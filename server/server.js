@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 const db = require('./database');
 const User = require('./models/user');
 const { authenticateUser, generateToken, authenticateToken, authorizeRole } = require('./auth');
@@ -27,7 +28,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routen
+// Globales Rate-Limiting für alle API-Routen
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 Minuten
+  max: 100, // Limit jede IP auf 100 Anfragen pro Fenster
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: 'Zu viele Anfragen von dieser IP, bitte versuchen Sie es später erneut'
+});
+
+// Anwenden des Rate-Limiters auf alle API-Routen
+app.use('/api', apiLimiter);
+
+// Authentifizierte Routen mit Rollenschutz
 app.use('/root', authenticateToken, authorizeRole('root'), rootRoutes);
 app.use('/admin', authenticateToken, authorizeRole('admin'), adminRoutes);
 app.use('/employee', authenticateToken, authorizeRole('employee'), employeeRoutes);
@@ -76,6 +89,7 @@ app.get('/root-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'root-dashboard.html'));
 });
 
+// Dashboard API-Routen (geschützt durch globales Rate-Limiting)
 app.get('/api/dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
   console.log('Sending dashboard data');
   res.json({
@@ -84,7 +98,7 @@ app.get('/api/dashboard-data', authenticateToken, authorizeRole('root'), (req, r
   });
 });
 
-// Root Dashboard Data Route
+// Wir nutzen eine klare, eindeutige Route statt Duplikate
 app.get('/api/root-dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
   console.log('Fetching root dashboard data');
   res.json({
