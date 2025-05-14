@@ -111,11 +111,13 @@
                     localStorage.setItem('role', data.role);
                     
                     if (data.role === 'root') {
-                        loadRootDashboard();
-                    } else {
-                        console.log('Unknown role:', data.role);
-                        alert('Unbekannte Benutzerrolle');
-                    }
+    loadRootDashboard();
+} else if (data.role === 'admin') {
+    window.location.href = '/admin-dashboard.html';
+} else {
+    console.log('Unknown role:', data.role);
+    alert('Unbekannte Benutzerrolle');
+}
                 } else {
                     const error = await response.json();
                     alert(`Login failed: ${error.message}`);

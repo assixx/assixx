@@ -4,14 +4,94 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: rgb(81, 80, 80);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            color: #f7f7f7;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #1b8e01;
+        }
+        section {
+            margin-top: 30px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #1b8e01;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #156600;
+        }
+        #logout-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+                margin: 10px;
+            }
+            table {
+                font-size: 14px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
+    <div class="container">
         <h1>Admin Dashboard</h1>
-        <button id="logout-btn">Ausloggen</button>
-    </header>
-    <main>
+        
         <section id="create-employee">
             <h2>Mitarbeiter erstellen</h2>
             <form id="create-employee-form">
@@ -26,6 +106,7 @@
                 <button type="submit">Mitarbeiter erstellen</button>
             </form>
         </section>
+        
         <section id="employee-list">
             <h2>Mitarbeiter-Liste</h2>
             <table>
@@ -42,17 +123,21 @@
                 </tbody>
             </table>
         </section>
+        
         <section id="upload-document">
             <h2>Dokument hochladen</h2>
             <form id="upload-document-form">
                 <select name="employeeId" id="employee-select" required>
                     <option value="">Mitarbeiter auswählen</option>
                 </select>
-                <input type="file" name="document" required>
+                <input type="file" name="document" required style="margin-top: 10px;">
                 <button type="submit">Dokument hochladen</button>
             </form>
         </section>
-    </main>
+        
+        <button id="logout-btn">Ausloggen</button>
+    </div>
+    
     <script src="/js/admin-dashboard.js"></script>
 </body>
 </html>

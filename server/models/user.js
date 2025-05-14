@@ -21,11 +21,22 @@ class User {
     const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
     return rows[0];
   }
+  
   static async findByRole(role) {
     const [rows] = await db.query('SELECT id, username, email, role, company, first_name, last_name FROM users WHERE role = ?', [role]);
     return rows;
   }
+  
+  // Neue delete-Methode hinzufügen - hier
+  static async delete(id) {
+    try {
+      const [result] = await db.query('DELETE FROM users WHERE id = ?', [id]);
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error(`Error deleting user with ID ${id}:`, error);
+      throw error;
+    }
+  }
 }
-
 
 module.exports = User;

@@ -109,39 +109,22 @@
         <div class="admin-section">
             <h2>Admin-Liste</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Benutzername</th>
-                        <th>E-Mail</th>
-                        <th>Firma</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                </tbody>
-            </table>
+    <thead>
+        <tr>
+            <th>Benutzername</th>
+            <th>E-Mail</th>
+            <th>Firma</th>
+            <th>Aktionen</th> <!-- Neue Spalte für Aktionen -->
+        </tr>
+    </thead>
+    <tbody id="admin-table-body">
+        <!-- Wird dynamisch gefüllt -->
+    </tbody>
+</table>
         </div>
         <button id="logout-btn" style="margin-top: 20px;">Ausloggen</button>
     </div>
-    <script>
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetch('/js/root-dashboard.js', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(response => response.text())
-            .then(script => {
-                const scriptElement = document.createElement('script');
-                scriptElement.textContent = script;
-                document.body.appendChild(scriptElement);
-            })
-            .catch(error => console.error('Error loading dashboard script:', error));
-        } else {
-            console.error('No token found. Redirecting to login...');
-            window.location.href = '/';
-        }
-    </script>
+    <!-- Direktes Einbinden des JavaScript-Codes -->
+    <script src="/js/root-dashboard.js"></script>
 </body>
 </html>
