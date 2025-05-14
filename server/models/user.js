@@ -26,6 +26,13 @@ class User {
     const [rows] = await db.query('SELECT id, username, email, role, company, first_name, last_name FROM users WHERE role = ?', [role]);
     return rows;
   }
+
+  // In server/models/user.js, add this method:
+
+static async findByEmail(email) {
+  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  return rows[0];
+}
   
   // Neue delete-Methode hinzufügen - hier
   static async delete(id) {

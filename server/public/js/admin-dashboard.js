@@ -62,19 +62,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function displayEmployees(employees) {
-        employeeTableBody.innerHTML = '';
-        employees.forEach(employee => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${employee.first_name} ${employee.last_name}</td>
-                <td>${employee.email}</td>
-                <td>${employee.employee_id}</td>
-                <td><button onclick="uploadDocumentFor('${employee.id}')">Dokument hochladen</button></td>
-            `;
-            employeeTableBody.appendChild(row);
-        });
+    // In server/public/js/admin-dashboard.js, modify the displayEmployees function:
+
+function displayEmployees(employees) {
+    employeeTableBody.innerHTML = '';
+    employees.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${employee.first_name} ${employee.last_name}</td>
+            <td>${employee.email}</td>
+            <td>${employee.employee_id}</td>
+            <td>
+                <button onclick="uploadDocumentFor('${employee.id}')">Dokument hochladen</button>
+                <button class="delete-btn" 
+                        data-id="${employee.id}" 
+                        data-name="${employee.first_name} ${employee.last_name}"
+                        style="background-color: #d9534f; margin-left: 5px;">
+                    Löschen
+                </button>
+            </td>
+        `;
+        employeeTableBody.appendChild(row);
+    });
+    
+    // Add event listeners for the delete buttons
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', deleteEmployee);
+    });
+}
+
+// Add the deleteEmployee function:
+async function deleteEmployee(e) {
+    const employeeId = e.target.getAttribute('data-id');
+    const employeeName = e.target.getAttribute('data-name');
+    
+    if (!confirm(`Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`)) {
+        return;
     }
+    
+    try {
+        const response = await fetch(`/admin/delete-employee/${employeeId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            alert(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht.`);
+            // Reload employee list
+            loadEmployees();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error('Fehler beim Löschen des Mitarbeiters:', error);
+        alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+    }
+}
 
     function populateEmployeeSelect(employees) {
         employeeSelect.innerHTML = '<option value="">Mitarbeiter auswählen</option>';

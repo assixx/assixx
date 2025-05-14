@@ -53,4 +53,42 @@ router.post('/upload-document/:employeeId', authenticateToken, authorizeRole('ad
   }
 });
 
+// In server/routes/admin.js, add this route:
+
+router.delete('/delete-employee/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  
+  logger.info(`Admin ${adminId} attempting to delete employee ${employeeId}`);
+  
+  try {
+    // First check if the user to delete is actually an employee
+    const employeeToDelete = await User.findById(employeeId);
+    
+    if (!employeeToDelete) {
+      logger.warn(`Employee with ID ${employeeId} not found`);
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    
+    if (employeeToDelete.role !== 'employee') {
+      logger.warn(`User with ID ${employeeId} is not an employee`);
+      return res.status(403).json({ message: 'Der zu löschende Benutzer ist kein Mitarbeiter' });
+    }
+    
+    // Delete employee
+    const success = await User.delete(employeeId);
+    
+    if (success) {
+      logger.info(`Employee with ID ${employeeId} deleted successfully by Admin ${adminId}`);
+      res.json({ message: 'Mitarbeiter erfolgreich gelöscht' });
+    } else {
+      logger.warn(`Failed to delete employee with ID ${employeeId}`);
+      res.status(500).json({ message: 'Fehler beim Löschen des Mitarbeiters' });
+    }
+  } catch (error) {
+    logger.error(`Error deleting employee ${employeeId} by Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Löschen des Mitarbeiters', error: error.message });
+  }
+});
+
 module.exports = router;

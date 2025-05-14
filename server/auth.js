@@ -3,24 +3,34 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('./models/user');
 
-async function authenticateUser(username, password) {
-  console.log(`Attempting to authenticate user: ${username}`);
+// In server/auth.js, modify the authenticateUser function:
+
+async function authenticateUser(usernameOrEmail, password) {
+  console.log(`Attempting to authenticate user: ${usernameOrEmail}`);
   try {
-    const user = await User.findByUsername(username);
+    // Try to find user by username first
+    let user = await User.findByUsername(usernameOrEmail);
+    
+    // If not found by username, try by email
     if (!user) {
-      console.log(`User not found: ${username}`);
+      user = await User.findByEmail(usernameOrEmail);
+    }
+    
+    if (!user) {
+      console.log(`User not found: ${usernameOrEmail}`);
       return null;
     }
+    
     const isValid = await bcrypt.compare(password, user.password);
     if (isValid) {
-      console.log(`User authenticated successfully: ${username}`);
+      console.log(`User authenticated successfully: ${user.username}`);
       return user;
     } else {
-      console.log(`Invalid password for user: ${username}`);
+      console.log(`Invalid password for user: ${user.username}`);
       return null;
     }
   } catch (error) {
-    console.error(`Error during authentication for user ${username}:`, error);
+    console.error(`Error during authentication for user ${usernameOrEmail}:`, error);
     throw error;
   }
 }

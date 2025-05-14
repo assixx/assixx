@@ -110,10 +110,12 @@
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('role', data.role);
                     
-                    if (data.role === 'root') {
+                   if (data.role === 'root') {
     loadRootDashboard();
 } else if (data.role === 'admin') {
     window.location.href = '/admin-dashboard.html';
+} else if (data.role === 'employee') {
+    window.location.href = '/employee-dashboard.html';
 } else {
     console.log('Unknown role:', data.role);
     alert('Unbekannte Benutzerrolle');
