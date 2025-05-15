@@ -126,6 +126,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${admin.company || '-'}</td>
             <td>
                 <button 
+                    class="config-btn" 
+                    data-id="${admin.id}" 
+                    data-username="${admin.username}"
+                    style="background-color: #007bff; padding: 5px 10px; font-size: 14px; margin-right: 5px;">
+                    Konfigurieren
+                </button>
+                <button 
                     class="delete-btn" 
                     data-id="${admin.id}" 
                     data-username="${admin.username}"
@@ -141,6 +148,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', deleteAdmin);
     });
+    
+    // Event-Listener für Konfigurations-Buttons hinzufügen
+    document.querySelectorAll('.config-btn').forEach(button => {
+        button.addEventListener('click', configureAdmin);
+    });
+}
+
+// Funktion zum Navigieren zur Admin-Konfigurationsseite
+function configureAdmin(e) {
+    const adminId = e.target.getAttribute('data-id');
+    const adminUsername = e.target.getAttribute('data-username');
+    
+    // Zur Konfigurationsseite navigieren und die Admin-ID übergeben
+    window.location.href = `/admin-config.html?id=${adminId}&username=${encodeURIComponent(adminUsername)}`;
 }
 
 async function deleteAdmin(e) {
