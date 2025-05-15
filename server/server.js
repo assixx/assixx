@@ -19,6 +19,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/js', express.static(path.join(__dirname, 'public/js')));
+app.use('/css', express.static(path.join(__dirname, 'public/css')));
+app.use('/components', express.static(path.join(__dirname, 'public/js/components')));
 app.use(securityMiddleware);
 app.use(morgan('dev'));
 

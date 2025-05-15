@@ -1041,13 +1041,13 @@
     <script>
         // Load navigation
         document.addEventListener('DOMContentLoaded', function() {
-            // Lade Navigation
-            fetch('/components/navigation.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('navigation-container').innerHTML = data;
-                })
-                .catch(error => console.error('Error loading navigation:', error));
+        // Lade Navigation
+fetch('/js/components/navigation.html')
+    .then(response => response.text())
+    .then(data => {
+        document.getElementById('navigation-container').innerHTML = data;
+    })
+    .catch(error => console.error('Error loading navigation:', error));
 
             // Lade Daten
             loadDashboardData();
