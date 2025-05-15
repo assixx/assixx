@@ -80,13 +80,25 @@ function authenticateToken(req, res, next) {
 
 function authorizeRole(role) {
   return (req, res, next) => {
-    console.log(`Authorizing role. Required: ${role}, User role: ${req.user.role}`);
-    if (req.user.role !== role) {
-      console.log(`Authorization failed: User ${req.user.username} does not have required role ${role}`);
-      return res.status(403).send('Unauthorized');
+    console.log('User role:', req.user.role);
+    console.log('Required role:', role);
+    
+    // Root hat Zugriff auf alles
+    if (req.user.role === 'root') {
+      return next();
     }
-    console.log(`User ${req.user.username} authorized for role ${role}`);
-    next();
+    
+    // Admin hat Zugriff auf Admin- und Employee-Ressourcen
+    if (req.user.role === 'admin' && (role === 'admin' || role === 'employee')) {
+      return next();
+    }
+    
+    // Genauer Rollen-Match
+    if (req.user.role === role) {
+      return next();
+    }
+    
+    return res.status(403).send('Unauthorized');
   };
 }
 

@@ -79,6 +79,25 @@ class Document {
     }
   }
 
+static async findAll() {
+  logger.info('Fetching all documents');
+  const query = `
+    SELECT d.*, u.first_name, u.last_name, 
+           CONCAT(u.first_name, ' ', u.last_name) AS employee_name
+    FROM documents d
+    LEFT JOIN users u ON d.user_id = u.id
+    ORDER BY d.upload_date DESC`;
+  
+  try {
+    const [rows] = await db.query(query);
+    logger.info(`Retrieved ${rows.length} documents`);
+    return rows;
+  } catch (error) {
+    logger.error(`Error fetching all documents: ${error.message}`);
+    throw error;
+  }
+}
+
   static async search(userId, searchTerm) {
     logger.info(`Searching documents for user ${userId} with term: ${searchTerm}`);
     const query = 'SELECT id, file_name, upload_date FROM documents WHERE user_id = ? AND file_name LIKE ?';

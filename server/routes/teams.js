@@ -251,4 +251,13 @@ router.delete('/:id/members/:userId', async (req, res) => {
   }
 });
 
+// Liste aller Teams abrufen
+router.get('/', authenticateToken, (req, res) => {
+  // Test-Daten zurückgeben
+  res.json([
+    { id: 1, name: "Entwicklung", department_name: "IT", leader_name: "Max Mustermann", member_count: 5 },
+    { id: 2, name: "Marketing", department_name: "Vertrieb", leader_name: "Maria Schmidt", member_count: 3 }
+  ]);
+});
+
 module.exports = router;
