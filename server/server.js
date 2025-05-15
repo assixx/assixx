@@ -155,5 +155,72 @@ app.use((err, req, res, next) => {
   res.status(500).send('Etwas ist schief gelaufen!');
 });
 
+// Ergänzungen zur server.js für erweiterte Benutzerverwaltung
+
+// Importieren der neuen Routen
+const departmentRoutes = require('./routes/departments');
+const teamRoutes = require('./routes/teams');
+const userRoutes = require('./routes/users');
+
+// Diese Verzeichnisse erstellen, falls sie nicht existieren
+const fs = require('fs').promises;
+
+async function createRequiredDirectories() {
+  const directories = [
+    'uploads',
+    'uploads/profile_pictures',
+    'uploads/documents'
+  ];
+
+  for (const dir of directories) {
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      console.log(`Verzeichnis ${dir} erstellt oder bereits vorhanden`);
+    } catch (error) {
+      console.error(`Fehler beim Erstellen des Verzeichnisses ${dir}:`, error);
+    }
+  }
+}
+
+createRequiredDirectories();
+
+// Statische Verzeichnisse für Uploads verfügbar machen
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Routen für die erweiterte Benutzerverwaltung einbinden
+app.use('/departments', departmentRoutes);
+app.use('/teams', teamRoutes);
+app.use('/users', userRoutes);
+
+// Neue HTML-Seiten bereitstellen
+app.get('/org-management.html', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin' && req.user.role !== 'root') {
+    return res.status(403).send("Zugriff verweigert");
+  }
+  res.sendFile(path.join(__dirname, 'public', 'org-management.html'));
+});
+
+app.get('/employee-profile.html', authenticateToken, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'employee-profile.html'));
+});
+
+// Zugriff auf Profilbilder bereitstellen (mit grundlegender Sicherheit)
+app.get('/profile-pictures/:filename', authenticateToken, async (req, res) => {
+  const filename = req.params.filename;
+  
+  // Sicherheitscheck: Überprüfen, ob der Dateipfad Verzeichniswechsel enthält
+  if (filename.includes('..') || filename.includes('/')) {
+    return res.status(400).send('Ungültiger Dateiname');
+  }
+  
+  try {
+    const filePath = path.join(__dirname, 'uploads', 'profile_pictures', filename);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Fehler beim Abrufen des Profilbilds:', error);
+    res.status(404).send('Profilbild nicht gefunden');
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));

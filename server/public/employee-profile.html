@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erweitertes Mitarbeiterprofil</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: rgb(81, 80, 80);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            color: #f7f7f7;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #1b8e01;
+        }
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ddd;
+            color: #333;
+            border: none;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #1b8e01;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            color: #333;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .profile-picture {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #666;
+            margin-right: 20px;
+        }
+        .profile-info {
+            flex-grow: 1;
+        }
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .profile-position {
+            font-size: 16px;
+            color: #666;
+            margin: 5px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #1b8e01;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .upload-btn-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .document-row:hover {
+            background-color: #f5f5f5;
+        }
+        .back-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 7px;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 10px;
+            background-color: #1b8e01;
+            color: white;
+            margin-left: 5px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-picture {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mitarbeiterprofil</h1>
+        
+        <div class="profile-header">
+            <div class="profile-picture" id="profile-image">
+                <!-- Wird dynamisch gefüllt -->
+                JD
+            </div>
+            <div class="profile-info">
+                <p class="profile-name" id="profile-name">John Doe</p>
+                <p class="profile-position" id="profile-position">Software Entwickler</p>
+                <p id="profile-department">IT Abteilung <span class="badge">Team Entwicklung</span></p>
+            </div>
+        </div>
+        
+        <div class="tab-container">
+            <button class="tab active" onclick="showTab('personal-info')">Persönliche Informationen</button>
+            <button class="tab" onclick="showTab('work-info')">Arbeitsinformationen</button>
+            <button class="tab" onclick="showTab('documents')">Dokumente</button>
+            <button class="tab" onclick="showTab('settings')">Einstellungen</button>
+        </div>
+        
+        <div id="personal-info" class="tab-content active">
+            <h2>Persönliche Informationen</h2>
+            
+            <form id="personal-info-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first_name">Vorname</label>
+                        <input type="text" id="first_name" name="first_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Nachname</label>
+                        <input type="text" id="last_name" name="last_name" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">E-Mail</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Telefon</label>
+                        <input type="tel" id="phone" name="phone" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Adresse</label>
+                    <textarea id="address" name="address" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="birthday">Geburtstag</label>
+                        <input type="date" id="birthday" name="birthday" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="emergency_contact">Notfallkontakt</label>
+                        <input type="text" id="emergency_contact" name="emergency_contact" class="form-control">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile_picture">Profilbild ändern</label>
+                    <div class="upload-btn-wrapper">
+                        <button class="btn btn-secondary">Bild auswählen</button>
+                        <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Speichern</button>
+            </form>
+        </div>
+        
+        <div id="work-info" class="tab-content">
+            <h2>Arbeitsinformationen</h2>
+            
+            <form id="work-info-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employee_id">Mitarbeiter-ID</label>
+                        <input type="text" id="employee_id" name="employee_id" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="position">Position</label>
+                        <input type="text" id="position" name="position" class="form-control" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="department">Abteilung</label>
+                        <input type="text" id="department" name="department" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="hire_date">Einstellungsdatum</label>
+                        <input type="date" id="hire_date" name="hire_date" class="form-control" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="teams">Teams</label>
+                    <div id="teams" class="form-control" style="min-height: 50px; background-color: #f9f9f9;">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notizen</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="3" readonly></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <div id="documents" class="tab-content">
+            <h2>Meine Dokumente</h2>
+            
+            <div class="form-group">
+                <input type="text" id="document-search" class="form-control" placeholder="Dokumente durchsuchen...">
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Dateiname</th>
+                        <th>Hochgeladen am</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="document-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="settings" class="tab-content">
+            <h2>Einstellungen</h2>
+            
+            <form id="settings-form">
+                <div class="form-group">
+                    <label for="username">Benutzername</label>
+                    <input type="text" id="username" name="username" class="form-control" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new_password">Neues Passwort</label>
+                    <input type="password" id="new_password" name="new_password" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">Passwort bestätigen</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label>Benachrichtigungseinstellungen</label>
+                    <div>
+                        <input type="checkbox" id="notify_documents" name="notify_documents" checked>
+                        <label for="notify_documents">Bei neuen Dokumenten benachrichtigen</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" id="notify_messages" name="notify_messages" checked>
+                        <label for="notify_messages">Bei neuen Nachrichten benachrichtigen</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
+                <button type="button" class="btn btn-danger" onclick="deleteAccount()">Konto löschen</button>
+            </form>
+        </div>
+        
+        <button class="btn btn-secondary back-btn" onclick="goBack()">Zurück zum Dashboard</button>
+    </div>
+    
+    <script>
+        // Tab-Wechsel-Funktionalität
+        function showTab(tabId) {
+            // Alle Tabs und Inhalte deaktivieren
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Ausgewählten Tab aktivieren
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        // Zurück-Funktion
+        function goBack() {
+            window.location.href = '/employee-dashboard.html';
+        }
+        
+        // Konto löschen
+        function deleteAccount() {
+            if (confirm('Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+                alert('Diese Funktion ist noch nicht implementiert.');
+            }
+        }
+        
+        // Seite laden und Daten abrufen
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hier würden die Benutzerdaten vom Server abgerufen und in das Formular geladen werden
+            loadUserData();
+            loadDocuments();
+            loadTeams();
+        });
+        
+        // Benutzerdaten laden
+        async function loadUserData() {
+            try {
+                const response = await fetch('/users/' + getUserId(), {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    fillUserData(userData);
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Benutzerdaten:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        }
+        
+        // Dokumente laden
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/employee/documents', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const documents = await response.json();
+                    displayDocuments(documents);
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Dokumente:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        }
+        
+        // Teams laden
+        async function loadTeams() {
+            try {
+                const response = await fetch('/users/' + getUserId() + '/teams', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const teams = await response.json();
+                    displayTeams(teams);
+                } else {
+                    const error = await response.json();
+                    console.error(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Teams:', error);
+            }
+        }
+        
+        // Benutzerdaten anzeigen
+        function fillUserData(userData) {
+            // Profil-Header
+            document.getElementById('profile-name').textContent = `${userData.first_name} ${userData.last_name}`;
+            document.getElementById('profile-position').textContent = userData.position || 'Keine Position angegeben';
+            
+            if (userData.department_name) {
+                document.getElementById('profile-department').textContent = userData.department_name;
+            } else {
+                document.getElementById('profile-department').textContent = 'Keine Abteilung zugewiesen';
+            }
+            
+            // Profilbild
+            if (userData.profile_picture) {
+                document.getElementById('profile-image').innerHTML = `<img src="/${userData.profile_picture}" alt="${userData.first_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            } else {
+                document.getElementById('profile-image').textContent = `${userData.first_name.charAt(0)}${userData.last_name.charAt(0)}`;
+            }
+            
+            // Persönliche Informationen
+            document.getElementById('first_name').value = userData.first_name || '';
+            document.getElementById('last_name').value = userData.last_name || '';
+            document.getElementById('email').value = userData.email || '';
+            document.getElementById('phone').value = userData.phone || '';
+            document.getElementById('address').value = userData.address || '';
+            document.getElementById('birthday').value = userData.birthday || '';
+            document.getElementById('emergency_contact').value = userData.emergency_contact || '';
+            
+            // Arbeitsinformationen
+            document.getElementById('employee_id').value = userData.employee_id || '';
+            document.getElementById('position').value = userData.position || '';
+            document.getElementById('department').value = userData.department_name || '';
+            document.getElementById('hire_date').value = userData.hire_date || '';
+            document.getElementById('notes').value = userData.notes || '';
+            
+            // Einstellungen
+            document.getElementById('username').value = userData.username || '';
+        }
+        
+        // Dokumente anzeigen
+        function displayDocuments(documents) {
+            const tableBody = document.getElementById('document-table-body');
+            tableBody.innerHTML = '';
+            
+            if (documents.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Keine Dokumente vorhanden</td></tr>';
+                return;
+            }
+            
+            documents.forEach(doc => {
+                const row = document.createElement('tr');
+                row.className = 'document-row';
+                
+                const date = new Date(doc.upload_date).toLocaleString();
+                
+                row.innerHTML = `
+                    <td>${doc.file_name}</td>
+                    <td>${date}</td>
+                    <td>
+                        <button onclick="downloadDocument('${doc.id}')" class="btn btn-primary">Herunterladen</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Dokument-Suche einrichten
+            document.getElementById('document-search').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = tableBody.getElementsByTagName('tr');
+                
+                for (let i = 0; i < rows.length; i++) {
+                    const fileName = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
+                    
+                    if (fileName.includes(searchTerm)) {
+                        rows[i].style.display = '';
+                    } else {
+                        rows[i].style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // Teams anzeigen
+        function displayTeams(teams) {
+            const teamsContainer = document.getElementById('teams');
+            
+            if (!teams || teams.length === 0) {
+                teamsContainer.textContent = 'Keine Teams zugewiesen';
+                return;
+            }
+            
+            teamsContainer.innerHTML = '';
+            
+            teams.forEach(team => {
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                badge.style.marginRight = '5px';
+                badge.style.marginBottom = '5px';
+                badge.textContent = team.name;
+                
+                teamsContainer.appendChild(badge);
+            });
+        }
+        
+        // Dokument herunterladen
+        async function downloadDocument(documentId) {
+            try {
+                const response = await fetch(`/employee/documents/${documentId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    
+                    // Dateinamen aus dem Content-Disposition-Header extrahieren
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    const fileName = contentDisposition.split('filename=')[1] || 'document.pdf';
+                    
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Herunterladen des Dokuments:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        }
+        
+        // Benutzer-ID aus dem lokalen Speicher holen
+        function getUserId() {
+            // In einer realen App würde hier die Benutzer-ID aus dem JWT-Token oder dem lokalen Speicher geholt werden
+            return 'current'; // "current" kann als Spezialwert verwendet werden, um den aktuellen Benutzer zu kennzeichnen
+        }
+        
+        // Event-Listener für Formulare
+        document.getElementById('personal-info-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const formData = new FormData(e.target);
+                
+                // Wenn ein Profilbild ausgewählt wurde, dieses separat hochladen
+                if (formData.get('profile_picture').size > 0) {
+                    const pictureFormData = new FormData();
+                    pictureFormData.append('profile_picture', formData.get('profile_picture'));
+                    
+                    const pictureResponse = await fetch('/users/profile/upload-picture', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: pictureFormData
+                    });
+                    
+                    if (!pictureResponse.ok) {
+                        const pictureError = await pictureResponse.json();
+                        alert(`Fehler beim Hochladen des Profilbilds: ${pictureError.message}`);
+                    }
+                }
+                
+                // Bildfeld entfernen, da dieses separat behandelt wird
+                formData.delete('profile_picture');
+                
+                // Restliche Daten als JSON senden
+                const response = await fetch('/users/profile/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData.entries()))
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    
+                    // Daten neu laden
+                    loadUserData();
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Aktualisieren des Profils:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        });
+        
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            // Passwortvalidierung
+            if (newPassword && newPassword !== confirmPassword) {
+                alert('Die Passwörter stimmen nicht überein!');
+                return;
+            }
+            
+            // Notification-Einstellungen
+            const notifyDocuments = document.getElementById('notify_documents').checked;
+            const notifyMessages = document.getElementById('notify_messages').checked;
+            
+            try {
+                const response = await fetch('/users/profile/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        new_password: newPassword || null,
+                        notifications: {
+                            documents: notifyDocuments,
+                            messages: notifyMessages
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    
+                    // Passwortfelder zurücksetzen
+                    document.getElementById('new_password').value = '';
+                    document.getElementById('confirm_password').value = '';
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Aktualisieren der Einstellungen:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        });
+    </script>
+</body>
+</html>
