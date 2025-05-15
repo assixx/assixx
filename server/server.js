@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const db = require('./database');
 const User = require('./models/user');
+const AdminLog = require('./models/adminLog'); // Added this import
 const { authenticateUser, generateToken, authenticateToken, authorizeRole } = require('./auth');
 const rootRoutes = require('./routes/root');
 const adminRoutes = require('./routes/admin');
@@ -68,13 +69,42 @@ app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     console.log(`Login attempt for user: ${username}`);
+    
     const user = await authenticateUser(username, password);
+    
+    // IP-Adresse des Clients ermitteln
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    
     if (user) {
       const token = generateToken(user);
       console.log(`Login successful for user: ${username}`);
+      
+      // Wenn es sich um einen Admin oder Root handelt, Login protokollieren
+      if (user.role === 'admin' || user.role === 'root') {
+        await AdminLog.create({
+          user_id: user.id,
+          action: 'login',
+          ip_address: ip,
+          status: 'success'
+        });
+      }
+      
       res.json({ message: 'Login erfolgreich', token, role: user.role });
     } else {
       console.log(`Login failed for user: ${username}`);
+      
+      // Fehlgeschlagenen Login suchen und protokollieren
+      const userByUsername = await User.findByUsername(username);
+      if (userByUsername && (userByUsername.role === 'admin' || userByUsername.role === 'root')) {
+        await AdminLog.create({
+          user_id: userByUsername.id,
+          action: 'login',
+          ip_address: ip,
+          status: 'failure',
+          details: 'Falsches Passwort'
+        });
+      }
+      
       res.status(401).json({ message: 'Ungültige Anmeldeinformationen' });
     }
   } catch (error) {
@@ -87,6 +117,12 @@ app.post('/login', async (req, res) => {
 app.get('/root-dashboard', (req, res) => {
   console.log('Accessing root dashboard');
   res.sendFile(path.join(__dirname, 'public', 'root-dashboard.html'));
+});
+
+// Admin Config Route
+app.get('/admin-config.html', (req, res) => {
+  console.log('Accessing admin configuration page');
+  res.sendFile(path.join(__dirname, 'public', 'admin-config.html'));
 });
 
 // Dashboard API-Routen (geschützt durch globales Rate-Limiting)

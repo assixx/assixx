@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Konfiguration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: rgb(81, 80, 80);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            color: #f7f7f7;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #1b8e01;
+        }
+        .section {
+            margin-top: 30px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #1b8e01;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #156600;
+        }
+        .admin-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .admin-info p {
+            margin: 5px 0;
+        }
+        .tab-container {
+            margin-top: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            padding: 10px 15px;
+            background-color: #e0e0e0;
+            border: none;
+            color: #333;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .back-btn {
+            background-color: #6c757d;
+            margin-top: 20px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+                margin: 10px;
+            }
+            table {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Konfiguration</h1>
+        
+        <div class="section">
+            <h2 id="admin-username">Admin bearbeiten</h2>
+            
+            <div class="admin-info" id="admin-details">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+            
+            <form id="update-admin-form">
+                <input type="hidden" id="admin-id" name="id">
+                
+                <div>
+                    <label for="username">Benutzername:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div>
+                    <label for="email">E-Mail:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div>
+                    <label for="company">Firma:</label>
+                    <input type="text" id="company" name="company">
+                </div>
+                
+                <div>
+                    <label for="new-password">Neues Passwort (leer lassen, um nicht zu ändern):</label>
+                    <input type="password" id="new-password" name="new_password">
+                </div>
+                
+                <div>
+                    <label for="notes">Notizen:</label>
+                    <textarea id="notes" name="notes" rows="4"></textarea>
+                </div>
+                
+                <button type="submit">Speichern</button>
+            </form>
+        </div>
+        
+        <div class="section">
+            <h2>Login-Protokolle</h2>
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="logs-3days">Letzte 3 Tage</button>
+                    <button class="tab-btn" data-tab="logs-10days">Letzte 10 Tage</button>
+                    <button class="tab-btn" data-tab="logs-30days">Letzte 30 Tage</button>
+                    <button class="tab-btn" data-tab="logs-all">Alle</button>
+                </div>
+                
+                <div class="tab-content active" id="logs-3days">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Aktion</th>
+                                <th>IP-Adresse</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-3days-body">
+                            <!-- Wird dynamisch gefüllt -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="tab-content" id="logs-10days">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Aktion</th>
+                                <th>IP-Adresse</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-10days-body">
+                            <!-- Wird dynamisch gefüllt -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="tab-content" id="logs-30days">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Aktion</th>
+                                <th>IP-Adresse</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-30days-body">
+                            <!-- Wird dynamisch gefüllt -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="tab-content" id="logs-all">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Aktion</th>
+                                <th>IP-Adresse</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-all-body">
+                            <!-- Wird dynamisch gefüllt -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <button class="back-btn" id="back-btn">Zurück zum Dashboard</button>
+    </div>
+    
+    <script src="/js/admin-config.js"></script>
+</body>
+</html>
