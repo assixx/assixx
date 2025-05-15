@@ -3,26 +3,31 @@ const express = require('express');
 const path = require('path');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs').promises;
 const db = require('./database');
 const User = require('./models/user');
-const AdminLog = require('./models/adminLog'); // Added this import
+const AdminLog = require('./models/adminLog'); 
 const { authenticateUser, generateToken, authenticateToken, authorizeRole } = require('./auth');
+
+// Import all route modules
 const rootRoutes = require('./routes/root');
 const adminRoutes = require('./routes/admin');
 const employeeRoutes = require('./routes/employee');
-const securityMiddleware = require('./middleware/security');
+const departmentRoutes = require('./routes/departments');
+const teamRoutes = require('./routes/teams');
+const userRoutes = require('./routes/users');
 const documentRoutes = require('./routes/documents');
 
 const app = express();
 
-// Middleware
+// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/components', express.static(path.join(__dirname, 'public/js/components')));
-app.use(securityMiddleware);
+// REMOVE OR IMPORT THIS: app.use(securityMiddleware);
 app.use(morgan('dev'));
 
 // Logging Middleware
@@ -32,30 +37,44 @@ app.use((req, res, next) => {
   next();
 });
 
+// Create required directories
+async function createRequiredDirectories() {
+  const directories = [
+    'uploads',
+    'uploads/profile_pictures',
+    'uploads/documents'
+  ];
+
+  for (const dir of directories) {
+    try {
+      await fs.mkdir(dir, { recursive: true });
+      console.log(`Verzeichnis ${dir} erstellt oder bereits vorhanden`);
+    } catch (error) {
+      console.error(`Fehler beim Erstellen des Verzeichnisses ${dir}:`, error);
+    }
+  }
+}
+createRequiredDirectories();
+
+// Statische Verzeichnisse für Uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Globales Rate-Limiting für alle API-Routen
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 Minuten
   max: 100, // Limit jede IP auf 100 Anfragen pro Fenster
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  standardHeaders: true,
+  legacyHeaders: false,
   message: 'Zu viele Anfragen von dieser IP, bitte versuchen Sie es später erneut'
 });
-
-// Anwenden des Rate-Limiters auf alle API-Routen
 app.use('/api', apiLimiter);
-
-// Authentifizierte Routen mit Rollenschutz
-app.use('/root', authenticateToken, authorizeRole('root'), rootRoutes);
-app.use('/admin', authenticateToken, authorizeRole('admin'), adminRoutes);
-app.use('/employee', authenticateToken, authorizeRole('employee'), employeeRoutes);
-app.use('/documents', authenticateToken, documentRoutes);
 
 // Startseite
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Registrierungsroute
+// Auth routes
 app.post('/register', async (req, res) => {
   try {
     const userId = await User.create(req.body);
@@ -67,7 +86,6 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Anmelderoute
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -116,86 +134,17 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Root Dashboard Route
+// HTML routes
 app.get('/root-dashboard', (req, res) => {
   console.log('Accessing root dashboard');
   res.sendFile(path.join(__dirname, 'public', 'root-dashboard.html'));
 });
 
-// Admin Config Route
 app.get('/admin-config.html', (req, res) => {
   console.log('Accessing admin configuration page');
   res.sendFile(path.join(__dirname, 'public', 'admin-config.html'));
 });
 
-// Dashboard API-Routen (geschützt durch globales Rate-Limiting)
-app.get('/api/dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
-  console.log('Sending dashboard data');
-  res.json({
-    message: 'Dies sind die Root-Dashboard-Daten',
-    user: req.user
-  });
-});
-
-// Wir nutzen eine klare, eindeutige Route statt Duplikate
-app.get('/api/root-dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
-  console.log('Fetching root dashboard data');
-  res.json({
-    message: 'Dies sind die Root-Dashboard-Daten',
-    user: req.user
-  });
-});
-
-// Fehlerbehandlung für nicht gefundene Routen
-app.use((req, res, next) => {
-  console.log(`404 - Not Found: ${req.method} ${req.url}`);
-  res.status(404).send("Sorry, diese Seite wurde nicht gefunden!");
-});
-
-// Allgemeine Fehlerbehandlung
-app.use((err, req, res, next) => {
-  console.error(`500 - Internal Server Error: ${err.stack}`);
-  res.status(500).send('Etwas ist schief gelaufen!');
-});
-
-// Ergänzungen zur server.js für erweiterte Benutzerverwaltung
-
-// Importieren der neuen Routen
-const departmentRoutes = require('./routes/departments');
-const teamRoutes = require('./routes/teams');
-const userRoutes = require('./routes/users');
-
-// Diese Verzeichnisse erstellen, falls sie nicht existieren
-const fs = require('fs').promises;
-
-async function createRequiredDirectories() {
-  const directories = [
-    'uploads',
-    'uploads/profile_pictures',
-    'uploads/documents'
-  ];
-
-  for (const dir of directories) {
-    try {
-      await fs.mkdir(dir, { recursive: true });
-      console.log(`Verzeichnis ${dir} erstellt oder bereits vorhanden`);
-    } catch (error) {
-      console.error(`Fehler beim Erstellen des Verzeichnisses ${dir}:`, error);
-    }
-  }
-}
-
-createRequiredDirectories();
-
-// Statische Verzeichnisse für Uploads verfügbar machen
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Routen für die erweiterte Benutzerverwaltung einbinden
-app.use('/departments', departmentRoutes);
-app.use('/teams', teamRoutes);
-app.use('/users', userRoutes);
-
-// Neue HTML-Seiten bereitstellen
 app.get('/org-management.html', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'root') {
     return res.status(403).send("Zugriff verweigert");
@@ -207,7 +156,24 @@ app.get('/employee-profile.html', authenticateToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee-profile.html'));
 });
 
-// Zugriff auf Profilbilder bereitstellen (mit grundlegender Sicherheit)
+// API routes
+app.get('/api/dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
+  console.log('Sending dashboard data');
+  res.json({
+    message: 'Dies sind die Root-Dashboard-Daten',
+    user: req.user
+  });
+});
+
+app.get('/api/root-dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
+  console.log('Fetching root dashboard data');
+  res.json({
+    message: 'Dies sind die Root-Dashboard-Daten',
+    user: req.user
+  });
+});
+
+// Profilbilder
 app.get('/profile-pictures/:filename', authenticateToken, async (req, res) => {
   const filename = req.params.filename;
   
@@ -223,6 +189,26 @@ app.get('/profile-pictures/:filename', authenticateToken, async (req, res) => {
     console.error('Fehler beim Abrufen des Profilbilds:', error);
     res.status(404).send('Profilbild nicht gefunden');
   }
+});
+
+// Register API routes (ONLY ONCE)
+app.use('/root', authenticateToken, authorizeRole('root'), rootRoutes);
+app.use('/admin', authenticateToken, authorizeRole('admin'), adminRoutes);
+app.use('/employee', authenticateToken, authorizeRole('employee'), employeeRoutes);
+app.use('/departments', authenticateToken, departmentRoutes);
+app.use('/teams', authenticateToken, teamRoutes);
+app.use('/users', userRoutes);
+app.use('/documents', authenticateToken, documentRoutes);
+
+// Error handling - MUST be last
+app.use((req, res, next) => {
+  console.log(`404 - Not Found: ${req.method} ${req.url}`);
+  res.status(404).send("Sorry, diese Seite wurde nicht gefunden!");
+});
+
+app.use((err, req, res, next) => {
+  console.error(`500 - Internal Server Error: ${err.stack}`);
+  res.status(500).send('Etwas ist schief gelaufen!');
 });
 
 const PORT = process.env.PORT || 3000;

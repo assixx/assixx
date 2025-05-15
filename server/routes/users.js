@@ -47,6 +47,9 @@ const checkOwnUser = (req, res, next) => {
   }
 };
 
+// ROUTES IN CORRECT ORDER - MOST SPECIFIC FIRST
+
+// 1. Static specific routes
 // Aktuellen Benutzer abrufen
 router.get('/current', authenticateToken, async (req, res) => {
   try {
@@ -63,6 +66,28 @@ router.get('/current', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(`Error fetching current user: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen des aktuellen Benutzers', error: error.message });
+  }
+});
+
+// Teams des aktuellen Benutzers abrufen
+router.get('/current/teams', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Prüfen, ob der Benutzer existiert
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    const Team = require('../models/team');
+    const teams = await Team.getUserTeams(userId);
+    
+    res.json(teams);
+  } catch (error) {
+    console.error(`Error fetching teams for current user: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen der Teams', error: error.message });
   }
 });
 
@@ -103,59 +128,7 @@ router.get('/search', authenticateToken, (req, res, next) => {
   }
 });
 
-// Benutzerdetails abrufen
-router.get('/:id', authenticateToken, checkOwnUser, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
-    }
-    
-    // Passwort aus der Antwort entfernen
-    const { password, ...userData } = user;
-    
-    res.json(userData);
-  } catch (error) {
-    console.error(`Error fetching user ${req.params.id}: ${error.message}`);
-    res.status(500).json({ message: 'Fehler beim Abrufen des Benutzers', error: error.message });
-  }
-});
-
-// Benutzer aktualisieren - nur für Admins
-router.put('/:id', authenticateToken, (req, res, next) => {
-  if (['admin', 'root'].includes(req.user.role)) {
-    next();
-  } else {
-    res.status(403).json({ message: 'Zugriff verweigert' });
-  }
-}, async (req, res) => {
-  try {
-    const userId = req.params.id;
-    
-    // Prüfen, ob der Benutzer existiert
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
-    }
-    
-    // Update durchführen
-    const success = await User.update(userId, req.body);
-    
-    if (success) {
-      console.log(`User ${userId} updated by user ${req.user.username}`);
-      res.json({ message: 'Benutzer erfolgreich aktualisiert' });
-    } else {
-      console.warn(`Failed to update user ${userId}`);
-      res.status(500).json({ message: 'Fehler beim Aktualisieren des Benutzers' });
-    }
-  } catch (error) {
-    console.error(`Error updating user ${req.params.id}: ${error.message}`);
-    res.status(500).json({ message: 'Fehler beim Aktualisieren des Benutzers', error: error.message });
-  }
-});
-
+// 2. Profile routes
 // Eigenes Profil aktualisieren - für alle Benutzer (nur bestimmte Felder)
 router.put('/profile/update', authenticateToken, async (req, res) => {
   try {
@@ -256,6 +229,60 @@ router.delete('/profile/picture', authenticateToken, async (req, res) => {
   }
 });
 
+// 3. Parameterized routes (these must come AFTER the more specific routes)
+// Benutzerdetails abrufen
+router.get('/:id', authenticateToken, checkOwnUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    // Passwort aus der Antwort entfernen
+    const { password, ...userData } = user;
+    
+    res.json(userData);
+  } catch (error) {
+    console.error(`Error fetching user ${req.params.id}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen des Benutzers', error: error.message });
+  }
+});
+
+// Benutzer aktualisieren - nur für Admins
+router.put('/:id', authenticateToken, (req, res, next) => {
+  if (['admin', 'root'].includes(req.user.role)) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Zugriff verweigert' });
+  }
+}, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Prüfen, ob der Benutzer existiert
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    // Update durchführen
+    const success = await User.update(userId, req.body);
+    
+    if (success) {
+      console.log(`User ${userId} updated by user ${req.user.username}`);
+      res.json({ message: 'Benutzer erfolgreich aktualisiert' });
+    } else {
+      console.warn(`Failed to update user ${userId}`);
+      res.status(500).json({ message: 'Fehler beim Aktualisieren des Benutzers' });
+    }
+  } catch (error) {
+    console.error(`Error updating user ${req.params.id}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Aktualisieren des Benutzers', error: error.message });
+  }
+});
+
 // Teams des Benutzers abrufen
 router.get('/:id/teams', authenticateToken, checkOwnUser, async (req, res) => {
   try {
@@ -278,36 +305,7 @@ router.get('/:id/teams', authenticateToken, checkOwnUser, async (req, res) => {
   }
 });
 
-// Teams des aktuellen Benutzers abrufen
-router.get('/current/teams', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    // Prüfen, ob der Benutzer existiert
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
-    }
-    
-    const Team = require('../models/team');
-    const teams = await Team.getUserTeams(userId);
-    
-    res.json(teams);
-  } catch (error) {
-    console.error(`Error fetching teams for current user: ${error.message}`);
-    res.status(500).json({ message: 'Fehler beim Abrufen der Teams', error: error.message });
-  }
-});
-
-// Liste aller Abteilungen abrufen
-router.get('/', authenticateToken, (req, res) => {
-  // Test-Daten zurückgeben
-  res.json([
-    { id: 1, name: "IT", manager_name: "Thomas Weber", employee_count: 12 },
-    { id: 2, name: "Vertrieb", manager_name: "Sandra Müller", employee_count: 8 }
-  ]);
-});
-
+// Removing the inappropriate route for listing departments
+// This should be in a departments.js file instead
 
 module.exports = router;

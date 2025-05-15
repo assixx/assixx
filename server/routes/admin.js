@@ -4,6 +4,7 @@ const { validateCreateEmployee } = require('../middleware/validators');
 const User = require('../models/user');
 const logger = require('../utils/logger');
 const Document = require('../models/document');
+const Department = require('../models/department');
 
 const router = express.Router();
 
@@ -88,6 +89,39 @@ router.delete('/delete-employee/:id', authenticateToken, authorizeRole('admin'),
   } catch (error) {
     logger.error(`Error deleting employee ${employeeId} by Admin ${adminId}: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Löschen des Mitarbeiters', error: error.message });
+  }
+});
+
+// Add dashboard stats endpoint
+router.get('/dashboard-stats', async (req, res) => {
+  try {
+    // Get counts from database
+    const employeeCount = await User.count({ role: 'employee' });
+    const departmentCount = await Department.count();
+    const teamCount = await Team.count();
+    const documentCount = await Document.count();
+    
+    res.json({
+      employeeCount,
+      departmentCount,
+      teamCount,
+      documentCount,
+      adminName: req.user.username
+    });
+  } catch (error) {
+    logger.error(`Error fetching dashboard stats: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen der Dashboard-Daten', error: error.message });
+  }
+});
+
+// Add documents endpoint
+router.get('/documents', async (req, res) => {
+  try {
+    const documents = await Document.findAll();
+    res.json(documents);
+  } catch (error) {
+    logger.error(`Error retrieving documents: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen der Dokumente', error: error.message });
   }
 });
 
