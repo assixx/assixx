@@ -1037,6 +1037,242 @@
         </div>
     </div>
 
+    <!-- Salary Document Upload Modal für Admin Dashboard -->
+<div id="upload-salary-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Gehaltsabrechnung hochladen</h3>
+            <button class="modal-close" onclick="hideSalaryUploadModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="upload-salary-form" enctype="multipart/form-data">
+                <input type="hidden" id="salary-employee-id" name="employeeId">
+                
+                <div class="form-group">
+                    <label for="salary-title">Titel *</label>
+                    <input type="text" id="salary-title" name="title" class="form-control" required 
+                           placeholder="z.B. Gehaltsabrechnung April 2025">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="salary-year">Jahr *</label>
+                        <select id="salary-year" name="year" class="form-control" required>
+                            <option value="2026">2026</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="salary-month">Monat *</label>
+                        <select id="salary-month" name="month" class="form-control" required>
+                            <option value="Januar">Januar</option>
+                            <option value="Februar">Februar</option>
+                            <option value="März">März</option>
+                            <option value="April">April</option>
+                            <option value="Mai">Mai</option>
+                            <option value="Juni">Juni</option>
+                            <option value="Juli">Juli</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="Oktober">Oktober</option>
+                            <option value="November">November</option>
+                            <option value="Dezember">Dezember</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="salary-description">Beschreibung</label>
+                    <textarea id="salary-description" name="description" class="form-control" rows="3"
+                              placeholder="Optionale Beschreibung oder Anmerkungen"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="salary-file">PDF-Datei (max. 3MB) *</label>
+                    <input type="file" id="salary-file" name="document" accept="application/pdf" required>
+                    <small class="form-text text-muted">Nur PDF-Dateien bis 3MB werden akzeptiert.</small>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary" onclick="hideSalaryUploadModal()">Abbrechen</button>
+            <button class="btn primary" onclick="uploadSalaryDocument()">Hochladen</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Monat automatisch auf aktuellen Monat setzen
+document.addEventListener('DOMContentLoaded', () => {
+    const currentMonth = new Date().getMonth(); // 0-11
+    const monthNames = [
+        "Januar", "Februar", "März", "April", "Mai", "Juni",
+        "Juli", "August", "September", "Oktober", "November", "Dezember"
+    ];
+    
+    const monthSelect = document.getElementById('salary-month');
+    if (monthSelect) {
+        monthSelect.value = monthNames[currentMonth];
+    }
+});
+
+// Modal anzeigen mit Mitarbeiter-ID
+function showSalaryUploadModal(employeeId, employeeName) {
+    const modal = document.getElementById('upload-salary-modal');
+    const employeeIdInput = document.getElementById('salary-employee-id');
+    const titleInput = document.getElementById('salary-title');
+    const currentDate = new Date();
+    
+    // Mitarbeiter-ID setzen
+    if (employeeIdInput) {
+        employeeIdInput.value = employeeId;
+    }
+    
+    // Standard-Titel basierend auf Mitarbeitername und aktuellem Monat setzen
+    if (titleInput && employeeName) {
+        const monthNames = [
+            "Januar", "Februar", "März", "April", "Mai", "Juni",
+            "Juli", "August", "September", "Oktober", "November", "Dezember"
+        ];
+        const currentMonth = monthNames[currentDate.getMonth()];
+        const currentYear = currentDate.getFullYear();
+        
+        titleInput.value = `Gehaltsabrechnung ${employeeName} - ${currentMonth} ${currentYear}`;
+    }
+    
+    // Modal anzeigen
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Modal schließen
+function hideSalaryUploadModal() {
+    const modal = document.getElementById('upload-salary-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Formular zurücksetzen
+    document.getElementById('upload-salary-form').reset();
+}
+
+// Gehaltsabrechnung hochladen
+async function uploadSalaryDocument() {
+    const form = document.getElementById('upload-salary-form');
+    const formData = new FormData(form);
+    const employeeId = formData.get('employeeId');
+    
+    if (!employeeId) {
+        alert('Mitarbeiter-ID fehlt!');
+        return;
+    }
+    
+    // Datei-Größe prüfen
+    const fileInput = document.getElementById('salary-file');
+    if (fileInput.files[0] && fileInput.files[0].size > 3 * 1024 * 1024) {
+        alert('Die Datei ist zu groß (max. 3MB erlaubt)');
+        return;
+    }
+    
+    try {
+        // Ladeindikator anzeigen
+        showLoading();
+        
+        const response = await fetch(`/admin/upload-salary-document/${employeeId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+        
+        // Ladeindikator ausblenden
+        hideLoading();
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert(result.message);
+            
+            // Modal schließen
+            hideSalaryUploadModal();
+            
+            // Optional: Liste der Dokumente aktualisieren, wenn vorhanden
+            if (typeof loadEmployeeSalaryDocuments === 'function') {
+                loadEmployeeSalaryDocuments(employeeId);
+            }
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Fehler beim Hochladen der Gehaltsabrechnung:', error);
+        alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+    }
+}
+
+// Lade-Indikator anzeigen/ausblenden
+function showLoading() {
+    const modalBody = document.querySelector('#upload-salary-modal .modal-body');
+    if (modalBody) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loading-indicator';
+        loadingDiv.className = 'loading-overlay';
+        loadingDiv.innerHTML = `
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Wird hochgeladen...</div>
+        `;
+        modalBody.appendChild(loadingDiv);
+    }
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('loading-indicator');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+</script>
+
+<style>
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1b8e01;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+.loading-text {
+    color: #333;
+    font-weight: bold;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
     <!-- Scripts -->
     <script>
         // Load navigation

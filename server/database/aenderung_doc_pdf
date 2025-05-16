@@ -1,0 +1,13 @@
+
+-- Änderungen an der documents-Tabelle
+ALTER TABLE documents 
+ADD COLUMN category VARCHAR(50) DEFAULT 'other',
+ADD COLUMN description TEXT,
+ADD COLUMN year INT,
+ADD COLUMN month VARCHAR(20),
+ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;
+
+-- Index für schnellere Abfragen
+CREATE INDEX idx_documents_category ON documents(category);
+CREATE INDEX idx_documents_user_category ON documents(user_id, category);
+CREATE INDEX idx_documents_archive_status ON documents(is_archived);
