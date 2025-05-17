@@ -9,10 +9,19 @@
             font-family: Arial, Helvetica, sans-serif, sans-serif;
             background-color: rgb(27, 27, 27);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            position: relative;
+        }
+        .logo-container {
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
         }
         .container {
             background-color: rgb(81, 80, 80);
@@ -21,6 +30,7 @@
             box-shadow: 1px 2px 15px rgba(0, 0, 0, 0.89);
             width: 100%;
             max-width: 400px;
+            position: relative;
         }
         h2 {
             text-align: center;
@@ -58,7 +68,7 @@
         }
         .footer {
             margin-top: 20px;
-            text-align: center;
+            text-align: right;
         }
         .footer a {
             color: #007bff;
@@ -67,9 +77,87 @@
         .footer a:hover {
             text-decoration: underline;
         }
+        /* Hilfe Button rechts oben auf Bildschirm */
+        .help-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #0d018e;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-weight: bold;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        /* Zugangsdaten Button links unten auf Bildschirm */
+        .access-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            border-radius: 50px;
+            background-color: #0d018e;
+            color: white;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .access-btn:hover {
+            background-color: #0056b3;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            overflow: auto;
+        }
+        .modal-content {
+            background-color: rgb(81, 80, 80);
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 500px;
+            color: #f7f7f7;
+        }
+        .close {
+            color: #f7f7f7;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
+    <!-- Hilfe-Button oben rechts -->
+    <button class="help-btn" onclick="window.location.href='hilfe.html'">?</button>
+    
+    <!-- Zugangsdaten-Button unten links -->
+    <button class="access-btn" onclick="document.getElementById('accessModal').style.display='block'">Zugangsdaten beantragen</button>
+    
+    <!-- Logo über dem Anmeldefenster -->
+    <div class="logo-container">
+        <img src="/images/logo.png" alt="Firmenlogo" class="logo">
+    </div>
+    
     <div class="container">
         <h2>Anmeldung</h2>
         <form id="loginForm">
@@ -86,7 +174,40 @@
             </div>
         </form>
         <div class="footer">
-            <a href="/register">Registrieren</a> | <a href="/forgot-password">Passwort vergessen?</a>
+            <a href="/forgot-password">Passwort vergessen?</a>
+        </div>
+    </div>
+
+    <!-- Modal für Zugangsdaten beantragen -->
+    <div id="accessModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('accessModal').style.display='none'">&times;</span>
+            <h2>Zugangsdaten beantragen</h2>
+            <form id="accessRequestForm">
+                <div class="input-group">
+                    <label for="lastName">Name</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+                <div class="input-group">
+                    <label for="firstName">Vorname</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="input-group">
+                    <label for="email">E-Mail</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="department">Abteilung</label>
+                    <input type="text" id="department" name="department" required>
+                </div>
+                <div class="input-group">
+                    <label for="teamLead">Teamleiter</label>
+                    <input type="text" id="teamLead" name="teamLead" required>
+                </div>
+                <div class="button-group">
+                    <button type="submit" style="background-color: #0d018e;">Beantragen</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -111,15 +232,15 @@
                     localStorage.setItem('role', data.role);
                     
                    if (data.role === 'root') {
-    loadRootDashboard();
-} else if (data.role === 'admin') {
-    window.location.href = '/admin-dashboard.html';
-} else if (data.role === 'employee') {
-    window.location.href = '/employee-dashboard.html';
-} else {
-    console.log('Unknown role:', data.role);
-    alert('Unbekannte Benutzerrolle');
-}
+                        loadRootDashboard();
+                    } else if (data.role === 'admin') {
+                        window.location.href = '/admin-dashboard.html';
+                    } else if (data.role === 'employee') {
+                        window.location.href = '/employee-dashboard.html';
+                    } else {
+                        console.log('Unknown role:', data.role);
+                        alert('Unbekannte Benutzerrolle');
+                    }
                 } else {
                     const error = await response.json();
                     alert(`Login failed: ${error.message}`);
@@ -131,32 +252,46 @@
         });
         
         async function loadRootDashboard() {
-    const token = localStorage.getItem('token');
-    try {
-        const response = await fetch('/root-dashboard', {
-            headers: {
-                'Authorization': `Bearer ${token}`
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('/root-dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (response.ok) {
+                    window.location.href = '/root-dashboard';
+                } else {
+                    throw new Error('Failed to load dashboard');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Fehler beim Laden des Dashboards. Bitte versuchen Sie sich erneut anzumelden.');
+                logout();
             }
-        });
-        if (response.ok) {
-            // Anstatt das Dashboard-HTML hier zu generieren, 
-            // leiten wir den Benutzer zur root-dashboard.html um
-            window.location.href = '/root-dashboard';
-        } else {
-            throw new Error('Failed to load dashboard');
         }
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        alert('Fehler beim Laden des Dashboards. Bitte versuchen Sie sich erneut anzumelden.');
-        logout();
-    }
-}
         
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
             window.location.href = '/';
         }
-        </script>
+
+        // Zugangsdaten beantragen (noch leer)
+        document.getElementById('accessRequestForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Hier später die Funktionalität implementieren
+            alert('Diese Funktion wird noch implementiert.');
+            document.getElementById('accessModal').style.display = 'none';
+        });
+
+        // Modal schließen, wenn außerhalb geklickt wird
+        window.onclick = function(event) {
+            const modal = document.getElementById('accessModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 </body>
 </html>
