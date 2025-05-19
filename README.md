@@ -335,6 +335,11 @@ Datenschutz: Implementierung von DSGVO-konformen Features (Datenlöschung, Ausku
 Diese Verbesserungen würden die Benutzerfreundlichkeit erheblich steigern und gleichzeitig die Sicherheit und Funktionalität des Systems verbessern, ohne eine komplette Überarbeitung zu erfordern.
 
 
+
+
+
+
+
 ## Komplette Anleitung: Lohnabrechnung-Projekt unter WSL Ubuntu einrichten
 
 Diese Anleitung führt dich Schritt für Schritt durch die Installation und Einrichtung des Lohnabrechnung-Projekts unter Windows Subsystem for Linux (WSL) mit Ubuntu.
@@ -362,11 +367,8 @@ cd ~/projects
 # Projekt klonen (ersetze die URL durch dein Repository)
 git clone https://github.com/dein-username/dein-projektname.git lohnabrechnung
 cd lohnabrechnung
-```
-
-### 4. Node.js einrichten
-```bash
-# Node.js und npm installieren
+4. Node.js einrichten
+bash# Node.js und npm installieren
 sudo apt update
 sudo apt install -y nodejs npm
 
@@ -383,11 +385,8 @@ cd ~/projects/lohnabrechnung/server
 
 # Abhängigkeiten installieren
 npm install
-```
-
-### 5. MySQL installieren und richtig konfigurieren
-```bash
-# MySQL installieren
+5. MySQL installieren und richtig konfigurieren
+bash# MySQL installieren
 sudo apt update
 sudo apt install -y mysql-server
 
@@ -396,26 +395,21 @@ sudo service mysql start
 
 # MySQL sicher konfigurieren
 sudo mysql_secure_installation
-```
-
 Beantworte die Fragen bei mysql_secure_installation wie folgt:
-- Passwortvalidierung-Plugin: Ja
-- Setze ein starkes Passwort: StrongP@ssw0rd!123 (oder eigenes starkes Passwort)
-- Anonymen Benutzer entfernen: Ja
-- Root-Login von außen verbieten: Nein
-- Test-Datenbank entfernen: Nein
-- Berechtigungstabellen neu laden: Ja
 
-### 6. Datenbank und Tabellen erstellen
-```bash
-# Bei MySQL anmelden
+Passwortvalidierung-Plugin: Ja
+Setze ein starkes Passwort: StrongP@ssw0rd!123 (oder eigenes starkes Passwort)
+Anonymen Benutzer entfernen: Ja
+Root-Login von außen verbieten: Nein
+Test-Datenbank entfernen: Nein
+Berechtigungstabellen neu laden: Ja
+
+6. Datenbank und Tabellen erstellen
+bash# Bei MySQL anmelden
 sudo mysql -u root -p
 # Passwort eingeben (dein starkes MySQL-Passwort)
-```
-
 Führe folgende SQL-Befehle aus:
-```sql
--- Datenbank erstellen
+sql-- Datenbank erstellen
 CREATE DATABASE lohnabrechnung;
 USE lohnabrechnung;
 
@@ -502,27 +496,17 @@ CREATE INDEX idx_admin_logs_user_id ON admin_logs(user_id);
 CREATE INDEX idx_admin_logs_timestamp ON admin_logs(timestamp);
 
 EXIT;
-```
-
-### 7. Root-Benutzer anlegen mit korrektem Hash
-```bash
-# Ins Projektverzeichnis wechseln
+7. Root-Benutzer anlegen mit korrektem Hash
+bash# Ins Projektverzeichnis wechseln
 cd ~/projects/lohnabrechnung/server
 
 # Korrekten Hash für das Passwort "root" generieren
 node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
-```
-
 Kopiere den erzeugten Hash (er sollte wie $2b$10$... aussehen).
-
-```bash
-# Bei MySQL anmelden
+bash# Bei MySQL anmelden
 sudo mysql -u root -p
 # Passwort eingeben
-```
-
-```sql
-USE lohnabrechnung;
+sqlUSE lohnabrechnung;
 
 -- Root-Benutzer mit dem gerade generierten Hash anlegen
 -- WICHTIG: Ersetze den Platzhalter durch deinen tatsächlichen Hash!
@@ -533,94 +517,60 @@ INSERT INTO users (username, email, password, role) VALUES
 SELECT id, username, role FROM users WHERE username = 'root';
 
 EXIT;
-```
-
-### 8. Umgebungsvariablen einrichten
-```bash
-# .env-Datei im server-Verzeichnis erstellen
+8. Umgebungsvariablen einrichten
+bash# .env-Datei im server-Verzeichnis erstellen
 cd ~/projects/lohnabrechnung/server
-```
-
 Erstelle eine .env-Datei:
-```bash
-cat > .env << EOF
+bashcat > .env << EOF
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=StrongP@ssw0rd!123
 DB_NAME=lohnabrechnung
 JWT_SECRET=ein_sicherer_zufallsstring
 EOF
-```
-
 Ersetze StrongP@ssw0rd!123 durch dein tatsächliches MySQL-Passwort.
-
-### 9. Verzeichnisstruktur für Uploads erstellen
-```bash
-# Erstelle die notwendigen Verzeichnisse
+9. Verzeichnisstruktur für Uploads erstellen
+bash# Erstelle die notwendigen Verzeichnisse
 mkdir -p uploads/profile_pictures uploads/documents
-```
-
-### 10. Server starten
-```bash
-# Starte den Server
+10. Server starten
+bash# Starte den Server
 node server.js
-```
-
-### 11. Anmeldung testen
+11. Anmeldung testen
 Öffne deinen Browser und navigiere zu http://localhost:3000
 Melde dich mit den folgenden Daten an:
-- Benutzername: root
-- Passwort: root
 
-## Fehlerbehebung WSL
+Benutzername: root
+Passwort: root
 
-### Problem: MySQL-Zugriffsfehler
+Fehlerbehebung
+Problem: MySQL-Zugriffsfehler
 Wenn du Fehler wie Error: Access denied for user 'root'@'localhost' erhältst:
-
-```bash
-sudo mysql
-```
-
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'StrongP@ssw0rd!123';
+bashsudo mysql
+sqlALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'StrongP@ssw0rd!123';
 FLUSH PRIVILEGES;
 EXIT;
-```
-
-```bash
-sudo service mysql restart
-```
-
-### Problem: Falscher Passwort-Hash
+bashsudo service mysql restart
+Problem: Falscher Passwort-Hash
 Wenn die Anmeldung mit "Invalid password" fehlschlägt:
 
 Überprüfe den Hash:
-```bash
-node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.compareSync('root', 'DEIN_HASH_AUS_DER_DATENBANK'));"
-```
+bashnode -e "const bcrypt = require('bcrypt'); console.log(bcrypt.compareSync('root', 'DEIN_HASH_AUS_DER_DATENBANK'));"
 
 Wenn false zurückkommt, erzeuge einen neuen Hash und aktualisiere ihn in der Datenbank:
-```bash
-node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
-```
-
-```sql
-USE lohnabrechnung;
+bashnode -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
+sqlUSE lohnabrechnung;
 UPDATE users SET password = '$2b$10$DEIN_NEUER_HASH' WHERE username = 'root';
 EXIT;
-```
 
-### Problem: Server startet nicht
+
+Problem: Server startet nicht
 Überprüfe die Logs mit:
-```bash
-cat combined.log
+bashcat combined.log
 cat error.log
-```
+Wichtige Hinweise
 
-## Wichtige Hinweise WSL
+MySQL-Passwort: Stelle sicher, dass das MySQL-Passwort in der .env-Datei mit dem tatsächlichen Passwort übereinstimmt.
+Passwort-Hash: Setze immer den vollständigen Hash ein. Der Hash muss mit $2b$10$ beginnen und hat eine bestimmte Länge.
+Port-Konflikte: Wenn Port 3000 bereits belegt ist, ändere ihn in der server.js-Datei oder setze die Umgebungsvariable PORT.
 
-- **MySQL-Passwort**: Stelle sicher, dass das MySQL-Passwort in der .env-Datei mit dem tatsächlichen Passwort übereinstimmt.
-- **Passwort-Hash**: Setze immer den vollständigen Hash ein. Der Hash muss mit $2b$10$ beginnen und hat eine bestimmte Länge.
-- **Port-Konflikte**: Wenn Port 3000 bereits belegt ist, ändere ihn in der server.js-Datei oder setze die Umgebungsvariable PORT.
-
-Mit dieser Anleitung sollte die Einrichtung des Lohnabrechnung-Projekts unter WSL reibungslos funktionieren!
+Mit dieser Anleitung sollte die Einrichtung des Lohnabrechnung-Projekts reibungslos funktionieren!
