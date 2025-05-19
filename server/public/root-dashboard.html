@@ -3,128 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Root Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: rgb(27, 27, 27);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            background-color: rgb(27, 27, 27);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(184, 183, 183, 0.1);
-            width: 100%;
-            max-width: 1000px;
-            color: #f7f7f7;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #1b8e01;
-        }
-        .dashboard-content {
-            background-color: #ffffff;
-            padding: 10px;
-            border-radius: 20px;
-            margin-top: 10px;
-            color: #333;
-        }
-        .admin-section {
-            margin-top: 30px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 20px;
-            background-color: #1b8e01;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #156600;
-        }
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-            }
-            table {
-                font-size: 14px;
-            }
-        }
-    </style>
+    <title>Root Dashboard - Assixx</title>
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/dashboard" class="logo-container">
+            <img src="/images/logo.svg" alt="Assixx Logo" class="logo" style="width: 60px; height: 60px;">
+        </a>
+        <div class="header-actions">
+            <span id="user-info" class="text-secondary">Root User</span>
+            <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
     <div class="container">
-        <h1>Root Dashboard</h1>
-        <div class="dashboard-content">
-            <h2>Willkommen, Root User!</h2>
-            <div id="dashboard-data">
-                <!-- Dashboard-Daten werden hier dynamisch eingefügt -->
+        <h1 class="text-center mb-4">Root Dashboard</h1>
+        
+        <!-- Dashboard Stats Grid -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="admin-count">0</div>
+                <div class="stat-label">Administratoren</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="user-count">0</div>
+                <div class="stat-label">Gesamtbenutzer</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="tenant-count">0</div>
+                <div class="stat-label">Aktive Firmen</div>
             </div>
         </div>
-        <div class="admin-section" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-    <h2>Admin erstellen</h2>
-    <form id="create-admin-form" style="width: 100%; max-width: 500px;">
-        <input type="text" name="username" placeholder="Benutzername" required>
-        <input type="email" name="email" placeholder="E-Mail" required>
-        <input type="password" name="password" placeholder="Passwort" required>
-        <input type="text" name="company" placeholder="Firma">
-        <textarea name="notes" placeholder="Notizen"></textarea>
-        <button type="submit">Admin erstellen</button>
-    </form>
-</div>
-        <div class="admin-section">
-            <h2>Admin-Liste</h2>
-            <table>
-    <thead>
-        <tr>
-            <th>Benutzername</th>
-            <th>E-Mail</th>
-            <th>Firma</th>
-            <th>Aktionen</th> <!-- Neue Spalte für Aktionen -->
-        </tr>
-    </thead>
-    <tbody id="admin-table-body">
-        <!-- Wird dynamisch gefüllt -->
-    </tbody>
-</table>
+
+        <!-- Admin Creation Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Neuen Administrator erstellen</h2>
+            </div>
+            <form id="create-admin-form">
+                <div class="form-group">
+                    <label class="form-label">Benutzername</label>
+                    <input type="text" name="username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Firma</label>
+                    <input type="text" name="company" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notizen</label>
+                    <textarea name="notes" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Administrator erstellen</button>
+            </form>
         </div>
-        <button id="logout-btn" style="margin-top: 20px;">Ausloggen</button>
+
+        <!-- Admin List Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Administrator-Übersicht</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Benutzername</th>
+                            <th>E-Mail</th>
+                            <th>Firma</th>
+                            <th>Status</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body">
+                        <!-- Wird dynamisch gefüllt -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <!-- Direktes Einbinden des JavaScript-Codes -->
+
+    <!-- JavaScript -->
     <script src="/js/root-dashboard.js"></script>
+    <script>
+        // Dashboard neu laden bei Klick auf Logo
+        document.querySelector('.logo-container').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.reload();
+        });
+    </script>
 </body>
 </html>

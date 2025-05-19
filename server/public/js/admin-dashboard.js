@@ -164,9 +164,11 @@ async function deleteEmployee(e) {
     }
 
     function logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/';
+        if (confirm('Möchten Sie sich wirklich abmelden?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/';
+        }
     }
 });
 

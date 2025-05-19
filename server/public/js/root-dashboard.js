@@ -197,8 +197,10 @@ async function deleteAdmin(e) {
     // Ausloggen
     function logout() {
         console.log('Logging out...');
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/';
+        if (confirm('Möchten Sie sich wirklich abmelden?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/';
+        }
     }
 });

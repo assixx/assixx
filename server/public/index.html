@@ -3,221 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lohnabrechnung Online - Anmeldung</title>
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif, sans-serif;
-            background-color: rgb(27, 27, 27);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 75vh;
-            margin: 0;
-            position: relative;
-        }
-        .logo-container {
-            margin-bottom: 30px;
-        }
-        .logo {
-            max-width: 200px;
-            height: auto;
-        }
-        .container {
-            background-color: rgb(81, 80, 80);
-            padding: 20px;
-            border-radius: 50px;
-            box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.89);
-            width: 100%;
-            max-width: 400px;
-            position: relative;
-        }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #f7f7f7;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #f7f7f7;
-        }
-        .input-group input {
-            width: 95%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 50px;
-        
-        }
-        .button-group {
-            text-align: center;
-        }
-        .button-group button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 50px;
-            background-color: #0b70d7;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .button-group button:hover {
-            background-color: #0056b3;
-        }
-        .footer {
-            margin-top: 20px;
-            text-align: right;
-        }
-        .footer a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        /* Hilfe Button rechts oben auf Bildschirm */
-        .help-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #0b70d7;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-weight: bold;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        /* Zugangsdaten Button links unten auf Bildschirm */
-        .access-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 10px 15px;
-            border-radius: 50px;
-            background-color: #0b70d7;
-            color: white;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            z-index: 1000;
-        }
-        .access-btn:hover {
-            background-color: #0056b3;
-        }
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            overflow: auto;
-        }
-        .modal-content {
-            background-color: rgb(81, 80, 80);
-            margin: 10% auto;
-            padding: 20px;
-            border-radius: 20px;
-            width: 80%;
-            max-width: 500px;
-            color: #f7f7f7;
-        }
-        .close {
-            color: #f7f7f7;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover {
-            color: #ccc;
-        }
-    </style>
+    <title>Assixx - Login</title>
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Hilfe-Button oben rechts -->
-    <button class="help-btn" onclick="window.location.href='hilfe.html'">?</button>
-    
-    <!-- Zugangsdaten-Button unten links -->
-    <button class="access-btn" onclick="document.getElementById('accessModal').style.display='block'">Zugangsdaten beantragen</button>
-    
-    <!-- Logo über dem Anmeldefenster -->
-    <div class="logo-container">
-        <img src="/images/logo.png" alt="Firmenlogo" class="logo">
+    <!-- Fragezeichen oben rechts -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 100;">
+        <a href="#" onclick="showHelp()" style="color: var(--text-secondary); text-decoration: none; font-size: 24px;">?</a>
     </div>
-    
-    <div class="container">
-        <h2>Anmeldung</h2>
-        <form id="loginForm">
-            <div class="input-group">
-                <label for="username">Benutzername/ E-Mail</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="input-group">
-                <label for="password">Passwort</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="button-group">
-                <button type="submit">Anmelden</button>
-            </div>
-        </form>
-        <div class="footer">
-            <a href="/forgot-password">Passwort vergessen?</a>
+    <div class="login-container">
+        <!-- Logo Section -->
+        <div class="login-header">
+            <img src="/images/logo.png" alt="Assixx Logo" class="login-logo">
         </div>
-    </div>
 
-    <!-- Modal für Zugangsdaten beantragen -->
-    <div id="accessModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="document.getElementById('accessModal').style.display='none'">&times;</span>
-            <h2>Zugangsdaten beantragen</h2>
-            <form id="accessRequestForm">
-                <div class="input-group">
-                    <label for="lastName">Name</label>
-                    <input type="text" id="lastName" name="lastName" required>
+        <!-- Login Form -->
+        <div class="login-card card">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Benutzername</label>
+                    <input type="text" id="username" class="form-control" required autofocus>
                 </div>
-                <div class="input-group">
-                    <label for="firstName">Vorname</label>
-                    <input type="text" id="firstName" name="firstName" required>
+                <div class="form-group">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" id="password" class="form-control" required>
                 </div>
-                <div class="input-group">
-                    <label for="email">E-Mail</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                <div class="input-group">
-                    <label for="department">Abteilung</label>
-                    <input type="text" id="department" name="department" required>
-                </div>
-                <div class="input-group">
-                    <label for="teamLead">Teamleiter</label>
-                    <input type="text" id="teamLead" name="teamLead" required>
-                </div>
-                <div class="button-group">
-                    <button type="submit" style="background-color: #0d018e;">Beantragen</button>
-                </div>
+                <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
             </form>
+            
+            <div class="login-footer">
+                <a href="#" onclick="showPasswordReset()" class="text-secondary">Passwort vergessen?</a>
+                <a href="#" onclick="requestAccess()" class="text-secondary" style="margin-left: 20px;">Zugangsdaten beantragen</a>
+            </div>
+        </div>
+
+        <!-- Company Footer -->
+        <div class="login-company">
+            <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
         </div>
     </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
+
             try {
                 const response = await fetch('/login', {
                     method: 'POST',
@@ -226,73 +59,196 @@
                     },
                     body: JSON.stringify({ username, password }),
                 });
-                
+
+                const data = await response.json();
+
                 if (response.ok) {
-                    const data = await response.json();
+                    // Store token
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('role', data.role);
                     
-                   if (data.role === 'root') {
-                        loadRootDashboard();
-                    } else if (data.role === 'admin') {
-                        window.location.href = '/admin-dashboard.html';
-                    } else if (data.role === 'employee') {
-                        window.location.href = '/employee-dashboard.html';
-                    } else {
-                        console.log('Unknown role:', data.role);
-                        alert('Unbekannte Benutzerrolle');
+                    // Redirect based on role
+                    switch(data.role) {
+                        case 'root':
+                            window.location.href = '/root-dashboard.html';
+                            break;
+                        case 'admin':
+                            window.location.href = '/admin-dashboard.html';
+                            break;
+                        case 'employee':
+                            window.location.href = '/employee-dashboard.html';
+                            break;
+                        default:
+                            alert('Unknown role');
                     }
                 } else {
-                    const error = await response.json();
-                    alert(`Login failed: ${error.message}`);
+                    alert(data.message || 'Login failed');
                 }
             } catch (error) {
-                console.error('Error during login:', error);
-                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+                console.error('Login error:', error);
+                alert('An error occurred during login');
             }
         });
-        
-        async function loadRootDashboard() {
-            const token = localStorage.getItem('token');
-            try {
-                const response = await fetch('/root-dashboard', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (response.ok) {
-                    window.location.href = '/root-dashboard';
-                } else {
-                    throw new Error('Failed to load dashboard');
-                }
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-                alert('Fehler beim Laden des Dashboards. Bitte versuchen Sie sich erneut anzumelden.');
-                logout();
-            }
+
+        function showPasswordReset() {
+            alert('Passwort-Reset Funktion - Coming Soon!');
         }
         
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            window.location.href = '/';
+        function requestAccess() {
+            alert('Zugangsdaten beantragen - Coming Soon!');
         }
-
-        // Zugangsdaten beantragen (noch leer)
-        document.getElementById('accessRequestForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Hier später die Funktionalität implementieren
-            alert('Diese Funktion wird noch implementiert.');
-            document.getElementById('accessModal').style.display = 'none';
-        });
-
-        // Modal schließen, wenn außerhalb geklickt wird
-        window.onclick = function(event) {
-            const modal = document.getElementById('accessModal');
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
+        
+        function showHelp() {
+            alert('Hilfe - Coming Soon!');
         }
     </script>
+
+    <style>
+        /* Login page specific styles */
+        body {
+            background: #121212;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, #1E1E1E 0%, #121212 50%, #0A0A0A 100%);
+            opacity: 0.9;
+            z-index: -1;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, 
+                transparent 0%, 
+                rgba(33, 150, 243, 0.05) 25%, 
+                transparent 50%, 
+                rgba(33, 150, 243, 0.05) 75%, 
+                transparent 100%);
+            z-index: -1;
+        }
+        
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            position: relative;
+            top: -50px;
+        }
+
+        .login-logo {
+            width: 156px;
+            height: auto;
+            display: block;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        .login-title {
+            font-size: 36px;
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--background-light);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            margin-top: -100px;
+        }
+
+
+        .login-company {
+            margin-top: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .btn-block {
+            width: 50%;
+            padding: var(--spacing-md);
+            font-size: 16px;
+            font-family: 'Ubuntu', sans-serif;
+            font-weight: 500;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .login-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .login-footer a:hover {
+            color: var(--primary-light);
+            text-decoration: underline;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: var(--spacing-lg);
+            }
+            
+            .login-title {
+                font-size: 28px;
+            }
+            
+            .login-logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Animation */
+        .login-card {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </body>
 </html>

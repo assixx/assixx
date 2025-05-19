@@ -3,131 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mitarbeiter Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f7f7f7;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            background-color: rgb(81, 80, 80);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 800px;
-            color: #f7f7f7;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #1b8e01;
-        }
-        section {
-            margin-top: 30px;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 5px;
-            color: #333;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            background-color: #1b8e01;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #156600;
-        }
-        #employee-details {
-            margin-top: 10px;
-        }
-        #logout-btn {
-            margin-top: 20px;
-            width: 100%;
-        }
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-                margin: 10px;
-            }
-            table {
-                font-size: 14px;
-            }
-        }
-    </style>
+    <title>Employee Dashboard - Assixx</title>
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Mitarbeiter Dashboard</h1>
-        
-        <section id="employee-info">
-            <h2>Meine Informationen</h2>
-            <div id="employee-details">
-                <!-- Wird dynamisch gefüllt -->
-            </div>
-        </section>
-        
-        <section id="document-search">
-            <h2>Dokumente suchen</h2>
-            <form id="search-form">
-                <input type="text" id="search-input" placeholder="Dokument suchen...">
-                <button type="submit">Suchen</button>
-            </form>
-        </section>
+    <!-- Header -->
+    <header class="header">
+        <a href="/employee-dashboard" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo">
+            <span class="logo-text">Assixx</span>
+        </a>
+        <div class="header-actions">
+            <span id="user-info" class="text-secondary">Mitarbeiter</span>
+            <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+        </div>
+    </header>
 
-        <section id="document-list">
-            <h2>Meine Dokumente</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Dateiname</th>
-                        <th>Hochgeladen am</th>
-                        <th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody id="document-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                </tbody>
-            </table>
-        </section>
+    <!-- Main Container -->
+    <div class="container">
+        <h1 class="text-center mb-4">Mitarbeiter Dashboard</h1>
         
-        <button id="logout-btn">Ausloggen</button>
+        <!-- Employee Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Willkommen <span id="employee-name">Mitarbeiter</span>!</h2>
+            </div>
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Mitarbeiter-ID</div>
+                    <div class="stat-value" id="employee-id">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Abteilung</div>
+                    <div class="stat-value" id="employee-department">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Position</div>
+                    <div class="stat-value" id="employee-position">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Dokumente</div>
+                    <div class="stat-value" id="document-count">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Schnellaktionen</h2>
+            </div>
+            <div class="dashboard-grid">
+                <button class="stat-card" onclick="showDocuments()" style="cursor: pointer;">
+                    <div class="stat-value"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-label">Meine Dokumente</div>
+                </button>
+                <button class="stat-card" onclick="showProfile()" style="cursor: pointer;">
+                    <div class="stat-value"><i class="fas fa-user"></i></div>
+                    <div class="stat-label">Mein Profil</div>
+                </button>
+                <button class="stat-card" onclick="reportError()" style="cursor: pointer;">
+                    <div class="stat-value"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-label">Fehler melden</div>
+                </button>
+                <button class="stat-card" onclick="showAnnouncements()" style="cursor: pointer;">
+                    <div class="stat-value"><i class="fas fa-bullhorn"></i></div>
+                    <div class="stat-label">Ankündigungen</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent Documents Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="flex flex-between">
+                    <h2 class="card-title">Neueste Dokumente</h2>
+                    <a href="/employee-documents.html" class="btn btn-secondary">Alle anzeigen</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Dokument</th>
+                            <th>Kategorie</th>
+                            <th>Datum</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-documents">
+                        <!-- Wird dynamisch gefüllt -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-documents" style="display: none; text-align: center; padding: 20px;">
+                <p>Keine Dokumente vorhanden</p>
+            </div>
+        </div>
+
+        <!-- Announcements Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Aktuelle Ankündigungen</h2>
+            </div>
+            <div id="announcements-container" style="padding: 20px;">
+                <div class="announcement-item" style="padding: 15px; background-color: var(--background-dark); border-radius: var(--radius-sm); margin-bottom: 10px;">
+                    <h3 style="margin-bottom: 5px;">Willkommen im neuen System!</h3>
+                    <p style="margin: 0; color: var(--text-secondary);">Das neue Assixx-System ist jetzt verfügbar. Bei Fragen wenden Sie sich bitte an Ihren Administrator.</p>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- JavaScript -->
     <script src="/js/employee-dashboard.js"></script>
+    <script>
+        // Dashboard neu laden bei Klick auf Logo
+        document.querySelector('.logo-container').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.reload();
+        });
+
+        // Quick action functions
+        function showDocuments() {
+            window.location.href = '/employee-documents.html';
+        }
+
+        function showProfile() {
+            window.location.href = '/employee-profile.html';
+        }
+
+        function reportError() {
+            alert('Fehlermeldesystem - Coming Soon!');
+            // TODO: Implement error reporting modal
+        }
+
+        function showAnnouncements() {
+            const announcementsSection = document.getElementById('announcements-container');
+            announcementsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Add Font Awesome icons
+        const fontAwesome = document.createElement('link');
+        fontAwesome.rel = 'stylesheet';
+        fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+        document.head.appendChild(fontAwesome);
+    </script>
+
+    <style>
+        /* Additional styling for icon buttons */
+        .stat-card[onclick] {
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card[onclick]:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+        
+        .stat-card[onclick] .stat-value {
+            font-size: 40px;
+            color: var(--primary-color);
+        }
+        
+        .announcement-item:hover {
+            background-color: var(--background-dark) !important;
+            border-left: 3px solid var(--primary-color);
+            padding-left: 12px;
+        }
+    </style>
 </body>
 </html>
