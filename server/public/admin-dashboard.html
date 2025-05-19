@@ -334,6 +334,9 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>Beschreibung</th>
+                                    <th>Status</th>
+                                    <th>Sichtbarkeit</th>
+                                    <th>Manager</th>
                                     <th>Mitarbeiter</th>
                                     <th>Teams</th>
                                     <th>Aktionen</th>
@@ -393,7 +396,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Neue Abteilung</h3>
-                <button class="modal-close" onclick="hideDepartmentModal()">&times;</button>
+                <button class="modal-close" onclick="hideModal('department-modal')">&times;</button>
             </div>
             <form id="department-form">
                 <div class="form-group">
@@ -403,6 +406,20 @@
                 <div class="form-group">
                     <label class="form-label">Beschreibung</label>
                     <textarea name="description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="active" selected>Aktiv</option>
+                        <option value="inactive">Inaktiv</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sichtbarkeit</label>
+                    <select name="visibility" class="form-control">
+                        <option value="public" selected>Öffentlich</option>
+                        <option value="private">Privat</option>
+                    </select>
                 </div>
                 <button type="submit" class="btn btn-primary">Abteilung erstellen</button>
             </form>
@@ -502,26 +519,7 @@
         </div>
     </div>
 
-    <!-- Department Modal -->
-    <div id="department-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Neue Abteilung</h3>
-                <button class="modal-close" onclick="hideModal('department-modal')">&times;</button>
-            </div>
-            <form id="department-form">
-                <div class="form-group">
-                    <label class="form-label">Name</label>
-                    <input type="text" name="name" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Beschreibung</label>
-                    <textarea name="description" class="form-control" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Abteilung erstellen</button>
-            </form>
-        </div>
-    </div>
+    <!-- Department Modal ist bereits weiter oben definiert -->
 
     <!-- Team Modal -->
     <div id="team-modal" class="modal" style="display: none;">
@@ -704,7 +702,7 @@
         }
 
         function showAllDepartments() {
-            console.log('Show all departments');
+            showSection('departments');
         }
 
         function showAllTeams() {
@@ -826,6 +824,16 @@
         .btn-group {
             display: flex;
             gap: var(--spacing-sm);
+        }
+        
+        .badge-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .badge-secondary {
+            background-color: var(--secondary-color);
+            color: white;
         }
 
         .department-list,

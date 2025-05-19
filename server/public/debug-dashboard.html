@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Dashboard</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .debug-section { 
+            margin: 20px 0; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            background: #f5f5f5;
+        }
+        pre { background: white; padding: 10px; overflow: auto; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Debug Dashboard</h1>
+    
+    <div class="debug-section">
+        <h2>1. Check localStorage</h2>
+        <pre id="localStorage-info"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>2. Test API Calls</h2>
+        <button onclick="testDepartmentsAPI()">Test /departments</button>
+        <button onclick="testTeamsAPI()">Test /teams</button>
+        <button onclick="testEmployeesAPI()">Test /admin/employees</button>
+        <pre id="api-results"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>3. Check DOM Elements</h2>
+        <button onclick="checkDOM()">Check DOM</button>
+        <pre id="dom-results"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>4. Manual Department Load</h2>
+        <button onclick="manualLoadDepartments()">Load Departments</button>
+        <div id="manual-departments"></div>
+    </div>
+
+    <script>
+    // Check localStorage
+    function checkLocalStorage() {
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+        document.getElementById('localStorage-info').textContent = JSON.stringify({
+            token: token ? token.substring(0, 50) + '...' : 'None',
+            role: role || 'None',
+            tokenLength: token ? token.length : 0
+        }, null, 2);
+    }
+    
+    // Test API calls
+    async function testAPICall(endpoint, elementId) {
+        const token = localStorage.getItem('token');
+        const resultsEl = document.getElementById('api-results');
+        
+        try {
+            resultsEl.textContent += `\nTesting ${endpoint}...\n`;
+            
+            const response = await fetch(endpoint, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            resultsEl.textContent += `Status: ${response.status}\n`;
+            
+            if (response.ok) {
+                const data = await response.json();
+                resultsEl.textContent += `Success! Data count: ${data.length}\n`;
+                resultsEl.textContent += JSON.stringify(data.slice(0, 2), null, 2) + '\n';
+            } else {
+                const error = await response.text();
+                resultsEl.textContent += `Error: ${error}\n`;
+            }
+        } catch (error) {
+            resultsEl.textContent += `Exception: ${error.message}\n`;
+        }
+    }
+    
+    function testDepartmentsAPI() { testAPICall('/departments'); }
+    function testTeamsAPI() { testAPICall('/teams'); }
+    function testEmployeesAPI() { testAPICall('/admin/employees'); }
+    
+    // Check DOM elements
+    function checkDOM() {
+        const results = document.getElementById('dom-results');
+        const elements = [
+            'department-list',
+            'department-count',
+            'departments-table-body',
+            'team-list',
+            'team-count'
+        ];
+        
+        const found = {};
+        elements.forEach(id => {
+            const el = document.getElementById(id);
+            found[id] = el ? 'Found' : 'Not found';
+        });
+        
+        results.textContent = JSON.stringify(found, null, 2);
+    }
+    
+    // Manual department load
+    async function manualLoadDepartments() {
+        const token = localStorage.getItem('token');
+        const container = document.getElementById('manual-departments');
+        
+        try {
+            const response = await fetch('/departments', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const departments = await response.json();
+                container.innerHTML = '<h3>Departments loaded manually:</h3>';
+                container.innerHTML += departments.map(dept => `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin: 5px;">
+                        <strong>${dept.name}</strong><br>
+                        Status: ${dept.status}, Visibility: ${dept.visibility}<br>
+                        Employees: ${dept.employee_count}, Teams: ${dept.team_count}
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="color: red;">Failed to load departments</p>';
+            }
+        } catch (error) {
+            container.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        }
+    }
+    
+    // Initialize
+    checkLocalStorage();
+    </script>
+</body>
+</html>

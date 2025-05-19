@@ -40,7 +40,7 @@ app.use(morgan('dev'));
 // Logging Middleware
 app.use((req, res, next) => {
   const token = req.headers['authorization'];
-  console.log('Received token:', token);
+  console.log(`${req.method} ${req.path} - Token:`, token ? 'Present' : 'None');
   next();
 });
 

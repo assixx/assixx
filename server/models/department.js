@@ -3,16 +3,33 @@ const logger = require('../utils/logger');
 
 class Department {
   static async create(departmentData) {
-    const { name, description, manager_id, parent_id } = departmentData;
+    const { name, description, manager_id, parent_id, status = 'active', visibility = 'public' } = departmentData;
     logger.info(`Creating new department: ${name}`);
     
-    const query = `
-      INSERT INTO departments (name, description, manager_id, parent_id) 
-      VALUES (?, ?, ?, ?)
-    `;
-    
+    // Check if columns exist, fallback to basic query if not
     try {
-      const [result] = await db.query(query, [name, description, manager_id, parent_id]);
+      const [columns] = await db.query('DESCRIBE departments');
+      const hasStatus = columns.some(col => col.Field === 'status');
+      const hasVisibility = columns.some(col => col.Field === 'visibility');
+      
+      let query, params;
+      
+      if (hasStatus && hasVisibility) {
+        query = `
+          INSERT INTO departments (name, description, manager_id, parent_id, status, visibility) 
+          VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        params = [name, description, manager_id, parent_id, status, visibility];
+      } else {
+        logger.warn('Status/visibility columns not found, using basic query');
+        query = `
+          INSERT INTO departments (name, description, manager_id, parent_id) 
+          VALUES (?, ?, ?, ?)
+        `;
+        params = [name, description, manager_id, parent_id];
+      }
+      
+      const [result] = await db.query(query, params);
       logger.info(`Department created successfully with ID ${result.insertId}`);
       return result.insertId;
     } catch (error) {
@@ -23,15 +40,30 @@ class Department {
 
   static async findAll() {
     logger.info('Fetching all departments');
-    const query = 'SELECT * FROM departments ORDER BY name';
     
     try {
+      // First try with extended query
+      const query = `
+        SELECT d.*, 
+          u.username as manager_name,
+          (SELECT COUNT(*) FROM users WHERE department_id = d.id) as employee_count,
+          (SELECT COUNT(*) FROM teams WHERE department_id = d.id) as team_count
+        FROM departments d
+        LEFT JOIN users u ON d.manager_id = u.id
+        ORDER BY d.name
+      `;
+      
       const [rows] = await db.query(query);
-      logger.info(`Retrieved ${rows.length} departments`);
+      logger.info(`Retrieved ${rows.length} departments with extended info`);
       return rows;
     } catch (error) {
-      logger.error(`Error fetching departments: ${error.message}`);
-      throw error;
+      logger.warn(`Error with extended query: ${error.message}, falling back to simple query`);
+      
+      // Fallback to simple query
+      const simpleQuery = 'SELECT * FROM departments ORDER BY name';
+      const [rows] = await db.query(simpleQuery);
+      logger.info(`Retrieved ${rows.length} departments with simple query`);
+      return rows;
     }
   }
 
@@ -55,16 +87,44 @@ class Department {
 
   static async update(id, departmentData) {
     logger.info(`Updating department ${id}`);
-    const { name, description, manager_id, parent_id } = departmentData;
+    const fields = [];
+    const values = [];
     
-    const query = `
-      UPDATE departments 
-      SET name = ?, description = ?, manager_id = ?, parent_id = ? 
-      WHERE id = ?
-    `;
+    // Only update provided fields
+    if (departmentData.name !== undefined) {
+      fields.push('name = ?');
+      values.push(departmentData.name);
+    }
+    if (departmentData.description !== undefined) {
+      fields.push('description = ?');
+      values.push(departmentData.description);
+    }
+    if (departmentData.manager_id !== undefined) {
+      fields.push('manager_id = ?');
+      values.push(departmentData.manager_id);
+    }
+    if (departmentData.parent_id !== undefined) {
+      fields.push('parent_id = ?');
+      values.push(departmentData.parent_id);
+    }
+    if (departmentData.status !== undefined) {
+      fields.push('status = ?');
+      values.push(departmentData.status);
+    }
+    if (departmentData.visibility !== undefined) {
+      fields.push('visibility = ?');
+      values.push(departmentData.visibility);
+    }
+    
+    if (fields.length === 0) {
+      return false;
+    }
+    
+    values.push(id);
+    const query = `UPDATE departments SET ${fields.join(', ')} WHERE id = ?`;
     
     try {
-      const [result] = await db.query(query, [name, description, manager_id, parent_id, id]);
+      const [result] = await db.query(query, values);
       if (result.affectedRows === 0) {
         logger.warn(`No department found with ID ${id} for update`);
         return false;

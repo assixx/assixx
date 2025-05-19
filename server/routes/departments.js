@@ -9,6 +9,7 @@ const router = express.Router();
 // Nur Admins und Root-Benutzer dürfen Abteilungen verwalten
 router.use(authenticateToken);
 router.use((req, res, next) => {
+  console.log(`Departments route - User: ${req.user?.username}, Role: ${req.user?.role}`);
   if (req.user.role === 'admin' || req.user.role === 'root') {
     next();
   } else {
@@ -57,7 +58,9 @@ router.post('/', async (req, res) => {
 // Alle Abteilungen abrufen
 router.get('/', async (req, res) => {
   try {
+    logger.info(`Fetching departments for user: ${req.user.username}`);
     const departments = await Department.findAll();
+    logger.info(`Returning ${departments.length} departments`);
     res.json(departments);
   } catch (error) {
     logger.error(`Error fetching departments: ${error.message}`);

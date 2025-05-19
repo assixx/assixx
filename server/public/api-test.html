@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAPI()">Test Departments API</button>
+    <pre id="result"></pre>
+
+    <script>
+    async function testAPI() {
+        const resultEl = document.getElementById('result');
+        const token = localStorage.getItem('token');
+        
+        resultEl.textContent = 'Token: ' + token + '\n\n';
+        
+        if (!token) {
+            resultEl.textContent += 'No token found!';
+            return;
+        }
+        
+        try {
+            resultEl.textContent += 'Calling /departments...\n';
+            
+            const response = await fetch('/departments', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            resultEl.textContent += 'Response status: ' + response.status + '\n';
+            resultEl.textContent += 'Response ok: ' + response.ok + '\n\n';
+            
+            if (response.ok) {
+                const data = await response.json();
+                resultEl.textContent += 'Data: ' + JSON.stringify(data, null, 2);
+            } else {
+                const error = await response.text();
+                resultEl.textContent += 'Error: ' + error;
+            }
+        } catch (error) {
+            resultEl.textContent += 'Exception: ' + error.message;
+        }
+    }
+    </script>
+</body>
+</html>

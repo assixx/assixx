@@ -1,6 +1,12 @@
+// Global token variable
+let token;
+
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
+    token = localStorage.getItem('token');
+    console.log('Token from localStorage:', token);
+    
     if (!token) {
+        console.log('No token found, redirecting to login');
         window.location.href = '/';
         return;
     }
@@ -18,36 +24,72 @@ document.addEventListener('DOMContentLoaded', () => {
     if (teamForm) teamForm.addEventListener('submit', createTeam);
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
-    // Initial loads
-    loadDashboardStats();
-    loadRecentEmployees();
-    loadRecentDocuments();
-    loadDepartments();
-    loadTeams();
+    // Initial loads - add slight delay to ensure DOM is ready
+    setTimeout(() => {
+        loadDashboardStats();
+        loadRecentEmployees();
+        loadRecentDocuments();
+        loadDepartments();
+        loadTeams();
+    }, 100);
 
     // Load Dashboard Statistics
     async function loadDashboardStats() {
+        // Lade jeden Zähler einzeln, um Fehler zu isolieren
+        
+        // Mitarbeiter
         try {
-            const [employeesRes, documentsRes, departmentsRes, teamsRes] = await Promise.all([
-                fetch('/admin/employees', { headers: { 'Authorization': `Bearer ${token}` }}),
-                fetch('/documents', { headers: { 'Authorization': `Bearer ${token}` }}),
-                fetch('/departments', { headers: { 'Authorization': `Bearer ${token}` }}),
-                fetch('/teams', { headers: { 'Authorization': `Bearer ${token}` }})
-            ]);
-
-            if (employeesRes.ok && documentsRes.ok && departmentsRes.ok && teamsRes.ok) {
+            const employeesRes = await fetch('/admin/employees', { 
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (employeesRes.ok) {
                 const employees = await employeesRes.json();
-                const documents = await documentsRes.json();
-                const departments = await departmentsRes.json();
-                const teams = await teamsRes.json();
-
                 document.getElementById('employee-count').textContent = employees.length;
+            }
+        } catch (error) {
+            console.error('Error loading employees:', error);
+        }
+        
+        // Dokumente
+        try {
+            const documentsRes = await fetch('/documents', { 
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (documentsRes.ok) {
+                const documents = await documentsRes.json();
                 document.getElementById('document-count').textContent = documents.length;
-                document.getElementById('department-count').textContent = departments.length;
+            }
+        } catch (error) {
+            console.error('Error loading documents:', error);
+        }
+        
+        // Abteilungen
+        try {
+            const departmentsRes = await fetch('/departments', { 
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (departmentsRes.ok) {
+                const departments = await departmentsRes.json();
+                const deptCountElement = document.getElementById('department-count');
+                if (deptCountElement) {
+                    deptCountElement.textContent = departments.length;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading departments:', error);
+        }
+        
+        // Teams
+        try {
+            const teamsRes = await fetch('/teams', { 
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (teamsRes.ok) {
+                const teams = await teamsRes.json();
                 document.getElementById('team-count').textContent = teams.length;
             }
         } catch (error) {
-            console.error('Error loading dashboard stats:', error);
+            console.error('Error loading teams:', error);
         }
     }
 
@@ -161,15 +203,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const departments = await response.json();
+                
                 const container = document.getElementById('department-list');
                 
                 if (container) {
-                    container.innerHTML = departments.map(dept => `
-                        <div class="compact-list-item">
-                            <span>${dept.name}</span>
-                            <small>${dept.employee_count || 0} Mitarbeiter</small>
-                        </div>
-                    `).join('');
+                    if (departments.length === 0) {
+                        container.innerHTML = '<div class="compact-list-item">Keine Abteilungen vorhanden</div>';
+                    } else {
+                        container.innerHTML = departments.map(dept => `
+                            <div class="compact-list-item">
+                                <span>${dept.name}</span>
+                                <small>${dept.employee_count || 0} Mitarbeiter</small>
+                            </div>
+                        `).join('');
+                    }
                 }
             }
         } catch (error) {
@@ -281,6 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create Department
     async function createDepartment(e) {
         e.preventDefault();
+        
         const formData = new FormData(departmentForm);
         const data = Object.fromEntries(formData.entries());
 
@@ -298,15 +346,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Abteilung erfolgreich erstellt');
                 departmentForm.reset();
                 hideModal('department-modal');
-                loadDepartments();
-                loadDashboardStats();
+                
+                // Reload all department lists
+                await loadDepartments();
+                await loadDashboardStats();
+                if (typeof loadDepartmentsTable === 'function') {
+                    await loadDepartmentsTable();
+                }
             } else {
                 const error = await response.json();
                 alert(`Fehler: ${error.message}`);
             }
         } catch (error) {
-            console.error('Fehler beim Erstellen der Abteilung:', error);
-            alert('Ein Fehler ist aufgetreten.');
+            console.error('Exception beim Erstellen der Abteilung:', error);
+            alert('Ein Fehler ist aufgetreten: ' + error.message);
         }
     }
 
@@ -503,9 +556,23 @@ async function loadDepartmentsTable() {
                     <tr>
                         <td>${dept.name}</td>
                         <td>${dept.description || '-'}</td>
+                        <td>
+                            <span class="badge ${dept.status === 'active' ? 'badge-success' : 'badge-warning'}">
+                                ${dept.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${dept.visibility === 'public' ? 'badge-primary' : 'badge-secondary'}">
+                                ${dept.visibility === 'public' ? 'Öffentlich' : 'Privat'}
+                            </span>
+                        </td>
+                        <td>${dept.manager_name || '-'}</td>
                         <td>${dept.employee_count || 0}</td>
                         <td>${dept.team_count || 0}</td>
                         <td>
+                            <button class="btn btn-sm btn-warning" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
+                                ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
+                            </button>
                             <button class="btn btn-sm btn-primary" onclick="editDepartment(${dept.id})">Bearbeiten</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${dept.id})">Löschen</button>
                         </td>
@@ -583,5 +650,157 @@ async function loadDepartmentsForSelectElement(selectElement, token) {
         }
     } catch (error) {
         console.error('Error loading departments for select:', error);
+    }
+}
+
+// Department management functions
+async function toggleDepartmentStatus(departmentId, currentStatus) {
+    const token = localStorage.getItem("token");
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    
+    try {
+        const response = await fetch(`/departments/${departmentId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (response.ok) {
+            alert(`Abteilung wurde ${newStatus === "active" ? "aktiviert" : "deaktiviert"}`);
+            loadDepartmentsTable();
+            loadDashboardStats();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error("Error toggling department status:", error);
+        alert("Ein Fehler ist aufgetreten.");
+    }
+}
+
+async function editDepartment(departmentId) {
+    const token = localStorage.getItem("token");
+    
+    try {
+        const response = await fetch(`/departments/${departmentId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const department = await response.json();
+            
+            // Create edit modal content
+            const modalContent = `
+                <div class="modal" id="edit-department-modal" style="display: flex;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Abteilung bearbeiten</h3>
+                            <button class="modal-close" onclick="hideModal(\"edit-department-modal\")">&times;</button>
+                        </div>
+                        <form id="edit-department-form" onsubmit="updateDepartment(event, ${departmentId})">
+                            <div class="form-group">
+                                <label class="form-label">Name</label>
+                                <input type="text" name="name" class="form-control" value="${department.name}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Beschreibung</label>
+                                <textarea name="description" class="form-control" rows="3">${department.description || ""}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-control">
+                                    <option value="active" ${department.status === "active" ? "selected" : ""}>Aktiv</option>
+                                    <option value="inactive" ${department.status === "inactive" ? "selected" : ""}>Inaktiv</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sichtbarkeit</label>
+                                <select name="visibility" class="form-control">
+                                    <option value="public" ${department.visibility === "public" ? "selected" : ""}>Öffentlich</option>
+                                    <option value="private" ${department.visibility === "private" ? "selected" : ""}>Privat</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML("beforeend", modalContent);
+        }
+    } catch (error) {
+        console.error("Error loading department:", error);
+        alert("Fehler beim Laden der Abteilung.");
+    }
+}
+
+async function updateDepartment(event, departmentId) {
+    event.preventDefault();
+    const token = localStorage.getItem("token");
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch(`/departments/${departmentId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert("Abteilung erfolgreich aktualisiert");
+            hideModal("edit-department-modal");
+            loadDepartmentsTable();
+            loadDashboardStats();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error("Error updating department:", error);
+        alert("Ein Fehler ist aufgetreten.");
+    }
+}
+
+async function deleteDepartment(departmentId) {
+    if (!confirm("Sind Sie sicher, dass Sie diese Abteilung löschen möchten?")) {
+        return;
+    }
+    
+    const token = localStorage.getItem("token");
+    
+    try {
+        const response = await fetch(`/departments/${departmentId}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            alert("Abteilung erfolgreich gelöscht");
+            loadDepartmentsTable();
+            loadDashboardStats();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error("Error deleting department:", error);
+        alert("Ein Fehler ist aufgetreten.");
+    }
+}
+
+// Global hideModal function
+function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = "none";
     }
 }
