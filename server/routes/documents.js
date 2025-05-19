@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
+const { checkFeature } = require('../middleware/features');
 const Document = require('../models/document');
 const logger = require('../utils/logger');
 

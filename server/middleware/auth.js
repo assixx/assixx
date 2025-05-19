@@ -4,18 +4,16 @@ function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   
-  console.log('Auth Header:', authHeader);
-  console.log('Extracted Token:', token);
-
-  if (token == null) return res.sendStatus(401);
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      console.log('Token verification failed:', err);
-      return res.sendStatus(403);
+      console.error('Token verification failed:', err.message);
+      return res.status(403).json({ error: 'Invalid or expired token' });
     }
     
-    console.log('Verified User:', user);
     req.user = user;
     next();
   });
@@ -23,10 +21,8 @@ function authenticateToken(req, res, next) {
 
 function authorizeRole(role) {
   return (req, res, next) => {
-    console.log('User role:', req.user.role); // Fügen Sie diesen Log hinzu
-    console.log('Required role:', role); // Fügen Sie diesen Log hinzu
-    if (req.user.role !== role) {
-      return res.status(403).send('Unauthorized');
+    if (!req.user || req.user.role !== role) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
     next();
   };

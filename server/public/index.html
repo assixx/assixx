@@ -3,253 +3,695 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assixx - Login</title>
+    <title>Assixx - Die SaaS-Lösung für Industriefirmen</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/css/dashboard-theme.css">
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <!-- Fragezeichen oben rechts -->
-    <div style="position: fixed; top: 20px; right: 20px; z-index: 100;">
-        <a href="#" onclick="showHelp()" style="color: var(--text-secondary); text-decoration: none; font-size: 24px;">?</a>
-    </div>
-    <div class="login-container">
-        <!-- Logo Section -->
-        <div class="login-header">
-            <img src="/images/logo.png" alt="Assixx Logo" class="login-logo">
-        </div>
-
-        <!-- Login Form -->
-        <div class="login-card card">
-            <form id="loginForm">
-                <div class="form-group">
-                    <label class="form-label">Benutzername</label>
-                    <input type="text" id="username" class="form-control" required autofocus>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Passwort</label>
-                    <input type="password" id="password" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
-            </form>
-            
-            <div class="login-footer">
-                <a href="#" onclick="showPasswordReset()" class="text-secondary">Passwort vergessen?</a>
-                <a href="#" onclick="requestAccess()" class="text-secondary" style="margin-left: 20px;">Zugangsdaten beantragen</a>
-            </div>
-        </div>
-
-        <!-- Company Footer -->
-        <div class="login-company">
-            <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
-        </div>
-    </div>
-
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Store token
-                    localStorage.setItem('token', data.token);
-                    
-                    // Redirect based on role
-                    switch(data.role) {
-                        case 'root':
-                            window.location.href = '/root-dashboard.html';
-                            break;
-                        case 'admin':
-                            window.location.href = '/admin-dashboard.html';
-                            break;
-                        case 'employee':
-                            window.location.href = '/employee-dashboard.html';
-                            break;
-                        default:
-                            alert('Unknown role');
-                    }
-                } else {
-                    alert(data.message || 'Login failed');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('An error occurred during login');
-            }
-        });
-
-        function showPasswordReset() {
-            alert('Passwort-Reset Funktion - Coming Soon!');
-        }
-        
-        function requestAccess() {
-            alert('Zugangsdaten beantragen - Coming Soon!');
-        }
-        
-        function showHelp() {
-            alert('Hilfe - Coming Soon!');
-        }
-    </script>
-
     <style>
-        /* Login page specific styles */
+        :root {
+            /* Assixx Dark Theme - Konsistent mit Dashboard */
+            --primary-color: #2196F3;
+            --primary-dark: #1976D2;
+            --primary-light: #42A5F5;
+            --secondary-color: #1B1B1B;
+            --background-dark: #121212;
+            --background-light: #1E1E1E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0B0B0;
+            --border-color: #333333;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --warning-color: #FF9800;
+            
+            /* Abstände */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            /* Rundungen */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            
+            /* Schatten */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            background: #121212;
+            font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
             position: relative;
             overflow-x: hidden;
         }
         
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 50% 50%, #1E1E1E 0%, #121212 50%, #0A0A0A 100%);
-            opacity: 0.9;
-            z-index: -1;
-        }
+        /* Removed gradient background for consistency with dashboard */
         
-        body::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, 
-                transparent 0%, 
-                rgba(33, 150, 243, 0.05) 25%, 
-                transparent 50%, 
-                rgba(33, 150, 243, 0.05) 75%, 
-                transparent 100%);
-            z-index: -1;
-        }
-        
-        .login-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: var(--spacing-lg);
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: var(--spacing-xl);
-            position: relative;
-            top: -50px;
-        }
-
-        .login-logo {
-            width: 156px;
-            height: auto;
-            display: block;
-            margin: 0 auto var(--spacing-lg);
-        }
-
-        .login-title {
-            font-size: 36px;
-            color: var(--primary-color);
-            margin: 0;
-            font-weight: 700;
-        }
-
-        .login-subtitle {
-            color: var(--text-secondary);
-            margin-top: var(--spacing-xs);
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 400px;
+        .header {
             background-color: var(--background-light);
-            padding: var(--spacing-xl);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border-color);
-            margin-top: -100px;
+            padding: 8px 16px;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            height: 56px;
         }
-
-
-        .login-company {
-            margin-top: var(--spacing-xl);
-            text-align: center;
-        }
-
-        .btn-block {
-            width: 50%;
-            padding: var(--spacing-md);
-            font-size: 16px;
-            font-family: 'Ubuntu', sans-serif;
-            font-weight: 500;
+        
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
             margin: 0 auto;
-            display: block;
+            width: 100%;
         }
-
-        .login-footer {
-            text-align: center;
-            margin-top: var(--spacing-lg);
-            padding-top: var(--spacing-lg);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .login-footer a {
-            color: var(--primary-color);
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            cursor: pointer;
             text-decoration: none;
+        }
+        
+        .logo {
+            height: 40px;
+            width: auto;
+            filter: none;
+        }
+        
+        .logo-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
             transition: color 0.3s ease;
         }
-
-        .login-footer a:hover {
-            color: var(--primary-light);
-            text-decoration: underline;
+        
+        .nav-links a:hover {
+            color: var(--text-primary);
         }
-
-        /* Responsive adjustments */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: var(--spacing-lg);
+        
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .hero {
+            padding: calc(var(--spacing-xl) * 3) 5% var(--spacing-xl);
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-lg);
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-lg);
+            line-height: 1.6;
+        }
+        
+        .features {
+            padding: var(--spacing-xl) 5%;
+            background-color: var(--background-light);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            background-color: var(--background-dark);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+        
+        .feature-card h3 {
+            margin-bottom: var(--spacing-md);
+            color: var(--primary-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .pricing {
+            padding: var(--spacing-xl) 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .pricing h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: var(--spacing-xl);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+        
+        .pricing-card {
+            background-color: var(--background-light);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            text-align: center;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .pricing-card.featured {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+        
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: var(--spacing-sm);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .price {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: var(--spacing-md) 0;
+        }
+        
+        .price span {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin: var(--spacing-lg) 0;
+            text-align: left;
+        }
+        
+        .feature-list li {
+            padding: var(--spacing-sm) 0;
+            position: relative;
+            padding-left: var(--spacing-lg);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        
+        .footer {
+            background-color: var(--background-light);
+            color: var(--text-secondary);
+            padding: var(--spacing-lg) 5%;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .signup-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .modal-content {
+            background-color: var(--background-light);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-content h2 {
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-sm);
+            font-weight: 600;
+        }
+        
+        .modal-content p {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-lg);
+            font-size: 13px;
+        }
+        
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background-color: var(--background-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        
+        .subdomain-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .subdomain-suffix {
+            color: var(--text-secondary);
+        }
+        
+        .error {
+            color: var(--error-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .success {
+            background-color: var(--success-color);
+            color: white;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        small {
+            color: var(--text-secondary);
+        }
+        
+        label {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: var(--spacing-sm) var(--spacing-md);
             }
             
-            .login-title {
-                font-size: 28px;
+            .nav {
+                flex-direction: column;
+                gap: var(--spacing-md);
             }
             
-            .login-logo {
-                width: 60px;
-                height: 60px;
+            .logo-container {
+                margin-bottom: var(--spacing-sm);
             }
-        }
-
-        /* Animation */
-        .login-card {
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: var(--spacing-md);
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .pricing h2 {
+                font-size: 1.75rem;
+            }
+            
+            .features-grid,
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: var(--spacing-md);
             }
         }
     </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo-container">
+                <img src="/images/logo.png" alt="Assixx Logo" class="logo">
+                <span class="logo-text">Assixx</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#pricing">Preise</a>
+                <a href="/login.html">Anmelden</a>
+                <a href="#" class="btn btn-primary" onclick="showSignup()">Kostenlos testen</a>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Die digitale Lösung für Industriefirmen</h1>
+        <p>Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung. Dokumentenverwaltung, Kommunikation und mehr - alles in einer Plattform.</p>
+        <button class="btn btn-primary" onclick="showSignup()">14 Tage kostenlos testen</button>
+    </section>
+
+    <section class="features" id="features">
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    Dokumentenverwaltung
+                </h3>
+                <p>Lohnabrechnungen, Bescheinigungen und mehr - digital und sicher verwaltet.</p>
+            </div>
+            <div class="feature-card">
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z"/>
+                    </svg>
+                    Mobile First
+                </h3>
+                <p>Optimiert für Smartphones - perfekt für Arbeiter ohne PC-Zugang.</p>
+            </div>
+            <div class="feature-card">
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"/>
+                    </svg>
+                    Benachrichtigungen
+                </h3>
+                <p>Wichtige Infos erreichen jeden Mitarbeiter sofort per Push-Notification.</p>
+            </div>
+            <div class="feature-card">
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/>
+                    </svg>
+                    Sicher & DSGVO-konform
+                </h3>
+                <p>Verschlüsselte Daten und deutsche Server für maximale Sicherheit.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <h2>Einfache, transparente Preise</h2>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Basic</h3>
+                <div class="price">€0<span>/Monat</span></div>
+                <ul class="feature-list">
+                    <li>Bis zu 10 Mitarbeiter</li>
+                    <li>Dokumenten-Upload</li>
+                    <li>Lohnabrechnungen</li>
+                    <li>Basis-Support</li>
+                </ul>
+                <button class="btn btn-secondary" onclick="showSignup('basic')">Jetzt starten</button>
+            </div>
+            
+            <div class="pricing-card featured">
+                <h3>Premium</h3>
+                <div class="price">€49<span>/Monat</span></div>
+                <ul class="feature-list">
+                    <li>Unbegrenzte Mitarbeiter</li>
+                    <li>E-Mail-Benachrichtigungen</li>
+                    <li>Erweiterte Berichte</li>
+                    <li>Audit-Logs</li>
+                    <li>Priority Support</li>
+                </ul>
+                <button class="btn btn-primary" onclick="showSignup('premium')">Kostenlos testen</button>
+            </div>
+            
+            <div class="pricing-card">
+                <h3>Enterprise</h3>
+                <div class="price">€149<span>/Monat</span></div>
+                <ul class="feature-list">
+                    <li>Alle Premium-Features</li>
+                    <li>API-Zugang</li>
+                    <li>Custom Branding</li>
+                    <li>Automatisierung</li>
+                    <li>24/7 Support</li>
+                    <li>SLA-Garantie</li>
+                </ul>
+                <button class="btn btn-secondary" onclick="showSignup('enterprise')">Kontakt aufnehmen</button>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>&copy; 2025 Assixx. Alle Rechte vorbehalten.</p>
+    </footer>
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="signup-modal">
+        <div class="modal-content">
+            <h2>Jetzt kostenlos testen</h2>
+            <p>14 Tage kostenlos - keine Kreditkarte erforderlich</p>
+            
+            <form id="signupForm">
+                <div class="form-group">
+                    <label class="form-label">Firmenname</label>
+                    <input type="text" name="company_name" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Ihre Subdomain</label>
+                    <div class="subdomain-input">
+                        <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9-]+">
+                        <span class="subdomain-suffix">.assixx.com</span>
+                    </div>
+                    <div id="subdomainError" class="error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Telefon (optional)</label>
+                    <input type="tel" name="phone" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Ihr Name</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <input type="text" name="first_name" class="form-control" placeholder="Vorname" required>
+                        <input type="text" name="last_name" class="form-control" placeholder="Nachname" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" name="password" class="form-control" required minlength="8">
+                    <small>Mindestens 8 Zeichen</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" required>
+                        Ich akzeptiere die AGB und Datenschutzerklärung
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Kostenlos registrieren</button>
+                <button type="button" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;" onclick="hideSignup()">Abbrechen</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showSignup(plan = null) {
+            document.getElementById('signupModal').style.display = 'flex';
+            if (plan) {
+                // Plan vorauswählen wenn von Preistabelle kommend
+                localStorage.setItem('selectedPlan', plan);
+            }
+        }
+        
+        function hideSignup() {
+            document.getElementById('signupModal').style.display = 'none';
+        }
+        
+        // Subdomain-Validierung
+        const subdomainInput = document.querySelector('input[name="subdomain"]');
+        subdomainInput.addEventListener('input', (e) => {
+            const value = e.target.value.toLowerCase();
+            e.target.value = value;
+            
+            // Nur Kleinbuchstaben, Zahlen und Bindestriche
+            if (!/^[a-z0-9-]*$/.test(value)) {
+                document.getElementById('subdomainError').textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt';
+            } else {
+                document.getElementById('subdomainError').textContent = '';
+            }
+        });
+        
+        // Form Submit
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...data,
+                        admin_email: data.email,
+                        admin_password: data.password,
+                        admin_first_name: data.first_name,
+                        admin_last_name: data.last_name,
+                        selectedPlan: localStorage.getItem('selectedPlan') || 'premium'
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Erfolg! Sie können sich jetzt unter ${data.subdomain}.assixx.com anmelden.`);
+                    // Später: Direkte Weiterleitung mit Auto-Login
+                    window.location.href = `/login.html`;
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Fehler bei der Registrierung');
+                }
+            } catch (error) {
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        });
+    </script>
 </body>
 </html>

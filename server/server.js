@@ -17,30 +17,66 @@ const departmentRoutes = require('./routes/departments');
 const teamRoutes = require('./routes/teams');
 const userRoutes = require('./routes/users');
 const documentRoutes = require('./routes/documents');
+const featureRoutes = require('./routes/features');
+const signupRoutes = require('./routes/signup');
 
 // Multi-tenant middleware
 const tenantMiddleware = require('./middleware/tenant');
 
+// Import enhanced security middleware
+const {
+    enforceHTTPS,
+    securityHeaders,
+    corsOptions,
+    generalLimiter,
+    authLimiter,
+    validateTenantContext,
+    sanitizeInputs,
+    apiSecurityHeaders,
+    cors
+} = require('./middleware/security-enhanced');
+
 const app = express();
+
+// Security middleware - MUST come first
+app.use(enforceHTTPS);
+app.use(securityHeaders);
+app.use(cors(corsOptions));
+app.use(...sanitizeInputs);
 
 // Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Multi-tenant support - muss vor anderen Routen kommen
-// Vorübergehend deaktiviert bis Datenbanken eingerichtet sind
-// app.use(tenantMiddleware);
-app.use(express.static(path.join(__dirname, 'public')));
+// Multi-tenant support
+app.use(tenantMiddleware);
+app.use(validateTenantContext);
+
+// Static files - with security headers
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+    }
+}));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/components', express.static(path.join(__dirname, 'public/js/components')));
-// REMOVE OR IMPORT THIS: app.use(securityMiddleware);
-app.use(morgan('dev'));
 
-// Logging Middleware
+// API security headers for all routes
+app.use(apiSecurityHeaders);
+
+// Logging with security considerations
+app.use(morgan('combined', {
+    skip: (req, res) => {
+        // Don't log sensitive endpoints
+        return req.path.includes('/api/auth') || req.path.includes('/api/login');
+    }
+}));
+
+// Secure Logging Middleware - never log tokens
 app.use((req, res, next) => {
-  const token = req.headers['authorization'];
-  console.log(`${req.method} ${req.path} - Token:`, token ? 'Present' : 'None');
+  console.log(`${req.method} ${req.path} - Auth: ${req.headers['authorization'] ? 'Present' : 'None'}`);
   next();
 });
 
@@ -66,20 +102,23 @@ createRequiredDirectories();
 // Statische Verzeichnisse für Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Globales Rate-Limiting für alle API-Routen
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 Minuten
-  max: 100, // Limit jede IP auf 100 Anfragen pro Fenster
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: 'Zu viele Anfragen von dieser IP, bitte versuchen Sie es später erneut'
-});
-app.use('/api', apiLimiter);
+// Use enhanced rate limiting from security middleware
+app.use('/api', generalLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/login', authLimiter);
+app.use('/api/upload', uploadLimiter);
 
-// Startseite
+// Öffentliche Seiten (OHNE tenantMiddleware)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Public signup routes with rate limiting
+app.use('/api', signupRoutes);
 
 // Auth routes
 app.post('/register', async (req, res) => {
@@ -93,10 +132,11 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
-    console.log(`Login attempt for user: ${username}`);
+    // Don't log credentials
+    console.log('Login attempt');
     
     const user = await authenticateUser(username, password);
     
@@ -216,6 +256,7 @@ app.use('/departments', authenticateToken, departmentRoutes);
 app.use('/teams', authenticateToken, teamRoutes);
 app.use('/users', userRoutes);
 app.use('/documents', authenticateToken, documentRoutes);
+app.use('/features', featureRoutes);
 
 // Error handling - MUST be last
 app.use((req, res, next) => {

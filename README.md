@@ -194,6 +194,9 @@ Das System verwendet vier Benutzerrollen:
 - Datenbank: MySQL
 - Authentifizierung: JWT (JSON Web Tokens)
 - Passwortverschlüsselung: bcrypt
+- Multi-Tenant-Architektur
+- Feature-Management-System
+- Modulare Feature-Aktivierung
 
 ### Geplante Erweiterungen:
 - Progressive Web App (PWA) für mobile Nutzung
@@ -202,6 +205,8 @@ Das System verwendet vier Benutzerrollen:
 - WebSocket für Echtzeit-Updates
 - Offline-Synchronisation
 - Mehrsprachige Unterstützung
+- Stripe/PayPal Integration
+- Automatische Abrechnung
 
 ## Sicherheitshinweise
 
@@ -248,12 +253,26 @@ Das System verwendet vier Benutzerrollen:
 - [ ] Automatische Berichte und Auswertungen
 - [ ] Integration mit bestehenden Firmensystemen
 
-### Phase 6: Multi-Tenant-Architektur
-- [ ] Subdomain-basierte Mandantentrennung
+### Phase 6: Multi-Tenant-Architektur ✅
+- ✅ Subdomain-basierte Mandantentrennung
+- ✅ Feature-Management-System
+- ✅ Modulare Feature-Aktivierung pro Kunde
 - [ ] Automatisiertes Onboarding neuer Firmen
 - [ ] White-Label-Branding pro Firma
-- [ ] Separate Datenbanken pro Mandant
+- [ ] Separate Datenbanken pro Mandant (derzeit gemeinsame DB)
 - [ ] Docker-Container-Deployment
+
+### Phase 7: SaaS-Monetarisierung
+- ✅ Feature-basierte Preispläne (Basic, Premium, Enterprise)
+- ✅ Feature-Toggle-System
+- ✅ Usage-Tracking für Features
+- [ ] Stripe/PayPal Integration
+- [ ] Automatische Abrechnungen
+- [ ] Customer Self-Service Portal
+- [ ] Billing Dashboard
+- [ ] Automatische Feature-Aktivierung nach Zahlung
+- [ ] Trial-Perioden-Management
+- [ ] Nutzungsbasierte Abrechnung
 
 ## Beitragen
 

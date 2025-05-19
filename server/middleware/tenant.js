@@ -5,6 +5,16 @@
 
 const tenantConfigs = require('../config/tenants');
 const { createTenantConnection } = require('../database/tenantDb');
+const db = require('../database');
+
+// Whitelist of allowed tenant subdomains
+const ALLOWED_TENANTS = new Set([
+    'demo',
+    'bosch',
+    'mercedes',
+    'siemens'
+    // Add new tenants here after verification
+]);
 
 /**
  * Extrahiert den Tenant aus der Subdomain
@@ -14,16 +24,37 @@ function getTenantFromHost(hostname) {
     const parts = hostname.split('.');
     
     // Lokale Entwicklung: localhost:3000 -> default tenant
-    if (hostname.includes('localhost')) {
+    if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
         return process.env.DEFAULT_TENANT || 'demo';
     }
     
     // Produktion: firma.assixx.de -> firma
     if (parts.length >= 3) {
-        return parts[0];
+        const tenantId = parts[0].toLowerCase();
+        
+        // Security: Only allow whitelisted tenants
+        if (!ALLOWED_TENANTS.has(tenantId)) {
+            console.warn(`Unauthorized tenant access attempt: ${tenantId}`);
+            return null;
+        }
+        
+        return tenantId;
     }
     
     return null;
+}
+
+/**
+ * Load allowed tenants from database (for dynamic whitelist)
+ */
+async function loadAllowedTenants() {
+    try {
+        const [rows] = await db.query('SELECT subdomain FROM tenants WHERE is_active = 1');
+        return new Set(rows.map(row => row.subdomain));
+    } catch (error) {
+        console.error('Error loading allowed tenants:', error);
+        return ALLOWED_TENANTS;
+    }
 }
 
 /**
