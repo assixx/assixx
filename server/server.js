@@ -28,7 +28,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Multi-tenant support - muss vor anderen Routen kommen
-app.use(tenantMiddleware);
+// Vorübergehend deaktiviert bis Datenbanken eingerichtet sind
+// app.use(tenantMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
