@@ -1,14 +1,23 @@
-# Lohnabrechnung Online
+# Assixx - Firmenkommunikations- und Verwaltungssystem
 
 ## Projektbeschreibung
 
-Lohnabrechnung Online ist ein webbasiertes System zur Verwaltung von Lohnabrechnungen und anderen HR-Dokumenten. Das System ermöglicht es:
+Assixx ist eine umfassende Kommunikations- und Verwaltungslösung für Industriefirmen, speziell entwickelt für Produktionsarbeiter ohne PC-Zugang. Das System verbessert die Kommunikation zwischen Arbeitern, Administration und Management durch mobile Technologie.
 
-- **Root-Benutzern**: Administratoren zu erstellen und zu verwalten
-- **Administratoren**: Mitarbeiter anzulegen und Dokumente für sie hochzuladen
-- **Mitarbeitern**: Ihre Dokumente einzusehen und herunterzuladen
+### Hauptfunktionen:
 
-Das System verwendet eine hierarchische Benutzerstruktur mit drei Benutzerrollen (Root, Admin, Mitarbeiter) und ermöglicht die sichere Speicherung und Übermittlung von Dokumenten.
+- **Fehlermeldesystem**: Arbeiter können Fotos von Problemen machen und direkt melden
+- **Dokumentenverwaltung**: Digitale Verwaltung von Lohnabrechnungen, Krankmeldungen und Bescheinigungen
+- **Firmenkommunikation**: Kalender, Ankündigungen und Umfragen
+- **Verbesserungsvorschläge**: Mitarbeiter können Ideen einreichen und diskutieren
+- **Echtzeit-Benachrichtigungen**: Wichtige Meldungen erreichen sofort die richtigen Personen
+
+### Zielgruppen:
+
+- **Produktionsarbeiter**: Mobile App für einfachen Zugang zu Firmeninformationen
+- **Administratoren**: Web-Dashboard für Dokumentenverwaltung und Kommunikation
+- **Maintenance-Team**: Sofortige Benachrichtigungen bei gemeldeten Problemen
+- **Management**: Auswertungen und Berichte für bessere Entscheidungen
 
 ## Systemvoraussetzungen
 
@@ -133,20 +142,30 @@ Der Server startet auf Port 3000. Sie können die Anwendung unter http://localho
 
 ## Benutzerrollen und Berechtigungen
 
-Das System verwendet drei Benutzerrollen:
+Das System verwendet vier Benutzerrollen:
 
-1. **Root** - Höchste Berechtigungsstufe:
-   - Kann Administratoren erstellen und löschen
-   - Hat vollen Zugriff auf alle Funktionen
+1. **Root** - Systemadministrator:
+   - Vollzugriff auf alle Funktionen
+   - Verwaltung von Administratoren
+   - Systemkonfiguration
 
-2. **Admin** - Mittlere Berechtigungsstufe:
-   - Kann Mitarbeiter erstellen und löschen
-   - Kann Dokumente für Mitarbeiter hochladen
-   - Verwaltet Mitarbeiterinformationen
+2. **Admin** - Firmenadministrator:
+   - Mitarbeiterverwaltung
+   - Dokumentenupload und -verwaltung
+   - Ankündigungen und Kalender pflegen
+   - Umfragen erstellen und auswerten
 
-3. **Mitarbeiter** - Niedrigste Berechtigungsstufe:
-   - Kann eigene Dokumente einsehen und herunterladen
-   - Kann nach Dokumenten suchen
+3. **Maintenance** - Wartungspersonal:
+   - Empfang von Fehlermeldungen
+   - Ticketverwaltung
+   - Statusupdates zu Problemen
+
+4. **Mitarbeiter** - Produktionsarbeiter:
+   - Dokumente einsehen und herunterladen
+   - Fehler mit Fotos melden
+   - An Umfragen teilnehmen
+   - Verbesserungsvorschläge einreichen
+   - Firmenkalender und Ankündigungen ansehen
 
 ## Fehlerbehebung
 
@@ -169,11 +188,20 @@ Das System verwendet drei Benutzerrollen:
 
 ## Technologien
 
+### Aktuell implementiert:
 - Frontend: HTML, CSS, JavaScript
 - Backend: Node.js, Express
 - Datenbank: MySQL
 - Authentifizierung: JWT (JSON Web Tokens)
 - Passwortverschlüsselung: bcrypt
+
+### Geplante Erweiterungen:
+- Progressive Web App (PWA) für mobile Nutzung
+- Push-Benachrichtigungen
+- Bildupload und -verarbeitung
+- WebSocket für Echtzeit-Updates
+- Offline-Synchronisation
+- Mehrsprachige Unterstützung
 
 ## Sicherheitshinweise
 
@@ -188,151 +216,45 @@ Das System verwendet drei Benutzerrollen:
 
 
 
-Konstruktive Kritik und Verbesserungsvorschläge für das Lohnabrechnung-System
-Sicherheit und Authentifizierung
-
-Passwort-Management:
-
-Implementiere eine Funktion zum Ändern des eigenen Passworts für alle Benutzer
-Füge Password-Reset-Funktionalität per E-Mail hinzu
-Erstelle eine Funktion für Root/Admins zum Zurücksetzen von Passwörtern untergeordneter Benutzer
-
-
-Verbesserte Authentifizierung:
-
-Füge Zwei-Faktor-Authentifizierung hinzu (z.B. per SMS oder Authenticator-App)
-Implementiere Brute-Force-Schutz mit temporärer Kontosperrung nach mehreren Fehlversuchen
-Füge Session-Timeout und automatische Abmeldung nach Inaktivität hinzu
-
-
-Zugriffsschutz:
-
-Implementiere IP-basierte Zugriffsbeschränkungen für sensible Funktionen
-Füge detaillierte Zugriffsprotokollierung hinzu
-
-
-
-Benutzerverwaltung
-
-Erweiterte Profiloptionen:
-
-Benutzerprofile mit mehr Informationen (Abteilung, Position, Kontaktdaten)
-Profilbilder für Benutzer
-Möglichkeit für Benutzer, bestimmte Profilinformationen selbst zu aktualisieren
-
-
-Verbesserte Benutzerorganisation:
-
-Gruppierung von Mitarbeitern nach Abteilungen oder Teams
-Filterfunktion für Benutzer in Admin-Dashboards
-Suche nach Benutzern
-
-
-
-Dokumentenmanagement
-
-Erweiterte Dokumentenfunktionen:
-
-Kategorisierung von Dokumenten (Lohnabrechnung, Steuer, Urlaub, etc.)
-Automatische Erinnerungen bei neuen Dokumenten per E-Mail
-Versionierung von Dokumenten (Nachverfolgung von Änderungen)
-Massenupload und -download von Dokumenten
-Vorschau von Dokumenten im Browser ohne Download
-
-
-Dokumentenvorlagen:
-
-Vorlagen für häufig verwendete Dokumente
-Automatische Generierung von Dokumenten basierend auf Vorlagen und Benutzerdaten
-
-
-Archivierung:
-
-Automatische Archivierung älterer Dokumente
-Aufbewahrungsrichtlinien mit automatischem Löschen nach bestimmten Zeiträumen
-
-
-
-Benutzeroberfläche und UX
-
-Modernes UI:
-
-Responsive Design für mobile Geräte optimieren
-Dunkelmodus implementieren
-Benutzerfreundlicheres Dashboard mit Statistiken und Übersichten
-
-
-Benachrichtigungen:
-
-In-App-Benachrichtigungen für neue Dokumente oder wichtige Aktionen
-E-Mail-Benachrichtigungen für wichtige Ereignisse
-Anpassbare Benachrichtigungseinstellungen für Benutzer
-
-
-Mehrsprachigkeit:
-
-Unterstützung für mehrere Sprachen hinzufügen (mindestens Deutsch/Englisch)
-Sprachauswahl für Benutzer speichern
-
-
-
-Systemarchitektur und Skalierbarkeit
-
-Performance-Optimierungen:
-
-Caching für häufig abgerufene Daten
-Optimierte Datenbankabfragen
-Lazy-Loading für große Dokumente
-
-
-Backend-Verbesserungen:
-
-Migration auf TypeScript für bessere Codequalität
-Implementierung von Unit- und Integrationstests
-API-Dokumentation mit Swagger
-
-
-Deployment und Monitoring:
-
-Docker-Container für einfache Bereitstellung
-Monitoring-Lösung für System-Performance
-Automatisierte Backups
-
-
-
-Allgemeine Funktionalitäten
-
-Kalender und Termine:
-
-Kalenderansicht für wiederkehrende Dokumente (z.B. monatliche Lohnabrechnungen)
-Erinnerungen für wichtige Termine
-
-
-Statistik und Reporting:
-
-Dashboard mit Nutzungsstatistiken für Administratoren
-Protokollierung aller relevanten Aktionen im System
-Exportmöglichkeiten für Berichte (CSV, PDF)
-
-
-Integration mit anderen Systemen:
-
-API für die Integration mit Buchhaltungssystemen
-LDAP/Active Directory-Integration für Unternehmen
-Import von Benutzern aus CSV-Dateien
-
-
-
-Kritische Sofort-Maßnahmen
-Als sofortige nächste Schritte würde ich folgende Verbesserungen priorisieren:
-
-Passwort-Management: Implementierung einer Funktion zum Ändern des eigenen Passworts
-E-Mail-Benachrichtigungen: Automatische Benachrichtigung an Mitarbeiter wenn neue Dokumente hochgeladen werden
-Dokumentenkategorisierung: Einfache Möglichkeit, Dokumente zu kategorisieren und zu filtern
-Fehlerbehandlung verbessern: Robustere Fehlerbehandlung und benutzerfreundlichere Fehlermeldungen
-Datenschutz: Implementierung von DSGVO-konformen Features (Datenlöschung, Auskunftsrecht)
-
-Diese Verbesserungen würden die Benutzerfreundlichkeit erheblich steigern und gleichzeitig die Sicherheit und Funktionalität des Systems verbessern, ohne eine komplette Überarbeitung zu erfordern.
+## Roadmap und geplante Features
+
+### Phase 1: Aktuelle Basis (bereits implementiert)
+- ✅ Benutzerverwaltung (Root, Admin, Mitarbeiter)
+- ✅ Dokumentenupload und -download
+- ✅ JWT-basierte Authentifizierung
+- ✅ Basis-Dashboard
+
+### Phase 2: Mobile-First Optimierung
+- [ ] Progressive Web App (PWA) Implementierung
+- [ ] Responsive Design für alle Bildschirmgrößen
+- [ ] Touch-optimierte UI-Elemente
+- [ ] Offline-Funktionalität
+
+### Phase 3: Fehlermeldesystem
+- [ ] Foto-Upload von Mobilgeräten
+- [ ] Ticketsystem für Problemmeldungen
+- [ ] Push-Benachrichtigungen an Maintenance
+- [ ] Status-Tracking für gemeldete Probleme
+
+### Phase 4: Erweiterte Kommunikation
+- [ ] Firmenkalender mit Events
+- [ ] Ankündigungssystem
+- [ ] Umfragemodul mit Auswertungen
+- [ ] Verbesserungsvorschläge-Portal
+
+### Phase 5: Erweiterte Features
+- [ ] Mehrsprachige Unterstützung
+- [ ] QR-Code oder PIN-basierte Anmeldung
+- [ ] Automatische Berichte und Auswertungen
+- [ ] Integration mit bestehenden Firmensystemen
+
+## Beitragen
+
+Wir freuen uns über Beiträge! Bitte erstellen Sie einen Fork des Repositories und senden Sie Pull Requests für neue Features oder Bugfixes.
+
+## Lizenz
+
+Dieses Projekt ist proprietär. Kontaktieren Sie Simon Öztürk für Lizenzinformationen.
 
 
 
