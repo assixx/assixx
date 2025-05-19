@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Daten laden
     loadDashboardData();
     loadAdmins();
+    loadDashboardStats();
 
     // Admin erstellen
     async function createAdmin(e) {
@@ -92,6 +93,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Dashboard-Statistiken laden
+    async function loadDashboardStats() {
+        try {
+            const [adminsResponse, usersResponse] = await Promise.all([
+                fetch('/root/admins', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch('/api/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+            
+            if (adminsResponse.ok && usersResponse.ok) {
+                const admins = await adminsResponse.json();
+                const users = await usersResponse.json();
+                
+                // Update counters
+                document.getElementById('admin-count').textContent = admins.length;
+                document.getElementById('user-count').textContent = users.length;
+                document.getElementById('tenant-count').textContent = '1'; // TODO: Implement tenant count
+            }
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+        }
+    }
+
     // Admin-Liste laden
     async function loadAdmins() {
         try {
@@ -106,6 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const admins = await response.json();
                 console.log('Loaded admins:', admins);
                 displayAdmins(admins);
+                // Update admin count
+                document.getElementById('admin-count').textContent = admins.length;
             } else {
                 console.error('Error loading admins:', response.status);
             }
@@ -126,17 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${admin.company || '-'}</td>
             <td>
                 <button 
-                    class="config-btn" 
+                    class="config-btn btn btn-success btn-sm" 
                     data-id="${admin.id}" 
-                    data-username="${admin.username}"
-                    style="background-color: #007bff; padding: 5px 10px; font-size: 14px; margin-right: 5px;">
+                    data-username="${admin.username}">
                     Konfigurieren
                 </button>
                 <button 
-                    class="delete-btn" 
+                    class="delete-btn btn btn-danger btn-sm" 
                     data-id="${admin.id}" 
-                    data-username="${admin.username}"
-                    style="background-color: #d9534f; padding: 5px 10px; font-size: 14px;">
+                    data-username="${admin.username}">
                     Löschen
                 </button>
             </td>

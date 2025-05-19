@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/dashboard-theme.css">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <a href="/admin-dashboard" class="logo-container">
-            <img src="/images/logo.png" alt="Assixx Logo" class="logo">
-            <span class="logo-text">Assixx</span>
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
             <span id="user-info" class="text-secondary">Admin</span>
@@ -19,9 +19,92 @@
         </div>
     </header>
 
-    <!-- Main Container -->
-    <div class="container">
-        <h1 class="text-center mb-4">Admin Dashboard</h1>
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3 class="sidebar-title">Navigation</h3>
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item active">
+                        <a href="#dashboard" class="sidebar-link" onclick="showSection('dashboard')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                                </svg>
+                            </span>
+                            <span>Übersicht</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#employees" class="sidebar-link" onclick="showSection('employees')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                </svg>
+                            </span>
+                            <span>Mitarbeiter</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#documents" class="sidebar-link" onclick="showSection('documents')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                </svg>
+                            </span>
+                            <span>Dokumente</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#payslips" class="sidebar-link" onclick="showSection('payslips')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                                </svg>
+                            </span>
+                            <span>Gehaltsabrechnungen</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#departments" class="sidebar-link" onclick="showSection('departments')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/>
+                                </svg>
+                            </span>
+                            <span>Abteilungen</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#teams" class="sidebar-link" onclick="showSection('teams')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                                </svg>
+                            </span>
+                            <span>Teams</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#settings" class="sidebar-link" onclick="showSection('settings')">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                                </svg>
+                            </span>
+                            <span>Einstellungen</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section">
+                <h1 class="text-center mb-4">Admin Dashboard</h1>
         
         <!-- Dashboard Stats Grid -->
         <div class="dashboard-grid">
@@ -43,147 +126,265 @@
             </div>
         </div>
 
-        <!-- Employee Creation Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Neuen Mitarbeiter erstellen</h2>
-            </div>
-            <form id="create-employee-form">
-                <div class="form-group">
-                    <label class="form-label">Benutzername</label>
-                    <input type="text" name="username" class="form-control" required>
+        <!-- Main Grid Container -->
+        <div class="admin-grid">
+            <!-- Employee Card -->
+            <div class="card compact-card">
+                <div class="card-header">
+                    <h2 class="card-title">Mitarbeiter</h2>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">E-Mail</label>
-                    <input type="email" name="email" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Passwort</label>
-                    <input type="password" name="password" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Vorname</label>
-                    <input type="text" name="first_name" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nachname</label>
-                    <input type="text" name="last_name" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Mitarbeiter-ID</label>
-                    <input type="text" name="employee_id" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Position</label>
-                    <input type="text" name="position" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Telefon</label>
-                    <input type="tel" name="phone" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">IBAN</label>
-                    <input type="text" name="iban" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Firma</label>
-                    <input type="text" name="company" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Notizen</label>
-                    <textarea name="notes" class="form-control" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
-            </form>
-        </div>
-
-        <!-- Employee List Card -->
-        <div class="card">
-            <div class="card-header">
-                <div class="flex flex-between">
-                    <h2 class="card-title">Mitarbeiter-Übersicht</h2>
-                    <div class="btn-group">
-                        <button id="search-btn" class="btn btn-secondary">Suchen</button>
-                        <button id="refresh-btn" class="btn btn-secondary">Aktualisieren</button>
+                <div class="compact-content">
+                    <button class="btn btn-primary btn-block mb-3" onclick="showEmployeeModal()">Neuer Mitarbeiter</button>
+                    <div class="compact-list" id="recent-employees">
+                        <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
                     </div>
+                    <a href="#" class="view-all-link" onclick="showAllEmployees()">Alle anzeigen →</a>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Benutzername</th>
-                            <th>Name</th>
-                            <th>E-Mail</th>
-                            <th>Position</th>
-                            <th>Firma</th>
-                            <th>Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employee-table-body">
+
+            <!-- Document Card -->
+            <div class="card compact-card">
+                <div class="card-header">
+                    <h2 class="card-title">Dokumente</h2>
+                </div>
+                <div class="compact-content">
+                    <button class="btn btn-primary btn-block mb-3" onclick="showDocumentModal()">Dokument hochladen</button>
+                    <div class="compact-list" id="recent-documents">
+                        <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
+                    </div>
+                    <a href="#" class="view-all-link" onclick="showAllDocuments()">Alle anzeigen →</a>
+                </div>
+            </div>
+
+            <!-- Department Card -->
+            <div class="card compact-card">
+                <div class="card-header">
+                    <h2 class="card-title">Abteilungen</h2>
+                </div>
+                <div class="compact-content">
+                    <button class="btn btn-primary btn-block mb-3" onclick="showDepartmentModal()">Neue Abteilung</button>
+                    <div class="compact-list" id="department-list">
                         <!-- Wird dynamisch gefüllt -->
-                    </tbody>
-                </table>
+                    </div>
+                    <a href="#" class="view-all-link" onclick="showAllDepartments()">Verwalten →</a>
+                </div>
+            </div>
+
+            <!-- Team Card -->
+            <div class="card compact-card">
+                <div class="card-header">
+                    <h2 class="card-title">Teams</h2>
+                </div>
+                <div class="compact-content">
+                    <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
+                    <div class="compact-list" id="team-list">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <a href="#" class="view-all-link" onclick="showAllTeams()">Verwalten →</a>
+                </div>
             </div>
         </div>
 
-        <!-- Document Upload Card -->
-        <div class="card">
+        <!-- Recently Added Section -->
+        <div class="card mt-4">
             <div class="card-header">
-                <h2 class="card-title">Dokument hochladen</h2>
+                <h2 class="card-title">Kürzlich hinzugefügt</h2>
             </div>
-            <form id="document-upload-form" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label class="form-label">Mitarbeiter auswählen</label>
-                    <select name="employeeId" id="upload-employee-select" class="form-control" required>
-                        <option value="">Bitte wählen...</option>
+            <div class="recent-activity-grid">
+                <div class="recent-section">
+                    <h3>Neue Mitarbeiter</h3>
+                    <ul id="recent-employees-list" class="recent-list">
                         <!-- Wird dynamisch gefüllt -->
-                    </select>
+                    </ul>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Dokumenttyp</label>
-                    <select name="category" class="form-control">
-                        <option value="payslip">Lohnabrechnung</option>
-                        <option value="contract">Vertrag</option>
-                        <option value="certificate">Bescheinigung</option>
-                        <option value="other">Sonstiges</option>
-                    </select>
+                <div class="recent-section">
+                    <h3>Neue Dokumente</h3>
+                    <ul id="recent-documents-list" class="recent-list">
+                        <!-- Wird dynamisch gefüllt -->
+                    </ul>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Datei auswählen</label>
-                    <input type="file" name="file" class="form-control" accept="application/pdf" required>
+                <div class="recent-section">
+                    <h3>Aktivitäten</h3>
+                    <ul id="recent-activities-list" class="recent-list">
+                        <!-- Wird dynamisch gefüllt -->
+                    </ul>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Beschreibung</label>
-                    <textarea name="description" class="form-control" rows="2"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Dokument hochladen</button>
-            </form>
+            </div>
         </div>
+            </section>
 
-        <!-- Departments and Teams Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Abteilungen und Teams</h2>
-            </div>
-            <div class="dashboard-grid">
-                <div class="stat-card">
-                    <h3>Abteilungen</h3>
-                    <div id="department-list" class="mt-3">
-                        <!-- Wird dynamisch gefüllt -->
+            <!-- Payslips Section -->
+            <section id="payslips-section" class="content-section" style="display: none;">
+                <h1>Gehaltsabrechnungen</h1>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="card-title">Gehaltsabrechnung hochladen</h2>
                     </div>
-                    <button class="btn btn-primary mt-3" onclick="showDepartmentModal()">Neue Abteilung</button>
+                    <form id="payslip-upload-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label class="form-label">Mitarbeiter auswählen</label>
+                            <select name="employeeId" id="payslip-employee-select" class="form-control" required>
+                                <option value="">Bitte wählen...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Monat</label>
+                            <input type="month" name="month" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Datei auswählen (PDF)</label>
+                            <input type="file" name="file" class="form-control" accept="application/pdf" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Beschreibung</label>
+                            <textarea name="description" class="form-control" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Gehaltsabrechnung hochladen</button>
+                    </form>
                 </div>
-                <div class="stat-card">
-                    <h3>Teams</h3>
-                    <div id="team-list" class="mt-3">
-                        <!-- Wird dynamisch gefüllt -->
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Aktuelle Gehaltsabrechnungen</h2>
                     </div>
-                    <button class="btn btn-primary mt-3" onclick="showTeamModal()">Neues Team</button>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Mitarbeiter</th>
+                                    <th>Monat</th>
+                                    <th>Hochgeladen am</th>
+                                    <th>Datei</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payslips-table-body">
+                                <!-- Wird dynamisch gefüllt -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </section>
+
+            <!-- Employees Section -->
+            <section id="employees-section" class="content-section" style="display: none;">
+                <h1>Mitarbeiterverwaltung</h1>
+                <button class="btn btn-primary mb-3" onclick="showEmployeeModal()">Neuer Mitarbeiter</button>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Mitarbeiterübersicht</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>E-Mail</th>
+                                    <th>Position</th>
+                                    <th>Abteilung</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table-body">
+                                <!-- Wird dynamisch gefüllt -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Documents Section -->
+            <section id="documents-section" class="content-section" style="display: none;">
+                <h1>Dokumentenverwaltung</h1>
+                <button class="btn btn-primary mb-3" onclick="showDocumentModal()">Dokument hochladen</button>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Dokumentenübersicht</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Dateiname</th>
+                                    <th>Mitarbeiter</th>
+                                    <th>Kategorie</th>
+                                    <th>Hochgeladen am</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documents-table-body">
+                                <!-- Wird dynamisch gefüllt -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Departments Section -->
+            <section id="departments-section" class="content-section" style="display: none;">
+                <h1>Abteilungsverwaltung</h1>
+                <button class="btn btn-primary mb-3" onclick="showDepartmentModal()">Neue Abteilung</button>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Abteilungsübersicht</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Beschreibung</th>
+                                    <th>Mitarbeiter</th>
+                                    <th>Teams</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="departments-table-body">
+                                <!-- Wird dynamisch gefüllt -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Teams Section -->
+            <section id="teams-section" class="content-section" style="display: none;">
+                <h1>Teamverwaltung</h1>
+                <button class="btn btn-primary mb-3" onclick="showTeamModal()">Neues Team</button>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Teamübersicht</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Abteilung</th>
+                                    <th>Beschreibung</th>
+                                    <th>Mitglieder</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teams-table-body">
+                                <!-- Wird dynamisch gefüllt -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="content-section" style="display: none;">
+                <h1>Einstellungen</h1>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">System-Einstellungen</h2>
+                    </div>
+                    <p>Einstellungen werden hier implementiert...</p>
+                </div>
+            </section>
+        </main>
     </div>
 
     <!-- Modals -->
@@ -236,9 +437,217 @@
         </div>
     </div>
 
+    <!-- Employee Modal -->
+    <div id="employee-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Neuer Mitarbeiter</h3>
+                <button class="modal-close" onclick="hideModal('employee-modal')">&times;</button>
+            </div>
+            <form id="create-employee-form">
+                <div class="form-group">
+                    <label class="form-label">Benutzername</label>
+                    <input type="text" name="username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Vorname</label>
+                    <input type="text" name="first_name" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nachname</label>
+                    <input type="text" name="last_name" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document Modal -->
+    <div id="document-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Dokument hochladen</h3>
+                <button class="modal-close" onclick="hideModal('document-modal')">&times;</button>
+            </div>
+            <form id="document-upload-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label">Mitarbeiter auswählen</label>
+                    <select name="employeeId" id="upload-employee-select" class="form-control" required>
+                        <option value="">Bitte wählen...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dokumenttyp</label>
+                    <select name="category" class="form-control">
+                        <option value="payslip">Lohnabrechnung</option>
+                        <option value="contract">Vertrag</option>
+                        <option value="certificate">Bescheinigung</option>
+                        <option value="other">Sonstiges</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Datei auswählen</label>
+                    <input type="file" name="file" class="form-control" accept="application/pdf" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Dokument hochladen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Department Modal -->
+    <div id="department-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Neue Abteilung</h3>
+                <button class="modal-close" onclick="hideModal('department-modal')">&times;</button>
+            </div>
+            <form id="department-form">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Beschreibung</label>
+                    <textarea name="description" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Abteilung erstellen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Team Modal -->
+    <div id="team-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Neues Team</h3>
+                <button class="modal-close" onclick="hideModal('team-modal')">&times;</button>
+            </div>
+            <form id="team-form">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Abteilung</label>
+                    <select name="department_id" class="form-control">
+                        <option value="">Keine Abteilung</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Beschreibung</label>
+                    <textarea name="description" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Team erstellen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Styles -->
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--background-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal form {
+            padding: var(--spacing-lg);
+        }
+    </style>
+
     <!-- JavaScript -->
     <script src="/js/admin-dashboard.js"></script>
     <script>
+        // Add event listener for payslip upload form
+        document.addEventListener('DOMContentLoaded', () => {
+            const payslipForm = document.getElementById('payslip-upload-form');
+            if (payslipForm) {
+                payslipForm.addEventListener('submit', uploadPayslip);
+            }
+        });
+
+        // Upload payslip function
+        async function uploadPayslip(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            const formData = new FormData(e.target);
+            
+            // Set category to payslip
+            formData.append('category', 'payslip');
+
+            try {
+                const response = await fetch('/documents/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Gehaltsabrechnung erfolgreich hochgeladen');
+                    e.target.reset();
+                    loadPayslipsTable();
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Hochladen der Gehaltsabrechnung:', error);
+                alert('Ein Fehler ist aufgetreten.');
+            }
+        }
         // Dashboard neu laden bei Klick auf Logo
         document.querySelector('.logo-container').addEventListener('click', (e) => {
             e.preventDefault();
@@ -246,31 +655,106 @@
         });
 
         // Modal functions
-        function showDepartmentModal() {
-            document.getElementById('department-modal').style.display = 'flex';
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
         }
 
-        function hideDepartmentModal() {
-            document.getElementById('department-modal').style.display = 'none';
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showEmployeeModal() {
+            showModal('employee-modal');
+        }
+
+        function showDocumentModal() {
+            showModal('document-modal');
+            // Mitarbeiter-Select füllen
+            loadEmployeesForSelect();
+        }
+
+        function showDepartmentModal() {
+            showModal('department-modal');
         }
 
         function showTeamModal() {
-            document.getElementById('team-modal').style.display = 'flex';
-        }
-
-        function hideTeamModal() {
-            document.getElementById('team-modal').style.display = 'none';
+            showModal('team-modal');
+            // Abteilungen für Select laden
+            loadDepartmentsForSelect();
         }
 
         // Modal schließen bei Klick außerhalb
         window.onclick = function(event) {
-            const modals = ['department-modal', 'team-modal'];
+            const modals = ['employee-modal', 'document-modal', 'department-modal', 'team-modal'];
             modals.forEach(modalId => {
                 const modal = document.getElementById(modalId);
                 if (event.target == modal) {
                     modal.style.display = 'none';
                 }
             });
+        }
+
+        // Placeholder functions for "view all" links
+        function showAllEmployees() {
+            console.log('Show all employees');
+        }
+
+        function showAllDocuments() {
+            console.log('Show all documents');
+        }
+
+        function showAllDepartments() {
+            console.log('Show all departments');
+        }
+
+        function showAllTeams() {
+            console.log('Show all teams');
+        }
+
+        // Section Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show the selected section
+            const selectedSection = document.getElementById(sectionName + '-section');
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+            
+            // Update active state in sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and activate the clicked item
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                if (link.getAttribute('onclick').includes(sectionName)) {
+                    link.parentElement.classList.add('active');
+                }
+            });
+            
+            // Load section-specific data
+            switch(sectionName) {
+                case 'employees':
+                    loadEmployeesTable();
+                    break;
+                case 'documents':
+                    loadDocumentsTable();
+                    break;
+                case 'payslips':
+                    loadPayslipsTable();
+                    loadEmployeesForPayslipSelect();
+                    break;
+                case 'departments':
+                    loadDepartmentsTable();
+                    break;
+                case 'teams':
+                    loadTeamsTable();
+                    break;
+            }
         }
     </script>
 

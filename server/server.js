@@ -198,6 +198,16 @@ app.get('/profile-pictures/:filename', authenticateToken, async (req, res) => {
   }
 });
 
+// API route for general user listing (for dashboard stats)
+app.get('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Fehler beim Abrufen der Benutzer', error: error.message });
+  }
+});
+
 // Register API routes (ONLY ONCE)
 app.use('/root', authenticateToken, authorizeRole('root'), rootRoutes);
 app.use('/admin', authenticateToken, authorizeRole('admin'), adminRoutes);
