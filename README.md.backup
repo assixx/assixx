@@ -1,23 +1,14 @@
-# Assixx - Firmenkommunikations- und Verwaltungssystem
+# Lohnabrechnung Online
 
 ## Projektbeschreibung
 
-Assixx ist eine umfassende Kommunikations- und Verwaltungslösung für Industriefirmen, speziell entwickelt für Produktionsarbeiter ohne PC-Zugang. Das System verbessert die Kommunikation zwischen Arbeitern, Administration und Management durch mobile Technologie.
+Lohnabrechnung Online ist ein webbasiertes System zur Verwaltung von Lohnabrechnungen und anderen HR-Dokumenten. Das System ermöglicht es:
 
-### Hauptfunktionen:
+- **Root-Benutzern**: Administratoren zu erstellen und zu verwalten
+- **Administratoren**: Mitarbeiter anzulegen und Dokumente für sie hochzuladen
+- **Mitarbeitern**: Ihre Dokumente einzusehen und herunterzuladen
 
-- **Fehlermeldesystem**: Arbeiter können Fotos von Problemen machen und direkt melden
-- **Dokumentenverwaltung**: Digitale Verwaltung von Lohnabrechnungen, Krankmeldungen und Bescheinigungen
-- **Firmenkommunikation**: Kalender, Ankündigungen und Umfragen
-- **Verbesserungsvorschläge**: Mitarbeiter können Ideen einreichen und diskutieren
-- **Echtzeit-Benachrichtigungen**: Wichtige Meldungen erreichen sofort die richtigen Personen
-
-### Zielgruppen:
-
-- **Produktionsarbeiter**: Mobile App für einfachen Zugang zu Firmeninformationen
-- **Administratoren**: Web-Dashboard für Dokumentenverwaltung und Kommunikation
-- **Maintenance-Team**: Sofortige Benachrichtigungen bei gemeldeten Problemen
-- **Management**: Auswertungen und Berichte für bessere Entscheidungen
+Das System verwendet eine hierarchische Benutzerstruktur mit drei Benutzerrollen (Root, Admin, Mitarbeiter) und ermöglicht die sichere Speicherung und Übermittlung von Dokumenten.
 
 ## Systemvoraussetzungen
 
@@ -142,30 +133,20 @@ Der Server startet auf Port 3000. Sie können die Anwendung unter http://localho
 
 ## Benutzerrollen und Berechtigungen
 
-Das System verwendet vier Benutzerrollen:
+Das System verwendet drei Benutzerrollen:
 
-1. **Root** - Systemadministrator:
-   - Vollzugriff auf alle Funktionen
-   - Verwaltung von Administratoren
-   - Systemkonfiguration
+1. **Root** - Höchste Berechtigungsstufe:
+   - Kann Administratoren erstellen und löschen
+   - Hat vollen Zugriff auf alle Funktionen
 
-2. **Admin** - Firmenadministrator:
-   - Mitarbeiterverwaltung
-   - Dokumentenupload und -verwaltung
-   - Ankündigungen und Kalender pflegen
-   - Umfragen erstellen und auswerten
+2. **Admin** - Mittlere Berechtigungsstufe:
+   - Kann Mitarbeiter erstellen und löschen
+   - Kann Dokumente für Mitarbeiter hochladen
+   - Verwaltet Mitarbeiterinformationen
 
-3. **Maintenance** - Wartungspersonal:
-   - Empfang von Fehlermeldungen
-   - Ticketverwaltung
-   - Statusupdates zu Problemen
-
-4. **Mitarbeiter** - Produktionsarbeiter:
-   - Dokumente einsehen und herunterladen
-   - Fehler mit Fotos melden
-   - An Umfragen teilnehmen
-   - Verbesserungsvorschläge einreichen
-   - Firmenkalender und Ankündigungen ansehen
+3. **Mitarbeiter** - Niedrigste Berechtigungsstufe:
+   - Kann eigene Dokumente einsehen und herunterladen
+   - Kann nach Dokumenten suchen
 
 ## Fehlerbehebung
 
@@ -188,20 +169,11 @@ Das System verwendet vier Benutzerrollen:
 
 ## Technologien
 
-### Aktuell implementiert:
 - Frontend: HTML, CSS, JavaScript
 - Backend: Node.js, Express
 - Datenbank: MySQL
 - Authentifizierung: JWT (JSON Web Tokens)
 - Passwortverschlüsselung: bcrypt
-
-### Geplante Erweiterungen:
-- Progressive Web App (PWA) für mobile Nutzung
-- Push-Benachrichtigungen
-- Bildupload und -verarbeitung
-- WebSocket für Echtzeit-Updates
-- Offline-Synchronisation
-- Mehrsprachige Unterstützung
 
 ## Sicherheitshinweise
 
@@ -216,59 +188,154 @@ Das System verwendet vier Benutzerrollen:
 
 
 
-## Roadmap und geplante Features
+Konstruktive Kritik und Verbesserungsvorschläge für das Lohnabrechnung-System
+Sicherheit und Authentifizierung
 
-### Phase 1: Aktuelle Basis (bereits implementiert)
-- ✅ Benutzerverwaltung (Root, Admin, Mitarbeiter)
-- ✅ Dokumentenupload und -download
-- ✅ JWT-basierte Authentifizierung
-- ✅ Basis-Dashboard
+Passwort-Management:
 
-### Phase 2: Mobile-First Optimierung
-- [ ] Progressive Web App (PWA) Implementierung
-- [ ] Responsive Design für alle Bildschirmgrößen
-- [ ] Touch-optimierte UI-Elemente
-- [ ] Offline-Funktionalität
+Implementiere eine Funktion zum Ändern des eigenen Passworts für alle Benutzer
+Füge Password-Reset-Funktionalität per E-Mail hinzu
+Erstelle eine Funktion für Root/Admins zum Zurücksetzen von Passwörtern untergeordneter Benutzer
 
-### Phase 3: Fehlermeldesystem
-- [ ] Foto-Upload von Mobilgeräten
-- [ ] Ticketsystem für Problemmeldungen
-- [ ] Push-Benachrichtigungen an Maintenance
-- [ ] Status-Tracking für gemeldete Probleme
 
-### Phase 4: Erweiterte Kommunikation
-- [ ] Firmenkalender mit Events
-- [ ] Ankündigungssystem
-- [ ] Umfragemodul mit Auswertungen
-- [ ] Verbesserungsvorschläge-Portal
+Verbesserte Authentifizierung:
 
-### Phase 5: Erweiterte Features
-- [ ] Mehrsprachige Unterstützung
-- [ ] QR-Code oder PIN-basierte Anmeldung
-- [ ] Automatische Berichte und Auswertungen
-- [ ] Integration mit bestehenden Firmensystemen
+Füge Zwei-Faktor-Authentifizierung hinzu (z.B. per SMS oder Authenticator-App)
+Implementiere Brute-Force-Schutz mit temporärer Kontosperrung nach mehreren Fehlversuchen
+Füge Session-Timeout und automatische Abmeldung nach Inaktivität hinzu
 
-### Phase 6: Multi-Tenant-Architektur
-- [ ] Subdomain-basierte Mandantentrennung
-- [ ] Automatisiertes Onboarding neuer Firmen
-- [ ] White-Label-Branding pro Firma
-- [ ] Separate Datenbanken pro Mandant
-- [ ] Docker-Container-Deployment
 
-## Beitragen
+Zugriffsschutz:
 
-Wir freuen uns über Beiträge! Bitte erstellen Sie einen Fork des Repositories und senden Sie Pull Requests für neue Features oder Bugfixes.
-
-## Lizenz
-
-Dieses Projekt ist proprietär. Kontaktieren Sie Simon Öztürk für Lizenzinformationen.
+Implementiere IP-basierte Zugriffsbeschränkungen für sensible Funktionen
+Füge detaillierte Zugriffsprotokollierung hinzu
 
 
 
+Benutzerverwaltung
+
+Erweiterte Profiloptionen:
+
+Benutzerprofile mit mehr Informationen (Abteilung, Position, Kontaktdaten)
+Profilbilder für Benutzer
+Möglichkeit für Benutzer, bestimmte Profilinformationen selbst zu aktualisieren
+
+
+Verbesserte Benutzerorganisation:
+
+Gruppierung von Mitarbeitern nach Abteilungen oder Teams
+Filterfunktion für Benutzer in Admin-Dashboards
+Suche nach Benutzern
 
 
 
+Dokumentenmanagement
 
+Erweiterte Dokumentenfunktionen:
+
+Kategorisierung von Dokumenten (Lohnabrechnung, Steuer, Urlaub, etc.)
+Automatische Erinnerungen bei neuen Dokumenten per E-Mail
+Versionierung von Dokumenten (Nachverfolgung von Änderungen)
+Massenupload und -download von Dokumenten
+Vorschau von Dokumenten im Browser ohne Download
+
+
+Dokumentenvorlagen:
+
+Vorlagen für häufig verwendete Dokumente
+Automatische Generierung von Dokumenten basierend auf Vorlagen und Benutzerdaten
+
+
+Archivierung:
+
+Automatische Archivierung älterer Dokumente
+Aufbewahrungsrichtlinien mit automatischem Löschen nach bestimmten Zeiträumen
+
+
+
+Benutzeroberfläche und UX
+
+Modernes UI:
+
+Responsive Design für mobile Geräte optimieren
+Dunkelmodus implementieren
+Benutzerfreundlicheres Dashboard mit Statistiken und Übersichten
+
+
+Benachrichtigungen:
+
+In-App-Benachrichtigungen für neue Dokumente oder wichtige Aktionen
+E-Mail-Benachrichtigungen für wichtige Ereignisse
+Anpassbare Benachrichtigungseinstellungen für Benutzer
+
+
+Mehrsprachigkeit:
+
+Unterstützung für mehrere Sprachen hinzufügen (mindestens Deutsch/Englisch)
+Sprachauswahl für Benutzer speichern
+
+
+
+Systemarchitektur und Skalierbarkeit
+
+Performance-Optimierungen:
+
+Caching für häufig abgerufene Daten
+Optimierte Datenbankabfragen
+Lazy-Loading für große Dokumente
+
+
+Backend-Verbesserungen:
+
+Migration auf TypeScript für bessere Codequalität
+Implementierung von Unit- und Integrationstests
+API-Dokumentation mit Swagger
+
+
+Deployment und Monitoring:
+
+Docker-Container für einfache Bereitstellung
+Monitoring-Lösung für System-Performance
+Automatisierte Backups
+
+
+
+Allgemeine Funktionalitäten
+
+Kalender und Termine:
+
+Kalenderansicht für wiederkehrende Dokumente (z.B. monatliche Lohnabrechnungen)
+Erinnerungen für wichtige Termine
+
+
+Statistik und Reporting:
+
+Dashboard mit Nutzungsstatistiken für Administratoren
+Protokollierung aller relevanten Aktionen im System
+Exportmöglichkeiten für Berichte (CSV, PDF)
+
+
+Integration mit anderen Systemen:
+
+API für die Integration mit Buchhaltungssystemen
+LDAP/Active Directory-Integration für Unternehmen
+Import von Benutzern aus CSV-Dateien
+
+
+
+Kritische Sofort-Maßnahmen
+Als sofortige nächste Schritte würde ich folgende Verbesserungen priorisieren:
+
+Passwort-Management: Implementierung einer Funktion zum Ändern des eigenen Passworts
+E-Mail-Benachrichtigungen: Automatische Benachrichtigung an Mitarbeiter wenn neue Dokumente hochgeladen werden
+Dokumentenkategorisierung: Einfache Möglichkeit, Dokumente zu kategorisieren und zu filtern
+Fehlerbehandlung verbessern: Robustere Fehlerbehandlung und benutzerfreundlichere Fehlermeldungen
+Datenschutz: Implementierung von DSGVO-konformen Features (Datenlöschung, Auskunftsrecht)
+
+Diese Verbesserungen würden die Benutzerfreundlichkeit erheblich steigern und gleichzeitig die Sicherheit und Funktionalität des Systems verbessern, ohne eine komplette Überarbeitung zu erfordern.
+
+
+<<<<<<< HEAD
 ## Komplette Anleitung: Lohnabrechnung-Projekt unter WSL Ubuntu einrichten
 
 Diese Anleitung führt dich Schritt für Schritt durch die Installation und Einrichtung des Lohnabrechnung-Projekts unter Windows Subsystem for Linux (WSL) mit Ubuntu.
@@ -283,21 +350,51 @@ wsl --install -d Ubuntu
 Ubuntu starten und Benutzernamen/Passwort einrichten
 
 ### 2. Visual Studio Code installieren und konfigurieren
+=======
+
+
+
+
+
+Komplette Anleitung: Lohnabrechnung-Projekt unter WSL Ubuntu einrichten
+Diese Anleitung führt dich Schritt für Schritt durch die Installation und Einrichtung des Lohnabrechnung-Projekts unter Windows Subsystem for Linux (WSL) mit Ubuntu.
+1. WSL mit Ubuntu installieren
+
+PowerShell als Administrator öffnen und ausführen:
+powershellwsl --install -d Ubuntu
+
+Ubuntu starten und Benutzernamen/Passwort einrichten
+
+2. Visual Studio Code installieren und konfigurieren
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 
 VS Code herunterladen von code.visualstudio.com
 WSL-Extension installieren: In VS Code: Extensions > "Remote - WSL" suchen und installieren
 
+<<<<<<< HEAD
 ### 3. Projekt klonen oder herunterladen
 ```bash
 # Verzeichnis erstellen und hineinwechseln
+=======
+3. Projekt klonen oder herunterladen
+bash# Verzeichnis erstellen und hineinwechseln
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 mkdir -p ~/projects
 cd ~/projects
 
 # Projekt klonen (ersetze die URL durch dein Repository)
 git clone https://github.com/dein-username/dein-projektname.git lohnabrechnung
 cd lohnabrechnung
+<<<<<<< HEAD
+```
+
+### 4. Node.js einrichten
+```bash
+# Node.js und npm installieren
+=======
 4. Node.js einrichten
 bash# Node.js und npm installieren
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 sudo apt update
 sudo apt install -y nodejs npm
 
@@ -314,8 +411,16 @@ cd ~/projects/lohnabrechnung/server
 
 # Abhängigkeiten installieren
 npm install
+<<<<<<< HEAD
+```
+
+### 5. MySQL installieren und richtig konfigurieren
+```bash
+# MySQL installieren
+=======
 5. MySQL installieren und richtig konfigurieren
 bash# MySQL installieren
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 sudo apt update
 sudo apt install -y mysql-server
 
@@ -324,6 +429,28 @@ sudo service mysql start
 
 # MySQL sicher konfigurieren
 sudo mysql_secure_installation
+<<<<<<< HEAD
+```
+
+Beantworte die Fragen bei mysql_secure_installation wie folgt:
+- Passwortvalidierung-Plugin: Ja
+- Setze ein starkes Passwort: StrongP@ssw0rd!123 (oder eigenes starkes Passwort)
+- Anonymen Benutzer entfernen: Ja
+- Root-Login von außen verbieten: Nein
+- Test-Datenbank entfernen: Nein
+- Berechtigungstabellen neu laden: Ja
+
+### 6. Datenbank und Tabellen erstellen
+```bash
+# Bei MySQL anmelden
+sudo mysql -u root -p
+# Passwort eingeben (dein starkes MySQL-Passwort)
+```
+
+Führe folgende SQL-Befehle aus:
+```sql
+-- Datenbank erstellen
+=======
 Beantworte die Fragen bei mysql_secure_installation wie folgt:
 
 Passwortvalidierung-Plugin: Ja
@@ -339,6 +466,7 @@ sudo mysql -u root -p
 # Passwort eingeben (dein starkes MySQL-Passwort)
 Führe folgende SQL-Befehle aus:
 sql-- Datenbank erstellen
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 CREATE DATABASE lohnabrechnung;
 USE lohnabrechnung;
 
@@ -425,17 +553,40 @@ CREATE INDEX idx_admin_logs_user_id ON admin_logs(user_id);
 CREATE INDEX idx_admin_logs_timestamp ON admin_logs(timestamp);
 
 EXIT;
+<<<<<<< HEAD
+```
+
+### 7. Root-Benutzer anlegen mit korrektem Hash
+```bash
+# Ins Projektverzeichnis wechseln
+=======
 7. Root-Benutzer anlegen mit korrektem Hash
 bash# Ins Projektverzeichnis wechseln
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 cd ~/projects/lohnabrechnung/server
 
 # Korrekten Hash für das Passwort "root" generieren
 node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
+<<<<<<< HEAD
+```
+
+Kopiere den erzeugten Hash (er sollte wie $2b$10$... aussehen).
+
+```bash
+# Bei MySQL anmelden
+sudo mysql -u root -p
+# Passwort eingeben
+```
+
+```sql
+USE lohnabrechnung;
+=======
 Kopiere den erzeugten Hash (er sollte wie $2b$10$... aussehen).
 bash# Bei MySQL anmelden
 sudo mysql -u root -p
 # Passwort eingeben
 sqlUSE lohnabrechnung;
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 
 -- Root-Benutzer mit dem gerade generierten Hash anlegen
 -- WICHTIG: Ersetze den Platzhalter durch deinen tatsächlichen Hash!
@@ -446,17 +597,107 @@ INSERT INTO users (username, email, password, role) VALUES
 SELECT id, username, role FROM users WHERE username = 'root';
 
 EXIT;
+<<<<<<< HEAD
+```
+
+### 8. Umgebungsvariablen einrichten
+```bash
+# .env-Datei im server-Verzeichnis erstellen
+cd ~/projects/lohnabrechnung/server
+```
+
+Erstelle eine .env-Datei:
+```bash
+cat > .env << EOF
+=======
 8. Umgebungsvariablen einrichten
 bash# .env-Datei im server-Verzeichnis erstellen
 cd ~/projects/lohnabrechnung/server
 Erstelle eine .env-Datei:
 bashcat > .env << EOF
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=StrongP@ssw0rd!123
 DB_NAME=lohnabrechnung
 JWT_SECRET=ein_sicherer_zufallsstring
 EOF
+<<<<<<< HEAD
+```
+
+Ersetze StrongP@ssw0rd!123 durch dein tatsächliches MySQL-Passwort.
+
+### 9. Verzeichnisstruktur für Uploads erstellen
+```bash
+# Erstelle die notwendigen Verzeichnisse
+mkdir -p uploads/profile_pictures uploads/documents
+```
+
+### 10. Server starten
+```bash
+# Starte den Server
+node server.js
+```
+
+### 11. Anmeldung testen
+Öffne deinen Browser und navigiere zu http://localhost:3000
+Melde dich mit den folgenden Daten an:
+- Benutzername: root
+- Passwort: root
+
+## Fehlerbehebung WSL
+
+### Problem: MySQL-Zugriffsfehler
+Wenn du Fehler wie Error: Access denied for user 'root'@'localhost' erhältst:
+
+```bash
+sudo mysql
+```
+
+```sql
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'StrongP@ssw0rd!123';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+```bash
+sudo service mysql restart
+```
+
+### Problem: Falscher Passwort-Hash
+Wenn die Anmeldung mit "Invalid password" fehlschlägt:
+
+Überprüfe den Hash:
+```bash
+node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.compareSync('root', 'DEIN_HASH_AUS_DER_DATENBANK'));"
+```
+
+Wenn false zurückkommt, erzeuge einen neuen Hash und aktualisiere ihn in der Datenbank:
+```bash
+node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
+```
+
+```sql
+USE lohnabrechnung;
+UPDATE users SET password = '$2b$10$DEIN_NEUER_HASH' WHERE username = 'root';
+EXIT;
+```
+
+### Problem: Server startet nicht
+Überprüfe die Logs mit:
+```bash
+cat combined.log
+cat error.log
+```
+
+## Wichtige Hinweise WSL
+
+- **MySQL-Passwort**: Stelle sicher, dass das MySQL-Passwort in der .env-Datei mit dem tatsächlichen Passwort übereinstimmt.
+- **Passwort-Hash**: Setze immer den vollständigen Hash ein. Der Hash muss mit $2b$10$ beginnen und hat eine bestimmte Länge.
+- **Port-Konflikte**: Wenn Port 3000 bereits belegt ist, ändere ihn in der server.js-Datei oder setze die Umgebungsvariable PORT.
+
+Mit dieser Anleitung sollte die Einrichtung des Lohnabrechnung-Projekts unter WSL reibungslos funktionieren!
+=======
 Ersetze StrongP@ssw0rd!123 durch dein tatsächliches MySQL-Passwort.
 9. Verzeichnisstruktur für Uploads erstellen
 bash# Erstelle die notwendigen Verzeichnisse
@@ -503,3 +744,4 @@ Passwort-Hash: Setze immer den vollständigen Hash ein. Der Hash muss mit $2b$10
 Port-Konflikte: Wenn Port 3000 bereits belegt ist, ändere ihn in der server.js-Datei oder setze die Umgebungsvariable PORT.
 
 Mit dieser Anleitung sollte die Einrichtung des Lohnabrechnung-Projekts reibungslos funktionieren!
+>>>>>>> ef3741303d64925090ef95a3b0a5a682c25a4fca

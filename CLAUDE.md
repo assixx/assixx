@@ -69,6 +69,35 @@
 - Mehrsprachigkeit (verschiedene Muttersprachen der Arbeiter)
 - Einfache Authentifizierung (evtl. QR-Code oder PIN)
 
+## Architektur-Entscheidung: Hybrid Multi-Tenant
+
+### Konzept:
+- **Subdomain-basierte Trennung**: Jede Firma erhält eigene Subdomain (z.B. bosch.assixx.de)
+- **Getrennte Datenbanken**: Jede Firma hat eine eigene Datenbank für maximale Sicherheit
+- **Gemeinsame Codebasis**: Wartungsfreundlich mit firmaspezifischen Konfigurationen
+- **Docker-basiertes Deployment**: Automatisierte Bereitstellung neuer Kundeninstanzen
+
+### Vorteile:
+- Maximale Datensicherheit durch Trennung
+- DSGVO-konform und Compliance-freundlich
+- Individuelle Anpassungen pro Firma möglich
+- Zentrale Wartung der Codebasis
+- Skalierbar durch Container-Architektur
+
+### Technische Umsetzung:
+1. **Tenant-Erkennung** über Subdomain
+2. **Dynamische Datenbankverbindung** basierend auf Tenant
+3. **Konfigurationsmanagement** für firmenspezifische Einstellungen
+4. **White-Label Branding** pro Firma
+5. **Kubernetes/Docker** für Orchestrierung
+
+### Deployment-Strategie:
+- Basis-Docker-Image für alle Kunden
+- Automatisches Setup-Script für neue Firmen
+- Nginx als Reverse Proxy für Subdomain-Routing
+- Separate Datenbank-Container pro Kunde
+- Optional: Edge-Deployment direkt beim Kunden
+
 ## Entwickler
 - Simon Öztürk
 

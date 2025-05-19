@@ -18,11 +18,17 @@ const teamRoutes = require('./routes/teams');
 const userRoutes = require('./routes/users');
 const documentRoutes = require('./routes/documents');
 
+// Multi-tenant middleware
+const tenantMiddleware = require('./middleware/tenant');
+
 const app = express();
 
 // Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Multi-tenant support - muss vor anderen Routen kommen
+app.use(tenantMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
