@@ -54,16 +54,5 @@
       }
     }
   ],
-  "bypass_actors": [
-    {
-      "actor_id": 5,
-      "actor_type": "RepositoryRole",
-      "bypass_mode": "pull_request"
-    },
-    {
-      "actor_id": 2,
-      "actor_type": "Team",
-      "bypass_mode": "never"
-    }
-  ]
+  "bypass_actors": []
 }
