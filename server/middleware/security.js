@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken, authorizeRole } = require('../middleware/auth');
+const { authenticateToken, authorizeRole } = require('./auth-unified');
 const User = require('../models/user');
 const Document = require('../models/document');
 

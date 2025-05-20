@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Debugging</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .status {
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 8px;
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .warning {
+            color: #f44336;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Token Debugging</h1>
+    
+    <div class="warning">
+        <strong>Hinweis:</strong> Diese Seite ist nur für Entwicklungs- und Debugging-Zwecke.
+    </div>
+    
+    <div class="card">
+        <h2>Aktuelles Token</h2>
+        <p><strong>Status:</strong> <span id="token-status" class="status">Wird geprüft...</span></p>
+        <p><strong>Token:</strong> <span id="token-value">...</span></p>
+        <button id="token-check-btn">Token neu prüfen</button>
+    </div>
+    
+    <div class="card">
+        <h2>Token-Validierung</h2>
+        <p><strong>Status:</strong> <span id="validation-status" class="status">Nicht geprüft</span></p>
+        <h3>Token-Daten (dekodiert):</h3>
+        <pre id="token-data">Keine Daten verfügbar</pre>
+    </div>
+    
+    <div class="card">
+        <h2>Neues Token generieren</h2>
+        <div>
+            <input type="text" id="username" placeholder="Benutzername" value="localhost.washboard010@passmail.net">
+            <input type="password" id="password" placeholder="Passwort" value="admin123">
+            <button id="login-btn">Anmelden</button>
+        </div>
+        <p><strong>Status:</strong> <span id="login-status" class="status">Bereit</span></p>
+    </div>
+    
+    <div class="card">
+        <h2>Token löschen</h2>
+        <button id="logout-btn">Abmelden (Token löschen)</button>
+        <p><strong>Status:</strong> <span id="logout-status" class="status">Bereit</span></p>
+    </div>
+    
+    <div class="card">
+        <h2>API Test</h2>
+        <button id="test-api-btn" onclick="testAPI()">API testen</button>
+        <p><strong>Status:</strong> <span id="api-status" class="status">Bereit</span></p>
+        <pre id="api-response">Keine Daten verfügbar</pre>
+    </div>
+    
+    <script src="/js/debug-token.js"></script>
+    <script>
+        // API-Testfunktion
+        async function testAPI() {
+            const token = localStorage.getItem('token');
+            const apiStatus = document.getElementById('api-status');
+            const apiResponse = document.getElementById('api-response');
+            
+            if (!token) {
+                apiStatus.textContent = '❌ Kein Token vorhanden';
+                return;
+            }
+            
+            try {
+                apiStatus.textContent = 'API-Anfrage läuft...';
+                
+                // Teste den /departments Endpoint
+                const response = await fetch('/departments', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                apiStatus.textContent = `Status: ${response.status}`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    apiResponse.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    apiResponse.textContent = `Fehler: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                apiStatus.textContent = `❌ Fehler: ${error.message}`;
+                apiResponse.textContent = error.toString();
+            }
+        }
+    </script>
+</body>
+</html>

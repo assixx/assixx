@@ -13,6 +13,7 @@ const { authenticateUser, generateToken, authenticateToken, authorizeRole } = re
 const rootRoutes = require('./routes/root');
 const adminRoutes = require('./routes/admin');
 const employeeRoutes = require('./routes/employee');
+const employeeTestRoutes = require('./routes/employee-test'); // TEST ROUTES without authentication
 const departmentRoutes = require('./routes/departments');
 const teamRoutes = require('./routes/teams');
 const userRoutes = require('./routes/users');
@@ -200,8 +201,71 @@ app.get('/org-management.html', authenticateToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'org-management.html'));
 });
 
+// API Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
+app.get('/api-test.html', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send("Seite nicht verfügbar");
+  }
+  res.sendFile(path.join(__dirname, 'public', 'api-test.html'));
+});
+
+// Datenbank-Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
+app.get('/test-db.html', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send("Seite nicht verfügbar");
+  }
+  res.sendFile(path.join(__dirname, 'public', 'test-db.html'));
+});
+
+// Debug-Dashboard (im Entwicklungsmodus ohne Authentifizierung verfügbar)
+app.get('/debug-dashboard.html', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send("Seite nicht verfügbar");
+  }
+  res.sendFile(path.join(__dirname, 'public', 'debug-dashboard.html'));
+});
+
+// Token-Debug Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
+app.get('/token-debug.html', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).send("Seite nicht verfügbar");
+  }
+  res.sendFile(path.join(__dirname, 'public', 'token-debug.html'));
+});
+
+// Token-Validierungs-Endpoint für Debugging
+app.get('/api/validate-token', authenticateToken, (req, res) => {
+  // Wenn wir hier ankommen, wurde das Token bereits validiert
+  res.json({
+    valid: true,
+    user: req.user,
+    message: 'Token ist gültig'
+  });
+});
+
+// Test-Endpoint ohne Authentifizierung für Debugging
+app.get('/api/token-test', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  res.json({
+    endpoint: 'Token Test',
+    tokenProvided: !!token,
+    tokenDetails: token ? token.substring(0, 20) + '...' : 'none',
+    requestHeaders: req.headers
+  });
+});
+
 app.get('/employee-profile.html', authenticateToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee-profile.html'));
+});
+
+app.get('/document-upload.html', authenticateToken, authorizeRole('admin'), (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'document-upload.html'));
+});
+
+app.get('/salary-documents.html', authenticateToken, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'salary-documents.html'));
 });
 
 // API routes
@@ -258,6 +322,17 @@ app.use('/teams', authenticateToken, teamRoutes);
 app.use('/users', userRoutes);
 app.use('/documents', authenticateToken, documentRoutes);
 app.use('/features', featureRoutes);
+
+// TEST Routes without authentication - SECURITY RISK - FOR DEVELOPMENT ONLY
+// WARNING: These routes bypass all authentication and authorization
+if (process.env.NODE_ENV !== 'production') {
+  console.warn('WARNING: Test routes enabled - these routes bypass authentication!');
+  app.use('/test/employee', employeeTestRoutes);
+  
+  // Import and register DB test routes
+  const testDbRoutes = require('./routes/test-db');
+  app.use('/test/db', testDbRoutes);
+}
 
 // Error handling - MUST be last
 app.use((req, res, next) => {

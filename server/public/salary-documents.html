@@ -136,10 +136,17 @@
             background-color: #f9f9f9;
             border-top: 1px solid #eee;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
         
-        .download-btn {
+        .document-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .download-btn, .view-btn {
             display: inline-flex;
             align-items: center;
             background-color: #1b8e01;
@@ -149,17 +156,66 @@
             padding: 8px 15px;
             cursor: pointer;
             font-size: 14px;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
         
-        .download-btn:hover {
+        .download-btn:hover, .view-btn:hover {
             background-color: #156600;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
-        .download-btn svg {
+        .download-btn:active, .view-btn:active {
+            transform: translateY(0);
+        }
+        
+        .view-btn {
+            background-color: #0062cc;
+        }
+        
+        .view-btn:hover {
+            background-color: #0051a8;
+        }
+        
+        .download-btn svg, .view-btn svg {
             width: 16px;
             height: 16px;
             margin-right: 5px;
+        }
+        
+        .download-info {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .download-progress-container {
+            width: 100%;
+            height: 4px;
+            background-color: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .download-progress-bar {
+            height: 100%;
+            background-color: #1b8e01;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .loading-spinner {
+            animation: spin 1.5s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
         
         .empty-state {
@@ -361,14 +417,29 @@
                                 </div>
                             </div>
                             <div class="document-footer">
-                                <button class="download-btn" onclick="downloadDocument('${doc.id}')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="7 10 12 15 17 10"></polyline>
-                                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                                    </svg>
-                                    Herunterladen
-                                </button>
+                                <div class="document-actions">
+                                    <button class="download-btn" onclick="downloadDocument('${doc.id}', '${encodeURIComponent(doc.file_name)}', false, this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        Herunterladen
+                                    </button>
+                                    <button class="view-btn" onclick="downloadDocument('${doc.id}', '${encodeURIComponent(doc.file_name)}', true, this)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        Anzeigen
+                                    </button>
+                                </div>
+                                <div class="download-info">
+                                    ${doc.download_count ? `${doc.download_count}x heruntergeladen` : 'Noch nicht heruntergeladen'}
+                                </div>
+                                <div class="download-progress-container" id="progress-${doc.id}">
+                                    <div class="download-progress-bar"></div>
+                                </div>
                             </div>
                         `;
                         
@@ -406,41 +477,120 @@
             }
         }
         
-        async function downloadDocument(documentId) {
+        async function downloadDocument(documentId, fileName, viewInBrowser, buttonEl) {
+            // Progress-Container finden
+            const progressContainer = document.getElementById(`progress-${documentId}`);
+            const progressBar = progressContainer.querySelector('.download-progress-bar');
+            
+            // Button-Text und Zustand speichern
+            const buttonContent = buttonEl.innerHTML;
+            const isViewMode = buttonEl.classList.contains('view-btn');
+            
             try {
-                const response = await fetch(`/employee/documents/${documentId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
+                // Button Zustand aktualisieren
+                buttonEl.disabled = true;
+                buttonEl.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="loading-spinner">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 6v6l4 2"></path>
+                    </svg>
+                    ${isViewMode ? 'Wird geladen...' : 'Wird vorbereitet...'}
+                `;
                 
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    
-                    // Dateinamen aus dem Content-Disposition-Header extrahieren
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let fileName = 'dokument.pdf';
-                    
-                    if (contentDisposition) {
-                        const fileNameMatch = contentDisposition.match(/filename=(.*?)(;|$)/);
-                        if (fileNameMatch && fileNameMatch[1]) {
-                            fileName = fileNameMatch[1].replace(/"/g, '');
+                // Progress-Container anzeigen
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '5%';
+                
+                // URL mit inline-Parameter, wenn im Browser anzeigen
+                const url = `/employee/documents/${documentId}${viewInBrowser ? '?inline=true' : ''}`;
+                
+                // Fetch mit Response-Type blob und Fortschrittsverfolgung
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.responseType = 'blob';
+                xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('token')}`);
+                
+                // Fortschritt verfolgen
+                xhr.onprogress = function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.min(Math.round((event.loaded / event.total) * 100), 100);
+                        progressBar.style.width = `${percentComplete}%`;
+                        
+                        // Button-Text aktualisieren
+                        if (percentComplete > 5) {
+                            buttonEl.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                ${percentComplete}%
+                            `;
                         }
                     }
-                    
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                } else {
-                    alert('Fehler beim Herunterladen des Dokuments');
-                }
+                };
+                
+                // Download abgeschlossen
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        const blob = xhr.response;
+                        const url = window.URL.createObjectURL(blob);
+                        
+                        progressBar.style.width = '100%';
+                        
+                        if (viewInBrowser) {
+                            // PDF im Browser öffnen
+                            window.open(url, '_blank');
+                        } else {
+                            // Datei herunterladen
+                            const a = document.createElement('a');
+                            a.style.display = 'none';
+                            a.href = url;
+                            a.download = decodeURIComponent(fileName);
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                        }
+                        
+                        // Download-Info nach 500ms aktualisieren für visuelles Feedback
+                        setTimeout(() => {
+                            loadSalaryDocuments(false);
+                            loadSalaryDocuments(true);
+                        }, 500);
+                        
+                        // Button und Progress zurücksetzen
+                        setTimeout(() => {
+                            buttonEl.disabled = false;
+                            buttonEl.innerHTML = buttonContent;
+                            progressContainer.style.display = 'none';
+                            progressBar.style.width = '0%';
+                        }, 1000);
+                    } else {
+                        // Fehler
+                        progressContainer.style.display = 'none';
+                        buttonEl.disabled = false;
+                        buttonEl.innerHTML = buttonContent;
+                        alert('Fehler beim Herunterladen des Dokuments');
+                    }
+                };
+                
+                // Fehlerbehandlung
+                xhr.onerror = function() {
+                    progressContainer.style.display = 'none';
+                    buttonEl.disabled = false;
+                    buttonEl.innerHTML = buttonContent;
+                    alert('Ein Netzwerkfehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+                };
+                
+                // Download starten
+                xhr.send();
+                
             } catch (error) {
                 console.error('Fehler beim Herunterladen des Dokuments:', error);
+                progressContainer.style.display = 'none';
+                buttonEl.disabled = false;
+                buttonEl.innerHTML = buttonContent;
                 alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
             }
         }

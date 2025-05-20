@@ -1,5 +1,6 @@
 const express = require('express');
-const { authenticateToken, authorizeRole } = require('../middleware/auth');
+const { authenticateToken, authorizeRole } = require('../auth');
+const { checkDocumentAccess } = require('../middleware/documentAccess');
 const User = require('../models/user');
 const Document = require('../models/document');
 const logger = require('../utils/logger');
@@ -94,40 +95,70 @@ router.get('/salary-documents', authenticateToken, authorizeRole('employee'), as
 });
 
 // Einzelnes Dokument herunterladen
-router.get('/documents/:documentId', authenticateToken, authorizeRole('employee'), async (req, res) => {
-    const employeeId = req.user.id;
-    const { documentId } = req.params;
-    
-    logger.info(`Employee ${employeeId} attempting to download document ${documentId}`);
-    
-    try {
-        const document = await Document.findById(documentId);
+router.get('/documents/:documentId', 
+    authenticateToken, 
+    authorizeRole('employee'),
+    checkDocumentAccess({ allowAdmin: false, allowDepartmentHeads: false, requireOwnership: true }),
+    async (req, res) => {
+        const employeeId = req.user.id;
+        const { documentId } = req.params;
+        const { inline } = req.query; // Option zum Anzeigen im Browser statt herunterzuladen
         
-        if (!document) {
-            logger.warn(`Document ${documentId} not found`);
-            return res.status(404).json({ message: 'Dokument nicht gefunden' });
-        }
+        logger.info(`Employee ${employeeId} attempting to download document ${documentId}`);
         
-        // Sicherheitscheck: Nur eigene Dokumente dürfen heruntergeladen werden
-        if (document.user_id !== employeeId) {
-            logger.warn(`Document ${documentId} does not belong to Employee ${employeeId}`);
-            return res.status(403).json({ message: 'Zugriff verweigert' });
-        }
+        try {
+            // Dokument wurde bereits vom Middleware geladen und ist in req.document verfügbar
+            const document = req.document;
 
-        // Setze entsprechende Header für den Download
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(document.file_name)}.pdf`);
-        
-        // Sende den Dateiinhalt
-        res.send(document.file_content);
-        
-        logger.info(`Employee ${employeeId} successfully downloaded document ${documentId}`);
-    } catch (error) {
-        logger.error(`Error downloading document ${documentId} for Employee ${employeeId}: ${error.message}`);
-        res.status(500).json({ message: 'Fehler beim Herunterladen des Dokuments', error: error.message });
+            // Download-Zähler erhöhen
+            await Document.incrementDownloadCount(documentId);
+
+            // Content-Type Header setzen
+            res.setHeader('Content-Type', 'application/pdf');
+            
+            // Content-Disposition Header basierend auf inline-Parameter setzen
+            const disposition = inline === 'true' ? 'inline' : 'attachment';
+            res.setHeader('Content-Disposition', `${disposition}; filename=${encodeURIComponent(document.file_name)}`);
+            
+            // Optional: Cache-Control Header für häufig abgerufene Dokumente
+            res.setHeader('Cache-Control', 'max-age=300'); // 5 Minuten cachen
+            
+            // Streaming-Support für große Dateien
+            // Überprüfen, ob die Datei mehr als 1MB groß ist
+            if (document.file_content && document.file_content.length > 1024 * 1024) {
+                logger.info(`Streaming large document ${documentId} (size: ${document.file_content.length} bytes)`);
+                
+                // Die Datei in kleineren Teilen senden
+                const CHUNK_SIZE = 256 * 1024; // 256 KB Chunks
+                const fileSize = document.file_content.length;
+                
+                // Content-Length Header setzen, damit der Client den Fortschritt verfolgen kann
+                res.setHeader('Content-Length', fileSize);
+                
+                // Daten in Chunks streamen
+                for (let offset = 0; offset < fileSize; offset += CHUNK_SIZE) {
+                    const chunk = document.file_content.slice(offset, Math.min(offset + CHUNK_SIZE, fileSize));
+                    // Wenn dies der letzte Chunk ist, Ende markieren
+                    const isLastChunk = offset + CHUNK_SIZE >= fileSize;
+                    
+                    if (!res.write(chunk) && !isLastChunk) {
+                        // Wenn Puffer voll ist und noch Daten kommen, auf "drain" Event warten
+                        await new Promise(resolve => res.once('drain', resolve));
+                    }
+                }
+                
+                res.end();
+            } else {
+                // Für kleinere Dateien einfach den gesamten Inhalt auf einmal senden
+                res.send(document.file_content);
+            }
+            
+            logger.info(`Employee ${employeeId} successfully downloaded document ${documentId}`);
+        } catch (error) {
+            logger.error(`Error downloading document ${documentId} for Employee ${employeeId}: ${error.message}`);
+            res.status(500).json({ message: 'Fehler beim Herunterladen des Dokuments', error: error.message });
+        }
     }
-});
-
-module.exports = router;
+);
 
 module.exports = router;

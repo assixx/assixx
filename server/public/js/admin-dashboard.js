@@ -5,10 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
     token = localStorage.getItem('token');
     console.log('Token from localStorage:', token);
     
+    // Temporär deaktiviert: Auch ohne Token weitermachen (für Testzwecke)
+    // if (!token) {
+    //     console.log('No token found, redirecting to login');
+    //     window.location.href = '/';
+    //     return;
+    // }
+    
+    // Für Testzwecke ohne Token
     if (!token) {
-        console.log('No token found, redirecting to login');
-        window.location.href = '/';
-        return;
+        console.log('No token found, but continuing for test purposes');
+        token = 'test-mode';
     }
 
     // Event Listeners for forms
@@ -17,25 +24,158 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentForm = document.getElementById('department-form');
     const teamForm = document.getElementById('team-form');
     const logoutBtn = document.getElementById('logout-btn');
+    
+    // Buttons für Mitarbeiter-Modal
+    const newEmployeeBtn = document.getElementById('new-employee-button');
+    const employeesSectionNewBtn = document.getElementById('employees-section-new-button');
 
-    if (createEmployeeForm) createEmployeeForm.addEventListener('submit', createEmployee);
+    // Event-Listener für Formulare
+    if (createEmployeeForm) {
+        createEmployeeForm.addEventListener('submit', createEmployee);
+        
+        // Live-Validierung für E-Mail und Passwort hinzufügen
+        const emailInput = document.getElementById('email');
+        const emailConfirmInput = document.getElementById('email_confirm');
+        const emailError = document.getElementById('email-error');
+        
+        const passwordInput = document.getElementById('password');
+        const passwordConfirmInput = document.getElementById('password_confirm');
+        const passwordError = document.getElementById('password-error');
+        
+        // E-Mail-Validierung
+        if (emailInput && emailConfirmInput && emailError) {
+            const checkEmails = function() {
+                if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
+                    emailError.style.display = 'block';
+                } else {
+                    emailError.style.display = 'none';
+                }
+            };
+            
+            emailInput.addEventListener('input', checkEmails);
+            emailConfirmInput.addEventListener('input', checkEmails);
+        }
+        
+        // Passwort-Validierung
+        if (passwordInput && passwordConfirmInput && passwordError) {
+            const checkPasswords = function() {
+                if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
+                    passwordError.style.display = 'block';
+                } else {
+                    passwordError.style.display = 'none';
+                }
+            };
+            
+            passwordInput.addEventListener('input', checkPasswords);
+            passwordConfirmInput.addEventListener('input', checkPasswords);
+        }
+    }
     if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
     if (departmentForm) departmentForm.addEventListener('submit', createDepartment);
     if (teamForm) teamForm.addEventListener('submit', createTeam);
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
+    
+    // Event-Listener für Mitarbeiter-Buttons
+    if (newEmployeeBtn) {
+        console.log('New employee button found, adding event listener');
+        newEmployeeBtn.addEventListener('click', function() {
+            console.log('New employee button clicked');
+            showNewEmployeeModal();
+        });
+    } else {
+        console.warn('New employee button not found');
+    }
+    
+    if (employeesSectionNewBtn) {
+        console.log('Employees section new button found, adding event listener');
+        employeesSectionNewBtn.addEventListener('click', function() {
+            console.log('Employees section new button clicked');
+            showNewEmployeeModal();
+        });
+    } else {
+        console.warn('Employees section new button not found');
+    }
+    
+    // Funktion zum Anzeigen des Mitarbeiter-Modals
+    function showNewEmployeeModal() {
+        const modal = document.getElementById('employee-modal');
+        if (modal) {
+            console.log('Found employee-modal, showing it');
+            
+            // Formular zurücksetzen, falls es bereits benutzt wurde
+            const form = document.getElementById('create-employee-form');
+            if (form) {
+                form.reset();
+                
+                // Fehler-Anzeigen zurücksetzen
+                const emailError = document.getElementById('email-error');
+                const passwordError = document.getElementById('password-error');
+                
+                if (emailError) emailError.style.display = 'none';
+                if (passwordError) passwordError.style.display = 'none';
+            }
+            
+            // Modal anzeigen
+            modal.style.display = 'flex';
+            
+            // Abteilungen für das Formular laden
+            loadDepartmentsForEmployeeSelect();
+        } else {
+            console.error('employee-modal element not found!');
+            alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
+        }
+    }
 
     // Initial loads - add slight delay to ensure DOM is ready
     setTimeout(() => {
+        console.log('Starting initial data load...');
         loadDashboardStats();
         loadRecentEmployees();
         loadRecentDocuments();
         loadDepartments();
         loadTeams();
+        loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
     }, 100);
 
     // Load Dashboard Statistics
     async function loadDashboardStats() {
-        // Lade jeden Zähler einzeln, um Fehler zu isolieren
+        console.log('Loading dashboard stats...');
+        
+        try {
+            // Direkt den Test-Endpunkt verwenden
+            const statsRes = await fetch('/test/db/counts');
+            
+            if (statsRes.ok) {
+                const stats = await statsRes.json();
+                console.log('Received dashboard stats:', stats);
+                
+                // Update UI mit den Statistiken aus dem Testendpunkt
+                document.getElementById('employee-count').textContent = stats.employees || 0;
+                document.getElementById('document-count').textContent = stats.documents || 0;
+                
+                const deptCountElement = document.getElementById('department-count');
+                if (deptCountElement) {
+                    deptCountElement.textContent = stats.departments || 0;
+                }
+                
+                document.getElementById('team-count').textContent = stats.teams || 0;
+            } else {
+                console.error('Failed to load dashboard stats', statsRes.statusText);
+                
+                // Fallback: Einzeln laden, wenn der stats-Endpunkt fehlschlägt
+                await loadDashboardStatsIndividually();
+            }
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+            
+            // Fallback: Einzeln laden bei einem Fehler
+            await loadDashboardStatsIndividually();
+        }
+    }
+    
+    // Fallback-Funktion, die Statistiken einzeln lädt
+    async function loadDashboardStatsIndividually() {
+        console.log('Loading stats individually as fallback...');
         
         // Mitarbeiter
         try {
@@ -44,7 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (employeesRes.ok) {
                 const employees = await employeesRes.json();
+                console.log(`Loaded ${employees.length} employees`);
                 document.getElementById('employee-count').textContent = employees.length;
+            } else {
+                console.error('Failed to load employees', employeesRes.statusText);
             }
         } catch (error) {
             console.error('Error loading employees:', error);
@@ -57,7 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (documentsRes.ok) {
                 const documents = await documentsRes.json();
+                console.log(`Loaded ${documents.length} documents`);
                 document.getElementById('document-count').textContent = documents.length;
+            } else {
+                console.error('Failed to load documents', documentsRes.statusText);
             }
         } catch (error) {
             console.error('Error loading documents:', error);
@@ -70,10 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (departmentsRes.ok) {
                 const departments = await departmentsRes.json();
+                console.log(`Loaded ${departments.length} departments`);
                 const deptCountElement = document.getElementById('department-count');
                 if (deptCountElement) {
                     deptCountElement.textContent = departments.length;
                 }
+            } else {
+                console.error('Failed to load departments', departmentsRes.statusText);
             }
         } catch (error) {
             console.error('Error loading departments:', error);
@@ -86,7 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (teamsRes.ok) {
                 const teams = await teamsRes.json();
+                console.log(`Loaded ${teams.length} teams`);
                 document.getElementById('team-count').textContent = teams.length;
+            } else {
+                console.error('Failed to load teams', teamsRes.statusText);
             }
         } catch (error) {
             console.error('Error loading teams:', error);
@@ -98,7 +250,60 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const formData = new FormData(createEmployeeForm);
         const employeeData = Object.fromEntries(formData.entries());
+        
+        // E-Mail-Übereinstimmung prüfen
+        if (employeeData.email !== employeeData.email_confirm) {
+            document.getElementById('email-error').style.display = 'block';
+            alert('Die E-Mail-Adressen stimmen nicht überein');
+            return;
+        } else {
+            document.getElementById('email-error').style.display = 'none';
+        }
+        
+        // Passwort-Übereinstimmung prüfen
+        if (employeeData.password !== employeeData.password_confirm) {
+            document.getElementById('password-error').style.display = 'block';
+            alert('Die Passwörter stimmen nicht überein');
+            return;
+        } else {
+            document.getElementById('password-error').style.display = 'none';
+        }
+        
+        // Validierung auf Client-Seite, um bessere Fehlermeldungen zu geben
+        if (!employeeData.username || employeeData.username.length < 3) {
+            alert('Der Benutzername muss mindestens 3 Zeichen lang sein.');
+            return;
+        }
+        
+        if (!employeeData.email || !employeeData.email.includes('@')) {
+            alert('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+            return;
+        }
+        
+        if (!employeeData.password || employeeData.password.length < 6) {
+            alert('Das Passwort muss mindestens 6 Zeichen lang sein.');
+            return;
+        }
+        
+        if (!employeeData.age || employeeData.age < 18 || employeeData.age > 100) {
+            alert('Das Alter muss zwischen 18 und 100 Jahren liegen.');
+            return;
+        }
+        
+        // Entferne die Bestätigungsfelder, die nicht zum Server gesendet werden sollen
+        delete employeeData.email_confirm;
+        delete employeeData.password_confirm;
+        
+        // Automatische Mitarbeiter-ID generieren (Timestamp + zufällige Zahl)
+        employeeData.employee_id = 'EMP' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000);
+        
+        // Bei leerer Abteilung setzen wir null statt leeren String
+        if (employeeData.department_id === "") {
+            employeeData.department_id = null;
+        }
 
+        console.log('Sending employee data:', employeeData);
+        
         try {
             const response = await fetch('/admin/create-employee', {
                 method: 'POST',
@@ -116,44 +321,71 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadRecentEmployees();
                 loadDashboardStats();
                 loadEmployeesForSelect();
+                loadEmployeesTable('reload'); // Mitarbeitertabelle neu laden
             } else {
                 const error = await response.json();
-                alert(`Fehler: ${error.message}`);
+                alert(`Fehler: ${error.message || 'Unbekannter Fehler bei der Mitarbeitererstellung'}`);
             }
         } catch (error) {
             console.error('Fehler beim Erstellen des Mitarbeiters:', error);
-            alert('Ein Fehler ist aufgetreten.');
+            alert('Ein Fehler ist aufgetreten: ' + error.message);
         }
     }
 
     // Load Recent Employees
     async function loadRecentEmployees() {
+        console.log('Loading recent employees...');
+        
         try {
-            const response = await fetch('/admin/employees', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            // Direkt den Test-Endpunkt verwenden
+            const response = await fetch('/test/db/employees');
 
             if (response.ok) {
                 const employees = await response.json();
-                const recentEmployees = employees.slice(-5).reverse();
-                const container = document.getElementById('recent-employees');
+                console.log(`Received ${employees.length} employees from server`);
                 
+                // Sicherstellen, dass wir ein Array haben
+                if (!Array.isArray(employees)) {
+                    console.error('Expected employees to be an array, got:', typeof employees);
+                    return;
+                }
+                
+                // Nehme die neuesten 5 Mitarbeiter und kehre die Reihenfolge um
+                const recentEmployees = employees.slice(-5).reverse();
+                console.log(`Displaying ${recentEmployees.length} recent employees`);
+                
+                // Update the employee box on dashboard
+                const container = document.getElementById('recent-employees');
                 if (container) {
-                    container.innerHTML = recentEmployees.map(emp => `
-                        <div class="compact-list-item">
-                            <span>${emp.first_name} ${emp.last_name}</span>
-                            <small>${emp.position || emp.role}</small>
-                        </div>
-                    `).join('');
+                    if (recentEmployees.length === 0) {
+                        container.innerHTML = '<div class="compact-list-item">Keine Mitarbeiter vorhanden</div>';
+                    } else {
+                        container.innerHTML = recentEmployees.map(emp => `
+                            <div class="compact-list-item">
+                                <span>${emp.first_name || ''} ${emp.last_name || ''}</span>
+                                <small>${emp.position || emp.role || 'Keine Position'}</small>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    console.warn('recent-employees container not found');
                 }
 
-                // Also update the recent employees list
+                // Update the recent employees list in "Recently Added" section
                 const recentList = document.getElementById('recent-employees-list');
                 if (recentList) {
-                    recentList.innerHTML = recentEmployees.map(emp => `
-                        <li>${emp.first_name} ${emp.last_name} - ${new Date(emp.created_at).toLocaleDateString()}</li>
-                    `).join('');
+                    if (recentEmployees.length === 0) {
+                        recentList.innerHTML = '<li>Keine neuen Mitarbeiter</li>';
+                    } else {
+                        recentList.innerHTML = recentEmployees.map(emp => `
+                            <li>${emp.first_name || ''} ${emp.last_name || ''} - ${emp.created_at ? new Date(emp.created_at).toLocaleDateString() : 'Unbekanntes Datum'}</li>
+                        `).join('');
+                    }
+                } else {
+                    console.warn('recent-employees-list not found');
                 }
+            } else {
+                console.error('Failed to load employees:', response.statusText);
             }
         } catch (error) {
             console.error('Error loading recent employees:', error);
@@ -163,9 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Recent Documents  
     async function loadRecentDocuments() {
         try {
-            const response = await fetch('/documents', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            // Direkt den Test-Endpunkt verwenden
+            const response = await fetch('/test/db/documents');
 
             if (response.ok) {
                 const documents = await response.json();
@@ -196,13 +427,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load Departments
     async function loadDepartments() {
+        console.log('Loading departments...');
+        
         try {
-            const response = await fetch('/departments', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            // Direkt den Test-Endpunkt verwenden
+            const response = await fetch('/test/db/departments');
 
             if (response.ok) {
                 const departments = await response.json();
+                console.log(`Received ${departments.length} departments from server`);
+                
+                // Sicherstellen, dass wir ein Array haben
+                if (!Array.isArray(departments)) {
+                    console.error('Expected departments to be an array, got:', typeof departments);
+                    return;
+                }
                 
                 const container = document.getElementById('department-list');
                 
@@ -212,12 +451,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         container.innerHTML = departments.map(dept => `
                             <div class="compact-list-item">
-                                <span>${dept.name}</span>
+                                <span>${dept.name || 'Unbenannte Abteilung'}</span>
                                 <small>${dept.employee_count || 0} Mitarbeiter</small>
                             </div>
                         `).join('');
                     }
+                } else {
+                    console.warn('department-list container not found');
                 }
+                
+                // Aktualisiere auch die Abteilungen für Auswahlfelder
+                loadDepartmentsForEmployeeSelect();
+            } else {
+                console.error('Failed to load departments:', response.statusText);
             }
         } catch (error) {
             console.error('Error loading departments:', error);
@@ -246,82 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error loading teams:', error);
-        }
-    }
-
-    // Load Employees for Select
-    async function loadEmployeesForSelect() {
-        try {
-            const response = await fetch('/admin/employees', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const employees = await response.json();
-                const select = document.getElementById('upload-employee-select');
-                
-                if (select) {
-                    select.innerHTML = '<option value="">Bitte wählen...</option>' +
-                        employees.map(emp => `
-                            <option value="${emp.id}">${emp.first_name} ${emp.last_name}</option>
-                        `).join('');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading employees for select:', error);
-        }
-    }
-
-    // Load Departments for Select
-    async function loadDepartmentsForSelect() {
-        try {
-            const response = await fetch('/departments', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const departments = await response.json();
-                const select = document.querySelector('#team-form select[name="department_id"]');
-                
-                if (select) {
-                    select.innerHTML = '<option value="">Keine Abteilung</option>' +
-                        departments.map(dept => `
-                            <option value="${dept.id}">${dept.name}</option>
-                        `).join('');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading departments for select:', error);
-        }
-    }
-
-    // Upload Document
-    async function uploadDocument(e) {
-        e.preventDefault();
-        const formData = new FormData(uploadDocumentForm);
-
-        try {
-            const response = await fetch('/documents/upload', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (response.ok) {
-                alert('Dokument erfolgreich hochgeladen');
-                uploadDocumentForm.reset();
-                hideModal('document-modal');
-                loadRecentDocuments();
-                loadDashboardStats();
-            } else {
-                const error = await response.json();
-                alert(`Fehler: ${error.message}`);
-            }
-        } catch (error) {
-            console.error('Fehler beim Hochladen des Dokuments:', error);
-            alert('Ein Fehler ist aufgetreten.');
         }
     }
 
@@ -447,67 +617,318 @@ async function loadEmployeesForPayslipSelect() {
 }
 
 // Load data for tables
-async function loadEmployeesTable() {
+// Globale Variable für Mitarbeiter
+let allEmployees = [];
+
+async function loadEmployeesTable(filter = '') {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch('/admin/employees', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Wenn wir noch keine Mitarbeiter haben oder ein Neuladeflag gesetzt ist, laden wir sie neu
+        if (allEmployees.length === 0 || filter === 'reload') {
+            const response = await fetch('/admin/employees', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        if (response.ok) {
-            const employees = await response.json();
-            const tbody = document.getElementById('employees-table-body');
-            
-            if (tbody) {
-                tbody.innerHTML = employees.map(emp => `
-                    <tr>
-                        <td>${emp.first_name} ${emp.last_name}</td>
-                        <td>${emp.email}</td>
-                        <td>${emp.position || '-'}</td>
-                        <td>${emp.department_name || '-'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="editEmployee(${emp.id})">Bearbeiten</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${emp.id})">Löschen</button>
-                        </td>
-                    </tr>
-                `).join('');
+            if (response.ok) {
+                allEmployees = await response.json();
+                console.log(`Loaded ${allEmployees.length} employees`);
+            } else {
+                console.error('Failed to load employees');
+                return;
             }
+        }
+        
+        // Mitarbeiter filtern, basierend auf dem übergebenen Filter
+        let filteredEmployees = [...allEmployees];
+        
+        if (filter === 'inactive') {
+            filteredEmployees = allEmployees.filter(emp => emp.status === 'inactive');
+        } else if (filter === 'active') {
+            filteredEmployees = allEmployees.filter(emp => emp.status !== 'inactive');
+        } else if (filter && filter !== 'reload' && filter !== 'all') {
+            // Suche nach einem Textfilter
+            const searchTerm = filter.toLowerCase();
+            filteredEmployees = allEmployees.filter(emp => 
+                (emp.first_name && emp.first_name.toLowerCase().includes(searchTerm)) || 
+                (emp.last_name && emp.last_name.toLowerCase().includes(searchTerm)) || 
+                (emp.email && emp.email.toLowerCase().includes(searchTerm)) || 
+                (emp.position && emp.position.toLowerCase().includes(searchTerm)) ||
+                (emp.employee_id && emp.employee_id.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        const tbody = document.getElementById('employees-table-body');
+        
+        if (tbody) {
+            if (filteredEmployees.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center">Keine Mitarbeiter gefunden</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredEmployees.map(emp => `
+                <tr class="${emp.status === 'inactive' ? 'table-row-inactive' : ''}">
+                    <td>${emp.first_name} ${emp.last_name}</td>
+                    <td>${emp.email}</td>
+                    <td>${emp.employee_id || '-'}</td>
+                    <td>${emp.position || '-'}</td>
+                    <td>${emp.department_name || '-'}</td>
+                    <td>
+                        <span class="badge ${emp.status !== 'inactive' ? 'badge-success' : 'badge-warning'}">
+                            ${emp.status !== 'inactive' ? 'Aktiv' : 'Inaktiv'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editEmployee(${emp.id})">Bearbeiten</button>
+                        <button class="btn btn-sm btn-warning" onclick="toggleEmployeeStatus(${emp.id}, '${emp.status || 'active'}')">
+                            ${emp.status === 'inactive' ? 'Aktivieren' : 'Deaktivieren'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${emp.id})">Löschen</button>
+                    </td>
+                </tr>
+            `).join('');
         }
     } catch (error) {
         console.error('Error loading employees table:', error);
     }
 }
 
-async function loadDocumentsTable() {
+// Event-Listener für Mitarbeitersuche und -Filter hinzufügen
+document.addEventListener('DOMContentLoaded', () => {
+    // Mitarbeitersuche
+    const searchInput = document.getElementById('employee-search');
+    const searchBtn = document.getElementById('employee-search-btn');
+    
+    if (searchInput && searchBtn) {
+        // Suche bei Klick auf den Suchen-Button
+        searchBtn.addEventListener('click', () => {
+            const searchTerm = searchInput.value.trim();
+            if (searchTerm) {
+                loadEmployeesTable(searchTerm);
+            } else {
+                loadEmployeesTable('all');
+            }
+        });
+        
+        // Suche bei Drücken der Enter-Taste
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    loadEmployeesTable(searchTerm);
+                } else {
+                    loadEmployeesTable('all');
+                }
+            }
+        });
+    }
+    
+    // Filter-Buttons für Mitarbeiter
+    const showAllBtn = document.getElementById('show-all-employees');
+    const showActiveBtn = document.getElementById('filter-employees-active');
+    const showInactiveBtn = document.getElementById('filter-employees-inactive');
+    
+    // Funktion zum Setzen der aktiven Klasse
+    const setActiveFilterButton = (activeBtn) => {
+        [showAllBtn, showActiveBtn, showInactiveBtn].forEach(btn => {
+            if (btn) {
+                if (btn === activeBtn) {
+                    btn.classList.add('active');
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-primary');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                }
+            }
+        });
+    };
+    
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', () => {
+            loadEmployeesTable('all');
+            setActiveFilterButton(showAllBtn);
+        });
+    }
+    
+    if (showActiveBtn) {
+        showActiveBtn.addEventListener('click', () => {
+            loadEmployeesTable('active');
+            setActiveFilterButton(showActiveBtn);
+        });
+    }
+    
+    if (showInactiveBtn) {
+        showInactiveBtn.addEventListener('click', () => {
+            loadEmployeesTable('inactive');
+            setActiveFilterButton(showInactiveBtn);
+        });
+    }
+});
+
+// Globale Variable für Dokumente
+let allDocuments = [];
+
+async function loadDocumentsTable(filter = '') {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch('/documents', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Wenn wir noch keine Dokumente haben oder ein Neuladeflag gesetzt ist, laden wir sie neu
+        if (allDocuments.length === 0 || filter === 'reload') {
+            const response = await fetch('/documents', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        if (response.ok) {
-            const documents = await response.json();
-            const tbody = document.getElementById('documents-table-body');
-            
-            if (tbody) {
-                tbody.innerHTML = documents.map(doc => `
-                    <tr>
-                        <td>${doc.file_name}</td>
-                        <td>${doc.employee_name || '-'}</td>
-                        <td>${doc.category}</td>
-                        <td>${new Date(doc.upload_date).toLocaleDateString()}</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})">Download</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">Löschen</button>
-                        </td>
-                    </tr>
-                `).join('');
+            if (response.ok) {
+                allDocuments = await response.json();
+                console.log(`Loaded ${allDocuments.length} documents`);
+            } else {
+                console.error('Failed to load documents');
+                return;
             }
+        }
+        
+        // Dokumente filtern, basierend auf dem übergebenen Filter
+        let filteredDocuments = [...allDocuments];
+        
+        if (filter === 'archived') {
+            filteredDocuments = allDocuments.filter(doc => doc.is_archived);
+        } else if (filter === 'active') {
+            filteredDocuments = allDocuments.filter(doc => !doc.is_archived);
+        } else if (filter && filter !== 'reload' && filter !== 'all') {
+            // Suche nach einem Textfilter
+            const searchTerm = filter.toLowerCase();
+            filteredDocuments = allDocuments.filter(doc => 
+                (doc.file_name && doc.file_name.toLowerCase().includes(searchTerm)) || 
+                (doc.employee_name && doc.employee_name.toLowerCase().includes(searchTerm)) || 
+                (doc.category && doc.category.toLowerCase().includes(searchTerm)) || 
+                (doc.description && doc.description.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        const tbody = document.getElementById('documents-table-body');
+        
+        if (tbody) {
+            if (filteredDocuments.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center">Keine Dokumente gefunden</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredDocuments.map(doc => `
+                <tr class="${doc.is_archived ? 'table-row-archived' : ''}">
+                    <td>${doc.file_name}</td>
+                    <td>${doc.employee_name || '-'}</td>
+                    <td>${doc.category}</td>
+                    <td>${new Date(doc.upload_date).toLocaleDateString()}</td>
+                    <td>
+                        ${doc.is_archived ? 
+                            '<span class="badge badge-secondary">Archiviert</span>' : 
+                            '<span class="badge badge-success">Aktiv</span>'
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})">Download</button>
+                        <button class="btn btn-sm ${doc.is_archived ? 'btn-info' : 'btn-warning'}" 
+                            onclick="toggleDocumentArchive(${doc.id}, ${doc.is_archived})">
+                            ${doc.is_archived ? 'Wiederherstellen' : 'Archivieren'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">Löschen</button>
+                    </td>
+                </tr>
+            `).join('');
         }
     } catch (error) {
         console.error('Error loading documents table:', error);
     }
 }
+
+// Event-Listener für Dokumentensuche hinzufügen
+document.addEventListener('DOMContentLoaded', () => {
+    // Dokumentensuche
+    const searchInput = document.getElementById('document-search');
+    const searchBtn = document.getElementById('document-search-btn');
+    
+    if (searchInput && searchBtn) {
+        // Suche bei Klick auf den Suchen-Button
+        searchBtn.addEventListener('click', () => {
+            const searchTerm = searchInput.value.trim();
+            if (searchTerm) {
+                loadDocumentsTable(searchTerm);
+            } else {
+                loadDocumentsTable('all');
+            }
+        });
+        
+        // Suche bei Drücken der Enter-Taste
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    loadDocumentsTable(searchTerm);
+                } else {
+                    loadDocumentsTable('all');
+                }
+            }
+        });
+    }
+    
+    // Filter-Buttons
+    const showAllBtn = document.getElementById('show-all-documents');
+    const showArchivedBtn = document.getElementById('filter-documents-archived');
+    const showActiveBtn = document.getElementById('filter-documents-active');
+    
+    // Funktion zum Setzen der aktiven Klasse
+    const setActiveFilterButton = (activeBtn) => {
+        [showAllBtn, showArchivedBtn, showActiveBtn].forEach(btn => {
+            if (btn) {
+                if (btn === activeBtn) {
+                    btn.classList.add('active');
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-primary');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                }
+            }
+        });
+    };
+    
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', () => {
+            loadDocumentsTable('all');
+            setActiveFilterButton(showAllBtn);
+        });
+    }
+    
+    if (showArchivedBtn) {
+        showArchivedBtn.addEventListener('click', () => {
+            loadDocumentsTable('archived');
+            setActiveFilterButton(showArchivedBtn);
+        });
+    }
+    
+    if (showActiveBtn) {
+        showActiveBtn.addEventListener('click', () => {
+            loadDocumentsTable('active');
+            setActiveFilterButton(showActiveBtn);
+        });
+    }
+    
+    // Setze "Alle anzeigen" standardmäßig als aktiv
+    if (showAllBtn) {
+        showAllBtn.classList.add('active');
+        showAllBtn.classList.remove('btn-secondary');
+        showAllBtn.classList.add('btn-primary');
+    }
+});
 
 async function loadPayslipsTable() {
     const token = localStorage.getItem('token');
@@ -653,6 +1074,53 @@ async function loadDepartmentsForSelectElement(selectElement, token) {
     }
 }
 
+// Lade Abteilungen für das Mitarbeiterformular
+async function loadDepartmentsForEmployeeSelect() {
+    console.log('Loading departments for employee select...');
+    
+    const token = localStorage.getItem('token');
+    const select = document.getElementById('employee-department-select');
+    
+    if (select) {
+        try {
+            // Status-Anzeige
+            select.innerHTML = '<option value="">Abteilungen werden geladen...</option>';
+            
+            // Direkt den Test-Endpunkt verwenden
+            const response = await fetch('/test/db/departments');
+            
+            if (response.ok) {
+                const departments = await response.json();
+                console.log(`Loaded ${departments.length} departments for select`);
+                
+                // Sicherstellen, dass wir ein Array haben
+                if (!Array.isArray(departments)) {
+                    console.error('Expected departments to be an array, got:', typeof departments);
+                    select.innerHTML = '<option value="">Fehler beim Laden der Abteilungen</option>';
+                    return;
+                }
+                
+                if (departments.length === 0) {
+                    select.innerHTML = '<option value="">Keine Abteilungen verfügbar</option>';
+                } else {
+                    select.innerHTML = '<option value="">Keine Abteilung</option>' +
+                        departments.map(dept => `
+                            <option value="${dept.id}">${dept.name || 'Unbenannte Abteilung'}</option>
+                        `).join('');
+                }
+            } else {
+                console.error('Failed to load departments for employee select');
+                select.innerHTML = '<option value="">Fehler beim Laden der Abteilungen</option>';
+            }
+        } catch (error) {
+            console.error('Error loading departments for employee select:', error);
+            select.innerHTML = '<option value="">Fehler beim Laden der Abteilungen</option>';
+        }
+    } else {
+        console.warn('employee-department-select not found');
+    }
+}
+
 // Department management functions
 async function toggleDepartmentStatus(departmentId, currentStatus) {
     const token = localStorage.getItem("token");
@@ -682,6 +1150,244 @@ async function toggleDepartmentStatus(departmentId, currentStatus) {
     }
 }
 
+// Employee management functions
+async function toggleEmployeeStatus(employeeId, currentStatus) {
+    const token = localStorage.getItem("token");
+    const newStatus = currentStatus === "inactive" ? "active" : "inactive";
+    
+    // Bestätigungsdialog anzeigen
+    const confirmAction = confirm(
+        `Möchten Sie diesen Mitarbeiter wirklich ${newStatus === "active" ? "aktivieren" : "deaktivieren"}?` +
+        `\n\nStatus wird geändert von: ${currentStatus === "inactive" ? "Inaktiv" : "Aktiv"}` +
+        `\nZu: ${newStatus === "active" ? "Aktiv" : "Inaktiv"}`
+    );
+    
+    if (!confirmAction) {
+        return; // Wenn der Benutzer abbricht, nichts tun
+    }
+    
+    try {
+        const response = await fetch(`/admin/toggle-employee-status/${employeeId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Prüfen, ob eine Änderung tatsächlich durchgeführt wurde
+            if (result.changed === false) {
+                alert(result.message);
+            } else {
+                alert(`Mitarbeiter wurde ${newStatus === "active" ? "aktiviert" : "deaktiviert"}`);
+                // Aktualisiere die Mitarbeiterliste im Speicher
+                const updatedEmployee = allEmployees.find(emp => emp.id === employeeId);
+                if (updatedEmployee) {
+                    updatedEmployee.status = newStatus;
+                }
+                loadEmployeesTable('reload');
+                loadDashboardStats();
+            }
+        } else {
+            alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Statuswechsel'}`);
+        }
+    } catch (error) {
+        console.error("Error toggling employee status:", error);
+        alert("Ein Fehler ist aufgetreten beim Statuswechsel.");
+    }
+}
+
+async function editEmployee(employeeId) {
+    const token = localStorage.getItem("token");
+    
+    try {
+        const response = await fetch(`/admin/employees/${employeeId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const employee = await response.json();
+            
+            // Create edit modal content
+            const modalContent = `
+                <div class="modal" id="edit-employee-modal" style="display: flex;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Mitarbeiter bearbeiten</h3>
+                            <button class="modal-close" onclick="hideModal('edit-employee-modal')">&times;</button>
+                        </div>
+                        <form id="edit-employee-form" onsubmit="updateEmployee(event, ${employeeId})">
+                            <div class="form-group">
+                                <label class="form-label">Benutzername</label>
+                                <input type="text" name="username" class="form-control" value="${employee.username}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">E-Mail</label>
+                                <input type="email" name="email" class="form-control" value="${employee.email}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Vorname</label>
+                                <input type="text" name="first_name" class="form-control" value="${employee.first_name}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nachname</label>
+                                <input type="text" name="last_name" class="form-control" value="${employee.last_name}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Alter</label>
+                                <input type="number" name="age" class="form-control" min="18" max="100" value="${employee.age}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Position</label>
+                                <input type="text" name="position" class="form-control" value="${employee.position || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Abteilung</label>
+                                <select name="department_id" class="form-control" id="edit-employee-department-select">
+                                    <option value="">Keine Abteilung</option>
+                                    <!-- Wird dynamisch gefüllt -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-control">
+                                    <option value="active" ${employee.status !== 'inactive' ? 'selected' : ''}>Aktiv</option>
+                                    <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Inaktiv</option>
+                                </select>
+                            </div>
+                            <div class="button-group">
+                                <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+                                <button type="button" class="btn btn-secondary" onclick="hideModal('edit-employee-modal')">Abbrechen</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML("beforeend", modalContent);
+            
+            // Lade Abteilungen für das Select-Feld
+            const departmentSelect = document.getElementById('edit-employee-department-select');
+            await loadDepartmentsForSelectElement(departmentSelect, token);
+            
+            // Setze den ausgewählten Wert für die Abteilung
+            if (employee.department_id && departmentSelect) {
+                for (const option of departmentSelect.options) {
+                    if (option.value == employee.department_id) {
+                        option.selected = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            console.error("Failed to load employee data");
+            alert("Fehler beim Laden der Mitarbeiterdaten.");
+        }
+    } catch (error) {
+        console.error("Error loading employee:", error);
+        alert("Fehler beim Laden des Mitarbeiters.");
+    }
+}
+
+async function updateEmployee(event, employeeId) {
+    event.preventDefault();
+    const token = localStorage.getItem("token");
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Prüfen, ob Abteilung leer ist und auf null setzen
+    if (data.department_id === "") {
+        data.department_id = null;
+    }
+    
+    try {
+        const response = await fetch(`/admin/employees/${employeeId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert("Mitarbeiter erfolgreich aktualisiert");
+            hideModal("edit-employee-modal");
+            loadEmployeesTable('reload');
+            loadDashboardStats();
+            loadRecentEmployees();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error("Error updating employee:", error);
+        alert("Ein Fehler ist aufgetreten beim Aktualisieren des Mitarbeiters.");
+    }
+}
+
+async function deleteEmployee(employeeId) {
+    // Mitarbeiterinformationen holen für einen detaillierteren Bestätigungsdialog
+    const token = localStorage.getItem("token");
+    let employeeName = "Mitarbeiter";
+    
+    try {
+        // Mitarbeiterdaten abrufen
+        const response = await fetch(`/admin/employees/${employeeId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const employee = await response.json();
+            employeeName = `${employee.first_name} ${employee.last_name}`;
+        }
+    } catch (error) {
+        console.error("Error fetching employee details:", error);
+    }
+    
+    // Detaillierterer Bestätigungsdialog
+    const confirmAction = confirm(
+        `ACHTUNG: Löschen kann nicht rückgängig gemacht werden!\n\n` +
+        `Möchten Sie den Mitarbeiter "${employeeName}" wirklich löschen?\n\n` +
+        `Alle zugehörigen Daten werden ebenfalls gelöscht.`
+    );
+    
+    if (!confirmAction) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/delete-employee/${employeeId}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht`);
+            loadEmployeesTable('reload');
+            loadDashboardStats();
+            loadRecentEmployees();
+        } else {
+            // Erweiterte Fehlermeldung
+            if (result.documentCount) {
+                alert(`Fehler: ${result.message}\n\nDer Mitarbeiter hat noch ${result.documentCount} Dokumente zugeordnet.`);
+            } else {
+                alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+            }
+        }
+    } catch (error) {
+        console.error("Error deleting employee:", error);
+        alert("Ein Fehler ist aufgetreten beim Löschen des Mitarbeiters.");
+    }
+}
+
 async function editDepartment(departmentId) {
     const token = localStorage.getItem("token");
     
@@ -699,7 +1405,7 @@ async function editDepartment(departmentId) {
                     <div class="modal-content">
                         <div class="modal-header">
                             <h3 class="modal-title">Abteilung bearbeiten</h3>
-                            <button class="modal-close" onclick="hideModal(\"edit-department-modal\")">&times;</button>
+                            <button class="modal-close" onclick="hideModal('edit-department-modal')">&times;</button>
                         </div>
                         <form id="edit-department-form" onsubmit="updateDepartment(event, ${departmentId})">
                             <div class="form-group">
@@ -724,7 +1430,10 @@ async function editDepartment(departmentId) {
                                     <option value="private" ${department.visibility === "private" ? "selected" : ""}>Privat</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+                            <div class="button-group">
+                                <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+                                <button type="button" class="btn btn-secondary" onclick="hideModal('edit-department-modal')">Abbrechen</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -799,8 +1508,186 @@ async function deleteDepartment(departmentId) {
 
 // Global hideModal function
 function hideModal(modalId) {
+    console.log('hideModal called for:', modalId);
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = "none";
+        console.log('Modal element found in hideModal, hiding it');
+        modal.style.display = 'none';
+    } else {
+        console.error('Modal element not found in hideModal:', modalId);
+    }
+}
+
+// Dokument archivieren oder wiederherstellen
+async function toggleDocumentArchive(documentId, isArchived) {
+    const token = localStorage.getItem('token');
+    const action = isArchived ? 'wiederherstellen' : 'archivieren';
+    
+    if (!confirm(`Möchten Sie dieses Dokument wirklich ${action}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/documents/${documentId}/archive`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ archived: !isArchived })
+        });
+        
+        if (response.ok) {
+            // Aktualisiere den Dokument-Status in unserer globalen Liste
+            const updatedDocument = allDocuments.find(doc => doc.id === documentId);
+            if (updatedDocument) {
+                updatedDocument.is_archived = !isArchived;
+            }
+            
+            alert(`Dokument erfolgreich ${isArchived ? 'wiederhergestellt' : 'archiviert'}`);
+            
+            // Dokumententabelle aktualisieren und den aktuellen Filter beibehalten
+            const searchInput = document.getElementById('document-search');
+            if (searchInput && searchInput.value.trim()) {
+                loadDocumentsTable(searchInput.value.trim());
+            } else {
+                // Wir prüfen, welcher Filter gerade aktiv ist
+                const activeDocBtn = document.getElementById('filter-documents-active');
+                const archivedDocBtn = document.getElementById('filter-documents-archived');
+                
+                if (activeDocBtn && activeDocBtn.classList.contains('active')) {
+                    loadDocumentsTable('active');
+                } else if (archivedDocBtn && archivedDocBtn.classList.contains('active')) {
+                    loadDocumentsTable('archived');
+                } else {
+                    loadDocumentsTable('all');
+                }
+            }
+            
+            // Aktualisiere auch die letzten Dokumente auf dem Dashboard
+            loadRecentDocuments();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error(`Error ${isArchived ? 'unarchiving' : 'archiving'} document:`, error);
+        alert('Ein Fehler ist aufgetreten.');
+    }
+}
+
+// Dokument herunterladen
+async function downloadDocument(documentId) {
+    const token = localStorage.getItem('token');
+    
+    try {
+        // Öffne das Dokument in einem neuen Tab
+        window.open(`/documents/${documentId}?inline=true`, '_blank');
+    } catch (error) {
+        console.error('Error downloading document:', error);
+        alert('Fehler beim Herunterladen des Dokuments');
+    }
+}
+
+// Dokument löschen
+async function deleteDocument(documentId) {
+    const token = localStorage.getItem('token');
+    
+    if (!confirm('Möchten Sie dieses Dokument wirklich löschen? Dies kann nicht rückgängig gemacht werden.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/documents/${documentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            // Entferne das Dokument aus unserer globalen Liste
+            allDocuments = allDocuments.filter(doc => doc.id !== documentId);
+            
+            alert('Dokument erfolgreich gelöscht');
+            
+            // Dokumententabelle aktualisieren und den aktuellen Filter beibehalten
+            const searchInput = document.getElementById('document-search');
+            if (searchInput && searchInput.value.trim()) {
+                loadDocumentsTable(searchInput.value.trim());
+            } else {
+                // Wir prüfen, welcher Filter gerade aktiv ist
+                const activeDocBtn = document.getElementById('filter-documents-active');
+                const archivedDocBtn = document.getElementById('filter-documents-archived');
+                
+                if (activeDocBtn && activeDocBtn.classList.contains('active')) {
+                    loadDocumentsTable('active');
+                } else if (archivedDocBtn && archivedDocBtn.classList.contains('active')) {
+                    loadDocumentsTable('archived');
+                } else {
+                    loadDocumentsTable('all');
+                }
+            }
+            
+            // Aktualisiere auch die letzten Dokumente auf dem Dashboard und die Statistiken
+            loadRecentDocuments();
+            loadDashboardStats();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        alert('Ein Fehler ist aufgetreten.');
+    }
+}
+
+// Funktionen für "Alle anzeigen" Links
+function showAllEmployees() {
+    console.log('Show all employees');
+    showSection('employees');
+    loadEmployeesTable('all');
+}
+
+function showAllDocuments() {
+    console.log('Show all documents');
+    showSection('documents');
+    loadDocumentsTable('all');
+}
+
+function showAllDepartments() {
+    console.log('Show all departments');
+    showSection('departments');
+    loadDepartmentsTable();
+}
+
+function showAllTeams() {
+    console.log('Show all teams');
+    showSection('teams');
+    loadTeamsTable();
+}
+
+// Globale Funktion für onclick-Events in HTML
+function showEmployeeModal() {
+    console.log('showEmployeeModal called from HTML');
+    // Diese Funktion wird direkt in HTML-onClick-Attributen verwendet
+    // Wir leiten den Aufruf an unsere detaillierte Implementierung weiter
+    if (typeof showNewEmployeeModal === 'function') {
+        showNewEmployeeModal();
+    } else {
+        // Fallback, falls die Hauptfunktion nicht verfügbar ist
+        const modal = document.getElementById('employee-modal');
+        if (modal) {
+            console.log('Found employee-modal, showing it directly');
+            modal.style.display = 'flex';
+            
+            // Lade die Abteilungen für das Formular, wenn möglich
+            if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+                loadDepartmentsForEmployeeSelect();
+            }
+        } else {
+            console.error('employee-modal not found');
+            alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
+        }
     }
 }

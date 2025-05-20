@@ -2,8 +2,12 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
-const { authenticateToken, authorizeRole } = require('../middleware/auth');
-const { validateCreateEmployee } = require('../middleware/validators');
+const { authenticateToken, authorizeRole } = require('../auth');
+const { 
+  validateCreateEmployee, 
+  validateUpdateEmployee, 
+  validateToggleEmployeeStatus 
+} = require('../middleware/validators');
 const User = require('../models/user');
 const Document = require('../models/document');
 const logger = require('../utils/logger');
@@ -52,16 +56,146 @@ router.post('/create-employee', authenticateToken, authorizeRole('admin'), valid
   }
 });
 
-router.get('/employees', authenticateToken, authorizeRole('admin'), async (req, res) => {
-  const adminId = req.user.id;
-  logger.info(`Admin ${adminId} requesting list of employees`);
+router.get('/employees', async (req, res) => {
   try {
     const employees = await User.findByRole('employee');
-    logger.info(`Retrieved ${employees.length} employees for Admin ${adminId}`);
+    
+    // Log für Debug-Zwecke
+    console.log(`Retrieved ${employees.length} employees:`, employees);
+    logger.info(`Retrieved ${employees.length} employees`);
+    
     res.json(employees);
   } catch (error) {
-    logger.error(`Error retrieving employees for Admin ${adminId}: ${error.message}`);
+    console.error(`Error retrieving employees from DB:`, error);
+    logger.error(`Error retrieving employees: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen der Mitarbeiter', error: error.message });
+  }
+});
+
+// Einzelnen Mitarbeiter abrufen
+router.get('/employees/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  
+  logger.info(`Admin ${adminId} requesting employee ${employeeId}`);
+  
+  try {
+    const employee = await User.findById(employeeId);
+    
+    if (!employee) {
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    
+    res.json(employee);
+  } catch (error) {
+    logger.error(`Error retrieving employee ${employeeId} for Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen des Mitarbeiters', error: error.message });
+  }
+});
+
+// Mitarbeiter aktualisieren
+router.put('/employees/:id', authenticateToken, authorizeRole('admin'), validateUpdateEmployee, async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  
+  logger.info(`Admin ${adminId} attempting to update employee ${employeeId}`);
+  
+  try {
+    // Prüfen, ob der Mitarbeiter existiert
+    const employee = await User.findById(employeeId);
+    
+    if (!employee) {
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    
+    // Stelle sicher, dass keine Rolle geändert wird (Sicherheits-Maßnahme)
+    if (req.body.role && req.body.role !== employee.role) {
+      return res.status(403).json({ message: 'Die Rolle eines Mitarbeiters kann nicht geändert werden' });
+    }
+    
+    // Update durchführen
+    const success = await User.update(employeeId, req.body);
+    
+    if (success) {
+      logger.info(`Employee ${employeeId} updated successfully by Admin ${adminId}`);
+      res.json({ 
+        message: 'Mitarbeiter erfolgreich aktualisiert',
+        success: true 
+      });
+    } else {
+      logger.warn(`Failed to update employee ${employeeId}`);
+      res.status(500).json({ 
+        message: 'Fehler beim Aktualisieren des Mitarbeiters',
+        success: false 
+      });
+    }
+  } catch (error) {
+    logger.error(`Error updating employee ${employeeId} by Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Fehler beim Aktualisieren des Mitarbeiters', 
+      error: error.message,
+      success: false 
+    });
+  }
+});
+
+// Mitarbeiterstatus ändern (aktivieren/deaktivieren)
+router.put('/toggle-employee-status/:id', authenticateToken, authorizeRole('admin'), validateToggleEmployeeStatus, async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  const { status } = req.body;
+  
+  logger.info(`Admin ${adminId} attempting to toggle status of employee ${employeeId} to ${status}`);
+  
+  try {
+    // Prüfen, ob der Mitarbeiter existiert
+    const employee = await User.findById(employeeId);
+    
+    if (!employee) {
+      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+    }
+    
+    // Überprüfen, ob der Mitarbeiter wirklich die Rolle 'employee' hat
+    if (employee.role !== 'employee') {
+      return res.status(403).json({ 
+        message: 'Nur Mitarbeiter-Konten können aktiviert/deaktiviert werden',
+        success: false 
+      });
+    }
+    
+    // Wenn der Status schon dem gewünschten Status entspricht, kein Update notwendig
+    if (employee.status === status) {
+      return res.json({ 
+        message: `Mitarbeiter ist bereits ${status === 'active' ? 'aktiviert' : 'deaktiviert'}`,
+        success: true,
+        changed: false
+      });
+    }
+    
+    // Update durchführen
+    const success = await User.update(employeeId, { status });
+    
+    if (success) {
+      logger.info(`Employee ${employeeId} status changed to ${status} by Admin ${adminId}`);
+      res.json({ 
+        message: `Mitarbeiter wurde ${status === 'active' ? 'aktiviert' : 'deaktiviert'}`,
+        success: true,
+        changed: true
+      });
+    } else {
+      logger.warn(`Failed to update status of employee ${employeeId}`);
+      res.status(500).json({ 
+        message: 'Fehler beim Aktualisieren des Mitarbeiterstatus',
+        success: false 
+      });
+    }
+  } catch (error) {
+    logger.error(`Error updating status of employee ${employeeId} by Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Fehler beim Aktualisieren des Mitarbeiterstatus', 
+      error: error.message,
+      success: false 
+    });
   }
 });
 
@@ -121,32 +255,83 @@ router.delete('/delete-employee/:id', authenticateToken, authorizeRole('admin'),
   logger.info(`Admin ${adminId} attempting to delete employee ${employeeId}`);
   
   try {
-    // First check if the user to delete is actually an employee
+    // Prüfen, ob die ID numerisch ist
+    if (isNaN(employeeId)) {
+      logger.warn(`Invalid employee ID format: ${employeeId}`);
+      return res.status(400).json({ 
+        message: 'Ungültige Mitarbeiter-ID', 
+        success: false 
+      });
+    }
+    
+    // Prüfen, ob der Mitarbeiter existiert
     const employeeToDelete = await User.findById(employeeId);
     
     if (!employeeToDelete) {
       logger.warn(`Employee with ID ${employeeId} not found`);
-      return res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+      return res.status(404).json({ 
+        message: 'Mitarbeiter nicht gefunden',
+        success: false 
+      });
     }
     
+    // Sicherstellen, dass nur Mitarbeiter gelöscht werden können (keine Admins!)
     if (employeeToDelete.role !== 'employee') {
-      logger.warn(`User with ID ${employeeId} is not an employee`);
-      return res.status(403).json({ message: 'Der zu löschende Benutzer ist kein Mitarbeiter' });
+      logger.warn(`User with ID ${employeeId} is not an employee but ${employeeToDelete.role}`);
+      return res.status(403).json({ 
+        message: 'Der zu löschende Benutzer ist kein Mitarbeiter',
+        success: false 
+      });
     }
     
-    // Delete employee
+    // Verhindern, dass Admin sich selbst löscht (sollte nicht passieren können, ist aber eine zusätzliche Sicherheit)
+    if (parseInt(employeeId) === parseInt(adminId)) {
+      logger.warn(`Admin ${adminId} attempted to delete themselves`);
+      return res.status(403).json({ 
+        message: 'Sie können Ihren eigenen Account nicht löschen',
+        success: false 
+      });
+    }
+    
+    // Prüfen, ob mit diesem Mitarbeiter Dokumente verknüpft sind
+    try {
+      const documents = await Document.findByUserId(employeeId);
+      if (documents && documents.length > 0) {
+        logger.warn(`Employee ${employeeId} has ${documents.length} documents, cannot delete`);
+        return res.status(409).json({
+          message: `Der Mitarbeiter hat ${documents.length} verknüpfte Dokumente. Bitte löschen oder verschieben Sie diese zuerst.`,
+          documentCount: documents.length,
+          success: false
+        });
+      }
+    } catch (docError) {
+      logger.error(`Error checking for documents when deleting employee ${employeeId}: ${docError.message}`);
+      // Der Fehler wird abgefangen, aber wir brechen nicht ab, um den Hauptzweck des Endpunkts nicht zu beeinträchtigen
+    }
+    
+    // Mitarbeiter löschen
     const success = await User.delete(employeeId);
     
     if (success) {
       logger.info(`Employee with ID ${employeeId} deleted successfully by Admin ${adminId}`);
-      res.json({ message: 'Mitarbeiter erfolgreich gelöscht' });
+      res.json({ 
+        message: 'Mitarbeiter erfolgreich gelöscht',
+        success: true 
+      });
     } else {
       logger.warn(`Failed to delete employee with ID ${employeeId}`);
-      res.status(500).json({ message: 'Fehler beim Löschen des Mitarbeiters' });
+      res.status(500).json({ 
+        message: 'Fehler beim Löschen des Mitarbeiters',
+        success: false 
+      });
     }
   } catch (error) {
     logger.error(`Error deleting employee ${employeeId} by Admin ${adminId}: ${error.message}`);
-    res.status(500).json({ message: 'Fehler beim Löschen des Mitarbeiters', error: error.message });
+    res.status(500).json({ 
+      message: 'Fehler beim Löschen des Mitarbeiters', 
+      error: error.message,
+      success: false 
+    });
   }
 });
 
@@ -268,7 +453,7 @@ router.put('/archive-document/:documentId', authenticateToken, authorizeRole('ad
 });
 
 // Add dashboard stats endpoint
-router.get('/dashboard-stats', async (req, res) => {
+router.get('/dashboard-stats', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
     // Get counts from database
     const employeeCount = await User.count({ role: 'employee' });

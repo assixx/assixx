@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken, authorizeRole } = require('../middleware/auth');
+const { authenticateToken, authorizeRole } = require('../auth');
 const Department = require('../models/department');
 const User = require('../models/user');
 const logger = require('../utils/logger');

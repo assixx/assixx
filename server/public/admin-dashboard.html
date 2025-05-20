@@ -144,11 +144,11 @@
                     <h2 class="card-title">Mitarbeiter</h2>
                 </div>
                 <div class="compact-content">
-                    <button class="btn btn-primary btn-block mb-3" onclick="showEmployeeModal()">Neuer Mitarbeiter</button>
+                    <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">Neuer Mitarbeiter</button>
                     <div class="compact-list" id="recent-employees">
                         <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
                     </div>
-                    <a href="#" class="view-all-link" onclick="showAllEmployees()">Alle anzeigen →</a>
+                    <a href="#" class="view-all-link" id="manage-employees-link">Verwalten →</a>
                 </div>
             </div>
 
@@ -158,11 +158,11 @@
                     <h2 class="card-title">Dokumente</h2>
                 </div>
                 <div class="compact-content">
-                    <button class="btn btn-primary btn-block mb-3" onclick="showDocumentModal()">Dokument hochladen</button>
+                    <a href="/document-upload.html" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
                     <div class="compact-list" id="recent-documents">
                         <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
                     </div>
-                    <a href="#" class="view-all-link" onclick="showAllDocuments()">Alle anzeigen →</a>
+                    <a href="#" class="view-all-link" id="manage-documents-link">Verwalten →</a>
                 </div>
             </div>
 
@@ -176,7 +176,7 @@
                     <div class="compact-list" id="department-list">
                         <!-- Wird dynamisch gefüllt -->
                     </div>
-                    <a href="#" class="view-all-link" onclick="showAllDepartments()">Verwalten →</a>
+                    <a href="#" class="view-all-link" id="manage-departments-link">Verwalten →</a>
                 </div>
             </div>
 
@@ -279,19 +279,33 @@
             <!-- Employees Section -->
             <section id="employees-section" class="content-section" style="display: none;">
                 <h1>Mitarbeiterverwaltung</h1>
-                <button class="btn btn-primary mb-3" onclick="showEmployeeModal()">Neuer Mitarbeiter</button>
+                <button class="btn btn-primary mb-3" id="employees-section-new-button" onclick="showEmployeeModal()">Neuer Mitarbeiter</button>
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Mitarbeiterübersicht</h2>
                     </div>
+                    <div class="flex-between mb-3">
+                        <div class="filter-buttons">
+                            <button id="show-all-employees" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                            <button id="filter-employees-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                            <button id="filter-employees-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+                        </div>
+                        <div class="search-container">
+                            <input type="text" id="employee-search" class="search-input" placeholder="Name, E-Mail oder Position...">
+                            <button id="employee-search-btn" class="btn btn-secondary">Suchen</button>
+                        </div>
+                    </div>
+                    
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Name</th>
                                     <th>E-Mail</th>
+                                    <th>Mitarbeiter-ID</th>
                                     <th>Position</th>
                                     <th>Abteilung</th>
+                                    <th>Status</th>
                                     <th>Aktionen</th>
                                 </tr>
                             </thead>
@@ -306,7 +320,20 @@
             <!-- Documents Section -->
             <section id="documents-section" class="content-section" style="display: none;">
                 <h1>Dokumentenverwaltung</h1>
-                <button class="btn btn-primary mb-3" onclick="showDocumentModal()">Dokument hochladen</button>
+                <div class="flex-between mb-3">
+                    <a href="/document-upload.html" class="btn btn-primary">Dokument hochladen</a>
+                    <div class="search-container">
+                        <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie...">
+                        <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <button id="show-all-documents" class="btn btn-sm btn-secondary">Alle anzeigen</button>
+                    <button id="filter-documents-archived" class="btn btn-sm btn-secondary">Archivierte anzeigen</button>
+                    <button id="filter-documents-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                </div>
+                
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Dokumentenübersicht</h2>
@@ -319,6 +346,7 @@
                                     <th>Mitarbeiter</th>
                                     <th>Kategorie</th>
                                     <th>Hochgeladen am</th>
+                                    <th>Status</th>
                                     <th>Aktionen</th>
                                 </tr>
                             </thead>
@@ -333,7 +361,7 @@
             <!-- Departments Section -->
             <section id="departments-section" class="content-section" style="display: none;">
                 <h1>Abteilungsverwaltung</h1>
-                <button class="btn btn-primary mb-3" onclick="showDepartmentModal()">Neue Abteilung</button>
+                <button class="btn btn-primary mb-3" id="direct-department-button">Neue Abteilung</button>
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Abteilungsübersicht</h2>
@@ -465,11 +493,11 @@
     </div>
 
     <!-- Employee Modal -->
-    <div id="employee-modal" class="modal" style="display: none;">
+    <div id="employee-modal" class="modal" style="display: none;" data-debug="employee-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Neuer Mitarbeiter</h3>
-                <button class="modal-close" onclick="hideModal('employee-modal')">&times;</button>
+                <button class="modal-close" id="close-employee-modal">&times;</button>
             </div>
             <form id="create-employee-form">
                 <div class="form-group">
@@ -478,21 +506,51 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">E-Mail</label>
-                    <input type="email" name="email" class="form-control" required>
+                    <input type="email" name="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">E-Mail bestätigen</label>
+                    <input type="email" name="email_confirm" id="email_confirm" class="form-control" required>
+                    <small id="email-error" class="error-message" style="color: red; display: none;">Die E-Mail-Adressen stimmen nicht überein</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Passwort</label>
-                    <input type="password" name="password" class="form-control" required>
+                    <input type="password" name="password" id="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Passwort bestätigen</label>
+                    <input type="password" name="password_confirm" id="password_confirm" class="form-control" required>
+                    <small id="password-error" class="error-message" style="color: red; display: none;">Die Passwörter stimmen nicht überein</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Vorname</label>
-                    <input type="text" name="first_name" class="form-control">
+                    <input type="text" name="first_name" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Nachname</label>
-                    <input type="text" name="last_name" class="form-control">
+                    <input type="text" name="last_name" class="form-control" required>
                 </div>
-                <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
+                <div class="form-group">
+                    <label class="form-label">Alter</label>
+                    <input type="number" name="age" class="form-control" min="18" max="100" required>
+                </div>
+                <!-- Mitarbeiter-ID wird automatisch generiert -->
+                <!-- IBAN-Feld wurde entfernt -->
+                <div class="form-group">
+                    <label class="form-label">Position</label>
+                    <input type="text" name="position" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Abteilung</label>
+                    <select name="department_id" class="form-control" id="employee-department-select">
+                        <option value="">Keine Abteilung</option>
+                        <!-- Wird dynamisch gefüllt -->
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-employee-button">Abbrechen</button>
+                </div>
             </form>
         </div>
     </div>
@@ -522,7 +580,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Datei auswählen</label>
-                    <input type="file" name="file" class="form-control" accept="application/pdf" required>
+                    <input type="file" name="document" class="form-control" accept="application/pdf" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Dokument hochladen</button>
             </form>
@@ -530,33 +588,7 @@
     </div>
 
     <!-- Department Modal ist bereits weiter oben definiert -->
-
-    <!-- Team Modal -->
-    <div id="team-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Neues Team</h3>
-                <button class="modal-close" onclick="hideModal('team-modal')">&times;</button>
-            </div>
-            <form id="team-form">
-                <div class="form-group">
-                    <label class="form-label">Name</label>
-                    <input type="text" name="name" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Abteilung</label>
-                    <select name="department_id" class="form-control">
-                        <option value="">Keine Abteilung</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Beschreibung</label>
-                    <textarea name="description" class="form-control" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Team erstellen</button>
-            </form>
-        </div>
-    </div>
+    <!-- Team Modal ist bereits weiter oben definiert -->
 
     <!-- Modal Styles -->
     <style>
@@ -608,6 +640,14 @@
         .modal-close:hover {
             color: var(--text-primary);
         }
+        
+        .table-row-inactive {
+            background-color: rgba(255, 165, 0, 0.1);
+        }
+        
+        .table-row-archived {
+            background-color: rgba(128, 128, 128, 0.1);
+        }
 
         .modal form {
             padding: var(--spacing-lg);
@@ -615,8 +655,392 @@
     </style>
 
     <!-- JavaScript -->
-    <script src="/js/admin-dashboard.js"></script>
     <script>
+        console.log('Admin dashboard HTML loaded');
+        
+        // Globale Modal-Funktionen direkt definieren
+        window.showModal = function(modalId) {
+            console.log('showModal called with:', modalId);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                console.log('Modal element found, showing it');
+                modal.style.display = 'flex';
+            } else {
+                console.error('Modal element not found:', modalId);
+            }
+        }
+        
+        window.hideModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            } else {
+                console.error('Modal element not found:', modalId);
+            }
+        }
+    </script>
+    <script src="/js/admin-dashboard.js"></script>
+    <script src="/js/dashboard-fix.js"></script>
+    <script src="/js/debug-employee-button.js"></script>
+    <script src="/js/modal-debug.js"></script>
+    <script src="/js/employee-modal-fix.js"></script>
+    <script src="/js/dashboard-navigation-fix.js"></script>
+    <script>
+        // Direkte Event-Listener hinzufügen
+        console.log('Adding direct event listeners');
+        document.addEventListener('DOMContentLoaded', () => {
+            // Event-Listener für das Schließen des Mitarbeiter-Modals
+            const closeEmployeeModalBtn = document.getElementById('close-employee-modal');
+            const cancelEmployeeBtn = document.getElementById('cancel-employee-button');
+            const employeeModal = document.getElementById('employee-modal');
+            
+            if (closeEmployeeModalBtn && employeeModal) {
+                console.log('Close employee modal button found, adding event listener');
+                closeEmployeeModalBtn.addEventListener('click', function() {
+                    console.log('Close button clicked, hiding employee modal');
+                    employeeModal.style.display = 'none';
+                });
+            }
+            
+            if (cancelEmployeeBtn && employeeModal) {
+                console.log('Cancel employee button found, adding event listener');
+                cancelEmployeeBtn.addEventListener('click', function() {
+                    console.log('Cancel button clicked, hiding employee modal');
+                    employeeModal.style.display = 'none';
+                });
+            }
+            
+            // Schließen des Modals beim Klick außerhalb
+            employeeModal?.addEventListener('click', function(event) {
+                if (event.target === employeeModal) {
+                    console.log('Clicked outside modal content, hiding employee modal');
+                    employeeModal.style.display = 'none';
+                }
+            });
+            console.log('DOM loaded, setting up debugging handlers');
+            
+            // Debug-Funktionen für alle Buttons
+            document.querySelectorAll('button').forEach(button => {
+                console.log('Found button:', button.textContent || button.innerHTML);
+                button.addEventListener('click', function(e) {
+                    console.log('Button clicked:', this.textContent || this.innerHTML);
+                });
+            });
+            
+            // Spezieller Listener für den Dokument-Upload-Button
+            const docUploadBtn = document.querySelector('button[onclick="showDocumentModal()"]');
+            if (docUploadBtn) {
+                console.log('Dokument Upload Button gefunden');
+                docUploadBtn.addEventListener('click', function(e) {
+                    console.log('Dokument Upload Button geklickt');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Navigiere direkt zur Upload-Seite
+                    window.location.href = '/document-upload.html';
+                });
+            } else {
+                console.error('Dokument Upload Button NICHT gefunden');
+            }
+            
+            // Direkter Link für Sidebar-Links
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                console.log('Found sidebar link:', link.textContent);
+                link.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    console.log('Sidebar link clicked:', href);
+                    
+                    if (href === '#departments') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Showing departments section');
+                        document.querySelectorAll('.content-section').forEach(section => {
+                            section.style.display = 'none';
+                        });
+                        document.getElementById('departments-section').style.display = 'block';
+                        
+                        // Update active state
+                        document.querySelectorAll('.sidebar-item').forEach(item => {
+                            item.classList.remove('active');
+                        });
+                        this.parentElement.classList.add('active');
+                    }
+                });
+            });
+            
+            // Direkter Listener für den Abteilungs-Button
+            const departmentBtn = document.getElementById('direct-department-button');
+            if (departmentBtn) {
+                console.log("Department button found");
+                departmentBtn.addEventListener('click', function() {
+                    console.log("Department button clicked");
+                    const deptModal = document.getElementById('department-modal');
+                    if (deptModal) {
+                        console.log("Department modal found, displaying it");
+                        deptModal.style.display = 'flex';
+                    } else {
+                        console.error("Department modal NOT found");
+                        alert("Das Abteilungs-Modal konnte nicht gefunden werden.");
+                    }
+                });
+            } else {
+                console.error("Department button NOT found");
+            }
+            
+            // Listener für "Abteilungen verwalten" Link
+            const manageDepartmentsLink = document.getElementById('manage-departments-link');
+            if (manageDepartmentsLink) {
+                console.log("Manage departments link found");
+                manageDepartmentsLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log("Manage departments link clicked");
+                    // Zeige die Abteilungs-Sektion an
+                    document.querySelectorAll('.content-section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    document.getElementById('departments-section').style.display = 'block';
+                    
+                    // Update active state in sidebar
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    
+                    // Finde und aktiviere die Abteilungen-Sidebar
+                    document.querySelectorAll('.sidebar-link').forEach(link => {
+                        if (link.getAttribute('href') === '#departments') {
+                            link.parentElement.classList.add('active');
+                        }
+                    });
+                    
+                    // Lade Abteilungstabelle
+                    loadDepartmentsTable();
+                });
+            } else {
+                console.error("Manage departments link NOT found");
+            }
+        });
+    </script>
+    <script>
+        // Funktionstabelle direkt definieren
+        
+        // Departments-Tabelle laden
+        async function loadDepartmentsTable() {
+            console.log("Loading departments table");
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch('/departments', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const departments = await response.json();
+                    console.log(`Loaded ${departments.length} departments`);
+                    
+                    const tbody = document.getElementById('departments-table-body');
+                    if (tbody) {
+                        tbody.innerHTML = departments.map(dept => `
+                            <tr>
+                                <td>${dept.name}</td>
+                                <td>${dept.description || '-'}</td>
+                                <td>
+                                    <span class="badge ${dept.status === 'active' ? 'badge-success' : 'badge-warning'}">
+                                        ${dept.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge ${dept.visibility === 'public' ? 'badge-primary' : 'badge-secondary'}">
+                                        ${dept.visibility === 'public' ? 'Öffentlich' : 'Privat'}
+                                    </span>
+                                </td>
+                                <td>${dept.manager_name || '-'}</td>
+                                <td>${dept.employee_count || 0}</td>
+                                <td>${dept.team_count || 0}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
+                                        ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" onclick="editDepartment(${dept.id})">Bearbeiten</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${dept.id})">Löschen</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        console.error("Departments table body not found");
+                    }
+                } else {
+                    console.error("Failed to load departments");
+                }
+            } catch (error) {
+                console.error('Error loading departments table:', error);
+            }
+        }
+        
+        // Abteilung-Status wechseln
+        async function toggleDepartmentStatus(departmentId, currentStatus) {
+            console.log(`Toggling department ${departmentId} status from ${currentStatus}`);
+            const token = localStorage.getItem("token");
+            const newStatus = currentStatus === "active" ? "inactive" : "active";
+            
+            try {
+                const response = await fetch(`/departments/${departmentId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.ok) {
+                    alert(`Abteilung wurde ${newStatus === "active" ? "aktiviert" : "deaktiviert"}`);
+                    loadDepartmentsTable();
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error("Error toggling department status:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+        
+        // Abteilung bearbeiten
+        async function editDepartment(departmentId) {
+            console.log(`Editing department ${departmentId}`);
+            const token = localStorage.getItem("token");
+            
+            try {
+                const response = await fetch(`/departments/${departmentId}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const department = await response.json();
+                    console.log("Department data:", department);
+                    
+                    // Erstelle ein Modal für die Bearbeitung
+                    const modalHTML = `
+                        <div class="modal" id="edit-department-modal" style="display: flex;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3 class="modal-title">Abteilung bearbeiten</h3>
+                                    <button class="modal-close" onclick="document.getElementById('edit-department-modal').remove()">&times;</button>
+                                </div>
+                                <form id="edit-department-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" name="name" class="form-control" value="${department.name}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Beschreibung</label>
+                                        <textarea name="description" class="form-control" rows="3">${department.description || ""}</textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Status</label>
+                                        <select name="status" class="form-control">
+                                            <option value="active" ${department.status === "active" ? "selected" : ""}>Aktiv</option>
+                                            <option value="inactive" ${department.status === "inactive" ? "selected" : ""}>Inaktiv</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Sichtbarkeit</label>
+                                        <select name="visibility" class="form-control">
+                                            <option value="public" ${department.visibility === "public" ? "selected" : ""}>Öffentlich</option>
+                                            <option value="private" ${department.visibility === "private" ? "selected" : ""}>Privat</option>
+                                        </select>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="updateDepartment(${departmentId})">Änderungen speichern</button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Modal zum Body hinzufügen
+                    document.body.insertAdjacentHTML("beforeend", modalHTML);
+                } else {
+                    console.error("Failed to load department data");
+                    alert("Fehler beim Laden der Abteilungsdaten.");
+                }
+            } catch (error) {
+                console.error("Error loading department:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+        
+        // Abteilung aktualisieren
+        async function updateDepartment(departmentId) {
+            console.log(`Updating department ${departmentId}`);
+            const token = localStorage.getItem("token");
+            const form = document.getElementById('edit-department-form');
+            
+            if (!form) {
+                console.error("Edit department form not found");
+                return;
+            }
+            
+            const formData = new FormData(form);
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                status: formData.get('status'),
+                visibility: formData.get('visibility')
+            };
+            
+            try {
+                const response = await fetch(`/departments/${departmentId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert("Abteilung erfolgreich aktualisiert");
+                    // Modal schließen
+                    const modal = document.getElementById('edit-department-modal');
+                    if (modal) modal.remove();
+                    // Tabelle neu laden
+                    loadDepartmentsTable();
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error("Error updating department:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+        
+        // Abteilung löschen
+        async function deleteDepartment(departmentId) {
+            console.log(`Deleting department ${departmentId}`);
+            if (!confirm("Sind Sie sicher, dass Sie diese Abteilung löschen möchten?")) {
+                return;
+            }
+            
+            const token = localStorage.getItem("token");
+            
+            try {
+                const response = await fetch(`/departments/${departmentId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    alert("Abteilung erfolgreich gelöscht");
+                    loadDepartmentsTable();
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error("Error deleting department:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+
         // Add event listener for payslip upload form
         document.addEventListener('DOMContentLoaded', () => {
             const payslipForm = document.getElementById('payslip-upload-form');
@@ -662,23 +1086,59 @@
             window.location.reload();
         });
 
-        // Modal functions
+        // Modal functions redefined for redundancy
         function showModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
+            console.log('Inline showModal called with:', modalId);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                console.log('Modal element found in inline function, showing it');
+                modal.style.display = 'flex';
+            } else {
+                console.error('Modal element not found in inline function:', modalId);
+            }
         }
 
         function hideModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+            console.log('hideModal called for:', modalId);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                console.log('Modal element found in hideModal, hiding it');
+                modal.style.display = 'none';
+            } else {
+                console.error('Modal element not found in hideModal:', modalId);
+            }
         }
 
         function showEmployeeModal() {
-            showModal('employee-modal');
+            console.log('showEmployeeModal function called');
+            const modal = document.getElementById('employee-modal');
+            if (modal) {
+                console.log('employee-modal found, showing directly');
+                modal.style.display = 'flex';
+                // Abteilungen für das Formular laden
+                if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+                    loadDepartmentsForEmployeeSelect();
+                } else {
+                    console.error('loadDepartmentsForEmployeeSelect is not a function');
+                }
+            } else {
+                console.error('employee-modal not found');
+                alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
+            }
         }
 
         function showDocumentModal() {
-            showModal('document-modal');
-            // Mitarbeiter-Select füllen
-            loadEmployeesForSelect();
+            console.log("Document upload modal requested");
+            const modal = document.getElementById('document-modal');
+            if (modal) {
+                console.log("Modal found, showing it");
+                modal.style.display = 'flex';
+                // Mitarbeiter-Select füllen
+                loadEmployeesForSelect();
+            } else {
+                console.error("Modal element not found!");
+                alert("Dokument-Upload-Formular konnte nicht geladen werden.");
+            }
         }
 
         function showDepartmentModal() {
@@ -692,15 +1152,16 @@
         }
 
         // Modal schließen bei Klick außerhalb
-        window.onclick = function(event) {
+        window.addEventListener('click', function(event) {
             const modals = ['employee-modal', 'document-modal', 'department-modal', 'team-modal'];
             modals.forEach(modalId => {
                 const modal = document.getElementById(modalId);
                 if (event.target == modal) {
+                    console.log(`Clicked outside of ${modalId}, closing it`);
                     modal.style.display = 'none';
                 }
             });
-        }
+        });
 
         // Placeholder functions for "view all" links
         function showAllEmployees() {
@@ -767,6 +1228,36 @@
     </script>
 
     <style>
+        /* Search Styles */
+        .search-container {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-left: auto;
+        }
+        
+        .search-input {
+            min-width: 300px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+        }
+        
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+        }
+        
         /* Modal Styles */
         .modal {
             position: fixed;
@@ -779,6 +1270,13 @@
             display: none;
             align-items: center;
             justify-content: center;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .modal-content {

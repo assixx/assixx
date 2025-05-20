@@ -57,6 +57,23 @@ class Document {
       throw error;
     }
   }
+  
+  static async incrementDownloadCount(id) {
+    logger.info(`Incrementing download count for document ${id}`);
+    const query = 'UPDATE documents SET download_count = COALESCE(download_count, 0) + 1, last_downloaded = NOW() WHERE id = ?';
+    try {
+      const [result] = await db.query(query, [id]);
+      if (result.affectedRows === 0) {
+        logger.warn(`No document found with ID ${id} for download tracking`);
+        return false;
+      }
+      logger.info(`Download count incremented for document ${id}`);
+      return true;
+    } catch (error) {
+      logger.error(`Error incrementing download count for document ${id}: ${error.message}`);
+      throw error;
+    }
+  }
 
   static async update(id, { fileName, fileContent, category, description, year, month, isArchived }) {
     logger.info(`Updating document ${id}`);
@@ -142,21 +159,29 @@ class Document {
     }
   }
 
-  static async findAll() {
-    logger.info('Fetching all documents');
-    const query = `
+  static async findAll(category = null) {
+    logger.info(`Fetching all documents${category ? ` of category ${category}` : ''}`);
+    let query = `
       SELECT d.*, u.first_name, u.last_name, 
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id
-      ORDER BY d.upload_date DESC`;
+      LEFT JOIN users u ON d.user_id = u.id`;
+    
+    const params = [];
+    
+    if (category) {
+      query += ' WHERE d.category = ?';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY d.upload_date DESC';
     
     try {
-      const [rows] = await db.query(query);
-      logger.info(`Retrieved ${rows.length} documents`);
+      const [rows] = await db.query(query, params);
+      logger.info(`Retrieved ${rows.length} documents${category ? ` of category ${category}` : ''}`);
       return rows;
     } catch (error) {
-      logger.error(`Error fetching all documents: ${error.message}`);
+      logger.error(`Error fetching documents: ${error.message}`);
       throw error;
     }
   }

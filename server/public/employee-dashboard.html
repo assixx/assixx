@@ -58,6 +58,10 @@
                     <div class="stat-value"><i class="fas fa-file-alt"></i></div>
                     <div class="stat-label">Meine Dokumente</div>
                 </button>
+                <button class="stat-card" onclick="showSalaryDocuments()" style="cursor: pointer;">
+                    <div class="stat-value"><i class="fas fa-money-bill-wave"></i></div>
+                    <div class="stat-label">Gehaltsabrechnungen</div>
+                </button>
                 <button class="stat-card" onclick="showProfile()" style="cursor: pointer;">
                     <div class="stat-value"><i class="fas fa-user"></i></div>
                     <div class="stat-label">Mein Profil</div>
@@ -65,10 +69,6 @@
                 <button class="stat-card" onclick="reportError()" style="cursor: pointer;">
                     <div class="stat-value"><i class="fas fa-exclamation-triangle"></i></div>
                     <div class="stat-label">Fehler melden</div>
-                </button>
-                <button class="stat-card" onclick="showAnnouncements()" style="cursor: pointer;">
-                    <div class="stat-value"><i class="fas fa-bullhorn"></i></div>
-                    <div class="stat-label">Ankündigungen</div>
                 </button>
             </div>
         </div>
@@ -138,6 +138,10 @@
             // TODO: Implement error reporting modal
         }
 
+        function showSalaryDocuments() {
+            window.location.href = '/salary-documents.html';
+        }
+        
         function showAnnouncements() {
             const announcementsSection = document.getElementById('announcements-container');
             announcementsSection.scrollIntoView({ behavior: 'smooth' });

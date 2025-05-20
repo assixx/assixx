@@ -2,142 +2,170 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Debug Dashboard</title>
     <style>
-        body { font-family: Arial; padding: 20px; }
-        .debug-section { 
-            margin: 20px 0; 
-            padding: 10px; 
-            border: 1px solid #ccc; 
-            background: #f5f5f5;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        pre { background: white; padding: 10px; overflow: auto; }
-        button { margin: 5px; padding: 10px; }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+        .stat-label {
+            font-size: 1.2em;
+            color: #666;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
     <h1>Debug Dashboard</h1>
     
-    <div class="debug-section">
-        <h2>1. Check localStorage</h2>
-        <pre id="localStorage-info"></pre>
+    <div class="card">
+        <h2>Manual Data Loading</h2>
+        <button id="load-data-btn">Daten laden</button>
+        <button id="reset-btn">Reset</button>
     </div>
     
-    <div class="debug-section">
-        <h2>2. Test API Calls</h2>
-        <button onclick="testDepartmentsAPI()">Test /departments</button>
-        <button onclick="testTeamsAPI()">Test /teams</button>
-        <button onclick="testEmployeesAPI()">Test /admin/employees</button>
-        <pre id="api-results"></pre>
+    <div class="card">
+        <h2>Stats</h2>
+        <div style="display: flex; justify-content: space-between;">
+            <div>
+                <div class="stat-value" id="employee-count">0</div>
+                <div class="stat-label">Mitarbeiter</div>
+            </div>
+            <div>
+                <div class="stat-value" id="document-count">0</div>
+                <div class="stat-label">Dokumente</div>
+            </div>
+            <div>
+                <div class="stat-value" id="department-count">0</div>
+                <div class="stat-label">Abteilungen</div>
+            </div>
+        </div>
     </div>
     
-    <div class="debug-section">
-        <h2>3. Check DOM Elements</h2>
-        <button onclick="checkDOM()">Check DOM</button>
-        <pre id="dom-results"></pre>
+    <div class="card">
+        <h2>Raw Data</h2>
+        <h3>Count Response:</h3>
+        <pre id="count-response">Noch keine Daten geladen</pre>
+        
+        <h3>Employees Response:</h3>
+        <pre id="employees-response">Noch keine Daten geladen</pre>
+        
+        <h3>Departments Response:</h3>
+        <pre id="departments-response">Noch keine Daten geladen</pre>
+        
+        <h3>Documents Response:</h3>
+        <pre id="documents-response">Noch keine Daten geladen</pre>
     </div>
     
-    <div class="debug-section">
-        <h2>4. Manual Department Load</h2>
-        <button onclick="manualLoadDepartments()">Load Departments</button>
-        <div id="manual-departments"></div>
-    </div>
-
     <script>
-    // Check localStorage
-    function checkLocalStorage() {
-        const token = localStorage.getItem('token');
-        const role = localStorage.getItem('role');
-        document.getElementById('localStorage-info').textContent = JSON.stringify({
-            token: token ? token.substring(0, 50) + '...' : 'None',
-            role: role || 'None',
-            tokenLength: token ? token.length : 0
-        }, null, 2);
-    }
-    
-    // Test API calls
-    async function testAPICall(endpoint, elementId) {
-        const token = localStorage.getItem('token');
-        const resultsEl = document.getElementById('api-results');
-        
-        try {
-            resultsEl.textContent += `\nTesting ${endpoint}...\n`;
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadBtn = document.getElementById('load-data-btn');
+            const resetBtn = document.getElementById('reset-btn');
             
-            const response = await fetch(endpoint, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
+            // Automatisch laden beim Öffnen der Seite
+            loadData();
+            
+            loadBtn.addEventListener('click', loadData);
+            resetBtn.addEventListener('click', resetData);
+            
+            async function loadData() {
+                try {
+                    // Counts laden
+                    const countResponse = await fetch('/test/db/counts');
+                    console.log('Count response status:', countResponse.status);
+                    if (countResponse.ok) {
+                        const countData = await countResponse.json();
+                        console.log('Count data:', countData);
+                        document.getElementById('count-response').textContent = JSON.stringify(countData, null, 2);
+                        document.getElementById('employee-count').textContent = countData.employees || 0;
+                        document.getElementById('document-count').textContent = countData.documents || 0;
+                        document.getElementById('department-count').textContent = countData.departments || 0;
+                    } else {
+                        document.getElementById('count-response').textContent = "Fehler: " + countResponse.status;
+                    }
+                    
+                    // Mitarbeiter laden
+                    const employeesResponse = await fetch('/test/db/employees');
+                    console.log('Employees response status:', employeesResponse.status);
+                    if (employeesResponse.ok) {
+                        const employeesData = await employeesResponse.json();
+                        console.log('Employees data:', employeesData);
+                        document.getElementById('employees-response').textContent = JSON.stringify(employeesData, null, 2);
+                    } else {
+                        document.getElementById('employees-response').textContent = "Fehler: " + employeesResponse.status;
+                    }
+                    
+                    // Abteilungen laden
+                    const departmentsResponse = await fetch('/test/db/departments');
+                    console.log('Departments response status:', departmentsResponse.status);
+                    if (departmentsResponse.ok) {
+                        const departmentsData = await departmentsResponse.json();
+                        console.log('Departments data:', departmentsData);
+                        document.getElementById('departments-response').textContent = JSON.stringify(departmentsData, null, 2);
+                    } else {
+                        document.getElementById('departments-response').textContent = "Fehler: " + departmentsResponse.status;
+                    }
+                    
+                    // Dokumente laden (nur Anzahl, nicht den ganzen Inhalt)
+                    const documentsResponse = await fetch('/test/db/documents');
+                    console.log('Documents response status:', documentsResponse.status);
+                    if (documentsResponse.ok) {
+                        const documentsData = await documentsResponse.json();
+                        console.log('Documents data length:', documentsData.length);
+                        document.getElementById('documents-response').textContent = "Dokumente gefunden: " + documentsData.length;
+                    } else {
+                        document.getElementById('documents-response').textContent = "Fehler: " + documentsResponse.status;
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der Daten:', error);
+                    alert('Fehler beim Laden der Daten: ' + error.message);
                 }
-            });
-            
-            resultsEl.textContent += `Status: ${response.status}\n`;
-            
-            if (response.ok) {
-                const data = await response.json();
-                resultsEl.textContent += `Success! Data count: ${data.length}\n`;
-                resultsEl.textContent += JSON.stringify(data.slice(0, 2), null, 2) + '\n';
-            } else {
-                const error = await response.text();
-                resultsEl.textContent += `Error: ${error}\n`;
             }
-        } catch (error) {
-            resultsEl.textContent += `Exception: ${error.message}\n`;
-        }
-    }
-    
-    function testDepartmentsAPI() { testAPICall('/departments'); }
-    function testTeamsAPI() { testAPICall('/teams'); }
-    function testEmployeesAPI() { testAPICall('/admin/employees'); }
-    
-    // Check DOM elements
-    function checkDOM() {
-        const results = document.getElementById('dom-results');
-        const elements = [
-            'department-list',
-            'department-count',
-            'departments-table-body',
-            'team-list',
-            'team-count'
-        ];
-        
-        const found = {};
-        elements.forEach(id => {
-            const el = document.getElementById(id);
-            found[id] = el ? 'Found' : 'Not found';
+            
+            function resetData() {
+                document.getElementById('employee-count').textContent = "0";
+                document.getElementById('document-count').textContent = "0";
+                document.getElementById('department-count').textContent = "0";
+                document.getElementById('count-response').textContent = "Zurückgesetzt";
+                document.getElementById('employees-response').textContent = "Zurückgesetzt";
+                document.getElementById('departments-response').textContent = "Zurückgesetzt";
+                document.getElementById('documents-response').textContent = "Zurückgesetzt";
+            }
         });
-        
-        results.textContent = JSON.stringify(found, null, 2);
-    }
-    
-    // Manual department load
-    async function manualLoadDepartments() {
-        const token = localStorage.getItem('token');
-        const container = document.getElementById('manual-departments');
-        
-        try {
-            const response = await fetch('/departments', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.ok) {
-                const departments = await response.json();
-                container.innerHTML = '<h3>Departments loaded manually:</h3>';
-                container.innerHTML += departments.map(dept => `
-                    <div style="border: 1px solid #ddd; padding: 10px; margin: 5px;">
-                        <strong>${dept.name}</strong><br>
-                        Status: ${dept.status}, Visibility: ${dept.visibility}<br>
-                        Employees: ${dept.employee_count}, Teams: ${dept.team_count}
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = '<p style="color: red;">Failed to load departments</p>';
-            }
-        } catch (error) {
-            container.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
-        }
-    }
-    
-    // Initialize
-    checkLocalStorage();
     </script>
 </body>
 </html>

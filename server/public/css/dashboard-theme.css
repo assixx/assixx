@@ -246,6 +246,16 @@ body {
     color: white;
 }
 
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.table-row-archived {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
 /* Dashboard Grid */
 .dashboard-grid {
     display: grid;

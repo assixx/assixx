@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Feature = require('../models/feature');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizeRole } = require('../auth');
 const { checkFeature } = require('../middleware/features');
 const logger = require('../utils/logger');
 

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Report - New Employee Button</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #0066cc;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .issue {
+            background-color: #ffe6e6;
+            border-left: 4px solid #ff3333;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .solution {
+            background-color: #e6ffe6;
+            border-left: 4px solid #33cc33;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Report: New Employee Button</h1>
+    
+    <h2>Issue Description</h2>
+    <p>
+        The "New Employee" button on the admin dashboard is not properly triggering the modal dialog when clicked.
+        This report investigates the potential causes and solutions.
+    </p>
+    
+    <h2>Code Analysis</h2>
+    
+    <h3>Button Event Handler</h3>
+    <p>The button click handler is defined in admin-dashboard.js (around line 36):</p>
+    <pre>
+if (newEmployeeBtn) {
+    console.log('New employee button found, adding event listener');
+    newEmployeeBtn.addEventListener('click', function() {
+        console.log('New employee button clicked');
+        showModal('employee-modal');
+        loadDepartmentsForEmployeeSelect();
+    });
+} else {
+    console.warn('New employee button not found');
+}
+    </pre>
+    
+    <h3>Modal Functions</h3>
+    <p>The showModal function is defined in admin-dashboard.html (around line 1007):</p>
+    <pre>
+function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+}
+    </pre>
+    
+    <h3>Modal Element</h3>
+    <p>The employee modal is defined in admin-dashboard.html (around line 482):</p>
+    <pre>
+&lt;div id="employee-modal" class="modal" style="display: none;"&gt;
+    &lt;div class="modal-content"&gt;
+        &lt;div class="modal-header"&gt;
+            &lt;h3 class="modal-title"&gt;Neuer Mitarbeiter&lt;/h3&gt;
+            &lt;button class="modal-close" onclick="hideModal('employee-modal')"&gt;&times;&lt;/button&gt;
+        &lt;/div&gt;
+        ...
+    &lt;/div&gt;
+&lt;/div&gt;
+    </pre>
+    
+    <h2>Potential Issues</h2>
+    
+    <div class="issue">
+        <h3>Issue 1: Function Scope</h3>
+        <p>The showModal function is defined within a script tag in the HTML, which means it needs to be available in the global scope to be callable from admin-dashboard.js.</p>
+    </div>
+    
+    <div class="issue">
+        <h3>Issue 2: Timing of Script Loading</h3>
+        <p>The order of script loading might be causing issues. If admin-dashboard.js executes before the showModal function is defined, it could cause errors.</p>
+    </div>
+    
+    <div class="issue">
+        <h3>Issue 3: Modal Element Missing</h3>
+        <p>If the employee-modal element isn't found in the DOM when showModal is called, it would cause an error.</p>
+    </div>
+    
+    <div class="issue">
+        <h3>Issue 4: Multiple Event Listeners</h3>
+        <p>There might be multiple event listeners on the button with one stopping event propagation or preventing default behavior.</p>
+    </div>
+    
+    <h2>Debug Steps</h2>
+    <ol>
+        <li>Add console.log statements to verify the button element is found</li>
+        <li>Add a breakpoint at line 36 in admin-dashboard.js to check if the event handler is attached</li>
+        <li>Check if click events are being triggered using browser devtools event listeners panel</li>
+        <li>Verify the showModal function is in the global scope</li>
+        <li>Verify the employee-modal element exists in the DOM</li>
+        <li>Check the browser console for any JavaScript errors</li>
+    </ol>
+    
+    <h2>Testing Procedure</h2>
+    <ol>
+        <li>Load the admin dashboard page</li>
+        <li>Open browser developer tools (F12)</li>
+        <li>Switch to the Console tab</li>
+        <li>Click the "New Employee" button</li>
+        <li>Check for console logs and errors</li>
+        <li>Run testButtonClick() in the console to simulate a direct click</li>
+        <li>Check Elements tab for the modal display state</li>
+    </ol>
+    
+    <h2>Console Output to Check</h2>
+    <table>
+        <tr>
+            <th>Expected Log</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>"New employee button found, adding event listener"</td>
+            <td>This confirms the button was found during initialization</td>
+        </tr>
+        <tr>
+            <td>"New employee button clicked"</td>
+            <td>This confirms the click event is being handled</td>
+        </tr>
+        <tr>
+            <td>"showModal called with: employee-modal"</td>
+            <td>This confirms the showModal function is being called</td>
+        </tr>
+    </table>
+    
+    <h2>Likely Issues and Solutions</h2>
+    
+    <div class="solution">
+        <h3>Solution 1: Fix Global Function Availability</h3>
+        <p>Ensure the showModal function is defined before admin-dashboard.js runs or move it to the admin-dashboard.js file.</p>
+        <pre>
+// Move this function to admin-dashboard.js
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.error(`Modal element with ID ${modalId} not found`);
+    }
+}
+        </pre>
+    </div>
+    
+    <div class="solution">
+        <h3>Solution 2: Error Handling</h3>
+        <p>Add error handling to the showModal function to prevent errors if the modal element isn't found.</p>
+    </div>
+    
+    <div class="solution">
+        <h3>Solution 3: Direct Style Manipulation</h3>
+        <p>As a workaround, use direct DOM manipulation in the event handler:</p>
+        <pre>
+newEmployeeBtn.addEventListener('click', function() {
+    console.log('New employee button clicked');
+    const modal = document.getElementById('employee-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadDepartmentsForEmployeeSelect();
+    } else {
+        console.error('Modal element not found');
+    }
+});
+        </pre>
+    </div>
+    
+    <h2>Verification Steps</h2>
+    <ol>
+        <li>After implementing a solution, refresh the page</li>
+        <li>Test clicking the "New Employee" button</li>
+        <li>Verify the modal appears</li>
+        <li>Check that departments are loaded correctly in the select dropdown</li>
+    </ol>
+    
+    <script>
+        // This script helps test the modal functionality directly
+        document.addEventListener('DOMContentLoaded', () => {
+            const testButton = document.createElement('button');
+            testButton.textContent = 'Test showModal Function';
+            testButton.style.padding = '10px';
+            testButton.style.backgroundColor = '#0066cc';
+            testButton.style.color = 'white';
+            testButton.style.border = 'none';
+            testButton.style.borderRadius = '5px';
+            testButton.style.marginTop = '20px';
+            testButton.onclick = () => {
+                try {
+                    // Try calling the function
+                    if (typeof showModal === 'function') {
+                        alert('showModal function exists in global scope');
+                    } else {
+                        alert('showModal function NOT found in global scope');
+                    }
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+            document.body.appendChild(testButton);
+        });
+    </script>
+</body>
+</html>

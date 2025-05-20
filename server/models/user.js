@@ -15,7 +15,6 @@ class User {
       last_name, 
       age, 
       employee_id, 
-      iban,
       department_id,
       position,
       phone,
@@ -25,6 +24,9 @@ class User {
       emergency_contact,
       profile_picture
     } = userData;
+    
+    // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
+    const iban = userData.iban || "";
 
     const hashedPassword = await bcrypt.hash(password, 10);
 

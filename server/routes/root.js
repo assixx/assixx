@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken, authorizeRole } = require('../middleware/auth');
+const { authenticateToken, authorizeRole } = require('../auth');
 const User = require('../models/user');
 const AdminLog = require('../models/adminLog'); // Neue Klasse für Admin-Logs
 const bcrypt = require('bcrypt');
