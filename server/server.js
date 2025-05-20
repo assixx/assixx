@@ -30,6 +30,7 @@ const {
     corsOptions,
     generalLimiter,
     authLimiter,
+    uploadLimiter,
     validateTenantContext,
     sanitizeInputs,
     apiSecurityHeaders,
@@ -48,9 +49,9 @@ app.use(...sanitizeInputs);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Multi-tenant support
-app.use(tenantMiddleware);
-app.use(validateTenantContext);
+// Multi-tenant support (temporär deaktiviert)
+// app.use(tenantMiddleware);
+// app.use(validateTenantContext);
 
 // Static files - with security headers
 app.use(express.static(path.join(__dirname, 'public'), {
