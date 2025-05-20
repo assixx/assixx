@@ -84,11 +84,12 @@
 ## Was wir als nächstes machen müssen
 
 ### 🔴 PRIORITÄT 1 - KERNFUNKTIONEN (vor Sicherheit)
-1. **Dokumenten-Download** 🎯
-   - Download-Route implementieren
-   - Berechtigungsprüfung
-   - Stream für große Dateien
-   - Download-Counter
+1. **Dokumenten-Download** ✅
+   - ✅ Download-Route implementiert
+   - ✅ Berechtigungsprüfung
+   - ✅ Stream für große Dateien
+   - ✅ Download-Counter
+   - 🔄 Fehlerbehebung bei spezifischen Szenarien
 
 2. **E-Mail-Benachrichtigungen**
    - Nodemailer Integration
@@ -313,4 +314,4 @@ app.post('/webhook/stripe', async (req, res) => {
 
 ---
 Stand: 2025-05-20
-Nächste Session: Dokumenten-Download und E-Mail-Benachrichtigungen
+Nächste Session: Download-Fehlerbehebung und danach E-Mail-Benachrichtigungen

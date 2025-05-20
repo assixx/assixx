@@ -46,11 +46,12 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 ## Prioritäten für die nächsten Entwicklungsphasen
 
 ### Priorität 1: Kritische Funktionen
-1. **Dokumenten-Download** 🔄
-   - Download-Route implementieren
-   - Berechtigungsprüfung
-   - Stream für große Dateien
-   - Download-Counter
+1. **Dokumenten-Download** ✅
+   - ✅ Download-Route implementiert
+   - ✅ Berechtigungsprüfung
+   - ✅ Stream für große Dateien
+   - ✅ Download-Counter
+   - 🔄 Fehlerbehebung bei Dokumenten-Download
 
 2. **E-Mail-Benachrichtigungen** 📧
    - Nodemailer Integration
