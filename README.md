@@ -278,9 +278,15 @@ Das System verwendet vier Benutzerrollen:
 
 Wir freuen uns über Beiträge! Bitte erstellen Sie einen Fork des Repositories und senden Sie Pull Requests für neue Features oder Bugfixes.
 
-## Lizenz
+## Lizenz und Urheberrecht
 
-Dieses Projekt ist proprietär. Kontaktieren Sie Simon Öztürk für Lizenzinformationen.
+© 2024-2025 Simon Öztürk / SCS-Technik. Alle Rechte vorbehalten.
+
+Dieses Projekt ist proprietär und vertraulich. Jede unautorisierte Nutzung, Vervielfältigung, Modifikation, Verteilung oder Anzeige dieses Quellcodes, ganz oder teilweise, ist strengstens untersagt.
+
+Die Nutzung dieser Software ist nur nach ausdrücklicher schriftlicher Genehmigung durch den Urheberrechtsinhaber zulässig. Für Lizenzvereinbarungen oder Fragen wenden Sie sich bitte an scs-technik@protonmail.com.
+
+Dieses Projekt enthält möglicherweise Geschäftsgeheimnisse. Unbefugter Zugriff, Nutzung oder Offenlegung kann zu rechtlichen Konsequenzen führen.
 
 
 

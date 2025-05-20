@@ -1,0 +1,12 @@
+/**
+ * @file %FILENAME%
+ * @description %DESCRIPTION%
+ * 
+ * @copyright Copyright (c) 2024-2025 Simon Öztürk / SCS-Technik
+ * @license Proprietary and confidential
+ * 
+ * This source code is proprietary and confidential. Unauthorized copying
+ * of this file via any medium is strictly prohibited. This file and the 
+ * information contained herein is not to be disclosed, used, or reproduced
+ * in whole or in part without prior written permission of Simon Öztürk.
+ */
