@@ -37,27 +37,8 @@ router.get('/documents', authenticateToken, authorizeRole('employee'), async (re
     }
 });
 
-router.get('/documents/:documentId', authenticateToken, authorizeRole('employee'), async (req, res) => {
-    const employeeId = req.user.id;
-    const { documentId } = req.params;
-    logger.info(`Employee ${employeeId} attempting to download document ${documentId}`);
-    try {
-        const document = await Document.findById(documentId);
-        
-        if (!document || document.user_id !== employeeId) {
-            logger.warn(`Document ${documentId} not found or not owned by Employee ${employeeId}`);
-            return res.status(404).json({ message: 'Dokument nicht gefunden' });
-        }
-
-        logger.info(`Employee ${employeeId} successfully downloaded document ${documentId}`);
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${document.file_name}`);
-        res.send(document.file_content);
-    } catch (error) {
-        logger.error(`Error downloading document ${documentId} for Employee ${employeeId}: ${error.message}`);
-        res.status(500).json({ message: 'Fehler beim Herunterladen des Dokuments', error: error.message });
-    }
-});
+// Diese Route wurde entfernt, da sie unten nochmal definiert ist und
+// dort erweiterte Funktionalität bietet
 
 router.get('/search-documents', authenticateToken, authorizeRole('employee'), async (req, res) => {
     const employeeId = req.user.id;
@@ -98,7 +79,6 @@ router.get('/salary-documents', authenticateToken, authorizeRole('employee'), as
 router.get('/documents/:documentId', 
     authenticateToken, 
     authorizeRole('employee'),
-    checkDocumentAccess({ allowAdmin: false, allowDepartmentHeads: false, requireOwnership: true }),
     async (req, res) => {
         const employeeId = req.user.id;
         const { documentId } = req.params;
@@ -107,8 +87,19 @@ router.get('/documents/:documentId',
         logger.info(`Employee ${employeeId} attempting to download document ${documentId}`);
         
         try {
-            // Dokument wurde bereits vom Middleware geladen und ist in req.document verfügbar
-            const document = req.document;
+            // Dokument suchen
+            const document = await Document.findById(documentId);
+            
+            // Prüfen, ob das Dokument existiert und dem Mitarbeiter gehört
+            if (!document) {
+                logger.warn(`Document ${documentId} not found`);
+                return res.status(404).json({ message: 'Dokument nicht gefunden' });
+            }
+            
+            if (document.user_id != employeeId) {
+                logger.warn(`Access denied: Employee ${employeeId} attempted to access document ${documentId} owned by user ${document.user_id}`);
+                return res.status(403).json({ message: 'Zugriff verweigert' });
+            }
 
             // Download-Zähler erhöhen
             await Document.incrementDownloadCount(documentId);
@@ -123,37 +114,16 @@ router.get('/documents/:documentId',
             // Optional: Cache-Control Header für häufig abgerufene Dokumente
             res.setHeader('Cache-Control', 'max-age=300'); // 5 Minuten cachen
             
-            // Streaming-Support für große Dateien
-            // Überprüfen, ob die Datei mehr als 1MB groß ist
-            if (document.file_content && document.file_content.length > 1024 * 1024) {
-                logger.info(`Streaming large document ${documentId} (size: ${document.file_content.length} bytes)`);
-                
-                // Die Datei in kleineren Teilen senden
-                const CHUNK_SIZE = 256 * 1024; // 256 KB Chunks
-                const fileSize = document.file_content.length;
-                
-                // Content-Length Header setzen, damit der Client den Fortschritt verfolgen kann
-                res.setHeader('Content-Length', fileSize);
-                
-                // Daten in Chunks streamen
-                for (let offset = 0; offset < fileSize; offset += CHUNK_SIZE) {
-                    const chunk = document.file_content.slice(offset, Math.min(offset + CHUNK_SIZE, fileSize));
-                    // Wenn dies der letzte Chunk ist, Ende markieren
-                    const isLastChunk = offset + CHUNK_SIZE >= fileSize;
-                    
-                    if (!res.write(chunk) && !isLastChunk) {
-                        // Wenn Puffer voll ist und noch Daten kommen, auf "drain" Event warten
-                        await new Promise(resolve => res.once('drain', resolve));
-                    }
-                }
-                
-                res.end();
-            } else {
-                // Für kleinere Dateien einfach den gesamten Inhalt auf einmal senden
-                res.send(document.file_content);
+            // Content-Length setzen, um dem Browser mitzuteilen, wie groß die Datei ist
+            if (document.file_content) {
+                res.setHeader('Content-Length', document.file_content.length);
             }
             
-            logger.info(`Employee ${employeeId} successfully downloaded document ${documentId}`);
+            logger.info(`Employee ${employeeId} successfully downloading document ${documentId}`);
+
+            // Für alle Dateien einfach den gesamten Inhalt auf einmal senden
+            return res.end(document.file_content);
+            
         } catch (error) {
             logger.error(`Error downloading document ${documentId} for Employee ${employeeId}: ${error.message}`);
             res.status(500).json({ message: 'Fehler beim Herunterladen des Dokuments', error: error.message });

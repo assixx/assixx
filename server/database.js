@@ -95,20 +95,20 @@ if (USE_MOCK_DB) {
     const config = {
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
+      queueLimit: 0,
+      multipleStatements: false, // Sicherheitsverbesserung
+      typeCast: function (field, next) {
+        // Spezielle Behandlung für BLOB/BINARY Felder, um sie als Buffer zurückzugeben
+        if (field.type === 'BLOB' || field.type === 'BINARY') {
+          return field.buffer();
+        }
+        return next();
+      }
     };
-    
-    // Füge Passwort nur hinzu, wenn es gesetzt ist
-    if (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '') {
-      config.password = process.env.DB_PASSWORD;
-    }
-    
-    // Füge Datenbank nur hinzu, wenn sie gesetzt ist
-    if (process.env.DB_NAME && process.env.DB_NAME.trim() !== '') {
-      config.database = process.env.DB_NAME;
-    }
     
     pool = mysql.createPool(config);
     console.log('Datenbank-Verbindung hergestellt');

@@ -3,22 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mitarbeiter Dokumente</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/dashboard-theme.css">
+    <title>Mitarbeiter Dokumente - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/employee-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        </a>
+        <div class="header-actions">
+            <span id="user-info" class="text-secondary">Mitarbeiter</span>
+            <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
     <div class="container">
-        <header>
-            <h1>Mitarbeiter Dokumente</h1>
-        </header>
-        <main>
-            <!-- Document table content will go here -->
-        </main>
+        <h1 class="text-center mb-4">Meine Dokumente</h1>
+        
+        <!-- Dokumente Suche -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">Dokumente suchen</h2>
+            </div>
+            <div class="card-content" style="padding: 20px;">
+                <form id="search-form" class="flex-between">
+                    <input type="text" id="search-input" class="form-control" placeholder="Suchbegriff eingeben..." style="width: 70%;">
+                    <button type="submit" class="btn btn-primary">Suchen</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Dokumente Tabelle -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Meine Dokumente</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Dokument</th>
+                            <th>Datum</th>
+                            <th>Kategorie</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="document-table-body">
+                        <!-- Wird dynamisch gefüllt -->
+                        <tr>
+                            <td colspan="4" class="text-center">Dokumente werden geladen...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-documents" style="display: none; text-align: center; padding: 20px;">
+                <p>Keine Dokumente gefunden</p>
+            </div>
+        </div>
+        
+        <!-- Zurück Button -->
+        <div class="text-center mt-4">
+            <a href="/employee-dashboard.html" class="btn btn-secondary">Zurück zum Dashboard</a>
+        </div>
     </div>
 
-    <!-- Script imports -->
-    <script src="/js/employee-dashboard.js"></script>
-    <script src="/js/document-table-fix.js"></script>
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const documentTableBody = document.getElementById('document-table-body');
+            const noDocumentsMessage = document.getElementById('no-documents');
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            // Event-Listener
+            logoutBtn.addEventListener('click', logout);
+            searchForm.addEventListener('submit', searchDocuments);
+            
+            // Beim Laden Dokumente anzeigen
+            loadDocuments();
+            
+            // Funktionen
+            async function loadDocuments() {
+                try {
+                    const response = await fetch('/employee/documents', {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const documents = await response.json();
+                        displayDocuments(documents);
+                    } else {
+                        const error = await response.json();
+                        alert(`Fehler: ${error.message}`);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der Dokumente:', error);
+                    alert('Dokumente konnten nicht geladen werden.');
+                }
+            }
+            
+            async function searchDocuments(e) {
+                e.preventDefault();
+                const query = searchInput.value.trim();
+                
+                if (query) {
+                    try {
+                        const response = await fetch(`/employee/search-documents?query=${encodeURIComponent(query)}`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const documents = await response.json();
+                            displayDocuments(documents);
+                        } else {
+                            const error = await response.json();
+                            alert(`Fehler: ${error.message}`);
+                        }
+                    } catch (error) {
+                        console.error('Fehler bei der Dokumentensuche:', error);
+                        alert('Suche konnte nicht durchgeführt werden.');
+                    }
+                }
+            }
+            
+            function displayDocuments(documents) {
+                if (documents.length === 0) {
+                    documentTableBody.innerHTML = '';
+                    noDocumentsMessage.style.display = 'block';
+                } else {
+                    noDocumentsMessage.style.display = 'none';
+                    documentTableBody.innerHTML = documents.map(doc => `
+                        <tr>
+                            <td>${doc.file_name}</td>
+                            <td>${new Date(doc.upload_date).toLocaleString()}</td>
+                            <td>${doc.category || 'Allgemein'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="downloadDocument('${doc.id}')">Download</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+            
+            // Globale Funktionen
+            window.downloadDocument = function(documentId) {
+                try {
+                    // Download über fetch mit authentifiziertem Request und Blob-Handling
+                    let responseObj; // Variable zum Speichern der Response
+                    
+                    fetch(`/employee/documents/${documentId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP-Fehler: ${response.status}`);
+                        }
+                        responseObj = response; // Response speichern
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        // Blob URL erstellen und Download auslösen
+                        const url = window.URL.createObjectURL(blob);
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = url;
+                        
+                        // Hole den Dateinamen aus dem Content-Disposition Header oder nutze eine Standard-Benennung
+                        const contentDisposition = responseObj.headers.get('content-disposition');
+                        const fileName = contentDisposition && contentDisposition.includes('filename=') ?
+                            contentDisposition.split('filename=')[1].replace(/["']/g, '') :
+                            `document-${documentId}.pdf`;
+                            
+                        downloadLink.download = fileName;
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(downloadLink);
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Herunterladen des Dokuments:', error);
+                        alert('Fehler beim Herunterladen des Dokuments');
+                    });
+                } catch (error) {
+                    console.error('Fehler beim Herunterladen des Dokuments:', error);
+                    alert('Fehler beim Herunterladen des Dokuments');
+                }
+            }
+            
+            function logout() {
+                if (confirm('Möchten Sie sich wirklich abmelden?')) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    window.location.href = '/';
+                }
+            }
+        });
+    </script>
 </body>
 </html>
