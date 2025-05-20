@@ -43,6 +43,6 @@ Durch das Einreichen eines Beitrags zum Assixx-Projekt erkl√§ren Sie sich ausdr√
 ## 8. Kontakt
 
 Bei Fragen zu diesem CLA wenden Sie sich bitte an:
-scs-technik@protonmail.com
+info@scs-technik.de
 
 *Letzte Aktualisierung: Mai 2025*

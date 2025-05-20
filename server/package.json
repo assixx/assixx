@@ -6,7 +6,7 @@
     "start": "node ."
   },
   "keywords": ["assixx", "saas", "enterprise", "document-management"],
-  "author": "Simon Öztürk <scs-technik@protonmail.com>",
+  "author": "Simon Öztürk <info@scs-technik.de>",
   "license": "Proprietary",
   "private": true,
   "description": "Assixx SaaS-Plattform für Industriefirmen - Server-Komponente",

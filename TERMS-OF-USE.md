@@ -44,6 +44,6 @@ Diese Nutzungsbedingungen unterliegen deutschem Recht. Ausschließlicher Gericht
 ## 7. Kontakt
 
 Bei Fragen zu diesen Nutzungsbedingungen oder für Genehmigungen wenden Sie sich bitte an:
-scs-technik@protonmail.com
+info@scs-technik.de
 
 *Letzte Aktualisierung: Mai 2025*

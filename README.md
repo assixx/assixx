@@ -284,7 +284,7 @@ Wir freuen uns über Beiträge! Bitte erstellen Sie einen Fork des Repositories 
 
 Dieses Projekt ist proprietär und vertraulich. Jede unautorisierte Nutzung, Vervielfältigung, Modifikation, Verteilung oder Anzeige dieses Quellcodes, ganz oder teilweise, ist strengstens untersagt.
 
-Die Nutzung dieser Software ist nur nach ausdrücklicher schriftlicher Genehmigung durch den Urheberrechtsinhaber zulässig. Für Lizenzvereinbarungen oder Fragen wenden Sie sich bitte an scs-technik@protonmail.com.
+Die Nutzung dieser Software ist nur nach ausdrücklicher schriftlicher Genehmigung durch den Urheberrechtsinhaber zulässig. Für Lizenzvereinbarungen oder Fragen wenden Sie sich bitte an info@scs-technik.de.
 
 Dieses Projekt enthält möglicherweise Geschäftsgeheimnisse. Unbefugter Zugriff, Nutzung oder Offenlegung kann zu rechtlichen Konsequenzen führen.
 
