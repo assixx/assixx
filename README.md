@@ -4,6 +4,9 @@
 
 Assixx ist eine umfassende Kommunikations- und Verwaltungslösung für Industriefirmen, speziell entwickelt für Produktionsarbeiter ohne PC-Zugang. Das System verbessert die Kommunikation zwischen Arbeitern, Administration und Management durch mobile Technologie.
 
+## Vision
+Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular erweiterbare Features anbietet und Kunden ermöglicht, nur für die Funktionen zu bezahlen, die sie tatsächlich benötigen.
+
 ### Hauptfunktionen:
 
 - **Fehlermeldesystem**: Arbeiter können Fotos von Problemen machen und direkt melden
@@ -18,6 +21,217 @@ Assixx ist eine umfassende Kommunikations- und Verwaltungslösung für Industrie
 - **Administratoren**: Web-Dashboard für Dokumentenverwaltung und Kommunikation
 - **Maintenance-Team**: Sofortige Benachrichtigungen bei gemeldeten Problemen
 - **Management**: Auswertungen und Berichte für bessere Entscheidungen
+
+## Feature-Management-System (bereits implementiert)
+
+### Basis-Features (€0/Monat)
+- ✅ Mitarbeiterverwaltung (bis 10 Mitarbeiter)
+- ✅ Basis-Dokumentenupload
+- ✅ Lohnabrechnungsverwaltung
+
+### Premium-Features (€49/Monat)
+- ✅ Unbegrenzte Mitarbeiter
+- ✅ E-Mail-Benachrichtigungen (bis 1000/Monat)
+- ✅ Erweiterte Berichte
+- ✅ Audit Logs
+
+### Enterprise-Features (€149/Monat)
+- ✅ API-Zugang
+- ✅ Custom Branding
+- ✅ Priority Support
+- ✅ Automatisierung
+- ✅ Multi-Mandanten-Verwaltung
+- ✅ Unbegrenzte E-Mail-Benachrichtigungen
+
+## Prioritäten für die nächsten Entwicklungsphasen
+
+### Priorität 1: Kritische Funktionen
+1. **Dokumenten-Download** 🔄
+   - Download-Route implementieren
+   - Berechtigungsprüfung
+   - Stream für große Dateien
+   - Download-Counter
+
+2. **E-Mail-Benachrichtigungen** 📧
+   - Nodemailer Integration
+   - Templates für verschiedene Events
+   - Queue für Massen-Mails
+   - Unsubscribe-Funktion
+
+3. **Mobile PWA** 📱
+   - Service Worker
+   - Offline-Funktionalität
+   - Push-Notifications
+   - App-Icon und Manifest
+
+### Priorität 2: Wichtige Funktionen
+1. **Stripe Integration** 💳
+   - Payment Routes erstellen
+   - Webhook Handler
+   - Automatische Feature-Aktivierung nach Zahlung
+
+2. **Lohnabrechnungs-Upload & Verwaltung** 
+   - [ ] Sichere Datei-Uploads mit Verschlüsselung
+   - [ ] Automatische Kategorisierung
+   - [ ] Versionskontrolle für Dokumente
+   - [ ] Massenupload-Funktion
+   - [ ] Automatische Benachrichtigungen bei neuen Dokumenten
+
+3. **Customer Portal**
+   - Subscription Management 
+   - Feature-Übersicht
+   - Rechnungshistorie
+   - Billing Dashboard
+
+4. **Benachrichtigungssystem**
+   - [ ] E-Mail-Templates anpassbar
+   - [ ] SMS-Benachrichtigungen (optional)
+   - [ ] In-App Push-Notifications
+   - [ ] Benachrichtigungs-Center
+   - [ ] Eskalationsregeln
+
+### Priorität 3: Zusätzliche Features
+1. **Reporting & Analytics**
+   - Dashboard mit KPIs
+   - Export-Funktionen
+   - Automatische Reports
+
+2. **Sicherheit & Datenschutz**
+   - [ ] End-to-End-Verschlüsselung für Dokumente
+   - [ ] 2-Faktor-Authentifizierung
+   - [ ] DSGVO-konforme Datenverarbeitung
+   - [ ] Automatisches Löschen alter Dokumente
+   - [ ] Zugriffskontrolle mit detaillierten Rechten
+
+3. **UI/UX Polish**
+   - Dark Mode
+   - Keyboard Shortcuts
+   - Performance-Optimierung
+
+## Technische Roadmap
+
+### Q1 2025
+- [ ] Stripe Integration
+- [ ] Mobile PWA
+- [ ] 2FA Implementation
+- [ ] Automatische Backups
+
+### Q2 2025
+- [ ] Docker-Deployment
+- [ ] Kubernetes-Orchestrierung
+- [ ] CI/CD Pipeline
+- [ ] Monitoring & Alerting
+
+### Q3 2025
+- [ ] Mobile Apps (iOS/Android)
+- [ ] API v2 mit GraphQL
+- [ ] Mehrsprachigkeit (EN, TR, PL)
+- [ ] Advanced Analytics
+
+### Q4 2025
+- [ ] AI-Features (Dokumentenklassifizierung)
+- [ ] Voice-Integration
+- [ ] Blockchain für Audit-Trail
+- [ ] IoT-Integration für Industrie 4.0
+
+## Gesamte Entwicklungsphasen im Überblick
+
+### Phase 1: Aktuelle Basis
+- ✅ Benutzerverwaltung (Root, Admin, Mitarbeiter)
+- ✅ Basis-Dokumentenupload
+- 🔄 Erweiterte Dokumentenfunktionen
+  - 🔄 Download mit Streaming-Unterstützung
+  - 🔄 Download-Counter und Statistiken
+  - 🔄 Berechtigungsprüfung optimieren
+- ✅ JWT-basierte Authentifizierung
+  - ✅ Token-Debugging und Validierung
+  - ✅ Vereinheitlichte Auth-Implementierung
+- ✅ Basis-Dashboard
+  - ✅ Admin-Dashboard mit Navigation
+  - ✅ Interaktive Mitarbeiter-, Abteilungs- und Dokumentenverwaltung
+- ✅ CSRF-Schutz und Sicherheitsverbesserungen
+
+### Phase 2: Kommunikations-Features
+- 🔄 E-Mail-Benachrichtigungen
+  - Nodemailer Integration
+  - Templates für verschiedene Events
+  - Queue für Massen-Mails
+  - Unsubscribe-Funktion
+- [ ] Ankündigungssystem
+- [ ] Umfragemodul mit Auswertungen
+- [ ] Verbesserungsvorschläge-Portal
+
+### Phase 3: Mobile-First Optimierung
+- 🔄 Progressive Web App (PWA) Implementierung
+  - Service Worker
+  - Offline-Funktionalität
+  - Push-Notifications
+  - App-Icon und Manifest
+- [ ] Responsive Design für alle Bildschirmgrößen
+- [ ] Touch-optimierte UI-Elemente
+
+### Phase 4: Fehlermeldesystem
+- [ ] Foto-Upload von Mobilgeräten
+- [ ] Ticketsystem für Problemmeldungen
+- [ ] Push-Benachrichtigungen an Maintenance
+- [ ] Status-Tracking für gemeldete Probleme
+
+### Phase 5: SaaS-Monetarisierung
+- ✅ Feature-basierte Preispläne (Basic, Premium, Enterprise)
+- ✅ Feature-Toggle-System
+- ✅ Usage-Tracking für Features
+- 🔄 Stripe Integration
+  - Automatische Abrechnung
+  - Webhook Handler
+  - Automatische Feature-Aktivierung nach Zahlung
+- 🔄 Customer Portal
+  - Subscription Management
+  - Feature-Übersicht
+  - Billing Dashboard
+- [ ] Trial-Perioden-Management
+- [ ] Nutzungsbasierte Abrechnung
+
+### Phase 6: Multi-Tenant-Architektur
+- ✅ Subdomain-basierte Mandantentrennung
+- ✅ Feature-Management-System
+- ✅ Modulare Feature-Aktivierung pro Kunde
+- [ ] Automatisiertes Onboarding neuer Firmen
+- [ ] White-Label-Branding pro Firma
+- [ ] Separate Datenbanken pro Mandant (derzeit gemeinsame DB)
+- [ ] Docker-Container-Deployment
+
+### Phase 7: Erweiterte Features
+- [ ] Mehrsprachige Unterstützung
+- [ ] QR-Code oder PIN-basierte Anmeldung
+- [ ] Automatische Berichte und Auswertungen
+- [ ] Integration mit bestehenden Firmensystemen
+- 🔄 Erweiterte Sicherheitsfunktionen
+  - [ ] 2FA Implementation
+  - [ ] DSGVO-konforme Verschlüsselung
+  - [ ] Erweiterte Audit Logs
+
+## Aktueller Fokus: Dokumenten-Download-Feature
+Der aktuelle Entwicklungsfokus liegt auf der Vervollständigung des Dokumenten-Download-Features:
+- Streaming-Unterstützung für große Dateien
+- Tracking von Downloads mit Counter
+- Optimierte Berechtigungsprüfung
+- Verbessertes Frontend für Dokumente
+
+## KPIs und Erfolgsmessung
+
+### Business KPIs
+- Anzahl aktiver Kunden
+- Monthly Recurring Revenue (MRR)
+- Customer Acquisition Cost (CAC)
+- Customer Lifetime Value (CLV)
+- Churn Rate
+
+### Technische KPIs
+- Uptime (Ziel: 99.9%)
+- Response Time (< 200ms)
+- Error Rate (< 0.1%)
+- Feature Adoption Rate
+- Customer Satisfaction Score
 
 ## Systemvoraussetzungen
 
@@ -215,64 +429,12 @@ Das System verwendet vier Benutzerrollen:
 - Stellen Sie sicher, dass die Anwendung hinter einer Firewall läuft, wenn sie öffentlich zugänglich ist
 - Führen Sie regelmäßige Backups der Datenbank durch
 
+## Nächste Schritte
 
-
-
-
-
-
-## Roadmap und geplante Features
-
-### Phase 1: Aktuelle Basis (bereits implementiert)
-- ✅ Benutzerverwaltung (Root, Admin, Mitarbeiter)
-- ✅ Dokumentenupload und -download
-- ✅ JWT-basierte Authentifizierung
-- ✅ Basis-Dashboard
-
-### Phase 2: Mobile-First Optimierung
-- [ ] Progressive Web App (PWA) Implementierung
-- [ ] Responsive Design für alle Bildschirmgrößen
-- [ ] Touch-optimierte UI-Elemente
-- [ ] Offline-Funktionalität
-
-### Phase 3: Fehlermeldesystem
-- [ ] Foto-Upload von Mobilgeräten
-- [ ] Ticketsystem für Problemmeldungen
-- [ ] Push-Benachrichtigungen an Maintenance
-- [ ] Status-Tracking für gemeldete Probleme
-
-### Phase 4: Erweiterte Kommunikation
-- [ ] Firmenkalender mit Events
-- [ ] Ankündigungssystem
-- [ ] Umfragemodul mit Auswertungen
-- [ ] Verbesserungsvorschläge-Portal
-
-### Phase 5: Erweiterte Features
-- [ ] Mehrsprachige Unterstützung
-- [ ] QR-Code oder PIN-basierte Anmeldung
-- [ ] Automatische Berichte und Auswertungen
-- [ ] Integration mit bestehenden Firmensystemen
-
-### Phase 6: Multi-Tenant-Architektur ✅
-- ✅ Subdomain-basierte Mandantentrennung
-- ✅ Feature-Management-System
-- ✅ Modulare Feature-Aktivierung pro Kunde
-- [ ] Automatisiertes Onboarding neuer Firmen
-- [ ] White-Label-Branding pro Firma
-- [ ] Separate Datenbanken pro Mandant (derzeit gemeinsame DB)
-- [ ] Docker-Container-Deployment
-
-### Phase 7: SaaS-Monetarisierung
-- ✅ Feature-basierte Preispläne (Basic, Premium, Enterprise)
-- ✅ Feature-Toggle-System
-- ✅ Usage-Tracking für Features
-- [ ] Stripe/PayPal Integration
-- [ ] Automatische Abrechnungen
-- [ ] Customer Self-Service Portal
-- [ ] Billing Dashboard
-- [ ] Automatische Feature-Aktivierung nach Zahlung
-- [ ] Trial-Perioden-Management
-- [ ] Nutzungsbasierte Abrechnung
+1. **Sofort**: Stripe Account einrichten
+2. **Diese Woche**: Payment-Flow implementieren
+3. **Dieser Monat**: Mobile Optimierung
+4. **Dieses Quartal**: Erste zahlende Kunden
 
 ## Beitragen
 
@@ -287,244 +449,3 @@ Dieses Projekt ist proprietär und vertraulich. Jede unautorisierte Nutzung, Ver
 Die Nutzung dieser Software ist nur nach ausdrücklicher schriftlicher Genehmigung durch den Urheberrechtsinhaber zulässig. Für Lizenzvereinbarungen oder Fragen wenden Sie sich bitte an info@scs-technik.de.
 
 Dieses Projekt enthält möglicherweise Geschäftsgeheimnisse. Unbefugter Zugriff, Nutzung oder Offenlegung kann zu rechtlichen Konsequenzen führen.
-
-
-
-
-
-
-
-## Komplette Anleitung: Lohnabrechnung-Projekt unter WSL Ubuntu einrichten
-
-Diese Anleitung führt dich Schritt für Schritt durch die Installation und Einrichtung des Lohnabrechnung-Projekts unter Windows Subsystem for Linux (WSL) mit Ubuntu.
-
-### 1. WSL mit Ubuntu installieren
-
-PowerShell als Administrator öffnen und ausführen:
-```powershell
-wsl --install -d Ubuntu
-```
-
-Ubuntu starten und Benutzernamen/Passwort einrichten
-
-### 2. Visual Studio Code installieren und konfigurieren
-
-VS Code herunterladen von code.visualstudio.com
-WSL-Extension installieren: In VS Code: Extensions > "Remote - WSL" suchen und installieren
-
-### 3. Projekt klonen oder herunterladen
-```bash
-# Verzeichnis erstellen und hineinwechseln
-mkdir -p ~/projects
-cd ~/projects
-
-# Projekt klonen (ersetze die URL durch dein Repository)
-git clone https://github.com/dein-username/dein-projektname.git lohnabrechnung
-cd lohnabrechnung
-4. Node.js einrichten
-bash# Node.js und npm installieren
-sudo apt update
-sudo apt install -y nodejs npm
-
-# Node Version Manager installieren
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-source ~/.bashrc
-
-# Node.js LTS installieren
-nvm install --lts
-nvm use --lts
-
-# Ins Projektverzeichnis wechseln
-cd ~/projects/lohnabrechnung/server
-
-# Abhängigkeiten installieren
-npm install
-5. MySQL installieren und richtig konfigurieren
-bash# MySQL installieren
-sudo apt update
-sudo apt install -y mysql-server
-
-# MySQL-Dienst starten
-sudo service mysql start
-
-# MySQL sicher konfigurieren
-sudo mysql_secure_installation
-Beantworte die Fragen bei mysql_secure_installation wie folgt:
-
-Passwortvalidierung-Plugin: Ja
-Setze ein starkes Passwort: StrongP@ssw0rd!123 (oder eigenes starkes Passwort)
-Anonymen Benutzer entfernen: Ja
-Root-Login von außen verbieten: Nein
-Test-Datenbank entfernen: Nein
-Berechtigungstabellen neu laden: Ja
-
-6. Datenbank und Tabellen erstellen
-bash# Bei MySQL anmelden
-sudo mysql -u root -p
-# Passwort eingeben (dein starkes MySQL-Passwort)
-Führe folgende SQL-Befehle aus:
-sql-- Datenbank erstellen
-CREATE DATABASE lohnabrechnung;
-USE lohnabrechnung;
-
--- Tabellen erstellen
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(50) NOT NULL UNIQUE,
-  email VARCHAR(100) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  role ENUM('root', 'admin', 'employee') NOT NULL,
-  first_name VARCHAR(50),
-  last_name VARCHAR(50),
-  age INT,
-  employee_id VARCHAR(50),
-  iban VARCHAR(50),
-  company VARCHAR(100),
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  department_id INT,
-  position VARCHAR(100),
-  phone VARCHAR(20),
-  profile_picture VARCHAR(255),
-  address TEXT,
-  birthday DATE,
-  hire_date DATE,
-  emergency_contact TEXT,
-  editable_fields JSON
-);
-
-CREATE TABLE documents (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  file_name VARCHAR(255) NOT NULL,
-  file_content LONGBLOB NOT NULL,
-  upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  category VARCHAR(50) DEFAULT 'other',
-  description TEXT,
-  year INT,
-  month VARCHAR(20),
-  is_archived BOOLEAN DEFAULT FALSE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE departments (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  description TEXT,
-  manager_id INT,
-  parent_id INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE teams (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  description TEXT,
-  department_id INT,
-  leader_id INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE user_teams (
-  user_id INT NOT NULL,
-  team_id INT NOT NULL,
-  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id, team_id)
-);
-
-CREATE TABLE admin_logs (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  action VARCHAR(50) NOT NULL DEFAULT 'login',
-  ip_address VARCHAR(50),
-  status ENUM('success', 'failure') NOT NULL DEFAULT 'success',
-  details TEXT,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indizes erstellen
-CREATE INDEX idx_documents_category ON documents(category);
-CREATE INDEX idx_documents_user_category ON documents(user_id, category);
-CREATE INDEX idx_documents_archive_status ON documents(is_archived);
-CREATE INDEX idx_admin_logs_user_id ON admin_logs(user_id);
-CREATE INDEX idx_admin_logs_timestamp ON admin_logs(timestamp);
-
-EXIT;
-7. Root-Benutzer anlegen mit korrektem Hash
-bash# Ins Projektverzeichnis wechseln
-cd ~/projects/lohnabrechnung/server
-
-# Korrekten Hash für das Passwort "root" generieren
-node -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
-Kopiere den erzeugten Hash (er sollte wie $2b$10$... aussehen).
-bash# Bei MySQL anmelden
-sudo mysql -u root -p
-# Passwort eingeben
-sqlUSE lohnabrechnung;
-
--- Root-Benutzer mit dem gerade generierten Hash anlegen
--- WICHTIG: Ersetze den Platzhalter durch deinen tatsächlichen Hash!
-INSERT INTO users (username, email, password, role) VALUES 
-('root', 'root@example.com', '$2b$10$DEIN_GENERIERTER_HASH', 'root');
-
--- Überprüfe, ob der Benutzer korrekt angelegt wurde
-SELECT id, username, role FROM users WHERE username = 'root';
-
-EXIT;
-8. Umgebungsvariablen einrichten
-bash# .env-Datei im server-Verzeichnis erstellen
-cd ~/projects/lohnabrechnung/server
-Erstelle eine .env-Datei:
-bashcat > .env << EOF
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=StrongP@ssw0rd!123
-DB_NAME=lohnabrechnung
-JWT_SECRET=ein_sicherer_zufallsstring
-EOF
-Ersetze StrongP@ssw0rd!123 durch dein tatsächliches MySQL-Passwort.
-9. Verzeichnisstruktur für Uploads erstellen
-bash# Erstelle die notwendigen Verzeichnisse
-mkdir -p uploads/profile_pictures uploads/documents
-10. Server starten
-bash# Starte den Server
-node server.js
-11. Anmeldung testen
-Öffne deinen Browser und navigiere zu http://localhost:3000
-Melde dich mit den folgenden Daten an:
-
-Benutzername: root
-Passwort: root
-
-Fehlerbehebung
-Problem: MySQL-Zugriffsfehler
-Wenn du Fehler wie Error: Access denied for user 'root'@'localhost' erhältst:
-bashsudo mysql
-sqlALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'StrongP@ssw0rd!123';
-FLUSH PRIVILEGES;
-EXIT;
-bashsudo service mysql restart
-Problem: Falscher Passwort-Hash
-Wenn die Anmeldung mit "Invalid password" fehlschlägt:
-
-Überprüfe den Hash:
-bashnode -e "const bcrypt = require('bcrypt'); console.log(bcrypt.compareSync('root', 'DEIN_HASH_AUS_DER_DATENBANK'));"
-
-Wenn false zurückkommt, erzeuge einen neuen Hash und aktualisiere ihn in der Datenbank:
-bashnode -e "const bcrypt = require('bcrypt'); console.log(bcrypt.hashSync('root', 10));"
-sqlUSE lohnabrechnung;
-UPDATE users SET password = '$2b$10$DEIN_NEUER_HASH' WHERE username = 'root';
-EXIT;
-
-
-Problem: Server startet nicht
-Überprüfe die Logs mit:
-bashcat combined.log
-cat error.log
-Wichtige Hinweise
-
-MySQL-Passwort: Stelle sicher, dass das MySQL-Passwort in der .env-Datei mit dem tatsächlichen Passwort übereinstimmt.
-Passwort-Hash: Setze immer den vollständigen Hash ein. Der Hash muss mit $2b$10$ beginnen und hat eine bestimmte Länge.
-Port-Konflikte: Wenn Port 3000 bereits belegt ist, ändere ihn in der server.js-Datei oder setze die Umgebungsvariable PORT.
-
-Mit dieser Anleitung sollte die Einrichtung des Lohnabrechnung-Projekts reibungslos funktionieren!
