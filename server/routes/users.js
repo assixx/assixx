@@ -64,7 +64,7 @@ router.get('/current', authenticateToken, async (req, res) => {
     
     res.json(userData);
   } catch (error) {
-    console.error(`Error fetching current user: ${error.message}`);
+    logger.error(`Error fetching current user: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen des aktuellen Benutzers', error: error.message });
   }
 });
@@ -86,7 +86,7 @@ router.get('/current/teams', authenticateToken, async (req, res) => {
     
     res.json(teams);
   } catch (error) {
-    console.error(`Error fetching teams for current user: ${error.message}`);
+    logger.error(`Error fetching teams for current user: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen der Teams', error: error.message });
   }
 });
@@ -100,6 +100,12 @@ router.get('/search', authenticateToken, (req, res, next) => {
   }
 }, async (req, res) => {
   try {
+    // Konvertiere is_archived zu Boolean, falls vorhanden
+    let isArchived = undefined;
+    if (req.query.is_archived !== undefined) {
+      isArchived = req.query.is_archived === 'true';
+    }
+    
     const filters = {
       search: req.query.search,
       role: req.query.role,
@@ -107,7 +113,8 @@ router.get('/search', authenticateToken, (req, res, next) => {
       sort_by: req.query.sort_by,
       sort_dir: req.query.sort_dir,
       limit: req.query.limit,
-      page: req.query.page
+      page: req.query.page,
+      is_archived: isArchived
     };
     
     const users = await User.search(filters);
@@ -123,7 +130,7 @@ router.get('/search', authenticateToken, (req, res, next) => {
       }
     });
   } catch (error) {
-    console.error(`Error searching users: ${error.message}`);
+    logger.error(`Error searching users: ${error.message}`);
     res.status(500).json({ message: 'Fehler bei der Benutzersuche', error: error.message });
   }
 });
@@ -136,14 +143,14 @@ router.put('/profile/update', authenticateToken, async (req, res) => {
     const result = await User.updateOwnProfile(userId, req.body);
     
     if (result.success) {
-      console.log(`User ${userId} updated their own profile`);
+      logger.info(`User ${userId} updated their own profile`);
       res.json({ message: result.message });
     } else {
-      console.warn(`Failed to update own profile for user ${userId}: ${result.message}`);
+      logger.warn(`Failed to update own profile for user ${userId}: ${result.message}`);
       res.status(400).json({ message: result.message });
     }
   } catch (error) {
-    console.error(`Error updating own profile for user ${req.user.id}: ${error.message}`);
+    logger.error(`Error updating own profile for user ${req.user.id}: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Aktualisieren des eigenen Profils', error: error.message });
   }
 });
@@ -164,7 +171,7 @@ router.post('/profile/upload-picture', authenticateToken, upload.single('profile
       try {
         await fs.unlink(user.profile_picture);
       } catch (unlinkError) {
-        console.warn(`Could not delete old profile picture: ${unlinkError.message}`);
+        logger.warn(`Could not delete old profile picture: ${unlinkError.message}`);
         // Wir brechen nicht ab, wenn das alte Bild nicht gelöscht werden kann
       }
     }
@@ -173,17 +180,17 @@ router.post('/profile/upload-picture', authenticateToken, upload.single('profile
     const success = await User.updateProfilePicture(userId, filePath);
     
     if (success) {
-      console.log(`Profile picture updated for user ${userId}`);
+      logger.info(`Profile picture updated for user ${userId}`);
       res.json({ 
         message: 'Profilbild erfolgreich aktualisiert',
         path: filePath
       });
     } else {
-      console.warn(`Failed to update profile picture for user ${userId}`);
+      logger.warn(`Failed to update profile picture for user ${userId}`);
       res.status(500).json({ message: 'Fehler beim Aktualisieren des Profilbilds' });
     }
   } catch (error) {
-    console.error(`Error uploading profile picture: ${error.message}`);
+    logger.error(`Error uploading profile picture: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Hochladen des Profilbilds', error: error.message });
   }
 });
@@ -209,7 +216,7 @@ router.delete('/profile/picture', authenticateToken, async (req, res) => {
     try {
       await fs.unlink(user.profile_picture);
     } catch (unlinkError) {
-      console.warn(`Could not delete profile picture: ${unlinkError.message}`);
+      logger.warn(`Could not delete profile picture: ${unlinkError.message}`);
       // Wir setzen trotzdem den Pfad in der Datenbank zurück
     }
     
@@ -217,14 +224,14 @@ router.delete('/profile/picture', authenticateToken, async (req, res) => {
     const success = await User.updateProfilePicture(userId, null);
     
     if (success) {
-      console.log(`Profile picture removed for user ${userId}`);
+      logger.info(`Profile picture removed for user ${userId}`);
       res.json({ message: 'Profilbild erfolgreich entfernt' });
     } else {
-      console.warn(`Failed to remove profile picture for user ${userId}`);
+      logger.warn(`Failed to remove profile picture for user ${userId}`);
       res.status(500).json({ message: 'Fehler beim Entfernen des Profilbilds' });
     }
   } catch (error) {
-    console.error(`Error removing profile picture: ${error.message}`);
+    logger.error(`Error removing profile picture: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Entfernen des Profilbilds', error: error.message });
   }
 });
@@ -244,7 +251,7 @@ router.get('/:id', authenticateToken, checkOwnUser, async (req, res) => {
     
     res.json(userData);
   } catch (error) {
-    console.error(`Error fetching user ${req.params.id}: ${error.message}`);
+    logger.error(`Error fetching user ${req.params.id}: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen des Benutzers', error: error.message });
   }
 });
@@ -271,15 +278,93 @@ router.put('/:id', authenticateToken, (req, res, next) => {
     const success = await User.update(userId, req.body);
     
     if (success) {
-      console.log(`User ${userId} updated by user ${req.user.username}`);
+      logger.info(`User ${userId} updated by user ${req.user.username}`);
       res.json({ message: 'Benutzer erfolgreich aktualisiert' });
     } else {
-      console.warn(`Failed to update user ${userId}`);
+      logger.warn(`Failed to update user ${userId}`);
       res.status(500).json({ message: 'Fehler beim Aktualisieren des Benutzers' });
     }
   } catch (error) {
-    console.error(`Error updating user ${req.params.id}: ${error.message}`);
+    logger.error(`Error updating user ${req.params.id}: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Aktualisieren des Benutzers', error: error.message });
+  }
+});
+
+// Benutzer archivieren - nur für Admins und Root
+router.post('/:id/archive', authenticateToken, (req, res, next) => {
+  if (['admin', 'root'].includes(req.user.role)) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Zugriff verweigert' });
+  }
+}, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Prüfen, ob der Benutzer existiert
+    const user = await User.findById(userId, true);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    // Prüfen, ob der Benutzer bereits archiviert ist
+    if (user.is_archived) {
+      return res.status(400).json({ message: 'Benutzer ist bereits archiviert' });
+    }
+    
+    // Archivierung durchführen
+    const success = await User.archiveUser(userId);
+    
+    if (success) {
+      logger.info(`User ${userId} archived by user ${req.user.username}`);
+      res.json({ message: 'Benutzer erfolgreich archiviert' });
+    } else {
+      logger.warn(`Failed to archive user ${userId}`);
+      res.status(500).json({ message: 'Fehler beim Archivieren des Benutzers' });
+    }
+  } catch (error) {
+    logger.error(`Error archiving user ${req.params.id}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Archivieren des Benutzers', error: error.message });
+  }
+});
+
+// Benutzer-Archivierung aufheben - nur für Admins und Root
+router.post('/:id/unarchive', authenticateToken, (req, res, next) => {
+  if (['admin', 'root'].includes(req.user.role)) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Zugriff verweigert' });
+  }
+}, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Prüfen, ob der Benutzer existiert
+    const user = await User.findById(userId, true);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    // Prüfen, ob der Benutzer archiviert ist
+    if (!user.is_archived) {
+      return res.status(400).json({ message: 'Benutzer ist nicht archiviert' });
+    }
+    
+    // Archivierung aufheben
+    const success = await User.unarchiveUser(userId);
+    
+    if (success) {
+      logger.info(`User ${userId} unarchived by user ${req.user.username}`);
+      res.json({ message: 'Benutzer-Archivierung erfolgreich aufgehoben' });
+    } else {
+      logger.warn(`Failed to unarchive user ${userId}`);
+      res.status(500).json({ message: 'Fehler beim Aufheben der Benutzer-Archivierung' });
+    }
+  } catch (error) {
+    logger.error(`Error unarchiving user ${req.params.id}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Aufheben der Benutzer-Archivierung', error: error.message });
   }
 });
 
@@ -300,7 +385,7 @@ router.get('/:id/teams', authenticateToken, checkOwnUser, async (req, res) => {
     
     res.json(teams);
   } catch (error) {
-    console.error(`Error fetching teams for user ${req.params.id}: ${error.message}`);
+    logger.error(`Error fetching teams for user ${req.params.id}: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen der Teams', error: error.message });
   }
 });

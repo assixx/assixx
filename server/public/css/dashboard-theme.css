@@ -594,3 +594,38 @@ body {
     max-width: 1200px;
     margin: 0 auto;
 }
+
+/* Employee deletion dialog styles */
+.alert {
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.alert-warning {
+    background-color: rgba(255, 165, 0, 0.15);
+    border-left: 4px solid orange;
+    color: #d68000;
+}
+
+.option-description {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-top: 4px;
+    margin-left: 24px;
+}
+
+.modal-body {
+    padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    margin: 0 calc(-1 * var(--spacing-lg));
+    margin-top: var(--spacing-lg);
+}

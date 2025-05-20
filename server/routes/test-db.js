@@ -10,7 +10,12 @@ const db = require('../database');
 // Direkter Zugriff auf die Datenbank für Testzwecke
 router.get('/employees', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE role = "employee"');
+    const [rows] = await db.query(`
+      SELECT u.*, d.name as department_name 
+      FROM users u
+      LEFT JOIN departments d ON u.department_id = d.id
+      WHERE u.role = "employee" AND u.is_archived = false
+    `);
     console.log('DB test route: Found employees:', rows.length);
     res.json(rows);
   } catch (error) {

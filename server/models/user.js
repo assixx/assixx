@@ -22,7 +22,9 @@ class User {
       birthday,
       hire_date,
       emergency_contact,
-      profile_picture
+      profile_picture,
+      status = 'active',
+      is_archived = false
     } = userData;
     
     // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
@@ -35,9 +37,10 @@ class User {
         username, email, password, role, company, notes, 
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
-        hire_date, emergency_contact, profile_picture
+        hire_date, emergency_contact, profile_picture,
+        status, is_archived
       ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -45,7 +48,8 @@ class User {
         username, email, hashedPassword, role, company, notes, 
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
-        hire_date, emergency_contact, profile_picture
+        hire_date, emergency_contact, profile_picture,
+        status, is_archived
       ]);
       
       logger.info(`User created successfully with ID: ${result.insertId}`);
@@ -82,17 +86,25 @@ class User {
     }
   }
   
-  static async findByRole(role) {
+  static async findByRole(role, includeArchived = false) {
     try {
-      const [rows] = await db.query(`
+      let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.created_at, u.department_id, 
-        u.position, u.phone, u.profile_picture, d.name as department_name 
+        u.position, u.phone, u.profile_picture, u.status, u.is_archived,
+        d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.role = ?
-      `, [role]);
+      `;
       
+      const params = [role];
+      
+      if (!includeArchived) {
+        query += ` AND u.is_archived = false`;
+      }
+      
+      const [rows] = await db.query(query, params);
       return rows;
     } catch (error) {
       logger.error(`Error finding users by role: ${error.message}`);
@@ -102,7 +114,7 @@ class User {
 
   static async findByEmail(email) {
     try {
-      const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+      const [rows] = await db.query('SELECT * FROM users WHERE email = ? AND is_archived = false', [email]);
       return rows[0];
     } catch (error) {
       logger.error(`Error finding user by email: ${error.message}`);
@@ -158,7 +170,8 @@ class User {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.employee_id, u.created_at,
-        u.department_id, u.position, u.phone, d.name as department_name
+        u.department_id, u.position, u.phone, u.status, u.is_archived,
+        d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE 1=1
@@ -166,7 +179,16 @@ class User {
       
       const values = [];
 
-      // Filter hinzufügen
+      // Filter für archivierte Benutzer
+      if (filters.is_archived !== undefined) {
+        query += ` AND u.is_archived = ?`;
+        values.push(filters.is_archived);
+      } else {
+        // Standardmäßig nur nicht-archivierte Benutzer anzeigen
+        query += ` AND u.is_archived = false`;
+      }
+      
+      // Weitere Filter hinzufügen
       if (filters.role) {
         query += ` AND u.role = ?`;
         values.push(filters.role);
@@ -175,6 +197,11 @@ class User {
       if (filters.department_id) {
         query += ` AND u.department_id = ?`;
         values.push(filters.department_id);
+      }
+      
+      if (filters.status) {
+        query += ` AND u.status = ?`;
+        values.push(filters.status);
       }
       
       if (filters.search) {
@@ -193,7 +220,7 @@ class User {
       if (filters.sort_by) {
         const validColumns = [
           'username', 'email', 'first_name', 'last_name', 
-          'created_at', 'employee_id', 'position'
+          'created_at', 'employee_id', 'position', 'status'
         ];
         
         if (validColumns.includes(filters.sort_by)) {
@@ -242,6 +269,15 @@ class User {
       let query = `SELECT COUNT(*) as total FROM users u WHERE 1=1`;
       const values = [];
       
+      // Filter für archivierte Benutzer
+      if (filters.is_archived !== undefined) {
+        query += ` AND u.is_archived = ?`;
+        values.push(filters.is_archived);
+      } else {
+        // Standardmäßig nur nicht-archivierte Benutzer anzeigen
+        query += ` AND u.is_archived = false`;
+      }
+      
       if (filters.role) {
         query += ` AND u.role = ?`;
         values.push(filters.role);
@@ -250,6 +286,11 @@ class User {
       if (filters.department_id) {
         query += ` AND u.department_id = ?`;
         values.push(filters.department_id);
+      }
+      
+      if (filters.status) {
+        query += ` AND u.status = ?`;
+        values.push(filters.status);
       }
       
       if (filters.search) {
@@ -323,6 +364,85 @@ class User {
       }
     } catch (error) {
       logger.error(`Error in updateOwnProfile for user ${userId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Neue Methode: Benutzer archivieren
+  static async archiveUser(userId) {
+    logger.info(`Archiving user ${userId}`);
+    return this.update(userId, { is_archived: true });
+  }
+
+  // Neue Methode: Benutzer aus dem Archiv wiederherstellen
+  static async unarchiveUser(userId) {
+    logger.info(`Unarchiving user ${userId}`);
+    return this.update(userId, { is_archived: false });
+  }
+
+  // Neue Methode: Alle archivierten Benutzer auflisten
+  static async findArchivedUsers(role = null) {
+    try {
+      let query = `
+        SELECT u.id, u.username, u.email, u.role, u.company, 
+        u.first_name, u.last_name, u.created_at, u.department_id, 
+        u.position, u.phone, u.profile_picture, u.status,
+        d.name as department_name 
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.is_archived = true
+      `;
+      
+      const params = [];
+      
+      if (role) {
+        query += ` AND u.role = ?`;
+        params.push(role);
+      }
+      
+      query += ` ORDER BY u.last_name, u.first_name`;
+      
+      const [rows] = await db.query(query, params);
+      
+      return rows;
+    } catch (error) {
+      logger.error(`Error finding archived users: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Neue Methode: Überprüfen, ob ein Benutzer Dokumente hat
+  static async hasDocuments(userId) {
+    try {
+      const query = `
+        SELECT COUNT(*) as document_count 
+        FROM documents 
+        WHERE user_id = ?
+      `;
+      
+      const [rows] = await db.query(query, [userId]);
+      
+      return rows[0].document_count > 0;
+    } catch (error) {
+      logger.error(`Error checking if user ${userId} has documents: ${error.message}`);
+      throw error;
+    }
+  }
+
+  // Neue Methode: Dokumente eines Benutzers zählen
+  static async getDocumentCount(userId) {
+    try {
+      const query = `
+        SELECT COUNT(*) as document_count 
+        FROM documents 
+        WHERE user_id = ?
+      `;
+      
+      const [rows] = await db.query(query, [userId]);
+      
+      return rows[0].document_count;
+    } catch (error) {
+      logger.error(`Error counting documents for user ${userId}: ${error.message}`);
       throw error;
     }
   }

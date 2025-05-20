@@ -295,12 +295,13 @@ router.delete('/delete-employee/:id', authenticateToken, authorizeRole('admin'),
     
     // Prüfen, ob mit diesem Mitarbeiter Dokumente verknüpft sind
     try {
-      const documents = await Document.findByUserId(employeeId);
-      if (documents && documents.length > 0) {
-        logger.warn(`Employee ${employeeId} has ${documents.length} documents, cannot delete`);
-        return res.status(409).json({
-          message: `Der Mitarbeiter hat ${documents.length} verknüpfte Dokumente. Bitte löschen oder verschieben Sie diese zuerst.`,
-          documentCount: documents.length,
+      const documentCount = await User.getDocumentCount(employeeId);
+      if (documentCount > 0) {
+        logger.warn(`Employee ${employeeId} has ${documentCount} documents, suggesting archive instead of delete`);
+        return res.status(200).json({
+          message: `Der Mitarbeiter hat ${documentCount} verknüpfte Dokumente. Sie können den Mitarbeiter archivieren, um ihn inaktiv zu setzen und die Dokumente zu behalten.`,
+          documentCount: documentCount,
+          canArchive: true,
           success: false
         });
       }
@@ -496,6 +497,228 @@ router.get('/dashboard-stats', authenticateToken, authorizeRole('admin'), async 
   } catch (error) {
     logger.error(`Error fetching dashboard stats: ${error.message}`);
     res.status(500).json({ message: 'Fehler beim Abrufen der Dashboard-Daten', error: error.message });
+  }
+});
+
+// Neue Routen für die Archivierung von Mitarbeitern
+
+// Mitarbeiter archivieren
+router.post('/archive-employee/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  
+  logger.info(`Admin ${adminId} attempting to archive employee ${employeeId}`);
+  
+  try {
+    // Prüfen, ob die ID numerisch ist
+    if (isNaN(employeeId)) {
+      logger.warn(`Invalid employee ID format: ${employeeId}`);
+      return res.status(400).json({ 
+        message: 'Ungültige Mitarbeiter-ID', 
+        success: false 
+      });
+    }
+    
+    // Prüfen, ob der Mitarbeiter existiert
+    const employeeToArchive = await User.findById(employeeId);
+    
+    if (!employeeToArchive) {
+      logger.warn(`Employee with ID ${employeeId} not found`);
+      return res.status(404).json({ 
+        message: 'Mitarbeiter nicht gefunden',
+        success: false 
+      });
+    }
+    
+    // Sicherstellen, dass nur Mitarbeiter archiviert werden können (keine Admins!)
+    if (employeeToArchive.role !== 'employee') {
+      logger.warn(`User with ID ${employeeId} is not an employee but ${employeeToArchive.role}`);
+      return res.status(403).json({ 
+        message: 'Der zu archivierende Benutzer ist kein Mitarbeiter',
+        success: false 
+      });
+    }
+    
+    // Verhindern, dass Admin sich selbst archiviert
+    if (parseInt(employeeId) === parseInt(adminId)) {
+      logger.warn(`Admin ${adminId} attempted to archive themselves`);
+      return res.status(403).json({ 
+        message: 'Sie können Ihren eigenen Account nicht archivieren',
+        success: false 
+      });
+    }
+    
+    // Mitarbeiter archivieren
+    const success = await User.archiveUser(employeeId);
+    
+    if (success) {
+      logger.info(`Employee with ID ${employeeId} archived successfully by Admin ${adminId}`);
+      res.json({ 
+        message: 'Mitarbeiter erfolgreich archiviert',
+        success: true 
+      });
+    } else {
+      logger.warn(`Failed to archive employee with ID ${employeeId}`);
+      res.status(500).json({ 
+        message: 'Fehler beim Archivieren des Mitarbeiters',
+        success: false 
+      });
+    }
+  } catch (error) {
+    logger.error(`Error archiving employee ${employeeId} by Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Fehler beim Archivieren des Mitarbeiters', 
+      error: error.message,
+      success: false 
+    });
+  }
+});
+
+// Mitarbeiter aus dem Archiv wiederherstellen
+router.post('/unarchive-employee/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  
+  logger.info(`Admin ${adminId} attempting to unarchive employee ${employeeId}`);
+  
+  try {
+    // Prüfen, ob die ID numerisch ist
+    if (isNaN(employeeId)) {
+      logger.warn(`Invalid employee ID format: ${employeeId}`);
+      return res.status(400).json({ 
+        message: 'Ungültige Mitarbeiter-ID', 
+        success: false 
+      });
+    }
+    
+    // Prüfen, ob der Mitarbeiter existiert
+    const employeeToUnarchive = await User.findById(employeeId);
+    
+    if (!employeeToUnarchive) {
+      logger.warn(`Employee with ID ${employeeId} not found`);
+      return res.status(404).json({ 
+        message: 'Mitarbeiter nicht gefunden',
+        success: false 
+      });
+    }
+    
+    // Sicherstellen, dass der Benutzer tatsächlich archiviert ist
+    if (!employeeToUnarchive.is_archived) {
+      logger.warn(`Employee ${employeeId} is not archived`);
+      return res.status(400).json({ 
+        message: 'Der Mitarbeiter ist nicht archiviert',
+        success: false 
+      });
+    }
+    
+    // Mitarbeiter wiederherstellen
+    const success = await User.unarchiveUser(employeeId);
+    
+    if (success) {
+      logger.info(`Employee with ID ${employeeId} unarchived successfully by Admin ${adminId}`);
+      res.json({ 
+        message: 'Mitarbeiter erfolgreich wiederhergestellt',
+        success: true 
+      });
+    } else {
+      logger.warn(`Failed to unarchive employee with ID ${employeeId}`);
+      res.status(500).json({ 
+        message: 'Fehler beim Wiederherstellen des Mitarbeiters',
+        success: false 
+      });
+    }
+  } catch (error) {
+    logger.error(`Error unarchiving employee ${employeeId} by Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Fehler beim Wiederherstellen des Mitarbeiters', 
+      error: error.message,
+      success: false 
+    });
+  }
+});
+
+// Archivierte Mitarbeiter abrufen
+router.get('/archived-employees', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  const adminId = req.user.id;
+  
+  logger.info(`Admin ${adminId} requesting archived employees`);
+  
+  try {
+    const archivedEmployees = await User.findArchivedUsers('employee');
+    
+    logger.info(`Retrieved ${archivedEmployees.length} archived employees for Admin ${adminId}`);
+    
+    res.json(archivedEmployees);
+  } catch (error) {
+    logger.error(`Error retrieving archived employees for Admin ${adminId}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen der archivierten Mitarbeiter', error: error.message });
+  }
+});
+
+// Modifizieren der delete-employee Route, um die Archivierungsoption anzubieten
+router.delete('/delete-employee/:id/force', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  const adminId = req.user.id;
+  const employeeId = req.params.id;
+  
+  logger.info(`Admin ${adminId} attempting to force-delete employee ${employeeId}`);
+  
+  try {
+    // Prüfen, ob die ID numerisch ist
+    if (isNaN(employeeId)) {
+      return res.status(400).json({ 
+        message: 'Ungültige Mitarbeiter-ID', 
+        success: false 
+      });
+    }
+    
+    // Prüfen, ob der Mitarbeiter existiert
+    const employeeToDelete = await User.findById(employeeId);
+    
+    if (!employeeToDelete) {
+      return res.status(404).json({ 
+        message: 'Mitarbeiter nicht gefunden',
+        success: false 
+      });
+    }
+    
+    // Sicherstellen, dass nur Mitarbeiter gelöscht werden können
+    if (employeeToDelete.role !== 'employee') {
+      return res.status(403).json({ 
+        message: 'Der zu löschende Benutzer ist kein Mitarbeiter',
+        success: false 
+      });
+    }
+    
+    // Verhindern, dass Admin sich selbst löscht
+    if (parseInt(employeeId) === parseInt(adminId)) {
+      return res.status(403).json({ 
+        message: 'Sie können Ihren eigenen Account nicht löschen',
+        success: false 
+      });
+    }
+    
+    // Mitarbeiter löschen, auch wenn Dokumente vorhanden sind
+    const success = await User.delete(employeeId);
+    
+    if (success) {
+      logger.info(`Employee with ID ${employeeId} force-deleted successfully by Admin ${adminId}`);
+      res.json({ 
+        message: 'Mitarbeiter endgültig gelöscht',
+        success: true 
+      });
+    } else {
+      res.status(500).json({ 
+        message: 'Fehler beim Löschen des Mitarbeiters',
+        success: false 
+      });
+    }
+  } catch (error) {
+    logger.error(`Error force-deleting employee ${employeeId}: ${error.message}`);
+    res.status(500).json({ 
+      message: 'Fehler beim endgültigen Löschen des Mitarbeiters', 
+      error: error.message,
+      success: false 
+    });
   }
 });
 

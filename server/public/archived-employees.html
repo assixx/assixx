@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivierte Mitarbeiter - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/admin-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        </a>
+        <div class="header-actions">
+            <span id="user-info" class="text-secondary">Admin</span>
+            <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+        </div>
+    </header>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3 class="sidebar-title">Navigation</h3>
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item">
+                        <a href="/admin-dashboard.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                                </svg>
+                            </span>
+                            <span>Übersicht</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="/admin-dashboard.html#employees" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                </svg>
+                            </span>
+                            <span>Mitarbeiter</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item active">
+                        <a href="/archived-employees.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/>
+                                </svg>
+                            </span>
+                            <span>Archiv</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="/admin-dashboard.html#documents" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                </svg>
+                            </span>
+                            <span>Dokumente</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="/admin-dashboard.html#departments" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/>
+                                </svg>
+                            </span>
+                            <span>Abteilungen</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Archivierte Mitarbeiter</h1>
+                <p class="text-secondary">Hier finden Sie alle archivierten Mitarbeiter, die nicht mehr aktiv sind, aber deren Daten und Dokumente noch erhalten bleiben sollen.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Archivierte Mitarbeiter</h2>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>E-Mail</th>
+                                <th>Mitarbeiter-ID</th>
+                                <th>Position</th>
+                                <th>Abteilung</th>
+                                <th>Archiviert am</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archived-employees-table">
+                            <!-- Wird dynamisch gefüllt -->
+                            <tr>
+                                <td colspan="7" class="text-center">Laden...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="empty-archive-message" style="display: none; padding: 20px; text-align: center;">
+                    <div style="margin-bottom: 20px;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="#999">
+                            <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/>
+                        </svg>
+                    </div>
+                    <h3>Keine archivierten Mitarbeiter</h3>
+                    <p>Es sind derzeit keine archivierten Mitarbeiter vorhanden.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal für Bestätigung -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="confirm-modal-title">Bestätigung</h3>
+                <button class="modal-close" onclick="hideModal('confirm-modal')">&times;</button>
+            </div>
+            <div id="confirm-modal-body" class="modal-body">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-modal-ok" class="btn btn-primary">Ja</button>
+                <button onclick="hideModal('confirm-modal')" class="btn btn-secondary">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Style -->
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--background-light);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: var(--spacing-lg);
+        }
+
+        .modal-footer {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+        }
+    </style>
+
+    <!-- JavaScript -->
+    <script>
+        let token;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            token = localStorage.getItem('token');
+            if (!token) {
+                console.log('No token found, redirecting to login');
+                window.location.href = '/';
+                return;
+            }
+            
+            // Benutzerinfo anzeigen
+            const userInfo = document.getElementById('user-info');
+            const username = localStorage.getItem('username') || 'Admin';
+            if (userInfo) {
+                userInfo.textContent = username;
+            }
+            
+            // Logout-Button
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    if (confirm('Möchten Sie sich wirklich abmelden?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('role');
+                        localStorage.removeItem('username');
+                        window.location.href = '/';
+                    }
+                });
+            }
+            
+            // Archivierte Mitarbeiter laden
+            loadArchivedEmployees();
+        });
+        
+        // Archivierte Mitarbeiter laden
+        async function loadArchivedEmployees() {
+            try {
+                const response = await fetch('/admin/archived-employees', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const employees = await response.json();
+                    console.log(`Loaded ${employees.length} archived employees`);
+                    
+                    // Tabelle aktualisieren
+                    const tableBody = document.getElementById('archived-employees-table');
+                    const emptyMessage = document.getElementById('empty-archive-message');
+                    
+                    if (employees.length === 0) {
+                        // Leere Nachricht anzeigen
+                        tableBody.innerHTML = '';
+                        emptyMessage.style.display = 'block';
+                    } else {
+                        // Mitarbeiter anzeigen
+                        emptyMessage.style.display = 'none';
+                        tableBody.innerHTML = employees.map(emp => `
+                            <tr data-employee-id="${emp.id}">
+                                <td>${emp.first_name} ${emp.last_name}</td>
+                                <td>${emp.email}</td>
+                                <td>${emp.employee_id || '-'}</td>
+                                <td>${emp.position || '-'}</td>
+                                <td>${emp.department_name || '-'}</td>
+                                <td>${new Date(emp.updated_at || emp.created_at).toLocaleDateString()}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="unarchiveEmployee(${emp.id})">Wiederherstellen</button>
+                                    <button class="btn btn-sm btn-danger" onclick="confirmDelete(${emp.id}, '${emp.first_name} ${emp.last_name}')">Endgültig löschen</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                } else {
+                    console.error('Error loading archived employees:', response.statusText);
+                    alert('Fehler beim Laden der archivierten Mitarbeiter.');
+                }
+            } catch (error) {
+                console.error('Error loading archived employees:', error);
+                alert('Fehler beim Laden der archivierten Mitarbeiter.');
+            }
+        }
+        
+        // Mitarbeiter wiederherstellen
+        async function unarchiveEmployee(employeeId) {
+            try {
+                const response = await fetch(`/admin/unarchive-employee/${employeeId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    alert('Mitarbeiter erfolgreich wiederhergestellt');
+                    loadArchivedEmployees(); // Tabelle aktualisieren
+                } else {
+                    const errorData = await response.json();
+                    alert(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
+                }
+            } catch (error) {
+                console.error('Error unarchiving employee:', error);
+                alert('Fehler beim Wiederherstellen des Mitarbeiters.');
+            }
+        }
+        
+        // Bestätigungsmodal für endgültiges Löschen
+        function confirmDelete(employeeId, employeeName) {
+            const modal = document.getElementById('confirm-modal');
+            const modalTitle = document.getElementById('confirm-modal-title');
+            const modalBody = document.getElementById('confirm-modal-body');
+            const confirmButton = document.getElementById('confirm-modal-ok');
+            
+            modalTitle.textContent = 'Mitarbeiter endgültig löschen';
+            modalBody.innerHTML = `
+                <p>Möchten Sie den Mitarbeiter <strong>${employeeName}</strong> wirklich endgültig löschen?</p>
+                <p class="text-danger"><strong>Warnung:</strong> Diese Aktion kann nicht rückgängig gemacht werden und alle zugeordneten Dokumente werden ebenfalls gelöscht.</p>
+            `;
+            
+            confirmButton.onclick = () => {
+                deleteEmployeeForce(employeeId);
+                hideModal('confirm-modal');
+            };
+            
+            modal.style.display = 'flex';
+        }
+        
+        // Mitarbeiter endgültig löschen
+        async function deleteEmployeeForce(employeeId) {
+            try {
+                const response = await fetch(`/admin/delete-employee/${employeeId}/force`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('Mitarbeiter wurde endgültig gelöscht');
+                    loadArchivedEmployees(); // Tabelle aktualisieren
+                } else {
+                    const errorData = await response.json();
+                    alert(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting employee:', error);
+                alert('Fehler beim Löschen des Mitarbeiters.');
+            }
+        }
+        
+        // Modal ausblenden
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

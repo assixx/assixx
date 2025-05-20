@@ -10,7 +10,8 @@
       "Bash(node:*)",
       "Bash(curl:*)",
       "Bash(nc:*)",
-      "Bash(NODE_ENV=development node server.js)"
+      "Bash(NODE_ENV=development node server.js)",
+      "Bash(mysql:*)"
     ],
     "deny": []
   }
