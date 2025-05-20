@@ -1,0 +1,16 @@
+# Assixx Project - CODEOWNERS
+# Diese Datei bestimmt automatisch, wer Pull Requests überprüfen soll
+
+# Standard-Besitzer für das gesamte Repository
+* @SCS-Technik
+
+# Server-Verzeichnis Besitzer
+/server/ @SCS-Technik
+
+# Spezifische kritische Dateien
+/server/auth.js @SCS-Technik
+/server/server.js @SCS-Technik
+/server/middleware/security*.js @SCS-Technik
+
+# Dokumentation
+*.md @SCS-Technik
