@@ -69,7 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Setze aktiven Status für das entsprechende Element
         document.querySelectorAll('.sidebar-link').forEach(link => {
-            if (link.getAttribute('href') === `#${sectionName}`) {
+            const href = link.getAttribute('href');
+            if (href && href === `#${sectionName}`) {
                 link.parentElement.classList.add('active');
             }
         });

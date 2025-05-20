@@ -6,11 +6,22 @@ async function checkDatabases() {
     
     try {
         // First connect without database
-        connection = await mysql.createConnection({
+        const config = {
             host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD
-        });
+            user: process.env.DB_USER
+        };
+        
+        // Füge Passwort nur hinzu, wenn es gesetzt ist
+        if (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '') {
+            config.password = process.env.DB_PASSWORD;
+        }
+        
+        console.log('Connecting to MySQL with:');
+        console.log(`- Host: ${config.host}`);
+        console.log(`- User: ${config.user}`);
+        console.log(`- Password: ${config.password ? 'Provided' : 'Not provided'}`);
+        
+        connection = await mysql.createConnection(config);
         
         console.log('Connected to MySQL server');
         
