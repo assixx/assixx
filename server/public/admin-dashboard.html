@@ -10,7 +10,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/admin-dashboard" class="logo-container">
+        <a href="/admin-dashboard.html" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
@@ -655,6 +655,9 @@
     </style>
 
     <!-- JavaScript -->
+    <!-- Verhindert mehrfache Bestätigungsdialoge -->
+    <script src="/js/confirm-once.js"></script>
+    
     <script>
         console.log('Admin dashboard HTML loaded');
         
@@ -685,6 +688,9 @@
     <script src="/js/modal-debug.js"></script>
     <script src="/js/employee-modal-fix.js"></script>
     <script src="/js/dashboard-navigation-fix.js"></script>
+    <script src="/js/employee-action-debug.js"></script>
+    <script src="/js/employee-table-fix.js"></script>
+    <script src="/js/document-table-fix.js"></script>
     <script>
         // Direkte Event-Listener hinzufügen
         console.log('Adding direct event listeners');
@@ -1040,6 +1046,220 @@
                 alert("Ein Fehler ist aufgetreten.");
             }
         }
+        
+        // Mitarbeiter bearbeiten
+        async function editEmployee(employeeId) {
+            console.log(`Editing employee ${employeeId}`);
+            const token = localStorage.getItem("token");
+            
+            try {
+                const response = await fetch(`/admin/employees/${employeeId}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const employee = await response.json();
+                    console.log("Employee data:", employee);
+                    
+                    // Erstelle ein Modal für die Bearbeitung
+                    const modalHTML = `
+                        <div class="modal" id="edit-employee-modal" style="display: flex;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3 class="modal-title">Mitarbeiter bearbeiten</h3>
+                                    <button type="button" class="modal-close" onclick="document.getElementById('edit-employee-modal').remove()">&times;</button>
+                                </div>
+                                <form id="edit-employee-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Benutzername</label>
+                                        <input type="text" name="username" class="form-control" value="${employee.username}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">E-Mail</label>
+                                        <input type="email" name="email" class="form-control" value="${employee.email}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Vorname</label>
+                                        <input type="text" name="first_name" class="form-control" value="${employee.first_name}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Nachname</label>
+                                        <input type="text" name="last_name" class="form-control" value="${employee.last_name}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Alter</label>
+                                        <input type="number" name="age" class="form-control" min="18" max="100" value="${employee.age || ''}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Position</label>
+                                        <input type="text" name="position" class="form-control" value="${employee.position || ''}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Abteilung</label>
+                                        <select name="department_id" class="form-control" id="edit-employee-department-select">
+                                            <option value="">Keine Abteilung</option>
+                                            <!-- Wird dynamisch gefüllt -->
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Status</label>
+                                        <select name="status" class="form-control">
+                                            <option value="active" ${employee.status === 'active' ? 'selected' : ''}>Aktiv</option>
+                                            <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Inaktiv</option>
+                                        </select>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">Änderungen speichern</button>
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">Abbrechen</button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Modal zum Body hinzufügen
+                    document.body.insertAdjacentHTML("beforeend", modalHTML);
+                    
+                    // Lade Abteilungen für das Select-Feld
+                    const departmentSelect = document.getElementById('edit-employee-department-select');
+                    if (departmentSelect) {
+                        // Hilfsfunktion zum Laden der Abteilungen
+                        const loadDepts = async () => {
+                            try {
+                                const deptResponse = await fetch('/departments', {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                
+                                if (deptResponse.ok) {
+                                    const departments = await deptResponse.json();
+                                    departmentSelect.innerHTML = '<option value="">Keine Abteilung</option>' +
+                                        departments.map(dept => `
+                                            <option value="${dept.id}" ${dept.id == employee.department_id ? 'selected' : ''}>
+                                                ${dept.name}
+                                            </option>
+                                        `).join('');
+                                }
+                            } catch (err) {
+                                console.error('Error loading departments:', err);
+                            }
+                        };
+                        
+                        loadDepts();
+                    }
+                } else {
+                    console.error("Failed to load employee data");
+                    alert("Fehler beim Laden der Mitarbeiterdaten.");
+                }
+            } catch (error) {
+                console.error("Error loading employee:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+        
+        // Mitarbeiter aktualisieren
+        async function updateEmployee(employeeId) {
+            console.log(`Updating employee ${employeeId}`);
+            const token = localStorage.getItem("token");
+            const form = document.getElementById('edit-employee-form');
+            
+            if (!form) {
+                console.error("Edit employee form not found");
+                return;
+            }
+            
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Bei leerer Abteilung setzen wir null statt leeren String
+            if (data.department_id === "") {
+                data.department_id = null;
+            }
+            
+            try {
+                const response = await fetch(`/admin/employees/${employeeId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert("Mitarbeiter erfolgreich aktualisiert");
+                    // Modal schließen
+                    const modal = document.getElementById('edit-employee-modal');
+                    if (modal) modal.remove();
+                    // Tabelle neu laden
+                    loadEmployeesTable('reload');
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error("Error updating employee:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+        
+        // Mitarbeiter löschen
+        async function deleteEmployee(employeeId) {
+            console.log(`Deleting employee ${employeeId}`);
+            if (!confirm("Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten? Dies kann nicht rückgängig gemacht werden.")) {
+                return;
+            }
+            
+            const token = localStorage.getItem("token");
+            
+            try {
+                const response = await fetch(`/admin/delete-employee/${employeeId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        alert("Mitarbeiter erfolgreich gelöscht");
+                        loadEmployeesTable('reload');
+                    } else {
+                        alert(`Fehler: ${result.message || 'Unbekannter Fehler'}`);
+                    }
+                } else {
+                    alert("Fehler beim Löschen des Mitarbeiters.");
+                }
+            } catch (error) {
+                console.error("Error deleting employee:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
+        
+        // Mitarbeiterstatus ändern
+        async function toggleEmployeeStatus(employeeId, currentStatus) {
+            console.log(`Toggling employee ${employeeId} status from ${currentStatus}`);
+            const token = localStorage.getItem("token");
+            const newStatus = currentStatus === "inactive" ? "active" : "inactive";
+            
+            try {
+                const response = await fetch(`/admin/toggle-employee-status/${employeeId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.ok) {
+                    alert(`Mitarbeiterstatus wurde zu "${newStatus}" geändert`);
+                    loadEmployeesTable('reload');
+                } else {
+                    const error = await response.json();
+                    alert(`Fehler: ${error.message}`);
+                }
+            } catch (error) {
+                console.error("Error toggling employee status:", error);
+                alert("Ein Fehler ist aufgetreten.");
+            }
+        }
 
         // Add event listener for payslip upload form
         document.addEventListener('DOMContentLoaded', () => {
@@ -1080,10 +1300,35 @@
                 alert('Ein Fehler ist aufgetreten.');
             }
         }
-        // Dashboard neu laden bei Klick auf Logo
-        document.querySelector('.logo-container').addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.reload();
+        // Logo und Übersicht verarbeiten
+        document.addEventListener('DOMContentLoaded', () => {
+            // Logo-Klick behandeln
+            document.querySelector('.logo-container').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.reload();
+            });
+            
+            // Übersicht-Link in der Seitennavigation
+            const dashboardLink = document.querySelector('.sidebar-link[href="#dashboard"]');
+            if (dashboardLink) {
+                dashboardLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.reload();
+                });
+            }
+            
+            // Logout-Button behandeln
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    if (confirm('Möchten Sie sich wirklich abmelden?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('role');
+                        localStorage.removeItem('username');
+                        window.location.href = '/';
+                    }
+                });
+            }
         });
 
         // Modal functions redefined for redundancy
@@ -1200,7 +1445,12 @@
             
             // Find and activate the clicked item
             document.querySelectorAll('.sidebar-link').forEach(link => {
-                if (link.getAttribute('onclick').includes(sectionName)) {
+                const onclickAttr = link.getAttribute('onclick');
+                const hrefAttr = link.getAttribute('href');
+                
+                // Check if either the onclick contains the sectionName or the href matches the section
+                if ((onclickAttr && onclickAttr.includes(sectionName)) || 
+                    (hrefAttr && hrefAttr === '#' + sectionName)) {
                     link.parentElement.classList.add('active');
                 }
             });
