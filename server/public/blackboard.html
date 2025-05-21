@@ -186,101 +186,72 @@
         <button type="button" class="modal-close" data-action="close">&times;</button>
       </div>
       <div class="modal-body">
-        <form id="entryForm" class="fade-in">
+        <form id="entryForm" class="simple-form">
           <input type="hidden" id="entryId">
           
-          <div class="form-panel">
-            <h3 class="form-section-title">Grundinformationen</h3>
-            <div class="form-group">
-              <label for="entryTitle" class="form-label">Titel</label>
-              <input type="text" class="form-input" id="entryTitle" required placeholder="Aussagekräftiger Titel für den Eintrag">
-            </div>
-            
-            <div class="form-group">
-              <label for="entryContent" class="form-label">Inhalt</label>
-              <div class="editor-container">
-                <textarea class="form-input" id="entryContent" rows="8" required placeholder="Detaillierte Beschreibung mit allen wichtigen Informationen"></textarea>
-                <div class="editor-toolbar">
-                  <small class="form-hint"><i class="fas fa-info-circle"></i> Markdown-Formatierung möglich: **fett**, *kursiv*, # Überschrift, - Liste, [Link](url)</small>
-                </div>
-              </div>
-            </div>
+          <!-- Titel und Inhalt -->
+          <div class="form-group large-form-group">
+            <label for="entryTitle" class="big-label">Titel</label>
+            <input type="text" class="big-input" id="entryTitle" required>
           </div>
           
-          <div class="form-panel">
-            <h3 class="form-section-title">Zielgruppe & Zuordnung</h3>
-            <div class="form-row">
-              <div class="form-group form-col-6">
-                <label for="entryOrgLevel" class="form-label">Organisationsebene</label>
-                <select class="form-input" id="entryOrgLevel" required>
-                  <option value="" disabled selected>-- Bitte wählen --</option>
-                  <option value="company">Firma (alle Mitarbeiter)</option>
-                  <option value="department">Abteilung</option>
-                  <option value="team">Team</option>
-                </select>
-                <small class="form-hint">Bestimmt, wer diesen Eintrag sehen kann</small>
-              </div>
-              
-              <div class="form-group form-col-6">
-                <label for="entryOrgId" class="form-label">Zuordnung</label>
-                <select class="form-input" id="entryOrgId" required disabled>
-                  <option value="" disabled selected>-- Bitte Ebene wählen --</option>
-                </select>
-                <small class="form-hint">Wird nach Auswahl der Organisationsebene aktiviert</small>
-              </div>
-            </div>
+          <div class="form-group large-form-group">
+            <label for="entryContent" class="big-label">Inhalt</label>
+            <textarea class="big-input" id="entryContent" rows="6" required></textarea>
+            <div class="simple-hint">Markdown-Formatierung möglich</div>
           </div>
           
-          <div class="form-panel">
-            <h3 class="form-section-title">Eigenschaften</h3>
-            <div class="form-row">
-              <div class="form-group form-col-6">
-                <label for="entryPriority" class="form-label">Priorität</label>
-                <div class="select-with-icon">
-                  <select class="form-input" id="entryPriority">
-                    <option value="low">Niedrig</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="high">Hoch</option>
-                    <option value="urgent">Dringend</option>
-                  </select>
-                  <div class="select-icon">
-                    <i class="fas fa-flag"></i>
-                  </div>
-                </div>
-                <small class="form-hint">Bestimmt die Hervorhebung im Blackboard</small>
-              </div>
-              
-              <div class="form-group form-col-6">
-                <label for="entryExpiresAt" class="form-label">Gültig bis (optional)</label>
-                <div class="input-with-icon">
-                  <input type="date" class="form-input" id="entryExpiresAt">
-                  <div class="input-icon">
-                    <i class="fas fa-calendar"></i>
-                  </div>
-                </div>
-                <small class="form-hint">Leer lassen für unbegrenzte Gültigkeit</small>
-              </div>
-            </div>
-            
-            <div class="form-group form-checkbox-container">
-              <div class="form-checkbox">
-                <input type="checkbox" id="entryRequiresConfirmation">
-                <label for="entryRequiresConfirmation" class="checkbox-label">
-                  <span class="checkbox-icon"></span>
-                  <span class="checkbox-text">Lesebestätigung erforderlich</span>
-                </label>
-              </div>
-              <small class="form-hint">Wenn aktiviert, müssen Mitarbeiter bestätigen, dass sie diesen Eintrag gelesen haben.</small>
+          <!-- Organisationseinheit -->
+          <div class="form-group large-form-group">
+            <label for="entryOrgLevel" class="big-label">Wer soll den Eintrag sehen?</label>
+            <select class="big-input" id="entryOrgLevel" required>
+              <option value="" disabled selected>-- Bitte wählen --</option>
+              <option value="company">Alle Mitarbeiter</option>
+              <option value="department">Bestimmte Abteilung</option>
+              <option value="team">Bestimmtes Team</option>
+            </select>
+          </div>
+          
+          <div class="form-group large-form-group">
+            <label for="entryOrgId" class="big-label">Welche Abteilung/Team?</label>
+            <select class="big-input" id="entryOrgId" required disabled>
+              <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
+            </select>
+          </div>
+          
+          <!-- Wichtigkeit und Datum -->
+          <div class="form-group large-form-group">
+            <label for="entryPriority" class="big-label">Wie wichtig ist der Eintrag?</label>
+            <select class="big-input" id="entryPriority">
+              <option value="low">Niedrig</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">Hoch</option>
+              <option value="urgent">Dringend</option>
+            </select>
+          </div>
+          
+          <div class="form-group large-form-group">
+            <label for="entryExpiresAt" class="big-label">Gültig bis (optional)</label>
+            <input type="date" class="big-input" id="entryExpiresAt">
+          </div>
+          
+          <!-- Checkbox für Bestätigung -->
+          <div class="form-group large-form-group">
+            <div class="simple-checkbox">
+              <input type="checkbox" id="entryRequiresConfirmation">
+              <label for="entryRequiresConfirmation">
+                Mitarbeiter müssen bestätigen, dass sie diesen Eintrag gelesen haben
+              </label>
             </div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-action="close">
-          <i class="fas fa-times"></i> Abbrechen
+        <button type="button" class="big-button secondary-button" data-action="close">
+          Abbrechen
         </button>
-        <button type="button" class="btn btn-primary" id="saveEntryBtn">
-          <i class="fas fa-save"></i> Speichern
+        <button type="button" class="big-button primary-button" id="saveEntryBtn">
+          Speichern
         </button>
       </div>
     </div>
