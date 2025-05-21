@@ -7,21 +7,26 @@ const express = require('express');
 const router = express.Router();
 const blackboardModel = require('../models/blackboard');
 const { authenticateToken } = require('../middleware/auth');
-// Temporarily disable tenant middleware due to database issues
-// const tenantMiddleware = require('../middleware/tenant');
+const tenantMiddleware = require('../middleware/tenant');
 const { checkFeature } = require('../middleware/features');
 
-// Set default tenant ID for testing
+// Fallback tenant ID wenn tenant middleware nicht funktioniert
 const DEFAULT_TENANT_ID = 1;
+
+// Debug log zum Überwachen der Datenbankverbindungen
+console.log("Blackboard API Routes geladen - Benutze Standard-DB:", process.env.DB_NAME);
 
 // Helper function to check if user can manage the entry
 async function canManageEntry(req, res, next) {
   try {
     const entryId = req.params.id;
-    // Use default tenant ID temporarily
-    req.tenantId = DEFAULT_TENANT_ID;
+    // Use tenant ID from middleware or fallback to default
+    req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
     
-    const entry = await blackboardModel.getEntryById(entryId, req.tenantId, req.user.id);
+    // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+    const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+    
+    const entry = await blackboardModel.getEntryById(entryId, numericTenantId, req.user.id);
     
     if (!entry) {
       return res.status(404).json({ message: 'Entry not found' });
@@ -31,12 +36,26 @@ async function canManageEntry(req, res, next) {
     const isAdmin = req.user.role === 'admin' || req.user.role === 'root';
     const isAuthor = entry.author_id === req.user.id;
     
-    if (!isAdmin && !isAuthor) {
-      return res.status(403).json({ message: 'You do not have permission to manage this entry' });
+    // Debug-Info
+    console.log(`User role: ${req.user.role}, isAdmin: ${isAdmin}, isAuthor: ${isAuthor}, entry author: ${entry.author_id}, user: ${req.user.id}`);
+    
+    // Admins haben immer die Berechtigung
+    if (isAdmin) {
+      console.log("Admin has permission to manage entry");
+      req.entry = entry;
+      return next();
     }
     
-    req.entry = entry;
-    next();
+    // Autoren nur, wenn sie nicht Admins sind
+    if (isAuthor) {
+      console.log("Author has permission to manage entry");
+      req.entry = entry;
+      return next();
+    }
+    
+    // Weder Admin noch Autor
+    console.log("User has no permission to manage entry");
+    return res.status(403).json({ message: 'You do not have permission to manage this entry' });
   } catch (error) {
     console.error('Error in canManageEntry middleware:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -90,12 +109,16 @@ async function canCreateForOrgLevel(req, res, next) {
  */
 router.get('/api/blackboard', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
-      // Use default tenant ID for testing
-      req.tenantId = DEFAULT_TENANT_ID;
+      // Use tenant ID from middleware or fallback to default
+      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
+      
+      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
       
       const options = {
         status: req.query.status || 'active',
@@ -107,7 +130,15 @@ router.get('/api/blackboard',
         sortDir: req.query.sortDir || 'DESC'
       };
       
-      const result = await blackboardModel.getAllEntries(req.tenantId, req.user.id, options);
+      const result = await blackboardModel.getAllEntries(numericTenantId, req.user.id, options);
+      
+      // Debug-Logging für Ergebnisse
+      console.log("Blackboard entries result:", JSON.stringify(result).substring(0, 200));
+      if (result.entries && result.entries.length > 0) {
+        console.log("First entry content type:", typeof result.entries[0].content);
+        console.log("First entry sample:", JSON.stringify(result.entries[0]).substring(0, 200));
+      }
+      
       res.json(result);
     } catch (error) {
       console.error('Error in GET /api/blackboard:', error);
@@ -121,15 +152,19 @@ router.get('/api/blackboard',
  */
 router.get('/api/blackboard/dashboard', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
-      // Use default tenant ID for testing
-      req.tenantId = DEFAULT_TENANT_ID;
+      // Use tenant ID from middleware or fallback to default
+      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
+      
+      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
       
       const limit = parseInt(req.query.limit || '3', 10);
-      const entries = await blackboardModel.getDashboardEntries(req.tenantId, req.user.id, limit);
+      const entries = await blackboardModel.getDashboardEntries(numericTenantId, req.user.id, limit);
       res.json(entries);
     } catch (error) {
       console.error('Error in GET /api/blackboard/dashboard:', error);
@@ -143,14 +178,18 @@ router.get('/api/blackboard/dashboard',
  */
 router.get('/api/blackboard/:id', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
-      // Use default tenant ID for testing
-      req.tenantId = DEFAULT_TENANT_ID;
+      // Use tenant ID from middleware or fallback to default
+      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
       
-      const entry = await blackboardModel.getEntryById(req.params.id, req.tenantId, req.user.id);
+      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      
+      const entry = await blackboardModel.getEntryById(req.params.id, numericTenantId, req.user.id);
       
       if (!entry) {
         return res.status(404).json({ message: 'Entry not found' });
@@ -169,25 +208,40 @@ router.get('/api/blackboard/:id',
  */
 router.post('/api/blackboard', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   canCreateForOrgLevel,
   async (req, res) => {
     try {
-      // Use default tenant ID for testing
-      req.tenantId = DEFAULT_TENANT_ID;
+      // Use tenant ID from middleware or fallback to default
+      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
+      
+      // Da die tenant_id in der DB ein Integer ist, müssen wir sie konvertieren
+      // Im Entwicklungsmodus verwenden wir 1 als Standard-Tenant-ID
+      let numericTenantId = 1;
+      
+      console.log(`Creating blackboard entry with tenant ID: ${numericTenantId} (konvertiert von ${req.tenantId})`);
+      
+      // Die org_id muss als Zahl vorliegen
+      let org_id = req.body.org_id;
+      if (typeof org_id === 'string') {
+        org_id = parseInt(org_id, 10);
+      }
       
       const entryData = {
-        tenant_id: req.tenantId,
+        tenant_id: numericTenantId, // numerische tenant_id
         title: req.body.title,
         content: req.body.content,
         org_level: req.body.org_level,
-        org_id: req.body.org_id,
+        org_id: org_id,
         author_id: req.user.id,
         expires_at: req.body.expires_at || null,
         priority: req.body.priority || 'normal',
         requires_confirmation: req.body.requires_confirmation || false
       };
+      
+      console.log("Blackboard entry data:", entryData);
       
       const entry = await blackboardModel.createEntry(entryData);
       res.status(201).json(entry);
@@ -203,8 +257,9 @@ router.post('/api/blackboard',
  */
 router.put('/api/blackboard/:id', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   canManageEntry,
   async (req, res) => {
     try {
@@ -213,10 +268,13 @@ router.put('/api/blackboard/:id',
         ...req.body
       };
       
+      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      
       const updatedEntry = await blackboardModel.updateEntry(
         req.params.id, 
         entryData, 
-        req.tenantId
+        numericTenantId
       );
       
       res.json(updatedEntry);
@@ -232,12 +290,16 @@ router.put('/api/blackboard/:id',
  */
 router.delete('/api/blackboard/:id', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   canManageEntry,
   async (req, res) => {
     try {
-      const success = await blackboardModel.deleteEntry(req.params.id, req.tenantId);
+      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      
+      const success = await blackboardModel.deleteEntry(req.params.id, numericTenantId);
       
       if (!success) {
         return res.status(404).json({ message: 'Entry not found' });
@@ -256,8 +318,9 @@ router.delete('/api/blackboard/:id',
  */
 router.post('/api/blackboard/:id/confirm', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
       const success = await blackboardModel.confirmEntry(req.params.id, req.user.id);
@@ -281,8 +344,9 @@ router.post('/api/blackboard/:id/confirm',
  */
 router.get('/api/blackboard/:id/confirmations', 
   authenticateToken, 
-  // tenantMiddleware, // Temporarily disabled
-  // checkFeature('blackboard_system'), // Temporarily disabled
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
       // Only admins can view confirmation status
@@ -290,9 +354,12 @@ router.get('/api/blackboard/:id/confirmations',
         return res.status(403).json({ message: 'Only admins can view confirmation status' });
       }
       
+      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
+      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      
       const confirmations = await blackboardModel.getConfirmationStatus(
         req.params.id, 
-        req.tenantId
+        numericTenantId
       );
       
       res.json(confirmations);

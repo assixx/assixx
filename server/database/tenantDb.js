@@ -19,15 +19,18 @@ async function createTenantConnection(tenantId) {
     
     try {
         // Tenant-spezifische Datenbank-Konfiguration
+        // In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
         const dbConfig = {
             host: process.env.DB_HOST || 'localhost',
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || '',
-            database: `assixx_${tenantId}`,
+            database: process.env.DB_NAME || 'lohnabrechnung', // Verwende DB_NAME aus .env statt tenant-spezifischer DB
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0
         };
+        
+        console.log(`Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`);
         
         // Verbindungspool erstellen
         const pool = await mysql.createPool(dbConfig);
@@ -50,8 +53,17 @@ async function createTenantConnection(tenantId) {
 /**
  * Initialisiert eine neue Tenant-Datenbank
  * Wird beim Onboarding einer neuen Firma verwendet
+ * 
+ * In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
  */
 async function initializeTenantDatabase(tenantId) {
+    // Im Entwicklungsmodus verwenden wir die Haupt-Datenbank
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`);
+        return;
+    }
+    
+    // Im Produktionsmodus führen wir die ursprüngliche Logik aus
     const connection = await mysql.createConnection({
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER || 'root',

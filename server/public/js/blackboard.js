@@ -24,8 +24,11 @@ let entriesLoadingEnabled = false;
 document.addEventListener('DOMContentLoaded', function() {
   console.log("Blackboard initializing...");
   
-  // WICHTIG: Standardmäßig deaktivieren wir das automatische Laden
-  entriesLoadingEnabled = false;
+  // Aktiviere das automatische Laden der Einträge
+  entriesLoadingEnabled = true;
+  
+  // Alle Schließen-Buttons einrichten
+  setupCloseButtons();
   
   // Check if user is logged in
   checkLoggedIn().then(() => {
@@ -43,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (newEntryBtn) {
         newEntryBtn.style.display = isAdmin ? 'block' : 'none';
       }
+      console.log(`User role: ${currentUserRole}, isAdmin: ${isAdmin}, New Entry button visibility: ${isAdmin ? 'visible' : 'hidden'}`);
       
       // Load departments and teams for form dropdowns
       loadDepartmentsAndTeams();
@@ -76,6 +80,41 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.href = "/login.html";
   });
 });
+
+/**
+ * Setup close buttons for all modals
+ */
+function setupCloseButtons() {
+  console.log("Setting up close buttons for modals");
+  
+  // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
+  document.querySelectorAll('[data-action="close"]').forEach(button => {
+    button.addEventListener('click', function() {
+      console.log("Close button clicked");
+      // Finde das übergeordnete Modal
+      const modal = this.closest('.modal-overlay');
+      if (modal) {
+        console.log("Closing modal:", modal.id);
+        window.DashboardUI.closeModal(modal.id);
+      } else {
+        console.error("No parent modal found for close button");
+      }
+    });
+  });
+  
+  // Schließen beim Klicken außerhalb des Modal-Inhalts
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(event) {
+      // Nur schließen, wenn der Klick auf den Modal-Hintergrund erfolgt (nicht auf den Inhalt)
+      if (event.target === modal) {
+        console.log("Clicked outside modal content, closing modal:", modal.id);
+        window.DashboardUI.closeModal(modal.id);
+      }
+    });
+  });
+  
+  console.log("Close buttons setup completed");
+}
 
 /**
  * Setup all event listeners
@@ -288,12 +327,20 @@ function displayEntries(entries) {
   }
   
   entries.forEach(entry => {
+    console.log("Processing entry:", entry);
     const col = document.createElement('div');
     // Use class appropriate for the dashboard grid in admin-grid
     col.className = 'admin-card';
     
+    // Sicherstellen, dass entry.content ein String ist
+    let content = entry.content;
+    if (typeof content !== 'string') {
+      content = JSON.stringify(content) || '';
+      console.warn("Entry content is not a string:", entry.content);
+    }
+    
     // Format content preview (strip HTML and limit length)
-    let contentPreview = entry.content.replace(/<\/?[^>]+(>|$)/g, '');
+    let contentPreview = content.replace(/<\/?[^>]+(>|$)/g, '');
     if (contentPreview.length > 150) {
       contentPreview = contentPreview.substring(0, 147) + '...';
     }

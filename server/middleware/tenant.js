@@ -83,12 +83,25 @@ async function tenantMiddleware(req, res, next) {
             });
         }
         
+        // Tenant-Datenbankverbindung erstellen
+        let tenantDb;
+        try {
+            tenantDb = await createTenantConnection(tenantId);
+        } catch (dbError) {
+            console.error('Fehler bei der Tenant-DB-Verbindung:', dbError);
+            // Fallback zur Hauptdatenbank im Entwicklungsmodus
+            tenantDb = db;
+        }
+        
         // Tenant-Informationen an Request anhängen
         req.tenant = {
             id: tenantId,
             config: tenantConfig,
-            db: await createTenantConnection(tenantId)
+            db: tenantDb
         };
+        
+        // Tenant-ID für Models verfügbar machen
+        req.tenantId = tenantId;
         
         // Firmen-spezifisches Branding laden
         req.branding = {

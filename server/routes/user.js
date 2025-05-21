@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const User = require('../models/user');
+const db = require('../database');
 
 /**
  * @route GET /api/user/profile
@@ -23,7 +24,8 @@ router.get('/profile', authenticateToken, async (req, res) => {
     // Get department information if available
     let departmentInfo = null;
     if (user.department_id) {
-      const [departments] = await req.tenantDb.query(
+      // Verwende db statt req.tenantDb
+      const [departments] = await db.query(
         'SELECT * FROM departments WHERE id = ?',
         [user.department_id]
       );
@@ -36,7 +38,8 @@ router.get('/profile', authenticateToken, async (req, res) => {
     // Get team information if available
     let teamInfo = null;
     if (user.team_id) {
-      const [teams] = await req.tenantDb.query(
+      // Verwende db statt req.tenantDb
+      const [teams] = await db.query(
         'SELECT * FROM teams WHERE id = ?',
         [user.team_id]
       );
