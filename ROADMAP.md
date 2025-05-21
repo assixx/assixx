@@ -45,142 +45,114 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - [x] Integration mit Dashboard und Navigation
    - [x] Erinnerungsfunktion für wichtige Termine
 
-3. **Chat-Funktion**
-   - [ ] Direkte Kommunikation zwischen Admins und Mitarbeitern
-   - [ ] Posteingang für jeden Mitarbeiter
-   - [ ] Benachrichtigungen über neue Nachrichten
-   - [ ] Archiv für vergangene Konversationen
-   - [ ] Möglichkeit für Dateianhänge in Nachrichten
-
-4. **Schichtplanungs-Tool**
+3. **Schichtplanungs-Tool** 📅
    - [ ] Interaktiver Schichtplaner für Team- und Abteilungsleiter
    - [ ] Automatische Schichtplanerstellung basierend auf Verfügbarkeiten
    - [ ] Mitarbeiter-Tauschbörse für Schichten
    - [ ] Benachrichtigungen über Schichtänderungen
    - [ ] Überstunden- und Fehlzeitenerfassung
 
-5. **TPM-Kalender (Total Productive Maintenance)**
-   - [ ] Terminplanung für Maschinenwartungen
-   - [ ] Wiederkehrende Wartungsintervalle
-   - [ ] Zuständigkeitsverwaltung für Maintenance-Teams
-   - [ ] Dokumentation durchgeführter Wartungen
-   - [ ] Warnungen bei überfälligen Wartungsterminen
-
-6. **Umfrage-Tool**
-   - [ ] Erstellung von Multiple-Choice-Umfragen durch Admins
-   - [ ] Verpflichtende Umfragen für Mitarbeiter
-   - [ ] Automatische Auswertung und Visualisierung der Ergebnisse
-   - [ ] Anonyme Umfragen für sensible Themen
-   - [ ] Export von Umfrageergebnissen
-
-7. **Urlaubsantrag-System**
-   - [ ] Digitale Urlaubsanträge von Mitarbeitern an Admins
-   - [ ] Übersicht über verfügbare Urlaubstage
-   - [ ] Genehmigungsprozess mit Benachrichtigungen
-   - [ ] Kalenderverfügbarkeit zur Vermeidung von Engpässen
-   - [ ] Übersicht für Admins über alle eingereichten Anträge
-
-8. **KVP-System (Kontinuierlicher Verbesserungsprozess)**
+4. **KVP-System (Kontinuierlicher Verbesserungsprozess)** 💡
    - [ ] Foto-Upload für Verbesserungsvorschläge oder Problemmeldungen
    - [ ] Verfolgung des Status von eingereichten Vorschlägen
    - [ ] Bewertungssystem für Vorschläge
    - [ ] Belohnungssystem für umgesetzte Ideen
    - [ ] Auswertung und Reporting über eingereichte KVPs
 
-9. **Lohnabrechnungs-Upload & Verwaltung** 
+5. **Chat-Funktion** 💬
+   - [ ] Direkte Kommunikation zwischen Admins und Mitarbeitern
+   - [ ] Posteingang für jeden Mitarbeiter
+   - [ ] Benachrichtigungen über neue Nachrichten
+   - [ ] Archiv für vergangene Konversationen
+   - [ ] Möglichkeit für Dateianhänge in Nachrichten
+
+### Priorität 2: Wichtige Funktionen
+
+1. **Umfrage-Tool** 📊
+   - [ ] Erstellung von Multiple-Choice-Umfragen durch Admins
+   - [ ] Verpflichtende Umfragen für Mitarbeiter
+   - [ ] Automatische Auswertung und Visualisierung der Ergebnisse
+   - [ ] Anonyme Umfragen für sensible Themen
+   - [ ] Export von Umfrageergebnissen
+
+2. **Urlaubsantrag-System** 🏖️
+   - [ ] Digitale Urlaubsanträge von Mitarbeitern an Admins
+   - [ ] Übersicht über verfügbare Urlaubstage
+   - [ ] Genehmigungsprozess mit Benachrichtigungen
+   - [ ] Kalenderverfügbarkeit zur Vermeidung von Engpässen
+   - [ ] Übersicht für Admins über alle eingereichten Anträge
+
+3. **Lohnabrechnungs-Erweiterungen** 📑
    - [ ] Sichere Datei-Uploads mit Verschlüsselung
    - [ ] Automatische Kategorisierung
    - [ ] Versionskontrolle für Dokumente
    - [ ] Massenupload-Funktion
    - [ ] Automatische Benachrichtigungen bei neuen Dokumenten
 
-### Priorität 2: Wichtige Funktionen
-
-1. **Mehrsprachige Unterstützung**
-   - [ ] Grundlegende Mehrsprachigkeit (DE, EN)
-   - [ ] Erweiterung um weitere Sprachen (PL, TR)
-   - [ ] Sprachauswahl im Benutzerprofil
-   - [ ] Automatische Spracherkennung
-   - [ ] Übersetzungsmanagement-System
-
-2. **Benachrichtigungssystem**
-   - [ ] E-Mail-Templates anpassbar
-   - [ ] SMS-Benachrichtigungen (optional)
-   - [ ] In-App Push-Notifications
-   - [ ] Benachrichtigungs-Center
-   - [ ] Eskalationsregeln
-
-3. **Dokumenten-Management**
-   - [ ] OCR für durchsuchbare PDFs
-   - [ ] Automatische Archivierung
-   - [ ] Erweiterte Suchfunktion
-   - [ ] Dokument-Tags und Metadaten
-   - [ ] Compliance-Berichte
-
-4. **Mitarbeiter-Portal**
-   - [ ] Mobile-optimierte Ansicht
-   - [ ] Dokumente-Übersicht mit Filterung
-   - [ ] Download-Historie
-   - [ ] Persönliche Einstellungen
-   - [ ] Benachrichtigungseinstellungen
-
-5. **Digitales Handbuch/Wiki**
-   - [ ] Maschinen- und Prozessdokumentation
-   - [ ] Suchbare Anleitungen mit Bildern/Videos
-   - [ ] QR-Code-Zugriff auf Betriebshandbücher
-   - [ ] Versionierung von Dokumentationen
-   - [ ] Offline-Verfügbarkeit kritischer Anleitungen
+4. **TPM-Kalender (Total Productive Maintenance)** 🔧
+   - [ ] Terminplanung für Maschinenwartungen
+   - [ ] Wiederkehrende Wartungsintervalle
+   - [ ] Zuständigkeitsverwaltung für Maintenance-Teams
+   - [ ] Dokumentation durchgeführter Wartungen
+   - [ ] Warnungen bei überfälligen Wartungsterminen
 
 ### Priorität 3: Zusätzliche Features
 
-1. **Automatisierung**
-   - [ ] API für ERP-Integration
-   - [ ] Automatischer Import aus HR-Systemen
-   - [ ] Workflow-Engine
-   - [ ] Regelbasierte Aktionen
-   - [ ] Batch-Verarbeitung
-
-2. **Erweiterte Benutzerverwaltung**
-   - [ ] Single Sign-On (SSO)
-   - [ ] Active Directory Integration
-   - [ ] Detaillierte Audit-Trails
-   - [ ] Session-Management
-   - [ ] IP-Whitelisting
-
-3. **Reporting & Analytics**
-   - [ ] Dashboard mit KPIs
-   - [ ] Exportfunktionen (Excel, PDF)
-   - [ ] Benutzerdefinierte Berichte
-   - [ ] Automatische Reports per E-Mail
-   - [ ] Trend-Analysen
-
-4. **Sicherheit & Datenschutz**
-   - [ ] End-to-End-Verschlüsselung für Dokumente
-   - [ ] 2-Faktor-Authentifizierung
-   - [ ] DSGVO-konforme Datenverarbeitung
-   - [ ] Automatisches Löschen alter Dokumente
-   - [ ] Zugriffskontrolle mit detaillierten Rechten
-
-5. **UI/UX Verbesserungen**
-   - [ ] Dark Mode
-   - [ ] Customizable Dashboards
-   - [ ] Keyboard Shortcuts
-   - [ ] Erweiterte Filteroptionen
-   - [ ] Mobile App (iOS/Android)
-
-6. **Qualitätssicherungs-Checklisten**
+1. **Qualitätssicherungs-Checklisten** ✓
    - [ ] Digitale Checklisten für Qualitätskontrollen
    - [ ] Fotodokumentation von Qualitätsmängeln
    - [ ] Automatische Benachrichtigung bei Abweichungen
    - [ ] Trendanalyse von Qualitätsproblemen
    - [ ] Integration mit KVP-System
 
-7. **Skill-Matrix/Qualifikationsmanagement**
+2. **Mehrsprachige Unterstützung** 🌐
+   - [ ] Grundlegende Mehrsprachigkeit (DE, EN)
+   - [ ] Erweiterung um weitere Sprachen (PL, TR)
+   - [ ] Sprachauswahl im Benutzerprofil
+   - [ ] Automatische Spracherkennung
+   - [ ] Übersetzungsmanagement-System
+
+3. **Erweiterte Benachrichtigungen** 🔔
+   - [ ] E-Mail-Templates anpassbar
+   - [ ] SMS-Benachrichtigungen (optional)
+   - [ ] In-App Push-Notifications
+   - [ ] Benachrichtigungs-Center
+   - [ ] Eskalationsregeln
+
+4. **Erweiterte Benutzerverwaltung** 👥
+   - [ ] Single Sign-On (SSO)
+   - [ ] Active Directory Integration
+   - [ ] Detaillierte Audit-Trails
+   - [ ] Session-Management
+   - [ ] IP-Whitelisting
+
+5. **Mobile PWA** 📱
+   - [ ] Service Worker für Offline-Funktionalität
+   - [ ] Push-Notifications
+   - [ ] Touch-optimierte UI-Elemente
+   - [ ] App-Icon und Manifest
+   - [ ] Automatische Updates
+
+6. **Reporting & Analytics** 📈
+   - [ ] Dashboard mit KPIs
+   - [ ] Exportfunktionen (Excel, PDF)
+   - [ ] Benutzerdefinierte Berichte
+   - [ ] Automatische Reports per E-Mail
+   - [ ] Trend-Analysen
+
+7. **Skill-Matrix/Qualifikationsmanagement** 🏢
    - [ ] Übersicht über Qualifikationen und Zertifikate
    - [ ] Automatische Erinnerungen bei auslaufenden Zertifikaten
    - [ ] Planung von Weiterbildungen
    - [ ] Personalbedarfsplanung basierend auf Qualifikationsanforderungen
    - [ ] Integration mit Schichtplanung
+
+8. **Stripe Integration** 💳
+   - [ ] Payment Routes erstellen
+   - [ ] Webhook Handler
+   - [ ] Automatische Feature-Aktivierung nach Zahlung
+   - [ ] Rechnungsstellung und Zahlungsverfolgung
+   - [ ] Subscription Management
 
 ## Monetarisierung
 
@@ -240,32 +212,28 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 ## Technische Roadmap
 
 ### Q1 2025
-- [ ] Blackboard & Firmenkalender implementieren
-- [ ] Chat-Funktion zwischen Admins und Mitarbeitern
+- [x] Blackboard & Firmenkalender implementieren
 - [ ] Schichtplanungs-Tool entwickeln
-- [ ] Mobile PWA für Produktionsarbeiter
+- [ ] KVP-System implementieren
+- [ ] Chat-Funktion zwischen Admins und Mitarbeitern
 
 ### Q2 2025
-- [ ] TPM-Kalender und Wartungsplanung
-- [ ] Mehrsprachigkeit implementieren (DE, EN, PL)
-- [ ] Umfrage- und KVP-System
+- [ ] Umfrage-Tool entwickeln
 - [ ] Urlaubsantrags-Management
-- [ ] Docker-Deployment
+- [ ] Lohnabrechnungs-Erweiterungen
+- [ ] TPM-Kalender und Wartungsplanung
 
 ### Q3 2025
-- [ ] Mobile Apps (iOS/Android)
-- [ ] Digitales Handbuch/Wiki
-- [ ] API v2 mit GraphQL
-- [ ] Stripe Integration
-- [ ] Advanced Analytics
+- [ ] Qualitätssicherungs-Checklisten
+- [ ] Mehrsprachigkeit implementieren (DE, EN, PL)
+- [ ] Erweiterte Benachrichtigungen
+- [ ] Erweiterte Benutzerverwaltung
 
 ### Q4 2025
-- [ ] Qualitätssicherungs-Checklisten
+- [ ] Mobile PWA für Produktionsarbeiter
+- [ ] Reporting & Analytics
 - [ ] Skill-Matrix/Qualifikationsmanagement
-- [ ] AI-Features (Dokumentenklassifizierung)
-- [ ] Voice-Integration
-- [ ] Blockchain für Audit-Trail
-- [ ] IoT-Integration für Industrie 4.0
+- [ ] Stripe Integration
 
 ## Organisationsstruktur in Assixx
 
@@ -292,11 +260,11 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 ## Nächste Schritte
 
-1. **Sofort**: Blackboard- und Kalender-System implementieren
-2. **Diese Woche**: Chat-Funktion entwickeln
-3. **Nächste Woche**: Schichtplanungs-Tool konzipieren
-4. **Dieser Monat**: TPM-Kalender und Umfrage-System
-5. **Dieses Quartal**: Erste Version des KVP-Systems
+1. **Sofort**: Schichtplanungs-Tool konzipieren und implementieren
+2. **Diese Woche**: KVP-System entwickeln
+3. **Nächste Woche**: Chat-Funktion implementieren
+4. **Dieser Monat**: Umfrage-Tool und Urlaubsantrag-System
+5. **Dieses Quartal**: Lohnabrechnungs-Erweiterungen und TPM-Kalender
 
 ## Kontakt
 

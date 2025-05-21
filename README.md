@@ -51,7 +51,7 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - ✅ Berechtigungsprüfung
    - ✅ Stream für große Dateien
    - ✅ Download-Counter
-   - 🔄 Fehlerbehebung bei Dokumenten-Download
+   - ✅ Fehlerbehebung bei Dokumenten-Download
 
 2. **E-Mail-Benachrichtigungen** ✅
    - ✅ Nodemailer Integration
@@ -60,81 +60,116 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - ✅ Unsubscribe-Funktion mit Token-basierter Verifizierung
    - ✅ Automatische Benachrichtigungen bei neuen Dokumenten
 
-3. **Mobile PWA** 📱
-   - Service Worker
-   - Offline-Funktionalität
-   - Push-Notifications
-   - App-Icon und Manifest
+3. **Blackboard-System** ✅
+   - ✅ Frontend-Implementierung mit Dashboard-Design
+   - ✅ Backend-API für Verwaltung der Einträge
+   - ✅ Datenbankschema und Migrationen
+   - ✅ Lesebestätigungsfunktion
+   - ✅ Priorisierungssystem für Ankündigungen
+
+4. **Firmenkalender** ✅
+   - ✅ Zentraler Firmenkalender für allgemeine Events
+   - ✅ Abteilungsspezifische Kalender für interne Meetings
+   - ✅ Integration mit Dashboard und Navigation
+   - ✅ Erinnerungsfunktion für wichtige Termine
+
+5. **Schichtplanungs-Tool** 📅
+   - [ ] Interaktiver Schichtplaner für Team- und Abteilungsleiter
+   - [ ] Automatische Schichtplanerstellung basierend auf Verfügbarkeiten
+   - [ ] Mitarbeiter-Tauschbörse für Schichten
+   - [ ] Benachrichtigungen über Schichtänderungen
+   - [ ] Überstunden- und Fehlzeitenerfassung
+
+6. **KVP-System** 💡
+   - [ ] Foto-Upload für Verbesserungsvorschläge oder Problemmeldungen
+   - [ ] Verfolgung des Status von eingereichten Vorschlägen
+   - [ ] Bewertungssystem für Vorschläge
+   - [ ] Belohnungssystem für umgesetzte Ideen
+
+7. **Chat-Funktion** 💬
+   - [ ] Direkte Kommunikation zwischen Admins und Mitarbeitern
+   - [ ] Posteingang für jeden Mitarbeiter
+   - [ ] Benachrichtigungen über neue Nachrichten
+   - [ ] Möglichkeit für Dateianhänge
 
 ### Priorität 2: Wichtige Funktionen
-1. **Stripe Integration** 💳
-   - Payment Routes erstellen
-   - Webhook Handler
-   - Automatische Feature-Aktivierung nach Zahlung
+1. **Umfrage-Tool** 📊
+   - [ ] Erstellung von Multiple-Choice-Umfragen
+   - [ ] Verpflichtende Umfragen für Mitarbeiter
+   - [ ] Automatische Auswertung und Visualisierung
+   - [ ] Anonyme Umfragen für sensible Themen
 
-2. **Lohnabrechnungs-Upload & Verwaltung** 
+2. **Urlaubsantrag-System** 🏖️
+   - [ ] Digitale Urlaubsanträge von Mitarbeitern
+   - [ ] Übersicht über verfügbare Urlaubstage
+   - [ ] Genehmigungsprozess mit Benachrichtigungen
+   - [ ] Kalenderverfügbarkeit zur Vermeidung von Engpässen
+
+3. **Lohnabrechnungs-Erweiterungen** 📑
    - [ ] Sichere Datei-Uploads mit Verschlüsselung
    - [ ] Automatische Kategorisierung
    - [ ] Versionskontrolle für Dokumente
    - [ ] Massenupload-Funktion
    - [ ] Automatische Benachrichtigungen bei neuen Dokumenten
 
-3. **Customer Portal**
-   - Subscription Management 
-   - Feature-Übersicht
-   - Rechnungshistorie
-   - Billing Dashboard
+4. **TPM-Kalender** 🔧
+   - [ ] Terminplanung für Maschinenwartungen
+   - [ ] Wiederkehrende Wartungsintervalle
+   - [ ] Zuständigkeitsverwaltung für Maintenance-Teams
+   - [ ] Dokumentation durchgeführter Wartungen
 
-4. **Benachrichtigungssystem**
+### Priorität 3: Zusätzliche Features
+1. **Qualitätssicherungs-Checklisten** ✓
+   - [ ] Digitale Checklisten für Qualitätskontrollen
+   - [ ] Fotodokumentation von Qualitätsmängeln
+   - [ ] Automatische Benachrichtigung bei Abweichungen
+   - [ ] Trendanalyse von Qualitätsproblemen
+
+2. **Mehrsprachige Unterstützung** 🌐
+   - [ ] Grundlegende Mehrsprachigkeit (DE, EN)
+   - [ ] Erweiterung um weitere Sprachen (PL, TR)
+   - [ ] Sprachauswahl im Benutzerprofil
+   - [ ] Automatische Spracherkennung
+
+3. **Erweiterte Benachrichtigungen** 🔔
    - [ ] E-Mail-Templates anpassbar
    - [ ] SMS-Benachrichtigungen (optional)
    - [ ] In-App Push-Notifications
    - [ ] Benachrichtigungs-Center
    - [ ] Eskalationsregeln
 
-### Priorität 3: Zusätzliche Features
-1. **Reporting & Analytics**
-   - Dashboard mit KPIs
-   - Export-Funktionen
-   - Automatische Reports
-
-2. **Sicherheit & Datenschutz**
-   - [ ] End-to-End-Verschlüsselung für Dokumente
-   - [ ] 2-Faktor-Authentifizierung
-   - [ ] DSGVO-konforme Datenverarbeitung
-   - [ ] Automatisches Löschen alter Dokumente
-   - [ ] Zugriffskontrolle mit detaillierten Rechten
-
-3. **UI/UX Polish**
-   - Dark Mode
-   - Keyboard Shortcuts
-   - Performance-Optimierung
+4. **Erweiterte Benutzerverwaltung** 👥
+   - [ ] Single Sign-On (SSO)
+   - [ ] Active Directory Integration
+   - [ ] Detaillierte Audit-Trails
+   - [ ] Session-Management
+   - [ ] IP-Whitelisting
 
 ## Technische Roadmap
 
 ### Q1 2025
-- [ ] Stripe Integration
-- [ ] Mobile PWA
-- [ ] 2FA Implementation
-- [ ] Automatische Backups
+- [ ] Schichtplanungs-Tool
+- [ ] KVP-System
+- [ ] Chat-Funktion
+- [ ] Umfrage-Tool
 
 ### Q2 2025
-- [ ] Docker-Deployment
-- [ ] Kubernetes-Orchestrierung
-- [ ] CI/CD Pipeline
-- [ ] Monitoring & Alerting
+- [ ] Urlaubsantrag-System
+- [ ] Lohnabrechnungs-Erweiterungen
+- [ ] TPM-Kalender
+- [ ] Qualitätssicherungs-Checklisten
 
 ### Q3 2025
-- [ ] Mobile Apps (iOS/Android)
-- [ ] API v2 mit GraphQL
-- [ ] Mehrsprachigkeit (EN, TR, PL)
-- [ ] Advanced Analytics
+- [ ] Mehrsprachige Unterstützung
+- [ ] Erweiterte Benachrichtigungen
+- [ ] Erweiterte Benutzerverwaltung
+- [ ] Mobile PWA
 
 ### Q4 2025
-- [ ] AI-Features (Dokumentenklassifizierung)
-- [ ] Voice-Integration
-- [ ] Blockchain für Audit-Trail
-- [ ] IoT-Integration für Industrie 4.0
+- [ ] Reporting & Analytics
+- [ ] Skill-Matrix/Qualifikationsmanagement
+- [ ] Stripe Integration
+- [ ] Automatisierung
 
 ## Gesamte Entwicklungsphasen im Überblick
 
@@ -213,20 +248,22 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
   - [ ] DSGVO-konforme Verschlüsselung
   - [ ] Erweiterte Audit Logs
 
-## Aktueller Fokus: Mobile-First & Chat-Funktion
+## Aktueller Fokus: Schichtplanungs-Tool & KVP-System
 Der aktuelle Entwicklungsfokus liegt auf zwei Hauptbereichen:
 
-1. **Mobile-First Optimierung**:
-   - Entwicklung einer Progressive Web App (PWA)
-   - Service Worker für Offline-Funktionalität
-   - Responsive Design für alle Bildschirmgrößen
-   - Push-Benachrichtigungen für neue Dokumente
+1. **Schichtplanungs-Tool**:
+   - Interaktiver Schichtplaner für Team- und Abteilungsleiter
+   - Automatische Schichtplanerstellung basierend auf Verfügbarkeiten
+   - Mitarbeiter-Tauschbörse für Schichten
+   - Benachrichtigungen über Schichtänderungen
+   - Überstunden- und Fehlzeitenerfassung
 
-2. **Chat-Funktion**:
-   - Direkte Kommunikation zwischen Admins und Mitarbeitern
-   - Posteingang für jeden Mitarbeiter
-   - Benachrichtigungen über neue Nachrichten
-   - Möglichkeit für Dateianhänge
+2. **KVP-System (Kontinuierlicher Verbesserungsprozess)**:
+   - Foto-Upload für Verbesserungsvorschläge oder Problemmeldungen
+   - Verfolgung des Status von eingereichten Vorschlägen
+   - Bewertungssystem für Vorschläge
+   - Belohnungssystem für umgesetzte Ideen
+   - Auswertung und Reporting über eingereichte KVPs
 
 ## KPIs und Erfolgsmessung
 

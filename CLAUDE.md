@@ -116,7 +116,7 @@
 
 ## Was wir als nächstes machen müssen
 
-### 🔴 PRIORITÄT 1 - KERNFUNKTIONEN (vor Sicherheit)
+### 🔴 PRIORITÄT 1 - KERNFUNKTIONEN
 1. **Blackboard-System** ✅
    - ✅ Frontend-Implementierung mit Dashboard-Design
    - ✅ Backend-API für Verwaltung der Einträge
@@ -146,62 +146,70 @@
    - ✅ Berechtigungssystem für verschiedene Kalenderebenen
    - ✅ Erinnerungsfunktion für wichtige Termine
 
-5. **Mobile PWA**
-   - Service Worker
-   - Offline-Funktionalität
+5. **Schichtplanungs-Tool** 📅
+   - Interaktiver Schichtplaner für Team- und Abteilungsleiter
+   - Automatische Schichtplanerstellung
+   - Mitarbeiter-Tauschbörse für Schichten
+   - Benachrichtigungen über Schichtänderungen
+   - Überstunden- und Fehlzeitenerfassung
+
+6. **KVP-System** 💡
+   - Foto-Upload für Verbesserungsvorschläge
+   - Verfolgung des Status von eingereichten Vorschlägen
+   - Bewertungssystem für Vorschläge
+   - Belohnungssystem für umgesetzte Ideen
+
+7. **Chat-Funktion** 💬
+   - Direkte Kommunikation zwischen Admins und Mitarbeitern
+   - Posteingang für jeden Mitarbeiter
+   - Benachrichtigungen über neue Nachrichten
+   - Möglichkeit für Dateianhänge
+
+### 🟡 PRIORITÄT 2 - Weitere Features
+1. **Umfrage-Tool** 📊
+   - Erstellung von Multiple-Choice-Umfragen
+   - Verpflichtende Umfragen für Mitarbeiter
+   - Automatische Auswertung und Visualisierung
+   - Anonyme Umfragen für sensible Themen
+
+2. **Urlaubsantrag-System** 🏖️
+   - Digitale Urlaubsanträge von Mitarbeitern
+   - Übersicht über verfügbare Urlaubstage
+   - Genehmigungsprozess mit Benachrichtigungen
+   - Kalenderverfügbarkeit für Planung
+
+3. **Lohnabrechnungs-Erweiterungen** 📑
+   - Verschlüsselte Uploads
+   - Automatische Kategorisierung
+   - Massenupload-Funktion
+   - Automatische Benachrichtigungen
+
+4. **TPM-Kalender** 🔧
+   - Terminplanung für Maschinenwartungen
+   - Wiederkehrende Wartungsintervalle
+   - Zuständigkeitsverwaltung für Maintenance
+   - Warnungen bei überfälligen Wartungen
+
+### 🟢 PRIORITÄT 3 (Spätere Implementierung)
+1. **Qualitätssicherungs-Checklisten** ✓
+   - Digitale Checklisten für Qualitätskontrollen
+   - Fotodokumentation von Qualitätsmängeln
+   - Trendanalyse von Qualitätsproblemen
+
+2. **Mehrsprachige Unterstützung** 🌐
+   - Grundlegende Mehrsprachigkeit (DE, EN)
+   - Erweiterung um weitere Sprachen (PL, TR)
+   - Sprachauswahl im Benutzerprofil
+
+3. **Mobile PWA** 📱
+   - Service Worker für Offline-Funktionalität
    - Push-Notifications
    - App-Icon und Manifest
 
-### 🟡 PRIORITÄT 2 - Business Features
-1. **Stripe Integration**
-   ```bash
-   npm install stripe
-   ```
-   - Payment Routes erstellen
-   - Webhook Handler
-   - Automatische Feature-Aktivierung nach Zahlung
-
-2. **Customer Portal**
-   - Subscription Management 
-   - Feature-Übersicht
-   - Billing Dashboard
-
-3. **Mobile-First Umsetzung**
-   - PWA Implementation
-   - Touch-optimierte UI
-   - Offline-Funktionalität
-
-### 🟡 PRIORITÄT 2 (Diese Woche)
-1. **Lohnabrechnungs-Features**
-   - Verschlüsselte Uploads
-   - Automatische Benachrichtigungen
-   - Massenupload
-
-2. **Sicherheit**
-   - 2FA einbauen
-   - DSGVO-konforme Verschlüsselung
-   - Audit Logs erweitern
-
-3. **E-Mail System**
-   - Templates für Premium-Kunden
-   - Automatische Benachrichtigungen
-   - Usage-Limits beachten
-
-### 🟢 PRIORITÄT 3 (Diesen Monat)
-1. **Reporting & Analytics**
+4. **Reporting & Analytics** 📈
    - Dashboard mit KPIs
    - Export-Funktionen
    - Automatische Reports
-
-2. **API & Integrationen**
-   - REST API v2
-   - Webhook System
-   - ERP-Integration
-
-3. **UI/UX Polish**
-   - Dark Mode
-   - Keyboard Shortcuts
-   - Performance-Optimierung
 
 ## Technische Details zum Feature-System
 
@@ -271,9 +279,9 @@ app.post('/webhook/stripe', async (req, res) => {
 - CLAUDE.md IMMER zuerst lesen
 - Git-Status und letzte Commits prüfen
 - Nächste Features planen:
-  - Mobile PWA für bessere Mobilgeräte-Nutzung entwickeln
-  - Chat-Funktion für direkte Kommunikation implementieren
-  - Stripe Integration für Zahlungsabwicklung vorbereiten
+  - Schichtplanungs-Tool als höchste Priorität implementieren
+  - KVP-System für kontinuierlichen Verbesserungsprozess entwickeln
+  - Chat-Funktion für direkte Kommunikation vorbereiten
 
 ## Feature-Preise (bereits in DB)
 - **Basic**: €0/Monat
