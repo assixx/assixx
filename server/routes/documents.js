@@ -6,6 +6,9 @@ const { authenticateToken, authorizeRole } = require('../auth');
 const { checkFeature } = require('../middleware/features');
 const { checkDocumentAccess } = require('../middleware/documentAccess');
 const Document = require('../models/document');
+const User = require('../models/user');
+const Feature = require('../models/feature');
+const emailService = require('../utils/emailService');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -65,6 +68,49 @@ router.post('/upload', authenticateToken, authorizeRole('admin'), upload.single(
     await fs.unlink(filePath);
 
     logger.info(`Admin ${adminId} successfully uploaded document ${documentId} for user ${userId}`);
+    
+    // E-Mail-Benachrichtigung senden, wenn Feature aktiviert ist
+    try {
+      // Benutzer-Details abrufen
+      const user = await User.findById(userId);
+      
+      if (user && user.email) {
+        // Prüfen, ob E-Mail-Feature aktiviert ist (nur für zahlende Kunden)
+        const tenantId = req.user.tenant_id || 1;
+        const hasEmailFeature = await Feature.checkTenantAccess(tenantId, 'email_notifications');
+        
+        if (hasEmailFeature) {
+          // Dokument-Details für die E-Mail
+          const documentInfo = {
+            id: documentId,
+            file_name: originalname,
+            category: category || 'Allgemein',
+            upload_date: new Date()
+          };
+          
+          // E-Mail senden und Feature-Nutzung protokollieren
+          const emailResult = await emailService.sendNewDocumentNotification(user, documentInfo);
+          
+          if (emailResult.success) {
+            await Feature.logUsage(tenantId, 'email_notifications', adminId, {
+              action: 'document_notification',
+              document_id: documentId,
+              recipient: userId
+            });
+            
+            logger.info(`Email notification sent to user ${userId} for document ${documentId}`);
+          } else {
+            logger.warn(`Failed to send email notification to user ${userId}: ${emailResult.error}`);
+          }
+        } else {
+          logger.info(`Email notifications feature not available for tenant ${tenantId}`);
+        }
+      }
+    } catch (emailError) {
+      // Wir werfen keinen Fehler, wenn die E-Mail fehlschlägt, sondern loggen nur
+      logger.error(`Error sending email notification: ${emailError.message}`);
+    }
+    
     res.status(201).json({ message: 'Dokument erfolgreich hochgeladen', documentId });
   } catch (error) {
     logger.error(`Error uploading document by Admin ${adminId}: ${error.message}`);

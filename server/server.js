@@ -20,6 +20,7 @@ const userRoutes = require('./routes/users');
 const documentRoutes = require('./routes/documents');
 const featureRoutes = require('./routes/features');
 const signupRoutes = require('./routes/signup');
+const unsubscribeRoutes = require('./routes/unsubscribe');
 
 // Multi-tenant middleware
 const tenantMiddleware = require('./middleware/tenant');
@@ -322,6 +323,7 @@ app.use('/teams', authenticateToken, teamRoutes);
 app.use('/users', userRoutes);
 app.use('/documents', authenticateToken, documentRoutes);
 app.use('/features', featureRoutes);
+app.use('/unsubscribe', unsubscribeRoutes); // E-Mail-Abmeldung (ohne Authentifizierung)
 
 // TEST Routes without authentication - SECURITY RISK - FOR DEVELOPMENT ONLY
 // WARNING: These routes bypass all authentication and authorization

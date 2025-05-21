@@ -17,7 +17,21 @@
 - **Standort**: `/home/scs/projects/Assixx/` (WSL Ubuntu)
 - **Repository**: https://github.com/SCS-Technik/Assixx
 
-## Was wir heute gemacht haben (2025-05-20)
+## Was wir heute gemacht haben (2025-05-21)
+1. **E-Mail-Benachrichtigungssystem** ✅
+   - Nodemailer Integration implementiert
+   - E-Mail-Templates für verschiedene Events erstellt
+   - Queue für Massen-E-Mails entwickelt
+   - Unsubscribe-Funktion implementiert
+   - Automatische Benachrichtigungen bei neuen Dokumenten
+
+2. **Employee Dashboard Bugfixes** ✅
+   - Dokumentenzähler im Dashboard korrigiert
+   - Automatische Aktualisierung nach Änderungen
+   - Event-Handler für Dokument-Aktionen verbessert
+   - Konsistenz zwischen Anzeige und Datenbankwerten sichergestellt
+
+## Was wir gestern gemacht haben (2025-05-20)
 1. **Token-Debugging-System** ✅
    - Token-Debug-Seite implementiert (`/token-debug.html`)
    - JWT Token-Validierung und -Anzeige
@@ -96,11 +110,12 @@
    - ✅ Download-Counter
    - 🔄 Fehlerbehebung bei spezifischen Szenarien
 
-2. **E-Mail-Benachrichtigungen**
-   - Nodemailer Integration
-   - Templates für verschiedene Events
-   - Queue für Massen-Mails
-   - Unsubscribe-Funktion
+2. **E-Mail-Benachrichtigungen** ✅
+   - ✅ Nodemailer Integration
+   - ✅ Templates für verschiedene Events
+   - ✅ Queue für Massen-Mails
+   - ✅ Unsubscribe-Funktion
+   - ✅ Feature-Prüfung (Premium-Feature)
 
 3. **Mobile PWA**
    - Service Worker
@@ -297,7 +312,16 @@ app.post('/webhook/stripe', async (req, res) => {
    - HTTPS-Zertifikate einrichten
    - Environment-Variablen sichern
 
-### Neue Dateien heute (2025-05-20)
+### Neue Dateien heute (2025-05-21)
+- `/server/utils/emailService.js` - E-Mail-Service mit Queue und Templates
+- `/server/templates/email/` - Ordner für E-Mail-Templates
+  - `welcome.html` - Template für Willkommensnachrichten
+  - `new-document.html` - Template für Dokumentenbenachrichtigungen
+  - `notification.html` - Allgemeines Template für Benachrichtigungen
+- `/server/routes/unsubscribe.js` - Route für E-Mail-Abmeldungen
+- `/server/scripts/send-bulk-email.js` - Beispielskript für Massen-E-Mails
+
+### Neue Dateien gestern (2025-05-20)
 - `/server/auth-unified.js` - Vereinheitlichte Auth-Implementierung
 - `/server/fix-token-validation.js` - Diagnose-Tool für Token-Probleme
 - `/server/update-auth.js` - Script zum Aktualisieren der Auth-Implementierung
@@ -318,5 +342,5 @@ app.post('/webhook/stripe', async (req, res) => {
 - `/server/public/js/csrf-helper.js` - Client-seitiger CSRF-Helper
 
 ---
-Stand: 2025-05-20
-Nächste Session: Download-Fehlerbehebung und danach E-Mail-Benachrichtigungen
+Stand: 2025-05-21
+Nächste Session: Mobile PWA und danach Stripe-Integration
