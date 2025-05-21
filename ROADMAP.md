@@ -28,12 +28,15 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 ### Priorität 1: Kernfeatures für Produktionsbetriebe
 
-1. **Blackboard-System**
-   - [ ] Firmenweit sichtbares Blackboard für allgemeine Ankündigungen
-   - [ ] Abteilungsspezifische Blackboards (nur für Mitglieder sichtbar)
-   - [ ] Team-basierte Blackboards für spezifische Arbeitsgruppen
-   - [ ] Admin-Panel zur Verwaltung aller Blackboards
-   - [ ] Leserechte für Mitarbeiter, volle Rechte für Admins
+1. **Blackboard-System** ✅
+   - [x] Firmenweit sichtbares Blackboard für allgemeine Ankündigungen
+   - [x] Abteilungsspezifische Blackboards (nur für Mitglieder sichtbar)
+   - [x] Team-basierte Blackboards für spezifische Arbeitsgruppen
+   - [x] Benutzerfreundliches UI für Eintragsmanagement
+   - [x] Leserechte für Mitarbeiter, volle Rechte für Admins
+   - [x] Lesebestätigungsfunktion für wichtige Mitteilungen
+   - [x] Priorisierung von Ankündigungen (niedrig, normal, hoch, dringend)
+   - [x] Ablaufdatum für zeitlich begrenzte Ankündigungen
 
 2. **Firmenkalender**
    - [ ] Zentraler Firmenkalender für allgemeine Events

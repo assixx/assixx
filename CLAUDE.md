@@ -18,14 +18,28 @@
 - **Repository**: https://github.com/SCS-Technik/Assixx
 
 ## Was wir heute gemacht haben (2025-05-21)
-1. **E-Mail-Benachrichtigungssystem** ✅
+1. **Blackboard-System Implementierung** ✅
+   - Frontend-Implementierung mit Dashboard-Design
+   - Blackboard-API für Erstellen, Lesen, Aktualisieren und Löschen von Einträgen
+   - Datenbankschema für Blackboard-Tabellen erstellt
+   - Tenant-spezifische Einträge mit Berechtigungssystem
+   - Verbessertes Formular-Design für bessere Benutzererfahrung
+   - Lesebestätigungsfunktion für wichtige Mitteilungen
+
+2. **Datenbank-Migrationen** ✅
+   - SQL-Migrations-Skripts für neue Features
+   - Multi-Tenant-Support für Blackboard-Einträge
+   - Standard-Tenant für Entwicklungsumgebung
+   - Fremdschlüsselbeziehungen für Datenkonsistenz
+
+3. **E-Mail-Benachrichtigungssystem** ✅
    - Nodemailer Integration implementiert
    - E-Mail-Templates für verschiedene Events erstellt
    - Queue für Massen-E-Mails entwickelt
    - Unsubscribe-Funktion implementiert
    - Automatische Benachrichtigungen bei neuen Dokumenten
 
-2. **Employee Dashboard Bugfixes** ✅
+4. **Employee Dashboard Bugfixes** ✅
    - Dokumentenzähler im Dashboard korrigiert
    - Automatische Aktualisierung nach Änderungen
    - Event-Handler für Dokument-Aktionen verbessert
@@ -103,21 +117,36 @@
 ## Was wir als nächstes machen müssen
 
 ### 🔴 PRIORITÄT 1 - KERNFUNKTIONEN (vor Sicherheit)
-1. **Dokumenten-Download** ✅
+1. **Blackboard-System** ✅
+   - ✅ Frontend-Implementierung mit Dashboard-Design
+   - ✅ Backend-API für Verwaltung der Einträge
+   - ✅ Datenbankschema und Migrationen
+   - ✅ Lesebestätigungsfunktion
+   - ✅ Priorisierungssystem für Ankündigungen
+   - ✅ Berechtigungsprüfung für verschiedene Organisationsebenen
+
+2. **Dokumenten-Download** ✅
    - ✅ Download-Route implementiert
    - ✅ Berechtigungsprüfung
    - ✅ Stream für große Dateien
    - ✅ Download-Counter
-   - 🔄 Fehlerbehebung bei spezifischen Szenarien
+   - ✅ Fehlerbehebung bei spezifischen Szenarien
 
-2. **E-Mail-Benachrichtigungen** ✅
+3. **E-Mail-Benachrichtigungen** ✅
    - ✅ Nodemailer Integration
    - ✅ Templates für verschiedene Events
    - ✅ Queue für Massen-Mails
    - ✅ Unsubscribe-Funktion
    - ✅ Feature-Prüfung (Premium-Feature)
 
-3. **Mobile PWA**
+4. **Firmenkalender**
+   - [ ] Frontend-Implementierung im Dashboard-Design
+   - [ ] Backend-API für Termin-Management
+   - [ ] Datenbankschema für Kalender-Einträge
+   - [ ] Berechtigungssystem für verschiedene Kalenderebenen
+   - [ ] Erinnerungsfunktion für wichtige Termine
+
+5. **Mobile PWA**
    - Service Worker
    - Offline-Funktionalität
    - Push-Notifications
@@ -241,8 +270,10 @@ app.post('/webhook/stripe', async (req, res) => {
 ## Notizen für nächste Session
 - CLAUDE.md IMMER zuerst lesen
 - Git-Status und letzte Commits prüfen
-- Stripe Account vorbereiten für Integration
-- Mobile Design-Mockups erstellen
+- Nächste Features planen:
+  - Firmenkalender-Feature gemäß Roadmap implementieren
+  - Stripe Integration für Zahlungsabwicklung vorbereiten
+  - Mobile PWA für bessere Mobilgeräte-Nutzung entwickeln
 
 ## Feature-Preise (bereits in DB)
 - **Basic**: €0/Monat
@@ -313,6 +344,14 @@ app.post('/webhook/stripe', async (req, res) => {
    - Environment-Variablen sichern
 
 ### Neue Dateien heute (2025-05-21)
+- `/server/models/blackboard.js` - Model für Blackboard-Einträge und -Bestätigungen
+- `/server/routes/blackboard.js` - API-Routen für Blackboard-Verwaltung
+- `/server/public/blackboard.html` - Blackboard-UI im Dashboard-Design
+- `/server/public/css/blackboard.css` - Spezifische Styles für Blackboard-Funktionalität
+- `/server/public/js/blackboard.js` - Client-seitige Logik für Blackboard-Interaktionen
+- `/server/public/js/dashboard-scripts.js` - Gemeinsame Funktionen für Dashboard-Seiten
+- `/server/database/migrations/add_blackboard_feature.sql` - SQL-Migration für Blackboard-Tabellen
+
 - `/server/utils/emailService.js` - E-Mail-Service mit Queue und Templates
 - `/server/templates/email/` - Ordner für E-Mail-Templates
   - `welcome.html` - Template für Willkommensnachrichten
