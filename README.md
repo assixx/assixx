@@ -11,9 +11,9 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 - **Fehlermeldesystem**: Arbeiter können Fotos von Problemen machen und direkt melden
 - **Dokumentenverwaltung**: Digitale Verwaltung von Lohnabrechnungen, Krankmeldungen und Bescheinigungen
-- **Firmenkommunikation**: Kalender, Ankündigungen und Umfragen
+- **Firmenkommunikation**: ✅ Kalender, ✅ Blackboard (Ankündigungen) und Umfragen
 - **Verbesserungsvorschläge**: Mitarbeiter können Ideen einreichen und diskutieren
-- **Echtzeit-Benachrichtigungen**: Wichtige Meldungen erreichen sofort die richtigen Personen
+- **Echtzeit-Benachrichtigungen**: ✅ E-Mail-Benachrichtigungen und zukünftig Push-Notifications
 
 ### Zielgruppen:
 
@@ -213,12 +213,20 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
   - [ ] DSGVO-konforme Verschlüsselung
   - [ ] Erweiterte Audit Logs
 
-## Aktueller Fokus: Mobile-First Optimierung
-Der aktuelle Entwicklungsfokus liegt auf der Optimierung der Anwendung für mobile Endgeräte:
-- Entwicklung einer Progressive Web App (PWA)
-- Service Worker für Offline-Funktionalität
-- Responsive Design für alle Bildschirmgrößen
-- Push-Benachrichtigungen für neue Dokumente
+## Aktueller Fokus: Mobile-First & Chat-Funktion
+Der aktuelle Entwicklungsfokus liegt auf zwei Hauptbereichen:
+
+1. **Mobile-First Optimierung**:
+   - Entwicklung einer Progressive Web App (PWA)
+   - Service Worker für Offline-Funktionalität
+   - Responsive Design für alle Bildschirmgrößen
+   - Push-Benachrichtigungen für neue Dokumente
+
+2. **Chat-Funktion**:
+   - Direkte Kommunikation zwischen Admins und Mitarbeitern
+   - Posteingang für jeden Mitarbeiter
+   - Benachrichtigungen über neue Nachrichten
+   - Möglichkeit für Dateianhänge
 
 ## KPIs und Erfolgsmessung
 

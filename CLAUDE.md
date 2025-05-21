@@ -139,12 +139,12 @@
    - ✅ Unsubscribe-Funktion
    - ✅ Feature-Prüfung (Premium-Feature)
 
-4. **Firmenkalender**
-   - [ ] Frontend-Implementierung im Dashboard-Design
-   - [ ] Backend-API für Termin-Management
-   - [ ] Datenbankschema für Kalender-Einträge
-   - [ ] Berechtigungssystem für verschiedene Kalenderebenen
-   - [ ] Erinnerungsfunktion für wichtige Termine
+4. **Firmenkalender** ✅
+   - ✅ Frontend-Implementierung im Dashboard-Design
+   - ✅ Backend-API für Termin-Management
+   - ✅ Datenbankschema für Kalender-Einträge
+   - ✅ Berechtigungssystem für verschiedene Kalenderebenen
+   - ✅ Erinnerungsfunktion für wichtige Termine
 
 5. **Mobile PWA**
    - Service Worker
@@ -271,9 +271,9 @@ app.post('/webhook/stripe', async (req, res) => {
 - CLAUDE.md IMMER zuerst lesen
 - Git-Status und letzte Commits prüfen
 - Nächste Features planen:
-  - Firmenkalender-Feature gemäß Roadmap implementieren
-  - Stripe Integration für Zahlungsabwicklung vorbereiten
   - Mobile PWA für bessere Mobilgeräte-Nutzung entwickeln
+  - Chat-Funktion für direkte Kommunikation implementieren
+  - Stripe Integration für Zahlungsabwicklung vorbereiten
 
 ## Feature-Preise (bereits in DB)
 - **Basic**: €0/Monat
@@ -343,7 +343,13 @@ app.post('/webhook/stripe', async (req, res) => {
    - HTTPS-Zertifikate einrichten
    - Environment-Variablen sichern
 
-### Neue Dateien heute (2025-05-21)
+### Neue Dateien heute (2025-05-22)
+- `/server/public/calendar.html` - Frontend für den Firmenkalender
+- `/server/public/css/calendar.css` - Styles für die Kalenderansicht
+- `/server/public/js/calendar.js` - Client-seitige Logik für den Kalender
+- Navigations-Updates für Kalender in allen Dashboard-Seiten
+
+### Neue Dateien gestern (2025-05-21)
 - `/server/models/blackboard.js` - Model für Blackboard-Einträge und -Bestätigungen
 - `/server/routes/blackboard.js` - API-Routen für Blackboard-Verwaltung
 - `/server/public/blackboard.html` - Blackboard-UI im Dashboard-Design
@@ -381,5 +387,5 @@ app.post('/webhook/stripe', async (req, res) => {
 - `/server/public/js/csrf-helper.js` - Client-seitiger CSRF-Helper
 
 ---
-Stand: 2025-05-21
-Nächste Session: Mobile PWA und danach Stripe-Integration
+Stand: 2025-05-22
+Nächste Session: Mobile PWA und danach Chat-Funktion

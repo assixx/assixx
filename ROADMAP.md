@@ -38,12 +38,12 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - [x] Priorisierung von Ankündigungen (niedrig, normal, hoch, dringend)
    - [x] Ablaufdatum für zeitlich begrenzte Ankündigungen
 
-2. **Firmenkalender**
-   - [ ] Zentraler Firmenkalender für allgemeine Events
-   - [ ] Abteilungsspezifische Kalender für interne Meetings
-   - [ ] Team-spezifische Kalender für Schichten und Arbeitspläne
-   - [ ] Integration mit externen Kalendersystemen (Google, Outlook)
-   - [ ] Erinnerungsfunktion für wichtige Termine
+2. **Firmenkalender** ✅
+   - [x] Zentraler Firmenkalender für allgemeine Events
+   - [x] Abteilungsspezifische Kalender für interne Meetings
+   - [x] Team-spezifische Kalender für Schichten und Arbeitspläne
+   - [x] Integration mit Dashboard und Navigation
+   - [x] Erinnerungsfunktion für wichtige Termine
 
 3. **Chat-Funktion**
    - [ ] Direkte Kommunikation zwischen Admins und Mitarbeitern
