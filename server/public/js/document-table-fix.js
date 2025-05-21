@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupDocumentTableListeners() {
         console.log('[Document Fix] Setting up document table listeners');
         
-        const tableBody = document.getElementById('documents-table-body');
+        const tableBody = document.getElementById('document-table-body');
         if (!tableBody) {
-            console.warn('[Document Fix] documents-table-body not found, will try again later');
+            console.warn('[Document Fix] document-table-body not found, will try again later');
             return false;
         }
         
@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Event-Delegation für die gesamte Tabelle
         tableBody.addEventListener('click', function(event) {
+            // Überprüfen, ob das Event bereits von einem direkten Event-Handler behandelt wurde
+            if (event.defaultPrevented) {
+                console.log('[Document Fix] Event wurde bereits von einem anderen Handler behandelt');
+                return;
+            }
+            
             // Verhindern von Doppelklicks (Debouncing)
             const now = Date.now();
             
@@ -94,7 +100,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 } 
                 else if (button.classList.contains('btn-primary') || button.textContent.trim() === 'Download') {
                     console.log(`[Document Fix] Download button clicked for document ID: ${documentId}`);
-                    downloadDocument(documentId);
+                    // Überprüfe, ob wir unsere verbesserte Methode verwenden sollten
+                    if (typeof openDocumentInNewTab === 'function') {
+                        console.log(`[Document Fix] Verwende die verbesserte openDocumentInNewTab Funktion für ID: ${documentId}`);
+                        // Skip - wird von der verbesserten Funktion behandelt
+                    } else if (typeof window.downloadDocument === 'function' && window.downloadDocument.toString().includes('fetch(`/employee/documents/${documentId}')) {
+                        console.log(`[Document Fix] Verbesserte downloadDocument Funktion erkannt für ID: ${documentId}`);
+                        // Skip - wird von der verbesserten Funktion behandelt
+                    } else {
+                        // Fallback auf die alte Methode
+                        console.log(`[Document Fix] Verwende Fallback-Download-Methode für ID: ${documentId}`);
+                        downloadDocument(documentId);
+                    }
                     
                     // Download deaktiviert nicht die Tabelle, also Button wieder aktivieren
                     button.disabled = false;
@@ -163,6 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     location.reload();
                 }
+                
+                // Aktualisiere den Dokumentenzähler in jedem Fall
+                fetch('/employee/documents', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(documents => {
+                    const documentCount = document.getElementById('document-count');
+                    if (documentCount) {
+                        documentCount.textContent = documents.length;
+                    }
+                })
+                .catch(err => {
+                    console.error("Fehler beim Aktualisieren des Dokumentenzählers:", err);
+                });
             } else {
                 alert(`Fehler: ${resolvedData.message || 'Unbekannter Fehler beim Löschen'}`);
             }
@@ -183,8 +217,55 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`[Document Fix] Downloading document with ID: ${documentId}`);
         
         try {
-            // Öffne das Dokument in einem neuen Tab
-            window.open(`/documents/${documentId}?inline=true`, '_blank');
+            // Den Token aus dem localStorage holen
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Sie müssen angemeldet sein, um Dokumente herunterzuladen.');
+                return;
+            }
+            
+            // Fetch API mit Auth-Header verwenden
+            fetch(`/employee/documents/${documentId}?inline=true`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP-Fehler: ${response.status}`);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // URL zum Blob erstellen
+                const url = URL.createObjectURL(blob);
+                
+                // Das Dokument in einem neuen Tab öffnen
+                const newWindow = window.open(url, '_blank');
+                
+                // Fallback wenn popup blockiert
+                if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                    console.warn('[Document Fix] Pop-up blockiert, versuche direkten Download');
+                    
+                    // Alternativ einen unsichtbaren Link erstellen und klicken
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `dokument-${documentId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+                
+                // URL-Objekt später freigeben
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                }, 100);
+            })
+            .catch(error => {
+                console.error('[Document Fix] Error downloading document:', error);
+                alert('Fehler beim Herunterladen des Dokuments: ' + error.message);
+            });
         } catch (error) {
             console.error('[Document Fix] Error downloading document:', error);
             alert('Fehler beim Herunterladen des Dokuments');
@@ -219,12 +300,29 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.success) {
                 alert(`Dokument erfolgreich ${isCurrentlyArchived ? 'wiederhergestellt' : 'archiviert'}`);
-                // Tabelle neu laden
+                // Tabelle neu laden und Zähler aktualisieren
                 if (typeof loadDocumentsTable === 'function') {
                     loadDocumentsTable('reload');
                 } else {
                     location.reload();
                 }
+                
+                // Aktualisiere den Dokumentenzähler in jedem Fall
+                fetch('/employee/documents', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(documents => {
+                    const documentCount = document.getElementById('document-count');
+                    if (documentCount) {
+                        documentCount.textContent = documents.length;
+                    }
+                })
+                .catch(err => {
+                    console.error("Fehler beim Aktualisieren des Dokumentenzählers:", err);
+                });
             } else {
                 alert(`Fehler: ${data.message || 'Unbekannter Fehler beim Ändern des Archivstatus'}`);
             }

@@ -3,7 +3,12 @@
 ## Anweisungen für Claude
 1. DIESE CLAUDE.md DATEI IMMER ZUERST LESEN BEI JEDEM START
 2. Git Status prüfen
-3. Dann mit der Arbeit beginnen
+3. Dann README.md und ROADMAP.md lesen und analysieren
+4. Übersicht und Analyse als Zusammenfassung präsentieren
+5. NACHFRAGEN welches Problem oder Feature als nächstes implementiert werden soll
+6. NICHT alles auf einmal angehen, immer Schritt für Schritt, Problem für Problem vorgehen
+7. IMMER nach der Abarbeitung eines Problems oder Features nachfragen, was als nächstes gemacht werden soll
+8. NACH JEDEM FIX auf die Überprüfung des Nutzers warten und erst nach dessen Bestätigung weitermachen
 
 ## Projektübersicht
 - **Name**: Assixx (SaaS-Plattform für Industriefirmen)

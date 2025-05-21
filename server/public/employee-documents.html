@@ -71,6 +71,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="/js/document-table-fix.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const documentTableBody = document.getElementById('document-table-body');
@@ -146,54 +147,116 @@
                             <td>${new Date(doc.upload_date).toLocaleString()}</td>
                             <td>${doc.category || 'Allgemein'}</td>
                             <td>
-                                <button class="btn btn-sm btn-primary" onclick="downloadDocument('${doc.id}')">Download</button>
+                                <button class="btn btn-sm btn-primary download-btn" data-document-id="${doc.id}">Download</button>
                             </td>
                         </tr>
                     `).join('');
+                    
+                    // Event-Listener für Dokument-Download-Buttons hinzufügen
+                    document.querySelectorAll('.download-btn').forEach(button => {
+                        // Verhindere mehrfache Event-Listener
+                        if (!button.hasAttribute('data-has-click-listener')) {
+                            button.setAttribute('data-has-click-listener', 'true');
+                            button.addEventListener('click', function(e) {
+                                // Verhindere Standardaktion und Bubbling
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                const docId = this.getAttribute('data-document-id');
+                                if (docId) {
+                                    console.log(`Download-Button geklickt für Dokument ID: ${docId}`);
+                                    openDocumentInNewTab(docId);
+                                }
+                            });
+                        }
+                    });
                 }
             }
             
+            // Dokument per Blob-API herunterladen
+            function openDocumentInNewTab(documentId) {
+                console.log(`Starte Download für Dokument mit ID ${documentId}`);
+                
+                // Den Token aus dem localStorage holen
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Sie müssen angemeldet sein, um Dokumente herunterzuladen.');
+                    return;
+                }
+                
+                // Einen Lade-Indikator anzeigen
+                const downloadBtn = document.querySelector(`button[data-document-id="${documentId}"]`);
+                if (downloadBtn) {
+                    const originalText = downloadBtn.textContent;
+                    downloadBtn.textContent = "Wird geladen...";
+                    downloadBtn.disabled = true;
+                    
+                    // Nach Abschluss wieder aktivieren
+                    setTimeout(() => {
+                        downloadBtn.textContent = originalText;
+                        downloadBtn.disabled = false;
+                    }, 3000);
+                }
+                
+                // Fetch API mit Auth-Header verwenden
+                fetch(`/employee/documents/${documentId}?inline=true`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            throw new Error('Authentifizierungsfehler. Bitte melden Sie sich erneut an.');
+                        }
+                        throw new Error(`HTTP Fehler: ${response.status}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // URL zum Blob erstellen
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Das Dokument in einem neuen Tab öffnen
+                    const newWindow = window.open(url, '_blank');
+                    
+                    // Fallback wenn popup blockiert
+                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                        alert('Pop-up wurde blockiert. Bitte erlauben Sie Pop-ups für diese Seite.');
+                        
+                        // Alternativ einen unsichtbaren Link erstellen und klicken
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `dokument-${documentId}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                    
+                    // URL-Objekt später freigeben
+                    setTimeout(() => {
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                })
+                .catch(error => {
+                    console.error('Fehler beim Herunterladen des Dokuments:', error);
+                    alert(error.message || 'Fehler beim Herunterladen des Dokuments');
+                    
+                    // Button wieder aktivieren, wenn ein Fehler auftritt
+                    if (downloadBtn) {
+                        downloadBtn.textContent = "Download";
+                        downloadBtn.disabled = false;
+                    }
+                });
+            }
+            
             // Globale Funktionen
+            // Für Kompatibilität mit bestehendem Code behalten wir die globale Funktion bei
             window.downloadDocument = function(documentId) {
                 try {
-                    // Download über fetch mit authentifiziertem Request und Blob-Handling
-                    let responseObj; // Variable zum Speichern der Response
-                    
-                    fetch(`/employee/documents/${documentId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP-Fehler: ${response.status}`);
-                        }
-                        responseObj = response; // Response speichern
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        // Blob URL erstellen und Download auslösen
-                        const url = window.URL.createObjectURL(blob);
-                        const downloadLink = document.createElement('a');
-                        downloadLink.href = url;
-                        
-                        // Hole den Dateinamen aus dem Content-Disposition Header oder nutze eine Standard-Benennung
-                        const contentDisposition = responseObj.headers.get('content-disposition');
-                        const fileName = contentDisposition && contentDisposition.includes('filename=') ?
-                            contentDisposition.split('filename=')[1].replace(/["']/g, '') :
-                            `document-${documentId}.pdf`;
-                            
-                        downloadLink.download = fileName;
-                        document.body.appendChild(downloadLink);
-                        downloadLink.click();
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(downloadLink);
-                    })
-                    .catch(error => {
-                        console.error('Fehler beim Herunterladen des Dokuments:', error);
-                        alert('Fehler beim Herunterladen des Dokuments');
-                    });
+                    console.log(`Globale Funktion: Starte Download für Dokument ID: ${documentId}`);
+                    openDocumentInNewTab(documentId); // Verwende unsere verbesserte Funktion
                 } catch (error) {
                     console.error('Fehler beim Herunterladen des Dokuments:', error);
                     alert('Fehler beim Herunterladen des Dokuments');
