@@ -410,6 +410,50 @@ class User {
       throw error;
     }
   }
+  
+  /**
+   * Get user's role, department and team information
+   * @param {number} userId - The user ID to retrieve information for
+   * @returns {Promise<Object>} Object containing role, departmentId, and teamId
+   */
+  static async getUserDepartmentAndTeam(userId) {
+    try {
+      logger.info(`Getting department and team for user ${userId}`);
+      
+      // First, get the user's role and department_id
+      const [userRows] = await db.query(
+        'SELECT role, department_id FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      if (userRows.length === 0) {
+        logger.warn(`User ${userId} not found`);
+        return { role: null, departmentId: null, teamId: null };
+      }
+      
+      const { role, department_id } = userRows[0];
+      
+      // Now, find the user's team (if any)
+      // We'll return the first team if user belongs to multiple teams
+      const [teamRows] = await db.query(
+        'SELECT team_id FROM user_teams WHERE user_id = ? LIMIT 1',
+        [userId]
+      );
+      
+      const teamId = teamRows.length > 0 ? teamRows[0].team_id : null;
+      
+      logger.info(`User ${userId} - Role: ${role}, Department: ${department_id}, Team: ${teamId}`);
+      
+      return {
+        role,
+        departmentId: department_id,
+        teamId
+      };
+    } catch (error) {
+      logger.error(`Error getting department and team for user ${userId}: ${error.message}`);
+      throw error;
+    }
+  }
 
   // Neue Methode: Überprüfen, ob ein Benutzer Dokumente hat
   static async hasDocuments(userId) {
@@ -445,6 +489,43 @@ class User {
       logger.error(`Error counting documents for user ${userId}: ${error.message}`);
       throw error;
     }
+  }
+}
+
+/**
+ * Get user's department and team information
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} Object with role, departmentId, and teamId
+ */
+User.getUserDepartmentAndTeam = async function(userId) {
+  try {
+    // Get user's role and department
+    const [users] = await db.query(
+      'SELECT role, department_id FROM users WHERE id = ?', 
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    const user = users[0];
+    
+    // Get user's team if exists
+    const [teams] = await db.query(
+      'SELECT team_id FROM user_teams WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+    
+    // Return role, departmentId, and teamId
+    return {
+      role: user.role,
+      departmentId: user.department_id,
+      teamId: teams.length > 0 ? teams[0].team_id : null
+    };
+  } catch (error) {
+    logger.error(`Error getting user department and team: ${error.message}`);
+    throw error;
   }
 }
 

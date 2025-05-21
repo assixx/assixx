@@ -18,29 +18,62 @@ let currentDepartmentId = null;
 let currentTeamId = null;
 
 // Initialize when document is ready
+// Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
+let entriesLoadingEnabled = false;
+
 document.addEventListener('DOMContentLoaded', function() {
+  console.log("Blackboard initializing...");
+  
+  // WICHTIG: Standardmäßig deaktivieren wir das automatische Laden
+  entriesLoadingEnabled = false;
+  
   // Check if user is logged in
   checkLoggedIn().then(() => {
     // Load user data
     fetchUserData().then(userData => {
+      console.log("User data loaded:", userData);
       currentUserId = userData.id;
       currentUserRole = userData.role;
-      currentDepartmentId = userData.department_id;
-      currentTeamId = userData.team_id;
+      currentDepartmentId = userData.departmentId || userData.department_id;
+      currentTeamId = userData.teamId || userData.team_id;
       isAdmin = userData.role === 'admin' || userData.role === 'root';
       
       // Show/hide "New Entry" button based on permissions
-      document.getElementById('newEntryBtn').style.display = isAdmin ? 'block' : 'none';
+      const newEntryBtn = document.getElementById('newEntryBtn');
+      if (newEntryBtn) {
+        newEntryBtn.style.display = isAdmin ? 'block' : 'none';
+      }
       
       // Load departments and teams for form dropdowns
       loadDepartmentsAndTeams();
       
-      // Load entries
-      loadEntries();
+      // Wir laden die Einträge erst wenn der Button geklickt wird
+      const loadEntriesBtn = document.getElementById('loadEntriesBtn');
+      if (loadEntriesBtn) {
+        loadEntriesBtn.addEventListener('click', function() {
+          entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
+          loadEntries();
+        });
+      }
+      
+      // Retry-Button Ereignisbehandlung
+      const retryLoadBtn = document.getElementById('retryLoadBtn');
+      if (retryLoadBtn) {
+        retryLoadBtn.addEventListener('click', function() {
+          entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
+          loadEntries();
+        });
+      }
+    }).catch(error => {
+      console.error("Error loading user data:", error);
+      window.location.href = "/login.html";
     });
     
     // Setup event listeners
     setupEventListeners();
+  }).catch(error => {
+    console.error("Error checking login:", error);
+    window.location.href = "/login.html";
   });
 });
 
@@ -48,69 +81,147 @@ document.addEventListener('DOMContentLoaded', function() {
  * Setup all event listeners
  */
 function setupEventListeners() {
-  // Filter by level
-  document.querySelectorAll('input[name="levelFilter"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-      currentFilter = this.value;
+  // Filter by level using tab buttons
+  document.querySelectorAll('.tab-btn[data-value]').forEach(button => {
+    button.addEventListener('click', function() {
+      currentFilter = this.dataset.value;
       currentPage = 1;
-      loadEntries();
+      
+      // Nur laden, wenn es aktiviert wurde
+      if (entriesLoadingEnabled) {
+        loadEntries();
+      }
     });
   });
   
   // Sort entries
-  document.getElementById('sortFilter').addEventListener('change', function() {
-    currentSort = this.value;
-    loadEntries();
-  });
+  const sortFilter = document.getElementById('sortFilter');
+  if (sortFilter) {
+    sortFilter.addEventListener('change', function() {
+      currentSort = this.value;
+      
+      // Nur laden, wenn es aktiviert wurde
+      if (entriesLoadingEnabled) {
+        loadEntries();
+      }
+    });
+  } else {
+    console.error('Sort filter not found');
+  }
   
-  // Search
-  document.getElementById('searchButton').addEventListener('click', function() {
-    currentSearch = document.getElementById('searchInput').value.trim();
-    currentPage = 1;
-    loadEntries();
-  });
+  // Search button
+  const searchButton = document.getElementById('searchButton');
+  const searchInput = document.getElementById('searchInput');
   
-  document.getElementById('searchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      currentSearch = this.value.trim();
+  if (searchButton && searchInput) {
+    searchButton.addEventListener('click', function() {
+      currentSearch = searchInput.value.trim();
       currentPage = 1;
-      loadEntries();
-    }
-  });
+      
+      // Nur laden, wenn es aktiviert wurde
+      if (entriesLoadingEnabled) {
+        loadEntries();
+      }
+    });
+    
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        currentSearch = this.value.trim();
+        currentPage = 1;
+        
+        // Nur laden, wenn es aktiviert wurde
+        if (entriesLoadingEnabled) {
+          loadEntries();
+        }
+      }
+    });
+  } else {
+    console.error('Search elements not found');
+  }
   
   // New entry button
-  document.getElementById('newEntryBtn').addEventListener('click', function() {
-    openEntryForm();
-  });
+  const newEntryBtn = document.getElementById('newEntryBtn');
+  if (newEntryBtn) {
+    newEntryBtn.addEventListener('click', function() {
+      console.log('New entry button clicked');
+      openEntryForm();
+    });
+  } else {
+    console.error('New entry button not found');
+  }
   
   // Save entry button
-  document.getElementById('saveEntryBtn').addEventListener('click', function() {
-    saveEntry();
-  });
+  const saveEntryBtn = document.getElementById('saveEntryBtn');
+  if (saveEntryBtn) {
+    saveEntryBtn.addEventListener('click', function() {
+      saveEntry();
+    });
+  } else {
+    console.error('Save entry button not found');
+  }
   
   // Organization level change
-  document.getElementById('entryOrgLevel').addEventListener('change', function() {
-    updateOrgIdDropdown(this.value);
-  });
+  const entryOrgLevel = document.getElementById('entryOrgLevel');
+  if (entryOrgLevel) {
+    entryOrgLevel.addEventListener('change', function() {
+      updateOrgIdDropdown(this.value);
+    });
+  } else {
+    console.error('Organization level dropdown not found');
+  }
 }
 
 /**
  * Load blackboard entries
  */
 async function loadEntries() {
+  // Wenn das Laden nicht aktiviert wurde (durch Klick auf den Button), dann abbrechen
+  if (!entriesLoadingEnabled) {
+    console.log("Entries loading is disabled. Skipping API call.");
+    return;
+  }
+
   try {
-    // Show loading indicator
-    document.getElementById('loadingIndicator').classList.remove('d-none');
-    document.getElementById('blackboardEntries').classList.add('d-none');
-    document.getElementById('noEntriesMessage').classList.add('d-none');
+    console.log("Loading entries...");
+    
+    // Verstecke die Lade-Button-Karte
+    const loadEntriesCard = document.getElementById('loadEntriesCard');
+    if (loadEntriesCard) loadEntriesCard.classList.add('d-none');
+    
+    // Zeige den Ladeindikator
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) loadingIndicator.classList.remove('d-none');
+    
+    // Verstecke vorherige Ergebnisse oder Fehlermeldungen
+    const blackboardEntries = document.getElementById('blackboardEntries');
+    if (blackboardEntries) blackboardEntries.classList.add('d-none');
+    
+    const noEntriesMessage = document.getElementById('noEntriesMessage');
+    if (noEntriesMessage) noEntriesMessage.classList.add('d-none');
     
     // Parse sort option
     const [sortBy, sortDir] = currentSort.split('|');
     
-    // Fetch entries
-    const response = await fetch(`/api/blackboard?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`);
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
+    // Fetch entries with authentication token
+    const response = await fetch(`/api/blackboard?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
     if (!response.ok) {
+      if (response.status === 401) {
+        // Redirect to login if unauthorized
+        window.location.href = '/login.html';
+        throw new Error('Unauthorized');
+      }
       throw new Error('Failed to load entries');
     }
     
@@ -122,12 +233,29 @@ async function loadEntries() {
     
     // Display entries
     displayEntries(data.entries);
+    
+    // Erfolgreiche Anfrage - deaktiviere weitere automatische API-Aufrufe
+    entriesLoadingEnabled = false;
   } catch (error) {
     console.error('Error loading entries:', error);
     showToast('error', 'Fehler beim Laden der Einträge.');
+    
+    // Bei einem Fehler, zeige die "Keine Einträge" Nachricht mit Wiederholungs-Button
+    const noEntriesMessage = document.getElementById('noEntriesMessage');
+    if (noEntriesMessage) {
+      noEntriesMessage.classList.remove('d-none');
+    }
+    
+    // Zeige die Lade-Button-Karte wieder an
+    const loadEntriesCard = document.getElementById('loadEntriesCard');
+    if (loadEntriesCard) loadEntriesCard.classList.remove('d-none');
+    
+    // Setze den Ladezustand zurück, damit nicht automatisch weiter geladen wird
+    entriesLoadingEnabled = false;
   } finally {
-    // Hide loading indicator
-    document.getElementById('loadingIndicator').classList.add('d-none');
+    // Verstecke immer den Ladeindikator, egal was passiert
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) loadingIndicator.classList.add('d-none');
   }
 }
 
@@ -135,17 +263,34 @@ async function loadEntries() {
  * Display entries in the UI
  */
 function displayEntries(entries) {
+  console.log("Displaying entries:", entries);
   const container = document.getElementById('blackboardEntries');
+  if (!container) {
+    console.error('Blackboard entries container not found');
+    return;
+  }
+  
   container.innerHTML = '';
   
-  if (entries.length === 0) {
-    document.getElementById('noEntriesMessage').classList.remove('d-none');
+  if (!entries || entries.length === 0) {
+    const noEntriesMessage = document.getElementById('noEntriesMessage');
+    if (noEntriesMessage) {
+      noEntriesMessage.classList.remove('d-none');
+    }
+    
+    // Hide pagination if no entries are found
+    const paginationContainer = document.getElementById('paginationContainer');
+    if (paginationContainer) {
+      paginationContainer.classList.add('d-none');
+    }
+    
     return;
   }
   
   entries.forEach(entry => {
     const col = document.createElement('div');
-    col.className = 'col-md-6 col-lg-4';
+    // Use class appropriate for the dashboard grid in admin-grid
+    col.className = 'admin-card';
     
     // Format content preview (strip HTML and limit length)
     let contentPreview = entry.content.replace(/<\/?[^>]+(>|$)/g, '');
@@ -218,8 +363,12 @@ function displayEntries(entries) {
     });
   });
   
-  // Show entries container
+  // Show entries container and pagination
   container.classList.remove('d-none');
+  const paginationContainer = document.getElementById('paginationContainer');
+  if (paginationContainer) {
+    paginationContainer.classList.remove('d-none');
+  }
 }
 
 /**
@@ -245,7 +394,11 @@ function updatePagination(pagination) {
     prevLi.addEventListener('click', function(e) {
       e.preventDefault();
       currentPage--;
-      loadEntries();
+      
+      // Nur laden, wenn es aktiviert wurde
+      if (entriesLoadingEnabled) {
+        loadEntries();
+      }
     });
   }
   
@@ -262,7 +415,11 @@ function updatePagination(pagination) {
       pageLi.addEventListener('click', function(e) {
         e.preventDefault();
         currentPage = i;
-        loadEntries();
+        
+        // Nur laden, wenn es aktiviert wurde
+        if (entriesLoadingEnabled) {
+          loadEntries();
+        }
       });
     }
     
@@ -281,7 +438,11 @@ function updatePagination(pagination) {
     nextLi.addEventListener('click', function(e) {
       e.preventDefault();
       currentPage++;
-      loadEntries();
+      
+      // Nur laden, wenn es aktiviert wurde
+      if (entriesLoadingEnabled) {
+        loadEntries();
+      }
     });
   }
 }
@@ -291,10 +452,25 @@ function updatePagination(pagination) {
  */
 async function viewEntry(entryId) {
   try {
-    // Fetch entry details
-    const response = await fetch(`/api/blackboard/${entryId}`);
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
+    // Fetch entry details with authentication
+    const response = await fetch(`/api/blackboard/${entryId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
     if (!response.ok) {
+      if (response.status === 401) {
+        window.location.href = '/login.html';
+        throw new Error('Unauthorized');
+      }
       throw new Error('Failed to load entry details');
     }
     
@@ -399,7 +575,7 @@ async function viewEntry(entryId) {
       editButton.textContent = 'Bearbeiten';
       editButton.addEventListener('click', function() {
         // Close detail modal and open edit form
-        bootstrap.Modal.getInstance(document.getElementById('entryDetailModal')).hide();
+        window.DashboardUI.closeModal('entryDetailModal');
         openEntryForm(entry);
       });
       
@@ -410,7 +586,7 @@ async function viewEntry(entryId) {
       deleteButton.textContent = 'Löschen';
       deleteButton.addEventListener('click', function() {
         // Close detail modal and show delete confirmation
-        bootstrap.Modal.getInstance(document.getElementById('entryDetailModal')).hide();
+        window.DashboardUI.closeModal('entryDetailModal');
         showDeleteConfirmation(entry.id);
       });
       
@@ -426,7 +602,7 @@ async function viewEntry(entryId) {
       viewConfirmationsButton.textContent = 'Lesebestätigungen anzeigen';
       viewConfirmationsButton.addEventListener('click', function() {
         // Close detail modal and show confirmations
-        bootstrap.Modal.getInstance(document.getElementById('entryDetailModal')).hide();
+        window.DashboardUI.closeModal('entryDetailModal');
         viewConfirmationStatus(entry.id);
       });
       
@@ -434,8 +610,7 @@ async function viewEntry(entryId) {
     }
     
     // Show modal
-    const detailModal = new bootstrap.Modal(document.getElementById('entryDetailModal'));
-    detailModal.show();
+    window.DashboardUI.openModal('entryDetailModal');
   } catch (error) {
     console.error('Error loading entry details:', error);
     showToast('error', 'Fehler beim Laden der Eintragsdetails.');
@@ -446,6 +621,7 @@ async function viewEntry(entryId) {
  * Open entry form for create/edit
  */
 function openEntryForm(entry = null) {
+  console.log("openEntryForm called");
   const formModal = document.getElementById('entryFormModal');
   const modalTitle = document.getElementById('entryFormModalLabel');
   const entryForm = document.getElementById('entryForm');
@@ -481,8 +657,10 @@ function openEntryForm(entry = null) {
   }
   
   // Show modal
-  const modal = new bootstrap.Modal(formModal);
-  modal.show();
+  const modal = document.getElementById('entryFormModal');
+  modal.style.opacity = '1';
+  modal.style.visibility = 'visible';
+  modal.classList.add('active');
 }
 
 /**
@@ -562,18 +740,41 @@ async function updateOrgIdDropdown(level, selectedId = null) {
  */
 async function loadDepartmentsAndTeams() {
   try {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
     // Load departments
-    const deptResponse = await fetch('/api/departments');
+    const deptResponse = await fetch('/api/departments', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
     if (deptResponse.ok) {
       const deptData = await deptResponse.json();
       departments = deptData;
+    } else if (deptResponse.status === 401) {
+      window.location.href = '/login.html';
+      throw new Error('Unauthorized');
     }
     
     // Load teams
-    const teamResponse = await fetch('/api/teams');
+    const teamResponse = await fetch('/api/teams', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
     if (teamResponse.ok) {
       const teamData = await teamResponse.json();
       teams = teamData;
+    } else if (teamResponse.status === 401) {
+      window.location.href = '/login.html';
+      throw new Error('Unauthorized');
     }
   } catch (error) {
     console.error('Error loading departments and teams:', error);
@@ -623,11 +824,19 @@ async function saveEntry() {
       method = 'PUT';
     }
     
-    // Send request
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
+    // Send request with authentication
     const response = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(entryData)
     });
@@ -637,7 +846,7 @@ async function saveEntry() {
     }
     
     // Close modal and reload entries
-    bootstrap.Modal.getInstance(document.getElementById('entryFormModal')).hide();
+    window.DashboardUI.closeModal('entryFormModal');
     loadEntries();
     
     // Show success message
@@ -653,8 +862,18 @@ async function saveEntry() {
  */
 async function deleteEntry(entryId) {
   try {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
     const response = await fetch(`/api/blackboard/${entryId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     
     if (!response.ok) {
@@ -688,12 +907,11 @@ function showDeleteConfirmation(entryId) {
   // Set confirm action
   confirmBtn.onclick = function() {
     deleteEntry(entryId);
-    bootstrap.Modal.getInstance(modal).hide();
+    window.DashboardUI.closeModal('confirmationModal');
   };
   
   // Show modal
-  const bsModal = new bootstrap.Modal(modal);
-  bsModal.show();
+  window.DashboardUI.openModal('confirmationModal');
 }
 
 /**
@@ -701,8 +919,18 @@ function showDeleteConfirmation(entryId) {
  */
 async function confirmEntry(entryId) {
   try {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
     const response = await fetch(`/api/blackboard/${entryId}/confirm`, {
-      method: 'POST'
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     });
     
     if (!response.ok) {
@@ -714,8 +942,8 @@ async function confirmEntry(entryId) {
     
     // Close detail modal if open
     const detailModal = document.getElementById('entryDetailModal');
-    if (detailModal.classList.contains('show')) {
-      bootstrap.Modal.getInstance(detailModal).hide();
+    if (detailModal.classList.contains('active')) {
+      window.DashboardUI.closeModal('entryDetailModal');
     }
     
     // Show success message
@@ -731,7 +959,18 @@ async function confirmEntry(entryId) {
  */
 async function viewConfirmationStatus(entryId) {
   try {
-    const response = await fetch(`/api/blackboard/${entryId}/confirmations`);
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch(`/api/blackboard/${entryId}/confirmations`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
     if (!response.ok) {
       throw new Error('Failed to load confirmation status');
@@ -775,8 +1014,7 @@ async function viewConfirmationStatus(entryId) {
     });
     
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('confirmationStatusModal'));
-    modal.show();
+    window.DashboardUI.openModal('confirmationStatusModal');
   } catch (error) {
     console.error('Error loading confirmation status:', error);
     showToast('error', 'Fehler beim Laden der Lesebestätigungen.');
@@ -788,7 +1026,16 @@ async function viewConfirmationStatus(entryId) {
  */
 async function fetchUserData() {
   try {
-    const response = await fetch('/api/user/profile');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch('/api/user/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
     if (!response.ok) {
       throw new Error('Failed to load user data');
@@ -797,7 +1044,7 @@ async function fetchUserData() {
     return await response.json();
   } catch (error) {
     console.error('Error fetching user data:', error);
-    return { role: 'employee' };
+    throw error;
   }
 }
 
@@ -806,16 +1053,30 @@ async function fetchUserData() {
  */
 async function checkLoggedIn() {
   try {
-    const response = await fetch('/api/auth/check');
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login.html';
+      throw new Error('No token found');
+    }
+    
+    const response = await fetch('/api/auth/check', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
     if (!response.ok) {
       // Redirect to login page
       window.location.href = '/login.html';
       throw new Error('User not logged in');
     }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error checking login status:', error);
     window.location.href = '/login.html';
+    throw error;
   }
 }
 
@@ -823,42 +1084,6 @@ async function checkLoggedIn() {
  * Show toast notification
  */
 function showToast(type, message) {
-  // Check if we have a toast container
-  let toastContainer = document.querySelector('.toast-container');
-  
-  if (!toastContainer) {
-    // Create toast container
-    toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-    document.body.appendChild(toastContainer);
-  }
-  
-  // Create toast
-  const toastId = 'toast-' + Date.now();
-  const toast = document.createElement('div');
-  toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
-  toast.id = toastId;
-  toast.setAttribute('role', 'alert');
-  toast.setAttribute('aria-live', 'assertive');
-  toast.setAttribute('aria-atomic', 'true');
-  
-  toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body">
-        ${message}
-      </div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-  `;
-  
-  toastContainer.appendChild(toast);
-  
-  // Show toast
-  const bsToast = new bootstrap.Toast(toast, { autohide: true, delay: 5000 });
-  bsToast.show();
-  
-  // Remove toast after it's hidden
-  toast.addEventListener('hidden.bs.toast', function() {
-    toast.remove();
-  });
+  // Use dashboard UI toast for simplified approach
+  window.DashboardUI.showToast(message, type);
 }
