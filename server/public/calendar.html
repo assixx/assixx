@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firmenkalender - Assixx</title>
+  <!-- Dashboard Theme CSS -->
+  <link rel="stylesheet" href="/css/dashboard-theme.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
+  <!-- FullCalendar CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+  <!-- Calendar spezifische Styles -->
+  <link rel="stylesheet" href="/css/calendar.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/admin-dashboard.html" class="logo-container">
+      <img src="/images/logo.png" alt="Assixx Logo" class="logo">
+    </a>
+    <div class="header-actions">
+      <span id="user-info" class="text-secondary">Admin</span>
+      <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+    </div>
+  </header>
+
+  <!-- Main Layout mit Sidebar -->
+  <div class="layout-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <h3 class="sidebar-title">Navigation</h3>
+        <ul class="sidebar-menu">
+          <li class="sidebar-item">
+            <a href="/admin-dashboard.html" class="sidebar-link">
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+              </span>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="/blackboard.html" class="sidebar-link">
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+              </span>
+              <span>Blackboard</span>
+            </a>
+          </li>
+          <li class="sidebar-item active">
+            <a href="/calendar.html" class="sidebar-link">
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
+                </svg>
+              </span>
+              <span>Kalender</span>
+            </a>
+          </li>
+          <li class="sidebar-item">
+            <a href="/documents.html" class="sidebar-link">
+              <span class="icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                </svg>
+              </span>
+              <span>Dokumente</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="container main-content">
+      <div class="flex flex-between mb-4">
+        <div>
+          <h1 class="card-title mb-2">Firmenkalender</h1>
+          <p class="text-secondary">Alle Termine und Veranstaltungen auf einen Blick</p>
+        </div>
+        <div class="flex gap-2">
+          <div class="btn-group view-selector">
+            <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
+            <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
+            <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
+            <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
+          </div>
+          <button id="newEventBtn" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Neuer Termin
+          </button>
+        </div>
+      </div>
+      
+      <!-- Filterleiste -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">Filter & Anzeige</h3>
+        </div>
+        <div class="card-body">
+          <div class="flex gap-4 flex-wrap">
+            <div class="form-group">
+              <label for="levelFilter" class="form-label">Ebene</label>
+              <div class="tab-navigation mb-2" id="levelFilter">
+                <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
+                <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
+                <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
+                <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="searchInput" class="form-label">Suche</label>
+              <div class="flex gap-1">
+                <input type="text" id="searchInput" class="form-input" placeholder="Suchbegriff...">
+                <button class="btn btn-primary" type="button" id="searchButton">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="flex-grow"></div>
+            
+            <div class="form-group">
+              <label class="form-label">Legende</label>
+              <div class="legend-container">
+                <div class="legend-item">
+                  <span class="legend-color" style="background-color: #3498db;"></span>
+                  <span class="legend-label">Firma</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color" style="background-color: #e67e22;"></span>
+                  <span class="legend-label">Abteilung</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color" style="background-color: #2ecc71;"></span>
+                  <span class="legend-label">Team</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color" style="background-color: #9b59b6;"></span>
+                  <span class="legend-label">Persönlich</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Calendar Container -->
+      <div class="card calendar-card mb-4">
+        <div class="card-body p-0">
+          <div id="calendar"></div>
+        </div>
+      </div>
+      
+      <!-- Upcoming Events -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">Anstehende Termine</h3>
+        </div>
+        <div class="card-body">
+          <div id="upcomingEvents" class="upcoming-events">
+            <!-- Wird dynamisch befüllt -->
+            <div class="loading-placeholder">
+              <div class="loading-spinner"></div>
+              <p class="text-center mt-3">Termine werden geladen...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div> <!-- Ende des layout-container -->
+
+  <!-- Event Detail Modal -->
+  <div class="modal-overlay" id="eventDetailModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="eventDetailModalLabel">Termin Details</h2>
+        <button type="button" class="modal-close" data-action="close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="eventDetailContent" class="fade-in">
+          <!-- Wird dynamisch gefüllt -->
+        </div>
+      </div>
+      <div class="modal-footer" id="eventDetailFooter">
+        <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+        <!-- Weitere Buttons werden dynamisch hinzugefügt -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Event Form Modal -->
+  <div class="modal-overlay" id="eventFormModal">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2 id="eventFormModalLabel">Neuer Termin</h2>
+        <button type="button" class="modal-close" data-action="close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="eventForm" class="simple-form">
+          <input type="hidden" id="eventId">
+          
+          <!-- Titel und Inhalt -->
+          <div class="form-group large-form-group">
+            <label for="eventTitle" class="big-label">Titel</label>
+            <input type="text" class="big-input" id="eventTitle" required>
+          </div>
+          
+          <div class="form-group large-form-group">
+            <label for="eventDescription" class="big-label">Beschreibung</label>
+            <textarea class="big-input" id="eventDescription" rows="4"></textarea>
+            <div class="simple-hint">Markdown-Formatierung möglich</div>
+          </div>
+          
+          <!-- Datum und Zeit -->
+          <div class="form-group large-form-group">
+            <div class="flex gap-4 flex-wrap">
+              <div class="flex-half">
+                <label for="eventStartDate" class="big-label">Startdatum</label>
+                <input type="date" class="big-input" id="eventStartDate" required>
+              </div>
+              <div class="flex-half">
+                <label for="eventStartTime" class="big-label">Startzeit</label>
+                <input type="time" class="big-input" id="eventStartTime" required>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group large-form-group">
+            <div class="flex gap-4 flex-wrap">
+              <div class="flex-half">
+                <label for="eventEndDate" class="big-label">Enddatum</label>
+                <input type="date" class="big-input" id="eventEndDate" required>
+              </div>
+              <div class="flex-half">
+                <label for="eventEndTime" class="big-label">Endzeit</label>
+                <input type="time" class="big-input" id="eventEndTime" required>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group large-form-group">
+            <div class="simple-checkbox">
+              <input type="checkbox" id="eventAllDay">
+              <label for="eventAllDay">
+                Ganztägiger Termin
+              </label>
+            </div>
+          </div>
+          
+          <!-- Ort -->
+          <div class="form-group large-form-group">
+            <label for="eventLocation" class="big-label">Ort</label>
+            <input type="text" class="big-input" id="eventLocation">
+          </div>
+          
+          <!-- Organisationseinheit -->
+          <div class="form-group large-form-group">
+            <label for="eventOrgLevel" class="big-label">Wer soll den Termin sehen?</label>
+            <select class="big-input" id="eventOrgLevel" required>
+              <option value="" disabled selected>-- Bitte wählen --</option>
+              <option value="company">Alle Mitarbeiter</option>
+              <option value="department">Bestimmte Abteilung</option>
+              <option value="team">Bestimmtes Team</option>
+            </select>
+          </div>
+          
+          <div class="form-group large-form-group">
+            <label for="eventOrgId" class="big-label">Welche Abteilung/Team?</label>
+            <select class="big-input" id="eventOrgId" required disabled>
+              <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
+            </select>
+          </div>
+          
+          <!-- Farbe und Erinnerung -->
+          <div class="form-group large-form-group">
+            <label for="eventColor" class="big-label">Farbe</label>
+            <div class="color-picker">
+              <div class="color-option" data-color="#3498db" style="background-color: #3498db;"></div>
+              <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71;"></div>
+              <div class="color-option" data-color="#e67e22" style="background-color: #e67e22;"></div>
+              <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6;"></div>
+              <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c;"></div>
+              <div class="color-option" data-color="#f1c40f" style="background-color: #f1c40f;"></div>
+              <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c;"></div>
+              <div class="color-option" data-color="#34495e" style="background-color: #34495e;"></div>
+            </div>
+            <input type="hidden" id="eventColor" value="#3498db">
+          </div>
+          
+          <div class="form-group large-form-group">
+            <label for="eventReminderTime" class="big-label">Erinnerung</label>
+            <select class="big-input" id="eventReminderTime">
+              <option value="">Keine Erinnerung</option>
+              <option value="5">5 Minuten vorher</option>
+              <option value="15">15 Minuten vorher</option>
+              <option value="30">30 Minuten vorher</option>
+              <option value="60">1 Stunde vorher</option>
+              <option value="120">2 Stunden vorher</option>
+              <option value="1440">1 Tag vorher</option>
+            </select>
+          </div>
+          
+          <!-- Teilnehmer -->
+          <div class="form-group large-form-group">
+            <label class="big-label">Teilnehmer</label>
+            <div class="attendees-container" id="attendeesContainer">
+              <!-- Wird dynamisch befüllt -->
+            </div>
+            <button type="button" class="btn btn-outline-primary mt-2" id="addAttendeeBtn">
+              <i class="fas fa-plus"></i> Teilnehmer hinzufügen
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="big-button secondary-button" data-action="close">
+          Abbrechen
+        </button>
+        <button type="button" class="big-button primary-button" id="saveEventBtn">
+          Speichern
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Attendees Modal -->
+  <div class="modal-overlay" id="attendeesModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="attendeesModalLabel">Teilnehmer hinzufügen</h2>
+        <button type="button" class="modal-close" data-action="close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <input type="text" class="form-input" id="attendeeSearch" placeholder="Mitarbeiter suchen...">
+        </div>
+        <div class="attendees-list" id="attendeesList">
+          <!-- Wird dynamisch befüllt -->
+          <div class="loading-placeholder">
+            <div class="loading-spinner"></div>
+            <p class="text-center mt-3">Mitarbeiter werden geladen...</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+        <button type="button" class="btn btn-primary" id="addSelectedAttendeesBtn">Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Event Response Modal -->
+  <div class="modal-overlay" id="eventResponseModal">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h2 id="eventResponseModalLabel">Auf Einladung antworten</h2>
+        <button type="button" class="modal-close" data-action="close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="responseEventTitle" class="mb-4">Titel des Termins</p>
+        <div class="response-options">
+          <button type="button" class="response-btn" data-response="accepted">
+            <i class="fas fa-check"></i>
+            <span>Zusagen</span>
+          </button>
+          <button type="button" class="response-btn" data-response="tentative">
+            <i class="fas fa-question"></i>
+            <span>Vielleicht</span>
+          </button>
+          <button type="button" class="response-btn" data-response="declined">
+            <i class="fas fa-times"></i>
+            <span>Absagen</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirmationModal">
+    <div class="modal-container modal-sm">
+      <div class="modal-header">
+        <h2 id="confirmationModalLabel">Bestätigung</h2>
+        <button type="button" class="modal-close" data-action="close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmationMessage" class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marked.js for Markdown rendering -->
+  <script src="/js/lib/marked.min.js"></script>
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
+  <!-- Standalone scripts for Calendar -->
+  <script>
+    // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
+    window.DashboardUI = {
+      openModal: function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+          modal.style.opacity = '1';
+          modal.style.visibility = 'visible';
+          modal.classList.add('active');
+        }
+      },
+      closeModal: function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+          modal.style.opacity = '0';
+          modal.style.visibility = 'hidden';
+          modal.classList.remove('active');
+        }
+      },
+      showToast: function(message, type) {
+        // Einfache Toast-Implementierung
+        const toast = document.createElement('div');
+        toast.className = 'toast-' + (type || 'info');
+        toast.textContent = message;
+        
+        // Toast-Container erstellen
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.className = 'toast-container';
+          document.body.appendChild(container);
+        }
+        
+        container.appendChild(toast);
+        
+        // Nach 3 Sekunden ausblenden
+        setTimeout(function() {
+          toast.remove();
+        }, 3000);
+      },
+      formatDate: function(date) {
+        if (!date) return '-';
+        const d = new Date(date);
+        return d.toLocaleDateString('de-DE');
+      }
+    };
+  </script>
+  <style>
+    /* Toast-Styles direkt im HTML einbinden */
+    .toast-container {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 9999;
+    }
+    .toast-info, .toast-error, .toast-success {
+      background-color: var(--background-light);
+      color: var(--text-primary);
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 16px;
+      margin-top: 8px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      font-size: 14px;
+    }
+    .toast-error {
+      border-left-color: var(--error-color);
+    }
+    .toast-success {
+      border-left-color: var(--success-color);
+    }
+    /* Zusätzliche Styles für fehlende Klassen */
+    .d-none {
+      display: none !important;
+    }
+  </style>
+  <!-- Calendar Scripts -->
+  <script src="/js/calendar.js"></script>
+</body>
+</html>

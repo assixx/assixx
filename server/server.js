@@ -22,7 +22,6 @@ const featureRoutes = require('./routes/features');
 const signupRoutes = require('./routes/signup');
 const unsubscribeRoutes = require('./routes/unsubscribe');
 const blackboardRoutes = require('./routes/blackboard');
-const calendarRoutes = require('./routes/calendar');
 const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
 
@@ -331,7 +330,6 @@ app.use('/unsubscribe', unsubscribeRoutes); // E-Mail-Abmeldung (ohne Authentifi
 app.use('/api/auth', authRoutes); // Authentifizierungs-API
 app.use('/api/user', userProfileRoutes); // Benutzer-Profil-API
 app.use('/', blackboardRoutes); // Blackboard-System
-app.use('/', calendarRoutes); // Firmenkalender-System
 
 // Add additional API routes for departments and teams
 app.use('/api/departments', departmentRoutes);
