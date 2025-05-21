@@ -1,0 +1,161 @@
+/**
+ * Blackboard System Styles
+ */
+
+/* Card styles for blackboard entries */
+.blackboard-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 1.5rem;
+  border: none;
+  border-radius: 8px;
+}
+
+.blackboard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Priority indicators - colored left border */
+.blackboard-card.priority-low {
+  border-left: 4px solid #28a745;
+}
+
+.blackboard-card.priority-normal {
+  border-left: 4px solid #0d6efd;
+}
+
+.blackboard-card.priority-high {
+  border-left: 4px solid #fd7e14;
+}
+
+.blackboard-card.priority-urgent {
+  border-left: 4px solid #dc3545;
+}
+
+/* Unread indicator */
+.blackboard-card.unread {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.unread-badge {
+  background-color: #dc3545;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+}
+
+/* Organization level badges */
+.badge.level-company {
+  background-color: #0d6efd;
+}
+
+.badge.level-department {
+  background-color: #fd7e14;
+}
+
+.badge.level-team {
+  background-color: #20c997;
+}
+
+/* Card content styles */
+.blackboard-card .card-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.blackboard-card .card-text {
+  color: #555;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blackboard-card .card-footer {
+  background-color: transparent;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 0.75rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+/* Author avatar */
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  color: #212529;
+  font-weight: 600;
+}
+
+/* Detail modal */
+.entry-detail-header {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.entry-detail-meta {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.entry-detail-content {
+  margin-bottom: 1.5rem;
+}
+
+/* Confirmation status styles */
+.confirmation-status-pending {
+  color: #6c757d;
+}
+
+.confirmation-status-confirmed {
+  color: #28a745;
+}
+
+/* Detail view metadata */
+.entry-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.entry-metadata-item {
+  margin-right: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.entry-metadata-item i {
+  color: #6c757d;
+  margin-right: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+  .blackboard-card {
+    margin-bottom: 1rem;
+  }
+  
+  .filter-section {
+    flex-direction: column;
+  }
+  
+  .filter-item {
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+}
