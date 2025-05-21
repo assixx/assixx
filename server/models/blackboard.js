@@ -4,7 +4,7 @@
  */
 
 const db = require('../database');
-const { getUserDepartmentAndTeam } = require('./user');
+const User = require('./user');
 
 /**
  * Get all blackboard entries visible to the user
@@ -31,7 +31,7 @@ async function getAllEntries(tenantId, userId, options = {}) {
     } = options;
 
     // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await getUserDepartmentAndTeam(userId);
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
     
     // Build base query
     let query = `
@@ -140,7 +140,7 @@ async function getAllEntries(tenantId, userId, options = {}) {
 async function getEntryById(id, tenantId, userId) {
   try {
     // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await getUserDepartmentAndTeam(userId);
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
     
     // Query the entry with confirmation status
     const query = `
@@ -427,7 +427,7 @@ async function getConfirmationStatus(entryId, tenantId) {
 async function getDashboardEntries(tenantId, userId, limit = 3) {
   try {
     // Get user info for access control
-    const { role, departmentId, teamId } = await getUserDepartmentAndTeam(userId);
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
     
     // Build query for dashboard entries
     let query = `
