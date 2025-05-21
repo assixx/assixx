@@ -236,42 +236,72 @@ Der aktuelle Entwicklungsfokus liegt auf der Optimierung der Anwendung für mobi
 - Feature Adoption Rate
 - Customer Satisfaction Score
 
-## Systemvoraussetzungen
+## Systemvoraussetzungen für Windows 11
 
 Bevor Sie beginnen, stellen Sie sicher, dass Sie folgende Software installiert haben:
 
 - **Node.js** (Version 16 oder höher)
-- **XAMPP** (oder eine andere MySQL-Datenbank)
-- **Git** (optional, für das Klonen des Repositories)
+  - Download unter: https://nodejs.org/
+  - Installieren Sie die LTS-Version mit den Standardeinstellungen
+  - Überprüfen Sie die Installation mit `node --version` im Command Prompt oder PowerShell
 
-## Installation
+- **XAMPP** (für MySQL-Datenbank)
+  - Download unter: https://www.apachefriends.org/de/index.html
+  - Mindestens die Komponenten Apache und MySQL auswählen
+  - Empfohlener Installationspfad: `C:\xampp`
 
-### 1. Repository klonen oder entpacken
+- **Git** (für das Klonen des Repositories)
+  - Download unter: https://git-scm.com/download/win
+  - Installieren Sie mit den Standardeinstellungen
+  - Wählen Sie die Option "Git from the command line and also from 3rd-party software"
 
-```bash
-git clone [repository-url]
-cd neuer-projektordner
+- **Visual Studio Code** (empfohlen, aber optional)
+  - Download unter: https://code.visualstudio.com/
+
+## Installation unter Windows 11
+
+### 1. Repository klonen
+
+Öffnen Sie den Windows Command Prompt oder PowerShell und führen Sie folgende Befehle aus:
+
+```cmd
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx
 ```
-
-Oder entpacken Sie das Archiv in einen Ordner Ihrer Wahl.
 
 ### 2. Abhängigkeiten installieren
 
-```bash
+```cmd
 cd server
 npm install
 ```
 
-### 3. MySQL-Datenbank einrichten
+Falls `npm install` Fehler ausgibt, versuchen Sie:
 
-1. Starten Sie XAMPP und aktivieren Sie den MySQL-Dienst
-2. Öffnen Sie phpMyAdmin (http://localhost/phpmyadmin)
-3. Erstellen Sie eine neue Datenbank mit dem Namen `lohnabrechnung` (oder einem Namen Ihrer Wahl)
-4. Importieren Sie die Datenbankstruktur aus der Datei `database/schema.sql` (siehe unten)
+```cmd
+npm install --legacy-peer-deps
+```
 
-#### Datenbankstruktur (schema.sql)
+### 3. MySQL-Datenbank über XAMPP einrichten
 
-Erstellen Sie eine Datei `schema.sql` mit folgendem Inhalt und importieren Sie diese in Ihre Datenbank:
+1. Starten Sie XAMPP Control Panel (Suchen Sie nach "XAMPP Control Panel" im Windows-Startmenü)
+2. Klicken Sie auf die "Start"-Buttons neben Apache und MySQL
+3. Klicken Sie auf den "Admin"-Button neben MySQL oder öffnen Sie http://localhost/phpmyadmin im Browser
+4. Erstellen Sie eine neue Datenbank:
+   - Klicken Sie links auf "Neu"
+   - Geben Sie als Datenbankname `lohnabrechnung` ein
+   - Wählen Sie Collation: `utf8mb4_unicode_ci`
+   - Klicken Sie auf "Erstellen"
+
+5. Importieren Sie das Datenbankschema:
+   - Wählen Sie die Datenbank `lohnabrechnung` in der linken Seitenleiste
+   - Klicken Sie oben auf den Reiter "Importieren"
+   - Klicken Sie auf "Durchsuchen" und wählen Sie die Datei `[Projektpfad]\server\database\schema.sql`
+   - Klicken Sie auf "OK" oder "Importieren"
+
+Falls die Datei `schema.sql` nicht im Repository vorhanden ist, erstellen Sie diese manuell:
+- Öffnen Sie Notepad oder einen anderen Texteditor
+- Fügen Sie folgenden SQL-Code ein:
 
 ```sql
 CREATE TABLE users (
@@ -300,62 +330,134 @@ CREATE TABLE documents (
 );
 ```
 
-### 4. Root-Benutzer erstellen
+- Speichern Sie die Datei als `schema.sql` im Ordner `server\database`
+- Importieren Sie sie wie oben beschrieben
 
-Führen Sie das folgende SQL-Statement aus, um einen Root-Benutzer zu erstellen:
+### 4. Root-Benutzer mit gehashtem Passwort erstellen
+
+Um ein korrekt gehashtes Passwort für den Root-Benutzer zu erstellen, folgen Sie diesen Schritten:
+
+1. Erstellen Sie eine temporäre JavaScript-Datei für das Passwort-Hashing:
+   - Öffnen Sie den Ordner `server` im Projektverzeichnis
+   - Erstellen Sie eine neue Datei `hash_password.js` mit folgendem Inhalt:
+
+```javascript
+const bcrypt = require('bcrypt');
+
+// Das Passwort, das Sie verwenden möchten
+const password = 'root';
+
+// Das Passwort hashen
+bcrypt.hash(password, 10, (err, hash) => {
+  if (err) {
+    console.error('Fehler beim Hashen des Passworts:', err);
+    return;
+  }
+  
+  console.log('Gehashtes Passwort:', hash);
+  console.log('SQL-Statement für Root-Benutzer:');
+  console.log(`INSERT INTO users (username, email, password, role) VALUES ('root', 'root@example.com', '${hash}', 'root');`);
+});
+```
+
+2. Führen Sie das Skript aus, um den Hash zu generieren:
+   - Öffnen Sie Command Prompt oder PowerShell im Verzeichnis `server`
+   - Führen Sie aus:
+
+```cmd
+node hash_password.js
+```
+
+3. Kopieren Sie das generierte SQL-Statement aus der Konsole
+4. Fügen Sie das SQL-Statement in phpMyAdmin ein:
+   - Wählen Sie die Datenbank `lohnabrechnung`
+   - Klicken Sie auf den Reiter "SQL"
+   - Fügen Sie das kopierte SQL-Statement ein
+   - Klicken Sie auf "OK" oder "Ausführen"
+
+Das Statement sollte ähnlich wie folgendes aussehen:
 
 ```sql
 INSERT INTO users (username, email, password, role) VALUES 
 ('root', 'root@example.com', '$2b$10$KbHQjW.ORFZvQmrR15T9.Op08o9SwAKUedMzpVhWsM3V5MNd9Dj/y', 'root');
 ```
 
-Das Passwort für diesen Benutzer ist `root`. Sie können es später im System ändern.
-
-Alternativ können Sie folgendes Skript ausführen, um ein Root-Passwort zu generieren:
-
-```bash
-cd server
-node hash_password.js
-```
-
-Verwenden Sie dann den generierten Hash im obigen SQL-Statement.
-
 ### 5. Umgebungsvariablen konfigurieren
 
-Erstellen Sie eine `.env`-Datei im `server`-Verzeichnis mit folgendem Inhalt:
+1. Erstellen Sie eine `.env`-Datei im `server`-Verzeichnis:
+   - Öffnen Sie Notepad oder einen anderen Texteditor
+   - Fügen Sie folgenden Inhalt ein:
 
 ```env
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=lohnabrechnung
-JWT_SECRET=IhrGeheimesTokenHier
+JWT_SECRET=AssixxSecretKey2025
+PORT=3000
+NODE_ENV=development
 ```
 
-Passen Sie die Datenbankverbindungsdaten entsprechend Ihrer Einrichtung an. Setzen Sie unbedingt ein sicheres, zufälliges JWT_SECRET!
+2. Wichtige Anmerkungen:
+   - Bei XAMPP ist standardmäßig kein Passwort für den MySQL-Benutzer `root` gesetzt
+   - Falls Sie ein Passwort gesetzt haben, tragen Sie es bei `DB_PASSWORD=` ein
+   - Ändern Sie unbedingt den Wert für `JWT_SECRET` in einen eigenen zufälligen String
+   - Speichern Sie die Datei ohne Dateinamenerweiterung als `.env` (nicht als `.env.txt`)
 
-## Server starten
+Um sicherzustellen, dass die Datei korrekt gespeichert wurde:
+- Öffnen Sie Command Prompt im `server`-Verzeichnis
+- Führen Sie `dir /a` aus, um auch versteckte Dateien anzuzeigen
+- Sie sollten eine Datei namens `.env` sehen
 
-```bash
-cd server
+## Server starten unter Windows 11
+
+1. Öffnen Sie Command Prompt oder PowerShell im `server`-Verzeichnis
+2. Führen Sie folgenden Befehl aus:
+
+```cmd
 node server.js
 ```
 
-Der Server startet auf Port 3000. Sie können die Anwendung unter http://localhost:3000 aufrufen.
+3. Erfolgsmeldung überprüfen:
+   - Die Konsole sollte eine Meldung anzeigen: `Server läuft auf Port 3000`
+   - Falls Fehler auftreten, prüfen Sie:
+     - Läuft MySQL über XAMPP?
+     - Stimmen die Datenbank-Zugangsdaten in der .env-Datei?
+     - Wurden alle Abhängigkeiten mit npm install installiert?
+
+4. Öffnen Sie einen Webbrowser und navigieren Sie zu:
+   ```
+   http://localhost:3000
+   ```
 
 ## Anmeldung und erste Schritte
 
-1. Melden Sie sich mit dem Root-Benutzer an:
+1. Falls Apache im XAMPP Control Panel noch nicht läuft, starten Sie ihn
+2. Öffnen Sie http://localhost:3000 im Browser
+3. Melden Sie sich mit dem Root-Benutzer an:
    - Benutzername: `root`
-   - Passwort: `root`
+   - Passwort: `root` (oder das Passwort, das Sie beim Hashen verwendet haben)
 
-2. Im Root-Dashboard können Sie Administratoren erstellen.
+4. Im Root-Dashboard können Sie:
+   - Die Systemübersicht einsehen
+   - Administratoren erstellen (unter "Benutzer > Admin hinzufügen")
+   - Systemeinstellungen verwalten
 
-3. Melden Sie sich mit einem Administrator-Account an, um:
-   - Mitarbeiter anzulegen
-   - Dokumente für Mitarbeiter hochzuladen
+5. So erstellen Sie einen Administrator:
+   - Klicken Sie auf "Benutzer" im Navigationsmenü
+   - Klicken Sie auf "Admin hinzufügen"
+   - Füllen Sie das Formular aus (Username, E-Mail, Passwort)
+   - Klicken Sie auf "Erstellen"
 
-4. Mitarbeiter können sich anmelden, um ihre Dokumente einzusehen und herunterzuladen.
+6. Melden Sie sich ab und wieder als Administrator an:
+   - Klicken Sie auf "Ausloggen" in der oberen rechten Ecke
+   - Melden Sie sich mit den Zugangsdaten des erstellten Admins an
+
+7. Als Administrator können Sie:
+   - Mitarbeiter anlegen (unter "Mitarbeiter > Neu")
+   - Dokumente für Mitarbeiter hochladen (unter "Dokumente > Upload")
+   - Abteilungen verwalten
+   - Auf das Blackboard und den Kalender zugreifen
 
 ## Benutzerrollen und Berechtigungen
 
@@ -384,24 +486,93 @@ Das System verwendet vier Benutzerrollen:
    - Verbesserungsvorschläge einreichen
    - Firmenkalender und Ankündigungen ansehen
 
-## Fehlerbehebung
+## Fehlerbehebung unter Windows 11
 
 ### Probleme mit der Datenbank
 
-- Stellen Sie sicher, dass MySQL läuft
-- Überprüfen Sie die Verbindungsdaten in der `.env`-Datei
-- Prüfen Sie, ob die Datenbank und Tabellen korrekt erstellt wurden
+- **MySQL startet nicht**: 
+  - Überprüfen Sie im XAMPP Control Panel, dass MySQL erfolgreich startet
+  - Falls MySQL mit einer Fehlermeldung abbricht, prüfen Sie die Logs unter `C:\xampp\mysql\data\mysql_error.log`
+  - Bei Port-Konflikten: Stellen Sie sicher, dass kein anderer Dienst Port 3306 belegt
+
+- **Verbindungsfehler zur Datenbank**:
+  - Öffnen Sie die `.env`-Datei und prüfen Sie die Zugangsdaten:
+    ```
+    DB_HOST=localhost
+    DB_USER=root
+    DB_PASSWORD=  (leerer String bei XAMPP-Standardinstallation)
+    DB_NAME=lohnabrechnung
+    ```
+  - Testen Sie die Datenbankverbindung mit folgendem Befehl im `server`-Verzeichnis:
+    ```cmd
+    node -e "const mysql = require('mysql2'); const conn = mysql.createConnection({host: 'localhost', user: 'root', password: '', database: 'lohnabrechnung'}); conn.connect(err => { if(err) { console.error('Verbindungsfehler:', err); } else { console.log('Verbindung erfolgreich!'); conn.end(); }})"
+    ```
+
+- **Tabellen fehlen oder sind falsch**:
+  - Überprüfen Sie in phpMyAdmin, ob die Datenbank `lohnabrechnung` existiert
+  - Prüfen Sie, ob alle Tabellen vorhanden sind (mindestens `users` und `documents`)
+  - Importieren Sie `schema.sql` erneut, falls nötig
 
 ### Authentifizierungsprobleme
 
-- Der JWT_SECRET in der `.env`-Datei muss gesetzt sein
-- Stellen Sie sicher, dass Root-Benutzer korrekt in der Datenbank existiert
+- **Login funktioniert nicht**:
+  - Überprüfen Sie in phpMyAdmin, ob der Root-Benutzer korrekt erstellt wurde:
+    ```sql
+    SELECT * FROM users WHERE username = 'root';
+    ```
+  - Stellen Sie sicher, dass in der `.env`-Datei ein gültiges JWT_SECRET gesetzt ist
+  - Falls nötig, erstellen Sie den Root-Benutzer neu mit gehashtem Passwort wie oben beschrieben
+
+- **Token-Fehler**:
+  - Löschen Sie Browser-Cookies und starten Sie den Server neu
+  - Prüfen Sie, ob das JWT_SECRET in der `.env`-Datei keine Leerzeichen enthält
 
 ### Probleme beim Starten des Servers
 
-- Stellen Sie sicher, dass Port 3000 frei ist
-- Überprüfen Sie, ob alle Abhängigkeiten installiert sind (`npm install`)
-- Prüfen Sie die Server-Logs auf Fehlermeldungen
+- **"Port already in use" Fehler**:
+  - Ein anderer Prozess verwendet bereits Port 3000
+  - Finden Sie den blockierenden Prozess:
+    ```cmd
+    netstat -ano | findstr :3000
+    ```
+  - Beenden Sie den blockierenden Prozess:
+    ```cmd
+    taskkill /PID [PID] /F
+    ```
+  - Alternativ: Ändern Sie den Port in der `.env`-Datei:
+    ```
+    PORT=3001
+    ```
+
+- **"Module not found" Fehler**:
+  - Stellen Sie sicher, dass alle Abhängigkeiten installiert sind:
+    ```cmd
+    npm install
+    ```
+  - Bei Problemen versuchen Sie die Installation mit:
+    ```cmd
+    npm install --force
+    ```
+
+- **Allgemeine Server-Fehler**:
+  - Überprüfen Sie die Konsole auf genaue Fehlermeldungen
+  - Starten Sie den Server im Debug-Modus:
+    ```cmd
+    set DEBUG=* & node server.js
+    ```
+
+### Windows-spezifische Probleme
+
+- **Datei .env wird nicht erkannt**:
+  - Windows versteckt Dateien, die mit einem Punkt beginnen
+  - Stellen Sie sicher, dass die Datei ohne Erweiterung gespeichert wurde
+  - Überprüfen Sie mit `dir /a` im Command Prompt, ob die Datei vorhanden ist
+  - Wenn Sie die Datei in Notepad erstellen, setzen Sie den Dateinamen in Anführungszeichen: `".env"`
+
+- **Pfad-Probleme**:
+  - Windows verwendet Backslashes (`\`) in Pfaden, Node.js erwartet oft Forward-Slashes (`/`)
+  - Verwenden Sie `path.join()` in Ihrem Code für pfadübergreifende Kompatibilität
+  - Falls nötig, passen Sie absolute Pfade in der Konfiguration an
 
 ## Technologien
 
