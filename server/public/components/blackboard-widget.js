@@ -32,8 +32,18 @@ class BlackboardWidget {
         </div>
       `;
       
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
       // Fetch entries
-      const response = await fetch(`/api/blackboard/dashboard?limit=${this.limit}`);
+      const response = await fetch(`/api/blackboard/dashboard?limit=${this.limit}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Failed to load entries');
@@ -218,8 +228,17 @@ class BlackboardWidget {
    */
   async confirmEntry(entryId) {
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
       const response = await fetch(`/api/blackboard/${entryId}/confirm`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (!response.ok) {

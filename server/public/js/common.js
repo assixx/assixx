@@ -27,17 +27,32 @@ async function loadNavigation() {
     const navPlaceholder = document.getElementById('navigation-placeholder');
     if (!navPlaceholder) return;
     
-    // Check if user is logged in and get role
-    const userResponse = await fetch('/api/user/profile');
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    let userRole = null;
+    let userData = null;
     
-    if (!userResponse.ok) {
-      // Not logged in, show login link
+    if (token) {
+      // Check if user is logged in and get role
+      const userResponse = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (userResponse.ok) {
+        userData = await userResponse.json();
+        userRole = userData.role;
+      } else {
+        // Token invalid or expired, show guest navigation
+        navPlaceholder.innerHTML = createGuestNavigation();
+        return;
+      }
+    } else {
+      // No token, show guest navigation
       navPlaceholder.innerHTML = createGuestNavigation();
       return;
     }
-    
-    const userData = await userResponse.json();
-    const userRole = userData.role;
     
     // Load proper navigation based on role
     if (userRole === 'admin' || userRole === 'root') {
@@ -248,8 +263,16 @@ function initializeBootstrapComponents() {
  */
 async function checkUnreadNotifications() {
   try {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     // Check if we have unread blackboard entries that require confirmation
-    const response = await fetch('/api/blackboard?requires_confirmation=true&unread=true&limit=1');
+    const response = await fetch('/api/blackboard?requires_confirmation=true&unread=true&limit=1', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     
     if (!response.ok) {
       return;
@@ -314,16 +337,28 @@ async function checkUnreadNotifications() {
  */
 async function logout() {
   try {
-    const response = await fetch('/api/auth/logout', {
-      method: 'POST'
-    });
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
     
-    if (response.ok) {
-      // Clear token and redirect to login page
+    if (token) {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    
+      if (response.ok) {
+        // Clear token and redirect to login page
+        localStorage.removeItem('token');
+        window.location.href = '/login.html';
+      } else {
+        console.error('Logout failed');
+      }
+    } else {
+      // No token, just redirect to login
       localStorage.removeItem('token');
       window.location.href = '/login.html';
-    } else {
-      console.error('Logout failed');
     }
   } catch (error) {
     console.error('Error during logout:', error);

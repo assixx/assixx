@@ -22,6 +22,8 @@ const featureRoutes = require('./routes/features');
 const signupRoutes = require('./routes/signup');
 const unsubscribeRoutes = require('./routes/unsubscribe');
 const blackboardRoutes = require('./routes/blackboard');
+const authRoutes = require('./routes/auth');
+const userProfileRoutes = require('./routes/user');
 
 // Multi-tenant middleware
 const tenantMiddleware = require('./middleware/tenant');
@@ -325,7 +327,13 @@ app.use('/users', userRoutes);
 app.use('/documents', authenticateToken, documentRoutes);
 app.use('/features', featureRoutes);
 app.use('/unsubscribe', unsubscribeRoutes); // E-Mail-Abmeldung (ohne Authentifizierung)
+app.use('/api/auth', authRoutes); // Authentifizierungs-API
+app.use('/api/user', userProfileRoutes); // Benutzer-Profil-API
 app.use('/', blackboardRoutes); // Blackboard-System
+
+// Add additional API routes for departments and teams
+app.use('/api/departments', departmentRoutes);
+app.use('/api/teams', teamRoutes);
 
 // TEST Routes without authentication - SECURITY RISK - FOR DEVELOPMENT ONLY
 // WARNING: These routes bypass all authentication and authorization

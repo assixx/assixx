@@ -4,18 +4,18 @@ INSERT INTO features (
     name, 
     description, 
     category, 
-    tier, 
-    default_active
+    base_price,
+    is_active
 ) VALUES (
     'blackboard_system',
     'Blackboard-System',
     'Digitales schwarzes Brett für firmenweite, abteilungs- und teamspezifische Ankündigungen.',
-    'communication',
     'premium',
+    15.00,
     1
 ) ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     description = VALUES(description),
     category = VALUES(category),
-    tier = VALUES(tier),
-    default_active = VALUES(default_active);
+    base_price = VALUES(base_price),
+    is_active = VALUES(is_active);

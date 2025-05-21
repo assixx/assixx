@@ -180,12 +180,16 @@ async function sendNewDocumentNotification(user, document) {
       return { success: false, error: 'Keine E-Mail-Adresse für den Benutzer verfügbar' };
     }
     
+    // Unsubscribe-Link generieren
+    const unsubscribeUrl = generateUnsubscribeLink(user.email, 'documents');
+    
     const replacements = {
       userName: `${user.first_name} ${user.last_name}`,
       documentName: document.file_name,
       documentCategory: document.category || 'Allgemein',
       documentDate: new Date(document.upload_date).toLocaleDateString('de-DE'),
-      dashboardUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/employee-dashboard.html`
+      dashboardUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/employee-dashboard.html`,
+      unsubscribeUrl: unsubscribeUrl
     };
     
     const html = await loadTemplate('new-document', replacements);
@@ -267,12 +271,23 @@ async function sendBulkNotification(users, messageOptions) {
     // HTML aus Template laden, falls nicht direkt angegeben
     let html = messageOptions.html;
     if (messageOptions.templateName) {
-      html = await loadTemplate(messageOptions.templateName, messageOptions.replacements || {});
+      const notificationType = messageOptions.notificationType || 'notification';
+      
+      // Replacement-Objekt mit Basis-Werten erstellen
+      const baseReplacements = messageOptions.replacements || {};
+      
+      html = await loadTemplate(messageOptions.templateName, baseReplacements);
     }
     
     // E-Mails zur Queue hinzufügen
     for (const user of validUsers) {
-      const personalizedHtml = html.replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`);
+      // Unsubscribe-Link für jeden Benutzer generieren
+      const unsubscribeUrl = generateUnsubscribeLink(user.email, messageOptions.notificationType || 'all');
+      
+      // HTML personalisieren
+      let personalizedHtml = html
+        .replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`)
+        .replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
       
       addToQueue({
         to: user.email,
