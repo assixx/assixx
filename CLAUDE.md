@@ -127,4 +127,23 @@
 - Wir müssen später noch klären ob Admins im Admin Dashboard zu ihrem Employee Dashboard wechseln können oder ob er durch andere Zugangsdaten in sein Employee Dashboard gelangt
 - Option hinzufügen: Admins können beim Senden von Nachrichten an Mitarbeiter oder andere Admins auswählen, ob die Nachricht in der Pause oder nach Feierabend gesendet werden soll
 
+## Production File Storage (TODO für später)
+**WICHTIG**: Aktuell werden Fotos lokal in `server/uploads/` gespeichert - für Production muss das geändert werden!
+
+**Empfohlene Lösung: AWS S3**
+- Tenant-basierte Ordnerstruktur: `bucket/tenantId/kvp/filename`
+- Kosten: ~€0.023/GB/Monat + Transfer
+- Integration: AWS SDK for Node.js
+- Code-Änderungen: `/server/routes/kvp.js` und `/server/models/kvp.js`
+
+**Alternative Optionen:**
+- Google Cloud Storage (~€0.020/GB/Monat)
+- Cloudinary für Image-Management (~€0.0018/Image)
+
+**Betrifft Module:**
+- KVP-System (Verbesserungsvorschläge mit Fotos)
+- Dokumenten-Management (bereits implementiert)
+- Profil-Bilder (bereits implementiert)
+- Zukünftige Features mit File-Uploads
+
 [... rest of the existing content remains the same ...]
