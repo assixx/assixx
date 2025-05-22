@@ -1,6 +1,8 @@
 node_modules/
 .env
 *.log
+# Upload-Ordner (Dateien werden lokal gespeichert, nicht in Git)
+server/uploads/
 # CLAUDE.md und .claude/ sind jetzt im Repository für bessere Kontinuität
 # CLAUDE.md
 # .claude/

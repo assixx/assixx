@@ -75,15 +75,31 @@
    - Context-Selection für Abteilung, Maschine, Teamleiter und Bereich
    - Drei-Schicht-System (Früh, Spät, Nacht) mit visualisierter Zuordnung
 
+8. **KVP-System** - 100% implementiert ✅
+   - Kontinuierlicher Verbesserungsprozess mit vollständiger CRUD-Funktionalität
+   - Kategorisierte Vorschläge mit Prioritätssystem (niedrig, normal, hoch, kritisch)
+   - File-Upload System mit Bildvorschau und sicherem Download
+   - Status-Management mit 7 verschiedenen Status und farbiger Visualisierung
+   - Employee-Berechtigungen: Eigene Vorschläge erstellen, bearbeiten und löschen
+   - Admin-Berechtigungen: Status ändern, archivieren, alle Vorschläge verwalten
+   - Modal-System mit Vollbild-Bildansicht und Attachment-Download
+   - Status-Historie-Tracking für Audit-Trail
+   - Points-System für Gamification (Grundstruktur implementiert)
+   - Ultra-modernes Glassmorphismus-Design mit Gradient-Status-Badges
+   - Multi-Tenant Support mit vollständiger Datenbankintegration (7 Tabellen)
+   - Responsive Design für Desktop und Mobile
+
 ### 🔴 PRIORITÄT 1 - NÄCHSTE FEATURES
-1. **KVP-System** 💡 **NÄCHSTE PRIORITÄT**
-2. **Chat-Funktion** 💬
+1. **Chat-Funktion** 💬 **NÄCHSTE PRIORITÄT**
+2. **Bestandsmanagement** 📦
+3. **Wartungsplanung** 🔧
 
 ### Q1 2025 STATUS: ✅ KOMPLETT ABGESCHLOSSEN
 - Blackboard-System: 100% ✅
 - Kalender-System: 100% ✅  
 - E-Mail-Benachrichtigungen: 100% ✅
 - Schichtplanungs-Tool: 100% ✅
+- KVP-System: 100% ✅
 
 ## Projektübersicht
 - **Name**: Assixx (SaaS-Plattform für Industriefirmen)
@@ -110,5 +126,24 @@
 ## Offene Fragen und Klärungsbedarf
 - Wir müssen später noch klären ob Admins im Admin Dashboard zu ihrem Employee Dashboard wechseln können oder ob er durch andere Zugangsdaten in sein Employee Dashboard gelangt
 - Option hinzufügen: Admins können beim Senden von Nachrichten an Mitarbeiter oder andere Admins auswählen, ob die Nachricht in der Pause oder nach Feierabend gesendet werden soll
+
+## Production File Storage (TODO für später)
+**WICHTIG**: Aktuell werden Fotos lokal in `server/uploads/` gespeichert - für Production muss das geändert werden!
+
+**Empfohlene Lösung: AWS S3**
+- Tenant-basierte Ordnerstruktur: `bucket/tenantId/kvp/filename`
+- Kosten: ~€0.023/GB/Monat + Transfer
+- Integration: AWS SDK for Node.js
+- Code-Änderungen: `/server/routes/kvp.js` und `/server/models/kvp.js`
+
+**Alternative Optionen:**
+- Google Cloud Storage (~€0.020/GB/Monat)
+- Cloudinary für Image-Management (~€0.0018/Image)
+
+**Betrifft Module:**
+- KVP-System (Verbesserungsvorschläge mit Fotos)
+- Dokumenten-Management (bereits implementiert)
+- Profil-Bilder (bereits implementiert)
+- Zukünftige Features mit File-Uploads
 
 [... rest of the existing content remains the same ...]
