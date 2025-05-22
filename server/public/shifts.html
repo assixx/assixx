@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schichtplanung - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for shift planning interface - Glassmorphismus Design */
+        .shift-planning-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
+            background: var(--background-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .shift-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .shift-info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: var(--background-dark);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: var(--spacing-xs);
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .info-select {
+            width: 100%;
+            padding: var(--spacing-sm);
+            background: var(--background-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .info-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .info-select:hover {
+            border-color: var(--primary-color);
+        }
+
+        .info-select option {
+            background: var(--background-dark);
+            color: var(--text-primary);
+            padding: var(--spacing-sm);
+        }
+
+        .week-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: var(--background-dark);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-xl);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .week-nav-btn {
+            background: var(--primary-color);
+            color: var(--text-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .week-nav-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .week-info {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .main-planning-area {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: var(--spacing-xl);
+        }
+
+        .week-schedule {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .schedule-header {
+            background: var(--background-dark);
+            color: var(--text-primary);
+            padding: var(--spacing-md);
+            display: grid;
+            grid-template-columns: 120px repeat(6, 1fr);
+            gap: 2px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .day-header {
+            text-align: center;
+            padding: var(--spacing-md) var(--spacing-xs);
+            background: var(--background-dark);
+            color: var(--primary-color);
+            border-radius: var(--radius-sm);
+        }
+
+        .shift-row {
+            display: grid;
+            grid-template-columns: 120px repeat(6, 1fr);
+            gap: 2px;
+            background: var(--background-dark);
+            padding: 2px;
+        }
+
+        .shift-label {
+            background: var(--background-dark);
+            color: var(--text-primary);
+            padding: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+            text-align: center;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            min-height: 85px;
+        }
+
+        .shift-info-area {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-md);
+            margin-top: 2px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .shift-info-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .shift-info-textarea {
+            flex: 1;
+            background: var(--background-dark);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            padding: var(--spacing-sm);
+            font-size: 13px;
+            resize: vertical;
+            min-height: 300px;
+            font-family: inherit;
+        }
+
+        .shift-info-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .shift-info-textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .shift-info-area.readonly .shift-info-textarea {
+            background: var(--background-light);
+            cursor: default;
+            resize: none;
+        }
+
+        .shift-cell {
+            background: var(--background-light);
+            min-height: 85px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: var(--radius-sm);
+        }
+
+        .shift-cell:hover {
+            background: rgba(33, 150, 243, 0.1);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .shift-cell.assigned {
+            background: rgba(76, 175, 80, 0.15);
+            border-color: var(--success-color);
+        }
+
+        .employee-assignment {
+            padding: var(--spacing-sm);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .shift-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .empty-slot {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .employee-sidebar {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .employee-list {
+            gap: var(--spacing-md);
+        }
+
+        .employee-item {
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+            cursor: grab;
+            transition: all 0.3s ease;
+            background: var(--background-dark);
+            user-select: none;
+        }
+
+        .employee-item:hover {
+            border-color: var(--primary-color);
+            background: rgba(33, 150, 243, 0.1);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .employee-item.selected {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .employee-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            cursor: grabbing;
+            z-index: 1000;
+        }
+
+        .employee-item.unavailable {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .shift-cell.drag-over {
+            background: rgba(33, 150, 243, 0.3) !important;
+            border-color: var(--primary-color) !important;
+            border-width: 2px !important;
+            transform: scale(1.02);
+        }
+
+        .shift-cell.drop-invalid {
+            background: rgba(244, 67, 54, 0.2) !important;
+            border-color: var(--error-color) !important;
+            border-width: 2px !important;
+        }
+
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .employee-name-sidebar {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .availability-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .status-available {
+            background: var(--success-color);
+        }
+
+        .status-unavailable {
+            background: var(--error-color);
+        }
+
+        .status-limited {
+            background: var(--warning-color);
+        }
+
+        .employee-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .admin-actions {
+            margin-top: var(--spacing-xl);
+            text-align: center;
+            padding: var(--spacing-lg);
+            background: var(--background-dark);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .admin-btn {
+            background: var(--success-color);
+            color: var(--text-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin: 0 var(--spacing-sm);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .admin-btn:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .admin-btn.cancel {
+            background: var(--text-secondary);
+        }
+
+        .admin-btn.cancel:hover {
+            background: #8a8a8a;
+        }
+
+        .shift-type-early { 
+            border-left: 4px solid #FFC107;
+        }
+        .shift-type-late { 
+            border-left: 4px solid var(--success-color);
+        }
+        .shift-type-night { 
+            border-left: 4px solid var(--primary-color);
+        }
+
+        @media (max-width: 1200px) {
+            .main-planning-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .shift-info-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .schedule-header,
+            .shift-row {
+                grid-template-columns: 80px repeat(6, 1fr);
+            }
+            
+            .shift-info-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .week-navigation {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/admin-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        </a>
+        <div class="header-actions">
+            <span id="userName" class="text-secondary">Admin</span>
+            <button id="logoutBtn" class="btn btn-secondary">Ausloggen</button>
+        </div>
+    </header>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3 class="sidebar-title">Navigation</h3>
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item">
+                        <a href="/admin-dashboard.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                                </svg>
+                            </span>
+                            <span>Übersicht</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="/blackboard.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                                </svg>
+                            </span>
+                            <span>Blackboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="/calendar.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/>
+                                </svg>
+                            </span>
+                            <span>Kalender</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item active">
+                        <a href="/shifts.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12,6 12,12 16,14"/>
+                                </svg>
+                            </span>
+                            <span>Schichtplanung</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="shift-planning-container">
+                <!-- Title -->
+                <h1 class="shift-title">Schichtplanung</h1>
+
+                <!-- Info Row -->
+                <div class="shift-info-row">
+                    <div class="info-item">
+                        <div class="info-label">Abteilung</div>
+                        <select class="info-select" id="departmentSelect">
+                            <option value="">Abteilung wählen...</option>
+                        </select>
+                        <div class="info-value" id="currentDepartment" style="display: none;">Produktion</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Maschine</div>
+                        <select class="info-select" id="machineSelect">
+                            <option value="">Maschine wählen...</option>
+                        </select>
+                        <div class="info-value" id="currentMachine" style="display: none;">Anlage 01</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Teamleiter</div>
+                        <select class="info-select" id="teamLeaderSelect">
+                            <option value="">Teamleiter wählen...</option>
+                        </select>
+                        <div class="info-value" id="currentTeamLeader" style="display: none;">Max Mustermann</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Bereich</div>
+                        <select class="info-select" id="areaSelect">
+                            <option value="">Bereich wählen...</option>
+                        </select>
+                        <div class="info-value" id="currentArea" style="display: none;">Halle A</div>
+                    </div>
+                </div>
+
+                <!-- Week Navigation -->
+                <div class="week-navigation">
+                    <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
+                    <div class="week-info">
+                        <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
+                    </div>
+                    <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
+                </div>
+
+                <!-- Main Planning Area -->
+                <div class="main-planning-area">
+                    <!-- Week Schedule -->
+                    <div class="week-schedule">
+                        <!-- Header -->
+                        <div class="schedule-header">
+                            <div class="day-header">Schicht</div>
+                            <div class="day-header">Montag<br><span style="font-size: 12px; font-weight: 400;">20.05</span></div>
+                            <div class="day-header">Dienstag<br><span style="font-size: 12px; font-weight: 400;">21.05</span></div>
+                            <div class="day-header">Mittwoch<br><span style="font-size: 12px; font-weight: 400;">22.05</span></div>
+                            <div class="day-header">Donnerstag<br><span style="font-size: 12px; font-weight: 400;">23.05</span></div>
+                            <div class="day-header">Freitag<br><span style="font-size: 12px; font-weight: 400;">24.05</span></div>
+                            <div class="day-header">Samstag<br><span style="font-size: 12px; font-weight: 400;">25.05</span></div>
+                        </div>
+
+                        <!-- Early Shift Row -->
+                        <div class="shift-row">
+                            <div class="shift-label shift-type-early">
+                                Frühschicht<br>
+                                <span style="font-size: 11px;">06:00-14:00</span>
+                            </div>
+                            <div class="shift-cell" data-day="monday" data-shift="early">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="tuesday" data-shift="early">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="wednesday" data-shift="early">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="thursday" data-shift="early">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="friday" data-shift="early">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="saturday" data-shift="early">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Late Shift Row -->
+                        <div class="shift-row">
+                            <div class="shift-label shift-type-late">
+                                Spätschicht<br>
+                                <span style="font-size: 11px;">14:00-22:00</span>
+                            </div>
+                            <div class="shift-cell" data-day="monday" data-shift="late">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="tuesday" data-shift="late">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="wednesday" data-shift="late">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="thursday" data-shift="late">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="friday" data-shift="late">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="saturday" data-shift="late">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Night Shift Row -->
+                        <div class="shift-row">
+                            <div class="shift-label shift-type-night">
+                                Nachtschicht<br>
+                                <span style="font-size: 11px;">22:00-06:00</span>
+                            </div>
+                            <div class="shift-cell" data-day="monday" data-shift="night">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="tuesday" data-shift="night">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="wednesday" data-shift="night">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="thursday" data-shift="night">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="friday" data-shift="night">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                            <div class="shift-cell" data-day="saturday" data-shift="night">
+                                <div class="employee-assignment">
+                                    <div class="empty-slot">Mitarbeiter zuweisen</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info/Todo Area Row -->
+                        <div class="shift-row">
+                            <div class="shift-label" style="background: #B3B8BC4A; border-left: 4px solid #FFC107;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
+                                </svg>
+                                Info & Todo<br>
+                                <span style="font-size: 11px;">Wochennotizen</span>
+                            </div>
+                            <div class="shift-info-area" style="grid-column: span 6;">
+                                <div class="shift-info-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                    </svg>
+                                    Notizen & Todos für diese Woche
+                                </div>
+                                <textarea 
+                                    class="shift-info-textarea" 
+                                    id="weeklyNotes"
+                                    placeholder="Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...&#10;&#10;Beispiele:&#10;• Wartung Anlage 01 am Mittwoch geplant&#10;• Neue Sicherheitsbestimmungen beachten&#10;• Team-Meeting Freitag 14:00 Uhr&#10;• Überstunden-Genehmigung für Donnerstag"
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Sidebar -->
+                    <div class="employee-sidebar">
+                        <h3 class="sidebar-title">Verfügbare Mitarbeiter</h3>
+                        <div class="employee-list" id="employeeList">
+                            <!-- Employee items will be loaded here -->
+                            <div class="employee-item" data-employee-id="1" data-employee-name="Johann Müller" data-employee-status="available" draggable="true">
+                                <div class="employee-header">
+                                    <div class="employee-name-sidebar">Johann Müller</div>
+                                    <div class="availability-status status-available">Verfügbar</div>
+                                </div>
+                                <div class="employee-details">Erfahrung: 5 Jahre</div>
+                            </div>
+
+                            <div class="employee-item" data-employee-id="2" data-employee-name="Anna Schmidt" data-employee-status="limited" data-employee-restrictions="early" draggable="true">
+                                <div class="employee-header">
+                                    <div class="employee-name-sidebar">Anna Schmidt</div>
+                                    <div class="availability-status status-limited">Begrenzt</div>
+                                </div>
+                                <div class="employee-details">Nur Frühschicht</div>
+                            </div>
+
+                            <div class="employee-item unavailable" data-employee-id="3" data-employee-name="Peter Weber" data-employee-status="unavailable" draggable="false">
+                                <div class="employee-header">
+                                    <div class="employee-name-sidebar">Peter Weber</div>
+                                    <div class="availability-status status-unavailable">Urlaub</div>
+                                </div>
+                                <div class="employee-details">Bis 26.05.2025</div>
+                            </div>
+
+                            <div class="employee-item" data-employee-id="4" data-employee-name="Lisa Wagner" data-employee-status="available" draggable="true">
+                                <div class="employee-header">
+                                    <div class="employee-name-sidebar">Lisa Wagner</div>
+                                    <div class="availability-status status-available">Verfügbar</div>
+                                </div>
+                                <div class="employee-details">Erfahrung: 3 Jahre</div>
+                            </div>
+
+                            <div class="employee-item unavailable" data-employee-id="5" data-employee-name="Tom Fischer" data-employee-status="unavailable" draggable="false">
+                                <div class="employee-header">
+                                    <div class="employee-name-sidebar">Tom Fischer</div>
+                                    <div class="availability-status status-unavailable">Krank</div>
+                                </div>
+                                <div class="employee-details">Seit 20.05.2025</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Actions -->
+                <div class="admin-actions" id="adminActions">
+                    <button class="admin-btn" id="saveScheduleBtn">
+                        Schichtplan speichern
+                    </button>
+                    <button class="admin-btn cancel" id="resetScheduleBtn">
+                        Zurücksetzen
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard-scripts.js"></script>
+    <script src="js/shifts-new.js"></script>
+</body>
+</html>

@@ -23,6 +23,7 @@ const signupRoutes = require('./routes/signup');
 const unsubscribeRoutes = require('./routes/unsubscribe');
 const blackboardRoutes = require('./routes/blackboard');
 const calendarRoutes = require('./routes/calendar');
+const shiftRoutes = require('./routes/shifts');
 const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
 
@@ -311,9 +312,31 @@ app.get('/profile-pictures/:filename', authenticateToken, async (req, res) => {
 // API route for general user listing (for dashboard stats)
 app.get('/api/users', authenticateToken, async (req, res) => {
   try {
-    const users = await User.findAll();
-    res.json(users);
+    // Use the search function with filters from query parameters
+    const filters = {
+      search: req.query.search || '',
+      role: req.query.role || '',
+      department_id: req.query.department_id || '',
+      sort_by: req.query.sort_by || 'first_name',
+      sort_dir: req.query.sort_dir || 'ASC',
+      limit: parseInt(req.query.limit) || 50,
+      page: parseInt(req.query.page) || 1
+    };
+    
+    const users = await User.search(filters);
+    const total = await User.count(filters);
+    
+    res.json({
+      users,
+      pagination: {
+        total,
+        page: parseInt(req.query.page) || 1,
+        limit: parseInt(req.query.limit) || 50,
+        pages: Math.ceil(total / (parseInt(req.query.limit) || 50))
+      }
+    });
   } catch (error) {
+    console.error('Error in /api/users:', error);
     res.status(500).json({ message: 'Fehler beim Abrufen der Benutzer', error: error.message });
   }
 });
@@ -332,10 +355,13 @@ app.use('/api/auth', authRoutes); // Authentifizierungs-API
 app.use('/api/user', userProfileRoutes); // Benutzer-Profil-API
 app.use('/', blackboardRoutes); // Blackboard-System
 app.use('/', calendarRoutes); // Firmenkalender-System
+app.use('/api/shifts', shiftRoutes); // Schichtplanungs-System
 
 // Add additional API routes for departments and teams
 app.use('/api/departments', departmentRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/machines', require('./routes/machines'));
+app.use('/api/areas', require('./routes/areas'));
 
 // TEST Routes without authentication - SECURITY RISK - FOR DEVELOPMENT ONLY
 // WARNING: These routes bypass all authentication and authorization
