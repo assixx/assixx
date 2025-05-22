@@ -78,9 +78,14 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - ✅ Event-Bearbeitung mit vollständiger Formular-Validierung
    - ✅ FullCalendar Integration mit Event-Display und Tooltips
 
-5. **Schichtplanungs-Tool** 📅
-   - [ ] Interaktiver Schichtplaner für Team- und Abteilungsleiter
-   - [ ] Automatische Schichtplanerstellung basierend auf Verfügbarkeiten
+5. **Schichtplanungs-Tool** ✅
+   - ✅ Interaktiver Schichtplaner mit Drag & Drop für Team- und Abteilungsleiter
+   - ✅ Wöchentliche Schichtplanansicht mit Navigation zwischen Kalenderwochen
+   - ✅ Validierung verhindert Doppelzuweisungen am selben Tag
+   - ✅ Multi-Tenant Support mit vollständiger Datenbankintegration
+   - ✅ Glassmorphismus-Design im Dashboard-Stil
+   - ✅ Auto-Save Funktionalität für Wochennotizen
+   - ✅ API-Endpunkte für Schichten, Maschinen und Bereiche
    - [ ] Mitarbeiter-Tauschbörse für Schichten
    - [ ] Benachrichtigungen über Schichtänderungen
    - [ ] Überstunden- und Fehlzeitenerfassung

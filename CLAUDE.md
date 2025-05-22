@@ -63,15 +63,27 @@
    - Abteilungen/Teams-Verwaltung
    - Rolle-basierte Berechtigungen
 
+7. **Schichtplanungs-Tool** - 100% implementiert ✅
+   - Interaktiver Schichtplaner mit Drag & Drop für Team- und Abteilungsleiter
+   - Wöchentliche Schichtplanansicht mit Navigation zwischen Kalenderwochen
+   - Validierung verhindert Doppelzuweisungen am selben Tag
+   - Multi-Tenant Support mit vollständiger Datenbankintegration
+   - Glassmorphismus-Design im Dashboard-Stil
+   - Auto-Save Funktionalität für Wochennotizen
+   - API-Endpunkte für Schichten, Maschinen und Bereiche
+   - Vollständiges Datenbankschema mit 8 Tabellen
+   - Context-Selection für Abteilung, Maschine, Teamleiter und Bereich
+   - Drei-Schicht-System (Früh, Spät, Nacht) mit visualisierter Zuordnung
+
 ### 🔴 PRIORITÄT 1 - NÄCHSTE FEATURES
-1. **Schichtplanungs-Tool** 📅 **NÄCHSTE PRIORITÄT**
-2. **KVP-System** 💡
-3. **Chat-Funktion** 💬
+1. **KVP-System** 💡 **NÄCHSTE PRIORITÄT**
+2. **Chat-Funktion** 💬
 
 ### Q1 2025 STATUS: ✅ KOMPLETT ABGESCHLOSSEN
 - Blackboard-System: 100% ✅
 - Kalender-System: 100% ✅  
 - E-Mail-Benachrichtigungen: 100% ✅
+- Schichtplanungs-Tool: 100% ✅
 
 ## Projektübersicht
 - **Name**: Assixx (SaaS-Plattform für Industriefirmen)
