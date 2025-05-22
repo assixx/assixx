@@ -11,9 +11,9 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 - **Fehlermeldesystem**: Arbeiter können Fotos von Problemen machen und direkt melden
 - **Dokumentenverwaltung**: Digitale Verwaltung von Lohnabrechnungen, Krankmeldungen und Bescheinigungen
-- **Firmenkommunikation**: ✅ Kalender, ✅ Blackboard (Ankündigungen) und Umfragen
+- **Firmenkommunikation**: ✅ Kalender mit Farbauswahl, ✅ Blackboard mit Farben/Tags und Umfragen
 - **Verbesserungsvorschläge**: Mitarbeiter können Ideen einreichen und diskutieren
-- **Echtzeit-Benachrichtigungen**: ✅ E-Mail-Benachrichtigungen und zukünftig Push-Notifications
+- **Echtzeit-Benachrichtigungen**: ✅ E-Mail-Benachrichtigungen mit Templates und zukünftig Push-Notifications
 
 ### Zielgruppen:
 
@@ -61,17 +61,22 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - ✅ Automatische Benachrichtigungen bei neuen Dokumenten
 
 3. **Blackboard-System** ✅
-   - ✅ Frontend-Implementierung mit Dashboard-Design
+   - ✅ Frontend-Implementierung mit Dashboard-Design und Glassmorphismus
    - ✅ Backend-API für Verwaltung der Einträge
    - ✅ Datenbankschema und Migrationen
-   - ✅ Lesebestätigungsfunktion
-   - ✅ Priorisierungssystem für Ankündigungen
+   - ✅ Lesebestätigungsfunktion für wichtige Mitteilungen
+   - ✅ Priorisierungssystem für Ankündigungen (Niedrig, Normal, Hoch, Kritisch)
+   - ✅ Farb- und Tag-System für bessere Kategorisierung
+   - ✅ Erweiterte Filter-Funktionen (Priorität, Tags, Farben, Organisationsebene)
 
 4. **Firmenkalender** ✅
    - ✅ Zentraler Firmenkalender für allgemeine Events
    - ✅ Abteilungsspezifische Kalender für interne Meetings
    - ✅ Integration mit Dashboard und Navigation
    - ✅ Erinnerungsfunktion für wichtige Termine
+   - ✅ Benutzerdefinierte Farbauswahl für Kalendereinträge
+   - ✅ Event-Bearbeitung mit vollständiger Formular-Validierung
+   - ✅ FullCalendar Integration mit Event-Display und Tooltips
 
 5. **Schichtplanungs-Tool** 📅
    - [ ] Interaktiver Schichtplaner für Team- und Abteilungsleiter
@@ -188,10 +193,22 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
   - ✅ Interaktive Mitarbeiter-, Abteilungs- und Dokumentenverwaltung
 - ✅ CSRF-Schutz und Sicherheitsverbesserungen
 
-### Phase 2: Kommunikations-Features
+### Phase 2: Kommunikations-Features (VOLLSTÄNDIG ✅)
 - ✅ E-Mail-Benachrichtigungen
   - ✅ Nodemailer Integration
   - ✅ Templates für verschiedene Events
+  - ✅ Queue-System für Massen-E-Mails
+  - ✅ Unsubscribe-Funktionalität
+- ✅ Blackboard-System (Ankündigungen)
+  - ✅ Farb- und Tag-System für Kategorisierung
+  - ✅ Priorisierung (Niedrig bis Kritisch)
+  - ✅ Lesebestätigungen für wichtige Mitteilungen
+  - ✅ Glassmorphismus-Design mit modernen Filtern
+- ✅ Kalender-System
+  - ✅ Firmentermine für alle Organisationsebenen
+  - ✅ Benutzerdefinierte Farbauswahl für Events
+  - ✅ FullCalendar-Integration mit interaktiven Features
+  - ✅ Event-Management mit vollständiger CRUD-Funktionalität
   - ✅ Queue für Massen-E-Mails
   - ✅ Feature-basierte Verfügbarkeit (Premium/Enterprise)
   - ✅ Unsubscribe-Funktion

@@ -28,22 +28,29 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 ### Priorität 1: Kernfeatures für Produktionsbetriebe
 
-1. **Blackboard-System** ✅
+1. **Blackboard-System** ✅ VOLLSTÄNDIG IMPLEMENTIERT
    - [x] Firmenweit sichtbares Blackboard für allgemeine Ankündigungen
    - [x] Abteilungsspezifische Blackboards (nur für Mitglieder sichtbar)
    - [x] Team-basierte Blackboards für spezifische Arbeitsgruppen
-   - [x] Benutzerfreundliches UI für Eintragsmanagement
+   - [x] Benutzerfreundliches UI für Eintragsmanagement mit Glassmorphismus-Design
    - [x] Leserechte für Mitarbeiter, volle Rechte für Admins
    - [x] Lesebestätigungsfunktion für wichtige Mitteilungen
-   - [x] Priorisierung von Ankündigungen (niedrig, normal, hoch, dringend)
+   - [x] Priorisierung von Ankündigungen (niedrig, normal, hoch, kritisch)
    - [x] Ablaufdatum für zeitlich begrenzte Ankündigungen
+   - [x] **NEU:** Farb- und Tag-System für bessere Kategorisierung
+   - [x] **NEU:** Erweiterte Filter-Funktionen (Priorität, Tags, Farben, Organisationsebene)
+   - [x] **NEU:** Moderne UI mit Card-Layout und visuellen Prioritätsindikatoren
 
-2. **Firmenkalender** ✅
+2. **Firmenkalender** ✅ VOLLSTÄNDIG IMPLEMENTIERT
    - [x] Zentraler Firmenkalender für allgemeine Events
    - [x] Abteilungsspezifische Kalender für interne Meetings
    - [x] Team-spezifische Kalender für Schichten und Arbeitspläne
    - [x] Integration mit Dashboard und Navigation
    - [x] Erinnerungsfunktion für wichtige Termine
+   - [x] **NEU:** Benutzerdefinierte Farbauswahl für Kalendereinträge
+   - [x] **NEU:** FullCalendar Integration mit Event-Display und Tooltips
+   - [x] **NEU:** Event-Bearbeitung mit vollständiger Formular-Validierung
+   - [x] **NEU:** Automatische Farb-Fallbacks basierend auf Organisationsebenen
 
 3. **Schichtplanungs-Tool** 📅
    - [ ] Interaktiver Schichtplaner für Team- und Abteilungsleiter
@@ -211,9 +218,16 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 ## Technische Roadmap
 
-### Q1 2025
-- [x] Blackboard & Firmenkalender implementieren
-- [ ] Schichtplanungs-Tool entwickeln
+### Q1 2025 ✅ ABGESCHLOSSEN
+- [x] **Blackboard-System vollständig implementiert** ✅
+  - [x] Farb- und Tag-System für Kategorisierung
+  - [x] Erweiterte Filter-Funktionen
+  - [x] Glassmorphismus-Design mit modernen UI-Elementen
+- [x] **Firmenkalender vollständig implementiert** ✅
+  - [x] Benutzerdefinierte Farbauswahl für Events
+  - [x] FullCalendar Integration mit interaktiven Features
+  - [x] Event-Management mit CRUD-Funktionalität
+- [ ] **Schichtplanungs-Tool entwickeln** 📅 NÄCHSTE PRIORITÄT
 - [ ] KVP-System implementieren
 - [ ] Chat-Funktion zwischen Admins und Mitarbeitern
 
