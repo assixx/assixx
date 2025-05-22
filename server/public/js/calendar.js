@@ -143,10 +143,13 @@ function initializeCalendar() {
       viewEvent(info.event.id);
     },
     eventClassNames: function(info) {
-      // Add class based on event's org_level
-      const orgLevel = info.event.extendedProps.org_level;
-      if (orgLevel) {
-        return [`event-${orgLevel}`];
+      // Only add org_level classes if no custom color is set
+      const hasCustomColor = info.event.extendedProps.custom_color && info.event.extendedProps.custom_color !== '';
+      if (!hasCustomColor) {
+        const orgLevel = info.event.extendedProps.org_level;
+        if (orgLevel) {
+          return [`event-${orgLevel}`];
+        }
       }
       return [];
     },
@@ -158,12 +161,17 @@ function initializeCalendar() {
     },
     dayHeaderFormat: { weekday: 'short', day: 'numeric', month: 'numeric' },
     eventDidMount: function(info) {
-      // Add tooltip with full title
-      tippy(info.el, {
-        content: info.event.title,
-        placement: 'top',
-        arrow: true
-      });
+      // Add tooltip with full title (only if tippy is available)
+      if (typeof tippy !== 'undefined') {
+        tippy(info.el, {
+          content: info.event.title,
+          placement: 'top',
+          arrow: true
+        });
+      } else {
+        // Fallback: Add title attribute for basic tooltip
+        info.el.setAttribute('title', info.event.title);
+      }
     }
   });
   
@@ -215,7 +223,9 @@ async function fetchEvents(info, successCallback, failureCallback) {
     }
     
     const data = await response.json();
+    console.log('Received calendar data:', data);
     const events = data.events.map(event => formatEvent(event));
+    console.log('Formatted events for FullCalendar:', events);
     
     // Call success callback with events
     successCallback(events);
@@ -230,20 +240,28 @@ async function fetchEvents(info, successCallback, failureCallback) {
  * Format event data for FullCalendar
  */
 function formatEvent(event) {
-  // Define color based on org_level
+  // Use custom color if provided, otherwise fallback to org_level defaults
   let color;
-  switch (event.org_level) {
-    case 'company':
-      color = '#3498db';
-      break;
-    case 'department':
-      color = '#e67e22';
-      break;
-    case 'team':
-      color = '#2ecc71';
-      break;
-    default:
-      color = event.color || '#9b59b6';
+  if (event.color && event.color !== '') {
+    // User selected a custom color
+    color = event.color;
+    console.log(`Using custom color for event "${event.title}": ${color}`);
+  } else {
+    // Fallback to org_level defaults
+    switch (event.org_level) {
+      case 'company':
+        color = '#1976d2'; // Blue (matches CSS)
+        break;
+      case 'department':
+        color = '#388e3c'; // Green (matches CSS)
+        break;
+      case 'team':
+        color = '#f57c00'; // Orange (matches CSS)
+        break;
+      default:
+        color = '#3498db'; // Default blue
+    }
+    console.log(`Using org_level color for event "${event.title}" (${event.org_level}): ${color}`);
   }
   
   return {
@@ -252,8 +270,9 @@ function formatEvent(event) {
     start: event.start_time,
     end: event.end_time,
     allDay: event.all_day === 1,
-    color: color,
+    backgroundColor: color,
     borderColor: color,
+    textColor: '#ffffff',
     extendedProps: {
       description: event.description,
       location: event.location,
@@ -262,7 +281,8 @@ function formatEvent(event) {
       created_by: event.created_by,
       creator_name: event.creator_name,
       reminder_time: event.reminder_time,
-      user_response: event.user_response
+      user_response: event.user_response,
+      custom_color: event.color // Store original color for editing
     }
   };
 }
@@ -690,8 +710,8 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
     document.getElementById('eventOrgLevel').value = event.org_level;
     updateOrgIdDropdown(event.org_level, event.org_id);
     
-    // Set color
-    const colorValue = event.color || '#3498db';
+    // Set color - use custom_color if available, otherwise display color
+    const colorValue = event.extendedProps?.custom_color || event.color || '#3498db';
     document.getElementById('eventColor').value = colorValue;
     document.querySelectorAll('.color-option').forEach(option => {
       option.classList.remove('selected');
@@ -1090,10 +1110,14 @@ async function saveEvent() {
       all_day: allDay,
       org_level: orgLevel,
       org_id: parseInt(orgId, 10),
-      reminder_time: reminderTime,
       color,
       attendees: selectedAttendees.map(att => att.id)
     };
+
+    // Only add reminder_time if it has a value (to avoid empty string to integer conversion error)
+    if (reminderTime && reminderTime !== '') {
+      eventData.reminder_time = parseInt(reminderTime, 10);
+    }
     
     let url = '/api/calendar';
     let method = 'POST';

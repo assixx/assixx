@@ -272,6 +272,8 @@
 
 .color-option.selected {
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.8);
+  transform: scale(1.1);
+  border: 2px solid #ffffff;
 }
 
 /* Modal Overlay */
@@ -618,6 +620,75 @@
 
 .secondary-button:hover {
   background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* FullCalendar Event Styling */
+.fc-event {
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  margin: 1px 0 !important;
+}
+
+.fc-event:hover {
+  opacity: 0.8 !important;
+  transform: scale(1.02) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Event styling by organization level - fallback colors only */
+.event-company {
+  background-color: #1976d2;
+  color: white;
+  border-left: 4px solid #0d47a1;
+}
+
+.event-department {
+  background-color: #388e3c;
+  color: white;
+  border-left: 4px solid #1b5e20;
+}
+
+.event-team {
+  background-color: #f57c00;
+  color: white;
+  border-left: 4px solid #e65100;
+}
+
+/* Event titles */
+.fc-event-title {
+  font-weight: 500 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Time display in events */
+.fc-event-time {
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+}
+
+/* Day cell styling for better event visibility */
+.fc-daygrid-day {
+  border: 1px solid var(--border-color) !important;
+}
+
+.fc-daygrid-day:hover {
+  background-color: rgba(var(--primary-rgb), 0.05) !important;
+}
+
+/* Today highlighting */
+.fc-day-today {
+  background-color: rgba(var(--primary-rgb), 0.1) !important;
+}
+
+/* Event dot indicator for list view */
+.fc-daygrid-dot-event .fc-event-title {
+  font-weight: 500;
 }
 
 /* Responsive adjustments */

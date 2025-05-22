@@ -6,20 +6,33 @@ const checkFeature = (featureCode, options = {}) => {
   return async (req, res, next) => {
     try {
       // Tenant ID aus Request holen (gesetzt durch tenant middleware)
-      const tenantId = req.tenantId;
+      const tenantSubdomain = req.tenantId;
       
-      if (!tenantId) {
+      if (!tenantSubdomain) {
         return res.status(400).json({ 
           error: 'Tenant nicht identifiziert',
           upgrade_required: true
         });
       }
 
+      // Hole numerische Tenant ID aus Datenbank
+      const db = require('../database');
+      const [tenantRows] = await db.query('SELECT id FROM tenants WHERE subdomain = ?', [tenantSubdomain]);
+      
+      if (tenantRows.length === 0) {
+        return res.status(404).json({ 
+          error: 'Tenant nicht gefunden',
+          upgrade_required: true
+        });
+      }
+      
+      const numericTenantId = tenantRows[0].id;
+
       // Prüfe ob Tenant das Feature hat
-      const hasAccess = await Feature.checkTenantAccess(tenantId, featureCode);
+      const hasAccess = await Feature.checkTenantAccess(numericTenantId, featureCode);
       
       if (!hasAccess) {
-        logger.warn(`Tenant ${tenantId} tried to access feature ${featureCode} without permission`);
+        logger.warn(`Tenant ${tenantSubdomain} tried to access feature ${featureCode} without permission`);
         
         // Hole Feature-Details für bessere Fehlermeldung
         const feature = await Feature.findByCode(featureCode);
@@ -53,20 +66,32 @@ const checkFeature = (featureCode, options = {}) => {
 const checkFeatures = (featureCodes, requireAll = true) => {
   return async (req, res, next) => {
     try {
-      const tenantId = req.tenantId;
+      const tenantSubdomain = req.tenantId;
       
-      if (!tenantId) {
+      if (!tenantSubdomain) {
         return res.status(400).json({ 
           error: 'Tenant nicht identifiziert'
         });
       }
+
+      // Hole numerische Tenant ID aus Datenbank
+      const db = require('../database');
+      const [tenantRows] = await db.query('SELECT id FROM tenants WHERE subdomain = ?', [tenantSubdomain]);
+      
+      if (tenantRows.length === 0) {
+        return res.status(404).json({ 
+          error: 'Tenant nicht gefunden'
+        });
+      }
+      
+      const numericTenantId = tenantRows[0].id;
 
       const results = {};
       const missingFeatures = [];
 
       // Prüfe jedes Feature
       for (const featureCode of featureCodes) {
-        const hasAccess = await Feature.checkTenantAccess(tenantId, featureCode);
+        const hasAccess = await Feature.checkTenantAccess(numericTenantId, featureCode);
         results[featureCode] = hasAccess;
         
         if (!hasAccess) {
@@ -104,14 +129,24 @@ const checkFeatures = (featureCodes, requireAll = true) => {
 // Middleware um alle Features eines Tenants zu laden
 const loadTenantFeatures = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantSubdomain = req.tenantId;
     
-    if (!tenantId) {
+    if (!tenantSubdomain) {
       req.availableFeatures = [];
       return next();
     }
 
-    const features = await Feature.getTenantFeatures(tenantId);
+    // Hole numerische Tenant ID aus Datenbank
+    const db = require('../database');
+    const [tenantRows] = await db.query('SELECT id FROM tenants WHERE subdomain = ?', [tenantSubdomain]);
+    
+    if (tenantRows.length === 0) {
+      req.availableFeatures = [];
+      return next();
+    }
+    
+    const numericTenantId = tenantRows[0].id;
+    const features = await Feature.getTenantFeatures(numericTenantId);
     req.availableFeatures = features.filter(f => f.is_available);
     req.allFeatures = features;
     
