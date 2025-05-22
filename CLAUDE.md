@@ -11,6 +11,14 @@
 8. IMMER nach der Abarbeitung eines Problems oder Features nachfragen, was als nächstes gemacht werden soll
 9. NACH JEDEM FIX auf die Überprüfung des Nutzers warten und erst nach dessen Bestätigung weitermachen
 
+## Git-Workflow (AB SOFORT - SEHR WICHTIG!)
+- **IMMER Feature-Branches erstellen** - NIE direkt auf master pushen!
+- **VOR jedem Commit fragen**: "Soll ich Feature-Branch erstellen?"
+- **Branch-Namen vorschlagen**: feature/blackboard-colors, feature/calendar-fix, etc.
+- **Pull Requests**: Für Code Review vor Merge in master
+- **Workflow**: git checkout -b feature/name → develop → push branch → PR
+- **Ausnahme nur**: Wenn Simon explizit sagt "push direkt auf master"
+
 ## Projektübersicht
 - **Name**: Assixx (SaaS-Plattform für Industriefirmen)
 - **Zielgruppe**: Industriefirmen mit Produktionsarbeitern ohne PC-Zugang
