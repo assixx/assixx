@@ -4,17 +4,422 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Dashboard - Assixx</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Dashboard Theme CSS -->
     <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
+    <style>
+        /* Employee Dashboard spezifische Styles */
+        .welcome-hero {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            color: white;
+            margin-bottom: var(--spacing-xl);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 120px;
+            box-shadow: 0 20px 40px rgba(33, 150, 243, 0.3);
+        }
+
+        .welcome-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 50%);
+            opacity: 1;
+        }
+
+        .welcome-hero::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100px) translateY(-100px) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100px) translateY(100px) rotate(45deg); opacity: 0; }
+        }
+
+        .welcome-content {
+            position: relative;
+            z-index: 2;
+            text-align: left;
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 var(--spacing-xs) 0;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ffffff, #e3f2fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 1rem;
+            opacity: 0.95;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .welcome-stats {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            gap: var(--spacing-lg);
+            align-items: center;
+        }
+
+        .welcome-stat {
+            text-align: center;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            border: 1px solid rgba(255,255,255,0.2);
+            min-width: 80px;
+            transition: all 0.3s ease;
+        }
+
+        .welcome-stat:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        .welcome-stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .welcome-stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        .floating-dot:nth-child(1) { top: 20%; left: 10%; animation-delay: -1s; }
+        .floating-dot:nth-child(2) { top: 60%; left: 20%; animation-delay: -2s; }
+        .floating-dot:nth-child(3) { top: 30%; right: 15%; animation-delay: -3s; }
+        .floating-dot:nth-child(4) { bottom: 40%; right: 25%; animation-delay: -4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-10px) rotate(180deg); opacity: 1; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .feature-card {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .feature-icon {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-md);
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 var(--spacing-sm) 0;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .feature-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .info-card {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .quick-stats {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stats-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .stats-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .stats-refresh {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stats-refresh:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .activity-feed {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-item:hover {
+            background: rgba(33, 150, 243, 0.05);
+            border-radius: var(--radius-sm);
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: var(--spacing-md);
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .activity-icon.document { background: var(--primary-color); }
+        .activity-icon.calendar { background: var(--success-color); }
+        .activity-icon.kvp { background: var(--warning-color); }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin: 0 0 var(--spacing-xs) 0;
+        }
+
+        .activity-time {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .page-header {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .breadcrumb {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .main-content {
+            padding: var(--spacing-lg);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .welcome-hero {
+                flex-direction: column;
+                text-align: center;
+                min-height: auto;
+                padding: var(--spacing-lg);
+            }
+            
+            .welcome-content {
+                text-align: center;
+                margin-bottom: var(--spacing-md);
+            }
+            
+            .welcome-title {
+                font-size: 1.75rem;
+            }
+            
+            .welcome-stats {
+                gap: var(--spacing-md);
+            }
+            
+            .welcome-stat {
+                min-width: 70px;
+                padding: var(--spacing-sm);
+            }
+            
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-secondary);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/employee-dashboard" class="logo-container">
-            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        <a href="/employee-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo">
         </a>
         <div class="header-actions">
-            <span id="user-info" class="text-secondary">Mitarbeiter</span>
+            <span id="user-info" class="text-secondary">Employee</span>
             <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
         </div>
     </header>
@@ -34,30 +439,6 @@
                                 </svg>
                             </span>
                             <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-item">
-                        <a href="/employee-documents.html" class="sidebar-link">
-                            <span class="icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10 9 9 9 8 9"></polyline>
-                                </svg>
-                            </span>
-                            <span>Dokumente</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-item">
-                        <a href="/salary-documents.html" class="sidebar-link">
-                            <span class="icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                                </svg>
-                            </span>
-                            <span>Gehaltsabrechnungen</span>
                         </a>
                     </li>
                     <li class="sidebar-item">
@@ -92,6 +473,18 @@
                         </a>
                     </li>
                     <li class="sidebar-item">
+                        <a href="/kvp.html" class="sidebar-link">
+                            <span class="icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 11h2v2H9v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zM7 7h10v2H7V7zm0 4h2v2H7v-2zm0 4h10v2H7v-2z"/>
+                                    <circle cx="12" cy="2" r="1.5"/>
+                                    <path d="M12 4c-1.1 0-2 .9-2 2v1h4V6c0-1.1-.9-2-2-2z"/>
+                                </svg>
+                            </span>
+                            <span>KVP System</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
                         <a href="/employee-profile.html" class="sidebar-link">
                             <span class="icon">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -107,334 +500,363 @@
         
         <!-- Main Content -->
         <main class="main-content">
-        <h1 class="text-center mb-4">Mitarbeiter Dashboard</h1>
-        
-        <!-- Employee Info Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Willkommen <span id="employee-name">Mitarbeiter</span>!</h2>
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <a href="/employee-dashboard.html">Dashboard</a> / Übersicht
+                </div>
             </div>
+
+            <!-- Welcome Hero Section -->
+            <div class="welcome-hero">
+                <div class="floating-elements">
+                    <div class="floating-dot"></div>
+                    <div class="floating-dot"></div>
+                    <div class="floating-dot"></div>
+                    <div class="floating-dot"></div>
+                </div>
+                
+                <div class="welcome-content">
+                    <h1 class="welcome-title">Willkommen zurück!</h1>
+                    <p class="welcome-subtitle">
+                        Schön, dass Sie da sind, <span id="employee-name" class="pulse">Mitarbeiter</span>
+                    </p>
+                </div>
+                
+                <div class="welcome-stats">
+                    <div class="welcome-stat">
+                        <span class="welcome-stat-number" id="hero-documents">12</span>
+                        <span class="welcome-stat-label">Dokumente</span>
+                    </div>
+                    <div class="welcome-stat">
+                        <span class="welcome-stat-number" id="hero-points">125</span>
+                        <span class="welcome-stat-label">KVP Punkte</span>
+                    </div>
+                    <div class="welcome-stat">
+                        <span class="welcome-stat-number" id="hero-alerts">3</span>
+                        <span class="welcome-stat-label">Neu</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Info Grid -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-label">Mitarbeiter-ID</div>
+                    <div class="info-value" id="employee-id">-</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">Abteilung</div>
+                    <div class="info-value" id="employee-department">-</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">Position</div>
+                    <div class="info-value" id="employee-position">Mitarbeiter</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">Dokumente</div>
+                    <div class="info-value" id="document-count">-</div>
+                </div>
+            </div>
+
+            <!-- Quick Access Features -->
             <div class="dashboard-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Mitarbeiter-ID</div>
-                    <div class="stat-value" id="employee-id">-</div>
+                <!-- Documents Card -->
+                <div class="feature-card" onclick="window.location.href='#documents'">
+                    <div class="feature-icon">📄</div>
+                    <h3 class="feature-title">Meine Dokumente</h3>
+                    <p class="feature-description">
+                        Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente
+                    </p>
+                    <span class="feature-badge" id="new-documents-badge">Neue verfügbar</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Abteilung</div>
-                    <div class="stat-value" id="employee-department">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Position</div>
-                    <div class="stat-value" id="employee-position">-</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Dokumente</div>
-                    <div class="stat-value" id="document-count">0</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Quick Actions Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Schnellaktionen</h2>
-            </div>
-            <div class="dashboard-grid">
-                <button class="stat-card action-btn" data-action="documents" style="cursor: pointer;">
-                    <div class="stat-value">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                    </div>
-                    <div class="stat-label">Meine Dokumente</div>
-                </button>
-                <button class="stat-card action-btn" data-action="salary" style="cursor: pointer;">
-                    <div class="stat-value">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M17 9h.01"></path>
-                            <path d="M7 9h.01"></path>
-                        </svg>
-                    </div>
-                    <div class="stat-label">Gehaltsabrechnungen</div>
-                </button>
-                <button class="stat-card action-btn" data-action="profile" style="cursor: pointer;">
-                    <div class="stat-value">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                    </div>
-                    <div class="stat-label">Mein Profil</div>
-                </button>
-                <button class="stat-card action-btn" data-action="blackboard" style="cursor: pointer;">
-                    <div class="stat-value">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                        </svg>
-                    </div>
-                    <div class="stat-label">Blackboard</div>
-                </button>
-                <button class="stat-card action-btn" data-action="calendar" style="cursor: pointer;">
-                    <div class="stat-value">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/>
-                        </svg>
-                    </div>
-                    <div class="stat-label">Kalender</div>
-                </button>
-            </div>
-        </div>
+                <!-- Calendar Card -->
+                <div class="feature-card" onclick="window.location.href='/calendar.html'">
+                    <div class="feature-icon">📅</div>
+                    <h3 class="feature-title">Firmenkalender</h3>
+                    <p class="feature-description">
+                        Termine, Events und wichtige Firmentermine im Überblick
+                    </p>
+                    <span class="feature-badge">Immer aktuell</span>
+                </div>
 
-        <!-- Recent Documents Card -->
-        <div class="card">
-            <div class="card-header">
-                <div class="flex flex-between">
-                    <h2 class="card-title">Neueste Dokumente</h2>
-                    <a href="/employee-documents.html" class="btn btn-secondary">Alle anzeigen</a>
+                <!-- Blackboard Card -->
+                <div class="feature-card" onclick="window.location.href='/blackboard.html'">
+                    <div class="feature-icon">📋</div>
+                    <h3 class="feature-title">Schwarzes Brett</h3>
+                    <p class="feature-description">
+                        Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung
+                    </p>
+                    <span class="feature-badge" id="unread-announcements-badge">Neue Meldungen</span>
+                </div>
+
+                <!-- KVP Card -->
+                <div class="feature-card" onclick="window.location.href='/kvp.html'">
+                    <div class="feature-icon">💡</div>
+                    <h3 class="feature-title">Verbesserungsvorschläge</h3>
+                    <p class="feature-description">
+                        Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe
+                    </p>
+                    <span class="feature-badge">Belohnung möglich</span>
+                </div>
+
+                <!-- Shifts Card -->
+                <div class="feature-card" onclick="window.location.href='/shifts.html'">
+                    <div class="feature-icon">🕒</div>
+                    <h3 class="feature-title">Schichtplanung</h3>
+                    <p class="feature-description">
+                        Ihre Schichtpläne und Arbeitszeiten in der Übersicht
+                    </p>
+                    <span class="feature-badge">Wöchentlich</span>
+                </div>
+
+                <!-- Profile Card -->
+                <div class="feature-card" onclick="window.location.href='/employee-profile.html'">
+                    <div class="feature-icon">👤</div>
+                    <h3 class="feature-title">Mein Profil</h3>
+                    <p class="feature-description">
+                        Persönliche Daten verwalten und Einstellungen anpassen
+                    </p>
+                    <span class="feature-badge">Personalisiert</span>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Dokument</th>
-                            <th>Datum</th>
-                            <th>Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recent-documents">
-                        <!-- Wird dynamisch gefüllt -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="no-documents" style="display: none; text-align: center; padding: 20px;">
-                <div class="empty-state">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px; margin-bottom: 10px; color: var(--text-secondary);">
-                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                        <polyline points="13 2 13 9 20 9"></polyline>
-                    </svg>
-                    <p>Keine Dokumente vorhanden</p>
-                    <p class="text-secondary" style="font-size: 0.9em; margin-top: 5px;">Hier werden neue Dokumente angezeigt, sobald sie hochgeladen wurden.</p>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stats-header">
+                    <h2 class="stats-title">Auf einen Blick</h2>
+                    <button class="stats-refresh" onclick="loadDashboardData()">
+                        <i class="fas fa-sync-alt"></i> Aktualisieren
+                    </button>
+                </div>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Neue Dokumente</div>
+                        <div class="info-value" id="new-documents-count">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Ungelesene Ankündigungen</div>
+                        <div class="info-value" id="unread-announcements-count">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Nächster Termin</div>
+                        <div class="info-value" id="next-appointment">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Meine KVP Punkte</div>
+                        <div class="info-value" id="kvp-points">-</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Announcements Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Aktuelle Ankündigungen</h2>
-            </div>
-            <div id="announcements-container" style="padding: 20px;">
-                <div class="announcement-item" style="padding: 15px; background-color: var(--background-dark); border-radius: var(--radius-sm); margin-bottom: 10px;">
-                    <h3 style="margin-bottom: 5px;">Willkommen im neuen System!</h3>
-                    <p style="margin: 0; color: var(--text-secondary);">Das neue Assixx-System ist jetzt verfügbar. Bei Fragen wenden Sie sich bitte an Ihren Administrator.</p>
+            <!-- Recent Activity -->
+            <div class="activity-feed">
+                <h2 class="stats-title" style="margin-bottom: var(--spacing-lg);">Letzte Aktivitäten</h2>
+                <div id="activity-list">
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i> Lade Aktivitäten...
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
-    </div> <!-- Ende des layout-container -->
+        </main>
+    </div>
 
-    <!-- JavaScript -->
-    <script src="/js/employee-dashboard.js"></script>
-    <script src="/js/document-table-fix.js"></script>
-    
-    <style>
-        /* Verbesserte Tabellenstile */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .table th, .table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .table th {
-            font-weight: bold;
-            color: var(--primary-color);
-            background-color: rgba(33, 150, 243, 0.05);
-        }
-        
-        .table tr:hover {
-            background-color: rgba(255, 255, 255, 0.03);
-        }
-        
-        .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        /* SVG Icon-Stile */
-        .stat-value svg {
-            color: var(--primary-color);
-            transition: all 0.3s ease;
-        }
-        
-        .action-btn:hover .stat-value svg {
-            transform: scale(1.1);
-            filter: drop-shadow(0 0 2px var(--primary-color));
-        }
-    </style>
     <script>
+        let currentUser = null;
+
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Dashboard neu laden bei Klick auf Logo
-            document.querySelector('.logo-container').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.location.reload();
-            });
-    
-            // Event-Listener für Schnellaktionsbuttons
-            document.querySelectorAll('.action-btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const action = this.getAttribute('data-action');
-                    console.log(`Schnellaktion ausgelöst: ${action}`);
-                    
-                    switch(action) {
-                        case 'documents':
-                            window.location.href = '/employee-documents.html';
-                            break;
-                        case 'salary':
-                            window.location.href = '/salary-documents.html';
-                            break;
-                        case 'profile':
-                            window.location.href = '/employee-profile.html';
-                            break;
-                        case 'blackboard':
-                            window.location.href = '/blackboard.html';
-                            break;
-                        case 'calendar':
-                            window.location.href = '/calendar.html';
-                            break;
-                        default:
-                            console.error(`Unbekannte Aktion: ${action}`);
-                    }
-                });
+            checkAuth();
+            loadDashboardData();
+            
+            // Initialize logout button
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
             });
         });
-        
-        // Legacy-Funktionen für Kompatibilität (falls verwendet)
-        function showDocuments() {
-            window.location.href = '/employee-documents.html';
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUser = payload;
+                
+                // Update user info in header
+                document.getElementById('user-info').textContent = payload.username || 'Employee';
+                
+                // Update welcome message
+                document.getElementById('employee-name').textContent = 
+                    `${payload.first_name || payload.username}`;
+                
+                // Redirect if not employee
+                if (payload.role !== 'employee') {
+                    window.location.href = payload.role === 'admin' ? '/admin-dashboard.html' : '/login.html';
+                }
+            } catch(e) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            }
         }
 
-        function showProfile() {
-            window.location.href = '/employee-profile.html';
+        async function apiCall(url, options = {}) {
+            const token = localStorage.getItem('token');
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            return response;
         }
 
-        function reportError() {
-            alert('Fehlermeldesystem - Coming Soon!');
+        async function loadDashboardData() {
+            try {
+                // Load employee profile data
+                await loadEmployeeProfile();
+                
+                // Load document count
+                await loadDocumentCount();
+                
+                // Load dashboard stats
+                await loadDashboardStats();
+                
+                // Load recent activity
+                await loadRecentActivity();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
         }
 
-        function showSalaryDocuments() {
-            window.location.href = '/salary-documents.html';
-        }
-        
-        function showAnnouncements() {
-            const announcementsSection = document.getElementById('announcements-container');
-            announcementsSection.scrollIntoView({ behavior: 'smooth' });
+        async function loadEmployeeProfile() {
+            try {
+                const response = await apiCall('/api/user/profile');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const user = data.data;
+                    document.getElementById('employee-id').textContent = user.employee_id || 'Nicht zugewiesen';
+                    document.getElementById('employee-department').textContent = user.department || 'Nicht zugewiesen';
+                    document.getElementById('employee-position').textContent = user.position || 'Mitarbeiter';
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
         }
 
-        // Wir vermeiden Font Awesome wegen CSP-Restriktionen und verwenden SVG-Icons direkt
+        async function loadDocumentCount() {
+            try {
+                // This would be an API call to get document count
+                document.getElementById('document-count').textContent = '12';
+                document.getElementById('new-documents-count').textContent = '3';
+                
+                // Update badge visibility
+                const newDocsCount = 3;
+                const badge = document.getElementById('new-documents-badge');
+                if (newDocsCount > 0) {
+                    badge.textContent = `${newDocsCount} neue`;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading document count:', error);
+            }
+        }
+
+        async function loadDashboardStats() {
+            try {
+                // Simulated data - replace with actual API calls
+                document.getElementById('unread-announcements-count').textContent = '2';
+                document.getElementById('next-appointment').textContent = 'Morgen 14:00';
+                document.getElementById('kvp-points').textContent = '125';
+                
+                // Update badges
+                const unreadCount = 2;
+                const announcementsBadge = document.getElementById('unread-announcements-badge');
+                if (unreadCount > 0) {
+                    announcementsBadge.textContent = `${unreadCount} neue`;
+                    announcementsBadge.style.display = 'inline-block';
+                } else {
+                    announcementsBadge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                // Simulated activity data
+                const activities = [
+                    {
+                        type: 'document',
+                        title: 'Neue Lohnabrechnung erhalten',
+                        time: 'vor 2 Stunden',
+                        icon: '📄'
+                    },
+                    {
+                        type: 'calendar',
+                        title: 'Termin "Teambesprechung" hinzugefügt',
+                        time: 'vor 1 Tag',
+                        icon: '📅'
+                    },
+                    {
+                        type: 'kvp',
+                        title: 'KVP-Vorschlag eingereicht',
+                        time: 'vor 3 Tagen',
+                        icon: '💡'
+                    },
+                    {
+                        type: 'document',
+                        title: 'Bescheinigung heruntergeladen',
+                        time: 'vor 1 Woche',
+                        icon: '📄'
+                    }
+                ];
+
+                const activityList = document.getElementById('activity-list');
+                activityList.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                        <div class="activity-icon ${activity.type}">
+                            ${activity.icon}
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">${activity.title}</div>
+                            <div class="activity-time">${activity.time}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                document.getElementById('activity-list').innerHTML = 
+                    '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
+            }
+        }
+
+        // Add click handlers for feature cards
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.feature-card[onclick]')) {
+                // Handle click
+            }
+        });
     </script>
-
-    <style>
-        /* Additional styling for icon buttons */
-        .action-btn {
-            transition: all 0.3s ease;
-        }
-        
-        .action-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
-        }
-        
-        .action-btn .stat-value {
-            font-size: 40px;
-            color: var(--primary-color);
-        }
-        
-        .announcement-item:hover {
-            background-color: var(--background-dark) !important;
-            border-left: 3px solid var(--primary-color);
-            padding-left: 12px;
-        }
-        
-        /* Styles für die Sidebar im Employee Dashboard */
-        .sidebar {
-            width: 240px;
-            background-color: var(--background-dark);
-            height: calc(100vh - 56px);
-            border-right: 1px solid var(--border-color);
-        }
-        
-        .sidebar-title {
-            padding: var(--spacing-md);
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .sidebar-item {
-            margin: 2px 0;
-        }
-        
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            padding: var(--spacing-sm) var(--spacing-md);
-            color: var(--text-primary);
-            text-decoration: none;
-            border-radius: var(--radius-sm);
-            margin: 0 var(--spacing-sm);
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar-link:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: var(--primary-color);
-        }
-        
-        .sidebar-item.active .sidebar-link {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .sidebar-link .icon {
-            margin-right: var(--spacing-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .layout-container {
-            display: flex;
-            height: calc(100vh - 56px);
-        }
-        
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: var(--spacing-lg);
-        }
-    </style>
 </body>
 </html>

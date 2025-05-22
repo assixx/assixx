@@ -24,6 +24,7 @@ const unsubscribeRoutes = require('./routes/unsubscribe');
 const blackboardRoutes = require('./routes/blackboard');
 const calendarRoutes = require('./routes/calendar');
 const shiftRoutes = require('./routes/shifts');
+const kvpRoutes = require('./routes/kvp');
 const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
 
@@ -356,6 +357,7 @@ app.use('/api/user', userProfileRoutes); // Benutzer-Profil-API
 app.use('/', blackboardRoutes); // Blackboard-System
 app.use('/', calendarRoutes); // Firmenkalender-System
 app.use('/api/shifts', shiftRoutes); // Schichtplanungs-System
+app.use('/api/kvp', kvpRoutes); // KVP-System (Kontinuierlicher Verbesserungsprozess)
 
 // Add additional API routes for departments and teams
 app.use('/api/departments', departmentRoutes);
