@@ -276,6 +276,7 @@ router.put('/api/calendar/:id',
         }
       }
       
+      console.log('Updating event with data:', eventData);
       const updatedEvent = await calendarModel.updateEvent(
         req.params.id, 
         eventData, 

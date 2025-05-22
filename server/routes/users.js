@@ -49,6 +49,51 @@ const checkOwnUser = (req, res, next) => {
 
 // ROUTES IN CORRECT ORDER - MOST SPECIFIC FIRST
 
+// 0. Main user listing route - MUST come first before parameterized routes
+// Alle Benutzer abrufen (mit optionalen Filtern) - nur für Admins
+router.get('/', authenticateToken, (req, res, next) => {
+  if (['admin', 'root'].includes(req.user.role)) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Zugriff verweigert' });
+  }
+}, async (req, res) => {
+  try {
+    // Konvertiere is_archived zu Boolean, falls vorhanden
+    let isArchived = undefined;
+    if (req.query.is_archived !== undefined) {
+      isArchived = req.query.is_archived === 'true';
+    }
+    
+    const filters = {
+      search: req.query.search || '',
+      role: req.query.role || '',
+      department_id: req.query.department_id || '',
+      sort_by: req.query.sort_by || 'first_name',
+      sort_dir: req.query.sort_dir || 'ASC',
+      limit: parseInt(req.query.limit) || 50,
+      page: parseInt(req.query.page) || 1,
+      is_archived: isArchived
+    };
+    
+    const users = await User.search(filters);
+    const total = await User.count(filters);
+    
+    res.json({
+      users,
+      pagination: {
+        total,
+        page: parseInt(req.query.page) || 1,
+        limit: parseInt(req.query.limit) || 50,
+        pages: Math.ceil(total / (parseInt(req.query.limit) || 50))
+      }
+    });
+  } catch (error) {
+    logger.error(`Error fetching users: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Abrufen der Benutzer', error: error.message });
+  }
+});
+
 // 1. Static specific routes
 // Aktuellen Benutzer abrufen
 router.get('/current', authenticateToken, async (req, res) => {

@@ -7,6 +7,15 @@ const db = require('../database');
 const User = require('./user');
 
 /**
+ * Format datetime strings for MySQL (remove 'Z' and convert to local format)
+ */
+function formatDateForMysql(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/**
  * Get all calendar events visible to the user
  * @param {number} tenantId - Tenant ID
  * @param {number} userId - User ID
@@ -284,8 +293,8 @@ async function createEvent(eventData) {
       title,
       description || null,
       location || null,
-      start_time,
-      end_time,
+      formatDateForMysql(start_time),
+      formatDateForMysql(end_time),
       all_day ? 1 : 0,
       org_level,
       org_id,
@@ -353,12 +362,12 @@ async function updateEvent(id, eventData, tenantId) {
     
     if (start_time !== undefined) {
       query += ', start_time = ?';
-      queryParams.push(start_time);
+      queryParams.push(formatDateForMysql(start_time));
     }
     
     if (end_time !== undefined) {
       query += ', end_time = ?';
-      queryParams.push(end_time);
+      queryParams.push(formatDateForMysql(end_time));
     }
     
     if (all_day !== undefined) {
@@ -383,7 +392,9 @@ async function updateEvent(id, eventData, tenantId) {
     
     if (reminder_time !== undefined) {
       query += ', reminder_time = ?';
-      queryParams.push(reminder_time);
+      // Convert empty string to null for integer field
+      const reminderValue = reminder_time === '' ? null : parseInt(reminder_time) || null;
+      queryParams.push(reminderValue);
     }
     
     if (color !== undefined) {
