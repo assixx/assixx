@@ -94,34 +94,43 @@
         <h3 class="card-title">Filter & Suche</h3>
       </div>
       <div class="card-body">
-        <div class="flex gap-4 flex-wrap">
-          <div class="form-group">
-            <label for="levelFilter" class="form-label">Ebene</label>
-            <div class="tab-navigation mb-2" id="levelFilter">
-              <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
-              <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
-              <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
-              <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
-            </div>
+        <!-- Moderne Filter-Kontrollen -->
+        <div class="modern-filters">
+          <!-- Floating Search Bar -->
+          <div class="floating-search">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <input type="text" id="searchInput" class="search-field" placeholder="Blackboard durchsuchen...">
+            <button type="button" id="searchButton" class="search-trigger">Suchen</button>
           </div>
           
-          <div class="form-group">
-            <label for="sortFilter" class="form-label">Sortierung</label>
-            <select id="sortFilter" class="form-input">
-              <option value="created_at|DESC">Neueste zuerst</option>
-              <option value="created_at|ASC">Älteste zuerst</option>
-              <option value="priority|DESC">Nach Priorität</option>
-              <option value="title|ASC">Alphabetisch (A-Z)</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="searchInput" class="form-label">Suche</label>
-            <div class="flex gap-1">
-              <input type="text" id="searchInput" class="form-input" placeholder="Suchbegriff...">
-              <button class="btn btn-primary" type="button" id="searchButton">
-                <i class="fas fa-search"></i>
+          <!-- Filter Pills -->
+          <div class="filter-pills">
+            <div class="pill-group">
+              <span class="pill-label">Ebene:</span>
+              <button class="filter-pill active" data-value="all" id="filterAll">
+                <span>🌐</span> Alle
               </button>
+              <button class="filter-pill" data-value="company" id="filterCompany">
+                <span>🏢</span> Firma
+              </button>
+              <button class="filter-pill" data-value="department" id="filterDepartment">
+                <span>🏛️</span> Abteilung
+              </button>
+              <button class="filter-pill" data-value="team" id="filterTeam">
+                <span>👥</span> Team
+              </button>
+            </div>
+            
+            <div class="pill-group">
+              <span class="pill-label">Sortieren:</span>
+              <select id="sortFilter" class="modern-select">
+                <option value="created_at|DESC">🕒 Neueste</option>
+                <option value="created_at|ASC">⏰ Älteste</option>
+                <option value="priority|DESC">⚡ Priorität</option>
+                <option value="title|ASC">🔤 A-Z</option>
+              </select>
             </div>
           </div>
         </div>

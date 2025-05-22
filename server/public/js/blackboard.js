@@ -120,9 +120,14 @@ function setupCloseButtons() {
  * Setup all event listeners
  */
 function setupEventListeners() {
-  // Filter by level using tab buttons
-  document.querySelectorAll('.tab-btn[data-value]').forEach(button => {
+  // Filter by level using pill buttons
+  document.querySelectorAll('.filter-pill[data-value]').forEach(button => {
     button.addEventListener('click', function() {
+      // Remove active class from all pills
+      document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
+      // Add active class to clicked pill
+      this.classList.add('active');
+      
       currentFilter = this.dataset.value;
       currentPage = 1;
       
