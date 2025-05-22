@@ -101,4 +101,33 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @route GET /api/user/profile-picture
+ * @desc Get user profile picture
+ * @access Private
+ */
+router.get('/profile-picture', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user || !user.profile_picture) {
+      return res.status(404).json({ message: 'Profile picture not found' });
+    }
+    
+    // Send the profile picture file
+    const path = require('path');
+    const fs = require('fs');
+    const filePath = path.join(__dirname, '..', 'uploads', 'profile_pictures', user.profile_picture);
+    
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      res.status(404).json({ message: 'Profile picture file not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching profile picture:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 module.exports = router;
