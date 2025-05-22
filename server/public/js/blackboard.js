@@ -213,6 +213,16 @@ function setupEventListeners() {
   } else {
     console.error('Organization level dropdown not found');
   }
+  
+  // Color selection
+  document.querySelectorAll('.color-option').forEach(button => {
+    button.addEventListener('click', function() {
+      // Remove active class from all color options
+      document.querySelectorAll('.color-option').forEach(option => option.classList.remove('active'));
+      // Add active class to clicked option
+      this.classList.add('active');
+    });
+  });
 }
 
 /**
@@ -372,10 +382,22 @@ function displayEntries(entries) {
     // Prepare author initial for avatar
     const authorInitial = entry.author_name ? entry.author_name.charAt(0).toUpperCase() : '?';
     
+    // Color mapping for CSS
+    const colorMap = {
+      'blue': '#2196F3',
+      'green': '#4CAF50', 
+      'orange': '#FF9800',
+      'red': '#F44336',
+      'purple': '#9C27B0',
+      'gray': '#757575'
+    };
+    
+    const entryColor = colorMap[entry.color] || colorMap['blue'];
+    
     col.innerHTML = `
-      <div class="card blackboard-card priority-${entry.priority} ${entry.requires_confirmation && !entry.is_confirmed ? 'unread' : ''}">
+      <div class="card blackboard-card priority-${entry.priority} ${entry.requires_confirmation && !entry.is_confirmed ? 'unread' : ''}" style="border-left: 4px solid ${entryColor};">
         <div class="card-body">
-          <h5 class="card-title">${entry.title} ${unreadBadge}</h5>
+          <h5 class="card-title" style="color: ${entryColor};">${entry.title} ${unreadBadge}</h5>
           <div class="mb-2">${levelBadge}</div>
           <p class="card-text">${contentPreview}</p>
           <button class="btn btn-sm btn-primary view-entry-btn" data-id="${entry.id}">
@@ -682,6 +704,10 @@ function openEntryForm(entry = null) {
   entryForm.reset();
   document.getElementById('entryOrgId').disabled = true;
   
+  // Reset color selection
+  document.querySelectorAll('.color-option').forEach(option => option.classList.remove('active'));
+  document.querySelector('.color-option[data-color="blue"]').classList.add('active');
+  
   // Set form title and populate if editing
   if (entry) {
     modalTitle.textContent = 'Eintrag bearbeiten';
@@ -700,12 +726,25 @@ function openEntryForm(entry = null) {
       document.getElementById('entryExpiresAt').value = formattedDate;
     }
     
+    // Set color selection
+    if (entry.color) {
+      document.querySelectorAll('.color-option').forEach(option => option.classList.remove('active'));
+      const colorOption = document.querySelector(`.color-option[data-color="${entry.color}"]`);
+      if (colorOption) {
+        colorOption.classList.add('active');
+      }
+    }
+    
+    // Load and set tags
+    loadEntryTags(entry.id);
+    
     // Set organization level and populate org id dropdown
     document.getElementById('entryOrgLevel').value = entry.org_level;
     updateOrgIdDropdown(entry.org_level, entry.org_id);
   } else {
     modalTitle.textContent = 'Neuer Eintrag';
     document.getElementById('entryId').value = '';
+    document.getElementById('entryTags').value = '';
   }
   
   // Show modal
@@ -856,6 +895,14 @@ async function saveEntry() {
     const expiresAt = document.getElementById('entryExpiresAt').value || null;
     const requiresConfirmation = document.getElementById('entryRequiresConfirmation').checked;
     
+    // Get selected color
+    const selectedColor = document.querySelector('.color-option.active');
+    const color = selectedColor ? selectedColor.dataset.color : 'blue';
+    
+    // Get tags
+    const tagsInput = document.getElementById('entryTags').value.trim();
+    const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [];
+    
     // Prepare entry data
     const entryData = {
       title,
@@ -863,6 +910,8 @@ async function saveEntry() {
       org_level: orgLevel,
       org_id: parseInt(orgId, 10),
       priority,
+      color,
+      tags,
       expires_at: expiresAt,
       requires_confirmation: requiresConfirmation
     };
@@ -1129,6 +1178,32 @@ async function checkLoggedIn() {
     console.error('Error checking login status:', error);
     window.location.href = '/login.html';
     throw error;
+  }
+}
+
+/**
+ * Load tags for a specific entry
+ */
+async function loadEntryTags(entryId) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return;
+    }
+    
+    const response = await fetch(`/api/blackboard/${entryId}/tags`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const tags = await response.json();
+      const tagNames = tags.map(tag => tag.name);
+      document.getElementById('entryTags').value = tagNames.join(', ');
+    }
+  } catch (error) {
+    console.error('Error loading entry tags:', error);
   }
 }
 

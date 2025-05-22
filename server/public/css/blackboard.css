@@ -529,6 +529,45 @@
   box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
 
+/* Color Picker */
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.color-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.color-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.color-option.active {
+  border-color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.color-option span {
+  font-size: 16px;
+}
+
 /* Grid Layout */
 .row {
   display: flex;

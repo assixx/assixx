@@ -226,6 +226,8 @@ async function createEntry(entryData) {
       author_id,
       expires_at = null,
       priority = 'normal',
+      color = 'blue',
+      tags = [],
       requires_confirmation = false
     } = entryData;
     
@@ -237,8 +239,8 @@ async function createEntry(entryData) {
     // Insert new entry
     const query = `
       INSERT INTO blackboard_entries 
-      (tenant_id, title, content, org_level, org_id, author_id, expires_at, priority, requires_confirmation)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (tenant_id, title, content, org_level, org_id, author_id, expires_at, priority, color, requires_confirmation)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const [result] = await db.query(query, [
@@ -250,8 +252,14 @@ async function createEntry(entryData) {
       author_id,
       expires_at,
       priority,
+      color,
       requires_confirmation ? 1 : 0
     ]);
+    
+    // Handle tags if provided
+    if (tags && tags.length > 0) {
+      await addTagsToEntry(result.insertId, tags, tenant_id);
+    }
     
     // Get the created entry
     const createdEntry = await getEntryById(result.insertId, tenant_id, author_id);
@@ -278,6 +286,7 @@ async function updateEntry(id, entryData, tenantId) {
       org_id,
       expires_at,
       priority,
+      color,
       status,
       requires_confirmation
     } = entryData;
@@ -316,6 +325,11 @@ async function updateEntry(id, entryData, tenantId) {
       queryParams.push(priority);
     }
     
+    if (color !== undefined) {
+      query += ', color = ?';
+      queryParams.push(color);
+    }
+    
     if (status !== undefined) {
       query += ', status = ?';
       queryParams.push(status);
@@ -332,6 +346,17 @@ async function updateEntry(id, entryData, tenantId) {
     
     // Execute update
     await db.query(query, queryParams);
+    
+    // Handle tags if provided
+    if (entryData.tags !== undefined) {
+      // Remove existing tags
+      await db.query('DELETE FROM blackboard_entry_tags WHERE entry_id = ?', [id]);
+      
+      // Add new tags if any
+      if (entryData.tags && entryData.tags.length > 0) {
+        await addTagsToEntry(id, entryData.tags, tenantId);
+      }
+    }
     
     // Get the updated entry
     const updatedEntry = await getEntryById(id, tenantId, entryData.author_id);
@@ -501,6 +526,99 @@ async function getDashboardEntries(tenantId, userId, limit = 3) {
   }
 }
 
+/**
+ * Add tags to an entry
+ * @param {number} entryId - Entry ID
+ * @param {Array} tagNames - Array of tag names
+ * @param {number} tenantId - Tenant ID
+ */
+async function addTagsToEntry(entryId, tagNames, tenantId) {
+  try {
+    for (const tagName of tagNames) {
+      // Get or create tag
+      let tagId = await getOrCreateTag(tagName.trim(), tenantId);
+      
+      // Link tag to entry
+      await db.query(
+        'INSERT IGNORE INTO blackboard_entry_tags (entry_id, tag_id) VALUES (?, ?)',
+        [entryId, tagId]
+      );
+    }
+  } catch (error) {
+    console.error('Error adding tags to entry:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get or create a tag
+ * @param {string} tagName - Tag name
+ * @param {number} tenantId - Tenant ID
+ * @returns {Promise<number>} Tag ID
+ */
+async function getOrCreateTag(tagName, tenantId) {
+  try {
+    // Check if tag exists
+    const [existingTags] = await db.query(
+      'SELECT id FROM blackboard_tags WHERE name = ? AND tenant_id = ?',
+      [tagName, tenantId]
+    );
+    
+    if (existingTags.length > 0) {
+      return existingTags[0].id;
+    }
+    
+    // Create new tag
+    const [result] = await db.query(
+      'INSERT INTO blackboard_tags (name, tenant_id, color) VALUES (?, ?, ?)',
+      [tagName, tenantId, 'blue']
+    );
+    
+    return result.insertId;
+  } catch (error) {
+    console.error('Error getting or creating tag:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all available tags for a tenant
+ * @param {number} tenantId - Tenant ID
+ * @returns {Promise<Array>} Array of tags
+ */
+async function getAllTags(tenantId) {
+  try {
+    const [tags] = await db.query(
+      'SELECT * FROM blackboard_tags WHERE tenant_id = ? ORDER BY name',
+      [tenantId]
+    );
+    return tags;
+  } catch (error) {
+    console.error('Error getting tags:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get tags for a specific entry
+ * @param {number} entryId - Entry ID
+ * @returns {Promise<Array>} Array of tags
+ */
+async function getEntryTags(entryId) {
+  try {
+    const [tags] = await db.query(`
+      SELECT t.* FROM blackboard_tags t
+      JOIN blackboard_entry_tags et ON t.id = et.tag_id
+      WHERE et.entry_id = ?
+      ORDER BY t.name
+    `, [entryId]);
+    return tags;
+  } catch (error) {
+    console.error('Error getting entry tags:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getAllEntries,
   getEntryById,
@@ -509,5 +627,8 @@ module.exports = {
   deleteEntry,
   confirmEntry,
   getConfirmationStatus,
-  getDashboardEntries
+  getDashboardEntries,
+  getAllTags,
+  getEntryTags,
+  addTagsToEntry
 };

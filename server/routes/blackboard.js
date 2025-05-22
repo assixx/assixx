@@ -238,6 +238,8 @@ router.post('/api/blackboard',
         author_id: req.user.id,
         expires_at: req.body.expires_at || null,
         priority: req.body.priority || 'normal',
+        color: req.body.color || 'blue',
+        tags: req.body.tags || [],
         requires_confirmation: req.body.requires_confirmation || false
       };
       
@@ -265,7 +267,16 @@ router.put('/api/blackboard/:id',
     try {
       const entryData = {
         author_id: req.user.id,
-        ...req.body
+        title: req.body.title,
+        content: req.body.content,
+        org_level: req.body.org_level,
+        org_id: req.body.org_id,
+        priority: req.body.priority,
+        color: req.body.color,
+        tags: req.body.tags,
+        expires_at: req.body.expires_at,
+        requires_confirmation: req.body.requires_confirmation,
+        status: req.body.status
       };
       
       // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
@@ -366,6 +377,25 @@ router.get('/api/blackboard/:id/confirmations',
     } catch (error) {
       console.error('Error in GET /api/blackboard/:id/confirmations:', error);
       res.status(500).json({ message: 'Error retrieving confirmation status' });
+    }
+  });
+
+/**
+ * @route GET /api/blackboard/:id/tags
+ * @desc Get tags for a specific entry
+ */
+router.get('/api/blackboard/:id/tags', 
+  authenticateToken, 
+  tenantMiddleware, 
+  // Temporarily disabled for debugging
+  // checkFeature('blackboard_system'),
+  async (req, res) => {
+    try {
+      const tags = await blackboardModel.getEntryTags(req.params.id);
+      res.json(tags);
+    } catch (error) {
+      console.error('Error in GET /api/blackboard/:id/tags:', error);
+      res.status(500).json({ message: 'Error retrieving entry tags' });
     }
   });
 
