@@ -85,12 +85,23 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - [ ] Automatisierte E-Mail-Benachrichtigungen bei Status-Änderungen
    - [ ] Erweiterte Reporting und Analytics für Management
 
-5. **Chat-Funktion** 💬
-   - [ ] Direkte Kommunikation zwischen Admins und Mitarbeitern
-   - [ ] Posteingang für jeden Mitarbeiter
-   - [ ] Benachrichtigungen über neue Nachrichten
-   - [ ] Archiv für vergangene Konversationen
-   - [ ] Möglichkeit für Dateianhänge in Nachrichten
+5. **Chat-Funktion** 💬 🚧 IN ENTWICKLUNG (80% fertig)
+   - [x] WebSocket-basierte Echtzeit-Kommunikation implementiert
+   - [x] Chat-UI mit modernem Glassmorphismus-Design
+   - [x] Unterhaltungs-Management (Erstellen, Anzeigen, Wechseln)
+   - [x] Multi-User Gruppenchats
+   - [x] Nachrichten senden und empfangen in Echtzeit
+   - [x] Zeitgesteuerte Nachrichtenzustellung (Pause/Nach Feierabend)
+   - [x] Typing-Indikator und Online-Status
+   - [x] Datenbankschema mit 6 Tabellen implementiert
+   - [x] Chat in Navigation integriert (Admin & Employee)
+   - [x] Frontend für Löschen/Archivieren vorbereitet
+   - [ ] Backend-Endpoints für Löschen/Archivieren
+   - [ ] Dateianhänge und Bildversand
+   - [ ] Nachrichtensuche und Filter
+   - [ ] Push-Benachrichtigungen
+   - [ ] Emoji-Picker
+   - [ ] Verschlüsselte Nachrichten
 
 ### Priorität 2: Wichtige Funktionen
 
@@ -237,7 +248,7 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 ## Technische Roadmap
 
-### Q1 2025 ✅ ABGESCHLOSSEN
+### Q1 2025 ✅ FAST ABGESCHLOSSEN (95%)
 - [x] **Blackboard-System vollständig implementiert** ✅
   - [x] Farb- und Tag-System für Kategorisierung
   - [x] Erweiterte Filter-Funktionen
@@ -247,8 +258,11 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
   - [x] FullCalendar Integration mit interaktiven Features
   - [x] Event-Management mit CRUD-Funktionalität
 - [x] **Schichtplanungs-Tool vollständig implementiert** ✅
-- [ ] KVP-System implementieren
-- [ ] Chat-Funktion zwischen Admins und Mitarbeitern
+- [x] **KVP-System vollständig implementiert** ✅
+- [🚧] **Chat-Funktion** (80% fertig)
+  - WebSocket-Server läuft
+  - UI fertig implementiert
+  - Fehlende Backend-Endpoints für Löschen/Archivieren
 
 ### Q2 2025
 - [ ] Umfrage-Tool entwickeln

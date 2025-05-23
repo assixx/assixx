@@ -26,7 +26,7 @@
 - **Standort**: `/home/scs/projects/Assixx/` (WSL Ubuntu)
 - **Repository**: https://github.com/SCS-Technik/Assixx
 
-## AKTUELLE MASTER-STATUS (2025-05-22)
+## AKTUELLE MASTER-STATUS (2025-05-23)
 
 ### ✅ VOLLSTÄNDIG IMPLEMENTIERTE SYSTEME (PRODUCTION READY)
 1. **Blackboard-System** - 100% implementiert
@@ -89,17 +89,34 @@
    - Multi-Tenant Support mit vollständiger Datenbankintegration (7 Tabellen)
    - Responsive Design für Desktop und Mobile
 
-### 🔴 PRIORITÄT 1 - NÄCHSTE FEATURES
-1. **Chat-Funktion** 💬 **NÄCHSTE PRIORITÄT**
-2. **Bestandsmanagement** 📦
-3. **Wartungsplanung** 🔧
+### 🚧 AKTUELL IN ENTWICKLUNG
+**Chat-Funktion** 💬 - 80% implementiert
+- ✅ WebSocket-Server läuft stabil
+- ✅ Datenbankschema mit 6 Tabellen (conversations, participants, messages, etc.)
+- ✅ Frontend komplett mit Glassmorphismus-Design
+- ✅ Echtzeit-Nachrichten funktionieren
+- ✅ Multi-User Gruppenchats
+- ✅ Zeitgesteuerte Zustellung (Pause/Nach Feierabend)
+- ✅ Typing-Indikator
+- ✅ Navigation integriert
+- 🚧 Frontend für Löschen/Archivieren vorbereitet
+- ❌ Backend-Endpoints für DELETE/Archive fehlen
+- ❌ File-Upload noch nicht implementiert
+- ❌ Nachrichten-Suche fehlt
+- ❌ Emoji-Picker fehlt
 
-### Q1 2025 STATUS: ✅ KOMPLETT ABGESCHLOSSEN
+### 🔴 NÄCHSTE FEATURES (nach Chat)
+1. **Bestandsmanagement** 📦
+2. **Wartungsplanung** 🔧
+3. **Umfrage-Tool** 📊
+
+### Q1 2025 STATUS: 95% ABGESCHLOSSEN
 - Blackboard-System: 100% ✅
 - Kalender-System: 100% ✅  
 - E-Mail-Benachrichtigungen: 100% ✅
 - Schichtplanungs-Tool: 100% ✅
 - KVP-System: 100% ✅
+- Chat-System: 80% 🚧
 
 ## Projektübersicht
 - **Name**: Assixx (SaaS-Plattform für Industriefirmen)
@@ -125,7 +142,29 @@
 
 ## Offene Fragen und Klärungsbedarf
 - Wir müssen später noch klären ob Admins im Admin Dashboard zu ihrem Employee Dashboard wechseln können oder ob er durch andere Zugangsdaten in sein Employee Dashboard gelangt
-- Option hinzufügen: Admins können beim Senden von Nachrichten an Mitarbeiter oder andere Admins auswählen, ob die Nachricht in der Pause oder nach Feierabend gesendet werden soll
+- ✅ IMPLEMENTIERT: Admins können beim Senden von Nachrichten auswählen, ob die Nachricht in der Pause oder nach Feierabend gesendet werden soll
+
+## Chat-System Entwicklungsstand (2025-05-23)
+**Was funktioniert:**
+- WebSocket-Verbindung stabil
+- Unterhaltungen erstellen mit mehreren Teilnehmern
+- Nachrichten senden/empfangen in Echtzeit
+- Zeitgesteuerte Zustellung (Sofort/Pause/Nach Feierabend)
+- Typing-Indikator
+- UI mit Glassmorphismus-Design
+
+**Bekannte Probleme:**
+- Avatar-Bilder zeigen 404 (default-avatar.svg wird verwendet)
+- Doppelte API-Calls teilweise behoben
+- Font Awesome Icons fehlen (CSS-Fallback implementiert)
+
+**Noch zu implementieren:**
+1. Backend-Endpoints für Nachrichten löschen/archivieren
+2. File-Upload für Anhänge
+3. Nachrichten-Suche
+4. Emoji-Picker
+5. Push-Benachrichtigungen
+6. Verschlüsselung
 
 ## Production File Storage (TODO für später)
 **WICHTIG**: Aktuell werden Fotos lokal in `server/uploads/` gespeichert - für Production muss das geändert werden!

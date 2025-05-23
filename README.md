@@ -104,11 +104,22 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - ✅ Multi-Tenant Support mit vollständiger Datenbankintegration (7 Tabellen)
    - ✅ Responsive Design für Desktop und Mobile
 
-7. **Chat-Funktion** 💬
-   - [ ] Direkte Kommunikation zwischen Admins und Mitarbeitern
-   - [ ] Posteingang für jeden Mitarbeiter
-   - [ ] Benachrichtigungen über neue Nachrichten
-   - [ ] Möglichkeit für Dateianhänge
+7. **Chat-Funktion** 💬 🚧 IN ENTWICKLUNG
+   - ✅ WebSocket-basierte Echtzeit-Kommunikation implementiert
+   - ✅ Grundlegende Chat-UI mit Glassmorphismus-Design
+   - ✅ Unterhaltungs-Management (Erstellen, Anzeigen, Wechseln)
+   - ✅ Nachrichten senden und empfangen in Echtzeit
+   - ✅ Multi-User Unterhaltungen (Gruppenchats)
+   - ✅ Zeitgesteuerte Nachrichtenzustellung (Pause/Nach Feierabend)
+   - ✅ Typing-Indikator und Online-Status
+   - ✅ Navigation in Employee Dashboard integriert
+   - 🚧 Nachrichten löschen/archivieren (Frontend fertig, Backend fehlt)
+   - [ ] Dateianhänge und Bildversand
+   - [ ] Nachrichtensuche und Filter
+   - [ ] Emoji-Picker
+   - [ ] Push-Benachrichtigungen
+   - [ ] Lesebestätigungen
+   - [ ] Verschlüsselte Nachrichten
 
 ### Priorität 2: Wichtige Funktionen
 1. **Umfrage-Tool** 📊
