@@ -11,7 +11,11 @@ const router = express.Router();
 router.post('/create-admin', authenticateToken, authorizeRole('root'), async (req, res) => {
   logger.info(`Attempt to create admin user by root user: ${req.user.username}`);
   try {
-    const adminData = { ...req.body, role: 'admin' };
+    const adminData = { 
+      ...req.body, 
+      role: 'admin',
+      tenant_id: req.user.tenant_id 
+    };
     const adminId = await User.create(adminData);
     logger.info(`Admin user created successfully with ID: ${adminId}`);
     res.status(201).json({ message: 'Admin-Benutzer erfolgreich erstellt', adminId });
@@ -28,7 +32,7 @@ router.post('/create-admin', authenticateToken, authorizeRole('root'), async (re
 router.get('/admins', authenticateToken, authorizeRole('root'), async (req, res) => {
   logger.info(`Fetching admin users list for root user: ${req.user.username}`);
   try {
-    const admins = await User.findByRole('admin');
+    const admins = await User.findByRole('admin', false, req.user.tenant_id);
     logger.info(`Retrieved ${admins.length} admin users`);
     res.json(admins);
   } catch (error) {

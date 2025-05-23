@@ -43,7 +43,11 @@ router.post('/create-employee', authenticateToken, authorizeRole('admin'), valid
   const adminId = req.user.id;
   logger.info(`Admin ${adminId} attempting to create a new employee`);
   try {
-    const employeeData = { ...req.body, role: 'employee' };
+    const employeeData = { 
+      ...req.body, 
+      role: 'employee',
+      tenant_id: req.user.tenant_id 
+    };
     const employeeId = await User.create(employeeData);
     logger.info(`Admin ${adminId} created new employee with ID: ${employeeId}`);
     res.status(201).json({ message: 'Mitarbeiter erfolgreich erstellt', employeeId });
@@ -58,7 +62,7 @@ router.post('/create-employee', authenticateToken, authorizeRole('admin'), valid
 
 router.get('/employees', async (req, res) => {
   try {
-    const employees = await User.findByRole('employee');
+    const employees = await User.findByRole('employee', false, req.user.tenant_id);
     
     // Log für Debug-Zwecke
     console.log(`Retrieved ${employees.length} employees:`, employees);

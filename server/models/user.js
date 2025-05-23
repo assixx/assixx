@@ -38,9 +38,9 @@ class User {
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
-        status, is_archived
+        status, is_archived, tenant_id
       ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -49,7 +49,7 @@ class User {
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
-        status, is_archived
+        status, is_archived, userData.tenant_id
       ]);
       
       logger.info(`User created successfully with ID: ${result.insertId}`);
@@ -86,7 +86,7 @@ class User {
     }
   }
   
-  static async findByRole(role, includeArchived = false) {
+  static async findByRole(role, includeArchived = false, tenant_id = null) {
     try {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
@@ -96,9 +96,11 @@ class User {
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.role = ?
+        ${tenant_id ? 'AND u.tenant_id = ?' : ''}
       `;
       
       const params = [role];
+      if (tenant_id) params.push(tenant_id);
       
       if (!includeArchived) {
         query += ` AND u.is_archived = false`;

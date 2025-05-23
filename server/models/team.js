@@ -3,16 +3,16 @@ const logger = require('../utils/logger');
 
 class Team {
   static async create(teamData) {
-    const { name, description, department_id, leader_id } = teamData;
+    const { name, description, department_id, leader_id, tenant_id } = teamData;
     logger.info(`Creating new team: ${name}`);
     
     const query = `
-      INSERT INTO teams (name, description, department_id, leader_id) 
-      VALUES (?, ?, ?, ?)
+      INSERT INTO teams (name, description, department_id, leader_id, tenant_id) 
+      VALUES (?, ?, ?, ?, ?)
     `;
     
     try {
-      const [result] = await db.query(query, [name, description, department_id, leader_id]);
+      const [result] = await db.query(query, [name, description, department_id, leader_id, tenant_id]);
       logger.info(`Team created successfully with ID ${result.insertId}`);
       return result.insertId;
     } catch (error) {
@@ -21,17 +21,18 @@ class Team {
     }
   }
 
-  static async findAll() {
-    logger.info('Fetching all teams');
+  static async findAll(tenant_id = null) {
+    logger.info(`Fetching all teams${tenant_id ? ` for tenant ${tenant_id}` : ''}`);
     const query = `
       SELECT t.*, d.name AS department_name 
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
+      ${tenant_id ? 'WHERE t.tenant_id = ?' : ''}
       ORDER BY t.name
     `;
     
     try {
-      const [rows] = await db.query(query);
+      const [rows] = await db.query(query, tenant_id ? [tenant_id] : []);
       logger.info(`Retrieved ${rows.length} teams`);
       return rows;
     } catch (error) {
