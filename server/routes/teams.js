@@ -42,7 +42,10 @@ router.post('/', async (req, res) => {
       }
     }
     
-    const teamId = await Team.create(req.body);
+    const teamId = await Team.create({
+      ...req.body,
+      tenant_id: req.user.tenant_id
+    });
     logger.info(`Team created with ID ${teamId} by user ${req.user.username}`);
     
     res.status(201).json({ 
@@ -58,7 +61,7 @@ router.post('/', async (req, res) => {
 // Alle Teams abrufen
 router.get('/', async (req, res) => {
   try {
-    const teams = await Team.findAll();
+    const teams = await Team.findAll(req.user.tenant_id);
     res.json(teams);
   } catch (error) {
     logger.error(`Error fetching teams: ${error.message}`);

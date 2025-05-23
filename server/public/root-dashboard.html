@@ -19,8 +19,16 @@
         </div>
     </header>
 
-    <!-- Main Container -->
-    <div class="container">
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Unified Sidebar Navigation -->
+        <aside class="sidebar">
+            <!-- Navigation wird durch unified-navigation.js injiziert -->
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="container">
         <h1 class="text-center mb-4">Root Dashboard</h1>
         
         <!-- Dashboard Stats Grid -->
@@ -91,9 +99,13 @@
                 </table>
             </div>
         </div>
+            </div>
+        </main>
     </div>
 
     <!-- JavaScript -->
+    <!-- Unified Navigation -->
+    <script src="/js/components/unified-navigation.js"></script>
     <script src="/js/root-dashboard.js"></script>
     <script>
         // Dashboard neu laden bei Klick auf Logo

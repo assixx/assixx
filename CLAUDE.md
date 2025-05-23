@@ -19,13 +19,10 @@
 - **Workflow**: git checkout -b feature/name → develop → push branch → PR
 - **Ausnahme nur**: Wenn Simon explizit sagt "push direkt auf master"
 
-## Projektübersicht
-- **Name**: Assixx (SaaS-Plattform für Industriefirmen)
-- **Zielgruppe**: Industriefirmen mit Produktionsarbeitern ohne PC-Zugang
-- **Business-Modell**: SaaS mit modularen Features (Basic €0, Premium €49, Enterprise €149)
-- **Standort**: `/home/scs/projects/Assixx/` (WSL Ubuntu)
-- **Repository**: https://github.com/SCS-Technik/Assixx
+## Memories
+- to memorize admins und mitarbeiter einer domöne müssen die selbe emailendung haben (z.B. @firma)
 
+<<<<<<< HEAD
 ## AKTUELLE MASTER-STATUS (2025-05-23)
 
 ### ✅ VOLLSTÄNDIG IMPLEMENTIERTE SYSTEME (PRODUCTION READY)
@@ -184,5 +181,3 @@
 - Dokumenten-Management (bereits implementiert)
 - Profil-Bilder (bereits implementiert)
 - Zukünftige Features mit File-Uploads
-
-[... rest of the existing content remains the same ...]

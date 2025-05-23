@@ -44,12 +44,12 @@ class Tenant {
       
       const tenantId = tenantResult.insertId;
       
-      // 3. Erstelle Admin-Benutzer
+      // 3. Erstelle Root-Benutzer (Firmeninhaber)
       const hashedPassword = await bcrypt.hash(admin_password, 10);
       
       const [userResult] = await connection.query(
         `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id) 
-         VALUES (?, ?, ?, 'admin', ?, ?, ?)`,
+         VALUES (?, ?, ?, 'root', ?, ?, ?)`,
         [admin_email, admin_email, hashedPassword, admin_first_name, admin_last_name, tenantId]
       );
       
@@ -142,6 +142,15 @@ class Tenant {
     const [tenants] = await db.query(
       'SELECT * FROM tenants WHERE subdomain = ? AND status != "cancelled"',
       [subdomain]
+    );
+    return tenants[0];
+  }
+  
+  // Finde Tenant by ID
+  static async findById(tenantId) {
+    const [tenants] = await db.query(
+      'SELECT * FROM tenants WHERE id = ? AND status != "cancelled"',
+      [tenantId]
     );
     return tenants[0];
   }

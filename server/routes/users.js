@@ -200,7 +200,75 @@ router.put('/profile/update', authenticateToken, async (req, res) => {
   }
 });
 
-// Profilbild hochladen
+// Passwort ändern für den aktuellen Benutzer
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Aktuelles und neues Passwort sind erforderlich' });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Neues Passwort muss mindestens 6 Zeichen lang sein' });
+    }
+    
+    const userId = req.user.id;
+    const result = await User.changePassword(userId, currentPassword, newPassword);
+    
+    if (result.success) {
+      logger.info(`Password changed for user ${userId}`);
+      res.json({ message: 'Passwort erfolgreich geändert' });
+    } else {
+      logger.warn(`Failed to change password for user ${userId}: ${result.message}`);
+      res.status(400).json({ message: result.message });
+    }
+  } catch (error) {
+    logger.error(`Error changing password for user ${req.user.id}: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Ändern des Passworts', error: error.message });
+  }
+});
+
+// Profilbild hochladen (neue Route für Frontend)
+router.post('/profile/picture', authenticateToken, upload.single('profile_picture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Keine Datei hochgeladen' });
+    }
+    
+    const userId = req.user.id;
+    const filePath = req.file.path;
+    
+    // Altes Profilbild entfernen, wenn vorhanden
+    const user = await User.findById(userId);
+    if (user && user.profile_picture) {
+      try {
+        await fs.unlink(user.profile_picture);
+      } catch (unlinkError) {
+        logger.warn(`Could not delete old profile picture: ${unlinkError.message}`);
+      }
+    }
+    
+    // Pfad in der Datenbank speichern
+    const success = await User.updateProfilePicture(userId, filePath);
+    
+    if (success) {
+      logger.info(`Profile picture updated for user ${userId}`);
+      res.json({ 
+        message: 'Profilbild erfolgreich aktualisiert',
+        path: filePath
+      });
+    } else {
+      logger.warn(`Failed to update profile picture for user ${userId}`);
+      res.status(500).json({ message: 'Fehler beim Aktualisieren des Profilbilds' });
+    }
+  } catch (error) {
+    logger.error(`Error uploading profile picture: ${error.message}`);
+    res.status(500).json({ message: 'Fehler beim Hochladen des Profilbilds', error: error.message });
+  }
+});
+
+// Profilbild hochladen (legacy route)
 router.post('/profile/upload-picture', authenticateToken, upload.single('profile_picture'), async (req, res) => {
   try {
     if (!req.file) {

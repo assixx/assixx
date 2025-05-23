@@ -2,11 +2,11 @@ const db = require('../database');
 const logger = require('../utils/logger');
 
 class Document {
-  static async create({ userId, fileName, fileContent, category = 'other', description = '', year = null, month = null }) {
+  static async create({ userId, fileName, fileContent, category = 'other', description = '', year = null, month = null, tenant_id }) {
     logger.info(`Creating new document for user ${userId} in category ${category}`);
-    const query = 'INSERT INTO documents (user_id, file_name, file_content, category, description, year, month) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO documents (user_id, file_name, file_content, category, description, year, month, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
     try {
-      const [result] = await db.query(query, [userId, fileName, fileContent, category, description, year, month]);
+      const [result] = await db.query(query, [userId, fileName, fileContent, category, description, year, month, tenant_id]);
       logger.info(`Document created successfully with ID ${result.insertId}`);
       return result.insertId;
     } catch (error) {

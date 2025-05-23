@@ -7,11 +7,13 @@ const express = require('express');
 const router = express.Router();
 const blackboardModel = require('../models/blackboard');
 const { authenticateToken } = require('../middleware/auth');
-const tenantMiddleware = require('../middleware/tenant');
+const { tenantMiddleware } = require('../middleware/tenant');
 const { checkFeature } = require('../middleware/features');
 
-// Fallback tenant ID wenn tenant middleware nicht funktioniert
-const DEFAULT_TENANT_ID = 1;
+// Helper function to get tenant ID from user object
+function getTenantId(user) {
+  return user.tenant_id || user.tenantId || 1;
+}
 
 // Debug log zum Überwachen der Datenbankverbindungen
 console.log("Blackboard API Routes geladen - Benutze Standard-DB:", process.env.DB_NAME);
@@ -20,13 +22,10 @@ console.log("Blackboard API Routes geladen - Benutze Standard-DB:", process.env.
 async function canManageEntry(req, res, next) {
   try {
     const entryId = req.params.id;
-    // Use tenant ID from middleware or fallback to default
-    req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
+    // Get tenant ID from user object
+    const tenantId = getTenantId(req.user);
     
-    // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-    const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
-    
-    const entry = await blackboardModel.getEntryById(entryId, numericTenantId, req.user.id);
+    const entry = await blackboardModel.getEntryById(entryId, tenantId, req.user.id);
     
     if (!entry) {
       return res.status(404).json({ message: 'Entry not found' });
@@ -109,16 +108,12 @@ async function canCreateForOrgLevel(req, res, next) {
  */
 router.get('/api/blackboard', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
-      // Use tenant ID from middleware or fallback to default
-      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
-      
-      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
       const options = {
         status: req.query.status || 'active',
@@ -130,7 +125,7 @@ router.get('/api/blackboard',
         sortDir: req.query.sortDir || 'DESC'
       };
       
-      const result = await blackboardModel.getAllEntries(numericTenantId, req.user.id, options);
+      const result = await blackboardModel.getAllEntries(tenantId, req.user.id, options);
       
       // Debug-Logging für Ergebnisse
       console.log("Blackboard entries result:", JSON.stringify(result).substring(0, 200));
@@ -152,19 +147,15 @@ router.get('/api/blackboard',
  */
 router.get('/api/blackboard/dashboard', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
-      // Use tenant ID from middleware or fallback to default
-      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
-      
-      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
       const limit = parseInt(req.query.limit || '3', 10);
-      const entries = await blackboardModel.getDashboardEntries(numericTenantId, req.user.id, limit);
+      const entries = await blackboardModel.getDashboardEntries(tenantId, req.user.id, limit);
       res.json(entries);
     } catch (error) {
       console.error('Error in GET /api/blackboard/dashboard:', error);
@@ -178,18 +169,14 @@ router.get('/api/blackboard/dashboard',
  */
 router.get('/api/blackboard/:id', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
-      // Use tenant ID from middleware or fallback to default
-      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
-      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
-      
-      const entry = await blackboardModel.getEntryById(req.params.id, numericTenantId, req.user.id);
+      const entry = await blackboardModel.getEntryById(req.params.id, tenantId, req.user.id);
       
       if (!entry) {
         return res.status(404).json({ message: 'Entry not found' });
@@ -208,20 +195,15 @@ router.get('/api/blackboard/:id',
  */
 router.post('/api/blackboard', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   canCreateForOrgLevel,
   async (req, res) => {
     try {
-      // Use tenant ID from middleware or fallback to default
-      req.tenantId = req.tenantId || DEFAULT_TENANT_ID;
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
-      // Da die tenant_id in der DB ein Integer ist, müssen wir sie konvertieren
-      // Im Entwicklungsmodus verwenden wir 1 als Standard-Tenant-ID
-      let numericTenantId = 1;
-      
-      console.log(`Creating blackboard entry with tenant ID: ${numericTenantId} (konvertiert von ${req.tenantId})`);
+      console.log(`Creating blackboard entry with tenant ID: ${tenantId} for user ${req.user.username}`);
       
       // Die org_id muss als Zahl vorliegen
       let org_id = req.body.org_id;
@@ -230,7 +212,7 @@ router.post('/api/blackboard',
       }
       
       const entryData = {
-        tenant_id: numericTenantId, // numerische tenant_id
+        tenant_id: tenantId, // tenant_id from user object
         title: req.body.title,
         content: req.body.content,
         org_level: req.body.org_level,
@@ -249,7 +231,12 @@ router.post('/api/blackboard',
       res.status(201).json(entry);
     } catch (error) {
       console.error('Error in POST /api/blackboard:', error);
-      res.status(500).json({ message: 'Error creating blackboard entry' });
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        message: 'Error creating blackboard entry',
+        error: error.message 
+      });
     }
   });
 
@@ -259,8 +246,7 @@ router.post('/api/blackboard',
  */
 router.put('/api/blackboard/:id', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   canManageEntry,
   async (req, res) => {
@@ -279,13 +265,13 @@ router.put('/api/blackboard/:id',
         status: req.body.status
       };
       
-      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
       const updatedEntry = await blackboardModel.updateEntry(
         req.params.id, 
         entryData, 
-        numericTenantId
+        tenantId
       );
       
       res.json(updatedEntry);
@@ -301,16 +287,15 @@ router.put('/api/blackboard/:id',
  */
 router.delete('/api/blackboard/:id', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   canManageEntry,
   async (req, res) => {
     try {
-      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
-      const success = await blackboardModel.deleteEntry(req.params.id, numericTenantId);
+      const success = await blackboardModel.deleteEntry(req.params.id, tenantId);
       
       if (!success) {
         return res.status(404).json({ message: 'Entry not found' });
@@ -329,8 +314,7 @@ router.delete('/api/blackboard/:id',
  */
 router.post('/api/blackboard/:id/confirm', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
@@ -355,8 +339,7 @@ router.post('/api/blackboard/:id/confirm',
  */
 router.get('/api/blackboard/:id/confirmations', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   async (req, res) => {
     try {
@@ -365,12 +348,12 @@ router.get('/api/blackboard/:id/confirmations',
         return res.status(403).json({ message: 'Only admins can view confirmation status' });
       }
       
-      // Da die tenant_id in der DB ein Integer ist, konvertieren wir auf einen Standardwert
-      const numericTenantId = 1; // Standard-Tenant-ID für die Entwicklung
+      // Get tenant ID from user object
+      const tenantId = getTenantId(req.user);
       
       const confirmations = await blackboardModel.getConfirmationStatus(
         req.params.id, 
-        numericTenantId
+        tenantId
       );
       
       res.json(confirmations);
@@ -386,8 +369,7 @@ router.get('/api/blackboard/:id/confirmations',
  */
 router.get('/api/blackboard/:id/tags', 
   authenticateToken, 
-  tenantMiddleware, 
-  // Temporarily disabled for debugging
+  // tenantMiddleware removed - we get tenant_id from JWT token
   // checkFeature('blackboard_system'),
   async (req, res) => {
     try {

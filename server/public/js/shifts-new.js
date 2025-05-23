@@ -50,6 +50,9 @@ class ShiftPlanningSystem {
         // Update UI based on user role
         this.updateUIForRole();
         
+        // Highlight employee's own shifts
+        this.highlightEmployeeShifts();
+        
         console.log('Shift Planning System initialized');
     }
 
@@ -59,6 +62,7 @@ class ShiftPlanningSystem {
             if (user) {
                 this.userRole = user.role || 'employee';
                 this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
+                this.currentUserId = user.id; // Store current user ID
                 
                 document.getElementById('userName').textContent = user.username || user.name || 'User';
                 
@@ -776,6 +780,15 @@ class ShiftPlanningSystem {
         const employeeList = document.getElementById('employeeList');
         employeeList.innerHTML = '';
 
+        // Hide employee list for non-admin users
+        if (!this.isAdmin) {
+            const sidebar = employeeList.closest('.employee-sidebar');
+            if (sidebar) {
+                sidebar.style.display = 'none';
+            }
+            return;
+        }
+
         this.employees.forEach(employee => {
             const statusClass = `status-${employee.status}`;
             const statusText = this.getStatusText(employee.status);
@@ -1105,7 +1118,7 @@ class ShiftPlanningSystem {
                         <div class="shift-time">${shift.start_time}-${shift.end_time}</div>
                     `;
                     cell.classList.add('assigned');
-                    cell.style.background = '#e3f2fd';
+                    cell.style.background = 'rgb(38, 51, 15)';  
                 }
             }
         });
@@ -1393,6 +1406,34 @@ class ShiftPlanningSystem {
                 item.classList.remove('selected');
             });
         }
+    }
+
+    highlightEmployeeShifts() {
+        // Only highlight for non-admin users
+        if (this.isAdmin || !this.currentUserId) return;
+        
+        // Find all shift cells with assigned employees
+        document.querySelectorAll('.shift-cell.assigned').forEach(cell => {
+            const employeeName = cell.textContent.trim();
+            const assignedEmployees = cell.querySelectorAll('.assigned-employee');
+            
+            // Check if current user is assigned to this shift
+            assignedEmployees.forEach(employeeDiv => {
+                const employeeId = employeeDiv.getAttribute('data-employee-id');
+                if (employeeId && parseInt(employeeId) === parseInt(this.currentUserId)) {
+                    cell.classList.add('employee-shift');
+                }
+            });
+            
+            // Also check by employee name comparison if ID not available
+            if (assignedEmployees.length === 0 && employeeName) {
+                // Get current user's name for comparison
+                const currentUser = this.employees.find(emp => emp.id === this.currentUserId);
+                if (currentUser && employeeName.includes(currentUser.name)) {
+                    cell.classList.add('employee-shift');
+                }
+            }
+        });
     }
 }
 

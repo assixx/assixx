@@ -38,9 +38,9 @@ class User {
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
-        status, is_archived, tenant_id
+        status, is_archived
       ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -49,7 +49,7 @@ class User {
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
-        status, is_archived, userData.tenant_id
+        status, is_archived
       ]);
       
       logger.info(`User created successfully with ID: ${result.insertId}`);
@@ -86,7 +86,7 @@ class User {
     }
   }
   
-  static async findByRole(role, includeArchived = false, tenant_id = null) {
+  static async findByRole(role, includeArchived = false) {
     try {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
@@ -96,11 +96,9 @@ class User {
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.role = ?
-        ${tenant_id ? 'AND u.tenant_id = ?' : ''}
       `;
       
       const params = [role];
-      if (tenant_id) params.push(tenant_id);
       
       if (!includeArchived) {
         query += ` AND u.is_archived = false`;
@@ -504,13 +502,12 @@ class User {
         SELECT 
           u.role,
           u.department_id,
-          ut.team_id,
+          u.team_id,
           d.name as department_name,
           t.name as team_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
-        LEFT JOIN user_teams ut ON u.id = ut.user_id
-        LEFT JOIN teams t ON ut.team_id = t.id
+        LEFT JOIN teams t ON u.team_id = t.id
         WHERE u.id = ?
       `;
       
@@ -621,6 +618,80 @@ class User {
       logger.error(`Error updating profile for user ${userId}: ${error.message}`);
       throw error;
     }
+  }
+}
+
+// Passwort ändern
+static async changePassword(userId, currentPassword, newPassword) {
+  try {
+    // Aktuellen Benutzer abrufen
+    const user = await this.findById(userId);
+    if (!user) {
+      return { success: false, message: 'Benutzer nicht gefunden' };
+    }
+
+    // Aktuelles Passwort überprüfen
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return { success: false, message: 'Aktuelles Passwort ist incorrect' };
+    }
+
+    // Neues Passwort hashen
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Passwort in der Datenbank aktualisieren
+    const query = 'UPDATE users SET password = ? WHERE id = ?';
+    const [result] = await db.query(query, [hashedNewPassword, userId]);
+
+    if (result.affectedRows > 0) {
+      logger.info(`Password changed successfully for user ${userId}`);
+      return { success: true, message: 'Passwort erfolgreich geändert' };
+    } else {
+      return { success: false, message: 'Fehler beim Ändern des Passworts' };
+    }
+  } catch (error) {
+    logger.error(`Error changing password for user ${userId}: ${error.message}`);
+    throw error;
+  }
+}
+
+// Profil-Update erweitern für allgemeine Felder
+static async updateOwnProfile(userId, userData) {
+  try {
+    const user = await this.findById(userId);
+    
+    if (!user) {
+      return { success: false, message: 'Benutzer nicht gefunden' };
+    }
+    
+    // Erlaubte Felder für Profil-Updates (erweitert)
+    const allowedFields = [
+      'email', 'first_name', 'last_name', 'age', 'employee_id', 
+      'iban', 'company', 'notes', 'phone', 'address', 'emergency_contact'
+    ];
+    
+    const allowedUpdates = {};
+    
+    for (const field of allowedFields) {
+      if (userData[field] !== undefined) {
+        allowedUpdates[field] = userData[field];
+      }
+    }
+    
+    if (Object.keys(allowedUpdates).length === 0) {
+      return { success: false, message: 'Keine Felder zum Aktualisieren' };
+    }
+    
+    const success = await this.update(userId, allowedUpdates);
+    
+    if (success) {
+      return { success: true, message: 'Profil erfolgreich aktualisiert' };
+    } else {
+      return { success: false, message: 'Fehler beim Aktualisieren des Profils' };
+    }
+  } catch (error) {
+    logger.error(`Error in updateOwnProfile for user ${userId}: ${error.message}`);
+    throw error;
   }
 }
 

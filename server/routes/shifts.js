@@ -20,7 +20,7 @@ const { authenticateToken } = require('../auth');
 router.get('/templates', authenticateToken, async (req, res) => {
   try {
     // Use default tenant ID 1 for now (can be improved later)
-    const tenantId = req.user.tenantId || 1;
+    const tenantId = req.user.tenant_id || 1;
     const templates = await Shift.getShiftTemplates(tenantId);
     res.json({ templates });
   } catch (error) {
@@ -49,7 +49,7 @@ router.post('/templates', authenticateToken, async (req, res) => {
 
     const templateData = {
       ...req.body,
-      tenant_id: req.user.tenantId || 1,
+      tenant_id: req.user.tenant_id || 1,
       created_by: req.user.id
     };
 
@@ -85,7 +85,7 @@ router.get('/plans', authenticateToken, async (req, res) => {
     };
 
     // Use the actual model function
-    const tenantId = req.user.tenantId || 1;
+    const tenantId = req.user.tenant_id || 1;
     const userId = req.user.id;
     const result = await Shift.getShiftPlans(tenantId, userId, options);
     res.json(result);
@@ -124,7 +124,7 @@ router.post('/plans', authenticateToken, async (req, res) => {
 
     const planData = {
       ...req.body,
-      tenant_id: req.user.tenantId || 1,
+      tenant_id: req.user.tenant_id || 1,
       created_by: req.user.id
     };
 
@@ -153,7 +153,7 @@ router.post('/plans', authenticateToken, async (req, res) => {
 router.get('/plans/:planId/shifts', authenticateToken, async (req, res) => {
   try {
     const planId = parseInt(req.params.planId);
-    const shifts = await Shift.getShiftsByPlan(planId, req.user.tenantId || 1, req.user.id);
+    const shifts = await Shift.getShiftsByPlan(planId, req.user.tenant_id || 1, req.user.id);
     res.json({ shifts });
   } catch (error) {
     console.error('Error fetching shifts for plan:', error);
@@ -181,7 +181,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const shiftData = {
       ...req.body,
-      tenant_id: req.user.tenantId || 1,
+      tenant_id: req.user.tenant_id || 1,
       created_by: req.user.id
     };
 
@@ -218,7 +218,7 @@ router.post('/:shiftId/assign', authenticateToken, async (req, res) => {
     const shiftId = parseInt(req.params.shiftId);
     const assignmentData = {
       ...req.body,
-      tenant_id: req.user.tenantId || 1,
+      tenant_id: req.user.tenant_id || 1,
       shift_id: shiftId,
       assigned_by: req.user.id
     };
@@ -268,7 +268,7 @@ router.get('/availability', authenticateToken, async (req, res) => {
     }
 
     const availability = await Shift.getEmployeeAvailability(
-      req.user.tenantId || 1, 
+      req.user.tenant_id || 1, 
       targetUserId, 
       start_date, 
       end_date
@@ -292,7 +292,7 @@ router.post('/availability', authenticateToken, async (req, res) => {
   try {
     const availabilityData = {
       ...req.body,
-      tenant_id: req.user.tenantId || 1,
+      tenant_id: req.user.tenant_id || 1,
       user_id: req.body.user_id || req.user.id
     };
 
@@ -334,7 +334,7 @@ router.get('/exchange-requests', authenticateToken, async (req, res) => {
     };
 
     const requests = await Shift.getShiftExchangeRequests(
-      req.user.tenantId || 1, 
+      req.user.tenant_id || 1, 
       req.user.id, 
       options
     );
@@ -357,7 +357,7 @@ router.post('/exchange-requests', authenticateToken, async (req, res) => {
   try {
     const requestData = {
       ...req.body,
-      tenant_id: req.user.tenantId || 1,
+      tenant_id: req.user.tenant_id || 1,
       requester_id: req.user.id
     };
 
@@ -392,7 +392,7 @@ router.get('/my-shifts', authenticateToken, async (req, res) => {
     }
 
     const shifts = await Shift.getEmployeeShifts(
-      req.user.tenantId || 1, 
+      req.user.tenant_id || 1, 
       req.user.id, 
       start_date, 
       end_date
@@ -414,7 +414,7 @@ router.get('/my-shifts', authenticateToken, async (req, res) => {
  */
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
-    const tenantId = req.user.tenantId || 1;
+    const tenantId = req.user.tenant_id || 1;
     const userId = req.user.id;
     
     // Get upcoming shifts for this week
@@ -478,7 +478,7 @@ router.get('/weekly', authenticateToken, async (req, res) => {
       });
     }
     
-    const tenantId = req.user.tenantId || 1;
+    const tenantId = req.user.tenant_id || 1;
     
     // Get shifts with assignments for the week
     const query = `

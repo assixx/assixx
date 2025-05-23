@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 
 class Department {
   static async create(departmentData) {
-    const { name, description, manager_id, parent_id, status = 'active', visibility = 'public' } = departmentData;
+    const { name, description, manager_id, parent_id, status = 'active', visibility = 'public', tenant_id } = departmentData;
     logger.info(`Creating new department: ${name}`);
     
     // Check if columns exist, fallback to basic query if not
@@ -16,17 +16,17 @@ class Department {
       
       if (hasStatus && hasVisibility) {
         query = `
-          INSERT INTO departments (name, description, manager_id, parent_id, status, visibility) 
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO departments (name, description, manager_id, parent_id, status, visibility, tenant_id) 
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
-        params = [name, description, manager_id, parent_id, status, visibility];
+        params = [name, description, manager_id, parent_id, status, visibility, tenant_id];
       } else {
         logger.warn('Status/visibility columns not found, using basic query');
         query = `
-          INSERT INTO departments (name, description, manager_id, parent_id) 
-          VALUES (?, ?, ?, ?)
+          INSERT INTO departments (name, description, manager_id, parent_id, tenant_id) 
+          VALUES (?, ?, ?, ?, ?)
         `;
-        params = [name, description, manager_id, parent_id];
+        params = [name, description, manager_id, parent_id, tenant_id];
       }
       
       const [result] = await db.query(query, params);
@@ -38,30 +38,33 @@ class Department {
     }
   }
 
-  static async findAll() {
-    logger.info('Fetching all departments');
+  static async findAll(tenant_id = null) {
+    logger.info(`Fetching all departments${tenant_id ? ` for tenant ${tenant_id}` : ''}`);
     
     try {
       // First try with extended query
       const query = `
         SELECT d.*, 
           u.username as manager_name,
-          (SELECT COUNT(*) FROM users WHERE department_id = d.id) as employee_count,
+          (SELECT COUNT(*) FROM users WHERE department_id = d.id AND tenant_id = d.tenant_id) as employee_count,
           (SELECT COUNT(*) FROM teams WHERE department_id = d.id) as team_count
         FROM departments d
         LEFT JOIN users u ON d.manager_id = u.id
+        ${tenant_id ? 'WHERE d.tenant_id = ?' : ''}
         ORDER BY d.name
       `;
       
-      const [rows] = await db.query(query);
+      const [rows] = await db.query(query, tenant_id ? [tenant_id] : []);
       logger.info(`Retrieved ${rows.length} departments with extended info`);
       return rows;
     } catch (error) {
       logger.warn(`Error with extended query: ${error.message}, falling back to simple query`);
       
       // Fallback to simple query
-      const simpleQuery = 'SELECT * FROM departments ORDER BY name';
-      const [rows] = await db.query(simpleQuery);
+      const simpleQuery = tenant_id 
+        ? 'SELECT * FROM departments WHERE tenant_id = ? ORDER BY name'
+        : 'SELECT * FROM departments ORDER BY name';
+      const [rows] = await db.query(simpleQuery, tenant_id ? [tenant_id] : []);
       logger.info(`Retrieved ${rows.length} departments with simple query`);
       return rows;
     }
