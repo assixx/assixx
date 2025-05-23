@@ -341,7 +341,7 @@
                 <div class="form-group">
                     <label class="form-label">Ihre Subdomain *</label>
                     <div class="subdomain-group">
-                        <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9-]+" placeholder="ihre-firma">
+                        <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9\-]+" placeholder="ihre-firma">
                         <span class="subdomain-suffix">.assixx.com</span>
                     </div>
                     <div id="subdomainError" class="error-message">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
@@ -448,6 +448,7 @@
             const signupData = {
                 company_name: data.company_name,
                 subdomain: data.subdomain,
+                email: data.email, // Company email
                 admin_email: data.email,
                 admin_password: data.password,
                 admin_first_name: data.first_name,

@@ -114,6 +114,12 @@
 
 **Zahlungsintegration kommt später!**
 
+**TODO für später:**
+- E-Mail-Bestätigung nach Registrierung
+- Zahlungsabwicklung vor Account-Aktivierung
+- Automatische Willkommens-E-Mail
+- Payment Gateway Integration (Stripe)
+
 ### 🔴 PRIORITÄT 2 - WEITERE FEATURES
 1. **Chat-Funktion** 💬
 2. **Bestandsmanagement** 📦
