@@ -42,7 +42,10 @@ router.post('/', async (req, res) => {
       }
     }
     
-    const departmentId = await Department.create(req.body);
+    const departmentId = await Department.create({
+      ...req.body,
+      tenant_id: req.user.tenant_id
+    });
     logger.info(`Department created with ID ${departmentId} by user ${req.user.username}`);
     
     res.status(201).json({ 
@@ -59,7 +62,7 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     logger.info(`Fetching departments for user: ${req.user.username}`);
-    const departments = await Department.findAll();
+    const departments = await Department.findAll(req.user.tenant_id);
     logger.info(`Returning ${departments.length} departments`);
     res.json(departments);
   } catch (error) {
