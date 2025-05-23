@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const blackboardModel = require('../models/blackboard');
 const { authenticateToken } = require('../middleware/auth');
-const tenantMiddleware = require('../middleware/tenant');
+const { tenantMiddleware } = require('../middleware/tenant');
 const { checkFeature } = require('../middleware/features');
 
 // Fallback tenant ID wenn tenant middleware nicht funktioniert

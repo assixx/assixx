@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const calendarModel = require('../models/calendar');
 const { authenticateToken } = require('../middleware/auth');
-const tenantMiddleware = require('../middleware/tenant');
+const { tenantMiddleware } = require('../middleware/tenant');
 const { checkFeature } = require('../middleware/features');
 
 // Fallback tenant ID falls tenant middleware nicht funktioniert

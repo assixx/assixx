@@ -10,7 +10,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const kvpModel = require('../models/kvp');
 const { authenticateToken } = require('../middleware/auth');
-const tenantMiddleware = require('../middleware/tenant');
+const { tenantMiddleware } = require('../middleware/tenant');
 const { checkFeature } = require('../middleware/features');
 
 // Fallback tenant ID
