@@ -89,8 +89,33 @@
    - Multi-Tenant Support mit vollständiger Datenbankintegration (7 Tabellen)
    - Responsive Design für Desktop und Mobile
 
-### 🔴 PRIORITÄT 1 - NÄCHSTE FEATURES
-1. **Chat-Funktion** 💬 **NÄCHSTE PRIORITÄT**
+### 🔴 PRIORITÄT 1 - KRITISCHE STRUKTURÄNDERUNG (HÖCHSTE PRIORITÄT!)
+
+#### **Tenant Self-Registration System** 🚨 **MUSS SOFORT UMGESETZT WERDEN**
+**WICHTIG**: Das bisherige System mit hardcodiertem Root-User wird komplett entfernt!
+
+**Neue Struktur:**
+- **1 Tenant = 1 Firma = 1 Root User** (geschlossenes System)
+- Kunden registrieren sich selbst über Signup-Seite
+- Jeder Kunde erstellt seinen eigenen Root-Account
+- Vollständige Datenisolierung zwischen Tenants
+
+**Implementierungsschritte:**
+1. Landing Page: "Registrieren" Button hinzufügen
+2. Signup-Seite mit Preisinfo erstellen:
+   - Root User Zugang: €X/Monat
+   - Pro Admin User: €Y/Monat  
+   - Pro Employee: €Z/Monat
+3. Self-Registration für Root Users (= Tenant-Erstellung)
+4. Hardcodierten Root-User aus DB entfernen
+5. Multi-Tenant Authentication implementieren
+6. Tenant-Isolation sicherstellen
+7. Root Dashboard: Preisinfo für neue Admins/Employees anzeigen
+
+**Zahlungsintegration kommt später!**
+
+### 🔴 PRIORITÄT 2 - WEITERE FEATURES
+1. **Chat-Funktion** 💬
 2. **Bestandsmanagement** 📦
 3. **Wartungsplanung** 🔧
 

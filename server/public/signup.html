@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrieren - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #121212 0%, #1a237e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .signup-container {
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .signup-info {
+            padding: 48px;
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .signup-form-section {
+            padding: 48px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            height: 48px;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #2196F3;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #B0B0B0;
+            font-size: 18px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .pricing-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pricing-title {
+            font-size: 20px;
+            color: #2196F3;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .price-item:last-child {
+            border-bottom: none;
+        }
+
+        .price-label {
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .price-value {
+            color: #2196F3;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 24px 0;
+        }
+
+        .features-list li {
+            padding: 8px 0;
+            color: #B0B0B0;
+            position: relative;
+            padding-left: 28px;
+        }
+
+        .features-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: #B0B0B0;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2196F3;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .subdomain-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subdomain-suffix {
+            color: #B0B0B0;
+            font-size: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 24px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            color: #B0B0B0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #2196F3;
+            border: 1px solid #2196F3;
+            margin-top: 16px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .error-message {
+            color: #F44336;
+            font-size: 14px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .success-message {
+            background: #4CAF50;
+            color: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .note {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 24px;
+            color: #FFB74D;
+            font-size: 14px;
+        }
+
+        @media (max-width: 968px) {
+            .signup-container {
+                grid-template-columns: 1fr;
+                max-width: 600px;
+            }
+
+            .signup-info {
+                padding: 32px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .signup-form-section {
+                padding: 32px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-info">
+            <div class="logo-section">
+                <img src="/images/logo.png" alt="Assixx Logo" class="logo">
+            </div>
+            <h1>Willkommen bei Assixx</h1>
+            <p class="subtitle">Die All-in-One Lösung für Ihre Industriefirma. Verbinden Sie Ihre Mitarbeiter digital und steigern Sie die Effizienz.</p>
+            
+            <div class="pricing-info">
+                <h3 class="pricing-title">💰 Transparente Preise</h3>
+                <div class="price-item">
+                    <span class="price-label">🏢 Root-Account (Ihre Firma)</span>
+                    <span class="price-value">€149/Monat</span>
+                </div>
+                <div class="price-item">
+                    <span class="price-label">👔 Pro Admin-User</span>
+                    <span class="price-value">€19/Monat</span>
+                </div>
+                <div class="price-item">
+                    <span class="price-label">👷 Pro Mitarbeiter</span>
+                    <span class="price-value">€5/Monat</span>
+                </div>
+            </div>
+
+            <h3 style="color: #2196F3; margin-bottom: 16px;">✨ Was Sie erhalten:</h3>
+            <ul class="features-list">
+                <li>Eigenes isoliertes System für Ihre Firma</li>
+                <li>Unbegrenzte Dokumente & Speicherplatz</li>
+                <li>E-Mail Benachrichtigungen</li>
+                <li>Blackboard & Kalender System</li>
+                <li>KVP & Schichtplanung</li>
+                <li>24/7 Support & Updates</li>
+                <li>DSGVO-konforme deutsche Server</li>
+            </ul>
+
+            <div class="note">
+                <strong>🎁 Special Offer:</strong> 14 Tage kostenlos testen - keine Kreditkarte erforderlich!
+            </div>
+        </div>
+
+        <div class="signup-form-section">
+            <h2>Erstellen Sie Ihren Root-Account</h2>
+            <p style="color: #B0B0B0; margin-bottom: 24px;">Als Root-User haben Sie vollen Zugriff auf alle Funktionen und können Admins sowie Mitarbeiter verwalten.</p>
+
+            <div id="successMessage" class="success-message"></div>
+
+            <form id="signupForm">
+                <div class="form-group">
+                    <label class="form-label">Firmenname *</label>
+                    <input type="text" name="company_name" class="form-control" required placeholder="Ihre Firma GmbH">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ihre Subdomain *</label>
+                    <div class="subdomain-group">
+                        <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9-]+" placeholder="ihre-firma">
+                        <span class="subdomain-suffix">.assixx.com</span>
+                    </div>
+                    <div id="subdomainError" class="error-message">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Vorname *</label>
+                        <input type="text" name="first_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nachname *</label>
+                        <input type="text" name="last_name" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">E-Mail Adresse *</label>
+                    <input type="email" name="email" class="form-control" required placeholder="ihre.email@firma.de">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Telefonnummer (optional)</label>
+                    <input type="tel" name="phone" class="form-control" placeholder="+49 123 456789">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Passwort *</label>
+                    <input type="password" name="password" class="form-control" required minlength="8">
+                    <small style="color: #B0B0B0; font-size: 12px;">Mindestens 8 Zeichen, inkl. Groß-/Kleinbuchstaben und Zahlen</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Passwort bestätigen *</label>
+                    <input type="password" name="password_confirm" class="form-control" required>
+                    <div id="passwordError" class="error-message">Passwörter stimmen nicht überein</div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms" required>
+                    <label for="terms">
+                        Ich akzeptiere die <a href="#" style="color: #2196F3;">AGB</a> und <a href="#" style="color: #2196F3;">Datenschutzerklärung</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    🚀 Kostenlos registrieren
+                </button>
+
+                <a href="/login.html" class="btn btn-secondary">
+                    Bereits registriert? Zur Anmeldung
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Get plan from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedPlan = urlParams.get('plan');
+        
+        // Subdomain validation
+        const subdomainInput = document.querySelector('input[name="subdomain"]');
+        const subdomainError = document.getElementById('subdomainError');
+        
+        subdomainInput.addEventListener('input', (e) => {
+            const value = e.target.value.toLowerCase();
+            e.target.value = value;
+            
+            if (value && !/^[a-z0-9-]+$/.test(value)) {
+                subdomainError.style.display = 'block';
+            } else {
+                subdomainError.style.display = 'none';
+            }
+        });
+
+        // Password confirmation
+        const passwordInput = document.querySelector('input[name="password"]');
+        const passwordConfirmInput = document.querySelector('input[name="password_confirm"]');
+        const passwordError = document.getElementById('passwordError');
+
+        passwordConfirmInput.addEventListener('input', () => {
+            if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
+                passwordError.style.display = 'block';
+            } else {
+                passwordError.style.display = 'none';
+            }
+        });
+
+        // Form submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Validate passwords match
+            if (passwordInput.value !== passwordConfirmInput.value) {
+                passwordError.style.display = 'block';
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Add root user credentials
+            const signupData = {
+                company_name: data.company_name,
+                subdomain: data.subdomain,
+                admin_email: data.email,
+                admin_password: data.password,
+                admin_first_name: data.first_name,
+                admin_last_name: data.last_name,
+                phone: data.phone,
+                plan: selectedPlan || 'enterprise'
+            };
+
+            try {
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = '⏳ Wird erstellt...';
+
+                const response = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(signupData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('successMessage').textContent = 
+                        `✅ Erfolgreich registriert! Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
+                    
+                    // Clear form
+                    e.target.reset();
+                    
+                    // Redirect after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 3000);
+                } else {
+                    alert(result.message || 'Fehler bei der Registrierung');
+                    submitButton.disabled = false;
+                    submitButton.textContent = '🚀 Kostenlos registrieren';
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+                submitButton.disabled = false;
+                submitButton.textContent = '🚀 Kostenlos registrieren';
+            }
+        });
+    </script>
+</body>
+</html>

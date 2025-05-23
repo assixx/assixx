@@ -3,18 +3,9 @@
  * Erkennt die Firma basierend auf der Subdomain und lädt die entsprechende Konfiguration
  */
 
-const tenantConfigs = require('../config/tenants');
-const { createTenantConnection } = require('../database/tenantDb');
 const db = require('../database');
-
-// Whitelist of allowed tenant subdomains
-const ALLOWED_TENANTS = new Set([
-    'demo',
-    'bosch',
-    'mercedes',
-    'siemens'
-    // Add new tenants here after verification
-]);
+const Tenant = require('../models/tenant');
+const logger = require('../utils/logger');
 
 /**
  * Extrahiert den Tenant aus der Subdomain
@@ -23,100 +14,115 @@ const ALLOWED_TENANTS = new Set([
 function getTenantFromHost(hostname) {
     const parts = hostname.split('.');
     
-    // Lokale Entwicklung: localhost:3000 -> default tenant
+    // Lokale Entwicklung: localhost:3000 -> aus Header oder Query
     if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-        return process.env.DEFAULT_TENANT || 'demo';
+        return null; // Will be handled by header/query fallback
     }
     
     // Produktion: firma.assixx.de -> firma
     if (parts.length >= 3) {
-        const tenantId = parts[0].toLowerCase();
-        
-        // Security: Only allow whitelisted tenants
-        if (!ALLOWED_TENANTS.has(tenantId)) {
-            console.warn(`Unauthorized tenant access attempt: ${tenantId}`);
-            return null;
-        }
-        
-        return tenantId;
+        return parts[0].toLowerCase();
     }
     
     return null;
 }
 
 /**
- * Load allowed tenants from database (for dynamic whitelist)
- */
-async function loadAllowedTenants() {
-    try {
-        const [rows] = await db.query('SELECT subdomain FROM tenants WHERE is_active = 1');
-        return new Set(rows.map(row => row.subdomain));
-    } catch (error) {
-        console.error('Error loading allowed tenants:', error);
-        return ALLOWED_TENANTS;
-    }
-}
-
-/**
  * Tenant Middleware
  * - Identifiziert den Tenant
- * - Lädt tenant-spezifische Konfiguration
- * - Erstellt Datenbankverbindung für Tenant
+ * - Lädt tenant-spezifische Daten aus der DB
+ * - Fügt tenant_id zu allen Requests hinzu
  */
 async function tenantMiddleware(req, res, next) {
     try {
-        // Tenant aus Hostname extrahieren
-        const tenantId = getTenantFromHost(req.hostname);
+        // 1. Tenant identifizieren (Priorität: Subdomain > Header > Query)
+        let tenantSubdomain = getTenantFromHost(req.hostname);
         
-        if (!tenantId) {
+        // Fallback für Entwicklung: X-Tenant-ID Header oder Query Parameter
+        if (!tenantSubdomain) {
+            tenantSubdomain = req.headers['x-tenant-id'] || req.query.tenant;
+        }
+        
+        // Für Login/Signup: Tenant aus Body
+        if (!tenantSubdomain && req.body && req.body.subdomain) {
+            tenantSubdomain = req.body.subdomain;
+        }
+        
+        if (!tenantSubdomain) {
             return res.status(400).json({ 
-                error: 'Keine gültige Firmen-Domain erkannt' 
+                error: 'Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.' 
             });
         }
         
-        // Tenant-Konfiguration laden
-        const tenantConfig = tenantConfigs[tenantId];
+        // 2. Tenant aus Datenbank laden
+        const tenant = await Tenant.findBySubdomain(tenantSubdomain);
         
-        if (!tenantConfig) {
+        if (!tenant) {
             return res.status(404).json({ 
-                error: 'Firma nicht gefunden' 
+                error: 'Firma nicht gefunden',
+                subdomain: tenantSubdomain
             });
         }
         
-        // Tenant-Datenbankverbindung erstellen
-        let tenantDb;
-        try {
-            tenantDb = await createTenantConnection(tenantId);
-        } catch (dbError) {
-            console.error('Fehler bei der Tenant-DB-Verbindung:', dbError);
-            // Fallback zur Hauptdatenbank im Entwicklungsmodus
-            tenantDb = db;
+        // 3. Prüfe Tenant-Status
+        if (tenant.status === 'cancelled' || tenant.status === 'suspended') {
+            return res.status(403).json({ 
+                error: 'Dieser Account ist nicht aktiv. Bitte kontaktieren Sie den Support.' 
+            });
         }
         
-        // Tenant-Informationen an Request anhängen
+        // 4. Trial-Status prüfen
+        const trialStatus = await Tenant.checkTrialStatus(tenant.id);
+        if (trialStatus && trialStatus.isExpired && tenant.status === 'trial') {
+            return res.status(402).json({ 
+                error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
+                trialEndsAt: trialStatus.trialEndsAt
+            });
+        }
+        
+        // 5. Tenant-Informationen an Request anhängen
         req.tenant = {
-            id: tenantId,
-            config: tenantConfig,
-            db: tenantDb
+            id: tenant.id,
+            subdomain: tenant.subdomain,
+            name: tenant.company_name,
+            status: tenant.status,
+            plan: tenant.current_plan,
+            trialStatus: trialStatus
         };
         
-        // Tenant-ID für Models verfügbar machen
-        req.tenantId = tenantId;
+        // Wichtig: tenant_id für alle DB-Queries verfügbar machen
+        req.tenantId = tenant.id;
         
-        // Firmen-spezifisches Branding laden
-        req.branding = {
-            logo: tenantConfig.branding.logo,
-            primaryColor: tenantConfig.branding.primaryColor,
-            companyName: tenantConfig.name
-        };
+        // 6. Wenn User eingeloggt ist, prüfe ob er zu diesem Tenant gehört
+        if (req.user && req.user.tenant_id && req.user.tenant_id !== tenant.id) {
+            return res.status(403).json({ 
+                error: 'Sie haben keinen Zugriff auf diese Firma.' 
+            });
+        }
+        
+        logger.info(`Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`);
         
         next();
     } catch (error) {
-        console.error('Tenant middleware error:', error);
+        logger.error('Tenant middleware error:', error);
         res.status(500).json({ 
-            error: 'Fehler beim Laden der Firmenkonfiguration' 
+            error: 'Fehler beim Laden der Firmenkonfiguration',
+            details: error.message
         });
     }
 }
 
-module.exports = tenantMiddleware;
+/**
+ * Skip tenant check für öffentliche Routen
+ */
+function skipTenantCheck(req, res, next) {
+    // Setze einen Default-Tenant für öffentliche Routen
+    req.tenantId = null;
+    req.tenant = null;
+    next();
+}
+
+module.exports = {
+    tenantMiddleware,
+    skipTenantCheck
+};

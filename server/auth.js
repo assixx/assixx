@@ -52,7 +52,12 @@ function generateToken(user) {
   console.log(`Generating token for user: ${user.username}`);
   try {
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role,
+        tenant_id: user.tenant_id // Wichtig für Multi-Tenant
+      },
       JWT_SECRET,
       { expiresIn: '1h' }
     );

@@ -30,7 +30,7 @@ const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
 
 // Multi-tenant middleware
-const tenantMiddleware = require('./middleware/tenant');
+const { tenantMiddleware, skipTenantCheck } = require('./middleware/tenant');
 
 // Import enhanced security middleware
 const {
