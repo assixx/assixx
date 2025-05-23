@@ -28,6 +28,7 @@ const kvpRoutes = require('./routes/kvp');
 const chatRoutes = require('./routes/chat');
 const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
+const debugRoutes = require('./debug-current-session');
 
 // Multi-tenant middleware
 const { tenantMiddleware, skipTenantCheck } = require('./middleware/tenant');
@@ -365,6 +366,7 @@ app.use('/', calendarRoutes); // Firmenkalender-System
 app.use('/api/shifts', shiftRoutes); // Schichtplanungs-System
 app.use('/api/kvp', kvpRoutes); // KVP-System (Kontinuierlicher Verbesserungsprozess)
 app.use('/api/chat', authenticateToken, chatRoutes); // Chat-System
+app.use('/api', debugRoutes); // Debug routes
 
 // Add additional API routes for departments and teams
 app.use('/api/departments', departmentRoutes);

@@ -70,7 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
             passwordConfirmInput.addEventListener('input', checkPasswords);
         }
     }
-    if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
+    // TODO: uploadDocument function needs to be implemented
+    // if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
     if (departmentForm) departmentForm.addEventListener('submit', createDepartment);
     if (teamForm) teamForm.addEventListener('submit', createTeam);
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
