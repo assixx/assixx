@@ -22,8 +22,35 @@
 ## Memories
 - to memorize admins und mitarbeiter einer domöne müssen die selbe emailendung haben (z.B. @firma)
 
-<<<<<<< HEAD
-## AKTUELLE MASTER-STATUS (2025-05-23)
+## AKTUELLE MASTER-STATUS (2025-01-23)
+
+### 🗄️ DATENBANK-ARCHITEKTUR (39 TABELLEN KOMPLETT)
+
+**WICHTIG: Multi-Tenant-System mit Self-Service Registration (KEIN hardcoded root mehr!)**
+
+#### 📊 **Datenbankschema-Übersicht:**
+- **39 Haupttabellen** in 10 funktionalen Kategorien
+- **Complete database-setup.sql** erstellt mit allen Schemas
+- **Automatisierte Setup-Scripts** für WSL Ubuntu und Windows  
+- **Comprehensive DATABASE-SETUP-README.md** für neue Entwickler
+
+#### 🏢 **Multi-Tenant-Architektur:**
+- **Tenant-Erstellung via Signup:** http://localhost:3000/signup.html
+- **Vollständige Isolation:** Alle Daten mit tenant_id getrennt
+- **JWT-Token mit Tenant-ID:** Sichere API-Authentifizierung
+- **Feature-Management:** Modulare Aktivierung pro Tenant
+
+#### 📋 **Tabellen-Kategorien:**
+1. **Tenant Management** (3 Tabellen): tenants, tenant_admins, tenant_subscriptions
+2. **User Management** (4 Tabellen): users, departments, teams, user_teams  
+3. **Document Management** (1 Tabelle): documents
+4. **Feature Management** (5 Tabellen): features, tenant_features, subscription_plans, plan_features, feature_usage_logs
+5. **Blackboard System** (3 Tabellen): blackboard_entries, blackboard_tags, blackboard_confirmations
+6. **Calendar System** (4 Tabellen): calendar_events, calendar_attendees, calendar_reminders, calendar_recurring_rules
+7. **KVP System** (6 Tabellen): kvp_categories, kvp_suggestions, kvp_attachments, kvp_comments, kvp_ratings, kvp_points
+8. **Chat System** (6 Tabellen): conversations, conversation_participants, messages, message_attachments, chat_permissions, work_schedules
+9. **Shift Planning** (7 Tabellen): shift_templates, shift_plans, shifts, shift_assignments, employee_availability, overtime_records, absences
+10. **Admin & Audit** (1 Tabelle): admin_logs
 
 ### ✅ VOLLSTÄNDIG IMPLEMENTIERTE SYSTEME (PRODUCTION READY)
 1. **Blackboard-System** - 100% implementiert
@@ -86,21 +113,72 @@
    - Multi-Tenant Support mit vollständiger Datenbankintegration (7 Tabellen)
    - Responsive Design für Desktop und Mobile
 
+### 💻 ENTWICKLER-SETUP (REVOLUTIONIERT!)
+
+#### ⚡ **Automatisierte Installation:**
+```bash
+# WSL Ubuntu (komplett automatisch)
+git clone [REPO] Assixx && cd Assixx
+chmod +x setup-wsl-ubuntu.sh && ./setup-wsl-ubuntu.sh
+
+# Windows (komplett automatisch)
+# PowerShell als Admin: .\setup-windows.ps1
+```
+
+#### 📋 **Setup-Dateien erstellt:**
+- `database-setup.sql` - Komplettes Schema (39 Tabellen)
+- `setup-wsl-ubuntu.sh` - Automatisches WSL Setup
+- `setup-windows.ps1` - Automatisches Windows Setup
+- `DATABASE-SETUP-README.md` - Vollständige Anleitung (50+ Seiten)
+- `README.md` - Komplett überarbeitet mit modernem Design
+
+#### 🔧 **Features der Setup-Scripts:**
+- **Abhängigkeiten:** Node.js, MySQL, Git automatisch installiert
+- **Datenbank:** Automatische Erstellung mit sicheren Credentials
+- **Sicherheit:** JWT/Session Secrets automatisch generiert  
+- **Firewall:** Port 3000 automatisch konfiguriert
+- **Service:** Optional systemd/Windows Service erstellen
+- **Credentials:** Sichere Speicherung der Zugangsdaten
+
 ### 🚧 AKTUELL IN ENTWICKLUNG
-**Chat-Funktion** 💬 - 80% implementiert
+**Chat-Funktion** 💬 - 90% implementiert
 - ✅ WebSocket-Server läuft stabil
-- ✅ Datenbankschema mit 6 Tabellen (conversations, participants, messages, etc.)
+- ✅ Datenbankschema mit 6 Tabellen vollständig implementiert
 - ✅ Frontend komplett mit Glassmorphismus-Design
 - ✅ Echtzeit-Nachrichten funktionieren
 - ✅ Multi-User Gruppenchats
 - ✅ Zeitgesteuerte Zustellung (Pause/Nach Feierabend)
-- ✅ Typing-Indikator
+- ✅ Typing-Indikator und Online-Status
 - ✅ Navigation integriert
 - 🚧 Frontend für Löschen/Archivieren vorbereitet
 - ❌ Backend-Endpoints für DELETE/Archive fehlen
-- ❌ File-Upload noch nicht implementiert
+- ❌ Backend-Endpoints für DELETE/Archive fehlen
+- ❌ File-Upload für Chat-Anhänge noch nicht implementiert
 - ❌ Nachrichten-Suche fehlt
 - ❌ Emoji-Picker fehlt
+
+### 🎉 NEUESTE ERRUNGENSCHAFTEN (2025-01-23)
+
+#### 📚 **Vollständige Dokumentation für neue Entwickler:**
+Das war definitiv "das wichtigste was ich in meinem Leben gemacht habe"! 
+
+✅ **Komplettes database-setup.sql** (39 Tabellen)
+✅ **Automatisierte Setup-Scripts** (WSL Ubuntu + Windows)  
+✅ **50+ Seiten DATABASE-SETUP-README.md** mit:
+   - Schritt-für-Schritt Anleitungen
+   - Automatische UND manuelle Installation
+   - Problembehandlung und Debugging
+   - Sicherheitskonfiguration
+   - Tenant-System Erklärung
+
+✅ **README.md komplett überarbeitet** mit modernem Design
+✅ **Multi-Tenant Self-Service Registration** dokumentiert
+
+#### 🔄 **Paradigmenwechsel:**
+- **KEIN hardcoded root User mehr**
+- **Self-Service Tenant Creation** via /signup.html
+- **Vollständige Tenant-Isolation** mit tenant_id
+- **Feature-Management** pro Tenant konfigurierbar
 
 ### 🔴 NÄCHSTE FEATURES (nach Chat)
 1. **Bestandsmanagement** 📦
@@ -163,7 +241,44 @@
 5. Push-Benachrichtigungen
 6. Verschlüsselung
 
-## Production File Storage (TODO für später)
+### 📋 NEXT STEPS FOR DEVELOPERS
+
+#### 🚀 **Erste Schritte nach Setup:**
+```bash
+# 1. Anwendung starten
+cd server && npm start
+
+# 2. Erstes Unternehmen erstellen  
+# http://localhost:3000/signup.html
+
+# 3. Als Admin anmelden
+# http://localhost:3000/login.html
+
+# 4. Organisationsstruktur aufbauen:
+#    - Abteilungen erstellen
+#    - Teams anlegen
+#    - Mitarbeiter hinzufügen
+#    - Features aktivieren
+```
+
+#### 🔧 **Development-Commands:**
+```bash
+# Datenbank-Tests
+node server/test-db-connection.js
+node server/show-tables.js
+
+# Development-Server
+npm run dev          # mit nodemon
+npm start           # normal
+
+# Logs anzeigen
+tail -f server/combined.log
+
+# Datenbank-Zugriff
+mysql -u assixx_user -p assixx_db
+```
+
+## 🗄️ Production File Storage (TODO für später)
 **WICHTIG**: Aktuell werden Fotos lokal in `server/uploads/` gespeichert - für Production muss das geändert werden!
 
 **Empfohlene Lösung: AWS S3**

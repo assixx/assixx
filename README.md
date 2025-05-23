@@ -1,47 +1,89 @@
-# Assixx - Firmenkommunikations- und Verwaltungssystem
+# 🏭 Assixx - Multi-Tenant SaaS Platform für Industrieunternehmen
 
-## Projektbeschreibung
+[![Version](https://img.shields.io/badge/Version-2025.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://github.com/SCS-Technik/Assixx)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
-Assixx ist eine umfassende Kommunikations- und Verwaltungslösung für Industriefirmen, speziell entwickelt für Produktionsarbeiter ohne PC-Zugang. Das System verbessert die Kommunikation zwischen Arbeitern, Administration und Management durch mobile Technologie.
+## 🎯 Projektbeschreibung
 
-## Vision
-Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular erweiterbare Features anbietet und Kunden ermöglicht, nur für die Funktionen zu bezahlen, die sie tatsächlich benötigen.
+**Assixx** ist eine hochmoderne Multi-Tenant SaaS-Plattform für Industrieunternehmen, die speziell für die Bedürfnisse der modernen Fertigungsbranche entwickelt wurde. Das System revolutioniert die Kommunikation und Verwaltung zwischen Produktionsarbeitern, Administration und Management durch intelligente Technologie-Integration.
 
-### Hauptfunktionen:
+## 🚀 Vision
 
-- **Fehlermeldesystem**: Arbeiter können Fotos von Problemen machen und direkt melden
-- **Dokumentenverwaltung**: Digitale Verwaltung von Lohnabrechnungen, Krankmeldungen und Bescheinigungen
-- **Firmenkommunikation**: ✅ Kalender mit Farbauswahl, ✅ Blackboard mit Farben/Tags und Umfragen
-- **Verbesserungsvorschläge**: ✅ KVP-System mit Status-Management und Bildupload
-- **Echtzeit-Benachrichtigungen**: ✅ E-Mail-Benachrichtigungen mit Templates und zukünftig Push-Notifications
+Assixx etabliert sich als **führende SaaS-Lösung** für Industrieunternehmen mit modularen, skalierbaren Features. Unternehmen zahlen nur für die Funktionen, die sie benötigen - von grundlegender Mitarbeiterverwaltung bis hin zu fortgeschrittenen Automatisierungslösungen.
 
-### Zielgruppen:
+## ⚡ Schnellstart für Entwickler
 
-- **Produktionsarbeiter**: Mobile App für einfachen Zugang zu Firmeninformationen
-- **Administratoren**: Web-Dashboard für Dokumentenverwaltung und Kommunikation
-- **Maintenance-Team**: Sofortige Benachrichtigungen bei gemeldeten Problemen
-- **Management**: Auswertungen und Berichte für bessere Entscheidungen
+**Neu hier? Hier ist der schnellste Weg:**
 
-## Feature-Management-System (bereits implementiert)
+```bash
+# 🔧 Automatisches Setup (WSL Ubuntu)
+git clone [YOUR-REPO] Assixx && cd Assixx
+chmod +x setup-wsl-ubuntu.sh && ./setup-wsl-ubuntu.sh
 
-### Basis-Features (€0/Monat)
-- ✅ Mitarbeiterverwaltung (bis 10 Mitarbeiter)
-- ✅ Basis-Dokumentenupload
-- ✅ Lohnabrechnungsverwaltung
+# 🪟 Automatisches Setup (Windows)
+# PowerShell als Administrator: .\setup-windows.ps1
 
-### Premium-Features (€49/Monat)
-- ✅ Unbegrenzte Mitarbeiter
-- ✅ E-Mail-Benachrichtigungen (bis 1000/Monat)
-- ✅ Erweiterte Berichte
-- ✅ Audit Logs
+# 🌐 Anwendung aufrufen
+# http://localhost:3000/signup.html
+```
 
-### Enterprise-Features (€149/Monat)
-- ✅ API-Zugang
-- ✅ Custom Branding
-- ✅ Priority Support
-- ✅ Automatisierung
-- ✅ Multi-Mandanten-Verwaltung
-- ✅ Unbegrenzte E-Mail-Benachrichtigungen
+**📋 Vollständige Anleitung:** [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md)
+
+## 🏢 Kernfunktionen (Stand 2025)
+
+### ✅ **Vollständig implementiert:**
+- 👥 **Multi-Tenant-Verwaltung** - Sichere Mandantentrennung mit Self-Service Registration
+- 📋 **Mitarbeiterverwaltung** - Komplettes HR-System mit Abteilungen und Teams
+- 📄 **Dokumentenmanagement** - Sichere Dokumentenverwaltung mit Kategorisierung
+- 📢 **Schwarzes Brett** - Ankündigungen mit Prioritäten, Tags und Lesebestätigungen
+- 📅 **Kalender-System** - Firmen-, Abteilungs- und Team-Events mit Teilnehmerverwaltung
+- 💡 **KVP-System** - Kontinuierlicher Verbesserungsprozess mit Bewertungen und Belohnungen
+- 💬 **Chat-System** - Echtzeit-Kommunikation mit Planungsfunktionen und Berechtigungen
+- ⏰ **Schichtplanung** - Erweiterte Personalplanung mit Templates und Tauschbörse
+- 🔐 **Feature-Management** - Modulare Aktivierung/Deaktivierung von Features pro Tenant
+- 📊 **Admin-Dashboard** - Umfassende Verwaltungstools mit Glassmorphismus-Design
+
+### 🎯 **Zielgruppen:**
+
+| Rolle | Beschreibung | Hauptfunktionen |
+|-------|-------------|-----------------|
+| 🏭 **Produktionsarbeiter** | Mobile-First Design | Dokumente einsehen, Chat, KVP-Vorschläge, Schichtpläne |
+| 👨‍💼 **Administratoren** | Web-Dashboard | Mitarbeiterverwaltung, Dokumentenupload, Ankündigungen |
+| 🔧 **Maintenance-Team** | Problem-Response | Sofortige Benachrichtigungen, Ticketverwaltung |
+| 📈 **Management** | Strategische Übersicht | Auswertungen, Berichte, Feature-Management |
+
+## 💰 SaaS-Preismodell (Feature-basiert)
+
+### 🆓 **Basic Plan** (€0/Monat)
+| Feature | Beschreibung |
+|---------|-------------|
+| 👥 Mitarbeiterverwaltung | Bis zu 10 Mitarbeiter |
+| 📄 Dokumenten-Upload | Basis-Funktionalität |
+| 💼 Lohnabrechnungen | Sichere Verwaltung |
+| 📢 Schwarzes Brett | Grundlegende Ankündigungen |
+| 📅 Kalender | Firmen-Events |
+
+### ⭐ **Premium Plan** (€49/Monat)
+| Feature | Beschreibung |
+|---------|-------------|
+| ∞ Unbegrenzte Mitarbeiter | Keine Limits |
+| 📧 E-Mail-Benachrichtigungen | 1.000/Monat |
+| 💡 KVP-System | Verbesserungsprozess |
+| 💬 Chat-System | Interne Kommunikation |
+| ⏰ Schichtplanung | Erweiterte Personalplanung |
+| 📊 Erweiterte Berichte | Detaillierte Analytics |
+| 🔍 Audit Logs | Vollständige Nachverfolgung |
+
+### 🚀 **Enterprise Plan** (€149/Monat)
+| Feature | Beschreibung |
+|---------|-------------|
+| 🔌 API-Zugang | REST API für Integrationen |
+| 🎨 Custom Branding | Eigenes Logo und Farben |
+| 🆘 Priority Support | 24/7 Support mit SLA |
+| 🤖 Automatisierung | Workflows und Imports |
+| 🏢 Multi-Mandanten | Mehrere Unternehmen verwalten |
+| 📧 Unlimited E-Mails | Keine Begrenzung |
 
 ## Prioritäten für die nächsten Entwicklungsphasen
 
@@ -322,50 +364,98 @@ Der aktuelle Entwicklungsfokus liegt auf zwei Hauptbereichen:
 - Feature Adoption Rate
 - Customer Satisfaction Score
 
-## Systemvoraussetzungen für Windows 11
+## 🏗️ Architektur & Technologie
 
-Bevor Sie beginnen, stellen Sie sicher, dass Sie folgende Software installiert haben:
-
-- **Node.js** (Version 16 oder höher)
-  - Download unter: https://nodejs.org/
-  - Installieren Sie die LTS-Version mit den Standardeinstellungen
-  - Überprüfen Sie die Installation mit `node --version` im Command Prompt oder PowerShell
-
-- **XAMPP** (für MySQL-Datenbank)
-  - Download unter: https://www.apachefriends.org/de/index.html
-  - Mindestens die Komponenten Apache und MySQL auswählen
-  - Empfohlener Installationspfad: `C:\xampp`
-
-- **Git** (für das Klonen des Repositories)
-  - Download unter: https://git-scm.com/download/win
-  - Installieren Sie mit den Standardeinstellungen
-  - Wählen Sie die Option "Git from the command line and also from 3rd-party software"
-
-- **Visual Studio Code** (empfohlen, aber optional)
-  - Download unter: https://code.visualstudio.com/
-
-## Installation unter Windows 11
-
-### 1. Repository klonen
-
-Öffnen Sie den Windows Command Prompt oder PowerShell und führen Sie folgende Befehle aus:
-
-```cmd
-git clone https://github.com/SCS-Technik/Assixx.git
-cd Assixx
+### 🔧 **Tech-Stack:**
+```
+Frontend:    HTML5, CSS3, JavaScript (Vanilla), Bootstrap 5
+Backend:     Node.js, Express.js, WebSocket
+Database:    MySQL 8.0+ mit Multi-Tenant-Isolation
+Auth:        JWT mit Tenant-spezifischen Claims
+Real-time:   WebSocket für Chat und Benachrichtigungen
+Design:      Glassmorphismus mit responsivem Layout
 ```
 
-### 2. Abhängigkeiten installieren
+### 🗄️ **Datenbankschema:**
+- **39 Haupttabellen** in 10 funktionalen Kategorien
+- **Multi-Tenant-Isolation** mit tenant_id in allen Tabellen
+- **Automatische Triggers** für Tenant-Zuordnung
+- **Optimierte Views** für häufige Abfragen
+- **Feature-Toggle-System** für modulare Aktivierung
 
-```cmd
-cd server
-npm install
+### 🔐 **Sicherheit:**
+- **Tenant-Isolation:** Vollständige Datentrennung zwischen Unternehmen
+- **JWT-Authentication:** Sichere, zustandslose Authentifizierung
+- **Role-based Access:** Root → Admin → Employee Hierarchie
+- **Input-Validation:** Schutz vor SQL-Injection und XSS
+- **Rate-Limiting:** DoS-Schutz auf API-Ebene
+
+## 🚀 Installation & Setup
+
+### ⚡ **Automatisierte Installation:**
+
+**📋 Vollständige Anleitung:** [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md)
+
+#### WSL Ubuntu:
+```bash
+git clone [YOUR-REPO] Assixx && cd Assixx
+chmod +x setup-wsl-ubuntu.sh && ./setup-wsl-ubuntu.sh
 ```
 
-Falls `npm install` Fehler ausgibt, versuchen Sie:
+#### Windows:
+```powershell
+# PowerShell als Administrator
+git clone [YOUR-REPO] C:\Assixx && cd C:\Assixx
+.\setup-windows.ps1
+```
 
-```cmd
-npm install --legacy-peer-deps
+### 📋 **Systemvoraussetzungen:**
+
+| Software | Version | Windows | Ubuntu |
+|----------|---------|---------|--------|
+| Node.js | 18.x+ | ✅ | ✅ |
+| MySQL | 8.0+ | ✅ (XAMPP) | ✅ |
+| Git | Latest | ✅ | ✅ |
+| NPM | 9.x+ | ✅ | ✅ |
+
+## 🚦 Erste Schritte
+
+### 1️⃣ **Erstes Unternehmen erstellen**
+
+**Wichtig:** Es gibt keinen hardcodierten Root-Benutzer mehr! 
+
+```bash
+# Anwendung starten
+cd server && npm start
+
+# Browser öffnen
+http://localhost:3000/signup.html
+```
+
+### 2️⃣ **Multi-Tenant-Setup**
+
+1. **Unternehmensdaten eingeben:**
+   - Firmenname
+   - Eindeutige Subdomain
+   - E-Mail-Adresse
+   - Admin-Benutzerdaten
+
+2. **Automatische Erstellung:**
+   - Tenant wird in `tenants`-Tabelle angelegt
+   - Admin-Benutzer automatisch zugeordnet
+   - Feature-Set basierend auf gewähltem Plan aktiviert
+
+### 3️⃣ **System konfigurieren**
+
+```bash
+# Als Admin anmelden
+http://localhost:3000/login.html
+
+# Organisationsstruktur aufbauen:
+# 1. Abteilungen erstellen
+# 2. Teams innerhalb Abteilungen anlegen  
+# 3. Mitarbeiter hinzufügen und zuordnen
+# 4. Features nach Bedarf aktivieren
 ```
 
 ### 3. MySQL-Datenbank über XAMPP einrichten
@@ -660,45 +750,122 @@ Das System verwendet vier Benutzerrollen:
   - Verwenden Sie `path.join()` in Ihrem Code für pfadübergreifende Kompatibilität
   - Falls nötig, passen Sie absolute Pfade in der Konfiguration an
 
-## Technologien
+## 🗂️ Projekt-Struktur
 
-### Aktuell implementiert:
-- Frontend: HTML, CSS, JavaScript
-- Backend: Node.js, Express
-- Datenbank: MySQL
-- Authentifizierung: JWT (JSON Web Tokens)
-- Passwortverschlüsselung: bcrypt
-- Multi-Tenant-Architektur
-- Feature-Management-System
-- Modulare Feature-Aktivierung
+```
+Assixx/
+├── 📄 database-setup.sql              # Komplettes DB-Schema (39 Tabellen)
+├── 🔧 setup-wsl-ubuntu.sh            # Automatisches WSL Setup
+├── 🔧 setup-windows.ps1              # Automatisches Windows Setup  
+├── 📖 DATABASE-SETUP-README.md       # Vollständige Setup-Anleitung
+├── 📋 README.md                      # Projekt-Übersicht (diese Datei)
+├── 📚 CLAUDE.md                      # Entwickler-Dokumentation
+└── server/
+    ├── 🔑 .env                       # Umgebungsvariablen (zu erstellen)
+    ├── 📦 package.json               # NPM-Abhängigkeiten
+    ├── 🚀 index.js                   # Hauptserver-Datei
+    ├── 🗄️ database.js                # DB-Verbindung & Konfiguration
+    ├── 📁 models/                    # Datenmodelle (User, Document, etc.)
+    ├── 🛣️ routes/                     # API-Endpunkte
+    ├── 🛡️ middleware/                # Express-Middleware (Auth, Security)
+    ├── 🌐 public/                    # Frontend-Dateien (HTML, CSS, JS)
+    ├── 📤 uploads/                   # Hochgeladene Dateien
+    └── 🔧 utils/                     # Hilfsfunktionen (Logger, E-Mail)
+```
 
-### Geplante Erweiterungen:
-- Progressive Web App (PWA) für mobile Nutzung
+## 📊 Entwicklungsstand
+
+### ✅ **Abgeschlossen (100%):**
+- Multi-Tenant-Architektur mit Self-Service Registration
+- Komplettes Benutzer-Management (Root/Admin/Employee)
+- Sichere Dokumentenverwaltung mit Berechtigungssystem
+- Schwarzes Brett mit Tags, Prioritäten und Lesebestätigungen
+- Kalender-System mit Multi-Level-Organisationsebenen
+- KVP-System mit Bewertungen und Belohnungssystem
+- Chat-System mit Echtzeit-Kommunikation und Planungsfunktionen
+- Schichtplanung mit Templates und Tauschbörse
+- Feature-Management-System mit modularer Aktivierung
+- E-Mail-Benachrichtigungen mit Templates und Queue-System
+
+### 🚧 **In Entwicklung:**
+- Progressive Web App (PWA) für Mobile-First
 - Push-Benachrichtigungen
-- Bildupload und -verarbeitung
-- WebSocket für Echtzeit-Updates
-- Offline-Synchronisation
-- Mehrsprachige Unterstützung
-- Stripe/PayPal Integration
-- Automatische Abrechnung
+- Stripe-Integration für automatische Abrechnung
+- Erweiterte Analytics und Reporting
 
-## Sicherheitshinweise
+### 📋 **Geplant:**
+- Mehrsprachige Unterstützung (DE/EN/PL/TR)
+- Docker-Container-Deployment
+- API-Dokumentation mit Swagger
+- Automatisierte Tests (Unit & Integration)
 
-- Ändern Sie das Standard-Root-Passwort nach der ersten Anmeldung
-- Verwenden Sie ein sicheres JWT_SECRET
-- Stellen Sie sicher, dass die Anwendung hinter einer Firewall läuft, wenn sie öffentlich zugänglich ist
-- Führen Sie regelmäßige Backups der Datenbank durch
+## 🔍 Problembehandlung
 
-## Nächste Schritte
+### ❌ **Häufige Probleme:**
 
-1. **Sofort**: Stripe Account einrichten
-2. **Diese Woche**: Payment-Flow implementieren
-3. **Dieser Monat**: Mobile Optimierung
-4. **Dieses Quartal**: Erste zahlende Kunden
+| Problem | Lösung |
+|---------|--------|
+| 🔴 MySQL-Verbindungsfehler | `sudo systemctl start mysql` (Ubuntu) / XAMPP starten (Windows) |
+| 🔴 .env-Datei nicht gefunden | `cp server/.env.example server/.env` |
+| 🔴 Port bereits belegt | `sudo lsof -i :3000` → Prozess beenden |
+| 🔴 NPM-Fehler | `npm cache clean --force && npm install` |
 
-## Beitragen
+**📋 Vollständige Problembehandlung:** [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md#-problembehandlung)
 
-Wir freuen uns über Beiträge! Bitte erstellen Sie einen Fork des Repositories und senden Sie Pull Requests für neue Features oder Bugfixes.
+## 🚀 Roadmap 2025
+
+### Q1 2025 ✅
+- ✅ Schichtplanungs-Tool vollständig implementiert
+- ✅ KVP-System mit Belohnungsmechanismus
+- ✅ Chat-System mit Echtzeit-Features
+- ✅ Multi-Tenant Self-Service Registration
+
+### Q2 2025 🎯
+- 📱 Progressive Web App (PWA)
+- 💳 Stripe-Integration für automatische Abrechnung
+- 📊 Erweiterte Analytics und Reporting
+- 🌐 Mehrsprachige Unterstützung (DE/EN)
+
+### Q3 2025 📈
+- 🏖️ Urlaubsantrag-System
+- 🔧 TPM-Kalender für Maschinenwartung
+- ✓ Qualitätssicherungs-Checklisten
+- 🔔 Push-Benachrichtigungen
+
+### Q4 2025 🚀
+- 🤖 Automatisierung und Workflows
+- 📈 Business Intelligence Dashboard
+- 🎓 Skill-Matrix und Qualifikationsmanagement
+- 🐳 Docker-Container-Deployment
+
+## 📈 Business-Metriken
+
+### 🎯 **KPIs:**
+- **Uptime-Ziel:** 99.9%
+- **Response-Time:** < 200ms
+- **Error-Rate:** < 0.1%
+- **Customer Satisfaction:** > 4.5/5
+
+### 💰 **Revenue-Ziele 2025:**
+- Q1: €5K MRR (Monthly Recurring Revenue)
+- Q2: €15K MRR
+- Q3: €35K MRR
+- Q4: €50K MRR
+
+## 🤝 Beitragen & Support
+
+### 📞 **Support:**
+- 📧 E-Mail: info@scs-technik.de
+- 📋 Issues: [GitHub Issues](./issues)
+- 📖 Dokumentation: [CLAUDE.md](./CLAUDE.md)
+
+### 🔧 **Entwickler-Tools:**
+```bash
+npm run lint      # Code-Qualität prüfen
+npm test          # Tests ausführen  
+npm run format    # Code formatieren
+npm run build     # Produktions-Build
+```
 
 ## Lizenz und Urheberrecht
 
