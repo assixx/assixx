@@ -504,12 +504,13 @@ class User {
         SELECT 
           u.role,
           u.department_id,
-          u.team_id,
+          ut.team_id,
           d.name as department_name,
           t.name as team_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
-        LEFT JOIN teams t ON u.team_id = t.id
+        LEFT JOIN user_teams ut ON u.id = ut.user_id
+        LEFT JOIN teams t ON ut.team_id = t.id
         WHERE u.id = ?
       `;
       

@@ -48,6 +48,14 @@ async function tenantMiddleware(req, res, next) {
             tenantSubdomain = req.body.subdomain;
         }
         
+        // Fallback: Wenn User eingeloggt ist, verwende tenant_id aus JWT
+        if (!tenantSubdomain && req.user && req.user.tenant_id) {
+            const tenant = await Tenant.findById(req.user.tenant_id);
+            if (tenant) {
+                tenantSubdomain = tenant.subdomain;
+            }
+        }
+        
         if (!tenantSubdomain) {
             return res.status(400).json({ 
                 error: 'Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.' 

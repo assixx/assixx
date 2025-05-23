@@ -61,7 +61,8 @@ router.post('/upload', authenticateToken, authorizeRole('admin'), upload.single(
       category: category || 'other',
       description: description || '',
       year: year || null,
-      month: month || null
+      month: month || null,
+      tenant_id: req.user.tenant_id
     });
 
     // Lösche die temporäre Datei

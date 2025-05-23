@@ -50,9 +50,10 @@ class UnifiedNavigation {
                 { id: 'features', icon: this.getSVGIcon('feature'), label: 'Feature Management', url: '/feature-management.html' }
             ],
             
-            // Employee Navigation (7 Items)
+            // Employee Navigation (8 Items)
             employee: [
                 { id: 'dashboard', icon: this.getSVGIcon('home'), label: 'Dashboard', url: '/employee-dashboard.html' },
+                { id: 'documents', icon: this.getSVGIcon('document'), label: 'Meine Dokumente', url: '/employee-documents.html' },
                 { id: 'blackboard', icon: this.getSVGIcon('blackboard'), label: 'Blackboard', url: '/blackboard.html' },
                 { id: 'calendar', icon: this.getSVGIcon('calendar'), label: 'Kalender', url: '/calendar.html' },
                 { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html' },

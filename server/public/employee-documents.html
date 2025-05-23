@@ -199,7 +199,7 @@
                 }
                 
                 // Fetch API mit Auth-Header verwenden
-                fetch(`/employee/documents/${documentId}?inline=true`, {
+                fetch(`/documents/${documentId}?inline=true`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`

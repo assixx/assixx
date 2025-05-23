@@ -1507,6 +1507,120 @@ async function deleteDepartment(departmentId) {
     }
 }
 
+// Team Management Functions
+async function editTeam(teamId) {
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch(`/teams/${teamId}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const team = await response.json();
+            
+            // Create edit modal
+            const modalHtml = `
+                <div id="edit-team-modal" class="modal" style="display: block;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Team bearbeiten</h3>
+                            <button class="modal-close" onclick="hideModal('edit-team-modal')">&times;</button>
+                        </div>
+                        <form id="edit-team-form" onsubmit="updateTeam(event, ${teamId})">
+                            <div class="form-group">
+                                <label class="form-label">Name</label>
+                                <input type="text" name="name" class="form-control" value="${team.name}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Beschreibung</label>
+                                <textarea name="description" class="form-control" rows="3">${team.description || ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Abteilung</label>
+                                <select name="department_id" class="form-control">
+                                    <option value="">Keine Abteilung</option>
+                                    ${await getDepartmentOptions(team.department_id)}
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Team aktualisieren</button>
+                                <button type="button" class="btn btn-secondary" onclick="hideModal('edit-team-modal')">Abbrechen</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        } else {
+            alert('Fehler beim Laden des Teams');
+        }
+    } catch (error) {
+        console.error('Error loading team:', error);
+        alert('Ein Fehler ist aufgetreten.');
+    }
+}
+
+async function updateTeam(event, teamId) {
+    event.preventDefault();
+    const token = localStorage.getItem('token');
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch(`/teams/${teamId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Team erfolgreich aktualisiert');
+            hideModal('edit-team-modal');
+            loadTeamsTable();
+            loadDashboardStats();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error('Error updating team:', error);
+        alert('Ein Fehler ist aufgetreten.');
+    }
+}
+
+async function deleteTeam(teamId) {
+    if (!confirm('Sind Sie sicher, dass Sie dieses Team löschen möchten?')) {
+        return;
+    }
+    
+    const token = localStorage.getItem('token');
+    
+    try {
+        const response = await fetch(`/teams/${teamId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            alert('Team erfolgreich gelöscht');
+            loadTeamsTable();
+            loadDashboardStats();
+        } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+        }
+    } catch (error) {
+        console.error('Error deleting team:', error);
+        alert('Ein Fehler ist aufgetreten.');
+    }
+}
+
 // Global hideModal function
 function hideModal(modalId) {
     console.log('hideModal called for:', modalId);

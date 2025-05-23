@@ -620,6 +620,7 @@
     </script>
     <!-- Unified Navigation -->
     <script src="/js/components/unified-navigation.js"></script>
+    <script src="/js/show-section.js"></script>
     <script src="/js/admin-dashboard.js"></script>
     <script src="/js/dashboard-fix.js"></script>
     <script src="/js/debug-employee-button.js"></script>
@@ -1333,6 +1334,10 @@
             showModal('team-modal');
             // Abteilungen für Select laden
             loadDepartmentsForSelect();
+        }
+
+        function hideTeamModal() {
+            hideModal('team-modal');
         }
 
         // Modal schließen bei Klick außerhalb

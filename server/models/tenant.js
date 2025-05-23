@@ -146,6 +146,15 @@ class Tenant {
     return tenants[0];
   }
   
+  // Finde Tenant by ID
+  static async findById(tenantId) {
+    const [tenants] = await db.query(
+      'SELECT * FROM tenants WHERE id = ? AND status != "cancelled"',
+      [tenantId]
+    );
+    return tenants[0];
+  }
+  
   // Trial-Status prüfen
   static async checkTrialStatus(tenantId) {
     const [result] = await db.query(

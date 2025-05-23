@@ -13,8 +13,10 @@ const { authenticateToken } = require('../middleware/auth');
 const { tenantMiddleware } = require('../middleware/tenant');
 const { checkFeature } = require('../middleware/features');
 
-// Fallback tenant ID
-const DEFAULT_TENANT_ID = 1;
+// Helper function to get tenant ID from user object
+function getTenantId(user) {
+  return user.tenant_id || user.tenantId || 1;
+}
 
 console.log("KVP API Routes geladen - Benutze Standard-DB:", process.env.DB_NAME);
 
@@ -65,27 +67,13 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Helper function to get tenant ID
-async function getTenantId(req) {
-  if (!req.tenantId) {
-    return DEFAULT_TENANT_ID;
-  }
-  
-  // req.tenantId contains subdomain, we need numeric ID
-  const db = require('../database');
-  const [tenantRows] = await db.query('SELECT id FROM tenants WHERE subdomain = ?', [req.tenantId]);
-  
-  if (tenantRows.length === 0) {
-    return DEFAULT_TENANT_ID;
-  }
-  
-  return tenantRows[0].id;
-}
+// Helper function to get tenant ID - REMOVED (using the one at top of file)
 
 // GET /api/kvp/categories - Get all categories
-router.get('/categories', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.get('/categories', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const categories = await kvpModel.getCategories(tenantId);
     
     res.json({
@@ -103,9 +91,10 @@ router.get('/categories', authenticateToken, tenantMiddleware, checkFeature('kvp
 });
 
 // GET /api/kvp/suggestions - Get suggestions with filters
-router.get('/suggestions', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.get('/suggestions', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const { status, category_id, priority, org_level } = req.query;
     
     const filters = {};
@@ -136,9 +125,10 @@ router.get('/suggestions', authenticateToken, tenantMiddleware, checkFeature('kv
 });
 
 // GET /api/kvp/suggestions/:id - Get single suggestion
-router.get('/suggestions/:id', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.get('/suggestions/:id', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const suggestion = await kvpModel.getSuggestionById(
       req.params.id, 
       tenantId, 
@@ -177,9 +167,10 @@ router.get('/suggestions/:id', authenticateToken, tenantMiddleware, checkFeature
 });
 
 // POST /api/kvp/suggestions - Create new suggestion
-router.post('/suggestions', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), upload.array('attachments', 5), async (req, res) => {
+router.post('/suggestions', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+upload.array('attachments', 5), async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const {
       title,
       description,
@@ -243,9 +234,10 @@ router.post('/suggestions', authenticateToken, tenantMiddleware, checkFeature('k
 });
 
 // PUT /api/kvp/suggestions/:id/status - Update suggestion status (Admin only)
-router.put('/suggestions/:id/status', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), requireAdmin, async (req, res) => {
+router.put('/suggestions/:id/status', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+requireAdmin, async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const { status, reason } = req.body;
     
     const validStatuses = ['new', 'pending', 'in_review', 'approved', 'implemented', 'rejected', 'archived'];
@@ -286,7 +278,8 @@ router.put('/suggestions/:id/status', authenticateToken, tenantMiddleware, check
 });
 
 // POST /api/kvp/suggestions/:id/comments - Add comment
-router.post('/suggestions/:id/comments', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.post('/suggestions/:id/comments', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
     const { comment, is_internal } = req.body;
     
@@ -323,9 +316,10 @@ router.post('/suggestions/:id/comments', authenticateToken, tenantMiddleware, ch
 });
 
 // GET /api/kvp/dashboard - Get dashboard statistics (Admin only)
-router.get('/dashboard', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), requireAdmin, async (req, res) => {
+router.get('/dashboard', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+requireAdmin, async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const stats = await kvpModel.getDashboardStats(tenantId);
     
     res.json({
@@ -343,9 +337,10 @@ router.get('/dashboard', authenticateToken, tenantMiddleware, checkFeature('kvp_
 });
 
 // GET /api/kvp/my-points - Get user's points
-router.get('/my-points', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.get('/my-points', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const points = await kvpModel.getUserPoints(tenantId, req.user.id);
     
     res.json({
@@ -363,9 +358,10 @@ router.get('/my-points', authenticateToken, tenantMiddleware, checkFeature('kvp_
 });
 
 // POST /api/kvp/award-points - Award points to user (Admin only)
-router.post('/award-points', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), requireAdmin, async (req, res) => {
+router.post('/award-points', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+requireAdmin, async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const { user_id, suggestion_id, points, reason } = req.body;
     
     if (!user_id || !suggestion_id || !points || !reason) {
@@ -400,9 +396,10 @@ router.post('/award-points', authenticateToken, tenantMiddleware, checkFeature('
 });
 
 // GET /api/kvp/attachments/:id/download - Download attachment
-router.get('/attachments/:id/download', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.get('/attachments/:id/download', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const attachmentId = parseInt(req.params.id);
     
     // Get attachment details and verify access
@@ -448,9 +445,10 @@ router.get('/attachments/:id/download', authenticateToken, tenantMiddleware, che
 });
 
 // DELETE /api/kvp/suggestions/:id - Delete suggestion (only by owner)
-router.delete('/suggestions/:id', authenticateToken, tenantMiddleware, checkFeature('kvp_system'), async (req, res) => {
+router.delete('/suggestions/:id', authenticateToken, /* tenantMiddleware, checkFeature('kvp_system'), */ // Temporarily disabled
+async (req, res) => {
   try {
-    const tenantId = await getTenantId(req);
+    const tenantId = getTenantId(req.user);
     const suggestionId = parseInt(req.params.id);
     
     // Get suggestion to verify ownership
