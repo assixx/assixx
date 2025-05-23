@@ -6,7 +6,7 @@
     <title>Chat - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/dashboard-theme.css">
-    <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         /* Chat-spezifische Styles mit Glassmorphismus-Design */
         .chat-container {
@@ -108,6 +108,14 @@
             font-weight: 600;
             font-size: 1.1rem;
             flex-shrink: 0;
+            position: relative;
+        }
+        
+        .conversation-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
         }
 
         .conversation-info {
@@ -253,14 +261,28 @@
             width: 35px;
             height: 35px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        
+        .message-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: white;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .message-sender {
             font-weight: 600;
-            font-size: 0.9rem;
-            flex-shrink: 0;
+            color: var(--text-primary);
+        }
+        
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-left: auto;
         }
 
         .message.own .message-avatar {
@@ -573,7 +595,11 @@
         }
 
         /* Message Attachments */
-        .message-attachment {
+        .message-attachments {
+            margin-top: var(--spacing-sm);
+        }
+        
+        .message-attachment, .attachment {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: var(--radius-md);
@@ -746,6 +772,285 @@
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.2);
         }
+
+        /* Emoji Picker Styles */
+        .emoji-picker {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 320px;
+            height: 350px;
+            background: rgba(20, 20, 40, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .emoji-picker-header {
+            display: flex;
+            padding: var(--spacing-sm);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            gap: var(--spacing-xs);
+        }
+
+        .emoji-category {
+            background: transparent;
+            border: none;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            cursor: pointer;
+            font-size: 1.2rem;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+            min-width: 36px;
+        }
+
+        .emoji-category:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .emoji-category.active {
+            background: rgba(33, 150, 243, 0.2);
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
+        }
+
+        .emoji-picker-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-md);
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: var(--spacing-xs);
+            align-content: start;
+        }
+
+        .emoji-item {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+            font-size: 1.3rem;
+        }
+
+        .emoji-item:hover {
+            background: rgba(33, 150, 243, 0.2);
+            transform: scale(1.2);
+        }
+
+        /* Typing Indicator Animation */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            margin: var(--spacing-sm) 0;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Message Reactions */
+        .message-reactions {
+            display: flex;
+            gap: var(--spacing-xs);
+            margin-top: var(--spacing-xs);
+            flex-wrap: wrap;
+        }
+
+        .reaction {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reaction:hover {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.3);
+            transform: scale(1.1);
+        }
+
+        .reaction.own {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: rgba(33, 150, 243, 0.3);
+        }
+
+        .reaction-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Search Bar */
+        .chat-search {
+            display: none;
+            padding: var(--spacing-md);
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            padding-right: 40px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .search-results {
+            margin-top: var(--spacing-sm);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .search-result-item {
+            padding: var(--spacing-sm);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-xs);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        /* Mobile Improvements */
+        @media (max-width: 768px) {
+            .emoji-picker {
+                width: 280px;
+                height: 300px;
+                right: 10px;
+                bottom: 80px;
+            }
+
+            .emoji-picker-content {
+                grid-template-columns: repeat(7, 1fr);
+            }
+
+            .message-input-container {
+                padding: var(--spacing-md);
+            }
+
+            .chat-header {
+                padding: var(--spacing-md);
+            }
+
+            .messages-container {
+                padding: var(--spacing-md);
+            }
+        }
+        
+        /* Status Indicators */
+        .status-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--background-primary);
+            transition: background-color 0.3s ease;
+        }
+        
+        .status-indicator.online {
+            background-color: #4caf50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+        }
+        
+        .status-indicator.offline {
+            background-color: #9e9e9e;
+        }
+        
+        .status-indicator.away {
+            background-color: #ff9800;
+        }
+        
+        .status-indicator.busy {
+            background-color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -802,6 +1107,9 @@
                             <button class="chat-action-btn" title="Suchen">
                                 <i class="fas fa-search"></i>
                             </button>
+                            <button class="chat-action-btn" id="deleteConversationBtn" title="Chat löschen">
+                                <i class="fas fa-trash"></i>
+                            </button>
                             <button class="chat-action-btn" title="Mehr Optionen">
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
@@ -821,7 +1129,7 @@
 
                     <!-- Message Input -->
                     <div class="message-input-container" id="chatArea" style="display: none;">
-                        <div class="delivery-options" id="messageScheduling">
+                        <div class="delivery-options">
                             <select id="messageScheduling" class="form-control">
                                 <option value="immediate">Sofort senden</option>
                                 <option value="break_time">In der Pause</option>
@@ -839,7 +1147,7 @@
                                 <button class="input-action-btn" id="attachmentBtn" title="Datei anhängen">
                                     <i class="fas fa-paperclip"></i>
                                 </button>
-                                <button class="input-action-btn" title="Emoji hinzufügen">
+                                <button class="input-action-btn" id="emojiBtn" title="Emoji hinzufügen">
                                     <i class="fas fa-smile"></i>
                                 </button>
                                 <button class="send-btn" id="sendButton">
@@ -869,6 +1177,11 @@
                         <!-- Wird durch JavaScript gefüllt -->
                     </div>
                 </div>
+                <div class="form-group" id="groupChatOptions" style="display: none; margin-top: 20px;">
+                    <label class="form-label">Gruppenname (optional)</label>
+                    <input type="text" id="groupChatName" class="form-control" placeholder="z.B. Projekt-Team, Abteilung Marketing..."
+                           style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: var(--text-primary); padding: 10px; border-radius: 8px;">
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" id="cancelModalBtn">Abbrechen</button>
@@ -882,6 +1195,23 @@
 
     <!-- File Upload Input -->
     <input type="file" id="fileInput" style="display: none;" multiple>
+
+    <!-- Emoji Picker Modal -->
+    <div id="emojiPicker" class="emoji-picker" style="display: none;">
+        <div class="emoji-picker-header">
+            <button class="emoji-category active" data-category="smileys">😊</button>
+            <button class="emoji-category" data-category="gestures">👍</button>
+            <button class="emoji-category" data-category="hearts">❤️</button>
+            <button class="emoji-category" data-category="animals">🐶</button>
+            <button class="emoji-category" data-category="food">🍕</button>
+            <button class="emoji-category" data-category="activities">⚽</button>
+            <button class="emoji-category" data-category="objects">💡</button>
+            <button class="emoji-category" data-category="symbols">✨</button>
+        </div>
+        <div class="emoji-picker-content" id="emojiContent">
+            <!-- Emojis werden hier dynamisch eingefügt -->
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="/js/components/unified-navigation.js"></script>

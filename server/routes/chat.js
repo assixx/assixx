@@ -57,20 +57,115 @@ const upload = multer({
 // Hilfsfunktion für Berechtigungsprüfung
 const checkChatPermission = async (fromUserId, toUserId, tenantId) => {
   try {
-    const query = `
-      SELECT cp.can_send, cp.can_receive 
-      FROM chat_permissions cp
-      JOIN users u1 ON cp.from_role = u1.role
-      JOIN users u2 ON cp.to_role = u2.role
-      WHERE u1.id = ? AND u2.id = ? AND u1.tenant_id = ? AND u2.tenant_id = ?
-    `;
-    const [rows] = await db.query(query, [fromUserId, toUserId, tenantId, tenantId]);
-    return rows.length > 0 ? rows[0] : { can_send: false, can_receive: false };
+    // Hole die Rollen beider Benutzer
+    const [users] = await db.query(`
+      SELECT id, role FROM users 
+      WHERE id IN (?, ?) AND tenant_id = ?
+    `, [fromUserId, toUserId, tenantId]);
+
+    const fromUser = users.find(u => u.id === fromUserId);
+    const toUser = users.find(u => u.id === toUserId);
+
+    if (!fromUser || !toUser) {
+      return { can_send: false, can_receive: false };
+    }
+
+    // Prüfe die Berechtigungen basierend auf den Rollen
+    const [permissions] = await db.query(`
+      SELECT can_initiate_chat, can_send, can_receive 
+      FROM chat_permissions 
+      WHERE from_role = ? AND to_role = ? 
+      AND (tenant_id = ? OR tenant_id IS NULL)
+      ORDER BY tenant_id DESC
+      LIMIT 1
+    `, [fromUser.role, toUser.role, tenantId]);
+
+    if (permissions.length > 0) {
+      return { 
+        can_send: permissions[0].can_send, 
+        can_receive: permissions[0].can_receive
+      };
+    }
+
+    return { can_send: false, can_receive: false };
   } catch (error) {
     console.error('Fehler bei Berechtigungsprüfung:', error);
     return { can_send: false, can_receive: false };
   }
 };
+
+// Route: Verfügbare Benutzer für Chat abrufen
+router.get('/users', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const tenantId = req.user.tenant_id || 1;
+
+    let query;
+    let params;
+
+    // Je nach Rolle unterschiedliche Benutzer anzeigen
+    if (userRole === 'employee') {
+      // Employees sehen nur Admins ihrer Organisation
+      query = `
+        SELECT 
+          u.id,
+          u.username,
+          u.first_name,
+          u.last_name,
+          u.role,
+          u.profile_picture_url,
+          d.name as department_name
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.tenant_id = ? 
+          AND u.role IN ('admin', 'root')
+          AND u.status = 'active'
+          AND u.is_archived = 0
+          AND u.id != ?
+        ORDER BY u.role DESC, u.first_name, u.last_name
+      `;
+      params = [tenantId, userId];
+    } else if (userRole === 'admin' || userRole === 'root') {
+      // Admins und Root sehen alle Benutzer
+      query = `
+        SELECT 
+          u.id,
+          u.username,
+          u.first_name,
+          u.last_name,
+          u.role,
+          u.profile_picture_url,
+          d.name as department_name
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.tenant_id = ? 
+          AND u.status = 'active'
+          AND u.is_archived = 0
+          AND u.id != ?
+        ORDER BY u.role DESC, u.first_name, u.last_name
+      `;
+      params = [tenantId, userId];
+    }
+
+    const [users] = await db.query(query, params);
+    
+    // Berechtigungen für jeden Benutzer prüfen
+    const usersWithPermissions = await Promise.all(users.map(async (user) => {
+      const permission = await checkChatPermission(userId, user.id, tenantId);
+      return {
+        ...user,
+        canSendMessage: permission.can_send,
+        canReceiveMessage: permission.can_receive
+      };
+    }));
+
+    res.json(usersWithPermissions);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Benutzer:', error);
+    res.status(500).json({ error: 'Fehler beim Abrufen der Benutzer' });
+  }
+});
 
 // Route: Alle Unterhaltungen für einen Benutzer abrufen
 router.get('/conversations', verifyToken, async (req, res) => {
@@ -198,7 +293,9 @@ router.get('/conversations/:id/messages', verifyToken, async (req, res) => {
         m.delivery_status,
         u.first_name,
         u.last_name,
+        u.username,
         u.profile_picture_url,
+        CONCAT(IFNULL(u.first_name, ''), IF(u.first_name IS NOT NULL AND u.last_name IS NOT NULL, ' ', ''), IFNULL(u.last_name, '')) as sender_name,
         (SELECT JSON_ARRAYAGG(
           JSON_OBJECT(
             'id', ma.id,
@@ -446,6 +543,107 @@ router.get('/work-schedules', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Fehler beim Abrufen der Arbeitszeiten:', error);
     res.status(500).json({ error: 'Fehler beim Abrufen der Arbeitszeiten' });
+  }
+});
+
+// Route: Nachricht löschen (soft delete)
+router.delete('/messages/:id', verifyToken, async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user.id;
+    const tenantId = req.user.tenant_id || 1;
+
+    // Prüfen ob der Benutzer die Nachricht löschen darf (nur eigene Nachrichten)
+    const [messages] = await db.query(`
+      SELECT sender_id FROM messages 
+      WHERE id = ? AND tenant_id = ? AND is_deleted = 0
+    `, [messageId, tenantId]);
+
+    if (messages.length === 0) {
+      return res.status(404).json({ error: 'Nachricht nicht gefunden' });
+    }
+
+    if (messages[0].sender_id !== userId) {
+      return res.status(403).json({ error: 'Keine Berechtigung zum Löschen dieser Nachricht' });
+    }
+
+    // Soft delete durchführen
+    await db.query(`
+      UPDATE messages 
+      SET is_deleted = 1, deleted_at = NOW() 
+      WHERE id = ? AND tenant_id = ?
+    `, [messageId, tenantId]);
+
+    res.json({ message: 'Nachricht erfolgreich gelöscht' });
+  } catch (error) {
+    console.error('Fehler beim Löschen der Nachricht:', error);
+    res.status(500).json({ error: 'Fehler beim Löschen der Nachricht' });
+  }
+});
+
+// Route: Nachricht archivieren (für Empfänger)
+router.put('/messages/:id/archive', verifyToken, async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user.id;
+    const tenantId = req.user.tenant_id || 1;
+
+    // Prüfen ob der Benutzer Zugriff auf die Nachricht hat
+    const [messages] = await db.query(`
+      SELECT m.id FROM messages m
+      JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
+      WHERE m.id = ? AND m.tenant_id = ? AND cp.user_id = ?
+    `, [messageId, tenantId, userId]);
+
+    if (messages.length === 0) {
+      return res.status(404).json({ error: 'Nachricht nicht gefunden oder kein Zugriff' });
+    }
+
+    // Nachricht für diesen Benutzer als archiviert markieren
+    // Da wir kein separates archived-Feld haben, verwenden wir eine Hilfstabelle
+    await db.query(`
+      INSERT INTO message_read_receipts (message_id, user_id, read_at) 
+      VALUES (?, ?, NOW())
+      ON DUPLICATE KEY UPDATE read_at = NOW()
+    `, [messageId, userId]);
+
+    res.json({ message: 'Nachricht erfolgreich archiviert' });
+  } catch (error) {
+    console.error('Fehler beim Archivieren der Nachricht:', error);
+    res.status(500).json({ error: 'Fehler beim Archivieren der Nachricht' });
+  }
+});
+
+// Route: Unterhaltung löschen
+router.delete('/conversations/:id', verifyToken, async (req, res) => {
+  try {
+    const conversationId = req.params.id;
+    const userId = req.user.id;
+    const tenantId = req.user.tenant_id || 1;
+
+    // Prüfen ob der Benutzer Zugriff auf die Unterhaltung hat
+    const [participants] = await db.query(`
+      SELECT user_id FROM conversation_participants 
+      WHERE conversation_id = ? AND user_id = ?
+    `, [conversationId, userId]);
+
+    if (participants.length === 0) {
+      return res.status(404).json({ error: 'Unterhaltung nicht gefunden' });
+    }
+
+    // Jeder Teilnehmer kann die Unterhaltung für sich löschen
+
+    // Unterhaltung als inaktiv markieren (soft delete)
+    await db.query(`
+      UPDATE conversations 
+      SET is_active = 0 
+      WHERE id = ? AND tenant_id = ?
+    `, [conversationId, tenantId]);
+
+    res.json({ message: 'Unterhaltung erfolgreich gelöscht' });
+  } catch (error) {
+    console.error('Fehler beim Löschen der Unterhaltung:', error);
+    res.status(500).json({ error: 'Fehler beim Löschen der Unterhaltung' });
   }
 });
 

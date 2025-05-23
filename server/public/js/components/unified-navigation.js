@@ -33,7 +33,7 @@ class UnifiedNavigation {
 
     getNavigationItems() {
         return {
-            // Admin Navigation (13 Items)
+            // Admin Navigation (14 Items)
             admin: [
                 { id: 'dashboard', icon: this.getSVGIcon('home'), label: 'Übersicht', url: '/admin-dashboard.html', section: 'dashboard' },
                 { id: 'employees', icon: this.getSVGIcon('users'), label: 'Mitarbeiter', url: '#employees', section: 'employees' },
@@ -43,6 +43,7 @@ class UnifiedNavigation {
                 { id: 'shifts', icon: this.getSVGIcon('clock'), label: 'Schichtplanung', url: '/shifts.html' },
                 { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html' },
                 { id: 'kvp', icon: this.getSVGIcon('lightbulb'), label: 'KVP System', url: '/kvp.html' },
+                { id: 'surveys', icon: this.getSVGIcon('poll'), label: 'Umfragen', url: '/survey-admin.html' },
                 { id: 'payslips', icon: this.getSVGIcon('money'), label: 'Gehaltsabrechnungen', url: '#payslips', section: 'payslips' },
                 { id: 'departments', icon: this.getSVGIcon('building'), label: 'Abteilungen', url: '#departments', section: 'departments' },
                 { id: 'teams', icon: this.getSVGIcon('team'), label: 'Teams', url: '#teams', section: 'teams' },
@@ -50,7 +51,7 @@ class UnifiedNavigation {
                 { id: 'features', icon: this.getSVGIcon('feature'), label: 'Feature Management', url: '/feature-management.html' }
             ],
             
-            // Employee Navigation (8 Items)
+            // Employee Navigation (9 Items)
             employee: [
                 { id: 'dashboard', icon: this.getSVGIcon('home'), label: 'Dashboard', url: '/employee-dashboard.html' },
                 { id: 'documents', icon: this.getSVGIcon('document'), label: 'Meine Dokumente', url: '/employee-documents.html' },
@@ -59,6 +60,7 @@ class UnifiedNavigation {
                 { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html' },
                 { id: 'shifts', icon: this.getSVGIcon('clock'), label: 'Schichtplanung', url: '/shifts.html' },
                 { id: 'kvp', icon: this.getSVGIcon('lightbulb'), label: 'KVP System', url: '/kvp.html' },
+                { id: 'surveys', icon: this.getSVGIcon('poll'), label: 'Umfragen', url: '/survey-employee.html' },
                 { id: 'profile', icon: this.getSVGIcon('user'), label: 'Mein Profil', url: '/profile.html' }
             ],
             
@@ -89,7 +91,8 @@ class UnifiedNavigation {
             team: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
             settings: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>',
             feature: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
-            admin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>'
+            admin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
+            poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>'
         };
         return icons[name] || icons.home;
     }

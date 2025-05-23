@@ -108,6 +108,8 @@ class ChatWebSocketServer {
   async handleSendMessage(ws, data) {
     const { conversationId, content, attachments = [] } = data;
     
+    console.log(`Handling send message: conversationId=${conversationId}, userId=${ws.userId}, tenantId=${ws.tenantId}`);
+    
     try {
       // Berechtigung prüfen
       const participantQuery = `
@@ -117,7 +119,12 @@ class ChatWebSocketServer {
       const [participants] = await db.query(participantQuery, [conversationId, ws.tenantId]);
       
       const participantIds = participants.map(p => p.user_id);
-      if (!participantIds.includes(ws.userId)) {
+      console.log(`Found participants: ${JSON.stringify(participantIds)}, current user: ${ws.userId}`);
+      
+      // Convert IDs to strings for comparison since ws.userId might be a string
+      const participantIdsStr = participantIds.map(id => String(id));
+      if (!participantIdsStr.includes(String(ws.userId))) {
+        console.log(`User ${ws.userId} not found in participants list`);
         this.sendMessage(ws, {
           type: 'error',
           data: { message: 'Keine Berechtigung für diese Unterhaltung' }
@@ -150,10 +157,14 @@ class ChatWebSocketServer {
         conversation_id: conversationId,
         content: content,
         sender_id: ws.userId,
-        sender_name: `${sender.first_name} ${sender.last_name}`,
-        profile_picture_url: sender.profile_picture_url,
+        sender_name: sender ? [(sender.first_name || ''), (sender.last_name || '')].filter(n => n).join(' ') || 'Unbekannter Benutzer' : 'Unbekannter Benutzer',
+        first_name: sender?.first_name || '',
+        last_name: sender?.last_name || '',
+        profile_picture_url: sender?.profile_picture_url || null,
         created_at: new Date().toISOString(),
-        attachments: attachments
+        delivery_status: 'sent',
+        is_read: false,
+        attachments: attachments || []
       };
 
       // Nachricht an alle Teilnehmer senden
@@ -400,10 +411,15 @@ class ChatWebSocketServer {
           conversation_id: message.conversation_id,
           content: message.content,
           sender_id: message.sender_id,
-          sender_name: `${sender.first_name} ${sender.last_name}`,
-          profile_picture_url: sender.profile_picture_url,
+          sender_name: sender ? [(sender.first_name || ''), (sender.last_name || '')].filter(n => n).join(' ') || 'Unbekannter Benutzer' : 'Unbekannter Benutzer',
+          first_name: sender?.first_name || '',
+          last_name: sender?.last_name || '',
+          profile_picture_url: sender?.profile_picture_url || null,
           created_at: message.created_at,
-          is_scheduled: true
+          delivery_status: 'delivered',
+          is_read: false,
+          is_scheduled: true,
+          attachments: []
         };
 
         for (const participant of participants) {
@@ -426,6 +442,120 @@ class ChatWebSocketServer {
     setInterval(() => {
       this.processScheduledMessages();
     }, 60000); // Alle 60 Sekunden
+  }
+
+  // Message Delivery Queue verarbeiten
+  async processMessageDeliveryQueue() {
+    try {
+      // Hole ausstehende Nachrichten aus der Queue
+      const query = `
+        SELECT 
+          mdq.id as queue_id,
+          mdq.message_id,
+          mdq.recipient_id,
+          m.conversation_id,
+          m.content,
+          m.sender_id,
+          m.created_at,
+          u.first_name,
+          u.last_name,
+          u.profile_picture_url
+        FROM message_delivery_queue mdq
+        JOIN messages m ON mdq.message_id = m.id
+        JOIN users u ON m.sender_id = u.id
+        WHERE mdq.status = 'pending'
+        AND mdq.attempts < 3
+        LIMIT 50
+      `;
+      
+      const [queuedMessages] = await db.query(query);
+
+      for (const message of queuedMessages) {
+        try {
+          // Update status to processing
+          await db.query(
+            'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
+            [message.queue_id]
+          );
+
+          // Nachricht-Objekt erstellen
+          const messageData = {
+            id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: message.content,
+            sender_id: message.sender_id,
+            sender_name: `${message.first_name || ''} ${message.last_name || ''}`.trim() || 'Unbekannter Benutzer',
+            first_name: message.first_name || '',
+            last_name: message.last_name || '',
+            profile_picture_url: message.profile_picture_url || null,
+            created_at: message.created_at,
+            delivery_status: 'delivered',
+            is_read: false,
+            attachments: []
+          };
+
+          // An Empfänger senden wenn online
+          const recipientWs = this.clients.get(message.recipient_id);
+          if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
+            this.sendMessage(recipientWs, {
+              type: 'new_message',
+              data: messageData
+            });
+          }
+
+          // Als zugestellt markieren
+          await db.query(
+            'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
+            [message.queue_id]
+          );
+
+          // Delivery status in messages table aktualisieren
+          await db.query(
+            'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
+            [message.message_id]
+          );
+
+        } catch (error) {
+          console.error(`Fehler beim Zustellen der Nachricht ${message.message_id}:`, error);
+          
+          // Bei Fehler als failed markieren wenn max attempts erreicht
+          const [result] = await db.query(
+            'SELECT attempts FROM message_delivery_queue WHERE id = ?',
+            [message.queue_id]
+          );
+          
+          if (result[0]?.attempts >= 3) {
+            await db.query(
+              'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
+              [message.queue_id]
+            );
+            await db.query(
+              'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
+              [message.message_id]
+            );
+          } else {
+            // Zurück auf pending setzen für erneuten Versuch
+            await db.query(
+              'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
+              [message.queue_id]
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Verarbeiten der Message Delivery Queue:', error);
+    }
+  }
+
+  // Message Delivery Queue Processor starten
+  startMessageDeliveryProcessor() {
+    // Initial ausführen
+    this.processMessageDeliveryQueue();
+    
+    // Alle 5 Sekunden prüfen
+    setInterval(() => {
+      this.processMessageDeliveryQueue();
+    }, 5000);
   }
 }
 

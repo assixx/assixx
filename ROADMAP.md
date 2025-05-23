@@ -85,22 +85,24 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - [ ] Automatisierte E-Mail-Benachrichtigungen bei Status-Änderungen
    - [ ] Erweiterte Reporting und Analytics für Management
 
-5. **Chat-Funktion** 💬 🚧 IN ENTWICKLUNG (80% fertig)
+5. **Chat-Funktion** 💬 ✅ VOLLSTÄNDIG IMPLEMENTIERT
    - [x] WebSocket-basierte Echtzeit-Kommunikation implementiert
    - [x] Chat-UI mit modernem Glassmorphismus-Design
-   - [x] Unterhaltungs-Management (Erstellen, Anzeigen, Wechseln)
+   - [x] Unterhaltungs-Management (Erstellen, Anzeigen, Wechseln, Löschen)
    - [x] Multi-User Gruppenchats
    - [x] Nachrichten senden und empfangen in Echtzeit
    - [x] Zeitgesteuerte Nachrichtenzustellung (Pause/Nach Feierabend)
-   - [x] Typing-Indikator und Online-Status
+   - [x] Typing-Indikator mit animierten Punkten
+   - [x] Online-Status-Anzeige
    - [x] Datenbankschema mit 6 Tabellen implementiert
    - [x] Chat in Navigation integriert (Admin & Employee)
-   - [x] Frontend für Löschen/Archivieren vorbereitet
-   - [ ] Backend-Endpoints für Löschen/Archivieren
-   - [ ] Dateianhänge und Bildversand
-   - [ ] Nachrichtensuche und Filter
+   - [x] Backend-Endpoints für Löschen/Archivieren
+   - [x] Dateianhänge und Bildversand
+   - [x] Nachrichtensuche mit Live-Filter
+   - [x] Emoji-Picker mit 8 Kategorien
+   - [x] Verbesserte Mobile Responsiveness
    - [ ] Push-Benachrichtigungen
-   - [ ] Emoji-Picker
+   - [ ] Nachrichtenreaktionen
    - [ ] Verschlüsselte Nachrichten
 
 ### Priorität 2: Wichtige Funktionen
@@ -248,7 +250,7 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
 
 ## Technische Roadmap
 
-### Q1 2025 ✅ FAST ABGESCHLOSSEN (95%)
+### Q1 2025 ✅ VOLLSTÄNDIG ABGESCHLOSSEN (100%)
 - [x] **Blackboard-System vollständig implementiert** ✅
   - [x] Farb- und Tag-System für Kategorisierung
   - [x] Erweiterte Filter-Funktionen
@@ -259,10 +261,13 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
   - [x] Event-Management mit CRUD-Funktionalität
 - [x] **Schichtplanungs-Tool vollständig implementiert** ✅
 - [x] **KVP-System vollständig implementiert** ✅
-- [🚧] **Chat-Funktion** (80% fertig)
-  - WebSocket-Server läuft
-  - UI fertig implementiert
-  - Fehlende Backend-Endpoints für Löschen/Archivieren
+- [x] **Chat-Funktion vollständig implementiert** ✅
+  - [x] WebSocket-Server läuft
+  - [x] UI mit Glassmorphismus-Design
+  - [x] Emoji-Picker mit 8 Kategorien
+  - [x] Nachrichtensuche und Filter
+  - [x] Löschen/Archivieren von Nachrichten
+  - [x] Unterhaltungen löschen
 
 ### Q2 2025
 - [ ] Umfrage-Tool entwickeln

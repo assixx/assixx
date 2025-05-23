@@ -28,6 +28,7 @@ const kvpRoutes = require('./routes/kvp');
 const chatRoutes = require('./routes/chat');
 const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
+const surveyRoutes = require('./routes/surveys');
 
 // Multi-tenant middleware
 const { tenantMiddleware, skipTenantCheck } = require('./middleware/tenant');
@@ -365,6 +366,7 @@ app.use('/', calendarRoutes); // Firmenkalender-System
 app.use('/api/shifts', shiftRoutes); // Schichtplanungs-System
 app.use('/api/kvp', kvpRoutes); // KVP-System (Kontinuierlicher Verbesserungsprozess)
 app.use('/api/chat', authenticateToken, chatRoutes); // Chat-System
+app.use('/api/surveys', authenticateToken, surveyRoutes); // Umfrage-System
 
 // Add additional API routes for departments and teams
 app.use('/api/departments', departmentRoutes);
@@ -405,6 +407,7 @@ const server = http.createServer(app);
 const chatWS = new ChatWebSocketServer(server);
 chatWS.startHeartbeat();
 chatWS.startScheduledMessageProcessor();
+chatWS.startMessageDeliveryProcessor();
 
 server.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);
