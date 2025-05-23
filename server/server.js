@@ -25,6 +25,7 @@ const blackboardRoutes = require('./routes/blackboard');
 const calendarRoutes = require('./routes/calendar');
 const shiftRoutes = require('./routes/shifts');
 const kvpRoutes = require('./routes/kvp');
+const chatRoutes = require('./routes/chat');
 const authRoutes = require('./routes/auth');
 const userProfileRoutes = require('./routes/user');
 
@@ -94,7 +95,8 @@ async function createRequiredDirectories() {
   const directories = [
     'uploads',
     'uploads/profile_pictures',
-    'uploads/documents'
+    'uploads/documents',
+    'uploads/chat'
   ];
 
   for (const dir of directories) {
@@ -275,6 +277,10 @@ app.get('/salary-documents.html', authenticateToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'salary-documents.html'));
 });
 
+app.get('/chat.html', authenticateToken, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+});
+
 // API routes
 app.get('/api/dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
   console.log('Sending dashboard data');
@@ -358,6 +364,7 @@ app.use('/', blackboardRoutes); // Blackboard-System
 app.use('/', calendarRoutes); // Firmenkalender-System
 app.use('/api/shifts', shiftRoutes); // Schichtplanungs-System
 app.use('/api/kvp', kvpRoutes); // KVP-System (Kontinuierlicher Verbesserungsprozess)
+app.use('/api/chat', authenticateToken, chatRoutes); // Chat-System
 
 // Add additional API routes for departments and teams
 app.use('/api/departments', departmentRoutes);
@@ -388,4 +395,18 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
+const http = require('http');
+const ChatWebSocketServer = require('./websocket');
+
+// HTTP Server erstellen
+const server = http.createServer(app);
+
+// WebSocket Server initialisieren
+const chatWS = new ChatWebSocketServer(server);
+chatWS.startHeartbeat();
+chatWS.startScheduledMessageProcessor();
+
+server.listen(PORT, () => {
+  console.log(`Server läuft auf Port ${PORT}`);
+  console.log(`WebSocket Chat Server läuft auf ws://localhost:${PORT}/chat-ws`);
+});

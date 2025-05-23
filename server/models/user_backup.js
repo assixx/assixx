@@ -621,4 +621,78 @@ class User {
   }
 }
 
+// Passwort ändern
+static async changePassword(userId, currentPassword, newPassword) {
+  try {
+    // Aktuellen Benutzer abrufen
+    const user = await this.findById(userId);
+    if (!user) {
+      return { success: false, message: 'Benutzer nicht gefunden' };
+    }
+
+    // Aktuelles Passwort überprüfen
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return { success: false, message: 'Aktuelles Passwort ist incorrect' };
+    }
+
+    // Neues Passwort hashen
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Passwort in der Datenbank aktualisieren
+    const query = 'UPDATE users SET password = ? WHERE id = ?';
+    const [result] = await db.query(query, [hashedNewPassword, userId]);
+
+    if (result.affectedRows > 0) {
+      logger.info(`Password changed successfully for user ${userId}`);
+      return { success: true, message: 'Passwort erfolgreich geändert' };
+    } else {
+      return { success: false, message: 'Fehler beim Ändern des Passworts' };
+    }
+  } catch (error) {
+    logger.error(`Error changing password for user ${userId}: ${error.message}`);
+    throw error;
+  }
+}
+
+// Profil-Update erweitern für allgemeine Felder
+static async updateOwnProfile(userId, userData) {
+  try {
+    const user = await this.findById(userId);
+    
+    if (!user) {
+      return { success: false, message: 'Benutzer nicht gefunden' };
+    }
+    
+    // Erlaubte Felder für Profil-Updates (erweitert)
+    const allowedFields = [
+      'email', 'first_name', 'last_name', 'age', 'employee_id', 
+      'iban', 'company', 'notes', 'phone', 'address', 'emergency_contact'
+    ];
+    
+    const allowedUpdates = {};
+    
+    for (const field of allowedFields) {
+      if (userData[field] !== undefined) {
+        allowedUpdates[field] = userData[field];
+      }
+    }
+    
+    if (Object.keys(allowedUpdates).length === 0) {
+      return { success: false, message: 'Keine Felder zum Aktualisieren' };
+    }
+    
+    const success = await this.update(userId, allowedUpdates);
+    
+    if (success) {
+      return { success: true, message: 'Profil erfolgreich aktualisiert' };
+    } else {
+      return { success: false, message: 'Fehler beim Aktualisieren des Profils' };
+    }
+  } catch (error) {
+    logger.error(`Error in updateOwnProfile for user ${userId}: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = User;
