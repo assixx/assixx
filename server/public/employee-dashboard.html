@@ -9,9 +9,53 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
     <style>
+        /* Glassmorphismus Design-Standards */
+        
+        /* Dramatischer Hintergrund-Gradient */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #000;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 25%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus für Header */
+        .header {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glassmorphismus für Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+        
         /* Employee Dashboard spezifische Styles */
         .welcome-hero {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
             padding: var(--spacing-lg) var(--spacing-xl);
             color: white;
@@ -22,7 +66,7 @@
             align-items: center;
             justify-content: space-between;
             min-height: 120px;
-            box-shadow: 0 20px 40px rgba(33, 150, 243, 0.3);
+            animation: fadeInUp 0.6s ease-out;
         }
 
         .welcome-hero::before {
@@ -90,18 +134,22 @@
 
         .welcome-stat {
             text-align: center;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(20px) saturate(180%);
             border-radius: var(--radius-md);
             padding: var(--spacing-md);
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             min-width: 80px;
             transition: all 0.3s ease;
         }
 
         .welcome-stat:hover {
-            background: rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.05);
             transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
 
         .welcome-stat-number {
@@ -155,20 +203,27 @@
         }
 
         .feature-card {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
             padding: var(--spacing-xl);
             transition: all 0.3s ease;
             cursor: pointer;
             position: relative;
             overflow: hidden;
+            animation: fadeInUp 0.6s ease-out;
         }
 
         .feature-card:hover {
             transform: translateY(-8px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            border-color: rgba(0, 142, 255, 0.5);
+            background: rgba(255, 255, 255, 0.03);
+            animation: subtle-pulse 2s infinite;
         }
 
         .feature-card::before {
@@ -228,11 +283,15 @@
         }
 
         .info-card {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-md);
             padding: var(--spacing-lg);
             text-align: center;
+            transition: all 0.3s ease;
         }
 
         .info-label {
@@ -250,11 +309,15 @@
         }
 
         .quick-stats {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
             padding: var(--spacing-xl);
             margin-bottom: var(--spacing-xl);
+            animation: fadeInUp 0.6s ease-out;
         }
 
         .stats-header {
@@ -272,33 +335,62 @@
         }
 
         .stats-refresh {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 142, 255, 0.3);
             color: white;
-            border: none;
             border-radius: var(--radius-sm);
             padding: var(--spacing-sm) var(--spacing-md);
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .stats-refresh:hover {
-            background: var(--primary-dark);
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stats-refresh::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg) translate(-70%, -70%);
+            transition: transform 0.6s;
+        }
+        
+        .stats-refresh:hover::after {
+            transform: rotate(45deg) translate(-30%, -30%);
         }
 
         .activity-feed {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
             padding: var(--spacing-xl);
+            animation: fadeInUp 0.6s ease-out;
         }
 
         .activity-item {
             display: flex;
             align-items: center;
             padding: var(--spacing-md);
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
+            background: transparent;
         }
 
         .activity-item:last-child {
@@ -306,7 +398,7 @@
         }
 
         .activity-item:hover {
-            background: rgba(33, 150, 243, 0.05);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: var(--radius-sm);
         }
 
@@ -409,6 +501,74 @@
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+        
+        /* Zusätzliche Glassmorphismus-Animationen */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes subtle-pulse {
+            0% {
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(0, 142, 255, 0.2),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            }
+            100% {
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+        }
+        
+        /* Buttons mit Glassmorphismus */
+        .btn {
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg) translate(-70%, -70%);
+            transition: transform 0.6s;
+        }
+        
+        .btn:hover::after {
+            transform: rotate(45deg) translate(-30%, -30%);
         }
     </style>
 </head>
