@@ -167,32 +167,34 @@ transform: translateY(-1px);
 
 ### User-Info Design (Header):
 ```css
-/* Kompaktes User-Info Design */
+/* Kompaktes User-Info Design - TRANSPARENT */
 .header .header-actions #user-info {
     display: flex !important;
     align-items: center !important;
     gap: 0.4rem !important;
     padding: 0.2rem 0.5rem !important;
-    background: rgba(255, 255, 255, 0.01) !important;
-    backdrop-filter: blur(5px) !important;
-    border-radius: 6px !important;
-    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-radius: 0 !important;
+    border: none !important;
     font-size: 0.85rem !important;
     color: var(--text-secondary) !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.3s ease !important;
 }
 
 /* User Avatar */
-#user-info .user-avatar {
-    font-size: 0.9rem !important;
-    color: rgba(255, 255, 255, 0.4) !important;
-    margin-right: 0.15rem !important;
+#user-avatar {
+    display: block !important;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Hover Effekt */
 #user-info:hover {
-    background: rgba(255, 255, 255, 0.02) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
 }
 
 /* Dezenter Logout Button */
@@ -224,6 +226,66 @@ transform: translateY(-1px);
     transform: translateY(-1px) !important;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3) !important;
 }
+```
+
+### Sidebar Design Standards:
+```css
+/* Sidebar Title - Zentriert mit Icon */
+.sidebar-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* User-Info-Card in Sidebar */
+.user-info-card {
+    display: flex;
+    align-items: center; /* WICHTIG: Mittig ausrichten */
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Sidebar Avatar - IMG Element */
+#sidebar-user-avatar {
+    display: block !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    flex-shrink: 0 !important;
+}
+
+/* User Role Badge - NUR Text, kein Background */
+.user-role-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+```
+
+### User-Info-Card Struktur:
+```html
+<div class="user-info-card">
+    <img id="sidebar-user-avatar" class="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+    <div class="user-details">
+        <div class="user-name">Username</div>
+        <div class="user-role-badge">ADMIN</div>
+        <div class="user-full-name">Vorname Nachname</div>
+        <div class="user-birthdate">Geboren: DD.MM.YYYY</div>
+    </div>
+</div>
 ```
 
 ### Compact-Cards Design (Admin Dashboard):
@@ -382,6 +444,53 @@ transform: translateY(-1px);
         grid-template-columns: 1fr;
     }
 }
+```
+
+### JavaScript User-Info Loading:
+```javascript
+// Header User Info laden - MUSS in jeder Seite mit Navigation sein!
+async function loadHeaderUserInfo() {
+    const token = localStorage.getItem('token');
+    if (!token || token === 'test-mode') return;
+    
+    try {
+        // Username aus Token für sofortige Anzeige
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = payload.username || 'User';
+        }
+        
+        // Vollständiges Profil laden
+        const response = await fetch('/api/user/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const userData = await response.json();
+            const user = userData.user || userData;
+            
+            // Update mit vollständigem Namen
+            if (userNameElement && (user.first_name || user.last_name)) {
+                const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                userNameElement.textContent = fullName || user.username || payload.username;
+            }
+            
+            // Avatar update
+            const avatarElement = document.getElementById('user-avatar');
+            if (avatarElement && user.profile_picture) {
+                avatarElement.src = user.profile_picture;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+    }
+}
+
+// MUSS beim Seitenladen aufgerufen werden!
+document.addEventListener('DOMContentLoaded', () => {
+    loadHeaderUserInfo();
+});
 ```
 
 ---

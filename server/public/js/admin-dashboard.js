@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('No token found, but continuing for test purposes');
         token = 'test-mode';
     }
+    
+    // Load user info in header
+    loadHeaderUserInfo();
 
     // Event Listeners for forms
     const createEmployeeForm = document.getElementById('create-employee-form');
@@ -1803,6 +1806,77 @@ function showEmployeeModal() {
         } else {
             console.error('employee-modal not found');
             alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
+        }
+    }
+}
+
+// Function to load user info in the header
+async function loadHeaderUserInfo() {
+    try {
+        const token = localStorage.getItem('token');
+        if (token && token !== 'test-mode') {
+            // Parse JWT token to get user info
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                
+                // Update the username in header
+                const userNameElement = document.getElementById('user-name');
+                if (userNameElement) {
+                    userNameElement.textContent = payload.username || 'Admin';
+                }
+            } catch (e) {
+                console.error('Error parsing JWT token:', e);
+            }
+            
+            // Try to fetch full user profile for more details
+            try {
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    const user = userData.user || userData;
+                    
+                    // Update username with full name if available
+                    const userNameElement = document.getElementById('user-name');
+                    if (userNameElement) {
+                        if (user.first_name || user.last_name) {
+                            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                            userNameElement.textContent = fullName || user.username || 'Admin';
+                        }
+                    }
+                    
+                    // Update avatar if available
+                    const userAvatar = document.getElementById('user-avatar');
+                    if (userAvatar && user.profile_picture) {
+                        userAvatar.src = user.profile_picture;
+                    }
+                    
+                    // Also trigger unified navigation to update
+                    if (window.unifiedNav && typeof window.unifiedNav.loadFullUserProfile === 'function') {
+                        window.unifiedNav.loadFullUserProfile();
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching user profile:', err);
+                // Keep the JWT-based info as fallback
+            }
+        } else {
+            // No token or test mode, set default values
+            const userNameElement = document.getElementById('user-name');
+            if (userNameElement) {
+                userNameElement.textContent = 'Admin';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading header user info:', error);
+        // Set fallback values
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = 'Admin';
         }
     }
 }

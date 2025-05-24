@@ -273,6 +273,9 @@
             display: flex;
             flex-direction: column;
             gap: var(--spacing-md);
+            min-height: 0; /* Wichtig für Firefox */
+            max-height: 100%;
+            scroll-behavior: smooth;
         }
 
         .message {
@@ -286,12 +289,19 @@
             align-self: flex-end;
             flex-direction: row-reverse;
         }
+        
+        .message-bubble {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
 
         .message-avatar {
             width: 35px;
             height: 35px;
             border-radius: 50%;
             object-fit: cover;
+            flex-shrink: 0;
             flex-shrink: 0;
         }
         

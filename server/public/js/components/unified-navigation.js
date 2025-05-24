@@ -25,9 +25,56 @@ class UnifiedNavigation {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 this.currentUser = payload;
                 this.currentRole = payload.role;
+                
+                // Also try to load full user profile
+                this.loadFullUserProfile();
             } catch (error) {
                 console.error('Error parsing token:', error);
             }
+        }
+    }
+    
+    async loadFullUserProfile() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || token === 'test-mode') return;
+            
+            const response = await fetch('/api/user/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                const user = userData.user || userData;
+                
+                // Update user info card with full details
+                const sidebarUserName = document.getElementById('sidebar-user-name');
+                if (sidebarUserName) {
+                    sidebarUserName.textContent = user.username || this.currentUser?.username || 'User';
+                }
+                
+                const sidebarFullName = document.getElementById('sidebar-user-fullname');
+                if (sidebarFullName && (user.first_name || user.last_name)) {
+                    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                    sidebarFullName.textContent = fullName;
+                }
+                
+                const sidebarBirthdate = document.getElementById('sidebar-user-birthdate');
+                if (sidebarBirthdate && user.birthdate) {
+                    const birthdate = new Date(user.birthdate);
+                    sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
+                }
+                
+                // Update avatar if we have profile picture
+                const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+                if (sidebarAvatar && user.profile_picture) {
+                    sidebarAvatar.src = user.profile_picture;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading full user profile:', error);
         }
     }
 
@@ -161,11 +208,13 @@ class UnifiedNavigation {
                     </span>
                     Navigation
                 </h3>
-                <div class="user-info-card">
-                    <div class="user-avatar">${this.getUserInitials()}</div>
+                <div class="user-info-card" id="sidebar-user-info-card">
+                    <img id="sidebar-user-avatar" class="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
                     <div class="user-details">
-                        <div class="user-name">${this.currentUser?.username || 'User'}</div>
-                        <div class="user-role">${this.getRoleDisplay()}</div>
+                        <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
+                        <div class="user-role-badge">${this.getRoleDisplay()}</div>
+                        <div class="user-full-name" id="sidebar-user-fullname"></div>
+                        <div class="user-birthdate" id="sidebar-user-birthdate"></div>
                     </div>
                 </div>
                 <ul class="sidebar-menu">
@@ -387,43 +436,60 @@ const unifiedNavigationCSS = `
     .user-info-card {
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
         background: rgba(255, 255, 255, 0.05);
         border-radius: var(--radius-md);
         border: 1px solid rgba(255, 255, 255, 0.1);
         margin-bottom: var(--spacing-lg);
     }
 
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 0.9rem;
+    /* Avatar Styles für Sidebar - IMG Element wie im Header */
+    #sidebar-user-avatar,
+    .sidebar .user-avatar,
+    .user-info-card .user-avatar {
+        display: block !important;
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        object-fit: cover !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        flex-shrink: 0 !important;
     }
 
     .user-details {
         flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .user-name {
         font-weight: 600;
         color: var(--text-primary);
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         margin-bottom: 2px;
     }
 
-    .user-role {
+    .user-role-badge {
+        display: inline-block;
         font-size: 0.75rem;
-        color: var(--text-secondary);
+        color: var(--text-primary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .user-full-name {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    
+    .user-birthdate {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        opacity: 0.8;
     }
 
     .sidebar-menu {

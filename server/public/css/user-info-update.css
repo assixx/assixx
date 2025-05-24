@@ -8,18 +8,17 @@
     align-items: center !important;
     gap: 0.4rem !important;
     padding: 0.2rem 0.5rem !important;
-    background: rgba(255, 255, 255, 0.01) !important;
-    backdrop-filter: blur(5px) !important;
-    border-radius: 6px !important;
-    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-radius: 0 !important;
+    border: none !important;
     transition: all 0.3s ease !important;
 }
 
 #user-info:hover,
 .user-info:hover,
 .header .header-actions #user-info:hover {
-    background: rgba(255, 255, 255, 0.02) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
 }
 
 /* Remove all pseudo-elements that might create extra circles */

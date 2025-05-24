@@ -403,6 +403,8 @@ class ChatClient {
       return;
     }
     
+    console.log('📝 Displaying message:', message);
+    
     const isOwnMessage = message.sender_id == this.currentUser.id;
     
     // Check if this is a temporary message update
@@ -428,44 +430,51 @@ class ChatClient {
     });
 
     messageElement.innerHTML = `
-      <div class="message-header">
-        ${!isOwnMessage ? `
-          <img src="${message.profile_picture_url || '/images/default-avatar.svg'}" 
-               alt="Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.svg'">
-          <span class="message-sender">${message.sender_name || `${message.first_name || ''} ${message.last_name || ''}`.trim() || message.username || 'Unbekannt'}</span>
-        ` : ''}
-        <span class="message-time">${time}</span>
-        ${message.is_scheduled ? '<span class="scheduled-indicator">📅</span>' : ''}
+      ${!isOwnMessage ? `
+        <img src="${message.profile_picture_url || '/images/default-avatar.svg'}" 
+             alt="Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.svg'">
+      ` : ''}
+      <div class="message-bubble">
+        <div class="message-header">
+          ${!isOwnMessage ? `
+            <span class="message-sender">${message.sender_name || `${message.first_name || ''} ${message.last_name || ''}`.trim() || message.username || 'Unbekannt'}</span>
+          ` : ''}
+          <span class="message-time">${time}</span>
+          ${message.is_scheduled ? '<span class="scheduled-indicator">📅</span>' : ''}
+          ${isOwnMessage ? `
+            <div class="message-actions">
+              <button class="message-action" onclick="chatClient.deleteMessage('${message.id}')" title="Löschen">
+                <i class="fas fa-trash"></i>
+              </button>
+              <button class="message-action" onclick="chatClient.archiveMessage('${message.id}')" title="Archivieren">
+                <i class="fas fa-archive"></i>
+              </button>
+            </div>
+          ` : ''}
+        </div>
+        <div class="message-content">${this.formatMessageContent(message.content)}</div>
+        ${message.attachments ? this.renderAttachments(message.attachments) : ''}
         ${isOwnMessage ? `
-          <div class="message-actions">
-            <button class="message-action" onclick="chatClient.deleteMessage('${message.id}')" title="Löschen">
-              <i class="fas fa-trash"></i>
-            </button>
-            <button class="message-action" onclick="chatClient.archiveMessage('${message.id}')" title="Archivieren">
-              <i class="fas fa-archive"></i>
-            </button>
+          <div class="message-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; text-align: right;">
+            ${message.delivery_status === 'failed' ? 
+              '<span style="color: #f44336;">❌ Fehler</span>' :
+              message.delivery_status === 'sending' ?
+                '<span style="color: #9e9e9e;">⏳</span>' :
+                message.is_read ? 
+                  '<span style="color: #2196f3;">✓✓</span>' : 
+                  message.delivery_status === 'delivered' ?
+                    '<span style="color: #9e9e9e;">✓✓</span>' :
+                    '<span style="color: #9e9e9e;">✓</span>'
+            }
           </div>
         ` : ''}
       </div>
-      <div class="message-content">${this.formatMessageContent(message.content)}</div>
-      ${message.attachments ? this.renderAttachments(message.attachments) : ''}
-      ${isOwnMessage ? `
-        <div class="message-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; text-align: right;">
-          ${message.delivery_status === 'failed' ? 
-            '<span style="color: #f44336;">❌ Fehler</span>' :
-            message.delivery_status === 'sending' ?
-              '<span style="color: #9e9e9e;">⏳</span>' :
-              message.is_read ? 
-                '<span style="color: #2196f3;">✓✓</span>' : 
-                message.delivery_status === 'delivered' ?
-                  '<span style="color: #9e9e9e;">✓✓</span>' :
-                  '<span style="color: #9e9e9e;">✓</span>'
-          }
-        </div>
-      ` : ''}
     `;
     
     container.appendChild(messageElement);
+    
+    // Scroll zum neusten Nachrichten
+    this.scrollToBottom();
   }
 
   renderAttachments(attachments) {

@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     createAdminForm.addEventListener('submit', createAdmin);
     logoutBtn.addEventListener('click', logout);
 
+    // Load user info in header
+    loadHeaderUserInfo();
+    
     // Daten laden
     loadDashboardData();
     loadAdmins();
@@ -228,6 +231,61 @@ async function deleteAdmin(e) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
             window.location.href = '/';
+        }
+    }
+    
+    // Load user info in header
+    async function loadHeaderUserInfo() {
+        try {
+            const token = localStorage.getItem('token');
+            const userNameElement = document.getElementById('user-name');
+            const userAvatar = document.getElementById('user-avatar');
+            
+            if (!token || !userNameElement) return;
+            
+            // Parse JWT token to get basic user info
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userNameElement.textContent = payload.username || 'Root';
+            } catch (e) {
+                console.error('Error parsing JWT token:', e);
+            }
+            
+            // Try to fetch full user profile for more details
+            const response = await fetch('/api/user/profile', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                const user = userData.data || userData.user || userData;
+                
+                // Update username with full name if available
+                if (user.first_name || user.last_name) {
+                    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                    userNameElement.textContent = fullName || user.username || 'Root';
+                } else {
+                    userNameElement.textContent = user.username || 'Root';
+                }
+                
+                // Update avatar if available
+                if (userAvatar && user.profile_picture_url) {
+                    userAvatar.src = user.profile_picture_url;
+                    userAvatar.onerror = function() {
+                        this.src = '/images/default-avatar.svg';
+                    };
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user info:', error);
+            // Fallback to local storage
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const userName = document.getElementById('user-name');
+            if (userName) {
+                userName.textContent = user.username || 'Root';
+            }
         }
     }
 });
