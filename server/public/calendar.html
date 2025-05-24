@@ -12,6 +12,183 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
   <!-- Calendar spezifische Styles -->
   <link rel="stylesheet" href="/css/calendar.css">
+  <style>
+    /* Glassmorphismus Design-Standards */
+    
+    /* Dramatischer Hintergrund-Gradient */
+    body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+    }
+    
+    body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 25%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        pointer-events: none;
+        z-index: -1;
+    }
+    
+    /* Glassmorphismus für Header */
+    .header {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Glassmorphismus für Sidebar */
+    .sidebar {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                    inset -1px 0 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Glassmorphismus für Cards */
+    .card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    /* Calendar Container - Glassmorphismus */
+    #calendar {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+    }
+    
+    /* Calendar Events - Glassmorphismus */
+    .fc-event {
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Modal Overlays - Glassmorphismus */
+    .modal-overlay {
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+    }
+    
+    .modal-container {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    /* Form Controls mit Glassmorphismus */
+    .form-control, select, input[type="text"], input[type="date"], input[type="time"], textarea {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #fff;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, select:focus, input:focus, textarea:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15),
+                    inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+    }
+    
+    /* Buttons mit Glassmorphismus und Shine-Effekt */
+    .btn {
+        position: relative;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 70%
+        );
+        transform: rotate(45deg) translate(-70%, -70%);
+        transition: transform 0.6s;
+    }
+    
+    .btn:hover::after {
+        transform: rotate(45deg) translate(-30%, -30%);
+    }
+    
+    /* View Selector Buttons - Glassmorphismus */
+    .view-selector .btn {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    
+    .view-selector .btn.active {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+    }
+    
+    /* Filter Tags - Glassmorphismus */
+    .filter-tag {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: all 0.3s ease;
+    }
+    
+    .filter-tag.active {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+    }
+    
+    /* Animationen */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+  </style>
 </head>
 <body>
   <!-- Header -->

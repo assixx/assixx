@@ -8,6 +8,45 @@
     <link rel="stylesheet" href="/css/dashboard-theme.css">
     <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
     <style>
+        /* Glassmorphismus Design-Standards */
+        
+        /* Dramatischer Hintergrund-Gradient */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #000;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 25%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus für Header */
+        .header {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glassmorphismus für Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+        
         /* Survey-specific styles */
         .survey-container {
             padding: var(--spacing-xl);
@@ -44,10 +83,13 @@
         }
 
         .survey-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
+            animation: fadeInUp 0.6s ease-out;
             padding: var(--spacing-lg);
             transition: all 0.3s ease;
             cursor: pointer;

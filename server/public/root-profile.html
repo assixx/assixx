@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Root Profil - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Glassmorphismus Design-Standards */
+        
+        /* Dramatischer Hintergrund-Gradient */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #000;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 25%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus für Header */
+        .header {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glassmorphismus für Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Profil Container */
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 32px;
+            font-size: 2.5rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Glassmorphismus Cards */
+        .profile-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Profilbild Section */
+        .profile-picture-section {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .profile-picture-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            border: 3px solid rgba(0, 142, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-picture {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .profile-picture-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: var(--primary-color);
+            background: rgba(0, 142, 255, 0.1);
+        }
+        
+        .profile-picture-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        
+        /* Form Styling */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 8px;
+        }
+        
+        /* Form Controls mit Glassmorphismus */
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 142, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15),
+                        inset 0 1px 2px rgba(0, 0, 0, 0.2);
+            outline: none;
+        }
+        
+        .form-control:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Password Section */
+        .password-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+        
+        /* Buttons mit Glassmorphismus und Shine-Effekt */
+        .btn {
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+            border-color: rgba(0, 142, 255, 0.3);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-secondary);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg) translate(-70%, -70%);
+            transition: transform 0.6s;
+        }
+        
+        .btn:hover::after {
+            transform: rotate(45deg) translate(-30%, -30%);
+        }
+        
+        /* Success/Error Messages */
+        .alert {
+            padding: var(--spacing-md);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--spacing-md);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .alert-success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #4caf50;
+        }
+        
+        .alert-error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+        
+        /* Animationen */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .profile-picture-section {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/root-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        </a>
+        <div class="header-actions">
+            <span id="user-info" class="text-secondary">Root User</span>
+            <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+        </div>
+    </header>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Unified Sidebar Navigation -->
+        <aside class="sidebar">
+            <!-- Navigation wird durch unified-navigation.js injiziert -->
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="profile-container">
+                <h1>Mein Profil</h1>
+                
+                <!-- Success/Error Messages -->
+                <div id="message-container"></div>
+                
+                <!-- Profile Picture Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Profilbild</h2>
+                    <div class="profile-picture-section">
+                        <div class="profile-picture-container">
+                            <div id="profile-picture-display" class="profile-picture-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="profile-picture-actions">
+                            <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
+                                <i class="fas fa-camera"></i> Bild ändern
+                            </button>
+                            <button class="btn btn-secondary" id="remove-picture-btn" style="display: none;">
+                                <i class="fas fa-trash"></i> Bild entfernen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Personal Information Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Persönliche Informationen</h2>
+                    <form id="profile-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Benutzername</label>
+                                <input type="text" id="username" name="username" class="form-control" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">E-Mail</label>
+                                <input type="email" id="email" name="email" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Vorname</label>
+                                <input type="text" id="first_name" name="first_name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nachname</label>
+                                <input type="text" id="last_name" name="last_name" class="form-control">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Änderungen speichern
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Password Change Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Passwort ändern</h2>
+                    <form id="password-form">
+                        <div class="form-group">
+                            <label class="form-label">Aktuelles Passwort</label>
+                            <input type="password" id="current_password" name="current_password" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Neues Passwort</label>
+                            <input type="password" id="new_password" name="new_password" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Neues Passwort bestätigen</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-key"></i> Passwort ändern
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Font Awesome für Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- JavaScript -->
+    <script src="/js/components/unified-navigation.js"></script>
+    <script>
+        // Authentication Check
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        
+        // Decode JWT to get user info
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        const userInfo = parseJwt(token);
+        if (userInfo && userInfo.role !== 'root') {
+            window.location.href = '/login.html';
+        }
+        
+        // Display user info
+        document.getElementById('user-info').textContent = userInfo?.username || 'Root User';
+        
+        // Load current profile data
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const user = data.data;
+                    
+                    // Fill form fields
+                    document.getElementById('username').value = user.username || '';
+                    document.getElementById('email').value = user.email || '';
+                    document.getElementById('first_name').value = user.first_name || '';
+                    document.getElementById('last_name').value = user.last_name || '';
+                    
+                    // Load profile picture if exists
+                    if (user.profile_picture) {
+                        displayProfilePicture(user.profile_picture);
+                    }
+                } else {
+                    showMessage('Fehler beim Laden des Profils', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showMessage('Fehler beim Laden des Profils', 'error');
+            }
+        }
+        
+        // Profile form submission
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showMessage('Profil erfolgreich aktualisiert', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage(error.message || 'Fehler beim Aktualisieren', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showMessage('Fehler beim Aktualisieren des Profils', 'error');
+            }
+        });
+        
+        // Password form submission
+        document.getElementById('password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (newPassword !== confirmPassword) {
+                showMessage('Die Passwörter stimmen nicht überein', 'error');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/user/change-password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword: data.current_password,
+                        newPassword: data.new_password
+                    })
+                });
+                
+                if (response.ok) {
+                    showMessage('Passwort erfolgreich geändert', 'success');
+                    e.target.reset();
+                } else {
+                    const error = await response.json();
+                    showMessage(error.message || 'Fehler beim Ändern des Passworts', 'error');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                showMessage('Fehler beim Ändern des Passworts', 'error');
+            }
+        });
+        
+        // Profile picture upload
+        document.getElementById('profile-picture-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('profilePicture', file);
+            
+            try {
+                const response = await fetch('/api/user/profile-picture', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayProfilePicture(data.profilePicture);
+                    showMessage('Profilbild erfolgreich aktualisiert', 'success');
+                } else {
+                    showMessage('Fehler beim Hochladen des Profilbilds', 'error');
+                }
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                showMessage('Fehler beim Hochladen des Profilbilds', 'error');
+            }
+        });
+        
+        // Display profile picture
+        function displayProfilePicture(url) {
+            const container = document.getElementById('profile-picture-display');
+            container.innerHTML = `<img src="${url}" alt="Profilbild" class="profile-picture">`;
+            document.getElementById('remove-picture-btn').style.display = 'block';
+        }
+        
+        // Remove profile picture
+        document.getElementById('remove-picture-btn').addEventListener('click', async () => {
+            if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) return;
+            
+            try {
+                const response = await fetch('/api/user/profile-picture', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    document.getElementById('profile-picture-display').innerHTML = '<i class="fas fa-user"></i>';
+                    document.getElementById('remove-picture-btn').style.display = 'none';
+                    showMessage('Profilbild erfolgreich entfernt', 'success');
+                } else {
+                    showMessage('Fehler beim Entfernen des Profilbilds', 'error');
+                }
+            } catch (error) {
+                console.error('Error removing profile picture:', error);
+                showMessage('Fehler beim Entfernen des Profilbilds', 'error');
+            }
+        });
+        
+        // Show success/error messages
+        function showMessage(message, type) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `
+                <div class="alert alert-${type}">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                    ${message}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/login.html';
+        });
+        
+        // Load profile on page load
+        loadProfile();
+    </script>
+</body>
+</html>

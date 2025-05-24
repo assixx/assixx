@@ -48,7 +48,7 @@ class UnifiedNavigation {
                 { id: 'departments', icon: this.getSVGIcon('building'), label: 'Abteilungen', url: '#departments', section: 'departments' },
                 { id: 'teams', icon: this.getSVGIcon('team'), label: 'Teams', url: '#teams', section: 'teams' },
                 { id: 'settings', icon: this.getSVGIcon('settings'), label: 'Einstellungen', url: '#settings', section: 'settings' },
-                { id: 'features', icon: this.getSVGIcon('feature'), label: 'Feature Management', url: '/feature-management.html' }
+                { id: 'features', icon: this.getSVGIcon('feature'), label: 'Feature Management', url: '/admin/feature-management.html' }
             ],
             
             // Employee Navigation (9 Items)
@@ -69,7 +69,8 @@ class UnifiedNavigation {
                 { id: 'dashboard', icon: this.getSVGIcon('home'), label: 'Root Dashboard', url: '/root-dashboard.html' },
                 { id: 'admins', icon: this.getSVGIcon('admin'), label: 'Administratoren', url: '#admins', section: 'admins' },
                 { id: 'tenants', icon: this.getSVGIcon('building'), label: 'Firmen', url: '#tenants', section: 'tenants' },
-                { id: 'features', icon: this.getSVGIcon('feature'), label: 'Feature Management', url: '/feature-management.html' },
+                { id: 'features', icon: this.getSVGIcon('feature'), label: 'Features', url: '/root-features.html' },
+                { id: 'profile', icon: this.getSVGIcon('user'), label: 'Mein Profil', url: '/root-profile.html' },
                 { id: 'system', icon: this.getSVGIcon('settings'), label: 'System', url: '#system', section: 'system' }
             ]
         };

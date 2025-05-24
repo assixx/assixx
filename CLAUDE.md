@@ -163,6 +163,165 @@ transform: translateY(-1px);
 - IMMER inset shadow für Glaseffekt
 - ALLE Container mit fadeInUp Animation
 - Logo immer mit subtle-pulse
+- Header OHNE border-bottom (nur box-shadow)
+
+### Compact-Cards Design (Admin Dashboard):
+```css
+/* Compact-Card Container */
+.compact-card {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Hover-Effekt mit Top-Border */
+.compact-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.compact-card:hover::before {
+    opacity: 1;
+}
+
+.compact-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Card Header - Transparenter */
+.compact-card .card-header {
+    background: rgba(255, 255, 255, 0.01);
+    backdrop-filter: blur(10px);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px 10px 0 0;
+}
+
+/* Card Title mit Akzent-Strich */
+.compact-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.compact-card .card-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+    border-radius: 2px;
+}
+
+/* Content mit Flex */
+.compact-content {
+    padding: var(--spacing-lg);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* List Items - Besser lesbar */
+.compact-list {
+    margin: var(--spacing-md) 0;
+    flex: 1;
+}
+
+.compact-list .list-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.compact-list .list-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(0, 142, 255, 0.3);
+    transform: translateX(5px);
+    color: var(--text-primary);
+}
+
+/* Kompakter Button */
+.compact-card .btn-block {
+    width: 100%;
+    padding: 10px 16px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+    margin-bottom: var(--spacing-md);
+}
+
+/* View-All Link - Minimalistisch */
+.view-all-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: color 0.2s ease;
+    padding: 8px 0;
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.view-all-link:hover {
+    color: var(--primary-light);
+}
+
+.view-all-link .arrow {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+}
+
+.view-all-link:hover .arrow {
+    transform: translateX(3px);
+}
+
+/* Grid Layout - 4 Spalten */
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+    align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+    .admin-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+```
 
 ---
 
