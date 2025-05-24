@@ -39,10 +39,11 @@ chmod +x setup-wsl-ubuntu.sh && ./setup-wsl-ubuntu.sh
 - 📢 **Schwarzes Brett** - Ankündigungen mit Prioritäten, Tags und Lesebestätigungen
 - 📅 **Kalender-System** - Firmen-, Abteilungs- und Team-Events mit Teilnehmerverwaltung
 - 💡 **KVP-System** - Kontinuierlicher Verbesserungsprozess mit Bewertungen und Belohnungen
-- 💬 **Chat-System** - Echtzeit-Kommunikation mit Planungsfunktionen und Berechtigungen
+- 💬 **Chat-System** - Echtzeit-Kommunikation mit WebSocket, Emoji-Picker und Nachrichtensuche
 - ⏰ **Schichtplanung** - Erweiterte Personalplanung mit Templates und Tauschbörse
 - 🔐 **Feature-Management** - Modulare Aktivierung/Deaktivierung von Features pro Tenant
 - 📊 **Admin-Dashboard** - Umfassende Verwaltungstools mit Glassmorphismus-Design
+- 🎨 **Modernes UI/UX** - Einheitliches Glassmorphismus-Design mit kompaktem Header-Layout
 
 ### 🎯 **Zielgruppen:**
 
@@ -377,6 +378,8 @@ Database:    MySQL 8.0+ mit Multi-Tenant-Isolation
 Auth:        JWT mit Tenant-spezifischen Claims
 Real-time:   WebSocket für Chat und Benachrichtigungen
 Design:      Glassmorphismus mit responsivem Layout
+UI/UX:       Kompaktes Header-Design, transparente User-Info
+Icons:       Font Awesome 6 für einheitliche Iconographie
 ```
 
 ### 🗄️ **Datenbankschema:**
@@ -785,10 +788,13 @@ Assixx/
 - Schwarzes Brett mit Tags, Prioritäten und Lesebestätigungen
 - Kalender-System mit Multi-Level-Organisationsebenen
 - KVP-System mit Bewertungen und Belohnungssystem
-- Chat-System mit Echtzeit-Kommunikation und Planungsfunktionen
+- Chat-System mit Echtzeit-Kommunikation, Emoji-Picker und Nachrichtensuche
 - Schichtplanung mit Templates und Tauschbörse
 - Feature-Management-System mit modularer Aktivierung
 - E-Mail-Benachrichtigungen mit Templates und Queue-System
+- Einheitliches Glassmorphismus-Design mit kompaktem Header-Layout
+- Root-User Profile und Features Pages mit Frontend-Management
+- Optimierte Compact-Cards für Admin-Dashboard
 
 ### 🚧 **In Entwicklung:**
 - Progressive Web App (PWA) für Mobile-First

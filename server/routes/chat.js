@@ -179,11 +179,25 @@ router.get('/conversations', verifyToken, async (req, res) => {
         c.name as conversation_name,
         c.is_group,
         c.created_at,
+        c.is_active,
         CASE 
-          WHEN c.is_group = 1 THEN c.name
-          ELSE CONCAT(other_user.first_name, ' ', other_user.last_name)
+          WHEN c.is_group = 1 THEN COALESCE(c.name, 'Gruppenchat')
+          ELSE COALESCE(
+            (SELECT CONCAT(u.first_name, ' ', u.last_name) 
+             FROM conversation_participants cp2 
+             JOIN users u ON cp2.user_id = u.id 
+             WHERE cp2.conversation_id = c.id 
+             AND cp2.user_id != ? 
+             LIMIT 1),
+            'Unbekannter Benutzer'
+          )
         END as display_name,
-        other_user.profile_picture_url,
+        (SELECT u.profile_picture_url 
+         FROM conversation_participants cp2 
+         JOIN users u ON cp2.user_id = u.id 
+         WHERE cp2.conversation_id = c.id 
+         AND cp2.user_id != ? 
+         LIMIT 1) as profile_picture_url,
         (SELECT COUNT(*) FROM messages m 
          WHERE m.conversation_id = c.id 
          AND m.is_read = 0 
@@ -195,18 +209,15 @@ router.get('/conversations', verifyToken, async (req, res) => {
          WHERE m.conversation_id = c.id 
          ORDER BY m.created_at DESC LIMIT 1) as last_message_time
       FROM conversations c
-      LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
-      LEFT JOIN users other_user ON (
-        cp.user_id = other_user.id 
-        AND other_user.id != ? 
-        AND other_user.tenant_id = ?
-      )
+      INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
       WHERE cp.user_id = ?
-      AND c.tenant_id = ?
+      AND cp.tenant_id = ?
+      AND (c.is_active = 1 OR c.is_active IS NULL)
+      GROUP BY c.id
       ORDER BY last_message_time DESC
     `;
 
-    const [conversations] = await db.query(query, [userId, userId, tenantId, userId, tenantId]);
+    const [conversations] = await db.query(query, [userId, userId, userId, userId, tenantId]);
     res.json(conversations);
   } catch (error) {
     console.error('Fehler beim Abrufen der Unterhaltungen:', error);

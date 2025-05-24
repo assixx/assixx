@@ -10,11 +10,8 @@ class ChatClient {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
-    this.pendingFiles = [];
+    this.pendingFiles = []; // Files waiting to be sent with message
     this.searchQuery = '';
-    this.messageQueue = []; // Queue for messages sent while disconnected
-    
-    // Initialize emoji categories
     this.emojiCategories = {
       smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😇', '😉', '😊', '🙂', '🙃', '☺️', '😋', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '🥲', '🤪', '🤩', '🥳', '😎', '🥸', '🧐', '🤓', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'],
       gestures: ['👋', '🤚', '🖐️', '✋', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦻', '👂', '🦻', '👃', '🧠', '🦾', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '💘'],
@@ -30,15 +27,6 @@ class ChatClient {
   }
 
   async init() {
-    console.log('🚀 Initializing ChatClient...');
-    
-    // Check if token exists
-    if (!this.token) {
-      console.error('❌ No authentication token found');
-      window.location.href = '/login.html';
-      return;
-    }
-    
     await this.loadInitialData();
     this.connectWebSocket();
     this.initializeEventListeners();
@@ -47,9 +35,7 @@ class ChatClient {
 
   async loadInitialData() {
     try {
-      console.log('📡 Loading initial data...');
-      
-      // Load conversations
+      // Lade Unterhaltungen
       const response = await fetch('/api/chat/conversations', {
         headers: {
           'Authorization': `Bearer ${this.token}`,
@@ -57,15 +43,12 @@ class ChatClient {
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.ok) {
+        this.conversations = await response.json();
+        this.renderConversations();
       }
 
-      this.conversations = await response.json();
-      console.log(`✅ Loaded ${this.conversations.length} conversations`);
-      this.renderConversations();
-
-      // Load available users
+      // Lade verfügbare Benutzer
       const usersResponse = await fetch('/api/chat/users', {
         headers: {
           'Authorization': `Bearer ${this.token}`,
@@ -75,74 +58,55 @@ class ChatClient {
 
       if (usersResponse.ok) {
         this.availableUsers = await usersResponse.json();
-        console.log(`✅ Loaded ${this.availableUsers.length} available users`);
       }
 
     } catch (error) {
-      console.error('❌ Error loading initial data:', error);
+      console.error('Fehler beim Laden der initialen Daten:', error);
       this.showNotification('Fehler beim Laden der Chat-Daten', 'error');
     }
   }
 
   connectWebSocket() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('⚠️ WebSocket already connected');
       return;
     }
 
-    // Get the correct protocol and host
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/chat-ws?token=${this.token}`;
-    
-    console.log(`🔌 Connecting to WebSocket: ${wsUrl}`);
+    const wsUrl = `${protocol}//${window.location.host}/chat-ws?token=${this.token}`;
 
     try {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('✅ WebSocket connection established');
+        console.log('WebSocket-Verbindung hergestellt');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.updateConnectionStatus(true);
         
-        // Process any queued messages
-        this.processMessageQueue();
-        
-        // Rejoin current conversation
+        // Aktuelle Unterhaltung wieder beitreten
         if (this.currentConversationId) {
           this.joinConversation(this.currentConversationId);
         }
       };
 
       this.ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          console.log('📨 Received message:', message.type);
-          this.handleWebSocketMessage(message);
-        } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error);
-        }
+        this.handleWebSocketMessage(JSON.parse(event.data));
       };
 
-      this.ws.onclose = (event) => {
-        console.log(`🔌 WebSocket connection closed: ${event.code} - ${event.reason}`);
+      this.ws.onclose = () => {
+        console.log('WebSocket-Verbindung getrennt');
         this.isConnected = false;
         this.updateConnectionStatus(false);
-        
-        // Only attempt reconnect if not a normal closure
-        if (event.code !== 1000) {
-          this.attemptReconnect();
-        }
+        this.attemptReconnect();
       };
 
       this.ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.error('WebSocket-Fehler:', error);
         this.updateConnectionStatus(false);
       };
 
     } catch (error) {
-      console.error('❌ Error connecting WebSocket:', error);
+      console.error('Fehler beim Verbinden des WebSocket:', error);
       this.attemptReconnect();
     }
   }
@@ -152,36 +116,20 @@ class ChatClient {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
       
-      console.log(`🔄 Reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
+      console.log(`Verbindungsversuch ${this.reconnectAttempts} in ${delay}ms`);
       
       setTimeout(() => {
         this.connectWebSocket();
       }, delay);
     } else {
-      console.error('❌ Max reconnection attempts reached');
       this.showNotification('Verbindung zum Chat-Server verloren. Bitte Seite neu laden.', 'error');
     }
   }
 
-  processMessageQueue() {
-    if (this.messageQueue.length === 0) return;
-    
-    console.log(`📤 Processing ${this.messageQueue.length} queued messages`);
-    
-    while (this.messageQueue.length > 0) {
-      const message = this.messageQueue.shift();
-      if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(message));
-      }
-    }
-  }
-
   handleWebSocketMessage(message) {
-    console.log('🔍 Processing message type:', message.type);
-    
     switch (message.type) {
       case 'connection_established':
-        console.log('✅ Chat connection confirmed');
+        console.log('Chat-Verbindung bestätigt');
         break;
       case 'new_message':
         this.handleNewMessage(message.data);
@@ -207,52 +155,36 @@ class ChatClient {
       case 'message_delivered':
         this.handleMessageDelivered(message.data);
         break;
-      case 'pong':
-        console.log('🏓 Received pong');
-        break;
       case 'error':
-        console.error('❌ Server error:', message.data.message);
         this.showNotification(message.data.message, 'error');
         break;
       default:
-        console.warn('⚠️ Unknown message type:', message.type);
+        console.log('Unbekannte WebSocket-Nachricht:', message);
     }
   }
 
   handleNewMessage(messageData) {
-    console.log('💬 New message received:', messageData);
-    
-    // Check if message already exists to prevent duplicates
-    const existingMessage = document.querySelector(`[data-message-id="${messageData.id}"]`);
-    if (existingMessage) {
-      console.log('⚠️ Message already exists, skipping duplicate');
-      return;
-    }
-    
     // Remove temporary message if this is our own message
     if (messageData.sender_id == this.currentUser.id) {
       const tempMessages = document.querySelectorAll('[data-temp-id]');
-      tempMessages.forEach(msg => {
-        console.log('🗑️ Removing temporary message');
-        msg.remove();
-      });
+      tempMessages.forEach(msg => msg.remove());
     }
     
-    // Add message to current conversation
+    // Nachricht zur aktuellen Unterhaltung hinzufügen
     if (messageData.conversation_id == this.currentConversationId) {
       this.displayMessage(messageData);
       this.scrollToBottom();
       
-      // Mark as read if not own message
+      // Nachricht als gelesen markieren wenn nicht eigene Nachricht
       if (messageData.sender_id != this.currentUser.id) {
         this.markMessageAsRead(messageData.id);
       }
     }
 
-    // Update conversation list
+    // Unterhaltungsliste aktualisieren
     this.updateConversationInList(messageData);
     
-    // Show notification if not current conversation
+    // Benachrichtigung anzeigen wenn nicht aktuelle Unterhaltung
     if (messageData.conversation_id != this.currentConversationId && 
         messageData.sender_id != this.currentUser.id) {
       this.showNotification(`Neue Nachricht von ${messageData.sender_name}`, 'info');
@@ -262,23 +194,18 @@ class ChatClient {
   async sendMessage() {
     const input = document.getElementById('messageInput');
     const content = input.value.trim();
-    const scheduling = document.getElementById('messageScheduling')?.value || 'immediate';
+    const scheduling = document.getElementById('messageScheduling').value;
     
-    if ((!content && this.pendingFiles.length === 0) || !this.currentConversationId) {
-      console.log('⚠️ Cannot send empty message or no conversation selected');
-      return;
-    }
+    if ((!content && this.pendingFiles.length === 0) || !this.currentConversationId) return;
 
-    console.log('📤 Sending message...');
-
-    // Send via HTTP API if files attached or scheduled
+    // Über HTTP API senden wenn Dateien angehängt sind oder geplante Nachrichten
     if (this.pendingFiles.length > 0 || scheduling !== 'immediate') {
       try {
         const formData = new FormData();
         formData.append('content', content);
         formData.append('scheduled_delivery', scheduling);
         
-        // Attach files
+        // Dateien anhängen
         this.pendingFiles.forEach(file => {
           formData.append('attachments', file);
         });
@@ -299,32 +226,30 @@ class ChatClient {
             this.showNotification('Nachricht gesendet', 'success');
           }
           
-          // Clear pending files
+          // Pending files löschen
           this.pendingFiles = [];
           this.updateFilePreview();
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
         }
       } catch (error) {
-        console.error('❌ Error sending message:', error);
+        console.error('Fehler beim Senden der Nachricht:', error);
         this.showNotification('Fehler beim Senden der Nachricht', 'error');
       }
     } else {
-      // Send via WebSocket for immediate delivery without files
+      // Über WebSocket senden für sofortige Zustellung ohne Dateien
       const messageData = {
         type: 'send_message',
         data: {
           conversationId: this.currentConversationId,
-          content: content
+          content: content,
+          scheduled_delivery: scheduling
         }
       };
       
-      if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+      if (this.isConnected) {
         try {
           this.ws.send(JSON.stringify(messageData));
-          console.log('✅ Message sent via WebSocket');
           
-          // Show temporary message
+          // Temporäre Nachricht anzeigen während auf Server-Antwort gewartet wird
           const tempMessage = {
             id: 'temp-' + Date.now(),
             conversation_id: this.currentConversationId,
@@ -343,14 +268,11 @@ class ChatClient {
           this.displayMessage(tempMessage);
           this.scrollToBottom();
         } catch (error) {
-          console.error('❌ Error sending via WebSocket:', error);
+          console.error('Fehler beim Senden über WebSocket:', error);
           this.showNotification('Fehler beim Senden der Nachricht', 'error');
         }
       } else {
-        // Queue message if not connected
-        console.log('⚠️ WebSocket not connected, queueing message');
-        this.messageQueue.push(messageData);
-        this.showNotification('Nachricht wird gesendet, sobald die Verbindung wiederhergestellt ist', 'warning');
+        this.showNotification('Keine Verbindung zum Chat-Server', 'error');
       }
     }
 
@@ -360,8 +282,6 @@ class ChatClient {
 
   async loadMessages(conversationId) {
     try {
-      console.log(`📥 Loading messages for conversation ${conversationId}`);
-      
       const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${this.token}`,
@@ -371,26 +291,19 @@ class ChatClient {
 
       if (response.ok) {
         const messages = await response.json();
-        console.log(`✅ Loaded ${messages.length} messages`);
         this.displayMessages(messages);
         this.scrollToBottom();
-      } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('❌ Error loading messages:', error);
+      console.error('Fehler beim Laden der Nachrichten:', error);
       this.showNotification('Fehler beim Laden der Nachrichten', 'error');
     }
   }
 
   displayMessages(messages) {
     const container = document.getElementById('messagesContainer');
-    if (!container) {
-      console.error('❌ Messages container not found');
-      return;
-    }
-    
     container.innerHTML = '';
+    
     messages.forEach(message => {
       this.displayMessage(message);
     });
@@ -398,11 +311,6 @@ class ChatClient {
 
   displayMessage(message) {
     const container = document.getElementById('messagesContainer');
-    if (!container) {
-      console.error('❌ Messages container not found');
-      return;
-    }
-    
     const isOwnMessage = message.sender_id == this.currentUser.id;
     
     // Check if this is a temporary message update
@@ -410,6 +318,7 @@ class ChatClient {
     const existingMessage = tempId ? container.querySelector(`[data-temp-id="${tempId}"]`) : null;
     
     if (existingMessage) {
+      // Remove temporary message when real message arrives
       existingMessage.remove();
     }
     
@@ -528,39 +437,18 @@ class ChatClient {
   }
 
   formatMessageContent(content) {
+    // Sicherheitscheck für content
     if (!content || typeof content !== 'string') {
       return '';
     }
     
-    // Escape HTML to prevent XSS
-    const escapeHtml = (text) => {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return text.replace(/[&<>"']/g, m => map[m]);
-    };
-    
-    // Escape content first
-    let formatted = escapeHtml(content);
-    
-    // Convert URLs to links
+    // Einfache URL-Erkennung und Verlinkung
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-    
-    return formatted;
+    return content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
   }
 
   renderConversations() {
     const container = document.getElementById('conversationsList');
-    if (!container) {
-      console.error('❌ Conversations list container not found');
-      return;
-    }
-    
     container.innerHTML = '';
 
     this.conversations.forEach(conversation => {
@@ -585,7 +473,7 @@ class ChatClient {
               <i class="fas fa-users"></i>
             </div>` :
             `<img src="${conversation.profile_picture_url || '/images/default-avatar.svg'}" 
-                 alt="Avatar" onerror="this.src='/images/default-avatar.svg'">
+                 alt="Avatar">
              <span class="status-indicator ${conversation.user_status || 'offline'}" 
                    data-user-status="${conversation.other_user_id}"
                    style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--background-primary); background: ${conversation.user_status === 'online' ? '#4caf50' : '#9e9e9e'};"
@@ -596,7 +484,7 @@ class ChatClient {
         <div class="conversation-info">
           <div class="conversation-name">
             ${conversation.is_group ? '<i class="fas fa-users" style="font-size: 0.8rem; margin-right: 4px;"></i>' : ''}
-            ${conversation.display_name || 'Unbekannt'}
+            ${conversation.display_name}
           </div>
           <div class="conversation-last-message">${conversation.last_message || 'Keine Nachrichten'}</div>
         </div>
@@ -614,14 +502,12 @@ class ChatClient {
   }
 
   async selectConversation(conversationId) {
-    console.log(`📌 Selecting conversation ${conversationId}`);
-    
-    // Remove previous selection
+    // Vorherige Auswahl entfernen
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.classList.remove('active');
     });
 
-    // Mark new selection
+    // Neue Auswahl markieren
     const selectedItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
     if (selectedItem) {
       selectedItem.classList.add('active');
@@ -654,13 +540,13 @@ class ChatClient {
       }
     }
     
-    // Join conversation
+    // Unterhaltung beitreten
     this.joinConversation(conversationId);
     
-    // Load messages
+    // Nachrichten laden
     await this.loadMessages(conversationId);
     
-    // Show chat area
+    // Chat-Bereich anzeigen
     const chatArea = document.getElementById('chatArea');
     const noChatSelected = document.getElementById('noChatSelected');
     
@@ -669,27 +555,33 @@ class ChatClient {
   }
 
   joinConversation(conversationId) {
-    if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-      console.log(`👋 Joining conversation ${conversationId}`);
+    if (this.isConnected) {
       this.ws.send(JSON.stringify({
         type: 'join_conversation',
         data: { conversationId }
       }));
-    } else {
-      console.log('⚠️ Cannot join conversation - WebSocket not connected');
     }
   }
 
   showNewConversationModal() {
-    console.log('📋 Opening new conversation modal');
+    console.log('📋 showNewConversationModal aufgerufen');
     
     const modal = document.getElementById('newConversationModal');
     const usersList = document.getElementById('availableUsersList');
     const groupChatOptions = document.getElementById('groupChatOptions');
     const groupChatName = document.getElementById('groupChatName');
     
-    if (!modal || !usersList) {
-      console.error('❌ Modal elements not found');
+    console.log('Modal Element gefunden:', !!modal);
+    console.log('UsersList Element gefunden:', !!usersList);
+    console.log('Verfügbare Benutzer:', this.availableUsers.length);
+    
+    if (!modal) {
+      console.error('❌ Modal nicht gefunden!');
+      return;
+    }
+    
+    if (!usersList) {
+      console.error('❌ UsersList nicht gefunden!');
       return;
     }
     
@@ -697,7 +589,7 @@ class ChatClient {
     if (groupChatName) groupChatName.value = '';
     if (groupChatOptions) groupChatOptions.style.display = 'none';
     
-    // Show available users
+    // Verfügbare Benutzer anzeigen
     usersList.innerHTML = '';
     this.availableUsers.forEach(user => {
       const userElement = document.createElement('div');
@@ -720,7 +612,7 @@ class ChatClient {
       usersList.appendChild(userElement);
     });
     
-    // Event listener for checkbox changes
+    // Event listener für Checkbox-Änderungen
     usersList.addEventListener('change', (e) => {
       if (e.target.classList.contains('user-checkbox')) {
         const checkedCount = usersList.querySelectorAll('.user-checkbox:checked').length;
@@ -730,8 +622,9 @@ class ChatClient {
       }
     });
 
-    modal.style.display = 'flex';
-    console.log('✅ Modal opened');
+    console.log('👥 Benutzer hinzugefügt, Modal wird angezeigt...');
+    modal.style.display = 'block';
+    console.log('✅ Modal angezeigt');
   }
 
   async createNewConversation() {
@@ -746,8 +639,6 @@ class ChatClient {
     const isGroup = selectedUsers.length > 1;
     const groupNameInput = document.getElementById('groupChatName');
     const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
-
-    console.log('🆕 Creating new conversation...');
 
     try {
       const response = await fetch('/api/chat/conversations', {
@@ -765,31 +656,26 @@ class ChatClient {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Conversation created:', result);
         this.showNotification(isGroup ? 'Gruppenchat erfolgreich erstellt' : 'Unterhaltung erfolgreich erstellt', 'success');
         this.closeModal('newConversationModal');
         
-        // Reload conversations
+        // Unterhaltungen neu laden
         await this.loadInitialData();
         
-        // Select new conversation
+        // Neue Unterhaltung auswählen
         this.selectConversation(result.id);
-      } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('❌ Error creating conversation:', error);
+      console.error('Fehler beim Erstellen der Unterhaltung:', error);
       this.showNotification('Fehler beim Erstellen der Unterhaltung', 'error');
     }
   }
 
   initializeEventListeners() {
-    console.log('🎧 Initializing event listeners...');
-    
-    // Message input
+    // Nur Event-Listener für Message-Input (andere werden in HTML hinzugefügt)
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
-      // Enter key to send
+      // Enter-Taste zum Senden
       messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -797,14 +683,14 @@ class ChatClient {
         }
       });
 
-      // Typing indicator
+      // Typing-Indikator
       messageInput.addEventListener('input', () => {
         this.handleTyping();
         this.resizeTextarea();
       });
     }
 
-    // File upload handler
+    // File-Upload Handler
     const fileInput = document.getElementById('fileInput');
     const attachmentBtn = document.getElementById('attachmentBtn');
     
@@ -819,14 +705,15 @@ class ChatClient {
       fileInput.addEventListener('change', async (event) => {
         const files = event.target.files;
         if (files.length > 0) {
-          console.log('📎 Files selected:', files);
+          console.log('📎 Dateien ausgewählt:', files);
           await this.handleFileUpload(files);
+          // Reset input
           fileInput.value = '';
         }
       });
     }
     
-    // Emoji picker handler
+    // Emoji Picker Handler
     const emojiBtn = document.getElementById('emojiBtn');
     if (emojiBtn) {
       emojiBtn.addEventListener('click', (e) => {
@@ -835,7 +722,7 @@ class ChatClient {
       });
     }
     
-    // Emoji category handlers
+    // Emoji Category Handlers
     const emojiCategories = document.querySelectorAll('.emoji-category');
     emojiCategories.forEach(category => {
       category.addEventListener('click', (e) => {
@@ -872,41 +759,29 @@ class ChatClient {
         this.deleteCurrentConversation();
       });
     }
-    
-    // Periodic connection check
-    setInterval(() => {
-      if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
-          type: 'ping',
-          data: { timestamp: new Date().toISOString() }
-        }));
-      }
-    }, 30000); // Every 30 seconds
   }
 
   handleTyping() {
     if (!this.currentConversationId || !this.isConnected) return;
 
-    // Send typing start
+    // Typing-Start senden
     this.ws.send(JSON.stringify({
       type: 'typing_start',
       data: { conversationId: this.currentConversationId }
     }));
 
-    // Timer for typing stop
+    // Timer für Typing-Stop
     clearTimeout(this.typingTimer);
     this.typingTimer = setTimeout(() => {
-      if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
-          type: 'typing_stop',
-          data: { conversationId: this.currentConversationId }
-        }));
-      }
+      this.ws.send(JSON.stringify({
+        type: 'typing_stop',
+        data: { conversationId: this.currentConversationId }
+      }));
     }, 2000);
   }
 
   markMessageAsRead(messageId) {
-    if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+    if (this.isConnected) {
       this.ws.send(JSON.stringify({
         type: 'mark_read',
         data: { messageId }
@@ -916,17 +791,13 @@ class ChatClient {
 
   resizeTextarea() {
     const textarea = document.getElementById('messageInput');
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    }
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
   }
 
   scrollToBottom() {
     const container = document.getElementById('messagesContainer');
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
+    container.scrollTop = container.scrollHeight;
   }
 
   updateConnectionStatus(connected) {
@@ -935,7 +806,7 @@ class ChatClient {
       indicator.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
       indicator.textContent = connected ? 'Verbunden' : 'Getrennt';
     }
-    console.log(`🔌 Connection status: ${connected ? 'Connected' : 'Disconnected'}`);
+    console.log(`WebSocket Status: ${connected ? 'Verbunden' : 'Getrennt'}`);
   }
 
   formatSchedulingTime(scheduling) {
@@ -947,51 +818,33 @@ class ChatClient {
   }
 
   showNotification(message, type = 'info') {
-    console.log(`🔔 ${type.toUpperCase()}: ${message}`);
-    
-    // Create notification element
+    // Einfache Benachrichtigung - kann später durch Toast-System ersetzt werden
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: ${type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : type === 'success' ? '#4caf50' : '#2196f3'};
-      color: white;
-      padding: 16px 24px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 9999;
-      animation: slideIn 0.3s ease-out;
-    `;
     notification.textContent = message;
     
     document.body.appendChild(notification);
     
     setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease-out';
-      setTimeout(() => notification.remove(), 300);
+      notification.remove();
     }, 5000);
   }
 
   closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.style.display = 'none';
-    }
+    document.getElementById(modalId).style.display = 'none';
   }
 
   startTypingTimer() {
-    // Placeholder for typing timer initialization
+    // Placeholder für Typing-Timer-Initialisierung
   }
 
   updateConversationInList(messageData) {
-    // Update conversation in list
+    // Unterhaltung in der Liste aktualisieren
     const conversation = this.conversations.find(c => c.id == messageData.conversation_id);
     if (conversation) {
       conversation.last_message = messageData.content;
       conversation.last_message_time = messageData.created_at;
-      if (messageData.sender_id != this.currentUser.id && messageData.conversation_id != this.currentConversationId) {
+      if (messageData.sender_id != this.currentUser.id) {
         conversation.unread_count = (conversation.unread_count || 0) + 1;
       }
       this.renderConversations();
@@ -999,9 +852,8 @@ class ChatClient {
   }
 
   showTypingIndicator(data) {
+    // Typing-Indikator anzeigen
     const container = document.getElementById('messagesContainer');
-    if (!container) return;
-    
     const existingIndicator = document.getElementById(`typing-${data.userId}`);
     
     if (!existingIndicator && data.conversationId == this.currentConversationId) {
@@ -1039,7 +891,8 @@ class ChatClient {
   }
 
   handleUserStatusChange(data) {
-    console.log(`👤 User ${data.userId} is now ${data.status}`);
+    // Benutzer-Status in der UI aktualisieren
+    console.log(`Benutzer ${data.userId} ist jetzt ${data.status}`);
     
     // Update user status in availableUsers
     const user = this.availableUsers.find(u => u.id === data.userId);
@@ -1047,13 +900,12 @@ class ChatClient {
       user.online_status = data.status;
     }
     
-    // Update status indicator in conversation list
-    const statusIndicators = document.querySelectorAll(`[data-user-status="${data.userId}"]`);
-    statusIndicators.forEach(indicator => {
-      indicator.className = `status-indicator ${data.status}`;
-      indicator.style.background = data.status === 'online' ? '#4caf50' : '#9e9e9e';
-      indicator.title = data.status === 'online' ? 'Online' : 'Offline';
-    });
+    // Update status indicator in conversation list if exists
+    const statusIndicator = document.querySelector(`[data-user-status="${data.userId}"]`);
+    if (statusIndicator) {
+      statusIndicator.className = `status-indicator ${data.status}`;
+      statusIndicator.title = data.status === 'online' ? 'Online' : 'Offline';
+    }
   }
 
   handleScheduledMessageDelivered(messageData) {
@@ -1082,11 +934,9 @@ class ChatClient {
           setTimeout(() => messageElement.remove(), 300);
         }
         this.showNotification('Nachricht gelöscht', 'success');
-      } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('❌ Error deleting message:', error);
+      console.error('Fehler beim Löschen der Nachricht:', error);
       this.showNotification('Fehler beim Löschen der Nachricht', 'error');
     }
   }
@@ -1107,11 +957,9 @@ class ChatClient {
           messageElement.classList.add('archived');
         }
         this.showNotification('Nachricht archiviert', 'success');
-      } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
-      console.error('❌ Error archiving message:', error);
+      console.error('Fehler beim Archivieren der Nachricht:', error);
       this.showNotification('Fehler beim Archivieren der Nachricht', 'error');
     }
   }
@@ -1125,28 +973,28 @@ class ChatClient {
     ];
     
     for (const file of files) {
-      // Check size
+      // Größe prüfen
       if (file.size > maxFileSize) {
         this.showNotification(`Datei ${file.name} ist zu groß (max. 10MB)`, 'error');
         continue;
       }
       
-      // Check type
+      // Typ prüfen
       if (!allowedTypes.includes(file.type)) {
         this.showNotification(`Dateityp ${file.type} nicht erlaubt`, 'error');
         continue;
       }
       
-      // Add to pending files
+      // Datei zur Liste hinzufügen
       this.pendingFiles.push(file);
     }
     
-    // Update preview
+    // Vorschau aktualisieren
     this.updateFilePreview();
   }
   
   updateFilePreview() {
-    // Remove old preview
+    // Entfernen Sie alte Vorschau
     const existingPreview = document.getElementById('file-preview');
     if (existingPreview) {
       existingPreview.remove();
@@ -1154,7 +1002,7 @@ class ChatClient {
     
     if (this.pendingFiles.length === 0) return;
     
-    // Create new preview
+    // Neue Vorschau erstellen
     const previewContainer = document.createElement('div');
     previewContainer.id = 'file-preview';
     previewContainer.className = 'file-preview-container';
@@ -1183,7 +1031,7 @@ class ChatClient {
         font-size: 0.85rem;
       `;
       
-      // Icon based on file type
+      // Icon basierend auf Dateityp
       let icon = '📎';
       if (file.type.startsWith('image/')) icon = '🖼️';
       else if (file.type === 'application/pdf') icon = '📄';
@@ -1205,12 +1053,10 @@ class ChatClient {
       previewContainer.appendChild(filePreview);
     });
     
-    // Insert preview above input area
+    // Vorschau über dem Input-Bereich einfügen
     const inputContainer = document.querySelector('.message-input-container');
     const inputWrapper = document.querySelector('.message-input-wrapper');
-    if (inputContainer && inputWrapper) {
-      inputContainer.insertBefore(previewContainer, inputWrapper);
-    }
+    inputContainer.insertBefore(previewContainer, inputWrapper);
   }
   
   removeFile(index) {
@@ -1219,12 +1065,11 @@ class ChatClient {
   }
   
   handleMessageSent(data) {
-    console.log('✅ Message sent confirmation:', data);
-    
     // Update temporary message with real message ID
     const tempMessages = document.querySelectorAll('[data-temp-id]');
     
     if (tempMessages.length > 0) {
+      // Use the first temporary message (most recent)
       const messageElement = tempMessages[0];
       messageElement.dataset.messageId = data.messageId;
       delete messageElement.dataset.tempId;
@@ -1237,8 +1082,6 @@ class ChatClient {
   }
   
   handleMessageDelivered(data) {
-    console.log('✅ Message delivered:', data);
-    
     // Update message status to delivered
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
@@ -1251,8 +1094,6 @@ class ChatClient {
 
   toggleEmojiPicker() {
     const emojiPicker = document.getElementById('emojiPicker');
-    if (!emojiPicker) return;
-    
     if (emojiPicker.style.display === 'none' || !emojiPicker.style.display) {
       emojiPicker.style.display = 'flex';
       this.showEmojiCategory('smileys');
@@ -1263,8 +1104,6 @@ class ChatClient {
   
   showEmojiCategory(category) {
     const emojiContent = document.getElementById('emojiContent');
-    if (!emojiContent) return;
-    
     const emojis = this.emojiCategories[category] || [];
     
     emojiContent.innerHTML = '';
@@ -1281,8 +1120,6 @@ class ChatClient {
   
   insertEmoji(emoji) {
     const messageInput = document.getElementById('messageInput');
-    if (!messageInput) return;
-    
     const cursorPos = messageInput.selectionStart;
     const textBefore = messageInput.value.substring(0, cursorPos);
     const textAfter = messageInput.value.substring(cursorPos);
@@ -1335,10 +1172,7 @@ class ChatClient {
   
   async searchMessages(query) {
     if (!query || query.length < 2) {
-      const resultsContainer = document.getElementById('searchResults');
-      if (resultsContainer) {
-        resultsContainer.innerHTML = '';
-      }
+      document.getElementById('searchResults').innerHTML = '';
       return;
     }
     
@@ -1355,13 +1189,12 @@ class ChatClient {
         this.displaySearchResults(results);
       }
     } catch (error) {
-      console.error('❌ Error searching:', error);
+      console.error('Fehler bei der Suche:', error);
     }
   }
   
   displaySearchResults(results) {
     const resultsContainer = document.getElementById('searchResults');
-    if (!resultsContainer) return;
     
     if (!results || results.length === 0) {
       resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary);">Keine Ergebnisse gefunden</div>';
@@ -1401,10 +1234,10 @@ class ChatClient {
       });
       
       if (response.ok) {
-        console.log('✅ Reaction added');
+        // Reaction will be updated via WebSocket
       }
     } catch (error) {
-      console.error('❌ Error adding reaction:', error);
+      console.error('Fehler beim Hinzufügen der Reaktion:', error);
     }
   }
   
@@ -1427,7 +1260,6 @@ class ChatClient {
       });
       
       if (response.ok) {
-        console.log('✅ Conversation deleted');
         this.showNotification('Unterhaltung gelöscht', 'success');
         
         // Remove from conversations list
@@ -1436,97 +1268,38 @@ class ChatClient {
         
         // Update UI
         this.renderConversations();
-        const messagesContainer = document.getElementById('messagesContainer');
-        if (messagesContainer) {
-          messagesContainer.innerHTML = `
-            <div class="empty-chat" id="noChatSelected">
-              <div class="empty-chat-icon">
-                <i class="fas fa-comments"></i>
-              </div>
-              <h3>Willkommen im Chat</h3>
-              <p>Wählen Sie eine Unterhaltung aus der Liste oder starten Sie eine neue Nachricht.</p>
+        document.getElementById('messagesContainer').innerHTML = `
+          <div class="empty-chat" id="noChatSelected">
+            <div class="empty-chat-icon">
+              <i class="fas fa-comments"></i>
             </div>
-          `;
-        }
-        
-        const chatArea = document.getElementById('chatArea');
-        const chatHeader = document.getElementById('chat-header');
-        if (chatArea) chatArea.style.display = 'none';
-        if (chatHeader) chatHeader.style.display = 'none';
+            <h3>Willkommen im Chat</h3>
+            <p>Wählen Sie eine Unterhaltung aus der Liste oder starten Sie eine neue Nachricht.</p>
+          </div>
+        `;
+        document.getElementById('chatArea').style.display = 'none';
+        document.getElementById('chat-header').style.display = 'none';
       } else {
         const error = await response.json();
         this.showNotification(error.message || 'Fehler beim Löschen der Unterhaltung', 'error');
       }
     } catch (error) {
-      console.error('❌ Error deleting conversation:', error);
+      console.error('Fehler beim Löschen der Unterhaltung:', error);
       this.showNotification('Fehler beim Löschen der Unterhaltung', 'error');
     }
   }
 }
 
-// Initialize chat client when page loads
+// Chat-Client initialisieren wenn Seite geladen ist
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📄 DOM loaded, initializing chat client...');
   window.chatClient = new ChatClient();
   
-  // Add CSS for animations
+  // Add CSS for highlight animation
   const style = document.createElement('style');
   style.textContent = `
     @keyframes highlight {
       0% { background-color: rgba(33, 150, 243, 0.3); }
       100% { background-color: transparent; }
-    }
-    
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-    
-    @keyframes slideOut {
-      from {
-        transform: translateX(0);
-        opacity: 1;
-      }
-      to {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-    }
-    
-    .typing-dots {
-      display: inline-flex;
-      gap: 4px;
-    }
-    
-    .typing-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-secondary);
-      animation: typingDot 1.5s infinite;
-    }
-    
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-    
-    .typing-dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-    
-    @keyframes typingDot {
-      0%, 60%, 100% {
-        opacity: 0.3;
-      }
-      30% {
-        opacity: 1;
-      }
     }
   `;
   document.head.appendChild(style);

@@ -101,6 +101,9 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - [x] Nachrichtensuche mit Live-Filter
    - [x] Emoji-Picker mit 8 Kategorien
    - [x] Verbesserte Mobile Responsiveness
+   - [x] **NEU:** Bug-Fixes für undefined Chats und leere Nachrichten
+   - [x] **NEU:** Duplikat-Nachrichten-Prävention
+   - [x] **NEU:** Verbesserte Benutzer-Namen-Anzeige
    - [ ] Push-Benachrichtigungen
    - [ ] Nachrichtenreaktionen
    - [ ] Verschlüsselte Nachrichten
@@ -247,6 +250,40 @@ Assixx wird eine vollständige SaaS-Plattform für Industriefirmen, die modular 
    - [ ] Dokumenten-Upload-Limits
    - [ ] E-Mail-Kontingente
    - [ ] Automatische Upgrades bei Überschreitung
+
+## UI/UX Improvements ✅ IMPLEMENTIERT
+
+### Glassmorphismus Design-System
+- [x] **Einheitliches Design-Theme** implementiert
+  - [x] Glassmorphismus für alle Container und Cards
+  - [x] Dramatischer Background-Gradient (transparent → blau → dunkel → schwarz)
+  - [x] Subtile Transparenzen (0.02-0.08) für optimale Lesbarkeit
+  - [x] Blur-Effekte: 20px für Container, 10px für Buttons, 5px für Inputs
+  - [x] Einheitliche Animationen (fadeInUp für Container, subtle-pulse für Logos)
+
+### Header & Navigation Improvements
+- [x] **Header ohne border-bottom** - nur mit box-shadow für modernen Look
+- [x] **Kompaktes User-Info Design** in allen Dashboards
+  - [x] Flex-Layout mit Avatar-Icon und Benutzername
+  - [x] Transparenter Hintergrund mit subtiler Backdrop-Blur
+  - [x] Dezenter, kontrastierter Logout-Button mit Icon
+  - [x] Hover-Effekte für bessere Interaktivität
+
+### Root User Features
+- [x] **Root Profile Page** mit Glassmorphismus-Design
+- [x] **Root Features Page** für Feature-Management (Frontend-only)
+- [x] **Navigation erweitert** um Profile und Features Links
+
+### Admin Dashboard Refinements
+- [x] **Compact-Cards Design** optimiert
+  - [x] Transparentere Card-Header (0.01 opacity)
+  - [x] Besser lesbare List-Items mit Hover-Effekten
+  - [x] View-All Links als minimalistischer Text statt Button
+  - [x] Hover-Effekt mit animiertem Top-Border
+
+### Feature Pages Design Update
+- [x] **Alle Feature HTML-Seiten** mit neuem Glassmorphismus-Theme
+- [x] **Einheitliches Design** über alle Module hinweg
 
 ## Technische Roadmap
 

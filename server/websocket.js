@@ -145,7 +145,7 @@ class ChatWebSocketServer {
 
       // Sender-Informationen abrufen
       const senderQuery = `
-        SELECT first_name, last_name, profile_picture_url 
+        SELECT id, username, first_name, last_name, profile_picture_url 
         FROM users WHERE id = ?
       `;
       const [senderInfo] = await db.query(senderQuery, [ws.userId]);
@@ -157,9 +157,14 @@ class ChatWebSocketServer {
         conversation_id: conversationId,
         content: content,
         sender_id: ws.userId,
-        sender_name: sender ? [(sender.first_name || ''), (sender.last_name || '')].filter(n => n).join(' ') || 'Unbekannter Benutzer' : 'Unbekannter Benutzer',
+        sender_name: sender ? (
+          [sender.first_name, sender.last_name].filter(n => n).join(' ') || 
+          sender.username || 
+          'Unbekannter Benutzer'
+        ) : 'Unbekannter Benutzer',
         first_name: sender?.first_name || '',
         last_name: sender?.last_name || '',
+        username: sender?.username || '',
         profile_picture_url: sender?.profile_picture_url || null,
         created_at: new Date().toISOString(),
         delivery_status: 'sent',

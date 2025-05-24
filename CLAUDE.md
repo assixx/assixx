@@ -165,6 +165,67 @@ transform: translateY(-1px);
 - Logo immer mit subtle-pulse
 - Header OHNE border-bottom (nur box-shadow)
 
+### User-Info Design (Header):
+```css
+/* Kompaktes User-Info Design */
+.header .header-actions #user-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    padding: 0.2rem 0.5rem !important;
+    background: rgba(255, 255, 255, 0.01) !important;
+    backdrop-filter: blur(5px) !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    font-size: 0.85rem !important;
+    color: var(--text-secondary) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* User Avatar */
+#user-info .user-avatar {
+    font-size: 0.9rem !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    margin-right: 0.15rem !important;
+}
+
+/* Hover Effekt */
+#user-info:hover {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Dezenter Logout Button */
+#logout-btn {
+    padding: 0.25rem 0.6rem !important;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(185, 28, 28, 0.8)) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.3rem !important;
+    text-decoration: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Logout Icon */
+#logout-btn i {
+    font-size: 0.75rem !important;
+}
+
+/* Logout Hover */
+#logout-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9)) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3) !important;
+}
+```
+
 ### Compact-Cards Design (Admin Dashboard):
 ```css
 /* Compact-Card Container */

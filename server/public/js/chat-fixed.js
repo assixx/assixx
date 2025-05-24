@@ -222,20 +222,10 @@ class ChatClient {
   handleNewMessage(messageData) {
     console.log('💬 New message received:', messageData);
     
-    // Check if message already exists to prevent duplicates
-    const existingMessage = document.querySelector(`[data-message-id="${messageData.id}"]`);
-    if (existingMessage) {
-      console.log('⚠️ Message already exists, skipping duplicate');
-      return;
-    }
-    
     // Remove temporary message if this is our own message
     if (messageData.sender_id == this.currentUser.id) {
       const tempMessages = document.querySelectorAll('[data-temp-id]');
-      tempMessages.forEach(msg => {
-        console.log('🗑️ Removing temporary message');
-        msg.remove();
-      });
+      tempMessages.forEach(msg => msg.remove());
     }
     
     // Add message to current conversation
@@ -730,7 +720,7 @@ class ChatClient {
       }
     });
 
-    modal.style.display = 'flex';
+    modal.style.display = 'block';
     console.log('✅ Modal opened');
   }
 

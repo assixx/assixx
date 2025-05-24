@@ -162,6 +162,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/css/user-info-update.css">
 </head>
 <body>
     <!-- Header -->
@@ -170,7 +172,10 @@
             <img src="/images/logo.png" alt="Assixx Logo" class="logo">
         </a>
         <div class="header-actions">
-            <span id="user-info" class="text-secondary">Admin</span>
+            <div id="user-info">
+                <img id="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                <span id="user-name">Lade...</span>
+            </div>
             <button onclick="window.location.href='/admin-dashboard'" class="btn btn-secondary">Zurück zum Dashboard</button>
         </div>
     </header>

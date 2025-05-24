@@ -885,6 +885,7 @@
       }
     }
   </style>
+    <link rel="stylesheet" href="/css/user-info-update.css">
 </head>
 <body>
   <!-- Header -->
@@ -893,8 +894,11 @@
       <img src="/images/logo.png" alt="Assixx Logo" class="logo">
     </a>
     <div class="header-actions">
-      <span id="user-info" class="text-secondary">Admin</span>
-      <button id="logout-btn" class="btn btn-secondary">Ausloggen</button>
+      <div id="user-info">
+                <img id="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                <span id="user-name">Lade...</span>
+            </div>
+      <button id="logout-btn" class="btn-logout" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Abmelden</button>
     </div>
   </header>
 
@@ -1120,6 +1124,7 @@
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
       checkAuth();
+            loadUserInfo();
       loadCategories();
       loadSuggestions();
       loadDashboardStats();
@@ -1134,6 +1139,45 @@
       // Initialize KVP buttons based on user role
       initializeButtons();
     });
+
+    
+        async function loadUserInfo() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    const userName = document.getElementById('user-name');
+                    const userAvatar = document.getElementById('user-avatar');
+                    
+                    // Display first and last name
+                    const displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username || 'Benutzer';
+                    userName.textContent = displayName;
+                    
+                    // Update avatar if available
+                    if (userData.profile_picture_url) {
+                        userAvatar.src = userData.profile_picture_url;
+                        userAvatar.onerror = function() {
+                            this.src = '/images/default-avatar.svg';
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                // Fallback to local storage
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const userName = document.getElementById('user-name');
+                if (userName) {
+                    userName.textContent = user.username || 'Benutzer';
+                }
+            }
+        }
+
 
     function checkAuth() {
       const token = localStorage.getItem('token');
