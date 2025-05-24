@@ -12,6 +12,7 @@
             --primary-color: #2196F3;
             --primary-dark: #1976D2;
             --primary-light: #42A5F5;
+            --primary-hover: #1976D2;
             --secondary-color: #1B1B1B;
             --background-dark: #121212;
             --background-light: #1E1E1E;
@@ -48,7 +49,7 @@
         
         body {
             font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--background-dark);
+            background: #121212;
             color: var(--text-primary);
             line-height: 1.6;
             font-size: 14px;
@@ -56,12 +57,44 @@
             overflow-x: hidden;
         }
         
-        /* Removed gradient background for consistency with dashboard */
+        /* Glassmorphismus Background wie bei signup.html */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, #1E1E1E 0%, #121212 50%, #0A0A0A 100%);
+            opacity: 0.9;
+            z-index: -1;
+        }
         
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, 
+                transparent 0%, 
+                rgba(33, 150, 243, 0.05) 25%, 
+                transparent 50%, 
+                rgba(33, 150, 243, 0.05) 75%, 
+                transparent 100%);
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus Header */
         .header {
-            background-color: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             padding: 8px 16px;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.0);
+            border-bottom: 0px solid rgba(255, 255, 255, 0.15);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -91,6 +124,18 @@
             height: 40px;
             width: auto;
             filter: none;
+            animation: subtle-pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes subtle-pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.95;
+                transform: scale(1.02);
+            }
         }
         
         .logo-text {
@@ -113,9 +158,10 @@
         }
         
         .nav-links a:hover {
-            color: var(--text-primary);
+            color: #fff;
         }
         
+        /* Glassmorphismus Buttons */
         .btn {
             padding: var(--spacing-sm) var(--spacing-md);
             border: none;
@@ -126,33 +172,52 @@
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            justify-content: center; /* Text horizontal zentrieren */
+            justify-content: center;
             gap: var(--spacing-xs);
             text-decoration: none;
+            position: relative;
+            overflow: hidden;
         }
         
         .btn-primary {
-            background-color: var(--primary-color);
-            color: #ffffff !important; /* Intensives Weiß, erzwungen */
-            font-weight: 700; /* Fettere Schrift für bessere Lesbarkeit */
-            text-shadow: 0 0 1px rgba(0,0,0,0.5); /* Leichter Schatten für Kontrast */
+            
+            color: white;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
         
         .btn-primary:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
         }
         
         .btn-secondary {
-            background-color: transparent;
+            background: rgba(255, 255, 255, 0.04);
             color: var(--primary-color);
-            border: 1px solid var(--primary-color);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(5px);
         }
         
         .btn-secondary:hover {
-            background-color: var(--primary-color);
-            color: white;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
         }
         
         .hero {
@@ -160,6 +225,18 @@
             text-align: center;
             max-width: 800px;
             margin: 0 auto;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .hero h1 {
@@ -167,6 +244,7 @@
             margin-bottom: var(--spacing-lg);
             color: var(--primary-color);
             font-weight: 700;
+            text-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
         }
         
         .hero p {
@@ -176,10 +254,13 @@
             line-height: 1.6;
         }
         
+        /* Glassmorphismus Features Section */
         .features {
             padding: var(--spacing-xl) 5%;
-            background-color: var(--background-light);
-            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .features-grid {
@@ -190,19 +271,24 @@
             margin: 0 auto;
         }
         
+        /* Glassmorphismus Feature Cards */
         .feature-card {
-            background-color: var(--background-dark);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
             padding: var(--spacing-lg);
             border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             transition: all 0.3s ease;
         }
         
         .feature-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.04);
             border-color: var(--primary-color);
+            box-shadow: 0 10px 40px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         .feature-card h3 {
@@ -232,6 +318,7 @@
             margin-bottom: var(--spacing-xl);
             color: var(--primary-color);
             font-weight: 600;
+            text-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
         }
         
         .pricing-grid {
@@ -240,38 +327,43 @@
             gap: var(--spacing-lg);
         }
         
+        /* Glassmorphismus Pricing Cards */
         .pricing-card {
-            background-color: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
             border-radius: var(--radius-md);
             padding: var(--spacing-lg);
             text-align: center;
             position: relative;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
-            height: 550px; /* Feste Höhe für alle Karten */
-            overflow: hidden; /* Verhindert, dass Inhalte über die Karte hinausragen */
+            height: 550px;
+            overflow: hidden;
         }
         
         .pricing-card:hover {
-            transform: translateY(-4px); /* Stärkerer Anhebe-Effekt (ca. 5% mehr) */
-            box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3); /* Blaues Leuchten im Schatten */
-            border-color: var(--primary-color); /* Blauer Rand beim Hovern */
-            transition: all 0.4s ease; /* Etwas langsamerer Übergang für mehr Effekt */
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 12px 40px rgba(33, 150, 243, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
         }
         
         .pricing-card.featured {
-            border-color: var(--primary-color);
-            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.2); /* Bereits leichtes blaues Leuchten */
-            background-color: rgba(33, 150, 243, 0.1);
+            background: rgba(33, 150, 243, 0.05);
+            border-color: rgba(33, 150, 243, 0.3);
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
-        /* Stärkerer Hover-Effekt für die hervorgehobene Karte */
         .pricing-card.featured:hover {
-            transform: translateY(-5px); /* Noch stärkerer Anhebe-Effekt */
-            box-shadow: 0 12px 25px rgba(33, 150, 243, 0.4); /* Intensiveres blaues Leuchten */
+            transform: translateY(-6px);
+            box-shadow: 0 14px 45px rgba(33, 150, 243, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         .pricing-card h3 {
@@ -286,6 +378,7 @@
             font-weight: 700;
             color: var(--primary-color);
             margin: var(--spacing-md) 0;
+            text-shadow: 0 0 10px rgba(33, 150, 243, 0.2);
         }
         
         .price span {
@@ -297,7 +390,7 @@
             list-style: none;
             margin: var(--spacing-lg) 0;
             text-align: left;
-            flex-grow: 1; /* Lässt die Liste wachsen, um verfügbaren Platz zu füllen */
+            flex-grow: 1;
         }
         
         .feature-list li {
@@ -316,14 +409,18 @@
             font-weight: bold;
         }
         
+        /* Glassmorphismus Footer */
         .footer {
-            background-color: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
             color: var(--text-secondary);
             padding: var(--spacing-lg) 5%;
             text-align: center;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
         }
         
+        /* Glassmorphismus Modal */
         .signup-modal {
             display: none;
             position: fixed;
@@ -340,15 +437,18 @@
         }
         
         .modal-content {
-            background-color: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
             padding: var(--spacing-lg);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-lg);
             max-width: 500px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.3s ease-out;
         }
         
         .modal-content h2 {
@@ -372,23 +472,28 @@
             margin-bottom: var(--spacing-xs);
             color: var(--text-secondary);
             font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
         
         .form-control {
             width: 100%;
             padding: var(--spacing-sm) var(--spacing-md);
-            background-color: var(--background-dark);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: var(--radius-sm);
             color: var(--text-primary);
             font-size: 14px;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
         
         .form-control:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15),
+                        inset 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .subdomain-input {
@@ -408,11 +513,15 @@
         }
         
         .success {
-            background-color: var(--success-color);
+            background: rgba(76, 175, 80, 0.15);
+            backdrop-filter: blur(10px);
             color: white;
             padding: var(--spacing-md);
             border-radius: var(--radius-sm);
             margin-bottom: var(--spacing-md);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         small {
@@ -429,6 +538,7 @@
         input[type="checkbox"] {
             width: 16px;
             height: 16px;
+            accent-color: var(--primary-color);
         }
         
         /* Responsive Design */
