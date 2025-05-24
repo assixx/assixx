@@ -108,7 +108,13 @@ class ChatWebSocketServer {
   async handleSendMessage(ws, data) {
     const { conversationId, content, attachments = [] } = data;
     
-    console.log(`Handling send message: conversationId=${conversationId}, userId=${ws.userId}, tenantId=${ws.tenantId}`);
+    console.log(`🔍 DEBUG - Handling send message:`, {
+      conversationId,
+      userId: ws.userId,
+      tenantId: ws.tenantId,
+      contentLength: content?.length,
+      hasAttachments: attachments.length > 0
+    });
     
     try {
       // Berechtigung prüfen

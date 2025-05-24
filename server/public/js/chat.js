@@ -3,6 +3,17 @@ class ChatClient {
     this.ws = null;
     this.token = localStorage.getItem('token');
     this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    // Fallback für currentUserId wenn user object nicht komplett ist
+    if (!this.currentUser.id && this.token && this.token !== 'test-mode') {
+      try {
+        const payload = JSON.parse(atob(this.token.split('.')[1]));
+        this.currentUser.id = payload.userId || payload.id;
+        this.currentUser.username = this.currentUser.username || payload.username;
+      } catch (e) {
+        console.error('Error parsing token:', e);
+      }
+    }
+    this.currentUserId = this.currentUser.id || null;
     this.currentConversationId = null;
     this.conversations = [];
     this.availableUsers = [];
@@ -31,6 +42,8 @@ class ChatClient {
 
   async init() {
     console.log('🚀 Initializing ChatClient...');
+    console.log('👤 Current user:', this.currentUser);
+    console.log('🆔 Current user ID:', this.currentUserId);
     
     // Check if token exists
     if (!this.token) {
@@ -119,9 +132,15 @@ class ChatClient {
         try {
           const message = JSON.parse(event.data);
           console.log('📨 Received message:', message.type);
+          console.log('🔍 DEBUG - Full WebSocket message:', {
+            type: message.type,
+            data: message.data,
+            timestamp: new Date().toISOString()
+          });
           this.handleWebSocketMessage(message);
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error);
+          console.error('🔍 DEBUG - Raw message data:', event.data);
         }
       };
 
@@ -178,12 +197,20 @@ class ChatClient {
 
   handleWebSocketMessage(message) {
     console.log('🔍 Processing message type:', message.type);
+    console.log('🔍 DEBUG - WebSocket message details:', {
+      type: message.type,
+      hasData: !!message.data,
+      dataKeys: message.data ? Object.keys(message.data) : [],
+      conversationId: message.data?.conversation_id,
+      currentConvId: this.currentConversationId
+    });
     
     switch (message.type) {
       case 'connection_established':
         console.log('✅ Chat connection confirmed');
         break;
       case 'new_message':
+        console.log('🔍 DEBUG - new_message received:', message.data);
         this.handleNewMessage(message.data);
         break;
       case 'user_typing':
@@ -221,6 +248,15 @@ class ChatClient {
 
   handleNewMessage(messageData) {
     console.log('💬 New message received:', messageData);
+    console.log('🔍 DEBUG - handleNewMessage details:', {
+      messageId: messageData.id,
+      conversationId: messageData.conversation_id,
+      currentConvId: this.currentConversationId,
+      senderId: messageData.sender_id,
+      currentUserId: this.currentUser.id,
+      content: typeof messageData.content === 'string' ? messageData.content.substring(0, 50) + '...' : JSON.stringify(messageData.content).substring(0, 50) + '...',
+      isOwnMessage: messageData.sender_id == this.currentUser.id
+    });
     
     // Check if message already exists to prevent duplicates
     const existingMessage = document.querySelector(`[data-message-id="${messageData.id}"]`);
@@ -240,13 +276,20 @@ class ChatClient {
     
     // Add message to current conversation
     if (messageData.conversation_id == this.currentConversationId) {
+      console.log('🔍 DEBUG - Message is for current conversation, displaying...');
       this.displayMessage(messageData);
       this.scrollToBottom();
       
       // Mark as read if not own message
       if (messageData.sender_id != this.currentUser.id) {
+        console.log('🔍 DEBUG - Marking message as read');
         this.markMessageAsRead(messageData.id);
       }
+    } else {
+      console.log('🔍 DEBUG - Message is for different conversation:', {
+        messageConvId: messageData.conversation_id,
+        currentConvId: this.currentConversationId
+      });
     }
 
     // Update conversation list
@@ -263,6 +306,14 @@ class ChatClient {
     const input = document.getElementById('messageInput');
     const content = input.value.trim();
     const scheduling = document.getElementById('messageScheduling')?.value || 'immediate';
+    
+    console.log('🔍 DEBUG - sendMessage called:', {
+      content: content,
+      scheduling: scheduling,
+      currentConversationId: this.currentConversationId,
+      pendingFiles: this.pendingFiles.length,
+      wsConnected: this.ws?.readyState === WebSocket.OPEN
+    });
     
     if ((!content && this.pendingFiles.length === 0) || !this.currentConversationId) {
       console.log('⚠️ Cannot send empty message or no conversation selected');
@@ -321,6 +372,7 @@ class ChatClient {
       
       if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
         try {
+          console.log('🔍 DEBUG - Sending message via WebSocket:', messageData);
           this.ws.send(JSON.stringify(messageData));
           console.log('✅ Message sent via WebSocket');
           
@@ -372,6 +424,15 @@ class ChatClient {
       if (response.ok) {
         const messages = await response.json();
         console.log(`✅ Loaded ${messages.length} messages`);
+        console.log('🔍 DEBUG - First few messages:', messages.slice(0, 3).map(m => ({
+          id: m.id,
+          content: m.content,
+          sender_id: m.sender_id,
+          sender_name: m.sender_name,
+          username: m.username,
+          first_name: m.first_name,
+          last_name: m.last_name
+        })));
         this.displayMessages(messages);
         this.scrollToBottom();
       } else {
@@ -404,6 +465,17 @@ class ChatClient {
     }
     
     console.log('📝 Displaying message:', message);
+    console.log('🔍 DEBUG - Message display details:', {
+      messageId: message.id,
+      isTemp: message.id?.toString().startsWith('temp-'),
+      senderId: message.sender_id,
+      currentUserId: this.currentUser.id,
+      isOwnMessage: message.sender_id == this.currentUser.id,
+      senderName: message.sender_name || message.username,
+      content: typeof message.content === 'string' ? 
+        message.content.substring(0, 50) + '...' : 
+        JSON.stringify(message.content || '').substring(0, 50) + '...'
+    });
     
     const isOwnMessage = message.sender_id == this.currentUser.id;
     
@@ -587,25 +659,33 @@ class ChatClient {
           minute: '2-digit'
         }) : '';
 
+      // Avatar für Einzelchats oder Gruppenchats
+      let avatarContent = '';
+      if (conversation.is_group) {
+        avatarContent = `<div style="background: linear-gradient(135deg, #9c27b0, #ba68c8); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+          <i class="fas fa-users"></i>
+        </div>`;
+      } else {
+        // Bei Einzelchat: Profilbild des anderen Users anzeigen
+        avatarContent = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/images/default-avatar.svg'}" 
+             alt="Avatar" 
+             style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover;"
+             onerror="this.src='/images/default-avatar.svg'">
+         <span class="status-indicator ${conversation.user_status || 'offline'}" 
+               data-user-status="${conversation.other_user_id}"
+               style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--background-primary); background: ${conversation.user_status === 'online' ? '#4caf50' : '#9e9e9e'};"
+               title="${conversation.user_status === 'online' ? 'Online' : 'Offline'}"></span>`;
+      }
+
       conversationElement.innerHTML = `
         <div class="conversation-avatar" style="position: relative;">
-          ${conversation.is_group ? 
-            `<div style="background: linear-gradient(135deg, #9c27b0, #ba68c8); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
-              <i class="fas fa-users"></i>
-            </div>` :
-            `<img src="${conversation.profile_picture_url || '/images/default-avatar.svg'}" 
-                 alt="Avatar" onerror="this.src='/images/default-avatar.svg'">
-             <span class="status-indicator ${conversation.user_status || 'offline'}" 
-                   data-user-status="${conversation.other_user_id}"
-                   style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--background-primary); background: ${conversation.user_status === 'online' ? '#4caf50' : '#9e9e9e'};"
-                   title="${conversation.user_status === 'online' ? 'Online' : 'Offline'}"></span>`
-          }
-          ${conversation.unread_count > 0 ? `<span class="unread-badge">${conversation.unread_count}</span>` : ''}
+          ${avatarContent}
+          ${conversation.unread_count > 0 ? `<span class="unread-badge" style="position: absolute; top: -5px; right: -5px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">${conversation.unread_count > 99 ? '99+' : conversation.unread_count}</span>` : ''}
         </div>
         <div class="conversation-info">
           <div class="conversation-name">
             ${conversation.is_group ? '<i class="fas fa-users" style="font-size: 0.8rem; margin-right: 4px;"></i>' : ''}
-            ${conversation.display_name || 'Unbekannt'}
+            ${conversation.display_name || conversation.name || conversation.username || 'Unbekannt'}
           </div>
           <div class="conversation-last-message">${conversation.last_message || 'Keine Nachrichten'}</div>
         </div>
@@ -648,17 +728,42 @@ class ChatClient {
       const chatPartnerStatus = document.getElementById('chat-partner-status');
       
       if (chatHeader) chatHeader.style.display = 'flex';
-      if (chatPartnerName) chatPartnerName.textContent = conversation.display_name || 'Unbekannt';
-      if (chatPartnerStatus) chatPartnerStatus.textContent = conversation.is_group ? 'Gruppenchat' : (conversation.other_user_role || 'Benutzer');
+      if (chatPartnerName) chatPartnerName.textContent = conversation.display_name || conversation.name || conversation.username || 'Unbekannt';
+      if (chatPartnerStatus) {
+        // Bei Einzelchats Rolle anzeigen, bei Gruppenchats "Gruppenchat"
+        if (conversation.is_group) {
+          chatPartnerStatus.textContent = 'Gruppenchat';
+        } else {
+          // Rolle des anderen Users anzeigen (z.B. "Administrator", "Mitarbeiter")
+          const roleText = conversation.other_user_role || conversation.user_role || 'employee';
+          const roleMap = {
+            'admin': 'Administrator',
+            'employee': 'Mitarbeiter',
+            'root': 'Root-Admin'
+          };
+          chatPartnerStatus.textContent = roleMap[roleText] || 'Benutzer';
+        }
+      }
       
       if (chatAvatar) {
         if (conversation.is_group) {
           chatAvatar.innerHTML = '<i class="fas fa-users"></i>';
           chatAvatar.style.background = 'linear-gradient(135deg, #9c27b0, #ba68c8)';
+          chatAvatar.style.backgroundImage = 'none';
         } else {
-          const initials = (conversation.display_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase();
-          chatAvatar.textContent = initials;
-          chatAvatar.style.background = 'linear-gradient(135deg, var(--primary-color), var(--primary-light))';
+          // Bei Einzelchat: Profilbild des anderen Users
+          if (conversation.other_user_picture || conversation.profile_picture_url) {
+            chatAvatar.innerHTML = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/images/default-avatar.svg'}" 
+                                        alt="Avatar" 
+                                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
+                                        onerror="this.src='/images/default-avatar.svg'">`;
+            chatAvatar.style.background = 'none';
+          } else {
+            // Fallback zu Initialen
+            const initials = (conversation.display_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase();
+            chatAvatar.textContent = initials;
+            chatAvatar.style.background = 'linear-gradient(135deg, var(--primary-color), var(--primary-light))';
+          }
         }
       }
     }

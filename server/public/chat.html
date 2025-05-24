@@ -40,73 +40,93 @@
         
         /* Chat-spezifische Styles mit Glassmorphismus-Design */
         .chat-container {
-            height: calc(100vh - 80px);
+            height: 100%;
+            width: 100%;
             display: flex;
             background: var(--background-primary);
             overflow: hidden;
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Main content anpassen für Chat */
+        .main-content {
+            height: calc(100vh - 60px);
+            margin-top: 0 !important;
+            margin-left: 0 !important; /* Kein Abstand zur Sidebar */
+            padding: 0 !important;
+            overflow: hidden;
+            position: fixed;
+            top: 60px;
+            left: 280px; /* Direkt nach Navigation Sidebar */
+            right: 0;
+            bottom: 0;
         }
 
-        /* Sidebar mit Conversations */
+        /* Sidebar mit Conversations - Kompakter */
         .chat-sidebar {
-            width: 350px;
-            background: rgba(255, 255, 255, 0.05);
+            width: 280px;
+            background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            flex-shrink: 0; /* Verhindert Größenänderung */
         }
 
         .chat-sidebar-header {
-            padding: var(--spacing-lg);
+            padding: var(--spacing-md);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(33, 150, 243, 0.1);
         }
 
         .chat-title {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 600;
             color: var(--text-primary);
-            margin: 0 0 var(--spacing-sm) 0;
+            margin: 0 0 var(--spacing-xs) 0;
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
+            gap: var(--spacing-xs);
         }
 
         .new-chat-btn {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             border: none;
             color: white;
-            padding: var(--spacing-sm) var(--spacing-lg);
-            border-radius: 25px;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-weight: 500;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
+            gap: 6px;
             width: 100%;
             justify-content: center;
         }
 
         .new-chat-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
         }
 
         .conversations-list {
             flex: 1;
             overflow-y: auto;
-            padding: var(--spacing-md);
+            padding: var(--spacing-sm);
         }
 
         .conversation-item {
             display: flex;
             align-items: center;
-            gap: var(--spacing-md);
-            padding: var(--spacing-md);
-            margin-bottom: var(--spacing-xs);
-            border-radius: var(--radius-lg);
+            gap: 10px;
+            padding: 10px;
+            margin-bottom: 4px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
@@ -117,18 +137,18 @@
         .conversation-item:hover {
             background: rgba(33, 150, 243, 0.1);
             border-color: rgba(33, 150, 243, 0.2);
-            transform: translateX(4px);
+            transform: translateX(2px);
         }
 
         .conversation-item.active {
             background: rgba(33, 150, 243, 0.15);
             border-color: rgba(33, 150, 243, 0.3);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
+            box-shadow: 0 2px 10px rgba(33, 150, 243, 0.2);
         }
 
         .conversation-avatar {
-            width: 45px;
-            height: 45px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             display: flex;
@@ -136,7 +156,7 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             flex-shrink: 0;
             position: relative;
         }
@@ -156,13 +176,13 @@
         .conversation-name {
             font-weight: 600;
             color: var(--text-primary);
-            margin: 0 0 4px 0;
-            font-size: 0.95rem;
+            margin: 0 0 2px 0;
+            font-size: 0.85rem;
         }
 
         .conversation-preview {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -172,11 +192,11 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 4px;
+            gap: 2px;
         }
 
         .conversation-time {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
         }
 
@@ -184,12 +204,12 @@
             background: var(--primary-color);
             color: white;
             border-radius: 50%;
-            min-width: 20px;
-            height: 20px;
+            min-width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
         }
 
@@ -202,7 +222,7 @@
         }
 
         .chat-header {
-            padding: var(--spacing-lg);
+            padding: 12px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -214,12 +234,12 @@
         .chat-header-info {
             display: flex;
             align-items: center;
-            gap: var(--spacing-md);
+            gap: 12px;
         }
 
         .chat-header-avatar {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             display: flex;
@@ -227,16 +247,17 @@
             justify-content: center;
             color: white;
             font-weight: 600;
+            font-size: 0.85rem;
         }
 
         .chat-header-details h3 {
             margin: 0;
             color: var(--text-primary);
-            font-size: 1.1rem;
+            font-size: 0.95rem;
         }
 
         .chat-header-details .status {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
         }
 
@@ -269,10 +290,10 @@
         .messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: var(--spacing-lg);
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-md);
+            gap: 12px;
             min-height: 0; /* Wichtig für Firefox */
             max-height: 100%;
             scroll-behavior: smooth;
@@ -280,8 +301,8 @@
 
         .message {
             display: flex;
-            gap: var(--spacing-md);
-            max-width: 70%;
+            gap: 10px;
+            max-width: 65%;
             animation: messageSlideIn 0.3s ease-out;
         }
 
@@ -297,30 +318,30 @@
         }
 
         .message-avatar {
-            width: 35px;
-            height: 35px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             object-fit: cover;
-            flex-shrink: 0;
             flex-shrink: 0;
         }
         
         .message-header {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-sm);
-            font-size: 0.85rem;
+            gap: 6px;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
             color: var(--text-secondary);
         }
         
         .message-sender {
             font-weight: 600;
             color: var(--text-primary);
+            font-size: 0.8rem;
         }
         
         .message-time {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             opacity: 0.7;
             margin-left: auto;
         }
@@ -333,15 +354,13 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 18px;
-            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: 16px;
+            padding: 10px 14px;
             position: relative;
             word-wrap: break-word;
-            max-width: 70%;
-            min-width: 150px;
             color: var(--text-primary);
-            font-size: 0.95rem;
-            line-height: 1.5;
+            font-size: 0.85rem;
+            line-height: 1.4;
         }
 
         .message.own .message-content {
@@ -435,26 +454,28 @@
 
         /* Message Input Area */
         .message-input-container {
-            padding: var(--spacing-lg);
+            padding: 12px 16px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
         }
 
         .message-input-wrapper {
             display: flex;
-            gap: var(--spacing-md);
+            gap: 8px;
             align-items: flex-end;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
-            padding: var(--spacing-sm);
+            border-radius: 20px;
+            padding: 6px;
             transition: all 0.3s ease;
         }
 
         .message-input-wrapper:focus-within {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
         }
 
         .message-input {
@@ -463,11 +484,11 @@
             border: none;
             color: var(--text-primary);
             resize: none;
-            max-height: 120px;
-            min-height: 20px;
-            padding: var(--spacing-sm) var(--spacing-md);
+            max-height: 100px;
+            min-height: 18px;
+            padding: 8px 12px;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             line-height: 1.4;
         }
 
@@ -490,15 +511,16 @@
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            padding: var(--spacing-sm);
+            padding: 6px;
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.3s ease;
-            width: 35px;
-            height: 35px;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 0.9rem;
         }
 
         .input-action-btn:hover {
@@ -511,18 +533,19 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 0.85rem;
         }
 
         .send-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+            transform: scale(1.05);
+            box-shadow: 0 3px 12px rgba(33, 150, 243, 0.4);
         }
 
         .send-btn:disabled {
@@ -533,24 +556,26 @@
 
         /* Delivery Options */
         .delivery-options {
-            margin-top: var(--spacing-md);
+            margin-bottom: 8px;
             display: flex;
-            gap: var(--spacing-sm);
+            gap: 6px;
             flex-wrap: wrap;
+            position: relative;
+            z-index: 100;
         }
 
         .delivery-option {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: var(--text-primary);
-            padding: var(--spacing-xs) var(--spacing-md);
-            border-radius: 20px;
+            padding: 4px 10px;
+            border-radius: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             display: flex;
             align-items: center;
-            gap: var(--spacing-xs);
+            gap: 4px;
         }
 
         .delivery-option:hover {
@@ -562,6 +587,105 @@
             background: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
+        }
+        
+        /* Custom Delivery Select - wie signup.html */
+        .custom-delivery-select {
+            position: relative;
+            width: 160px;
+        }
+
+        .delivery-display {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .delivery-display:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .delivery-icon {
+            font-size: 0.9rem;
+        }
+
+        .delivery-text {
+            flex: 1;
+        }
+
+        .dropdown-arrow {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            transition: transform 0.3s ease;
+        }
+
+        .custom-delivery-select.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .delivery-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            margin-bottom: 4px;
+            background: rgba(18, 18, 18, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .custom-delivery-select.active .delivery-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .delivery-dropdown-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .delivery-dropdown-option:last-child {
+            border-bottom: none;
+        }
+
+        .delivery-dropdown-option:hover {
+            background: rgba(33, 150, 243, 0.2);
+            color: var(--text-primary);
+            padding-left: 16px;
+        }
+
+        .option-icon {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
         }
 
         /* Empty State */
@@ -701,8 +825,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 1000;
             display: flex;
             align-items: center;
@@ -710,15 +835,19 @@
         }
 
         .modal-content {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
             padding: var(--spacing-xl);
             max-width: 500px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            animation: fadeInUp 0.3s ease-out;
         }
 
         .modal-header {
@@ -759,8 +888,9 @@
             display: flex;
             gap: var(--spacing-md);
             justify-content: flex-end;
-            padding-top: var(--spacing-md);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: var(--spacing-lg);
+            margin-top: var(--spacing-md);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .available-user {
@@ -1186,11 +1316,28 @@
                     <!-- Message Input -->
                     <div class="message-input-container" id="chatArea" style="display: none;">
                         <div class="delivery-options">
-                            <select id="messageScheduling" class="form-control">
-                                <option value="immediate">Sofort senden</option>
-                                <option value="break_time">In der Pause</option>
-                                <option value="after_work">Nach Feierabend</option>
-                            </select>
+                            <div class="custom-delivery-select">
+                                <div class="delivery-display" onclick="toggleDeliveryDropdown()">
+                                    <span class="delivery-icon">⚡</span>
+                                    <span class="delivery-text">Sofort senden</span>
+                                    <span class="dropdown-arrow">▼</span>
+                                </div>
+                                <div class="delivery-dropdown" id="deliveryDropdown">
+                                    <div class="delivery-dropdown-option" data-value="immediate" onclick="selectDeliveryOption('immediate', '⚡', 'Sofort senden')">
+                                        <span class="option-icon">⚡</span>
+                                        <span class="option-text">Sofort senden</span>
+                                    </div>
+                                    <div class="delivery-dropdown-option" data-value="break_time" onclick="selectDeliveryOption('break_time', '☕', 'In der Pause')">
+                                        <span class="option-icon">☕</span>
+                                        <span class="option-text">In der Pause</span>
+                                    </div>
+                                    <div class="delivery-dropdown-option" data-value="after_work" onclick="selectDeliveryOption('after_work', '🏠', 'Nach Feierabend')">
+                                        <span class="option-icon">🏠</span>
+                                        <span class="option-text">Nach Feierabend</span>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="messageScheduling" value="immediate">
+                            </div>
                         </div>
                         
                         <div class="message-input-wrapper">
@@ -1375,6 +1522,50 @@
             
             // Sofort versuchen
             setupEventListeners();
+        });
+
+        // Custom Delivery Select Functions
+        function toggleDeliveryDropdown() {
+            const select = document.querySelector('.custom-delivery-select');
+            select.classList.toggle('active');
+            
+            // Close on outside click
+            if (select.classList.contains('active')) {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!e.target.closest('.custom-delivery-select')) {
+                        select.classList.remove('active');
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            }
+        }
+
+        function selectDeliveryOption(value, icon, text) {
+            // Update display
+            document.querySelector('.delivery-icon').textContent = icon;
+            document.querySelector('.delivery-text').textContent = text;
+            
+            // Update hidden input
+            document.getElementById('messageScheduling').value = value;
+            
+            // Close dropdown
+            document.querySelector('.custom-delivery-select').classList.remove('active');
+            
+            // Log selection
+            console.log('📅 Delivery option selected:', value);
+        }
+    </script>
+    <!-- Header User Info Loading -->
+    <script src="/js/header-user-info.js"></script>
+    <script>
+        // Sicherstellen dass Header geladen wird
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof loadHeaderUserInfo === 'function') {
+                console.log('📋 Loading header user info...');
+                loadHeaderUserInfo();
+            } else {
+                console.error('❌ loadHeaderUserInfo function not found!');
+            }
         });
     </script>
 </body>

@@ -101,10 +101,15 @@ if (USE_MOCK_DB) {
       connectionLimit: 10,
       queueLimit: 0,
       multipleStatements: false, // Sicherheitsverbesserung
+      charset: 'utf8mb4',
       typeCast: function (field, next) {
         // Spezielle Behandlung für BLOB/BINARY Felder, um sie als Buffer zurückzugeben
         if (field.type === 'BLOB' || field.type === 'BINARY') {
           return field.buffer();
+        }
+        // Ensure TEXT fields are returned as strings
+        if (field.type === 'VAR_STRING' || field.type === 'STRING' || field.type === 'LONG_STRING' || field.type === 'TINY' || field.type === 'SHORT' || field.type === 'LONG' || field.type === 'LONGLONG') {
+          return field.string();
         }
         return next();
       }

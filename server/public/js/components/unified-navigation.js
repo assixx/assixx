@@ -88,7 +88,7 @@ class UnifiedNavigation {
                 { id: 'blackboard', icon: this.getSVGIcon('blackboard'), label: 'Blackboard', url: '/blackboard.html' },
                 { id: 'calendar', icon: this.getSVGIcon('calendar'), label: 'Kalender', url: '/calendar.html' },
                 { id: 'shifts', icon: this.getSVGIcon('clock'), label: 'Schichtplanung', url: '/shifts.html' },
-                { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html' },
+                { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html', badge: 'unread-messages' },
                 { id: 'kvp', icon: this.getSVGIcon('lightbulb'), label: 'KVP System', url: '/kvp.html' },
                 { id: 'surveys', icon: this.getSVGIcon('poll'), label: 'Umfragen', url: '/survey-admin.html' },
                 { id: 'payslips', icon: this.getSVGIcon('money'), label: 'Gehaltsabrechnungen', url: '#payslips', section: 'payslips' },
@@ -104,7 +104,7 @@ class UnifiedNavigation {
                 { id: 'documents', icon: this.getSVGIcon('document'), label: 'Meine Dokumente', url: '/employee-documents.html' },
                 { id: 'blackboard', icon: this.getSVGIcon('blackboard'), label: 'Blackboard', url: '/blackboard.html' },
                 { id: 'calendar', icon: this.getSVGIcon('calendar'), label: 'Kalender', url: '/calendar.html' },
-                { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html' },
+                { id: 'chat', icon: this.getSVGIcon('chat'), label: 'Chat', url: '/chat.html', badge: 'unread-messages' },
                 { id: 'shifts', icon: this.getSVGIcon('clock'), label: 'Schichtplanung', url: '/shifts.html' },
                 { id: 'kvp', icon: this.getSVGIcon('lightbulb'), label: 'KVP System', url: '/kvp.html' },
                 { id: 'surveys', icon: this.getSVGIcon('poll'), label: 'Umfragen', url: '/survey-employee.html' },
@@ -228,12 +228,19 @@ class UnifiedNavigation {
         const activeClass = isActive ? 'active' : '';
         const clickHandler = item.section ? `onclick="showSection('${item.section}')"` : '';
         
+        // Badge für ungelesene Nachrichten
+        let badgeHtml = '';
+        if (item.badge === 'unread-messages') {
+            badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+        }
+        
         return `
-            <li class="sidebar-item ${activeClass}">
+            <li class="sidebar-item ${activeClass}" style="position: relative;">
                 <a href="${item.url}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">
                     <span class="icon">${item.icon}</span>
                     <span class="label">${item.label}</span>
                     <span class="nav-indicator"></span>
+                    ${badgeHtml}
                 </a>
             </li>
         `;
@@ -360,6 +367,37 @@ class UnifiedNavigation {
     setActive(navId) {
         localStorage.setItem('activeNavigation', navId);
         this.updateActiveNavigation();
+    }
+    
+    // Ungelesene Chat-Nachrichten aktualisieren
+    async updateUnreadMessages() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || token === 'test-mode') return;
+            
+            const response = await fetch('/api/chat/unread-count', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const badge = document.getElementById('chat-unread-badge');
+                if (badge) {
+                    const count = data.unreadCount || 0;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error updating unread messages:', error);
+        }
     }
 }
 
@@ -625,6 +663,12 @@ if (!document.querySelector('#unified-navigation-styles')) {
 // Navigation automatisch initialisieren
 document.addEventListener('DOMContentLoaded', () => {
     window.unifiedNav = new UnifiedNavigation();
+    
+    // Ungelesene Nachrichten beim Start und periodisch aktualisieren
+    if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
+        window.unifiedNav.updateUnreadMessages();
+        setInterval(() => window.unifiedNav.updateUnreadMessages(), 10000); // Alle 10 Sekunden
+    }
 });
 
 // Export für Module

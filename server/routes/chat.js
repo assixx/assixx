@@ -63,8 +63,8 @@ const checkChatPermission = async (fromUserId, toUserId, tenantId) => {
       WHERE id IN (?, ?) AND tenant_id = ?
     `, [fromUserId, toUserId, tenantId]);
 
-    const fromUser = users.find(u => u.id === fromUserId);
-    const toUser = users.find(u => u.id === toUserId);
+    const fromUser = users.find(u => u.id == fromUserId);
+    const toUser = users.find(u => u.id == toUserId);
 
     if (!fromUser || !toUser) {
       return { can_send: false, can_receive: false };
@@ -218,7 +218,16 @@ router.get('/conversations', verifyToken, async (req, res) => {
     `;
 
     const [conversations] = await db.query(query, [userId, userId, userId, userId, tenantId]);
-    res.json(conversations);
+    
+    // Convert Buffer content to string if needed
+    const processedConversations = conversations.map(conv => {
+      if (conv.last_message && Buffer.isBuffer(conv.last_message)) {
+        conv.last_message = conv.last_message.toString('utf8');
+      }
+      return conv;
+    });
+    
+    res.json(processedConversations);
   } catch (error) {
     console.error('Fehler beim Abrufen der Unterhaltungen:', error);
     res.status(500).json({ error: 'Fehler beim Abrufen der Unterhaltungen' });
@@ -329,13 +338,21 @@ router.get('/conversations/:id/messages', verifyToken, async (req, res) => {
       conversationId, tenantId, parseInt(limit), parseInt(offset)
     ]);
 
+    // Convert Buffer content to string if needed
+    const processedMessages = messages.map(message => {
+      if (message.content && Buffer.isBuffer(message.content)) {
+        message.content = message.content.toString('utf8');
+      }
+      return message;
+    });
+
     // Nachrichten als gelesen markieren
     await db.query(
       'UPDATE messages SET is_read = 1 WHERE conversation_id = ? AND sender_id != ? AND is_read = 0',
       [conversationId, userId]
     );
 
-    res.json(messages.reverse());
+    res.json(processedMessages.reverse());
   } catch (error) {
     console.error('Fehler beim Abrufen der Nachrichten:', error);
     res.status(500).json({ error: 'Fehler beim Abrufen der Nachrichten' });
@@ -346,7 +363,9 @@ router.get('/conversations/:id/messages', verifyToken, async (req, res) => {
 router.post('/conversations/:id/messages', verifyToken, upload.array('attachments', 5), async (req, res) => {
   try {
     const conversationId = req.params.id;
-    const { content, scheduled_delivery } = req.body;
+    // Ensure content is a string, not a Buffer
+    const content = req.body.content ? req.body.content.toString() : '';
+    const { scheduled_delivery } = req.body;
     const userId = req.user.id;
     const tenantId = req.user.tenant_id || 1; // Fallback auf 1
     const files = req.files || [];
@@ -589,6 +608,30 @@ router.delete('/messages/:id', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Fehler beim Löschen der Nachricht:', error);
     res.status(500).json({ error: 'Fehler beim Löschen der Nachricht' });
+  }
+});
+
+// Route: Ungelesene Nachrichten zählen
+router.get('/unread-count', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const tenantId = req.user.tenant_id || 1;
+    
+    const [result] = await db.query(`
+      SELECT COUNT(*) as unreadCount
+      FROM messages m
+      JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
+      WHERE cp.user_id = ? 
+      AND cp.tenant_id = ?
+      AND m.sender_id != ?
+      AND m.is_read = 0
+      AND m.is_deleted = 0
+    `, [userId, tenantId, userId]);
+    
+    res.json({ unreadCount: result[0].unreadCount || 0 });
+  } catch (error) {
+    console.error('Fehler beim Abrufen der ungelesenen Nachrichten:', error);
+    res.status(500).json({ error: 'Interner Serverfehler' });
   }
 });
 
