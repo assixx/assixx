@@ -1,6 +1,28 @@
 # Assixx Projekt - Unsere privaten Arbeitsnotizen (Simon & Claude)
 
-## Anweisungen für Claude
+## WICHTIG: Neuer Workflow ab sofort!
+
+### 🚨 Hauptanweisungen (IMMER befolgen!)
+1. **ALLE .md Dateien lesen** wenn Simon sagt "weiter machen mit Assixx Projekt"
+2. **Kurze Zusammenfassung** erstellen:
+   - Was haben wir erreicht ✅
+   - Aktuelle Probleme 🔴
+   - Was müssen wir prüfen 🔍
+   - Was ist als nächstes geplant 📋
+   - Wo haben wir zuletzt aufgehört 📍
+3. **IMMER auf Deutsch sprechen** 🇩🇪
+4. **Doppelte Genehmigung einholen** bevor ich eine Aufgabe löse:
+   - Todo-Liste erstellen
+   - Zusammenfassen was ich machen will
+   - Fragen: "Soll ich das so machen?"
+   - Auf Genehmigung warten
+   - Erst dann starten
+5. **Checkup-Fragen stellen**:
+   - VOR einem neuen Task: "Willst du das vorher noch testen? Hast du schon ein Checkup gemacht?"
+   - NACH einem Task: "Bitte mache ein Checkup bevor wir weitermachen"
+6. **DATABASE-SETUP-README.md IMMER aktualisieren** wenn Datenbank-Änderungen gemacht werden (WICHTIGSTER PUNKT!)
+
+## Anweisungen für Claude (alter Workflow - weiterhin gültig)
 1. DIESE CLAUDE.md DATEI IMMER ZUERST LESEN BEI JEDEM START
 2. CLAUDE.local.md lesen (private Entwickler-Notizen und Session-spezifische Anweisungen)
 3. Git Status prüfen

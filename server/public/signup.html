@@ -6,402 +6,1004 @@
     <title>Registrieren - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
     <style>
+        /* Dashboard-Style Design - weniger bunt, mehr dunkel/weiß/blau */
         body {
-            background: linear-gradient(135deg, #121212 0%, #1a237e 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 10px;
+            background: #121212;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, #1E1E1E 0%, #121212 50%, #0A0A0A 100%);
+            opacity: 0.9;
+            z-index: -1;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, 
+                transparent 0%, 
+                rgba(33, 150, 243, 0.05) 25%, 
+                transparent 50%, 
+                rgba(33, 150, 243, 0.05) 75%, 
+                transparent 100%);
+            z-index: -1;
         }
 
+        /* Weniger kompakter Container für 16-Zoll Monitore - Glassmorphismus */
         .signup-container {
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             max-width: 1200px;
             width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 28px 40px;
+            position: relative;
+            animation: fadeInUp 0.6s ease-out;
         }
 
-        .signup-info {
-            padding: 48px;
-            background: linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 100%);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .signup-form-section {
-            padding: 48px;
-        }
-
-        .logo-section {
+        /* Header mit mehr Raum */
+        .signup-header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 32px;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .logo {
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .signup-logo {
             height: 48px;
         }
 
-        h1 {
-            font-size: 32px;
-            color: #2196F3;
-            margin-bottom: 16px;
-            font-weight: 700;
-        }
-
-        h2 {
+        .header-text h1 {
             font-size: 24px;
-            color: #fff;
-            margin-bottom: 24px;
-            font-weight: 600;
-        }
-
-        .subtitle {
-            color: #B0B0B0;
-            font-size: 18px;
-            margin-bottom: 32px;
-            line-height: 1.6;
-        }
-
-        .pricing-info {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .pricing-title {
-            font-size: 20px;
-            color: #2196F3;
-            margin-bottom: 16px;
-            font-weight: 600;
-        }
-
-        .price-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .price-item:last-child {
-            border-bottom: none;
-        }
-
-        .price-label {
-            color: #fff;
-            font-size: 16px;
-        }
-
-        .price-value {
-            color: #2196F3;
-            font-size: 20px;
+            color: var(--primary-color);
+            margin: 0;
             font-weight: 700;
         }
 
-        .features-list {
-            list-style: none;
-            padding: 0;
-            margin: 24px 0;
+        .header-text p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 0;
+            opacity: 0.7;
         }
 
-        .features-list li {
-            padding: 8px 0;
-            color: #B0B0B0;
-            position: relative;
-            padding-left: 28px;
+        /* Kompakte Pricing Info */
+        .pricing-info {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
-        .features-list li::before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #4CAF50;
-            font-weight: bold;
-            font-size: 18px;
+        .pricing-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .form-group {
+        .pricing-item strong {
+            color: var(--primary-color);
+            
+        }
+
+        /* Weniger kompakte Form - 3 Spalten */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px 20px;
             margin-bottom: 20px;
         }
 
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
         .form-label {
-            display: block;
-            color: #B0B0B0;
-            margin-bottom: 8px;
-            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 16px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 15px;
             transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
         .form-control:focus {
             outline: none;
-            border-color: #2196F3;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15),
+                        inset 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        .subdomain-group {
+        .form-control::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.4;
+            font-size: 13px;
+        }
+
+        /* Subdomain Input Group */
+        .input-group {
             display: flex;
             align-items: center;
-            gap: 8px;
         }
 
-        .subdomain-suffix {
-            color: #B0B0B0;
-            font-size: 16px;
+        .input-group .form-control {
+            border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+            border-right: none;
         }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 24px 0;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checkbox-group label {
-            color: #B0B0B0;
-            cursor: pointer;
+        .input-group-suffix {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: none;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            color: var(--text-secondary);
             font-size: 14px;
+            white-space: nowrap;
         }
 
-        .btn {
-            padding: 14px 32px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+        /* Phone Input Group */
+        .phone-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Custom Country Select - Glassmorphismus */
+        .custom-country-select {
+            position: relative;
+            width: 85px;
+        }
+
+        .country-display {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .country-display:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .country-display svg {
+            margin-left: auto;
+            opacity: 0.6;
+            transition: transform 0.3s ease;
+        }
+
+        .country-display.active svg {
+            transform: rotate(180deg);
+        }
+
+        /* Custom Dropdown - Transparentes Glassmorphismus */
+        .country-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .country-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .country-option {
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .country-option:last-child {
+            border-bottom: none;
+        }
+
+        .country-option:hover {
+            background: rgba(33, 150, 243, 0.2);
+            color: white;
+            padding-left: 16px;
+        }
+
+        .country-option:active {
+            background: rgba(33, 150, 243, 0.3);
+        }
+
+        /* Scrollbar für Dropdown */
+        .country-dropdown::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .country-dropdown::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .country-dropdown::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .country-dropdown::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .phone-input-group .phone-number {
+            flex: 1;
+        }
+
+        /* Custom Plan Select - Glassmorphismus */
+        .custom-plan-select {
+            position: relative;
             width: 100%;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
         }
 
-        .btn-primary {
-            background: #2196F3;
-            color: #fff;
+        .plan-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
 
-        .btn-primary:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        .plan-display:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .btn-secondary {
-            background: transparent;
-            color: #2196F3;
-            border: 1px solid #2196F3;
-            margin-top: 16px;
+        .plan-display svg {
+            opacity: 0.6;
+            transition: transform 0.3s ease;
         }
 
-        .btn-secondary:hover {
-            background: rgba(33, 150, 243, 0.1);
+        .plan-display.active svg {
+            transform: rotate(180deg);
+        }
+
+        /* Plan Dropdown - Transparentes Glassmorphismus */
+        .plan-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .plan-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .plan-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .plan-option:last-child {
+            border-bottom: none;
+        }
+
+        .plan-option:hover {
+            background: rgba(33, 150, 243, 0.2);
+            color: white;
+            padding-left: 20px;
+        }
+
+        .plan-option:active {
+            background: rgba(33, 150, 243, 0.3);
+        }
+
+        .plan-price {
+            font-size: 12px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .plan-option:hover .plan-price {
+            color: white;
         }
 
         .error-message {
-            color: #F44336;
-            font-size: 14px;
-            margin-top: 4px;
+            color: #ef4444;
+            font-size: 11px;
+            margin-top: 2px;
             display: none;
+            position: absolute;
         }
 
+        /* Features mit mehr Raum */
+        .features-section {
+            grid-column: 1 / -1;
+            margin-top: 12px;
+        }
+
+        .features-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .feature-item input[type="checkbox"] {
+            accent-color: var(--primary-color);
+            width: 14px;
+            height: 14px;
+        }
+
+        .feature-item input[type="checkbox"]:checked + span {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Bottom Section */
+        .bottom-section {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            flex: 1;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            accent-color: var(--primary-color);
+            width: 14px;
+            height: 14px;
+        }
+
+        .terms-link {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .terms-link:hover {
+            text-decoration: underline;
+        }
+
+        .submit-button {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .submit-button:hover::before {
+            left: 100%;
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Success Message - Glassmorphismus */
         .success-message {
-            background: #4CAF50;
-            color: #fff;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 24px;
+            background: rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(10px);
+            color: #10b981;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
             display: none;
-        }
-
-        .note {
-            background: rgba(255, 152, 0, 0.1);
-            border: 1px solid rgba(255, 152, 0, 0.3);
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 24px;
-            color: #FFB74D;
+            border: 1px solid rgba(16, 185, 129, 0.3);
             font-size: 14px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
-        @media (max-width: 968px) {
+        /* Special Offer Banner - unten bei Submit */
+        .offer-banner {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(251, 191, 36, 0.02);
+            backdrop-filter: blur(10px);
+            
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            color: #fbbf24;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: glow 2s ease-in-out infinite alternate;
+            margin: 0 16px;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            }
+            to {
+                box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        /* Help Button - Glassmorphismus */
+        .help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 19px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .help-button:hover {
+            background: rgba(33, 150, 243, 0.15);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* Responsive für kleinere Bildschirme */
+        @media (max-width: 1200px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
             .signup-container {
+                padding: 16px;
+                animation: none;
+            }
+
+            .signup-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .form-grid {
                 grid-template-columns: 1fr;
-                max-width: 600px;
+                gap: 10px;
             }
 
-            .signup-info {
-                padding: 32px;
-                border-right: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            .bottom-section {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
             }
 
-            .signup-form-section {
-                padding: 32px;
-            }
-
-            h1 {
-                font-size: 28px;
-            }
-
-            h2 {
-                font-size: 20px;
+            .submit-button {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Help Button -->
+    <div class="help-button" onclick="showHelp()">?</div>
+
     <div class="signup-container">
-        <div class="signup-info">
-            <div class="logo-section">
-                <img src="/images/logo.png" alt="Assixx Logo" class="logo">
+        <!-- Header -->
+        <div class="signup-header">
+            <div class="header-left">
+                <img src="/images/logo.png" alt="Assixx Logo" class="signup-logo">
+                <div class="header-text">
+                    <h1></h1>         <!-- machen wir anders spöter -->
+                    <p></p> <!-- machen wir anders spöter -->
+                </div>
             </div>
-            <h1>Willkommen bei Assixx</h1>
-            <p class="subtitle">Die All-in-One Lösung für Ihre Industriefirma. Verbinden Sie Ihre Mitarbeiter digital und steigern Sie die Effizienz.</p>
-            
             <div class="pricing-info">
-                <h3 class="pricing-title">💰 Transparente Preise</h3>
-                <div class="price-item">
-                    <span class="price-label">🏢 Root-Account (Ihre Firma)</span>
-                    <span class="price-value">€149/Monat</span>
-                </div>
-                <div class="price-item">
-                    <span class="price-label">👔 Pro Admin-User</span>
-                    <span class="price-value">€19/Monat</span>
-                </div>
-                <div class="price-item">
-                    <span class="price-label">👷 Pro Mitarbeiter</span>
-                    <span class="price-value">€5/Monat</span>
-                </div>
-            </div>
-
-            <h3 style="color: #2196F3; margin-bottom: 16px;">✨ Was Sie erhalten:</h3>
-            <ul class="features-list">
-                <li>Eigenes isoliertes System für Ihre Firma</li>
-                <li>Unbegrenzte Dokumente & Speicherplatz</li>
-                <li>E-Mail Benachrichtigungen</li>
-                <li>Blackboard & Kalender System</li>
-                <li>KVP & Schichtplanung</li>
-                <li>24/7 Support & Updates</li>
-                <li>DSGVO-konforme deutsche Server</li>
-            </ul>
-
-            <div class="note">
-                <strong>🎁 Special Offer:</strong> 14 Tage kostenlos testen - keine Kreditkarte erforderlich!
+                <div class="pricing-item">🏢 Root: <strong>€149/M</strong></div>
+                <div class="pricing-item">👔 Admin: <strong>€19/M</strong></div>
+                <div class="pricing-item">👷 Mitarbeiter: <strong>€5/M</strong></div>
             </div>
         </div>
 
-        <div class="signup-form-section">
-            <h2>Erstellen Sie Ihren Root-Account</h2>
-            <p style="color: #B0B0B0; margin-bottom: 24px;">Als Root-User haben Sie vollen Zugriff auf alle Funktionen und können Admins sowie Mitarbeiter verwalten.</p>
+        <!-- Success Message -->
+        <div id="successMessage" class="success-message"></div>
 
-            <div id="successMessage" class="success-message"></div>
-
-            <form id="signupForm">
+        <!-- Compact Form -->
+        <form id="signupForm">
+            <div class="form-grid">
+                <!-- Erste Zeile -->
                 <div class="form-group">
                     <label class="form-label">Firmenname *</label>
                     <input type="text" name="company_name" class="form-control" required placeholder="Ihre Firma GmbH">
                 </div>
-
                 <div class="form-group">
-                    <label class="form-label">Ihre Subdomain *</label>
-                    <div class="subdomain-group">
+                    <label class="form-label">Subdomain *</label>
+                    <div class="input-group">
                         <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9\-]+" placeholder="ihre-firma">
-                        <span class="subdomain-suffix">.assixx.com</span>
+                        <span class="input-group-suffix">.assixx.com</span>
                     </div>
-                    <div id="subdomainError" class="error-message">Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt</div>
+                    <div id="subdomainError" class="error-message">Nur Kleinbuchstaben und Bindestriche</div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Vorname *</label>
-                        <input type="text" name="first_name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Nachname *</label>
-                        <input type="text" name="last_name" class="form-control" required>
-                    </div>
-                </div>
-
                 <div class="form-group">
-                    <label class="form-label">E-Mail Adresse *</label>
-                    <input type="email" name="email" class="form-control" required placeholder="ihre.email@firma.de">
+                    <label class="form-label">E-Mail *</label>
+                    <input type="email" name="email" class="form-control" required placeholder="email@firma.de">
                 </div>
 
+                <!-- Zweite Zeile -->
                 <div class="form-group">
-                    <label class="form-label">Telefonnummer (optional)</label>
-                    <input type="tel" name="phone" class="form-control" placeholder="+49 123 456789">
+                    <label class="form-label">Vorname *</label>
+                    <input type="text" name="first_name" class="form-control" required placeholder="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nachname *</label>
+                    <input type="text" name="last_name" class="form-control" required placeholder="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefon</label>
+                    <div class="phone-input-group">
+                        <div class="custom-country-select">
+                            <div class="country-display" onclick="toggleCountryDropdown()">
+                                <span id="selectedFlag">🇩🇪</span>
+                                <span id="selectedCode">+49</span>
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="country-dropdown" id="countryDropdown">
+                                <div class="country-option" onclick="selectCountry('🇩🇪', '+49')">🇩🇪 +49</div>
+                                <div class="country-option" onclick="selectCountry('🇦🇹', '+43')">🇦🇹 +43</div>
+                                <div class="country-option" onclick="selectCountry('🇨🇭', '+41')">🇨🇭 +41</div>
+                                <div class="country-option" onclick="selectCountry('🇫🇷', '+33')">🇫🇷 +33</div>
+                                <div class="country-option" onclick="selectCountry('🇮🇹', '+39')">🇮🇹 +39</div>
+                                <div class="country-option" onclick="selectCountry('🇪🇸', '+34')">🇪🇸 +34</div>
+                                <div class="country-option" onclick="selectCountry('🇳🇱', '+31')">🇳🇱 +31</div>
+                                <div class="country-option" onclick="selectCountry('🇧🇪', '+32')">🇧🇪 +32</div>
+                                <div class="country-option" onclick="selectCountry('🇱🇺', '+352')">🇱🇺 +352</div>
+                                <div class="country-option" onclick="selectCountry('🇵🇱', '+48')">🇵🇱 +48</div>
+                                <div class="country-option" onclick="selectCountry('🇨🇿', '+420')">🇨🇿 +420</div>
+                                <div class="country-option" onclick="selectCountry('🇺🇸', '+1')">🇺🇸 +1</div>
+                                <div class="country-option" onclick="selectCountry('🇬🇧', '+44')">🇬🇧 +44</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="countryCode" value="+49">
+                        <input type="tel" name="phone" class="form-control phone-number" placeholder="123 456789">
+                    </div>
                 </div>
 
+                <!-- Dritte Zeile -->
                 <div class="form-group">
                     <label class="form-label">Passwort *</label>
-                    <input type="password" name="password" class="form-control" required minlength="8">
-                    <small style="color: #B0B0B0; font-size: 12px;">Mindestens 8 Zeichen, inkl. Groß-/Kleinbuchstaben und Zahlen</small>
+                    <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min. 8 Zeichen">
                 </div>
-
                 <div class="form-group">
                     <label class="form-label">Passwort bestätigen *</label>
-                    <input type="password" name="password_confirm" class="form-control" required>
+                    <input type="password" name="password_confirm" class="form-control" required placeholder="">
                     <div id="passwordError" class="error-message">Passwörter stimmen nicht überein</div>
                 </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="terms" required>
-                    <label for="terms">
-                        Ich akzeptiere die <a href="#" style="color: #2196F3;">AGB</a> und <a href="#" style="color: #2196F3;">Datenschutzerklärung</a>
-                    </label>
+                <div class="form-group">
+                    <label class="form-label">Plan</label>
+                    <div class="custom-plan-select">
+                        <div class="plan-display" onclick="togglePlanDropdown()">
+                            <span id="selectedPlan">Enterprise</span>
+                            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="plan-dropdown" id="planDropdown">
+                            <div class="plan-option" onclick="selectPlan('enterprise', 'Enterprise')">
+                                <span>Enterprise</span>
+                                <span class="plan-price">€149/M</span>
+                            </div>
+                            <div class="plan-option" onclick="selectPlan('professional', 'Professional')">
+                                <span>Professional</span>
+                                <span class="plan-price">€99/M</span>
+                            </div>
+                            <div class="plan-option" onclick="selectPlan('basic', 'Basic')">
+                                <span>Basic</span>
+                                <span class="plan-price">€49/M</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="plan" id="planValue" value="enterprise">
                 </div>
 
-                <button type="submit" class="btn btn-primary">
-                    🚀 Kostenlos registrieren
-                </button>
+                <!-- Features in kompakter Zeile -->
+                <div class="features-section">
+                    <label class="form-label">Features</label>
+                    <div class="features-row">
+                        <label class="feature-item">
+                            <input type="checkbox" name="features" value="blackboard" checked>
+                            <span>Schwarzes Brett</span>
+                        </label>
+                        <label class="feature-item">
+                            <input type="checkbox" name="features" value="calendar" checked>
+                            <span>Kalender</span>
+                        </label>
+                        <label class="feature-item">
+                            <input type="checkbox" name="features" value="shift_planning" checked>
+                            <span>Schichtplanung</span>
+                        </label>
+                        <label class="feature-item">
+                            <input type="checkbox" name="features" value="kvp" checked>
+                            <span>KVP</span>
+                        </label>
+                        <label class="feature-item">
+                            <input type="checkbox" name="features" value="survey" checked>
+                            <span>Umfragen</span>
+                        </label>
+                    </div>
+                </div>
 
-                <a href="/login.html" class="btn btn-secondary">
-                    Bereits registriert? Zur Anmeldung
-                </a>
-            </form>
-        </div>
+                <!-- Terms und Submit in einer Zeile -->
+                <div class="bottom-section">
+                    <label class="terms-checkbox">
+                        <input type="checkbox" id="termsCheckbox" name="terms" required>
+                        <span>Ich akzeptiere die <a href="/TERMS-OF-USE.md" target="_blank" class="terms-link">Nutzungsbedingungen</a></span>
+                    </label>
+                    <div class="offer-banner">
+                        🎁 <strong>14 Tage kostenlos testen</strong>
+                    </div>
+                    <button type="submit" class="submit-button" id="submitButton">
+                        Jetzt registrieren →
+                    </button>
+                    <a href="/login.html" class="login-link">Bereits registriert?</a>
+                </div>
+            </div>
+        </form>
     </div>
 
+    <style>
+        /* Zusätzliche Glassmorphismus-Effekte */
+        .form-control:hover:not(:focus) {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        select.form-control {
+            appearance: none;
+            background: rgba(255, 255, 255, 0.04);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 40px;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Hover Effekte für alle Select-Felder */
+        select.form-control:hover:not(:focus),
+        .country-select:hover:not(:focus) {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Firefox spezifisch für bessere Option Styles */
+        @-moz-document url-prefix() {
+            select.form-control option,
+            .country-select option {
+                background-color: #121212 !important;
+                color: #e0e0e0 !important;
+            }
+        }
+        
+        /* Webkit Browser (Chrome, Safari) */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            select.form-control,
+            .country-select {
+                background-color: rgba(255, 255, 255, 0.04);
+            }
+            
+            select option {
+                background: #1a1a1a;
+                color: #e0e0e0;
+                padding: 10px;
+            }
+            
+            select option:hover {
+                background: #2a2a2a;
+                box-shadow: 0 0 10px 100px #2a2a2a inset;
+            }
+        }
+
+        /* Pulse Animation für Logo */
+        .signup-logo {
+            animation: subtle-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes subtle-pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.95;
+                transform: scale(1.02);
+            }
+        }
+
+        /* Glassmorphismus für alle Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+    </style>
+
     <script>
+        // Custom Dropdown Functions
+        let currentCountryCode = '+49';
+        let currentPlan = 'enterprise';
+        
+        // Country Dropdown
+        function toggleCountryDropdown() {
+            const dropdown = document.getElementById('countryDropdown');
+            const display = document.querySelector('.country-display');
+            
+            // Close plan dropdown if open
+            document.getElementById('planDropdown').classList.remove('active');
+            document.querySelector('.plan-display').classList.remove('active');
+            
+            dropdown.classList.toggle('active');
+            display.classList.toggle('active');
+            
+            if (dropdown.classList.contains('active')) {
+                document.addEventListener('click', closeDropdownOutside);
+            }
+        }
+        
+        function closeDropdownOutside(e) {
+            const countrySelect = document.querySelector('.custom-country-select');
+            const planSelect = document.querySelector('.custom-plan-select');
+            
+            if (!countrySelect.contains(e.target)) {
+                document.getElementById('countryDropdown').classList.remove('active');
+                document.querySelector('.country-display').classList.remove('active');
+            }
+            
+            if (!planSelect.contains(e.target)) {
+                document.getElementById('planDropdown').classList.remove('active');
+                document.querySelector('.plan-display').classList.remove('active');
+            }
+            
+            if (!countrySelect.contains(e.target) && !planSelect.contains(e.target)) {
+                document.removeEventListener('click', closeDropdownOutside);
+            }
+        }
+        
+        function selectCountry(flag, code) {
+            document.getElementById('selectedFlag').textContent = flag;
+            document.getElementById('selectedCode').textContent = code;
+            document.getElementById('countryCode').value = code;
+            currentCountryCode = code;
+            
+            document.getElementById('countryDropdown').classList.remove('active');
+            document.querySelector('.country-display').classList.remove('active');
+        }
+        
+        // Plan Dropdown
+        function togglePlanDropdown() {
+            const dropdown = document.getElementById('planDropdown');
+            const display = document.querySelector('.plan-display');
+            
+            // Close country dropdown if open
+            document.getElementById('countryDropdown').classList.remove('active');
+            document.querySelector('.country-display').classList.remove('active');
+            
+            dropdown.classList.toggle('active');
+            display.classList.toggle('active');
+            
+            if (dropdown.classList.contains('active')) {
+                document.addEventListener('click', closeDropdownOutside);
+            }
+        }
+        
+        function selectPlan(value, name) {
+            document.getElementById('selectedPlan').textContent = name;
+            document.getElementById('planValue').value = value;
+            currentPlan = value;
+            
+            document.getElementById('planDropdown').classList.remove('active');
+            document.querySelector('.plan-display').classList.remove('active');
+        }
+        
+        // Help function
+        function showHelp() {
+            alert('Hilfe zur Registrierung:\n\n' +
+                  '1. Geben Sie Ihre Firmendaten ein\n' +
+                  '2. Wählen Sie eine eindeutige Subdomain\n' +
+                  '3. Erstellen Sie ein sicheres Passwort\n' +
+                  '4. 14 Tage kostenlos testen!\n\n' +
+                  'Bei Fragen: support@assixx.com');
+        }
+
         // Get plan from URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         const selectedPlan = urlParams.get('plan');
+        if (selectedPlan) {
+            document.querySelector('select[name="plan"]').value = selectedPlan;
+        }
         
         // Subdomain validation
         const subdomainInput = document.querySelector('input[name="subdomain"]');
@@ -418,7 +1020,7 @@
             }
         });
 
-        // Password confirmation
+        // Password confirmation with real-time validation
         const passwordInput = document.querySelector('input[name="password"]');
         const passwordConfirmInput = document.querySelector('input[name="password_confirm"]');
         const passwordError = document.getElementById('passwordError');
@@ -426,8 +1028,10 @@
         passwordConfirmInput.addEventListener('input', () => {
             if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
                 passwordError.style.display = 'block';
+                passwordConfirmInput.style.borderColor = '#ef4444';
             } else {
                 passwordError.style.display = 'none';
+                passwordConfirmInput.style.borderColor = '';
             }
         });
 
@@ -438,29 +1042,40 @@
             // Validate passwords match
             if (passwordInput.value !== passwordConfirmInput.value) {
                 passwordError.style.display = 'block';
+                passwordConfirmInput.focus();
                 return;
             }
 
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
+            // Get country code
+            const phoneNumber = data.phone;
+            const fullPhone = phoneNumber ? `${currentCountryCode} ${phoneNumber}` : '';
+
+            // Collect selected features
+            const selectedFeatures = Array.from(document.querySelectorAll('input[name="features"]:checked'))
+                .map(cb => cb.value);
+
             // Add root user credentials
             const signupData = {
                 company_name: data.company_name,
                 subdomain: data.subdomain,
-                email: data.email, // Company email
+                email: data.email,
                 admin_email: data.email,
                 admin_password: data.password,
                 admin_first_name: data.first_name,
                 admin_last_name: data.last_name,
-                phone: data.phone,
-                plan: selectedPlan || 'enterprise'
+                phone: fullPhone,
+                plan: currentPlan,
+                features: selectedFeatures
             };
 
             try {
                 const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
                 submitButton.disabled = true;
-                submitButton.textContent = '⏳ Wird erstellt...';
+                submitButton.innerHTML = '⏳ Wird erstellt...';
 
                 const response = await fetch('/api/signup', {
                     method: 'POST',
@@ -474,8 +1089,8 @@
 
                 if (response.ok) {
                     document.getElementById('successMessage').style.display = 'block';
-                    document.getElementById('successMessage').textContent = 
-                        `✅ Erfolgreich registriert! Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
+                    document.getElementById('successMessage').innerHTML = 
+                        `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
                     
                     // Clear form
                     e.target.reset();
@@ -487,13 +1102,13 @@
                 } else {
                     alert(result.message || 'Fehler bei der Registrierung');
                     submitButton.disabled = false;
-                    submitButton.textContent = '🚀 Kostenlos registrieren';
+                    submitButton.innerHTML = originalText;
                 }
             } catch (error) {
                 console.error('Signup error:', error);
                 alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
                 submitButton.disabled = false;
-                submitButton.textContent = '🚀 Kostenlos registrieren';
+                submitButton.innerHTML = originalText;
             }
         });
     </script>
