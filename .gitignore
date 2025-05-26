@@ -9,6 +9,8 @@ server.log
 server/uploads/
 # Windows-spezifische Dateien
 *:Zone.Identifier
+# Temporäre Dateien und Setup-Skripte
+server/temp/
 # CLAUDE.md und .claude/ sind jetzt im Repository für bessere Kontinuität
 # CLAUDE.md
 # .claude/
