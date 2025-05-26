@@ -56,7 +56,11 @@ module.exports = [
 
   // Browser environment for client-side JavaScript
   {
-    files: ['public/js/**/*.js', 'middleware/public/js/**/*.js', 'public/components/**/*.js'],
+    files: [
+      'public/js/**/*.js',
+      'middleware/public/js/**/*.js',
+      'public/components/**/*.js',
+    ],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'script',
@@ -72,6 +76,8 @@ module.exports = [
         alert: 'readonly',
         confirm: 'readonly',
         prompt: 'readonly',
+        atob: 'readonly',
+        btoa: 'readonly',
         FormData: 'readonly',
         FileReader: 'readonly',
         Blob: 'readonly',

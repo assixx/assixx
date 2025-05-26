@@ -1433,6 +1433,7 @@ class ChatClient {
         })
       );
     } else {
+      // No conversation selected - nothing to do
     }
   }
 
@@ -1911,7 +1912,7 @@ class ChatClient {
     }
   }
 
-  async handleFileUpload(files) {
+  handleFileUpload(files) {
     const maxFileSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
       'image/jpeg',
@@ -2219,6 +2220,7 @@ class ChatClient {
       );
 
       if (response.ok) {
+        // Reaction added successfully - UI already updated optimistically
       }
     } catch (error) {
       console.error('❌ Error adding reaction:', error);

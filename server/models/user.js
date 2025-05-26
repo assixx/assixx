@@ -348,81 +348,18 @@ class User {
     }
   }
 
-  // Neue Methode: Selbstständige Aktualisierung des eigenen Profils
-  static async updateOwnProfile(userId, userData) {
-    try {
-      // Wir holen zuerst den Benutzer, um zu sehen, welche Felder er bearbeiten darf
-      const user = await this.findById(userId);
-
-      if (!user) {
-        return { success: false, message: 'Benutzer nicht gefunden' };
-      }
-
-      // Bestimmen, welche Felder aktualisiert werden dürfen
-      let editableFields = [];
-
-      // Wenn das Feld editable_fields existiert und ein JSON-String ist, parsen wir es
-      if (user.editable_fields) {
-        try {
-          editableFields = JSON.parse(user.editable_fields);
-        } catch (e) {
-          logger.error(
-            `Error parsing editable_fields for user ${userId}: ${e.message}`
-          );
-          // Standard-editierbare Felder setzen
-          editableFields = ['phone', 'address', 'emergency_contact'];
-        }
-      } else {
-        // Standard-editierbare Felder, wenn nichts anderes definiert ist
-        editableFields = ['phone', 'address', 'emergency_contact'];
-      }
-
-      // Nur die erlaubten Felder aktualisieren
-      const allowedUpdates = {};
-
-      for (const field of editableFields) {
-        if (userData[field] !== undefined) {
-          allowedUpdates[field] = userData[field];
-        }
-      }
-
-      // Wenn keine erlaubten Updates vorliegen, abbrechen
-      if (Object.keys(allowedUpdates).length === 0) {
-        return {
-          success: false,
-          message: 'Keine erlaubten Felder zum Aktualisieren',
-        };
-      }
-
-      // Update durchführen
-      const success = await this.update(userId, allowedUpdates);
-
-      if (success) {
-        return { success: true, message: 'Profil erfolgreich aktualisiert' };
-      } else {
-        return {
-          success: false,
-          message: 'Fehler beim Aktualisieren des Profils',
-        };
-      }
-    } catch (error) {
-      logger.error(
-        `Error in updateOwnProfile for user ${userId}: ${error.message}`
-      );
-      throw error;
-    }
-  }
-
   // Neue Methode: Benutzer archivieren
+  // eslint-disable-next-line require-await
   static async archiveUser(userId) {
     logger.info(`Archiving user ${userId}`);
-    return await this.update(userId, { is_archived: true });
+    return this.update(userId, { is_archived: true });
   }
 
   // Neue Methode: Benutzer aus dem Archiv wiederherstellen
+  // eslint-disable-next-line require-await
   static async unarchiveUser(userId) {
     logger.info(`Unarchiving user ${userId}`);
-    return await this.update(userId, { is_archived: false });
+    return this.update(userId, { is_archived: false });
   }
 
   // Neue Methode: Alle archivierten Benutzer auflisten
@@ -452,54 +389,6 @@ class User {
       return rows;
     } catch (error) {
       logger.error(`Error finding archived users: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Get user's role, department and team information
-   * @param {number} userId - The user ID to retrieve information for
-   * @returns {Promise<Object>} Object containing role, departmentId, and teamId
-   */
-  static async getUserDepartmentAndTeam(userId) {
-    try {
-      logger.info(`Getting department and team for user ${userId}`);
-
-      // First, get the user's role and department_id
-      const [userRows] = await db.query(
-        'SELECT role, department_id FROM users WHERE id = ?',
-        [userId]
-      );
-
-      if (userRows.length === 0) {
-        logger.warn(`User ${userId} not found`);
-        return { role: null, departmentId: null, teamId: null };
-      }
-
-      const { role, department_id } = userRows[0];
-
-      // Now, find the user's team (if any)
-      // We'll return the first team if user belongs to multiple teams
-      const [teamRows] = await db.query(
-        'SELECT team_id FROM user_teams WHERE user_id = ? LIMIT 1',
-        [userId]
-      );
-
-      const teamId = teamRows.length > 0 ? teamRows[0].team_id : null;
-
-      logger.info(
-        `User ${userId} - Role: ${role}, Department: ${department_id}, Team: ${teamId}`
-      );
-
-      return {
-        role,
-        departmentId: department_id,
-        teamId,
-      };
-    } catch (error) {
-      logger.error(
-        `Error getting department and team for user ${userId}: ${error.message}`
-      );
       throw error;
     }
   }

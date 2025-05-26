@@ -169,14 +169,16 @@ class Document {
     }
   }
 
+  // eslint-disable-next-line require-await
   static async archiveDocument(id) {
     logger.info(`Archiving document ${id}`);
-    return await this.update(id, { isArchived: true });
+    return this.update(id, { isArchived: true });
   }
 
+  // eslint-disable-next-line require-await
   static async unarchiveDocument(id) {
     logger.info(`Unarchiving document ${id}`);
-    return await this.update(id, { isArchived: false });
+    return this.update(id, { isArchived: false });
   }
 
   static async delete(id) {

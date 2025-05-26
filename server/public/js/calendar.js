@@ -18,6 +18,23 @@ let currentTeamId = null;
 let selectedAttendees = [];
 let calendarView = 'dayGridMonth'; // Default view
 
+/**
+ * Helper function to set selected organization ID
+ * @param {number} id - The organization ID
+ * @param {string} name - The organization name
+ */
+function selectOrgId(id, name) {
+  const selectedOrgIdElement = document.getElementById('selectedOrgId');
+  const eventOrgIdElement = document.getElementById('eventOrgId');
+
+  if (selectedOrgIdElement) {
+    selectedOrgIdElement.textContent = name;
+  }
+  if (eventOrgIdElement) {
+    eventOrgIdElement.value = id;
+  }
+}
+
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', () => {
   // Alle Schließen-Buttons einrichten
@@ -751,9 +768,11 @@ function openEventForm(
     const reminderTime = event.extendedProps?.reminder_time;
     if (reminderTime) {
       const reminderText = formatReminderTime(reminderTime);
-      selectReminder(reminderTime, reminderText);
+      const reminderSelect = document.getElementById('eventReminder');
+      if (reminderSelect) reminderSelect.value = reminderTime;
     } else {
-      selectReminder('', 'Keine Erinnerung');
+      const reminderSelect = document.getElementById('eventReminder');
+      if (reminderSelect) reminderSelect.value = '';
     }
 
     // Parse dates - FullCalendar provides dates as 'start' and 'end'
@@ -784,11 +803,14 @@ function openEventForm(
     // Set organization level and populate org id dropdown
     const orgLevel = event.extendedProps?.org_level;
     if (orgLevel === 'company') {
-      selectOrgLevel('company', 'Alle Mitarbeiter');
+      const orgLevelSelect = document.getElementById('eventOrgLevel');
+      if (orgLevelSelect) orgLevelSelect.value = 'company';
     } else if (orgLevel === 'department') {
-      selectOrgLevel('department', 'Bestimmte Abteilung');
+      const orgLevelSelect = document.getElementById('eventOrgLevel');
+      if (orgLevelSelect) orgLevelSelect.value = 'department';
     } else if (orgLevel === 'team') {
-      selectOrgLevel('team', 'Bestimmtes Team');
+      const orgLevelSelect = document.getElementById('eventOrgLevel');
+      if (orgLevelSelect) orgLevelSelect.value = 'team';
     }
 
     // Wait a bit then set the org_id

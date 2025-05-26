@@ -1,3 +1,20 @@
+/**
+ * Download a document
+ * @param {string} docId - Document ID
+ */
+function downloadDocument(docId) {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  // Create a download link and trigger it
+  const link = document.createElement('a');
+  link.href = `/api/documents/${docId}/download`;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Verwenden stattdessen die einzelnen Elemente direkt
   const documentTableBody = document.getElementById('recent-documents');

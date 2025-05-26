@@ -5,6 +5,8 @@
  * inklusive der Verarbeitung von verknüpften Dokumenten und anderen Daten.
  */
 
+/* global hideModal, loadEmployeesTable, loadDashboardStats */
+
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
 let selectedEmployeeId = null;
 let selectedEmployeeName = '';

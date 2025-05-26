@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // Global token variable
 let token;
 
@@ -88,14 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event-Listener für Mitarbeiter-Buttons
   if (newEmployeeBtn) {
-    newEmployeeBtn.addEventListener('click', function () {
+    newEmployeeBtn.addEventListener('click', () => {
       showNewEmployeeModal();
     });
   } else {
   }
 
   if (employeesSectionNewBtn) {
-    employeesSectionNewBtn.addEventListener('click', function () {
+    employeesSectionNewBtn.addEventListener('click', () => {
       showNewEmployeeModal();
     });
   } else {
@@ -296,10 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
     delete employeeData.password_confirm;
 
     // Automatische Mitarbeiter-ID generieren (Timestamp + zufällige Zahl)
-    employeeData.employee_id =
-      'EMP' +
-      Date.now().toString().slice(-6) +
-      Math.floor(Math.random() * 1000);
+    employeeData.employee_id = `EMP${Date.now()
+      .toString()
+      .slice(-6)}${Math.floor(Math.random() * 1000)}`;
 
     // Bei leerer Abteilung setzen wir null statt leeren String
     if (employeeData.department_id === '') {
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Fehler beim Erstellen des Mitarbeiters:', error);
-      alert(`Ein Fehler ist aufgetreten: ${  error.message}`);
+      alert(`Ein Fehler ist aufgetreten: ${error.message}`);
     }
   }
 
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Exception beim Erstellen der Abteilung:', error);
-      alert(`Ein Fehler ist aufgetreten: ${  error.message}`);
+      alert(`Ein Fehler ist aufgetreten: ${error.message}`);
     }
   }
 
@@ -633,11 +633,13 @@ async function loadEmployeesForPayslipSelect() {
 
       if (response.ok) {
         const employees = await response.json();
-        select.innerHTML =
-          `<option value="">Bitte wählen...</option>${ 
-                    employees.map(emp => `
+        select.innerHTML = `<option value="">Bitte wählen...</option>${employees
+          .map(
+            (emp) => `
                         <option value="${emp.id}">${emp.first_name} ${emp.last_name}</option>
-                    `).join('')}`;
+                    `
+          )
+          .join('')}`;
       }
     } catch (error) {
       console.error('Error loading employees for payslip select:', error);
@@ -1104,11 +1106,13 @@ async function loadEmployeesForSelectElement(selectElement, token) {
 
     if (response.ok) {
       const employees = await response.json();
-      selectElement.innerHTML =
-        `<option value="">Bitte wählen...</option>${ 
-                employees.map(emp => `
+      selectElement.innerHTML = `<option value="">Bitte wählen...</option>${employees
+        .map(
+          (emp) => `
                     <option value="${emp.id}">${emp.first_name} ${emp.last_name}</option>
-                `).join('')}`;
+                `
+        )
+        .join('')}`;
     }
   } catch (error) {
     console.error('Error loading employees for select:', error);
@@ -1123,11 +1127,13 @@ async function loadDepartmentsForSelectElement(selectElement, token) {
 
     if (response.ok) {
       const departments = await response.json();
-      selectElement.innerHTML =
-        `<option value="">Keine Abteilung</option>${ 
-                departments.map(dept => `
+      selectElement.innerHTML = `<option value="">Keine Abteilung</option>${departments
+        .map(
+          (dept) => `
                     <option value="${dept.id}">${dept.name}</option>
-                `).join('')}`;
+                `
+        )
+        .join('')}`;
     }
   } catch (error) {
     console.error('Error loading departments for select:', error);
@@ -1166,13 +1172,13 @@ async function loadDepartmentsForEmployeeSelect() {
           select.innerHTML =
             '<option value="">Keine Abteilungen verfügbar</option>';
         } else {
-          select.innerHTML =
-            `<option value="">Keine Abteilung</option>${ 
-                        departments.map(dept => `
+          select.innerHTML = `<option value="">Keine Abteilung</option>${departments
+            .map(
+              (dept) => `
                             <option value="${dept.id}">${dept.name || 'Unbenannte Abteilung'}</option>
-                        `).join('')}`;
-              )
-              .join('');
+                        `
+            )
+            .join('')}`;
         }
       } else {
         console.error('Failed to load departments for employee select');

@@ -1,6 +1,6 @@
 # Assixx Project - Zentrale TODO-Liste
 
-> **Letzte Aktualisierung:** 26.05.2025
+> **Letzte Aktualisierung:** 26.05.2025 - 19:30
 > **Erstellt aus:** README.md, ROADMAP.md, CLAUDE.md, CLAUDE.local.md, SECURITY-IMPROVEMENTS.md, CHAT-SYSTEM-FIXES.md
 
 ## ✅ ERLEDIGTE AUFGABEN
@@ -72,6 +72,17 @@
   - [x] Datei-Anhänge
   - [x] Typing Indicators
   - [x] Ungelesene Nachrichten Badge
+
+### Code-Qualität & Wartung (26.05.2025)
+- [x] **ESLint & Prettier Setup**
+  - [x] ESLint Konfiguration hinzugefügt
+  - [x] Prettier Integration
+  - [x] Kritische Parsing-Fehler behoben
+  - [x] no-return-await Fehler korrigiert
+  - [x] Doppelte Klassenmethoden entfernt
+  - [x] no-undef Fehler behoben (atob als global definiert)
+  - [x] Fehlende Funktionen implementiert
+  - [x] 127 ESLint-Fehler verbleiben (meist unused variables in HTML-Templates)
 
 ## 🚨 KRITISCHE SICHERHEITS-TODOS (Höchste Priorität!)
 
@@ -168,6 +179,13 @@ Siehe [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md) für detaill
 - [ ] Deployment-Guide erweitern
 - [ ] Testing-Dokumentation
 
+### Code-Qualität
+- [x] ESLint & Prettier Setup (26.05.2025)
+- [ ] Verbleibende ESLint-Warnungen beheben (127 Items)
+- [ ] Unit Tests implementieren
+- [ ] Integration Tests
+- [ ] E2E Tests mit Cypress
+
 ### Lohnabrechnungs-Erweiterungen
 - [ ] Erweiterte Filter-Optionen
 - [ ] Bulk-Upload Funktionalität  
@@ -196,21 +214,23 @@ Siehe [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md) für detaill
 
 ## 📊 Status-Übersicht
 
-### Erledigte Aufgaben: ✅ 45 Items
+### Erledigte Aufgaben: ✅ 54 Items
 - **UI/UX & Design:** 15 Items
 - **Features:** 20 Items
+- **Code-Qualität:** 9 Items
 - **Dokumentation:** 5 Items
 - **Bug Fixes:** 5 Items
 
-### Offene Aufgaben: ⏳ 67 Items
+### Offene Aufgaben: ⏳ 71 Items
 - **Kritisch/Security:** 15 TODOs
 - **Feature-Entwicklung:** 16 TODOs  
 - **Erweiterungen:** 21 TODOs
+- **Code-Qualität:** 4 TODOs
 - **Dokumentation:** 9 TODOs
 - **Bugs:** 6 TODOs
 
-**Gesamt:** 112 Items (45 erledigt, 67 offen)
-**Fortschritt:** 40% abgeschlossen
+**Gesamt:** 125 Items (54 erledigt, 71 offen)
+**Fortschritt:** 43% abgeschlossen
 
 ---
 
