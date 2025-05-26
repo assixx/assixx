@@ -13,7 +13,7 @@ const { authenticateUser, generateToken, authenticateToken, authorizeRole } = re
 const rootRoutes = require('./routes/root');
 const adminRoutes = require('./routes/admin');
 const employeeRoutes = require('./routes/employee');
-const employeeTestRoutes = require('./routes/employee-test'); // TEST ROUTES without authentication
+// const employeeTestRoutes = require('./routes/employee-test'); // TEST ROUTES without authentication
 const departmentRoutes = require('./routes/departments');
 const teamRoutes = require('./routes/teams');
 const userRoutes = require('./routes/users');
@@ -378,7 +378,7 @@ app.use('/api/areas', require('./routes/areas'));
 // WARNING: These routes bypass all authentication and authorization
 if (process.env.NODE_ENV !== 'production') {
   console.warn('WARNING: Test routes enabled - these routes bypass authentication!');
-  app.use('/test/employee', employeeTestRoutes);
+  // app.use('/test/employee', employeeTestRoutes);
   
   // Import and register DB test routes
   const testDbRoutes = require('./routes/test-db');
