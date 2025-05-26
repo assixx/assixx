@@ -5,18 +5,20 @@ require('dotenv').config();
 
 async function executeChatSchema() {
   let connection;
-  
+
   try {
     console.log('Verbindung zur Datenbank wird hergestellt...');
-    console.log(`Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, Database: ${process.env.DB_NAME}`);
-    
+    console.log(
+      `Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, Database: ${process.env.DB_NAME}`
+    );
+
     // Datenbankverbindung erstellen
     connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'lohnabrechnung',
-      multipleStatements: true
+      multipleStatements: true,
     });
 
     console.log('Datenbankverbindung erfolgreich hergestellt');
@@ -24,13 +26,13 @@ async function executeChatSchema() {
     // Chat-Schema-Datei lesen
     const schemaPath = path.join(__dirname, 'chat_schema_fixed.sql');
     const schemaSQL = await fs.readFile(schemaPath, 'utf8');
-    
+
     console.log('Chat-Schema wird ausgeführt...');
     console.log('Schema-Inhalt Länge:', schemaSQL.length, 'Zeichen');
 
     // Ganzes Schema auf einmal ausführen (MySQL unterstützt multipleStatements)
     console.log('Führe komplettes Chat-Schema aus...');
-    
+
     try {
       await connection.query(schemaSQL);
       console.log('✓ Chat-Schema erfolgreich ausgeführt');
@@ -41,7 +43,8 @@ async function executeChatSchema() {
 
     // Überprüfen ob Tabellen erstellt wurden
     console.log('\nÜberprüfung der erstellten Chat-Tabellen:');
-    const [tables] = await connection.execute(`
+    const [tables] = await connection.execute(
+      `
       SELECT TABLE_NAME 
       FROM INFORMATION_SCHEMA.TABLES 
       WHERE TABLE_SCHEMA = ? 
@@ -49,15 +52,16 @@ async function executeChatSchema() {
       OR TABLE_NAME LIKE 'conversations%'
       OR TABLE_NAME LIKE 'messages%'
       OR TABLE_NAME LIKE 'work_schedules%'
-    `, [process.env.DB_NAME]);
+    `,
+      [process.env.DB_NAME]
+    );
 
     console.log('Gefundene Chat-Tabellen:');
-    tables.forEach(table => {
+    tables.forEach((table) => {
       console.log(`- ${table.TABLE_NAME}`);
     });
 
     console.log('\n✅ Chat-Schema erfolgreich ausgeführt!');
-    
   } catch (error) {
     console.error('❌ Fehler beim Ausführen des Chat-Schemas:', error);
     throw error;

@@ -3,17 +3,17 @@
  * Includes navigation, helpers, and shared functionality
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
   // Load navigation
   loadNavigation();
-  
+
   // Setup logout button listener
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'logoutBtn') {
       logout();
     }
   });
-  
+
   // Check if token is expired on each page load
   checkTokenExpiry();
 });
@@ -26,20 +26,20 @@ async function loadNavigation() {
     // Get navigation placeholder
     const navPlaceholder = document.getElementById('navigation-placeholder');
     if (!navPlaceholder) return;
-    
+
     // Get token from localStorage
     const token = localStorage.getItem('token');
     let userRole = null;
     let userData = null;
-    
+
     if (token) {
       // Check if user is logged in and get role
       const userResponse = await fetch('/api/user/profile', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (userResponse.ok) {
         userData = await userResponse.json();
         userRole = userData.role;
@@ -53,17 +53,17 @@ async function loadNavigation() {
       navPlaceholder.innerHTML = createGuestNavigation();
       return;
     }
-    
+
     // Load proper navigation based on role
     if (userRole === 'admin' || userRole === 'root') {
       navPlaceholder.innerHTML = createAdminNavigation(userData);
     } else {
       navPlaceholder.innerHTML = createEmployeeNavigation(userData);
     }
-    
+
     // Initialize Bootstrap components
     initializeBootstrapComponents();
-    
+
     // Check for unread notifications
     checkUnreadNotifications();
   } catch (error) {
@@ -250,12 +250,20 @@ function createGuestNavigation() {
  */
 function initializeBootstrapComponents() {
   // Initialize tooltips
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-  
+  const tooltipTriggerList = document.querySelectorAll(
+    '[data-bs-toggle="tooltip"]'
+  );
+  [...tooltipTriggerList].map(
+    (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
+  );
+
   // Initialize popovers
-  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-  [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+  const popoverTriggerList = document.querySelectorAll(
+    '[data-bs-toggle="popover"]'
+  );
+  [...popoverTriggerList].map(
+    (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
+  );
 }
 
 /**
@@ -266,21 +274,24 @@ async function checkUnreadNotifications() {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) return;
-    
+
     // Check if we have unread blackboard entries that require confirmation
-    const response = await fetch('/api/blackboard?requires_confirmation=true&unread=true&limit=1', {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      '/api/blackboard?requires_confirmation=true&unread=true&limit=1',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
-    
+    );
+
     if (!response.ok) {
       return;
     }
-    
+
     const data = await response.json();
     const unreadCount = data.pagination.total;
-    
+
     if (unreadCount > 0) {
       // Update badge
       const badge = document.querySelector('.notification-badge');
@@ -288,15 +299,15 @@ async function checkUnreadNotifications() {
         badge.textContent = unreadCount;
         badge.classList.remove('d-none');
       }
-      
+
       // Update dropdown content
       const notificationList = document.querySelector('.notification-list');
       if (notificationList) {
         // Clear existing content
         notificationList.innerHTML = '';
-        
+
         // Add unread blackboard entries
-        data.entries.forEach(entry => {
+        data.entries.forEach((entry) => {
           const item = document.createElement('div');
           item.className = 'dropdown-item notification-item';
           item.innerHTML = `
@@ -313,7 +324,7 @@ async function checkUnreadNotifications() {
           `;
           notificationList.appendChild(item);
         });
-        
+
         // Add link to see all
         if (unreadCount > 1) {
           const seeAllItem = document.createElement('div');
@@ -339,15 +350,15 @@ async function logout() {
   try {
     // Get token from localStorage
     const token = localStorage.getItem('token');
-    
+
     if (token) {
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-    
+
       if (response.ok) {
         // Clear token and redirect to login page
         localStorage.removeItem('token');
@@ -370,14 +381,14 @@ async function logout() {
  */
 function checkTokenExpiry() {
   const token = localStorage.getItem('token');
-  
+
   if (!token) return;
-  
+
   try {
     // Parse token to get expiry time
     const payload = JSON.parse(atob(token.split('.')[1]));
     const expiryTime = payload.exp * 1000; // Convert to milliseconds
-    
+
     // If token is expired or about to expire (less than 5 minutes), redirect to login
     if (Date.now() >= expiryTime - 5 * 60 * 1000) {
       logout();

@@ -3,23 +3,39 @@ const logger = require('../utils/logger');
 
 class Department {
   static async create(departmentData) {
-    const { name, description, manager_id, parent_id, status = 'active', visibility = 'public', tenant_id } = departmentData;
+    const {
+      name,
+      description,
+      manager_id,
+      parent_id,
+      status = 'active',
+      visibility = 'public',
+      tenant_id,
+    } = departmentData;
     logger.info(`Creating new department: ${name}`);
-    
+
     // Check if columns exist, fallback to basic query if not
     try {
       const [columns] = await db.query('DESCRIBE departments');
-      const hasStatus = columns.some(col => col.Field === 'status');
-      const hasVisibility = columns.some(col => col.Field === 'visibility');
-      
+      const hasStatus = columns.some((col) => col.Field === 'status');
+      const hasVisibility = columns.some((col) => col.Field === 'visibility');
+
       let query, params;
-      
+
       if (hasStatus && hasVisibility) {
         query = `
           INSERT INTO departments (name, description, manager_id, parent_id, status, visibility, tenant_id) 
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
-        params = [name, description, manager_id, parent_id, status, visibility, tenant_id];
+        params = [
+          name,
+          description,
+          manager_id,
+          parent_id,
+          status,
+          visibility,
+          tenant_id,
+        ];
       } else {
         logger.warn('Status/visibility columns not found, using basic query');
         query = `
@@ -28,7 +44,7 @@ class Department {
         `;
         params = [name, description, manager_id, parent_id, tenant_id];
       }
-      
+
       const [result] = await db.query(query, params);
       logger.info(`Department created successfully with ID ${result.insertId}`);
       return result.insertId;
@@ -39,8 +55,10 @@ class Department {
   }
 
   static async findAll(tenant_id = null) {
-    logger.info(`Fetching all departments${tenant_id ? ` for tenant ${tenant_id}` : ''}`);
-    
+    logger.info(
+      `Fetching all departments${tenant_id ? ` for tenant ${tenant_id}` : ''}`
+    );
+
     try {
       // First try with extended query
       const query = `
@@ -53,15 +71,17 @@ class Department {
         ${tenant_id ? 'WHERE d.tenant_id = ?' : ''}
         ORDER BY d.name
       `;
-      
+
       const [rows] = await db.query(query, tenant_id ? [tenant_id] : []);
       logger.info(`Retrieved ${rows.length} departments with extended info`);
       return rows;
     } catch (error) {
-      logger.warn(`Error with extended query: ${error.message}, falling back to simple query`);
-      
+      logger.warn(
+        `Error with extended query: ${error.message}, falling back to simple query`
+      );
+
       // Fallback to simple query
-      const simpleQuery = tenant_id 
+      const simpleQuery = tenant_id
         ? 'SELECT * FROM departments WHERE tenant_id = ? ORDER BY name'
         : 'SELECT * FROM departments ORDER BY name';
       const [rows] = await db.query(simpleQuery, tenant_id ? [tenant_id] : []);
@@ -73,7 +93,7 @@ class Department {
   static async findById(id) {
     logger.info(`Fetching department with ID ${id}`);
     const query = 'SELECT * FROM departments WHERE id = ?';
-    
+
     try {
       const [rows] = await db.query(query, [id]);
       if (rows.length === 0) {
@@ -92,7 +112,7 @@ class Department {
     logger.info(`Updating department ${id}`);
     const fields = [];
     const values = [];
-    
+
     // Only update provided fields
     if (departmentData.name !== undefined) {
       fields.push('name = ?');
@@ -118,14 +138,14 @@ class Department {
       fields.push('visibility = ?');
       values.push(departmentData.visibility);
     }
-    
+
     if (fields.length === 0) {
       return false;
     }
-    
+
     values.push(id);
     const query = `UPDATE departments SET ${fields.join(', ')} WHERE id = ?`;
-    
+
     try {
       const [result] = await db.query(query, values);
       if (result.affectedRows === 0) {
@@ -143,7 +163,7 @@ class Department {
   static async delete(id) {
     logger.info(`Deleting department ${id}`);
     const query = 'DELETE FROM departments WHERE id = ?';
-    
+
     try {
       const [result] = await db.query(query, [id]);
       if (result.affectedRows === 0) {
@@ -165,13 +185,17 @@ class Department {
       FROM users u 
       WHERE u.department_id = ?
     `;
-    
+
     try {
       const [rows] = await db.query(query, [departmentId]);
-      logger.info(`Retrieved ${rows.length} users for department ${departmentId}`);
+      logger.info(
+        `Retrieved ${rows.length} users for department ${departmentId}`
+      );
       return rows;
     } catch (error) {
-      logger.error(`Error fetching users for department ${departmentId}: ${error.message}`);
+      logger.error(
+        `Error fetching users for department ${departmentId}: ${error.message}`
+      );
       throw error;
     }
   }

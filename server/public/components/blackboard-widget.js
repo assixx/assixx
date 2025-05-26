@@ -8,15 +8,15 @@ class BlackboardWidget {
     this.container = document.getElementById(containerId);
     this.limit = limit;
     this.isDashboard = isDashboard;
-    
+
     if (!this.container) {
       console.error(`Container with ID '${containerId}' not found`);
       return;
     }
-    
+
     this.loadEntries();
   }
-  
+
   /**
    * Load blackboard entries from the API
    */
@@ -31,26 +31,29 @@ class BlackboardWidget {
           <span class="ms-2">Lade Einträge...</span>
         </div>
       `;
-      
+
       // Get token from localStorage
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No token found');
       }
-      
+
       // Fetch entries
-      const response = await fetch(`/api/blackboard/dashboard?limit=${this.limit}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `/api/blackboard/dashboard?limit=${this.limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
-      
+      );
+
       if (!response.ok) {
         throw new Error('Failed to load entries');
       }
-      
+
       const entries = await response.json();
-      
+
       // Display entries
       this.displayEntries(entries);
     } catch (error) {
@@ -63,7 +66,7 @@ class BlackboardWidget {
       `;
     }
   }
-  
+
   /**
    * Display entries in the widget
    */
@@ -76,7 +79,7 @@ class BlackboardWidget {
       `;
       return;
     }
-    
+
     // For dashboard, show card-based design
     if (this.isDashboard) {
       this.renderDashboardWidget(entries);
@@ -85,13 +88,13 @@ class BlackboardWidget {
       this.renderSimpleList(entries);
     }
   }
-  
+
   /**
    * Render dashboard style widget
    */
   renderDashboardWidget(entries) {
     let html = '';
-    
+
     // Header if on dashboard
     if (this.isDashboard) {
       html += `
@@ -103,14 +106,14 @@ class BlackboardWidget {
         </div>
       `;
     }
-    
+
     html += '<div class="blackboard-entries">';
-    
-    entries.forEach(entry => {
+
+    entries.forEach((entry) => {
       // Format date
       const createdDate = new Date(entry.created_at);
       const formattedDate = createdDate.toLocaleDateString('de-DE');
-      
+
       // Prepare priority class
       let priorityClass = '';
       if (entry.priority === 'low') {
@@ -122,7 +125,7 @@ class BlackboardWidget {
       } else if (entry.priority === 'urgent') {
         priorityClass = 'border-danger';
       }
-      
+
       // Prepare level badge
       let levelBadge = '';
       if (entry.org_level === 'company') {
@@ -132,11 +135,13 @@ class BlackboardWidget {
       } else if (entry.org_level === 'team') {
         levelBadge = '<span class="badge bg-success">Team</span>';
       }
-      
+
       // Prepare unread indicator
-      const unreadBadge = entry.requires_confirmation && !entry.is_confirmed ? 
-        '<span class="badge bg-danger ms-2">Ungelesen</span>' : '';
-      
+      const unreadBadge =
+        entry.requires_confirmation && !entry.is_confirmed
+          ? '<span class="badge bg-danger ms-2">Ungelesen</span>'
+          : '';
+
       html += `
         <div class="blackboard-entry card mb-3 ${priorityClass}">
           <div class="card-body">
@@ -148,40 +153,43 @@ class BlackboardWidget {
             <p class="card-text">${this.truncateText(entry.content, 100)}</p>
             <div class="entry-actions">
               <a href="/blackboard.html?id=${entry.id}" class="btn btn-sm btn-primary">Details</a>
-              ${entry.requires_confirmation && !entry.is_confirmed ? 
-                `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${entry.id}">
+              ${
+                entry.requires_confirmation && !entry.is_confirmed
+                  ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${entry.id}">
                    Bestätigen
-                 </button>` : ''}
+                 </button>`
+                  : ''
+              }
             </div>
           </div>
         </div>
       `;
     });
-    
+
     html += '</div>';
-    
+
     this.container.innerHTML = html;
-    
+
     // Add event listeners for confirmation buttons
-    this.container.querySelectorAll('.confirm-entry-btn').forEach(btn => {
+    this.container.querySelectorAll('.confirm-entry-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const entryId = e.target.getAttribute('data-id');
         this.confirmEntry(entryId);
       });
     });
   }
-  
+
   /**
    * Render simple list style widget
    */
   renderSimpleList(entries) {
     let html = '<ul class="list-group">';
-    
-    entries.forEach(entry => {
+
+    entries.forEach((entry) => {
       // Format date
       const createdDate = new Date(entry.created_at);
       const formattedDate = createdDate.toLocaleDateString('de-DE');
-      
+
       // Prepare priority class
       let priorityClass = '';
       if (entry.priority === 'urgent') {
@@ -189,11 +197,13 @@ class BlackboardWidget {
       } else if (entry.priority === 'high') {
         priorityClass = 'border-left-warning';
       }
-      
+
       // Prepare unread indicator
-      const unreadIndicator = entry.requires_confirmation && !entry.is_confirmed ? 
-        'list-group-item-warning' : '';
-      
+      const unreadIndicator =
+        entry.requires_confirmation && !entry.is_confirmed
+          ? 'list-group-item-warning'
+          : '';
+
       html += `
         <li class="list-group-item d-flex justify-content-between align-items-center ${priorityClass} ${unreadIndicator}">
           <div>
@@ -202,27 +212,30 @@ class BlackboardWidget {
             </a>
             <small class="d-block text-muted">${formattedDate}</small>
           </div>
-          ${entry.requires_confirmation && !entry.is_confirmed ? 
-            `<button class="btn btn-sm btn-outline-success confirm-entry-btn" data-id="${entry.id}">
+          ${
+            entry.requires_confirmation && !entry.is_confirmed
+              ? `<button class="btn btn-sm btn-outline-success confirm-entry-btn" data-id="${entry.id}">
                <i class="fas fa-check"></i>
-             </button>` : ''}
+             </button>`
+              : ''
+          }
         </li>
       `;
     });
-    
+
     html += '</ul>';
-    
+
     this.container.innerHTML = html;
-    
+
     // Add event listeners for confirmation buttons
-    this.container.querySelectorAll('.confirm-entry-btn').forEach(btn => {
+    this.container.querySelectorAll('.confirm-entry-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const entryId = e.target.getAttribute('data-id');
         this.confirmEntry(entryId);
       });
     });
   }
-  
+
   /**
    * Confirm a blackboard entry as read
    */
@@ -233,18 +246,18 @@ class BlackboardWidget {
       if (!token) {
         throw new Error('No token found');
       }
-      
+
       const response = await fetch(`/api/blackboard/${entryId}/confirm`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to confirm entry');
       }
-      
+
       // Reload entries
       this.loadEntries();
     } catch (error) {
@@ -252,19 +265,19 @@ class BlackboardWidget {
       alert('Fehler bei der Lesebestätigung.');
     }
   }
-  
+
   /**
    * Truncate text to a specific length
    */
   truncateText(text, maxLength) {
     // Remove HTML tags
     const plainText = text.replace(/<\/?[^>]+(>|$)/g, '');
-    
+
     if (plainText.length <= maxLength) {
       return plainText;
     }
-    
-    return plainText.substring(0, maxLength - 3) + '...';
+
+    return `${plainText.substring(0, maxLength - 3)}...`;
   }
 }
 

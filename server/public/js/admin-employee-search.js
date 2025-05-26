@@ -3,45 +3,46 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Bestehende Elemente
   const employeeTableBody = document.getElementById('employee-table-body');
-  
+
   // Neue Elemente für die erweiterte Suche
   const searchForm = document.getElementById('employee-search-form');
   const searchInput = document.getElementById('employee-search-input');
   const departmentFilter = document.getElementById('department-filter');
   const paginationContainer = document.getElementById('pagination-container');
-  
+
   // Event-Listener hinzufügen
   if (searchForm) {
     searchForm.addEventListener('submit', handleSearch);
   }
-  
+
   if (departmentFilter) {
     departmentFilter.addEventListener('change', handleSearch);
     // Abteilungen laden
     loadDepartments();
   }
-  
+
   // Initialen Suchvorgang ausführen
   if (searchForm) {
     loadEmployees();
   }
-  
+
   // Funktion zum Laden der Abteilungen
   async function loadDepartments() {
     try {
       const response = await fetch('/departments', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (response.ok) {
         const departments = await response.json();
-        
+
         // Departmentfilter befüllen
-        departmentFilter.innerHTML = '<option value="">Alle Abteilungen</option>';
-        
-        departments.forEach(dept => {
+        departmentFilter.innerHTML =
+          '<option value="">Alle Abteilungen</option>';
+
+        departments.forEach((dept) => {
           const option = document.createElement('option');
           option.value = dept.id;
           option.textContent = dept.name;
@@ -54,35 +55,35 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Fehler beim Laden der Abteilungen:', error);
     }
   }
-  
+
   // Funktion zum Laden der Mitarbeiter mit Filtern
   async function loadEmployees(page = 1) {
     try {
       // Suchparameter aufbauen
       const searchTerm = searchInput ? searchInput.value.trim() : '';
       const departmentId = departmentFilter ? departmentFilter.value : '';
-      
+
       // URL mit Parametern erstellen
       let url = `/users/search?role=employee&page=${page}&limit=10`;
-      
+
       if (searchTerm) {
         url += `&search=${encodeURIComponent(searchTerm)}`;
       }
-      
+
       if (departmentId) {
         url += `&department_id=${departmentId}`;
       }
-      
+
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         displayEmployees(data.users);
-        
+
         // Pagination anzeigen
         if (paginationContainer) {
           displayPagination(data.pagination, page);
@@ -90,20 +91,21 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         const error = await response.json();
         console.error('Fehler:', error.message);
-        
+
         if (employeeTableBody) {
           employeeTableBody.innerHTML = `<tr><td colspan="5" class="text-center">Fehler beim Laden der Mitarbeiter: ${error.message}</td></tr>`;
         }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiter:', error);
-      
+
       if (employeeTableBody) {
-        employeeTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.</td></tr>';
+        employeeTableBody.innerHTML =
+          '<tr><td colspan="5" class="text-center">Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.</td></tr>';
       }
     }
   }
-  
+
   // Event-Handler für die Suche
   function handleSearch(e) {
     if (e) {
@@ -111,31 +113,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadEmployees(1); // Bei neuer Suche immer auf Seite 1 zurücksetzen
   }
-  
+
   // Funktion zum Anzeigen der Mitarbeiter
   function displayEmployees(employees) {
     if (!employeeTableBody) return;
-    
+
     employeeTableBody.innerHTML = '';
-    
+
     if (employees.length === 0) {
-      employeeTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Keine Mitarbeiter gefunden</td></tr>';
+      employeeTableBody.innerHTML =
+        '<tr><td colspan="5" class="text-center">Keine Mitarbeiter gefunden</td></tr>';
       return;
     }
-    
-    employees.forEach(employee => {
+
+    employees.forEach((employee) => {
       const row = document.createElement('tr');
-      
+
       // Profilbild oder Platzhalter
-      const profileImage = employee.profile_picture 
+      const profileImage = employee.profile_picture
         ? `<img src="/${employee.profile_picture}" class="profile-thumbnail" alt="${employee.first_name}" width="40" height="40">`
         : `<div class="profile-placeholder">${employee.first_name.charAt(0)}${employee.last_name.charAt(0)}</div>`;
-      
+
       // Abteilungsinformation
-      const departmentInfo = employee.department_name 
-        ? `<span class="department-badge">${employee.department_name}</span>` 
+      const departmentInfo = employee.department_name
+        ? `<span class="department-badge">${employee.department_name}</span>`
         : '';
-      
+
       row.innerHTML = `
         <td>
           <div class="d-flex align-items-center">
@@ -166,34 +169,34 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
         </td>
       `;
-      
+
       employeeTableBody.appendChild(row);
     });
-    
+
     // Event-Listener für die Lösch-Buttons hinzufügen
-    document.querySelectorAll('.delete-btn').forEach(button => {
+    document.querySelectorAll('.delete-btn').forEach((button) => {
       button.addEventListener('click', deleteEmployee);
     });
-    
+
     // Event-Listener für die Bearbeiten-Buttons hinzufügen
-    document.querySelectorAll('.edit-btn').forEach(button => {
+    document.querySelectorAll('.edit-btn').forEach((button) => {
       button.addEventListener('click', editEmployee);
     });
   }
-  
+
   // Funktion zum Anzeigen der Pagination
   function displayPagination(pagination, currentPage) {
     if (!paginationContainer) return;
-    
+
     paginationContainer.innerHTML = '';
-    
+
     if (pagination.pages <= 1) {
       return;
     }
-    
+
     const ul = document.createElement('ul');
     ul.className = 'pagination justify-content-center';
-    
+
     // Zurück-Button
     const prevLi = document.createElement('li');
     prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
@@ -209,12 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     prevLi.appendChild(prevLink);
     ul.appendChild(prevLi);
-    
+
     // Seitenzahlen
     const maxPages = 5; // Maximale Anzahl von Seiten, die angezeigt werden
     const startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
     const endPage = Math.min(pagination.pages, startPage + maxPages - 1);
-    
+
     for (let i = startPage; i <= endPage; i++) {
       const li = document.createElement('li');
       li.className = `page-item ${i === currentPage ? 'active' : ''}`;
@@ -229,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       li.appendChild(link);
       ul.appendChild(li);
     }
-    
+
     // Weiter-Button
     const nextLi = document.createElement('li');
     nextLi.className = `page-item ${currentPage === pagination.pages ? 'disabled' : ''}`;
@@ -245,27 +248,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     nextLi.appendChild(nextLink);
     ul.appendChild(nextLi);
-    
+
     paginationContainer.appendChild(ul);
   }
-  
+
   // Funktion zum Löschen eines Mitarbeiters
   async function deleteEmployee(e) {
     const employeeId = e.target.getAttribute('data-id');
     const employeeName = e.target.getAttribute('data-name');
-    
-    if (!confirm(`Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`)) {
+
+    if (
+      !confirm(
+        `Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`
+      )
+    ) {
       return;
     }
-    
+
     try {
       const response = await fetch(`/admin/delete-employee/${employeeId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (response.ok) {
         alert(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht.`);
         // Mitarbeiterliste neu laden
@@ -276,19 +283,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Fehler beim Löschen des Mitarbeiters:', error);
-      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      alert(
+        'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
+      );
     }
   }
-  
+
   // Funktion zum Bearbeiten eines Mitarbeiters
   function editEmployee(e) {
     const employeeId = e.target.getAttribute('data-id');
     const employeeName = e.target.getAttribute('data-name');
-    
+
     // Modal oder separate Seite zum Bearbeiten des Mitarbeiters öffnen
     // Hier kann je nach UI-Design eine eigene Implementierung erfolgen
-    alert(`Bearbeiten von Mitarbeiter "${employeeName}" (ID: ${employeeId}) wird implementiert...`);
-    
+    alert(
+      `Bearbeiten von Mitarbeiter "${employeeName}" (ID: ${employeeId}) wird implementiert...`
+    );
+
     // Beispielweise:
     // window.location.href = `/admin/edit-employee.html?id=${employeeId}`;
   }

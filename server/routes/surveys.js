@@ -12,10 +12,11 @@ router.use(checkFeature('surveys'));
 router.get('/', async (req, res) => {
   try {
     const { status, page, limit } = req.query;
-    const surveys = await Survey.getAllByTenant(
-      req.user.tenant_id, 
-      { status, page: parseInt(page) || 1, limit: parseInt(limit) || 20 }
-    );
+    const surveys = await Survey.getAllByTenant(req.user.tenant_id, {
+      status,
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 20,
+    });
     res.json(surveys);
   } catch (error) {
     console.error('Error fetching surveys:', error);
@@ -76,9 +77,9 @@ router.post('/', async (req, res) => {
       req.user.id
     );
 
-    res.status(201).json({ 
-      id: surveyId, 
-      message: 'Umfrage erfolgreich erstellt' 
+    res.status(201).json({
+      id: surveyId,
+      message: 'Umfrage erfolgreich erstellt',
     });
   } catch (error) {
     console.error('Error creating survey:', error);
@@ -99,13 +100,15 @@ router.post('/from-template/:templateId', async (req, res) => {
       req.user.id
     );
 
-    res.status(201).json({ 
-      id: surveyId, 
-      message: 'Umfrage aus Vorlage erstellt' 
+    res.status(201).json({
+      id: surveyId,
+      message: 'Umfrage aus Vorlage erstellt',
     });
   } catch (error) {
     console.error('Error creating survey from template:', error);
-    res.status(500).json({ error: 'Fehler beim Erstellen der Umfrage aus Vorlage' });
+    res
+      .status(500)
+      .json({ error: 'Fehler beim Erstellen der Umfrage aus Vorlage' });
   }
 });
 
@@ -141,7 +144,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     const success = await Survey.delete(req.params.id, req.user.tenant_id);
-    
+
     if (!success) {
       return res.status(404).json({ error: 'Umfrage nicht gefunden' });
     }
@@ -177,9 +180,11 @@ router.post('/:id/responses', async (req, res) => {
         'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?',
         [surveyId, userId]
       );
-      
+
       if (existing.length > 0) {
-        return res.status(400).json({ error: 'Sie haben bereits an dieser Umfrage teilgenommen' });
+        return res
+          .status(400)
+          .json({ error: 'Sie haben bereits an dieser Umfrage teilgenommen' });
       }
     }
 
@@ -188,32 +193,40 @@ router.post('/:id/responses', async (req, res) => {
     try {
       await connection.beginTransaction();
 
-      const [responseResult] = await connection.query(`
+      const [responseResult] = await connection.query(
+        `
         INSERT INTO survey_responses (survey_id, user_id, anonymous_id)
         VALUES (?, ?, ?)
-      `, [
-        surveyId,
-        survey.is_anonymous ? null : userId,
-        survey.is_anonymous ? `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` : null
-      ]);
+      `,
+        [
+          surveyId,
+          survey.is_anonymous ? null : userId,
+          survey.is_anonymous
+            ? `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            : null,
+        ]
+      );
 
       const responseId = responseResult.insertId;
 
       // Save answers
       for (const answer of answers) {
-        await connection.query(`
+        await connection.query(
+          `
           INSERT INTO survey_answers (
             response_id, question_id, answer_text, option_id, 
             answer_number, answer_date
           ) VALUES (?, ?, ?, ?, ?, ?)
-        `, [
-          responseId,
-          answer.question_id,
-          answer.answer_text || null,
-          answer.option_id || null,
-          answer.answer_number || null,
-          answer.answer_date || null
-        ]);
+        `,
+          [
+            responseId,
+            answer.question_id,
+            answer.answer_text || null,
+            answer.option_id || null,
+            answer.answer_number || null,
+            answer.answer_date || null,
+          ]
+        );
       }
 
       // Mark response as complete
@@ -240,13 +253,16 @@ router.post('/:id/responses', async (req, res) => {
 router.get('/:id/my-response', async (req, res) => {
   try {
     const db = require('../database');
-    const [responses] = await db.query(`
+    const [responses] = await db.query(
+      `
       SELECT sr.*, sa.question_id, sa.answer_text, sa.option_id, 
              sa.answer_number, sa.answer_date
       FROM survey_responses sr
       LEFT JOIN survey_answers sa ON sr.id = sa.response_id
       WHERE sr.survey_id = ? AND sr.user_id = ?
-    `, [req.params.id, req.user.id]);
+    `,
+      [req.params.id, req.user.id]
+    );
 
     if (responses.length === 0) {
       return res.json({ responded: false });
@@ -257,14 +273,14 @@ router.get('/:id/my-response', async (req, res) => {
       response: {
         id: responses[0].id,
         completed_at: responses[0].completed_at,
-        answers: responses.map(r => ({
+        answers: responses.map((r) => ({
           question_id: r.question_id,
           answer_text: r.answer_text,
           option_id: r.option_id,
           answer_number: r.answer_number,
-          answer_date: r.answer_date
-        }))
-      }
+          answer_date: r.answer_date,
+        })),
+      },
     });
   } catch (error) {
     console.error('Error fetching user response:', error);

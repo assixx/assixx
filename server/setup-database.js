@@ -5,27 +5,29 @@ require('dotenv').config();
 
 async function setupDatabase() {
   let connection;
-  
+
   try {
     console.log('Setting up database...');
-    
+
     // First connect without database to create it if needed
     const config = {
       host: process.env.DB_HOST,
-      user: process.env.DB_USER
+      user: process.env.DB_USER,
     };
-    
+
     if (process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '') {
       config.password = process.env.DB_PASSWORD;
     }
-    
+
     console.log(`Connecting to MySQL with user: ${config.user}`);
     connection = await mysql.createConnection(config);
-    
+
     // Check if database exists
     const [databases] = await connection.query('SHOW DATABASES');
-    const databaseExists = databases.some(db => db.Database === process.env.DB_NAME);
-    
+    const databaseExists = databases.some(
+      (db) => db.Database === process.env.DB_NAME
+    );
+
     if (!databaseExists) {
       console.log(`Creating database ${process.env.DB_NAME}...`);
       await connection.query(`CREATE DATABASE ${process.env.DB_NAME}`);
@@ -33,13 +35,13 @@ async function setupDatabase() {
     } else {
       console.log(`Database ${process.env.DB_NAME} already exists.`);
     }
-    
+
     // Connect to the database
     await connection.query(`USE ${process.env.DB_NAME}`);
-    
+
     // Check and create tables
     await createTablesIfNotExist(connection);
-    
+
     console.log('Database setup completed successfully!');
   } catch (error) {
     console.error('Error setting up database:', error);
@@ -69,7 +71,7 @@ async function createTablesIfNotExist(connection) {
         profile_picture VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
     },
     {
       name: 'departments',
@@ -80,7 +82,7 @@ async function createTablesIfNotExist(connection) {
         status ENUM('active', 'inactive') DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
     },
     {
       name: 'documents',
@@ -93,7 +95,7 @@ async function createTablesIfNotExist(connection) {
         upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status ENUM('active', 'archived', 'deleted') DEFAULT 'active',
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
     },
     {
       name: 'admin_logs',
@@ -106,10 +108,10 @@ async function createTablesIfNotExist(connection) {
         status VARCHAR(50),
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
-    }
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+    },
   ];
-  
+
   // Create each table if it doesn't exist
   for (const table of tables) {
     try {
@@ -125,24 +127,31 @@ async function createTablesIfNotExist(connection) {
       console.error(`Error creating table ${table.name}:`, error);
     }
   }
-  
+
   // Check if we need to create a default admin user
   try {
-    const [users] = await connection.query('SELECT * FROM users WHERE role = "root" LIMIT 1');
+    const [users] = await connection.query(
+      'SELECT * FROM users WHERE role = "root" LIMIT 1'
+    );
     if (users.length === 0) {
       console.log('Creating default root admin user...');
       // Generate a bcrypt hash for password "admin123"
       const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      
-      await connection.query(`
+
+      await connection.query(
+        `
         INSERT INTO users 
         (username, password, first_name, last_name, email, role) 
         VALUES 
         ('admin', ?, 'System', 'Administrator', 'admin@example.com', 'root')
-      `, [hashedPassword]);
-      
-      console.log('Default admin user created with username: admin and password: admin123');
+      `,
+        [hashedPassword]
+      );
+
+      console.log(
+        'Default admin user created with username: admin and password: admin123'
+      );
     } else {
       console.log('Root admin user already exists.');
     }

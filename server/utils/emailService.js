@@ -28,14 +28,14 @@ function initializeTransporter(config = null) {
     secure: process.env.EMAIL_SECURE === 'true',
     auth: {
       user: process.env.EMAIL_USER || 'user@example.com',
-      pass: process.env.EMAIL_PASSWORD || 'password'
-    }
+      pass: process.env.EMAIL_PASSWORD || 'password',
+    },
   };
 
   const transportConfig = config || defaultConfig;
-  
+
   transporter = nodemailer.createTransport(transportConfig);
-  
+
   // Test SMTP-Verbindung
   transporter.verify((error) => {
     if (error) {
@@ -44,7 +44,7 @@ function initializeTransporter(config = null) {
       logger.info('E-Mail-Service erfolgreich konfiguriert');
     }
   });
-  
+
   return transporter;
 }
 
@@ -56,18 +56,24 @@ function initializeTransporter(config = null) {
  */
 async function loadTemplate(templateName, replacements = {}) {
   try {
-    const templatePath = path.join(__dirname, '../templates/email', `${templateName}.html`);
+    const templatePath = path.join(
+      __dirname,
+      '../templates/email',
+      `${templateName}.html`
+    );
     let templateContent = await fs.promises.readFile(templatePath, 'utf8');
-    
+
     // Platzhalter ersetzen (Format: {{variable}})
-    Object.keys(replacements).forEach(key => {
+    Object.keys(replacements).forEach((key) => {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       templateContent = templateContent.replace(regex, replacements[key]);
     });
-    
+
     return templateContent;
   } catch (error) {
-    logger.error(`Fehler beim Laden des E-Mail-Templates '${templateName}': ${error.message}`);
+    logger.error(
+      `Fehler beim Laden des E-Mail-Templates '${templateName}': ${error.message}`
+    );
     // Fallback-Template
     return `
       <html>
@@ -92,8 +98,9 @@ async function sendEmail(options) {
 
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
-    const from = options.from || process.env.EMAIL_FROM || 'Assixx <noreply@assixx.de>';
-    
+    const from =
+      options.from || process.env.EMAIL_FROM || 'Assixx <noreply@assixx.de>';
+
     // E-Mail senden
     const info = await transporter.sendMail({
       from,
@@ -103,9 +110,9 @@ async function sendEmail(options) {
       subject: options.subject,
       text: options.text,
       html: options.html,
-      attachments: options.attachments
+      attachments: options.attachments,
     });
-    
+
     logger.info(`E-Mail gesendet: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
@@ -120,8 +127,10 @@ async function sendEmail(options) {
  */
 function addToQueue(emailOptions) {
   emailQueue.push(emailOptions);
-  logger.info(`E-Mail zur Queue hinzugefügt. Queue-Länge: ${emailQueue.length}`);
-  
+  logger.info(
+    `E-Mail zur Queue hinzugefügt. Queue-Länge: ${emailQueue.length}`
+  );
+
   // Starte die Queue-Verarbeitung, falls sie nicht bereits läuft
   if (!isProcessingQueue) {
     processQueue();
@@ -135,33 +144,39 @@ async function processQueue() {
   if (isProcessingQueue || emailQueue.length === 0) {
     return;
   }
-  
+
   isProcessingQueue = true;
-  logger.info(`Starte Verarbeitung der E-Mail-Queue: ${emailQueue.length} E-Mails in der Warteschlange`);
-  
+  logger.info(
+    `Starte Verarbeitung der E-Mail-Queue: ${emailQueue.length} E-Mails in der Warteschlange`
+  );
+
   try {
     // E-Mails in Batches verarbeiten
     while (emailQueue.length > 0) {
       const batch = emailQueue.splice(0, MAX_EMAILS_PER_BATCH);
       logger.info(`Verarbeite Batch von ${batch.length} E-Mails`);
-      
+
       // E-Mails parallel senden, aber mit Limit
       const results = await Promise.all(
-        batch.map(emailOptions => sendEmail(emailOptions))
+        batch.map((emailOptions) => sendEmail(emailOptions))
       );
-      
-      const successful = results.filter(r => r.success).length;
-      const failed = results.filter(r => !r.success).length;
-      
-      logger.info(`Batch verarbeitet: ${successful} erfolgreich, ${failed} fehlgeschlagen`);
-      
+
+      const successful = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success).length;
+
+      logger.info(
+        `Batch verarbeitet: ${successful} erfolgreich, ${failed} fehlgeschlagen`
+      );
+
       // Kurze Pause zwischen Batches, um SMTP-Limits einzuhalten
       if (emailQueue.length > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
   } catch (error) {
-    logger.error(`Fehler bei der Verarbeitung der E-Mail-Queue: ${error.message}`);
+    logger.error(
+      `Fehler bei der Verarbeitung der E-Mail-Queue: ${error.message}`
+    );
   } finally {
     isProcessingQueue = false;
     logger.info('E-Mail-Queue-Verarbeitung abgeschlossen');
@@ -177,31 +192,36 @@ async function processQueue() {
 async function sendNewDocumentNotification(user, document) {
   try {
     if (!user.email) {
-      return { success: false, error: 'Keine E-Mail-Adresse für den Benutzer verfügbar' };
+      return {
+        success: false,
+        error: 'Keine E-Mail-Adresse für den Benutzer verfügbar',
+      };
     }
-    
+
     // Unsubscribe-Link generieren
     const unsubscribeUrl = generateUnsubscribeLink(user.email, 'documents');
-    
+
     const replacements = {
       userName: `${user.first_name} ${user.last_name}`,
       documentName: document.file_name,
       documentCategory: document.category || 'Allgemein',
       documentDate: new Date(document.upload_date).toLocaleDateString('de-DE'),
       dashboardUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/employee-dashboard.html`,
-      unsubscribeUrl: unsubscribeUrl
+      unsubscribeUrl,
     };
-    
+
     const html = await loadTemplate('new-document', replacements);
-    
+
     return await sendEmail({
       to: user.email,
       subject: 'Neues Dokument für Sie verfügbar',
       html,
-      text: `Hallo ${replacements.userName},\n\nEin neues Dokument "${replacements.documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`
+      text: `Hallo ${replacements.userName},\n\nEin neues Dokument "${replacements.documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error) {
-    logger.error(`Fehler beim Senden der Dokumentenbenachrichtigung: ${error.message}`);
+    logger.error(
+      `Fehler beim Senden der Dokumentenbenachrichtigung: ${error.message}`
+    );
     return { success: false, error: error.message };
   }
 }
@@ -214,22 +234,25 @@ async function sendNewDocumentNotification(user, document) {
 async function sendWelcomeEmail(user) {
   try {
     if (!user.email) {
-      return { success: false, error: 'Keine E-Mail-Adresse für den Benutzer verfügbar' };
+      return {
+        success: false,
+        error: 'Keine E-Mail-Adresse für den Benutzer verfügbar',
+      };
     }
-    
+
     const replacements = {
       userName: `${user.first_name} ${user.last_name}`,
       companyName: user.company || 'Ihr Unternehmen',
-      loginUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/login.html`
+      loginUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/login.html`,
     };
-    
+
     const html = await loadTemplate('welcome', replacements);
-    
+
     return await sendEmail({
       to: user.email,
       subject: 'Willkommen bei Assixx',
       html,
-      text: `Hallo ${replacements.userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`
+      text: `Hallo ${replacements.userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error) {
     logger.error(`Fehler beim Senden der Willkommens-E-Mail: ${error.message}`);
@@ -248,62 +271,83 @@ async function sendBulkNotification(users, messageOptions) {
     // Feature-Prüfung für Massen-E-Mails (wenn verfügbar)
     if (messageOptions.tenantId && messageOptions.checkFeature) {
       const Feature = require('../models/feature');
-      const hasAccess = await Feature.checkTenantAccess(messageOptions.tenantId, 'email_notifications');
-      
+      const hasAccess = await Feature.checkTenantAccess(
+        messageOptions.tenantId,
+        'email_notifications'
+      );
+
       if (!hasAccess) {
-        return { success: false, error: 'Keine Berechtigung für Massen-E-Mails. Bitte Feature upgraden.' };
+        return {
+          success: false,
+          error:
+            'Keine Berechtigung für Massen-E-Mails. Bitte Feature upgraden.',
+        };
       }
-      
+
       // Nutzung des Features protokollieren
-      await Feature.logUsage(messageOptions.tenantId, 'email_notifications', messageOptions.userId, {
-        recipients: users.length,
-        subject: messageOptions.subject
-      });
+      await Feature.logUsage(
+        messageOptions.tenantId,
+        'email_notifications',
+        messageOptions.userId,
+        {
+          recipients: users.length,
+          subject: messageOptions.subject,
+        }
+      );
     }
-    
+
     // Filtere Benutzer ohne E-Mail
-    const validUsers = users.filter(user => user.email);
-    
+    const validUsers = users.filter((user) => user.email);
+
     if (validUsers.length === 0) {
-      return { success: false, error: 'Keine gültigen E-Mail-Empfänger gefunden' };
+      return {
+        success: false,
+        error: 'Keine gültigen E-Mail-Empfänger gefunden',
+      };
     }
-    
+
     // HTML aus Template laden, falls nicht direkt angegeben
     let html = messageOptions.html;
     if (messageOptions.templateName) {
-      const notificationType = messageOptions.notificationType || 'notification';
-      
+      const notificationType =
+        messageOptions.notificationType || 'notification';
+
       // Replacement-Objekt mit Basis-Werten erstellen
       const baseReplacements = messageOptions.replacements || {};
-      
+
       html = await loadTemplate(messageOptions.templateName, baseReplacements);
     }
-    
+
     // E-Mails zur Queue hinzufügen
     for (const user of validUsers) {
       // Unsubscribe-Link für jeden Benutzer generieren
-      const unsubscribeUrl = generateUnsubscribeLink(user.email, messageOptions.notificationType || 'all');
-      
+      const unsubscribeUrl = generateUnsubscribeLink(
+        user.email,
+        messageOptions.notificationType || 'all'
+      );
+
       // HTML personalisieren
-      let personalizedHtml = html
+      const personalizedHtml = html
         .replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`)
         .replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
-      
+
       addToQueue({
         to: user.email,
         subject: messageOptions.subject,
         html: personalizedHtml,
         text: messageOptions.text,
-        attachments: messageOptions.attachments
+        attachments: messageOptions.attachments,
       });
     }
-    
-    return { 
-      success: true, 
-      message: `${validUsers.length} E-Mails zur Versandwarteschlange hinzugefügt` 
+
+    return {
+      success: true,
+      message: `${validUsers.length} E-Mails zur Versandwarteschlange hinzugefügt`,
     };
   } catch (error) {
-    logger.error(`Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${error.message}`);
+    logger.error(
+      `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${error.message}`
+    );
     return { success: false, error: error.message };
   }
 }
@@ -322,7 +366,7 @@ function generateUnsubscribeLink(email, type = 'all') {
     process.env.JWT_SECRET || 'default-secret',
     { expiresIn: '30d' }
   );
-  
+
   return `${process.env.APP_URL || 'https://app.assixx.de'}/unsubscribe?token=${token}`;
 }
 
@@ -334,5 +378,5 @@ module.exports = {
   sendBulkNotification,
   addToQueue,
   processQueue,
-  generateUnsubscribeLink
+  generateUnsubscribeLink,
 };

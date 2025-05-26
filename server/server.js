@@ -6,8 +6,13 @@ const rateLimit = require('express-rate-limit');
 const fs = require('fs').promises;
 const db = require('./database');
 const User = require('./models/user');
-const AdminLog = require('./models/adminLog'); 
-const { authenticateUser, generateToken, authenticateToken, authorizeRole } = require('./auth');
+const AdminLog = require('./models/adminLog');
+const {
+  authenticateUser,
+  generateToken,
+  authenticateToken,
+  authorizeRole,
+} = require('./auth');
 
 // Import all route modules
 const rootRoutes = require('./routes/root');
@@ -35,16 +40,16 @@ const { tenantMiddleware, skipTenantCheck } = require('./middleware/tenant');
 
 // Import enhanced security middleware
 const {
-    enforceHTTPS,
-    securityHeaders,
-    corsOptions,
-    generalLimiter,
-    authLimiter,
-    uploadLimiter,
-    validateTenantContext,
-    sanitizeInputs,
-    apiSecurityHeaders,
-    cors
+  enforceHTTPS,
+  securityHeaders,
+  corsOptions,
+  generalLimiter,
+  authLimiter,
+  uploadLimiter,
+  validateTenantContext,
+  sanitizeInputs,
+  apiSecurityHeaders,
+  cors,
 } = require('./middleware/security-enhanced');
 
 const app = express();
@@ -64,30 +69,38 @@ app.use(express.urlencoded({ extended: true }));
 // app.use(validateTenantContext);
 
 // Static files - with security headers
-app.use(express.static(path.join(__dirname, 'public'), {
+app.use(
+  express.static(path.join(__dirname, 'public'), {
     setHeaders: (res) => {
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('X-Frame-Options', 'DENY');
-    }
-}));
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+    },
+  })
+);
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/css', express.static(path.join(__dirname, 'public/css')));
-app.use('/components', express.static(path.join(__dirname, 'public/js/components')));
+app.use(
+  '/components',
+  express.static(path.join(__dirname, 'public/js/components'))
+);
 
 // API security headers for all routes
 app.use(apiSecurityHeaders);
 
 // Logging with security considerations
-app.use(morgan('combined', {
-    skip: (req, res) => {
-        // Don't log sensitive endpoints
-        return req.path.includes('/api/auth') || req.path.includes('/api/login');
-    }
-}));
+app.use(
+  morgan('combined', {
+    skip: (req, res) =>
+      // Don't log sensitive endpoints
+      req.path.includes('/api/auth') || req.path.includes('/api/login'),
+  })
+);
 
 // Secure Logging Middleware - never log tokens
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Auth: ${req.headers['authorization'] ? 'Present' : 'None'}`);
+  console.log(
+    `${req.method} ${req.path} - Auth: ${req.headers['authorization'] ? 'Present' : 'None'}`
+  );
   next();
 });
 
@@ -97,7 +110,7 @@ async function createRequiredDirectories() {
     'uploads',
     'uploads/profile_pictures',
     'uploads/documents',
-    'uploads/chat'
+    'uploads/chat',
   ];
 
   for (const dir of directories) {
@@ -137,10 +150,14 @@ app.post('/register', async (req, res) => {
   try {
     const userId = await User.create(req.body);
     console.log(`User registered successfully with ID: ${userId}`);
-    res.status(201).json({ message: 'Benutzer erfolgreich registriert', userId });
+    res
+      .status(201)
+      .json({ message: 'Benutzer erfolgreich registriert', userId });
   } catch (error) {
     console.error('Registrierungsfehler:', error);
-    res.status(500).json({ message: 'Fehler bei der Registrierung', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Fehler bei der Registrierung', error: error.message });
   }
 });
 
@@ -149,42 +166,45 @@ app.post('/login', authLimiter, async (req, res) => {
     const { username, password } = req.body;
     // Don't log credentials
     console.log('Login attempt');
-    
+
     const user = await authenticateUser(username, password);
-    
+
     // IP-Adresse des Clients ermitteln
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    
+
     if (user) {
       const token = generateToken(user);
       console.log(`Login successful for user: ${username}`);
-      
+
       // Wenn es sich um einen Admin oder Root handelt, Login protokollieren
       if (user.role === 'admin' || user.role === 'root') {
         await AdminLog.create({
           user_id: user.id,
           action: 'login',
           ip_address: ip,
-          status: 'success'
+          status: 'success',
         });
       }
-      
+
       res.json({ message: 'Login erfolgreich', token, role: user.role });
     } else {
       console.log(`Login failed for user: ${username}`);
-      
+
       // Fehlgeschlagenen Login suchen und protokollieren
       const userByUsername = await User.findByUsername(username);
-      if (userByUsername && (userByUsername.role === 'admin' || userByUsername.role === 'root')) {
+      if (
+        userByUsername &&
+        (userByUsername.role === 'admin' || userByUsername.role === 'root')
+      ) {
         await AdminLog.create({
           user_id: userByUsername.id,
           action: 'login',
           ip_address: ip,
           status: 'failure',
-          details: 'Falsches Passwort'
+          details: 'Falsches Passwort',
         });
       }
-      
+
       res.status(401).json({ message: 'Ungültige Anmeldeinformationen' });
     }
   } catch (error) {
@@ -206,7 +226,7 @@ app.get('/admin-config.html', (req, res) => {
 
 app.get('/org-management.html', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'root') {
-    return res.status(403).send("Zugriff verweigert");
+    return res.status(403).send('Zugriff verweigert');
   }
   res.sendFile(path.join(__dirname, 'public', 'org-management.html'));
 });
@@ -214,7 +234,7 @@ app.get('/org-management.html', authenticateToken, (req, res) => {
 // API Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
 app.get('/api-test.html', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(404).send("Seite nicht verfügbar");
+    return res.status(404).send('Seite nicht verfügbar');
   }
   res.sendFile(path.join(__dirname, 'public', 'api-test.html'));
 });
@@ -222,7 +242,7 @@ app.get('/api-test.html', (req, res) => {
 // Datenbank-Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
 app.get('/test-db.html', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(404).send("Seite nicht verfügbar");
+    return res.status(404).send('Seite nicht verfügbar');
   }
   res.sendFile(path.join(__dirname, 'public', 'test-db.html'));
 });
@@ -230,7 +250,7 @@ app.get('/test-db.html', (req, res) => {
 // Debug-Dashboard (im Entwicklungsmodus ohne Authentifizierung verfügbar)
 app.get('/debug-dashboard.html', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(404).send("Seite nicht verfügbar");
+    return res.status(404).send('Seite nicht verfügbar');
   }
   res.sendFile(path.join(__dirname, 'public', 'debug-dashboard.html'));
 });
@@ -238,7 +258,7 @@ app.get('/debug-dashboard.html', (req, res) => {
 // Token-Debug Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
 app.get('/token-debug.html', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(404).send("Seite nicht verfügbar");
+    return res.status(404).send('Seite nicht verfügbar');
   }
   res.sendFile(path.join(__dirname, 'public', 'token-debug.html'));
 });
@@ -249,7 +269,7 @@ app.get('/api/validate-token', authenticateToken, (req, res) => {
   res.json({
     valid: true,
     user: req.user,
-    message: 'Token ist gültig'
+    message: 'Token ist gültig',
   });
 });
 
@@ -257,12 +277,12 @@ app.get('/api/validate-token', authenticateToken, (req, res) => {
 app.get('/api/token-test', (req, res) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  
+
   res.json({
     endpoint: 'Token Test',
     tokenProvided: !!token,
-    tokenDetails: token ? token.substring(0, 20) + '...' : 'none',
-    requestHeaders: req.headers
+    tokenDetails: token ? `${token.substring(0, 20)}...` : 'none',
+    requestHeaders: req.headers,
   });
 });
 
@@ -270,9 +290,14 @@ app.get('/employee-profile.html', authenticateToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee-profile.html'));
 });
 
-app.get('/document-upload.html', authenticateToken, authorizeRole('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'document-upload.html'));
-});
+app.get(
+  '/document-upload.html',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'document-upload.html'));
+  }
+);
 
 app.get('/salary-documents.html', authenticateToken, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'salary-documents.html'));
@@ -283,33 +308,48 @@ app.get('/chat.html', authenticateToken, (req, res) => {
 });
 
 // API routes
-app.get('/api/dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
-  console.log('Sending dashboard data');
-  res.json({
-    message: 'Dies sind die Root-Dashboard-Daten',
-    user: req.user
-  });
-});
+app.get(
+  '/api/dashboard-data',
+  authenticateToken,
+  authorizeRole('root'),
+  (req, res) => {
+    console.log('Sending dashboard data');
+    res.json({
+      message: 'Dies sind die Root-Dashboard-Daten',
+      user: req.user,
+    });
+  }
+);
 
-app.get('/api/root-dashboard-data', authenticateToken, authorizeRole('root'), (req, res) => {
-  console.log('Fetching root dashboard data');
-  res.json({
-    message: 'Dies sind die Root-Dashboard-Daten',
-    user: req.user
-  });
-});
+app.get(
+  '/api/root-dashboard-data',
+  authenticateToken,
+  authorizeRole('root'),
+  (req, res) => {
+    console.log('Fetching root dashboard data');
+    res.json({
+      message: 'Dies sind die Root-Dashboard-Daten',
+      user: req.user,
+    });
+  }
+);
 
 // Profilbilder
 app.get('/profile-pictures/:filename', authenticateToken, async (req, res) => {
   const filename = req.params.filename;
-  
+
   // Sicherheitscheck: Überprüfen, ob der Dateipfad Verzeichniswechsel enthält
   if (filename.includes('..') || filename.includes('/')) {
     return res.status(400).send('Ungültiger Dateiname');
   }
-  
+
   try {
-    const filePath = path.join(__dirname, 'uploads', 'profile_pictures', filename);
+    const filePath = path.join(
+      __dirname,
+      'uploads',
+      'profile_pictures',
+      filename
+    );
     res.sendFile(filePath);
   } catch (error) {
     console.error('Fehler beim Abrufen des Profilbilds:', error);
@@ -328,31 +368,39 @@ app.get('/api/users', authenticateToken, async (req, res) => {
       sort_by: req.query.sort_by || 'first_name',
       sort_dir: req.query.sort_dir || 'ASC',
       limit: parseInt(req.query.limit) || 50,
-      page: parseInt(req.query.page) || 1
+      page: parseInt(req.query.page) || 1,
     };
-    
+
     const users = await User.search(filters);
     const total = await User.count(filters);
-    
+
     res.json({
       users,
       pagination: {
         total,
         page: parseInt(req.query.page) || 1,
         limit: parseInt(req.query.limit) || 50,
-        pages: Math.ceil(total / (parseInt(req.query.limit) || 50))
-      }
+        pages: Math.ceil(total / (parseInt(req.query.limit) || 50)),
+      },
     });
   } catch (error) {
     console.error('Error in /api/users:', error);
-    res.status(500).json({ message: 'Fehler beim Abrufen der Benutzer', error: error.message });
+    res.status(500).json({
+      message: 'Fehler beim Abrufen der Benutzer',
+      error: error.message,
+    });
   }
 });
 
 // Register API routes (ONLY ONCE)
 app.use('/root', authenticateToken, authorizeRole('root'), rootRoutes);
 app.use('/admin', authenticateToken, authorizeRole('admin'), adminRoutes);
-app.use('/employee', authenticateToken, authorizeRole('employee'), employeeRoutes);
+app.use(
+  '/employee',
+  authenticateToken,
+  authorizeRole('employee'),
+  employeeRoutes
+);
 app.use('/departments', authenticateToken, departmentRoutes);
 app.use('/teams', authenticateToken, teamRoutes);
 app.use('/users', userRoutes);
@@ -381,7 +429,7 @@ app.use('/api/areas', require('./routes/areas'));
 // Error handling - MUST be last
 app.use((req, res, next) => {
   console.log(`404 - Not Found: ${req.method} ${req.url}`);
-  res.status(404).send("Sorry, diese Seite wurde nicht gefunden!");
+  res.status(404).send('Sorry, diese Seite wurde nicht gefunden!');
 });
 
 app.use((err, req, res, next) => {
