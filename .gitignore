@@ -1,8 +1,14 @@
 node_modules/
 .env
 *.log
+*.pid
+combined.log
+error.log
+server.log
 # Upload-Ordner (Dateien werden lokal gespeichert, nicht in Git)
 server/uploads/
+# Windows-spezifische Dateien
+*:Zone.Identifier
 # CLAUDE.md und .claude/ sind jetzt im Repository für bessere Kontinuität
 # CLAUDE.md
 # .claude/
