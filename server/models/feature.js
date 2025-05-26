@@ -5,7 +5,9 @@ class Feature {
   // Alle Features abrufen
   static async findAll() {
     try {
-      const [features] = await db.query('SELECT * FROM features WHERE is_active = true ORDER BY category, name');
+      const [features] = await db.query(
+        'SELECT * FROM features WHERE is_active = true ORDER BY category, name'
+      );
       return features;
     } catch (error) {
       logger.error(`Error fetching features: ${error.message}`);
@@ -16,7 +18,10 @@ class Feature {
   // Feature by Code finden
   static async findByCode(code) {
     try {
-      const [features] = await db.query('SELECT * FROM features WHERE code = ?', [code]);
+      const [features] = await db.query(
+        'SELECT * FROM features WHERE code = ?',
+        [code]
+      );
       return features[0];
     } catch (error) {
       logger.error(`Error finding feature by code: ${error.message}`);
@@ -36,21 +41,26 @@ class Feature {
         AND tf.status = 'active'
         AND (tf.valid_until IS NULL OR tf.valid_until >= CURDATE())
       `;
-      
+
       const [results] = await db.query(query, [tenantId, featureCode]);
-      
+
       if (results.length === 0) {
         return false;
       }
-      
+
       const feature = results[0];
-      
+
       // Prüfe Usage-Limit wenn vorhanden
-      if (feature.usage_limit !== null && feature.current_usage >= feature.usage_limit) {
-        logger.warn(`Feature ${featureCode} usage limit reached for tenant ${tenantId}`);
+      if (
+        feature.usage_limit !== null &&
+        feature.current_usage >= feature.usage_limit
+      ) {
+        logger.warn(
+          `Feature ${featureCode} usage limit reached for tenant ${tenantId}`
+        );
         return false;
       }
-      
+
       return true;
     } catch (error) {
       logger.error(`Error checking tenant feature access: ${error.message}`);
@@ -72,13 +82,14 @@ class Feature {
         customPrice = null,
         trialDays = 0,
         usageLimit = null,
-        activatedBy = null
+        activatedBy = null,
       } = options;
 
       const status = trialDays > 0 ? 'trial' : 'active';
-      const trialEndDate = trialDays > 0 
-        ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) 
-        : null;
+      const trialEndDate =
+        trialDays > 0
+          ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
+          : null;
 
       const query = `
         INSERT INTO tenant_features 
@@ -104,7 +115,7 @@ class Feature {
         customPrice,
         trialDays,
         usageLimit,
-        activatedBy
+        activatedBy,
       ]);
 
       logger.info(`Feature ${featureCode} activated for tenant ${tenantId}`);
@@ -216,7 +227,12 @@ class Feature {
         ORDER BY date
       `;
 
-      const [stats] = await db.query(query, [tenantId, feature.id, startDate, endDate]);
+      const [stats] = await db.query(query, [
+        tenantId,
+        feature.id,
+        startDate,
+        endDate,
+      ]);
       return stats;
     } catch (error) {
       logger.error(`Error fetching usage stats: ${error.message}`);

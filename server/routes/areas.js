@@ -16,32 +16,67 @@ router.get('/', authenticateToken, async (req, res) => {
     // For now, return dummy area data
     // In production, this would query the areas table
     const areas = [
-      { id: 1, name: 'Halle A', description: 'Produktionsbereich A', type: 'production' },
-      { id: 2, name: 'Halle B', description: 'Produktionsbereich B', type: 'production' },
-      { id: 3, name: 'Lager Nord', description: 'Eingangslager', type: 'warehouse' },
-      { id: 4, name: 'Lager Süd', description: 'Ausgangslager', type: 'warehouse' },
-      { id: 5, name: 'Bürobereich', description: 'Verwaltung und Büros', type: 'office' },
-      { id: 6, name: 'Qualitätsprüfung', description: 'QS-Bereich', type: 'quality' },
-      { id: 7, name: 'Wartung', description: 'Werkstatt und Wartung', type: 'maintenance' }
+      {
+        id: 1,
+        name: 'Halle A',
+        description: 'Produktionsbereich A',
+        type: 'production',
+      },
+      {
+        id: 2,
+        name: 'Halle B',
+        description: 'Produktionsbereich B',
+        type: 'production',
+      },
+      {
+        id: 3,
+        name: 'Lager Nord',
+        description: 'Eingangslager',
+        type: 'warehouse',
+      },
+      {
+        id: 4,
+        name: 'Lager Süd',
+        description: 'Ausgangslager',
+        type: 'warehouse',
+      },
+      {
+        id: 5,
+        name: 'Bürobereich',
+        description: 'Verwaltung und Büros',
+        type: 'office',
+      },
+      {
+        id: 6,
+        name: 'Qualitätsprüfung',
+        description: 'QS-Bereich',
+        type: 'quality',
+      },
+      {
+        id: 7,
+        name: 'Wartung',
+        description: 'Werkstatt und Wartung',
+        type: 'maintenance',
+      },
     ];
 
     // Filter by type if requested
     const areaType = req.query.type;
     let filteredAreas = areas;
-    
+
     if (areaType) {
-      filteredAreas = areas.filter(area => area.type === areaType);
+      filteredAreas = areas.filter((area) => area.type === areaType);
     }
 
-    res.json({ 
+    res.json({
       success: true,
-      areas: filteredAreas 
+      areas: filteredAreas,
     });
   } catch (error) {
     console.error('Error fetching areas:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Fehler beim Laden der Bereiche' 
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Laden der Bereiche',
     });
   }
 });
@@ -53,7 +88,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const areaId = parseInt(req.params.id);
-    
+
     // Dummy area data
     const area = {
       id: areaId,
@@ -61,18 +96,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
       description: 'Automatisch generierter Bereich',
       type: 'production',
       capacity: 50,
-      supervisor: 'Max Mustermann'
+      supervisor: 'Max Mustermann',
     };
 
-    res.json({ 
+    res.json({
       success: true,
-      area 
+      area,
     });
   } catch (error) {
     console.error('Error fetching area:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Fehler beim Laden des Bereichs' 
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Laden des Bereichs',
     });
   }
 });
@@ -85,9 +120,9 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     // Check admin permission
     if (!['admin', 'root', 'manager'].includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Keine Berechtigung zum Erstellen von Bereichen' 
+      return res.status(403).json({
+        success: false,
+        message: 'Keine Berechtigung zum Erstellen von Bereichen',
       });
     }
 
@@ -96,7 +131,7 @@ router.post('/', authenticateToken, async (req, res) => {
     if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Name ist erforderlich'
+        message: 'Name ist erforderlich',
       });
     }
 
@@ -107,19 +142,19 @@ router.post('/', authenticateToken, async (req, res) => {
       description: description || null,
       type: type || 'production',
       capacity: capacity || null,
-      created_at: new Date()
+      created_at: new Date(),
     };
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       message: 'Bereich erfolgreich erstellt',
-      area 
+      area,
     });
   } catch (error) {
     console.error('Error creating area:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Fehler beim Erstellen des Bereichs' 
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Erstellen des Bereichs',
     });
   }
 });

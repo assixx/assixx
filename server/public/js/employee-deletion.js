@@ -16,39 +16,39 @@ let documentCount = 0;
  */
 function showDeleteEmployeeDialog(employeeId) {
   selectedEmployeeId = employeeId;
-  
+
   // Token abrufen
   const token = localStorage.getItem('token');
-  
+
   // Mitarbeiter-Informationen abrufen für Anzeige im Dialog
   fetch(`/admin/employees/${employeeId}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
   })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Mitarbeiter konnte nicht abgerufen werden');
-    }
-    return response.json();
-  })
-  .then(employee => {
-    selectedEmployeeName = `${employee.first_name} ${employee.last_name}`;
-    
-    // Prüfen, ob der Mitarbeiter Dokumente hat
-    return fetch(`/documents?user_id=${employeeId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Dokumente konnten nicht abgerufen werden');
-    }
-    return response.json();
-  })
-  .then(documents => {
-    documentCount = documents.length;
-    
-    // Dialog-Inhalt zusammenstellen basierend auf den Dokumenten
-    let dialogContent = `
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Mitarbeiter konnte nicht abgerufen werden');
+      }
+      return response.json();
+    })
+    .then((employee) => {
+      selectedEmployeeName = `${employee.first_name} ${employee.last_name}`;
+
+      // Prüfen, ob der Mitarbeiter Dokumente hat
+      return fetch(`/documents?user_id=${employeeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Dokumente konnten nicht abgerufen werden');
+      }
+      return response.json();
+    })
+    .then((documents) => {
+      documentCount = documents.length;
+
+      // Dialog-Inhalt zusammenstellen basierend auf den Dokumenten
+      let dialogContent = `
       <div class="modal" id="delete-employee-modal" style="display: flex;">
         <div class="modal-content">
           <div class="modal-header">
@@ -57,10 +57,10 @@ function showDeleteEmployeeDialog(employeeId) {
           </div>
           <div class="modal-body">
             <p><strong>Möchten Sie den Mitarbeiter "${selectedEmployeeName}" wirklich löschen?</strong></p>`;
-    
-    // Warnung, wenn Dokumente vorhanden sind
-    if (documentCount > 0) {
-      dialogContent += `
+
+      // Warnung, wenn Dokumente vorhanden sind
+      if (documentCount > 0) {
+        dialogContent += `
             <div class="alert alert-warning">
               <p><i class="fas fa-exclamation-triangle"></i> <strong>Achtung:</strong> Dieser Mitarbeiter hat ${documentCount} Dokument${documentCount === 1 ? '' : 'e'} zugeordnet.</p>
               <p>Bitte wählen Sie, wie mit diesen Dokumenten verfahren werden soll:</p>
@@ -87,8 +87,8 @@ function showDeleteEmployeeDialog(employeeId) {
                 Diese Aktion kann <strong>nicht</strong> rückgängig gemacht werden.
               </p>
             </div>`;
-    } else {
-      dialogContent += `
+      } else {
+        dialogContent += `
             <p>Für diesen Mitarbeiter sind keine Dokumente vorhanden. Der Mitarbeiter kann gefahrlos gelöscht werden.</p>
             
             <div class="form-group">
@@ -111,9 +111,9 @@ function showDeleteEmployeeDialog(employeeId) {
                 Der Mitarbeiter wird aus der Datenbank entfernt.
               </p>
             </div>`;
-    }
-    
-    dialogContent += `
+      }
+
+      dialogContent += `
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary" onclick="processEmployeeDeletion()">Bestätigen</button>
@@ -122,14 +122,14 @@ function showDeleteEmployeeDialog(employeeId) {
         </div>
       </div>
     `;
-    
-    // Dialog zur Seite hinzufügen und anzeigen
-    document.body.insertAdjacentHTML('beforeend', dialogContent);
-  })
-  .catch(error => {
-    console.error('Fehler bei der Anzeige des Lösch-Dialogs:', error);
-    alert(`Fehler: ${error.message}`);
-  });
+
+      // Dialog zur Seite hinzufügen und anzeigen
+      document.body.insertAdjacentHTML('beforeend', dialogContent);
+    })
+    .catch((error) => {
+      console.error('Fehler bei der Anzeige des Lösch-Dialogs:', error);
+      alert(`Fehler: ${error.message}`);
+    });
 }
 
 /**
@@ -139,17 +139,17 @@ function processEmployeeDeletion() {
   // Gewählte Option ermitteln
   const options = document.getElementsByName('deletion-option');
   let selectedOption = '';
-  
+
   for (const option of options) {
     if (option.checked) {
       selectedOption = option.value;
       break;
     }
   }
-  
+
   // Token abrufen
   const token = localStorage.getItem('token');
-  
+
   // Basierend auf der gewählten Option unterschiedliche Aktionen ausführen
   if (selectedOption === 'archive') {
     // Mitarbeiter archivieren
@@ -157,111 +157,126 @@ function processEmployeeDeletion() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({}) // Leerer Körper, da keine Daten benötigt werden
+      body: JSON.stringify({}), // Leerer Körper, da keine Daten benötigt werden
     })
-    .then(response => response.json())
-    .then(result => {
-      if (result.success) {
-        // Erfolgsmeldung anzeigen
-        alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich archiviert.`);
-        
-        // Dialog schließen und Mitarbeiterliste aktualisieren
-        hideModal('delete-employee-modal');
-        
-        // Mitarbeiterliste aktualisieren
-        if (typeof loadEmployeesTable === 'function') {
-          loadEmployeesTable('reload');
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.success) {
+          // Erfolgsmeldung anzeigen
+          alert(
+            `Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich archiviert.`
+          );
+
+          // Dialog schließen und Mitarbeiterliste aktualisieren
+          hideModal('delete-employee-modal');
+
+          // Mitarbeiterliste aktualisieren
+          if (typeof loadEmployeesTable === 'function') {
+            loadEmployeesTable('reload');
+          }
+
+          // Dashboard-Statistiken aktualisieren
+          if (typeof loadDashboardStats === 'function') {
+            loadDashboardStats();
+          }
+        } else {
+          alert(
+            `Fehler: ${result.message || 'Unbekannter Fehler beim Archivieren des Mitarbeiters'}`
+          );
         }
-        
-        // Dashboard-Statistiken aktualisieren
-        if (typeof loadDashboardStats === 'function') {
-          loadDashboardStats();
-        }
-      } else {
-        alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Archivieren des Mitarbeiters'}`);
-      }
-    })
-    .catch(error => {
-      console.error('Fehler beim Archivieren des Mitarbeiters:', error);
-      alert(`Fehler: ${error.message}`);
-    });
+      })
+      .catch((error) => {
+        console.error('Fehler beim Archivieren des Mitarbeiters:', error);
+        alert(`Fehler: ${error.message}`);
+      });
   } else if (selectedOption === 'delete') {
     // Zusätzliche Bestätigung einholen, wenn Dokumente vorhanden sind
     if (documentCount > 0) {
       const confirmDelete = confirm(
         `WARNUNG: ENDGÜLTIGES LÖSCHEN!\n\n` +
-        `Sie sind dabei, den Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen ${documentCount} Dokumente endgültig zu löschen!\n\n` +
-        `Diese Aktion kann NICHT rückgängig gemacht werden!\n\n` +
-        `Sind Sie absolut sicher, dass Sie fortfahren möchten?`
+          `Sie sind dabei, den Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen ${documentCount} Dokumente endgültig zu löschen!\n\n` +
+          `Diese Aktion kann NICHT rückgängig gemacht werden!\n\n` +
+          `Sind Sie absolut sicher, dass Sie fortfahren möchten?`
       );
-      
+
       if (!confirmDelete) {
         return; // Abbrechen, wenn der Benutzer nicht bestätigt
       }
-      
+
       // Force-Delete verwenden, um Mitarbeiter mit Dokumenten zu löschen
       fetch(`/admin/delete-employee/${selectedEmployeeId}/force`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
-          hideModal('delete-employee-modal');
-          
-          // Mitarbeiterliste aktualisieren
-          if (typeof loadEmployeesTable === 'function') {
-            loadEmployeesTable('reload');
+        .then((response) => response.json())
+        .then((result) => {
+          if (result.success) {
+            alert(
+              `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`
+            );
+            hideModal('delete-employee-modal');
+
+            // Mitarbeiterliste aktualisieren
+            if (typeof loadEmployeesTable === 'function') {
+              loadEmployeesTable('reload');
+            }
+
+            // Dashboard-Statistiken aktualisieren
+            if (typeof loadDashboardStats === 'function') {
+              loadDashboardStats();
+            }
+          } else {
+            alert(
+              `Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`
+            );
           }
-          
-          // Dashboard-Statistiken aktualisieren
-          if (typeof loadDashboardStats === 'function') {
-            loadDashboardStats();
-          }
-        } else {
-          alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
-        }
-      })
-      .catch(error => {
-        console.error('Fehler beim endgültigen Löschen des Mitarbeiters:', error);
-        alert(`Fehler: ${error.message}`);
-      });
+        })
+        .catch((error) => {
+          console.error(
+            'Fehler beim endgültigen Löschen des Mitarbeiters:',
+            error
+          );
+          alert(`Fehler: ${error.message}`);
+        });
     } else {
       // Normales Löschen ohne Dokumente
       fetch(`/admin/delete-employee/${selectedEmployeeId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
-          hideModal('delete-employee-modal');
-          
-          // Mitarbeiterliste aktualisieren
-          if (typeof loadEmployeesTable === 'function') {
-            loadEmployeesTable('reload');
+        .then((response) => response.json())
+        .then((result) => {
+          if (result.success) {
+            alert(
+              `Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`
+            );
+            hideModal('delete-employee-modal');
+
+            // Mitarbeiterliste aktualisieren
+            if (typeof loadEmployeesTable === 'function') {
+              loadEmployeesTable('reload');
+            }
+
+            // Dashboard-Statistiken aktualisieren
+            if (typeof loadDashboardStats === 'function') {
+              loadDashboardStats();
+            }
+          } else {
+            alert(
+              `Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`
+            );
           }
-          
-          // Dashboard-Statistiken aktualisieren
-          if (typeof loadDashboardStats === 'function') {
-            loadDashboardStats();
-          }
-        } else {
-          alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
-        }
-      })
-      .catch(error => {
-        console.error('Fehler beim Löschen des Mitarbeiters:', error);
-        alert(`Fehler: ${error.message}`);
-      });
+        })
+        .catch((error) => {
+          console.error('Fehler beim Löschen des Mitarbeiters:', error);
+          alert(`Fehler: ${error.message}`);
+        });
     }
   }
 }

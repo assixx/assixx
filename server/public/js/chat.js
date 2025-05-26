@@ -8,7 +8,8 @@ class ChatClient {
       try {
         const payload = JSON.parse(atob(this.token.split('.')[1]));
         this.currentUser.id = payload.userId || payload.id;
-        this.currentUser.username = this.currentUser.username || payload.username;
+        this.currentUser.username =
+          this.currentUser.username || payload.username;
       } catch (e) {
         console.error('Error parsing token:', e);
       }
@@ -24,31 +25,619 @@ class ChatClient {
     this.pendingFiles = [];
     this.searchQuery = '';
     this.messageQueue = []; // Queue for messages sent while disconnected
-    
+
     // Initialize emoji categories
     this.emojiCategories = {
-      smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😇', '😉', '😊', '🙂', '🙃', '☺️', '😋', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '🥲', '🤪', '🤩', '🥳', '😎', '🥸', '🧐', '🤓', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'],
-      gestures: ['👋', '🤚', '🖐️', '✋', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦻', '👂', '🦻', '👃', '🧠', '🦾', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '💘'],
-      hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍', '💔', '❣️', '💕', '💖', '💗', '💓', '💘', '💝', '💞', '💟', '♥️', '♦️', '♠️', '♣️'],
-      animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🦍', '🦧', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🦼', '🐴', '🦄', '🐝', '🦟', '🦗', '🐛', '🐌', '🐚', '🐞', '🐜', '🦞', '🦘', '🐍', '🐢', '🦕', '🦖', '🐙', '🦑', '🦀', '🦞', '🦐', '🦪', '😸', '🐠', '🐟', '🐡', '🐋', '🦈', '🐳', '🐊', '🐅', '🐆', '🦓', '🦌', '🦭', '🐘', '🦛', '🦒'],
-      food: ['🍎', '🍏', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🥑', '🥦', '🧄', '🧅', '🌶️', '🥒', '🥬', '🥦', '🥚', '🥞', '🧀', '🍞', '🥐', '🥖', '🧁', '🥨', '🥯', '🥛', '🥓', '🥤', '🌭', '🍔', '🍕', '🍖', '🥪', '🌮', '🌯', '🥙', '🧆', '🥜', '🍳', '🥘', '🍲', '🍥', '🍜', '🍝', '🍠', '🍢', '🍣', '🍤', '🍙', '🍚', '🍛', '🦀', '🦞', '🦐', '🦑', '🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯', '🍼', '🥛', '☕', '🍵', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🍾', '🥄', '🧋', '🧊'],
-      activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🏓', '🏸', '🏉', '🎾', '🥏', '🎳', '🏏', '🏑', '🏒', '🥍', '🏅', '🥇', '🥈', '🥉', '🏆', '🎱', '🔮', '🎯', '🎲', '🧩', '🎰', '🎳'],
-      objects: ['💡', '🔦', '🕯️', '🧪', '🔎', '🔍', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '⏱️', '⏲️', '⏰', '🕰️', '⌚', '⏳', '📡', '🔋', '🔌', '💻', '🖥️', '🖨️', '⌨️', '🖱️', '🖲️', '💽', '💾', '💿', '📀', '📁', '🗂️', '📂', '📃', '📄', '📅', '📆', '🖇️', '📇', '📈', '📉', '📊', '📋', '📌', '📍', '📎', '🖇️', '📏', '📐', '✂️', '🖊️', '🖋️', '✒️', '🖌️', '🖍️', '📑', '📒', '📓', '📔', '📕', '📖', '📗', '📘', '📙', '📚', '📐', '🔖', '📎', '🖇️', '🔐', '🔒', '🔓'],
-      symbols: ['✨', '💫', '💥', '🔥', '🌙', '☀️', '🌤️', '⛅', '🌥️', '🌦️', '🌈', '☁️', '🌧️', '⛈️', '🌩️', '⚡', '🔥', '💧', '🌊', '🎆', '🎇', '🎐', '🎑', '🎖️', '🎗️', '🎟️', '🎫', '🏆', '🏅', '🥇', '🥈', '🥉', '🎆', '🎇', '🏧', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎵', '🎶', '🎹', '🎻', '🥁', '🎷', '🎺', '🎸', '🎲', '♟️', '🎯', '🎴', '🀄', '🎲', '📣', '📪', '📫', '📬', '📭', '📮', '📯', '📰', '📦', '📧', '📨', '📩', '📤', '📥', '📜', '📃', '📑', '📊', '📈', '📉', '📄', '📅', '📆', '📇', '📁', '📂', '📃', '🗃️', '🗄️', '📋', '🗒️', '🗓️', '🔐', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝️', '🔨', '⛏️', '🔩', '🔪', '🔫', '💉', '💊', '🌡️', '🎒', '🧪', '🧫', '🧬', '🧭', '🧮', '🧯', '🧰', '🧿', '🧫', '🚬', '⚰️', '⚱️', '🏺️', '🗿', '🧿', '📴', '📵', '🛢️']
+      smileys: [
+        '😀',
+        '😃',
+        '😄',
+        '😁',
+        '😆',
+        '😅',
+        '😂',
+        '🤣',
+        '😇',
+        '😉',
+        '😊',
+        '🙂',
+        '🙃',
+        '☺️',
+        '😋',
+        '😌',
+        '😍',
+        '🥰',
+        '😘',
+        '😗',
+        '😙',
+        '😚',
+        '🥲',
+        '🤪',
+        '🤩',
+        '🥳',
+        '😎',
+        '🥸',
+        '🧐',
+        '🤓',
+        '😏',
+        '😒',
+        '😞',
+        '😔',
+        '😟',
+        '😕',
+        '🙁',
+        '☹️',
+        '😣',
+        '😖',
+        '😫',
+        '😩',
+        '🥺',
+        '😢',
+        '😭',
+        '😤',
+        '😠',
+        '😡',
+        '🤬',
+        '🤯',
+        '😳',
+        '🥵',
+        '🥶',
+        '😱',
+        '😨',
+        '😰',
+        '😥',
+        '😓',
+        '🤗',
+        '🤔',
+        '🤭',
+        '🤫',
+        '🤥',
+        '😶',
+        '😐',
+        '😑',
+        '😬',
+        '🙄',
+        '😯',
+        '😦',
+        '😧',
+        '😮',
+        '😲',
+        '🥱',
+        '😴',
+        '🤤',
+        '😪',
+        '😵',
+        '🤐',
+        '🥴',
+        '🤢',
+        '🤮',
+        '🤧',
+        '😷',
+        '🤒',
+        '🤕',
+        '🤑',
+        '🤠',
+        '😈',
+        '👿',
+        '👹',
+        '👺',
+        '🤡',
+        '💩',
+        '👻',
+        '💀',
+        '☠️',
+        '👽',
+        '👾',
+        '🤖',
+        '🎃',
+        '😺',
+        '😸',
+        '😹',
+        '😻',
+        '😼',
+        '😽',
+        '🙀',
+        '😿',
+        '😾',
+      ],
+      gestures: [
+        '👋',
+        '🤚',
+        '🖐️',
+        '✋',
+        '👌',
+        '🤌',
+        '🤏',
+        '✌️',
+        '🤞',
+        '🤟',
+        '🤘',
+        '🤙',
+        '👈',
+        '👉',
+        '👆',
+        '🖕',
+        '👇',
+        '☝️',
+        '👍',
+        '👎',
+        '✊',
+        '👊',
+        '🤛',
+        '🤜',
+        '👏',
+        '🙌',
+        '👐',
+        '🤲',
+        '🤝',
+        '🙏',
+        '✍️',
+        '💅',
+        '🤳',
+        '💪',
+        '🦾',
+        '🦿',
+        '🦻',
+        '👂',
+        '🦻',
+        '👃',
+        '🧠',
+        '🦾',
+        '🦷',
+        '🦴',
+        '👀',
+        '👁️',
+        '👅',
+        '👄',
+        '💋',
+        '💘',
+      ],
+      hearts: [
+        '❤️',
+        '🧡',
+        '💛',
+        '💚',
+        '💙',
+        '💜',
+        '🤎',
+        '🖤',
+        '🤍',
+        '💔',
+        '❣️',
+        '💕',
+        '💖',
+        '💗',
+        '💓',
+        '💘',
+        '💝',
+        '💞',
+        '💟',
+        '♥️',
+        '♦️',
+        '♠️',
+        '♣️',
+      ],
+      animals: [
+        '🐶',
+        '🐱',
+        '🐭',
+        '🐹',
+        '🐰',
+        '🦊',
+        '🐻',
+        '🐼',
+        '🐻‍❄️',
+        '🐨',
+        '🐯',
+        '🦁',
+        '🐮',
+        '🐷',
+        '🐸',
+        '🐵',
+        '🙈',
+        '🙉',
+        '🙊',
+        '🐒',
+        '🦍',
+        '🦧',
+        '🐔',
+        '🐧',
+        '🐦',
+        '🐤',
+        '🐣',
+        '🐥',
+        '🦆',
+        '🦅',
+        '🦉',
+        '🦇',
+        '🐺',
+        '🐗',
+        '🦼',
+        '🐴',
+        '🦄',
+        '🐝',
+        '🦟',
+        '🦗',
+        '🐛',
+        '🐌',
+        '🐚',
+        '🐞',
+        '🐜',
+        '🦞',
+        '🦘',
+        '🐍',
+        '🐢',
+        '🦕',
+        '🦖',
+        '🐙',
+        '🦑',
+        '🦀',
+        '🦞',
+        '🦐',
+        '🦪',
+        '😸',
+        '🐠',
+        '🐟',
+        '🐡',
+        '🐋',
+        '🦈',
+        '🐳',
+        '🐊',
+        '🐅',
+        '🐆',
+        '🦓',
+        '🦌',
+        '🦭',
+        '🐘',
+        '🦛',
+        '🦒',
+      ],
+      food: [
+        '🍎',
+        '🍏',
+        '🍐',
+        '🍊',
+        '🍋',
+        '🍌',
+        '🍉',
+        '🍇',
+        '🍓',
+        '🍈',
+        '🍒',
+        '🍑',
+        '🥭',
+        '🍍',
+        '🥥',
+        '🥝',
+        '🍅',
+        '🥑',
+        '🥦',
+        '🧄',
+        '🧅',
+        '🌶️',
+        '🥒',
+        '🥬',
+        '🥦',
+        '🥚',
+        '🥞',
+        '🧀',
+        '🍞',
+        '🥐',
+        '🥖',
+        '🧁',
+        '🥨',
+        '🥯',
+        '🥛',
+        '🥓',
+        '🥤',
+        '🌭',
+        '🍔',
+        '🍕',
+        '🍖',
+        '🥪',
+        '🌮',
+        '🌯',
+        '🥙',
+        '🧆',
+        '🥜',
+        '🍳',
+        '🥘',
+        '🍲',
+        '🍥',
+        '🍜',
+        '🍝',
+        '🍠',
+        '🍢',
+        '🍣',
+        '🍤',
+        '🍙',
+        '🍚',
+        '🍛',
+        '🦀',
+        '🦞',
+        '🦐',
+        '🦑',
+        '🍦',
+        '🍧',
+        '🍨',
+        '🍩',
+        '🍪',
+        '🎂',
+        '🍰',
+        '🧁',
+        '🥧',
+        '🍫',
+        '🍬',
+        '🍭',
+        '🍮',
+        '🍯',
+        '🍼',
+        '🥛',
+        '☕',
+        '🍵',
+        '🍶',
+        '🍺',
+        '🍻',
+        '🥂',
+        '🍷',
+        '🥃',
+        '🍸',
+        '🍹',
+        '🍾',
+        '🥄',
+        '🧋',
+        '🧊',
+      ],
+      activities: [
+        '⚽',
+        '🏀',
+        '🏈',
+        '⚾',
+        '🥎',
+        '🏓',
+        '🏸',
+        '🏉',
+        '🎾',
+        '🥏',
+        '🎳',
+        '🏏',
+        '🏑',
+        '🏒',
+        '🥍',
+        '🏅',
+        '🥇',
+        '🥈',
+        '🥉',
+        '🏆',
+        '🎱',
+        '🔮',
+        '🎯',
+        '🎲',
+        '🧩',
+        '🎰',
+        '🎳',
+      ],
+      objects: [
+        '💡',
+        '🔦',
+        '🕯️',
+        '🧪',
+        '🔎',
+        '🔍',
+        '📷',
+        '📸',
+        '📹',
+        '🎥',
+        '📽️',
+        '🎞️',
+        '📞',
+        '☎️',
+        '📟',
+        '📠',
+        '📺',
+        '📻',
+        '🎙️',
+        '🎚️',
+        '🎛️',
+        '⏱️',
+        '⏲️',
+        '⏰',
+        '🕰️',
+        '⌚',
+        '⏳',
+        '📡',
+        '🔋',
+        '🔌',
+        '💻',
+        '🖥️',
+        '🖨️',
+        '⌨️',
+        '🖱️',
+        '🖲️',
+        '💽',
+        '💾',
+        '💿',
+        '📀',
+        '📁',
+        '🗂️',
+        '📂',
+        '📃',
+        '📄',
+        '📅',
+        '📆',
+        '🖇️',
+        '📇',
+        '📈',
+        '📉',
+        '📊',
+        '📋',
+        '📌',
+        '📍',
+        '📎',
+        '🖇️',
+        '📏',
+        '📐',
+        '✂️',
+        '🖊️',
+        '🖋️',
+        '✒️',
+        '🖌️',
+        '🖍️',
+        '📑',
+        '📒',
+        '📓',
+        '📔',
+        '📕',
+        '📖',
+        '📗',
+        '📘',
+        '📙',
+        '📚',
+        '📐',
+        '🔖',
+        '📎',
+        '🖇️',
+        '🔐',
+        '🔒',
+        '🔓',
+      ],
+      symbols: [
+        '✨',
+        '💫',
+        '💥',
+        '🔥',
+        '🌙',
+        '☀️',
+        '🌤️',
+        '⛅',
+        '🌥️',
+        '🌦️',
+        '🌈',
+        '☁️',
+        '🌧️',
+        '⛈️',
+        '🌩️',
+        '⚡',
+        '🔥',
+        '💧',
+        '🌊',
+        '🎆',
+        '🎇',
+        '🎐',
+        '🎑',
+        '🎖️',
+        '🎗️',
+        '🎟️',
+        '🎫',
+        '🏆',
+        '🏅',
+        '🥇',
+        '🥈',
+        '🥉',
+        '🎆',
+        '🎇',
+        '🏧',
+        '🎪',
+        '🎭',
+        '🎨',
+        '🎬',
+        '🎤',
+        '🎧',
+        '🎼',
+        '🎵',
+        '🎶',
+        '🎹',
+        '🎻',
+        '🥁',
+        '🎷',
+        '🎺',
+        '🎸',
+        '🎲',
+        '♟️',
+        '🎯',
+        '🎴',
+        '🀄',
+        '🎲',
+        '📣',
+        '📪',
+        '📫',
+        '📬',
+        '📭',
+        '📮',
+        '📯',
+        '📰',
+        '📦',
+        '📧',
+        '📨',
+        '📩',
+        '📤',
+        '📥',
+        '📜',
+        '📃',
+        '📑',
+        '📊',
+        '📈',
+        '📉',
+        '📄',
+        '📅',
+        '📆',
+        '📇',
+        '📁',
+        '📂',
+        '📃',
+        '🗃️',
+        '🗄️',
+        '📋',
+        '🗒️',
+        '🗓️',
+        '🔐',
+        '🔒',
+        '🔓',
+        '🔏',
+        '🔐',
+        '🔑',
+        '🗝️',
+        '🔨',
+        '⛏️',
+        '🔩',
+        '🔪',
+        '🔫',
+        '💉',
+        '💊',
+        '🌡️',
+        '🎒',
+        '🧪',
+        '🧫',
+        '🧬',
+        '🧭',
+        '🧮',
+        '🧯',
+        '🧰',
+        '🧿',
+        '🧫',
+        '🚬',
+        '⚰️',
+        '⚱️',
+        '🏺️',
+        '🗿',
+        '🧿',
+        '📴',
+        '📵',
+        '🛢️',
+      ],
     };
-    
+
     this.init();
   }
 
   async init() {
-
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
       window.location.href = '/login.html';
       return;
     }
-    
+
     await this.loadInitialData();
     this.connectWebSocket();
     this.initializeEventListeners();
@@ -57,13 +646,12 @@ class ChatClient {
 
   async loadInitialData() {
     try {
-
       // Load conversations
       const response = await fetch('/api/chat/conversations', {
         headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -77,16 +665,14 @@ class ChatClient {
       // Load available users
       const usersResponse = await fetch('/api/chat/users', {
         headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       if (usersResponse.ok) {
         this.availableUsers = await usersResponse.json();
-
       }
-
     } catch (error) {
       console.error('❌ Error loading initial data:', error);
       this.showNotification('Fehler beim Laden der Chat-Daten', 'error');
@@ -95,7 +681,6 @@ class ChatClient {
 
   connectWebSocket() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-
       return;
     }
 
@@ -108,14 +693,13 @@ class ChatClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.updateConnectionStatus(true);
-        
+
         // Process any queued messages
         this.processMessageQueue();
-        
+
         // Rejoin current conversation
         if (this.currentConversationId) {
           this.joinConversation(this.currentConversationId);
@@ -129,7 +713,7 @@ class ChatClient {
           console.log('🔍 DEBUG - Full WebSocket message:', {
             type: message.type,
             data: message.data,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
           this.handleWebSocketMessage(message);
         } catch (error) {
@@ -139,10 +723,9 @@ class ChatClient {
       };
 
       this.ws.onclose = (event) => {
-
         this.isConnected = false;
         this.updateConnectionStatus(false);
-        
+
         // Only attempt reconnect if not a normal closure
         if (event.code !== 1000) {
           this.attemptReconnect();
@@ -153,7 +736,6 @@ class ChatClient {
         console.error('❌ WebSocket error:', error);
         this.updateConnectionStatus(false);
       };
-
     } catch (error) {
       console.error('❌ Error connecting WebSocket:', error);
       this.attemptReconnect();
@@ -163,14 +745,18 @@ class ChatClient {
   attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+      const delay =
+        this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
 
       setTimeout(() => {
         this.connectWebSocket();
       }, delay);
     } else {
       console.error('❌ Max reconnection attempts reached');
-      this.showNotification('Verbindung zum Chat-Server verloren. Bitte Seite neu laden.', 'error');
+      this.showNotification(
+        'Verbindung zum Chat-Server verloren. Bitte Seite neu laden.',
+        'error'
+      );
     }
   }
 
@@ -186,21 +772,18 @@ class ChatClient {
   }
 
   handleWebSocketMessage(message) {
-
     console.log('🔍 DEBUG - WebSocket message details:', {
       type: message.type,
       hasData: !!message.data,
       dataKeys: message.data ? Object.keys(message.data) : [],
       conversationId: message.data?.conversation_id,
-      currentConvId: this.currentConversationId
+      currentConvId: this.currentConversationId,
     });
-    
+
     switch (message.type) {
       case 'connection_established':
-
         break;
       case 'new_message':
-
         this.handleNewMessage(message.data);
         break;
       case 'user_typing':
@@ -225,88 +808,94 @@ class ChatClient {
         this.handleMessageDelivered(message.data);
         break;
       case 'pong':
-
         break;
       case 'error':
         console.error('❌ Server error:', message.data.message);
         this.showNotification(message.data.message, 'error');
         break;
       default:
-
     }
   }
 
   handleNewMessage(messageData) {
-
     console.log('🔍 DEBUG - handleNewMessage details:', {
       messageId: messageData.id,
       conversationId: messageData.conversation_id,
       currentConvId: this.currentConversationId,
       senderId: messageData.sender_id,
       currentUserId: this.currentUser.id,
-      content: typeof messageData.content === 'string' ? messageData.content.substring(0, 50) + '...' : JSON.stringify(messageData.content).substring(0, 50) + '...',
-      isOwnMessage: messageData.sender_id == this.currentUser.id
+      content:
+        typeof messageData.content === 'string'
+          ? `${messageData.content.substring(0, 50)}...`
+          : `${JSON.stringify(messageData.content).substring(0, 50)}...`,
+      isOwnMessage: messageData.sender_id == this.currentUser.id,
     });
-    
-    // Check if message already exists to prevent duplicates
-    const existingMessage = document.querySelector(`[data-message-id="${messageData.id}"]`);
-    if (existingMessage) {
 
+    // Check if message already exists to prevent duplicates
+    const existingMessage = document.querySelector(
+      `[data-message-id="${messageData.id}"]`
+    );
+    if (existingMessage) {
       return;
     }
-    
+
     // Remove temporary message if this is our own message
     if (messageData.sender_id == this.currentUser.id) {
       const tempMessages = document.querySelectorAll('[data-temp-id]');
-      tempMessages.forEach(msg => {
-
+      tempMessages.forEach((msg) => {
         msg.remove();
       });
     }
-    
+
     // Add message to current conversation
     if (messageData.conversation_id == this.currentConversationId) {
-
       this.displayMessage(messageData);
       this.scrollToBottom();
-      
+
       // Mark as read if not own message
       if (messageData.sender_id != this.currentUser.id) {
-
         this.markMessageAsRead(messageData.id);
       }
     } else {
       console.log('🔍 DEBUG - Message is for different conversation:', {
         messageConvId: messageData.conversation_id,
-        currentConvId: this.currentConversationId
+        currentConvId: this.currentConversationId,
       });
     }
 
     // Update conversation list
     this.updateConversationInList(messageData);
-    
+
     // Show notification if not current conversation
-    if (messageData.conversation_id != this.currentConversationId && 
-        messageData.sender_id != this.currentUser.id) {
-      this.showNotification(`Neue Nachricht von ${messageData.sender_name}`, 'info');
+    if (
+      messageData.conversation_id != this.currentConversationId &&
+      messageData.sender_id != this.currentUser.id
+    ) {
+      this.showNotification(
+        `Neue Nachricht von ${messageData.sender_name}`,
+        'info'
+      );
     }
   }
 
   async sendMessage() {
     const input = document.getElementById('messageInput');
     const content = input.value.trim();
-    const scheduling = document.getElementById('messageScheduling')?.value || 'immediate';
-    
+    const scheduling =
+      document.getElementById('messageScheduling')?.value || 'immediate';
+
     console.log('🔍 DEBUG - sendMessage called:', {
-      content: content,
-      scheduling: scheduling,
+      content,
+      scheduling,
       currentConversationId: this.currentConversationId,
       pendingFiles: this.pendingFiles.length,
-      wsConnected: this.ws?.readyState === WebSocket.OPEN
+      wsConnected: this.ws?.readyState === WebSocket.OPEN,
     });
-    
-    if ((!content && this.pendingFiles.length === 0) || !this.currentConversationId) {
 
+    if (
+      (!content && this.pendingFiles.length === 0) ||
+      !this.currentConversationId
+    ) {
       return;
     }
 
@@ -316,28 +905,34 @@ class ChatClient {
         const formData = new FormData();
         formData.append('content', content);
         formData.append('scheduled_delivery', scheduling);
-        
+
         // Attach files
-        this.pendingFiles.forEach(file => {
+        this.pendingFiles.forEach((file) => {
           formData.append('attachments', file);
         });
 
-        const response = await fetch(`/api/chat/conversations/${this.currentConversationId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.token}`
-          },
-          body: formData
-        });
+        const response = await fetch(
+          `/api/chat/conversations/${this.currentConversationId}/messages`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+            body: formData,
+          }
+        );
 
         if (response.ok) {
           const result = await response.json();
           if (result.scheduled_delivery) {
-            this.showNotification(`Nachricht für ${this.formatSchedulingTime(scheduling)} geplant`, 'success');
+            this.showNotification(
+              `Nachricht für ${this.formatSchedulingTime(scheduling)} geplant`,
+              'success'
+            );
           } else {
             this.showNotification('Nachricht gesendet', 'success');
           }
-          
+
           // Clear pending files
           this.pendingFiles = [];
           this.updateFilePreview();
@@ -354,31 +949,34 @@ class ChatClient {
         type: 'send_message',
         data: {
           conversationId: this.currentConversationId,
-          content: content
-        }
+          content,
+        },
       };
-      
+
       if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
         try {
-
           this.ws.send(JSON.stringify(messageData));
 
           // Show temporary message
           const tempMessage = {
-            id: 'temp-' + Date.now(),
+            id: `temp-${Date.now()}`,
             conversation_id: this.currentConversationId,
-            content: content,
+            content,
             sender_id: this.currentUser.id,
-            sender_name: this.currentUser.first_name || this.currentUser.last_name || this.currentUser.username || 'Unknown',
+            sender_name:
+              this.currentUser.first_name ||
+              this.currentUser.last_name ||
+              this.currentUser.username ||
+              'Unknown',
             first_name: this.currentUser.first_name || '',
             last_name: this.currentUser.last_name || '',
             profile_picture_url: this.currentUser.profile_picture_url || null,
             created_at: new Date().toISOString(),
             delivery_status: 'sending',
             is_read: false,
-            attachments: []
+            attachments: [],
           };
-          
+
           this.displayMessage(tempMessage);
           this.scrollToBottom();
         } catch (error) {
@@ -389,7 +987,10 @@ class ChatClient {
         // Queue message if not connected
 
         this.messageQueue.push(messageData);
-        this.showNotification('Nachricht wird gesendet, sobald die Verbindung wiederhergestellt ist', 'warning');
+        this.showNotification(
+          'Nachricht wird gesendet, sobald die Verbindung wiederhergestellt ist',
+          'warning'
+        );
       }
     }
 
@@ -399,26 +1000,31 @@ class ChatClient {
 
   async loadMessages(conversationId) {
     try {
-
-      const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `/api/chat/conversations/${conversationId}/messages`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
 
       if (response.ok) {
         const messages = await response.json();
 
-        console.log('🔍 DEBUG - First few messages:', messages.slice(0, 3).map(m => ({
-          id: m.id,
-          content: m.content,
-          sender_id: m.sender_id,
-          sender_name: m.sender_name,
-          username: m.username,
-          first_name: m.first_name,
-          last_name: m.last_name
-        })));
+        console.log(
+          '🔍 DEBUG - First few messages:',
+          messages.slice(0, 3).map((m) => ({
+            id: m.id,
+            content: m.content,
+            sender_id: m.sender_id,
+            sender_name: m.sender_name,
+            username: m.username,
+            first_name: m.first_name,
+            last_name: m.last_name,
+          }))
+        );
         this.displayMessages(messages);
         this.scrollToBottom();
       } else {
@@ -436,9 +1042,9 @@ class ChatClient {
       console.error('❌ Messages container not found');
       return;
     }
-    
+
     container.innerHTML = '';
-    messages.forEach(message => {
+    messages.forEach((message) => {
       this.displayMessage(message);
     });
   }
@@ -457,48 +1063,64 @@ class ChatClient {
       currentUserId: this.currentUser.id,
       isOwnMessage: message.sender_id == this.currentUser.id,
       senderName: message.sender_name || message.username,
-      content: typeof message.content === 'string' ? 
-        message.content.substring(0, 50) + '...' : 
-        JSON.stringify(message.content || '').substring(0, 50) + '...'
+      content:
+        typeof message.content === 'string'
+          ? `${message.content.substring(0, 50)}...`
+          : `${JSON.stringify(message.content || '').substring(0, 50)}...`,
     });
-    
+
     const isOwnMessage = message.sender_id == this.currentUser.id;
-    
+
     // Check if this is a temporary message update
-    const tempId = typeof message.id === 'string' && message.id.startsWith('temp-') ? message.id : null;
-    const existingMessage = tempId ? container.querySelector(`[data-temp-id="${tempId}"]`) : null;
-    
+    const tempId =
+      typeof message.id === 'string' && message.id.startsWith('temp-')
+        ? message.id
+        : null;
+    const existingMessage = tempId
+      ? container.querySelector(`[data-temp-id="${tempId}"]`)
+      : null;
+
     if (existingMessage) {
       existingMessage.remove();
     }
-    
+
     const messageElement = document.createElement('div');
     messageElement.className = `message ${isOwnMessage ? 'own' : ''}`;
-    
+
     if (tempId) {
       messageElement.dataset.tempId = message.id;
     } else {
       messageElement.dataset.messageId = message.id;
     }
-    
+
     const time = new Date(message.created_at).toLocaleTimeString('de-DE', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
 
     messageElement.innerHTML = `
-      ${!isOwnMessage ? `
+      ${
+        !isOwnMessage
+          ? `
         <img src="${message.profile_picture_url || '/images/default-avatar.svg'}" 
              alt="Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.svg'">
-      ` : ''}
+      `
+          : ''
+      }
       <div class="message-bubble">
         <div class="message-header">
-          ${!isOwnMessage ? `
+          ${
+            !isOwnMessage
+              ? `
             <span class="message-sender">${message.sender_name || `${message.first_name || ''} ${message.last_name || ''}`.trim() || message.username || 'Unbekannt'}</span>
-          ` : ''}
+          `
+              : ''
+          }
           <span class="message-time">${time}</span>
           ${message.is_scheduled ? '<span class="scheduled-indicator">📅</span>' : ''}
-          ${isOwnMessage ? `
+          ${
+            isOwnMessage
+              ? `
             <div class="message-actions">
               <button class="message-action" onclick="chatClient.deleteMessage('${message.id}')" title="Löschen">
                 <i class="fas fa-trash"></i>
@@ -507,43 +1129,52 @@ class ChatClient {
                 <i class="fas fa-archive"></i>
               </button>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="message-content">${this.formatMessageContent(message.content)}</div>
         ${message.attachments ? this.renderAttachments(message.attachments) : ''}
-        ${isOwnMessage ? `
+        ${
+          isOwnMessage
+            ? `
           <div class="message-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; text-align: right;">
-            ${message.delivery_status === 'failed' ? 
-              '<span style="color: #f44336;">❌ Fehler</span>' :
-              message.delivery_status === 'sending' ?
-                '<span style="color: #9e9e9e;">⏳</span>' :
-                message.is_read ? 
-                  '<span style="color: #2196f3;">✓✓</span>' : 
-                  message.delivery_status === 'delivered' ?
-                    '<span style="color: #9e9e9e;">✓✓</span>' :
-                    '<span style="color: #9e9e9e;">✓</span>'
+            ${
+              message.delivery_status === 'failed'
+                ? '<span style="color: #f44336;">❌ Fehler</span>'
+                : message.delivery_status === 'sending'
+                  ? '<span style="color: #9e9e9e;">⏳</span>'
+                  : message.is_read
+                    ? '<span style="color: #2196f3;">✓✓</span>'
+                    : message.delivery_status === 'delivered'
+                      ? '<span style="color: #9e9e9e;">✓✓</span>'
+                      : '<span style="color: #9e9e9e;">✓</span>'
             }
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
-    
+
     container.appendChild(messageElement);
-    
+
     // Scroll zum neusten Nachrichten
     this.scrollToBottom();
   }
 
   renderAttachments(attachments) {
     if (!attachments || attachments.length === 0) return '';
-    
+
     return `
       <div class="message-attachments">
-        ${attachments.map(attachment => {
-          const isImage = attachment.mime_type && attachment.mime_type.startsWith('image/');
-          
-          if (isImage) {
-            return `
+        ${attachments
+          .map((attachment) => {
+            const isImage =
+              attachment.mime_type && attachment.mime_type.startsWith('image/');
+
+            if (isImage) {
+              return `
               <div class="attachment image-attachment">
                 <img src="/api/chat/attachments/${attachment.filename}" 
                      alt="${attachment.original_filename}"
@@ -559,12 +1190,16 @@ class ChatClient {
                 </div>
               </div>
             `;
-          } else {
-            let icon = '📎';
-            if (attachment.mime_type === 'application/pdf') icon = '📄';
-            else if (attachment.mime_type && attachment.mime_type.includes('word')) icon = '📝';
-            
-            return `
+            } else {
+              let icon = '📎';
+              if (attachment.mime_type === 'application/pdf') icon = '📄';
+              else if (
+                attachment.mime_type &&
+                attachment.mime_type.includes('word')
+              )
+                icon = '📝';
+
+              return `
               <div class="attachment">
                 <a href="/api/chat/attachments/${attachment.filename}" 
                    download="${attachment.original_filename}" 
@@ -578,12 +1213,13 @@ class ChatClient {
                 </a>
               </div>
             `;
-          }
-        }).join('')}
+            }
+          })
+          .join('')}
       </div>
     `;
   }
-  
+
   formatFileSize(bytes) {
     if (!bytes) return '';
     const kb = bytes / 1024;
@@ -597,7 +1233,7 @@ class ChatClient {
     if (!content || typeof content !== 'string') {
       return '';
     }
-    
+
     // Escape HTML to prevent XSS
     const escapeHtml = (text) => {
       const map = {
@@ -605,18 +1241,21 @@ class ChatClient {
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#039;'
+        "'": '&#039;',
       };
-      return text.replace(/[&<>"']/g, m => map[m]);
+      return text.replace(/[&<>"']/g, (m) => map[m]);
     };
-    
+
     // Escape content first
     let formatted = escapeHtml(content);
-    
+
     // Convert URLs to links
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-    
+    formatted = formatted.replace(
+      urlRegex,
+      '<a href="$1" target="_blank" rel="noopener">$1</a>'
+    );
+
     return formatted;
   }
 
@@ -626,23 +1265,24 @@ class ChatClient {
       console.error('❌ Conversations list container not found');
       return;
     }
-    
+
     container.innerHTML = '';
 
-    this.conversations.forEach(conversation => {
+    this.conversations.forEach((conversation) => {
       const conversationElement = document.createElement('div');
       conversationElement.className = 'conversation-item';
       conversationElement.dataset.conversationId = conversation.id;
-      
+
       if (conversation.id == this.currentConversationId) {
         conversationElement.classList.add('active');
       }
 
-      const lastMessageTime = conversation.last_message_time ? 
-        new Date(conversation.last_message_time).toLocaleTimeString('de-DE', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : '';
+      const lastMessageTime = conversation.last_message_time
+        ? new Date(conversation.last_message_time).toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '';
 
       // Avatar für Einzelchats oder Gruppenchats
       let avatarContent = '';
@@ -688,55 +1328,68 @@ class ChatClient {
   }
 
   async selectConversation(conversationId) {
-
     // Remove previous selection
-    document.querySelectorAll('.conversation-item').forEach(item => {
+    document.querySelectorAll('.conversation-item').forEach((item) => {
       item.classList.remove('active');
     });
 
     // Mark new selection
-    const selectedItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
+    const selectedItem = document.querySelector(
+      `[data-conversation-id="${conversationId}"]`
+    );
     if (selectedItem) {
       selectedItem.classList.add('active');
     }
 
     this.currentConversationId = conversationId;
-    
+
     // Find conversation details
-    const conversation = this.conversations.find(c => c.id == conversationId);
+    const conversation = this.conversations.find((c) => c.id == conversationId);
     if (conversation) {
       // Update chat header
       const chatHeader = document.getElementById('chat-header');
       const chatAvatar = document.getElementById('chat-avatar');
       const chatPartnerName = document.getElementById('chat-partner-name');
       const chatPartnerStatus = document.getElementById('chat-partner-status');
-      
+
       if (chatHeader) chatHeader.style.display = 'flex';
-      if (chatPartnerName) chatPartnerName.textContent = conversation.display_name || conversation.name || conversation.username || 'Unbekannt';
+      if (chatPartnerName)
+        chatPartnerName.textContent =
+          conversation.display_name ||
+          conversation.name ||
+          conversation.username ||
+          'Unbekannt';
       if (chatPartnerStatus) {
         // Bei Einzelchats Rolle anzeigen, bei Gruppenchats "Gruppenchat"
         if (conversation.is_group) {
           chatPartnerStatus.textContent = 'Gruppenchat';
         } else {
           // Rolle des anderen Users anzeigen (z.B. "Administrator", "Mitarbeiter")
-          const roleText = conversation.other_user_role || conversation.user_role || 'employee';
+          const roleText =
+            conversation.other_user_role ||
+            conversation.user_role ||
+            'employee';
           const roleMap = {
-            'admin': 'Administrator',
-            'employee': 'Mitarbeiter',
-            'root': 'Root-Admin'
+            admin: 'Administrator',
+            employee: 'Mitarbeiter',
+            root: 'Root-Admin',
           };
           chatPartnerStatus.textContent = roleMap[roleText] || 'Benutzer';
         }
       }
-      
+
       if (chatAvatar) {
         if (conversation.is_group) {
           chatAvatar.innerHTML = '<i class="fas fa-users"></i>';
-          chatAvatar.style.background = 'linear-gradient(135deg, #9c27b0, #ba68c8)';
+          chatAvatar.style.background =
+            'linear-gradient(135deg, #9c27b0, #ba68c8)';
           chatAvatar.style.backgroundImage = 'none';
         } else {
           // Bei Einzelchat: Profilbild des anderen Users
-          if (conversation.other_user_picture || conversation.profile_picture_url) {
+          if (
+            conversation.other_user_picture ||
+            conversation.profile_picture_url
+          ) {
             chatAvatar.innerHTML = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/images/default-avatar.svg'}" 
                                         alt="Avatar" 
                                         style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
@@ -744,63 +1397,70 @@ class ChatClient {
             chatAvatar.style.background = 'none';
           } else {
             // Fallback zu Initialen
-            const initials = (conversation.display_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase();
+            const initials = (conversation.display_name || 'U')
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase();
             chatAvatar.textContent = initials;
-            chatAvatar.style.background = 'linear-gradient(135deg, var(--primary-color), var(--primary-light))';
+            chatAvatar.style.background =
+              'linear-gradient(135deg, var(--primary-color), var(--primary-light))';
           }
         }
       }
     }
-    
+
     // Join conversation
     this.joinConversation(conversationId);
-    
+
     // Load messages
     await this.loadMessages(conversationId);
-    
+
     // Show chat area
     const chatArea = document.getElementById('chatArea');
     const noChatSelected = document.getElementById('noChatSelected');
-    
+
     if (chatArea) chatArea.style.display = 'block';
     if (noChatSelected) noChatSelected.style.display = 'none';
   }
 
   joinConversation(conversationId) {
     if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-
-      this.ws.send(JSON.stringify({
-        type: 'join_conversation',
-        data: { conversationId }
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: 'join_conversation',
+          data: { conversationId },
+        })
+      );
     } else {
-
     }
   }
 
   showNewConversationModal() {
-
     const modal = document.getElementById('newConversationModal');
     const usersList = document.getElementById('availableUsersList');
     const groupChatOptions = document.getElementById('groupChatOptions');
     const groupChatName = document.getElementById('groupChatName');
-    
+
     if (!modal || !usersList) {
       console.error('❌ Modal elements not found');
       return;
     }
-    
+
     // Reset modal state
     if (groupChatName) groupChatName.value = '';
     if (groupChatOptions) groupChatOptions.style.display = 'none';
-    
+
     // Show available users
     usersList.innerHTML = '';
-    this.availableUsers.forEach(user => {
+    this.availableUsers.forEach((user) => {
       const userElement = document.createElement('div');
       userElement.className = 'available-user';
-      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unbekannter Benutzer';
-      
+      const userName =
+        `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+        user.username ||
+        'Unbekannter Benutzer';
+
       userElement.innerHTML = `
         <input type="checkbox" id="user_${user.id}" value="${user.id}" class="user-checkbox">
         <label for="user_${user.id}" style="display: flex; align-items: center; gap: 8px; flex: 1;">
@@ -816,11 +1476,13 @@ class ChatClient {
       `;
       usersList.appendChild(userElement);
     });
-    
+
     // Event listener for checkbox changes
     usersList.addEventListener('change', (e) => {
       if (e.target.classList.contains('user-checkbox')) {
-        const checkedCount = usersList.querySelectorAll('.user-checkbox:checked').length;
+        const checkedCount = usersList.querySelectorAll(
+          '.user-checkbox:checked'
+        ).length;
         if (groupChatOptions) {
           groupChatOptions.style.display = checkedCount > 1 ? 'block' : 'none';
         }
@@ -828,45 +1490,54 @@ class ChatClient {
     });
 
     modal.style.display = 'flex';
-
   }
 
   async createNewConversation() {
-    const selectedUsers = Array.from(document.querySelectorAll('#availableUsersList input:checked'))
-      .map(input => parseInt(input.value));
+    const selectedUsers = Array.from(
+      document.querySelectorAll('#availableUsersList input:checked')
+    ).map((input) => parseInt(input.value));
 
     if (selectedUsers.length === 0) {
-      this.showNotification('Bitte mindestens einen Benutzer auswählen', 'warning');
+      this.showNotification(
+        'Bitte mindestens einen Benutzer auswählen',
+        'warning'
+      );
       return;
     }
 
     const isGroup = selectedUsers.length > 1;
     const groupNameInput = document.getElementById('groupChatName');
-    const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
+    const groupName =
+      isGroup && groupNameInput ? groupNameInput.value.trim() : null;
 
     try {
       const response = await fetch('/api/chat/conversations', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           participant_ids: selectedUsers,
           is_group: isGroup,
-          name: groupName || null
-        })
+          name: groupName || null,
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
 
-        this.showNotification(isGroup ? 'Gruppenchat erfolgreich erstellt' : 'Unterhaltung erfolgreich erstellt', 'success');
+        this.showNotification(
+          isGroup
+            ? 'Gruppenchat erfolgreich erstellt'
+            : 'Unterhaltung erfolgreich erstellt',
+          'success'
+        );
         this.closeModal('newConversationModal');
-        
+
         // Reload conversations
         await this.loadInitialData();
-        
+
         // Select new conversation
         this.selectConversation(result.id);
       } else {
@@ -879,7 +1550,6 @@ class ChatClient {
   }
 
   initializeEventListeners() {
-
     // Message input
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
@@ -901,25 +1571,24 @@ class ChatClient {
     // File upload handler
     const fileInput = document.getElementById('fileInput');
     const attachmentBtn = document.getElementById('attachmentBtn');
-    
+
     if (attachmentBtn && fileInput) {
       attachmentBtn.addEventListener('click', (e) => {
         e.preventDefault();
         fileInput.click();
       });
     }
-    
+
     if (fileInput) {
       fileInput.addEventListener('change', async (event) => {
         const files = event.target.files;
         if (files.length > 0) {
-
           await this.handleFileUpload(files);
           fileInput.value = '';
         }
       });
     }
-    
+
     // Emoji picker handler
     const emojiBtn = document.getElementById('emojiBtn');
     if (emojiBtn) {
@@ -928,37 +1597,46 @@ class ChatClient {
         this.toggleEmojiPicker();
       });
     }
-    
+
     // Emoji category handlers
     const emojiCategories = document.querySelectorAll('.emoji-category');
-    emojiCategories.forEach(category => {
+    emojiCategories.forEach((category) => {
       category.addEventListener('click', (e) => {
         const categoryName = e.target.dataset.category;
         this.showEmojiCategory(categoryName);
-        
+
         // Update active state
-        document.querySelectorAll('.emoji-category').forEach(cat => cat.classList.remove('active'));
+        document
+          .querySelectorAll('.emoji-category')
+          .forEach((cat) => cat.classList.remove('active'));
         e.target.classList.add('active');
       });
     });
-    
+
     // Click outside to close emoji picker
     document.addEventListener('click', (e) => {
       const emojiPicker = document.getElementById('emojiPicker');
       const emojiBtn = document.getElementById('emojiBtn');
-      if (emojiPicker && !emojiPicker.contains(e.target) && e.target !== emojiBtn && !emojiBtn.contains(e.target)) {
+      if (
+        emojiPicker &&
+        !emojiPicker.contains(e.target) &&
+        e.target !== emojiBtn &&
+        !emojiBtn.contains(e.target)
+      ) {
         emojiPicker.style.display = 'none';
       }
     });
-    
+
     // Search functionality
-    const searchBtn = document.querySelector('.chat-action-btn[title="Suchen"]');
+    const searchBtn = document.querySelector(
+      '.chat-action-btn[title="Suchen"]'
+    );
     if (searchBtn) {
       searchBtn.addEventListener('click', () => {
         this.toggleSearch();
       });
     }
-    
+
     // Delete conversation button
     const deleteConvBtn = document.getElementById('deleteConversationBtn');
     if (deleteConvBtn) {
@@ -966,14 +1644,16 @@ class ChatClient {
         this.deleteCurrentConversation();
       });
     }
-    
+
     // Periodic connection check
     setInterval(() => {
       if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
-          type: 'ping',
-          data: { timestamp: new Date().toISOString() }
-        }));
+        this.ws.send(
+          JSON.stringify({
+            type: 'ping',
+            data: { timestamp: new Date().toISOString() },
+          })
+        );
       }
     }, 30000); // Every 30 seconds
   }
@@ -982,29 +1662,35 @@ class ChatClient {
     if (!this.currentConversationId || !this.isConnected) return;
 
     // Send typing start
-    this.ws.send(JSON.stringify({
-      type: 'typing_start',
-      data: { conversationId: this.currentConversationId }
-    }));
+    this.ws.send(
+      JSON.stringify({
+        type: 'typing_start',
+        data: { conversationId: this.currentConversationId },
+      })
+    );
 
     // Timer for typing stop
     clearTimeout(this.typingTimer);
     this.typingTimer = setTimeout(() => {
       if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({
-          type: 'typing_stop',
-          data: { conversationId: this.currentConversationId }
-        }));
+        this.ws.send(
+          JSON.stringify({
+            type: 'typing_stop',
+            data: { conversationId: this.currentConversationId },
+          })
+        );
       }
     }, 2000);
   }
 
   markMessageAsRead(messageId) {
     if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'mark_read',
-        data: { messageId }
-      }));
+      this.ws.send(
+        JSON.stringify({
+          type: 'mark_read',
+          data: { messageId },
+        })
+      );
     }
   }
 
@@ -1012,7 +1698,7 @@ class ChatClient {
     const textarea = document.getElementById('messageInput');
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   }
 
@@ -1029,19 +1715,20 @@ class ChatClient {
       indicator.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
       indicator.textContent = connected ? 'Verbunden' : 'Getrennt';
     }
-
   }
 
   formatSchedulingTime(scheduling) {
     switch (scheduling) {
-      case 'break_time': return 'Pausenzeit (12:00)';
-      case 'after_work': return 'Feierabend (17:00)';
-      default: return 'sofort';
+      case 'break_time':
+        return 'Pausenzeit (12:00)';
+      case 'after_work':
+        return 'Feierabend (17:00)';
+      default:
+        return 'sofort';
     }
   }
 
   showNotification(message, type = 'info') {
-
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -1058,9 +1745,9 @@ class ChatClient {
       animation: slideIn 0.3s ease-out;
     `;
     notification.textContent = message;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       notification.style.animation = 'slideOut 0.3s ease-out';
       setTimeout(() => notification.remove(), 300);
@@ -1080,11 +1767,16 @@ class ChatClient {
 
   updateConversationInList(messageData) {
     // Update conversation in list
-    const conversation = this.conversations.find(c => c.id == messageData.conversation_id);
+    const conversation = this.conversations.find(
+      (c) => c.id == messageData.conversation_id
+    );
     if (conversation) {
       conversation.last_message = messageData.content;
       conversation.last_message_time = messageData.created_at;
-      if (messageData.sender_id != this.currentUser.id && messageData.conversation_id != this.currentConversationId) {
+      if (
+        messageData.sender_id != this.currentUser.id &&
+        messageData.conversation_id != this.currentConversationId
+      ) {
         conversation.unread_count = (conversation.unread_count || 0) + 1;
       }
       this.renderConversations();
@@ -1094,10 +1786,13 @@ class ChatClient {
   showTypingIndicator(data) {
     const container = document.getElementById('messagesContainer');
     if (!container) return;
-    
+
     const existingIndicator = document.getElementById(`typing-${data.userId}`);
-    
-    if (!existingIndicator && data.conversationId == this.currentConversationId) {
+
+    if (
+      !existingIndicator &&
+      data.conversationId == this.currentConversationId
+    ) {
       const indicator = document.createElement('div');
       indicator.id = `typing-${data.userId}`;
       indicator.className = 'typing-indicator';
@@ -1122,7 +1817,9 @@ class ChatClient {
   }
 
   handleMessageRead(data) {
-    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    const messageElement = document.querySelector(
+      `[data-message-id="${data.messageId}"]`
+    );
     if (messageElement) {
       const statusElement = messageElement.querySelector('.message-status');
       if (statusElement) {
@@ -1132,18 +1829,20 @@ class ChatClient {
   }
 
   handleUserStatusChange(data) {
-
     // Update user status in availableUsers
-    const user = this.availableUsers.find(u => u.id === data.userId);
+    const user = this.availableUsers.find((u) => u.id === data.userId);
     if (user) {
       user.online_status = data.status;
     }
-    
+
     // Update status indicator in conversation list
-    const statusIndicators = document.querySelectorAll(`[data-user-status="${data.userId}"]`);
-    statusIndicators.forEach(indicator => {
+    const statusIndicators = document.querySelectorAll(
+      `[data-user-status="${data.userId}"]`
+    );
+    statusIndicators.forEach((indicator) => {
       indicator.className = `status-indicator ${data.status}`;
-      indicator.style.background = data.status === 'online' ? '#4caf50' : '#9e9e9e';
+      indicator.style.background =
+        data.status === 'online' ? '#4caf50' : '#9e9e9e';
       indicator.title = data.status === 'online' ? 'Online' : 'Offline';
     });
   }
@@ -1158,17 +1857,19 @@ class ChatClient {
 
   async deleteMessage(messageId) {
     if (!confirm('Möchten Sie diese Nachricht wirklich löschen?')) return;
-    
+
     try {
       const response = await fetch(`/api/chat/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${this.token}`
-        }
+          Authorization: `Bearer ${this.token}`,
+        },
       });
-      
+
       if (response.ok) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const messageElement = document.querySelector(
+          `[data-message-id="${messageId}"]`
+        );
         if (messageElement) {
           messageElement.style.opacity = '0';
           setTimeout(() => messageElement.remove(), 300);
@@ -1188,12 +1889,14 @@ class ChatClient {
       const response = await fetch(`/api/chat/messages/${messageId}/archive`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${this.token}`
-        }
+          Authorization: `Bearer ${this.token}`,
+        },
       });
-      
+
       if (response.ok) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const messageElement = document.querySelector(
+          `[data-message-id="${messageId}"]`
+        );
         if (messageElement) {
           messageElement.style.opacity = '0.5';
           messageElement.classList.add('archived');
@@ -1207,45 +1910,53 @@ class ChatClient {
       this.showNotification('Fehler beim Archivieren der Nachricht', 'error');
     }
   }
-  
+
   async handleFileUpload(files) {
     const maxFileSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
-    
+
     for (const file of files) {
       // Check size
       if (file.size > maxFileSize) {
-        this.showNotification(`Datei ${file.name} ist zu groß (max. 10MB)`, 'error');
+        this.showNotification(
+          `Datei ${file.name} ist zu groß (max. 10MB)`,
+          'error'
+        );
         continue;
       }
-      
+
       // Check type
       if (!allowedTypes.includes(file.type)) {
         this.showNotification(`Dateityp ${file.type} nicht erlaubt`, 'error');
         continue;
       }
-      
+
       // Add to pending files
       this.pendingFiles.push(file);
     }
-    
+
     // Update preview
     this.updateFilePreview();
   }
-  
+
   updateFilePreview() {
     // Remove old preview
     const existingPreview = document.getElementById('file-preview');
     if (existingPreview) {
       existingPreview.remove();
     }
-    
+
     if (this.pendingFiles.length === 0) return;
-    
+
     // Create new preview
     const previewContainer = document.createElement('div');
     previewContainer.id = 'file-preview';
@@ -1260,7 +1971,7 @@ class ChatClient {
       flex-wrap: wrap;
       gap: 8px;
     `;
-    
+
     this.pendingFiles.forEach((file, index) => {
       const filePreview = document.createElement('div');
       filePreview.className = 'file-preview-item';
@@ -1274,13 +1985,13 @@ class ChatClient {
         gap: 8px;
         font-size: 0.85rem;
       `;
-      
+
       // Icon based on file type
       let icon = '📎';
       if (file.type.startsWith('image/')) icon = '🖼️';
       else if (file.type === 'application/pdf') icon = '📄';
       else if (file.type.includes('word')) icon = '📝';
-      
+
       filePreview.innerHTML = `
         <span>${icon}</span>
         <span>${file.name}</span>
@@ -1293,10 +2004,10 @@ class ChatClient {
           font-size: 1rem;
         ">&times;</button>
       `;
-      
+
       previewContainer.appendChild(filePreview);
     });
-    
+
     // Insert preview above input area
     const inputContainer = document.querySelector('.message-input-container');
     const inputWrapper = document.querySelector('.message-input-wrapper');
@@ -1304,33 +2015,33 @@ class ChatClient {
       inputContainer.insertBefore(previewContainer, inputWrapper);
     }
   }
-  
+
   removeFile(index) {
     this.pendingFiles.splice(index, 1);
     this.updateFilePreview();
   }
-  
-  handleMessageSent(data) {
 
+  handleMessageSent(data) {
     // Update temporary message with real message ID
     const tempMessages = document.querySelectorAll('[data-temp-id]');
-    
+
     if (tempMessages.length > 0) {
       const messageElement = tempMessages[0];
       messageElement.dataset.messageId = data.messageId;
       delete messageElement.dataset.tempId;
-      
+
       const statusElement = messageElement.querySelector('.message-status');
       if (statusElement) {
         statusElement.innerHTML = '<span style="color: #9e9e9e;">✓</span>';
       }
     }
   }
-  
-  handleMessageDelivered(data) {
 
+  handleMessageDelivered(data) {
     // Update message status to delivered
-    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+    const messageElement = document.querySelector(
+      `[data-message-id="${data.messageId}"]`
+    );
     if (messageElement) {
       const statusElement = messageElement.querySelector('.message-status');
       if (statusElement) {
@@ -1342,7 +2053,7 @@ class ChatClient {
   toggleEmojiPicker() {
     const emojiPicker = document.getElementById('emojiPicker');
     if (!emojiPicker) return;
-    
+
     if (emojiPicker.style.display === 'none' || !emojiPicker.style.display) {
       emojiPicker.style.display = 'flex';
       this.showEmojiCategory('smileys');
@@ -1350,15 +2061,15 @@ class ChatClient {
       emojiPicker.style.display = 'none';
     }
   }
-  
+
   showEmojiCategory(category) {
     const emojiContent = document.getElementById('emojiContent');
     if (!emojiContent) return;
-    
+
     const emojis = this.emojiCategories[category] || [];
-    
+
     emojiContent.innerHTML = '';
-    emojis.forEach(emoji => {
+    emojis.forEach((emoji) => {
       const emojiItem = document.createElement('div');
       emojiItem.className = 'emoji-item';
       emojiItem.textContent = emoji;
@@ -1368,22 +2079,25 @@ class ChatClient {
       emojiContent.appendChild(emojiItem);
     });
   }
-  
+
   insertEmoji(emoji) {
     const messageInput = document.getElementById('messageInput');
     if (!messageInput) return;
-    
+
     const cursorPos = messageInput.selectionStart;
     const textBefore = messageInput.value.substring(0, cursorPos);
     const textAfter = messageInput.value.substring(cursorPos);
-    
+
     messageInput.value = textBefore + emoji + textAfter;
     messageInput.focus();
-    messageInput.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
-    
+    messageInput.setSelectionRange(
+      cursorPos + emoji.length,
+      cursorPos + emoji.length
+    );
+
     this.resizeTextarea();
   }
-  
+
   toggleSearch() {
     const searchContainer = document.querySelector('.chat-search');
     if (!searchContainer) {
@@ -1401,7 +2115,7 @@ class ChatClient {
         <div class="search-results" id="searchResults"></div>
       `;
       chatHeader.parentNode.insertBefore(searchDiv, chatHeader.nextSibling);
-      
+
       // Add search event listener
       const searchInput = document.getElementById('searchInput');
       searchInput.addEventListener('input', (e) => {
@@ -1409,20 +2123,21 @@ class ChatClient {
       });
       searchInput.focus();
     } else {
-      searchContainer.style.display = searchContainer.style.display === 'none' ? 'block' : 'none';
+      searchContainer.style.display =
+        searchContainer.style.display === 'none' ? 'block' : 'none';
       if (searchContainer.style.display === 'block') {
         document.getElementById('searchInput').focus();
       }
     }
   }
-  
+
   closeSearch() {
     const searchContainer = document.querySelector('.chat-search');
     if (searchContainer) {
       searchContainer.style.display = 'none';
     }
   }
-  
+
   async searchMessages(query) {
     if (!query || query.length < 2) {
       const resultsContainer = document.getElementById('searchResults');
@@ -1431,15 +2146,18 @@ class ChatClient {
       }
       return;
     }
-    
+
     try {
-      const response = await fetch(`/api/chat/conversations/${this.currentConversationId}/search?q=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `/api/chat/conversations/${this.currentConversationId}/search?q=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
         }
-      });
-      
+      );
+
       if (response.ok) {
         const results = await response.json();
         this.displaySearchResults(results);
@@ -1448,27 +2166,34 @@ class ChatClient {
       console.error('❌ Error searching:', error);
     }
   }
-  
+
   displaySearchResults(results) {
     const resultsContainer = document.getElementById('searchResults');
     if (!resultsContainer) return;
-    
+
     if (!results || results.length === 0) {
-      resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary);">Keine Ergebnisse gefunden</div>';
+      resultsContainer.innerHTML =
+        '<div style="padding: 10px; color: var(--text-secondary);">Keine Ergebnisse gefunden</div>';
       return;
     }
-    
-    resultsContainer.innerHTML = results.map(result => `
+
+    resultsContainer.innerHTML = results
+      .map(
+        (result) => `
       <div class="search-result-item" onclick="chatClient.scrollToMessage(${result.id})">
         <div style="font-weight: 500;">${result.sender_name}</div>
         <div style="font-size: 0.85rem; color: var(--text-secondary);">${result.content}</div>
         <div style="font-size: 0.75rem; color: var(--text-secondary);">${new Date(result.created_at).toLocaleString('de-DE')}</div>
       </div>
-    `).join('');
+    `
+      )
+      .join('');
   }
-  
+
   scrollToMessage(messageId) {
-    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    const messageElement = document.querySelector(
+      `[data-message-id="${messageId}"]`
+    );
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       messageElement.style.animation = 'highlight 2s ease';
@@ -1478,52 +2203,62 @@ class ChatClient {
     }
     this.closeSearch();
   }
-  
+
   async addReaction(messageId, emoji) {
     try {
-      const response = await fetch(`/api/chat/messages/${messageId}/reactions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ emoji })
-      });
-      
-      if (response.ok) {
+      const response = await fetch(
+        `/api/chat/messages/${messageId}/reactions`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ emoji }),
+        }
+      );
 
+      if (response.ok) {
       }
     } catch (error) {
       console.error('❌ Error adding reaction:', error);
     }
   }
-  
+
   async deleteCurrentConversation() {
     if (!this.currentConversationId) {
       this.showNotification('Keine Unterhaltung ausgewählt', 'warning');
       return;
     }
-    
-    if (!confirm('Möchten Sie diese Unterhaltung wirklich löschen? Alle Nachrichten werden unwiderruflich gelöscht.')) {
+
+    if (
+      !confirm(
+        'Möchten Sie diese Unterhaltung wirklich löschen? Alle Nachrichten werden unwiderruflich gelöscht.'
+      )
+    ) {
       return;
     }
-    
-    try {
-      const response = await fetch(`/api/chat/conversations/${this.currentConversationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${this.token}`
-        }
-      });
-      
-      if (response.ok) {
 
+    try {
+      const response = await fetch(
+        `/api/chat/conversations/${this.currentConversationId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
         this.showNotification('Unterhaltung gelöscht', 'success');
-        
+
         // Remove from conversations list
-        this.conversations = this.conversations.filter(c => c.id !== this.currentConversationId);
+        this.conversations = this.conversations.filter(
+          (c) => c.id !== this.currentConversationId
+        );
         this.currentConversationId = null;
-        
+
         // Update UI
         this.renderConversations();
         const messagesContainer = document.getElementById('messagesContainer');
@@ -1538,14 +2273,17 @@ class ChatClient {
             </div>
           `;
         }
-        
+
         const chatArea = document.getElementById('chatArea');
         const chatHeader = document.getElementById('chat-header');
         if (chatArea) chatArea.style.display = 'none';
         if (chatHeader) chatHeader.style.display = 'none';
       } else {
         const error = await response.json();
-        this.showNotification(error.message || 'Fehler beim Löschen der Unterhaltung', 'error');
+        this.showNotification(
+          error.message || 'Fehler beim Löschen der Unterhaltung',
+          'error'
+        );
       }
     } catch (error) {
       console.error('❌ Error deleting conversation:', error);
@@ -1556,9 +2294,8 @@ class ChatClient {
 
 // Initialize chat client when page loads
 document.addEventListener('DOMContentLoaded', () => {
-
   window.chatClient = new ChatClient();
-  
+
   // Add CSS for animations
   const style = document.createElement('style');
   style.textContent = `

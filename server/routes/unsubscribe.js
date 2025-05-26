@@ -15,7 +15,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const token = req.query.token;
-    
+
     if (!token) {
       return res.status(400).send(`
         <html>
@@ -37,42 +37,55 @@ router.get('/', async (req, res) => {
         </html>
       `);
     }
-    
+
     // Token verifizieren
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret');
-    
-    if (!decoded.email || !decoded.purpose || decoded.purpose !== 'unsubscribe') {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'default-secret'
+    );
+
+    if (
+      !decoded.email ||
+      !decoded.purpose ||
+      decoded.purpose !== 'unsubscribe'
+    ) {
       throw new Error('Ungültiger Token');
     }
-    
+
     // Benutzer finden
     const user = await User.findByEmail(decoded.email);
-    
+
     if (!user) {
       throw new Error('Benutzer nicht gefunden');
     }
-    
+
     // Bestimmte oder alle Benachrichtigungen deaktivieren
     const notificationType = decoded.type || 'all';
-    let notificationSettings = user.notification_settings ? JSON.parse(user.notification_settings) : {};
-    
+    let notificationSettings = user.notification_settings
+      ? JSON.parse(user.notification_settings)
+      : {};
+
     if (notificationType === 'all') {
       notificationSettings = { ...notificationSettings, enabled: false };
     } else {
-      notificationSettings = { 
-        ...notificationSettings, 
-        categories: { 
-          ...(notificationSettings.categories || {}), 
-          [notificationType]: false 
-        } 
+      notificationSettings = {
+        ...notificationSettings,
+        categories: {
+          ...(notificationSettings.categories || {}),
+          [notificationType]: false,
+        },
       };
     }
-    
+
     // Einstellungen speichern
-    await User.update(user.id, { notification_settings: JSON.stringify(notificationSettings) });
-    
-    logger.info(`Benutzer ${user.email} hat sich von ${notificationType === 'all' ? 'allen Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet`);
-    
+    await User.update(user.id, {
+      notification_settings: JSON.stringify(notificationSettings),
+    });
+
+    logger.info(
+      `Benutzer ${user.email} hat sich von ${notificationType === 'all' ? 'allen Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet`
+    );
+
     // Erfolgsseite anzeigen
     res.send(`
       <html>
@@ -95,8 +108,10 @@ router.get('/', async (req, res) => {
       </html>
     `);
   } catch (error) {
-    logger.error(`Fehler bei der Abmeldung von Benachrichtigungen: ${error.message}`);
-    
+    logger.error(
+      `Fehler bei der Abmeldung von Benachrichtigungen: ${error.message}`
+    );
+
     res.status(400).send(`
       <html>
         <head>

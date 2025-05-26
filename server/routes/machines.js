@@ -21,28 +21,28 @@ router.get('/', authenticateToken, async (req, res) => {
       { id: 3, name: 'Förderband A', department_id: 2, status: 'active' },
       { id: 4, name: 'Förderband B', department_id: 2, status: 'active' },
       { id: 5, name: 'Prüfstand 01', department_id: 3, status: 'maintenance' },
-      { id: 6, name: 'Prüfstand 02', department_id: 3, status: 'active' }
+      { id: 6, name: 'Prüfstand 02', department_id: 3, status: 'active' },
     ];
 
     // Filter by department if requested
     const departmentId = req.query.department_id;
     let filteredMachines = machines;
-    
+
     if (departmentId) {
-      filteredMachines = machines.filter(machine => 
-        machine.department_id == departmentId
+      filteredMachines = machines.filter(
+        (machine) => machine.department_id == departmentId
       );
     }
 
-    res.json({ 
+    res.json({
       success: true,
-      machines: filteredMachines 
+      machines: filteredMachines,
     });
   } catch (error) {
     console.error('Error fetching machines:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Fehler beim Laden der Maschinen' 
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Laden der Maschinen',
     });
   }
 });
@@ -54,7 +54,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const machineId = parseInt(req.params.id);
-    
+
     // Dummy machine data
     const machine = {
       id: machineId,
@@ -63,18 +63,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
       status: 'active',
       description: 'Automatisch generierte Maschine',
       location: 'Halle A',
-      maintenance_schedule: 'Wöchentlich'
+      maintenance_schedule: 'Wöchentlich',
     };
 
-    res.json({ 
+    res.json({
       success: true,
-      machine 
+      machine,
     });
   } catch (error) {
     console.error('Error fetching machine:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Fehler beim Laden der Maschine' 
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Laden der Maschine',
     });
   }
 });
@@ -87,9 +87,9 @@ router.post('/', authenticateToken, async (req, res) => {
   try {
     // Check admin permission
     if (!['admin', 'root', 'manager'].includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Keine Berechtigung zum Erstellen von Maschinen' 
+      return res.status(403).json({
+        success: false,
+        message: 'Keine Berechtigung zum Erstellen von Maschinen',
       });
     }
 
@@ -98,7 +98,7 @@ router.post('/', authenticateToken, async (req, res) => {
     if (!name || !department_id) {
       return res.status(400).json({
         success: false,
-        message: 'Name und Abteilung sind erforderlich'
+        message: 'Name und Abteilung sind erforderlich',
       });
     }
 
@@ -110,19 +110,19 @@ router.post('/', authenticateToken, async (req, res) => {
       description: description || null,
       location: location || null,
       status: 'active',
-      created_at: new Date()
+      created_at: new Date(),
     };
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       message: 'Maschine erfolgreich erstellt',
-      machine 
+      machine,
     });
   } catch (error) {
     console.error('Error creating machine:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Fehler beim Erstellen der Maschine' 
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Erstellen der Maschine',
     });
   }
 });

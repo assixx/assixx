@@ -2,11 +2,32 @@ const db = require('../database');
 const logger = require('../utils/logger');
 
 class Document {
-  static async create({ userId, fileName, fileContent, category = 'other', description = '', year = null, month = null, tenant_id }) {
-    logger.info(`Creating new document for user ${userId} in category ${category}`);
-    const query = 'INSERT INTO documents (user_id, file_name, file_content, category, description, year, month, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+  static async create({
+    userId,
+    fileName,
+    fileContent,
+    category = 'other',
+    description = '',
+    year = null,
+    month = null,
+    tenant_id,
+  }) {
+    logger.info(
+      `Creating new document for user ${userId} in category ${category}`
+    );
+    const query =
+      'INSERT INTO documents (user_id, file_name, file_content, category, description, year, month, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
     try {
-      const [result] = await db.query(query, [userId, fileName, fileContent, category, description, year, month, tenant_id]);
+      const [result] = await db.query(query, [
+        userId,
+        fileName,
+        fileContent,
+        category,
+        description,
+        year,
+        month,
+        tenant_id,
+      ]);
       logger.info(`Document created successfully with ID ${result.insertId}`);
       return result.insertId;
     } catch (error) {
@@ -17,26 +38,36 @@ class Document {
 
   static async findByUserId(userId) {
     logger.info(`Fetching documents for user ${userId}`);
-    const query = 'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? ORDER BY upload_date DESC';
+    const query =
+      'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? ORDER BY upload_date DESC';
     try {
       const [rows] = await db.query(query, [userId]);
       logger.info(`Retrieved ${rows.length} documents for user ${userId}`);
       return rows;
     } catch (error) {
-      logger.error(`Error fetching documents for user ${userId}: ${error.message}`);
+      logger.error(
+        `Error fetching documents for user ${userId}: ${error.message}`
+      );
       throw error;
     }
   }
 
   static async findByUserIdAndCategory(userId, category, archived = false) {
-    logger.info(`Fetching ${category} documents for user ${userId} (archived: ${archived})`);
-    const query = 'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
+    logger.info(
+      `Fetching ${category} documents for user ${userId} (archived: ${archived})`
+    );
+    const query =
+      'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
     try {
       const [rows] = await db.query(query, [userId, category, archived]);
-      logger.info(`Retrieved ${rows.length} ${category} documents for user ${userId}`);
+      logger.info(
+        `Retrieved ${rows.length} ${category} documents for user ${userId}`
+      );
       return rows;
     } catch (error) {
-      logger.error(`Error fetching ${category} documents for user ${userId}: ${error.message}`);
+      logger.error(
+        `Error fetching ${category} documents for user ${userId}: ${error.message}`
+      );
       throw error;
     }
   }
@@ -57,10 +88,11 @@ class Document {
       throw error;
     }
   }
-  
+
   static async incrementDownloadCount(id) {
     logger.info(`Incrementing download count for document ${id}`);
-    const query = 'UPDATE documents SET download_count = COALESCE(download_count, 0) + 1, last_downloaded = NOW() WHERE id = ?';
+    const query =
+      'UPDATE documents SET download_count = COALESCE(download_count, 0) + 1, last_downloaded = NOW() WHERE id = ?';
     try {
       const [result] = await db.query(query, [id]);
       if (result.affectedRows === 0) {
@@ -70,12 +102,17 @@ class Document {
       logger.info(`Download count incremented for document ${id}`);
       return true;
     } catch (error) {
-      logger.error(`Error incrementing download count for document ${id}: ${error.message}`);
+      logger.error(
+        `Error incrementing download count for document ${id}: ${error.message}`
+      );
       throw error;
     }
   }
 
-  static async update(id, { fileName, fileContent, category, description, year, month, isArchived }) {
+  static async update(
+    id,
+    { fileName, fileContent, category, description, year, month, isArchived }
+  ) {
     logger.info(`Updating document ${id}`);
     let query = 'UPDATE documents SET ';
     const params = [];
@@ -115,7 +152,7 @@ class Document {
       return false;
     }
 
-    query += updates.join(', ') + ' WHERE id = ?';
+    query += `${updates.join(', ')} WHERE id = ?`;
     params.push(id);
 
     try {
@@ -134,12 +171,12 @@ class Document {
 
   static async archiveDocument(id) {
     logger.info(`Archiving document ${id}`);
-    return this.update(id, { isArchived: true });
+    return await this.update(id, { isArchived: true });
   }
 
   static async unarchiveDocument(id) {
     logger.info(`Unarchiving document ${id}`);
-    return this.update(id, { isArchived: false });
+    return await this.update(id, { isArchived: false });
   }
 
   static async delete(id) {
@@ -160,25 +197,29 @@ class Document {
   }
 
   static async findAll(category = null) {
-    logger.info(`Fetching all documents${category ? ` of category ${category}` : ''}`);
+    logger.info(
+      `Fetching all documents${category ? ` of category ${category}` : ''}`
+    );
     let query = `
       SELECT d.*, u.first_name, u.last_name, 
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
       LEFT JOIN users u ON d.user_id = u.id`;
-    
+
     const params = [];
-    
+
     if (category) {
       query += ' WHERE d.category = ?';
       params.push(category);
     }
-    
+
     query += ' ORDER BY d.upload_date DESC';
-    
+
     try {
       const [rows] = await db.query(query, params);
-      logger.info(`Retrieved ${rows.length} documents${category ? ` of category ${category}` : ''}`);
+      logger.info(
+        `Retrieved ${rows.length} documents${category ? ` of category ${category}` : ''}`
+      );
       return rows;
     } catch (error) {
       logger.error(`Error fetching documents: ${error.message}`);
@@ -187,14 +228,25 @@ class Document {
   }
 
   static async search(userId, searchTerm) {
-    logger.info(`Searching documents for user ${userId} with term: ${searchTerm}`);
-    const query = 'SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND (file_name LIKE ? OR description LIKE ?)';
+    logger.info(
+      `Searching documents for user ${userId} with term: ${searchTerm}`
+    );
+    const query =
+      'SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND (file_name LIKE ? OR description LIKE ?)';
     try {
-      const [rows] = await db.query(query, [userId, `%${searchTerm}%`, `%${searchTerm}%`]);
-      logger.info(`Found ${rows.length} documents matching search for user ${userId}`);
+      const [rows] = await db.query(query, [
+        userId,
+        `%${searchTerm}%`,
+        `%${searchTerm}%`,
+      ]);
+      logger.info(
+        `Found ${rows.length} documents matching search for user ${userId}`
+      );
       return rows;
     } catch (error) {
-      logger.error(`Error searching documents for user ${userId}: ${error.message}`);
+      logger.error(
+        `Error searching documents for user ${userId}: ${error.message}`
+      );
       throw error;
     }
   }

@@ -9,7 +9,7 @@ const db = require('../database');
 // Middleware zur JWT-Verifizierung
 const verifyToken = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ error: 'Kein Token bereitgestellt' });
   }
@@ -30,60 +30,74 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(
+      null,
+      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`
+    );
+  },
 });
 
 const upload = multer({
-  storage: storage,
+  storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB
+    fileSize: 10 * 1024 * 1024, // 10MB
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain',
-      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('Dateityp nicht erlaubt'), false);
     }
-  }
+  },
 });
 
 // Hilfsfunktion für Berechtigungsprüfung
 const checkChatPermission = async (fromUserId, toUserId, tenantId) => {
   try {
     // Hole die Rollen beider Benutzer
-    const [users] = await db.query(`
+    const [users] = await db.query(
+      `
       SELECT id, role FROM users 
       WHERE id IN (?, ?) AND tenant_id = ?
-    `, [fromUserId, toUserId, tenantId]);
+    `,
+      [fromUserId, toUserId, tenantId]
+    );
 
-    const fromUser = users.find(u => u.id == fromUserId);
-    const toUser = users.find(u => u.id == toUserId);
+    const fromUser = users.find((u) => u.id == fromUserId);
+    const toUser = users.find((u) => u.id == toUserId);
 
     if (!fromUser || !toUser) {
       return { can_send: false, can_receive: false };
     }
 
     // Prüfe die Berechtigungen basierend auf den Rollen
-    const [permissions] = await db.query(`
+    const [permissions] = await db.query(
+      `
       SELECT can_initiate_chat, can_send, can_receive 
       FROM chat_permissions 
       WHERE from_role = ? AND to_role = ? 
       AND (tenant_id = ? OR tenant_id IS NULL)
       ORDER BY tenant_id DESC
       LIMIT 1
-    `, [fromUser.role, toUser.role, tenantId]);
+    `,
+      [fromUser.role, toUser.role, tenantId]
+    );
 
     if (permissions.length > 0) {
-      return { 
-        can_send: permissions[0].can_send, 
-        can_receive: permissions[0].can_receive
+      return {
+        can_send: permissions[0].can_send,
+        can_receive: permissions[0].can_receive,
       };
     }
 
@@ -149,16 +163,18 @@ router.get('/users', verifyToken, async (req, res) => {
     }
 
     const [users] = await db.query(query, params);
-    
+
     // Berechtigungen für jeden Benutzer prüfen
-    const usersWithPermissions = await Promise.all(users.map(async (user) => {
-      const permission = await checkChatPermission(userId, user.id, tenantId);
-      return {
-        ...user,
-        canSendMessage: permission.can_send,
-        canReceiveMessage: permission.can_receive
-      };
-    }));
+    const usersWithPermissions = await Promise.all(
+      users.map(async (user) => {
+        const permission = await checkChatPermission(userId, user.id, tenantId);
+        return {
+          ...user,
+          canSendMessage: permission.can_send,
+          canReceiveMessage: permission.can_receive,
+        };
+      })
+    );
 
     res.json(usersWithPermissions);
   } catch (error) {
@@ -217,16 +233,22 @@ router.get('/conversations', verifyToken, async (req, res) => {
       ORDER BY last_message_time DESC
     `;
 
-    const [conversations] = await db.query(query, [userId, userId, userId, userId, tenantId]);
-    
+    const [conversations] = await db.query(query, [
+      userId,
+      userId,
+      userId,
+      userId,
+      tenantId,
+    ]);
+
     // Convert Buffer content to string if needed
-    const processedConversations = conversations.map(conv => {
+    const processedConversations = conversations.map((conv) => {
       if (conv.last_message && Buffer.isBuffer(conv.last_message)) {
         conv.last_message = conv.last_message.toString('utf8');
       }
       return conv;
     });
-    
+
     res.json(processedConversations);
   } catch (error) {
     console.error('Fehler beim Abrufen der Unterhaltungen:', error);
@@ -243,9 +265,15 @@ router.post('/conversations', verifyToken, async (req, res) => {
 
     // Berechtigungen prüfen
     for (const participantId of participant_ids) {
-      const permission = await checkChatPermission(userId, participantId, tenantId);
+      const permission = await checkChatPermission(
+        userId,
+        participantId,
+        tenantId
+      );
       if (!permission.can_send) {
-        return res.status(403).json({ error: 'Keine Berechtigung, an diesen Benutzer zu schreiben' });
+        return res.status(403).json({
+          error: 'Keine Berechtigung, an diesen Benutzer zu schreiben',
+        });
       }
     }
 
@@ -255,7 +283,10 @@ router.post('/conversations', verifyToken, async (req, res) => {
       VALUES (?, ?, ?, ?)
     `;
     const [conversationResult] = await db.query(conversationQuery, [
-      name || null, is_group, tenantId, userId
+      name || null,
+      is_group,
+      tenantId,
+      userId,
     ]);
 
     const conversationId = conversationResult.insertId;
@@ -263,7 +294,7 @@ router.post('/conversations', verifyToken, async (req, res) => {
     // Teilnehmer hinzufügen
     const participantQueries = [];
     const allParticipants = [userId, ...participant_ids];
-    
+
     for (const participantId of allParticipants) {
       participantQueries.push(
         db.query(
@@ -275,7 +306,10 @@ router.post('/conversations', verifyToken, async (req, res) => {
 
     await Promise.all(participantQueries);
 
-    res.json({ id: conversationId, message: 'Unterhaltung erfolgreich erstellt' });
+    res.json({
+      id: conversationId,
+      message: 'Unterhaltung erfolgreich erstellt',
+    });
   } catch (error) {
     console.error('Fehler beim Erstellen der Unterhaltung:', error);
     res.status(500).json({ error: 'Fehler beim Erstellen der Unterhaltung' });
@@ -295,10 +329,16 @@ router.get('/conversations/:id/messages', verifyToken, async (req, res) => {
       SELECT 1 FROM conversation_participants 
       WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?
     `;
-    const [participants] = await db.query(participantQuery, [conversationId, userId, tenantId]);
-    
+    const [participants] = await db.query(participantQuery, [
+      conversationId,
+      userId,
+      tenantId,
+    ]);
+
     if (participants.length === 0) {
-      return res.status(403).json({ error: 'Keine Berechtigung für diese Unterhaltung' });
+      return res
+        .status(403)
+        .json({ error: 'Keine Berechtigung für diese Unterhaltung' });
     }
 
     // Nachrichten abrufen
@@ -335,11 +375,14 @@ router.get('/conversations/:id/messages', verifyToken, async (req, res) => {
     `;
 
     const [messages] = await db.query(messagesQuery, [
-      conversationId, tenantId, parseInt(limit), parseInt(offset)
+      conversationId,
+      tenantId,
+      parseInt(limit),
+      parseInt(offset),
     ]);
 
     // Convert Buffer content to string if needed
-    const processedMessages = messages.map(message => {
+    const processedMessages = messages.map((message) => {
       if (message.content && Buffer.isBuffer(message.content)) {
         message.content = message.content.toString('utf8');
       }
@@ -360,108 +403,139 @@ router.get('/conversations/:id/messages', verifyToken, async (req, res) => {
 });
 
 // Route: Nachricht senden
-router.post('/conversations/:id/messages', verifyToken, upload.array('attachments', 5), async (req, res) => {
-  try {
-    const conversationId = req.params.id;
-    // Ensure content is a string, not a Buffer
-    const content = req.body.content ? req.body.content.toString() : '';
-    const { scheduled_delivery } = req.body;
-    const userId = req.user.id;
-    const tenantId = req.user.tenant_id || 1; // Fallback auf 1
-    const files = req.files || [];
+router.post(
+  '/conversations/:id/messages',
+  verifyToken,
+  upload.array('attachments', 5),
+  async (req, res) => {
+    try {
+      const conversationId = req.params.id;
+      // Ensure content is a string, not a Buffer
+      const content = req.body.content ? req.body.content.toString() : '';
+      const { scheduled_delivery } = req.body;
+      const userId = req.user.id;
+      const tenantId = req.user.tenant_id || 1; // Fallback auf 1
+      const files = req.files || [];
 
-    // Überprüfen, ob Benutzer Teilnehmer der Unterhaltung ist
-    const participantQuery = `
+      // Überprüfen, ob Benutzer Teilnehmer der Unterhaltung ist
+      const participantQuery = `
       SELECT user_id FROM conversation_participants 
       WHERE conversation_id = ? AND tenant_id = ?
     `;
-    const [participants] = await db.query(participantQuery, [conversationId, tenantId]);
-    
-    const participantIds = participants.map(p => p.user_id);
-    if (!participantIds.includes(userId)) {
-      return res.status(403).json({ error: 'Keine Berechtigung für diese Unterhaltung' });
-    }
+      const [participants] = await db.query(participantQuery, [
+        conversationId,
+        tenantId,
+      ]);
 
-    // Berechtigungen für alle anderen Teilnehmer prüfen
-    for (const participantId of participantIds) {
-      if (participantId !== userId) {
-        const permission = await checkChatPermission(userId, participantId, tenantId);
-        if (!permission.can_send) {
-          return res.status(403).json({ error: 'Keine Berechtigung, an einen der Teilnehmer zu schreiben' });
+      const participantIds = participants.map((p) => p.user_id);
+      if (!participantIds.includes(userId)) {
+        return res
+          .status(403)
+          .json({ error: 'Keine Berechtigung für diese Unterhaltung' });
+      }
+
+      // Berechtigungen für alle anderen Teilnehmer prüfen
+      for (const participantId of participantIds) {
+        if (participantId !== userId) {
+          const permission = await checkChatPermission(
+            userId,
+            participantId,
+            tenantId
+          );
+          if (!permission.can_send) {
+            return res.status(403).json({
+              error: 'Keine Berechtigung, an einen der Teilnehmer zu schreiben',
+            });
+          }
         }
       }
-    }
 
-    // Nachricht erstellen
-    const messageQuery = `
+      // Nachricht erstellen
+      const messageQuery = `
       INSERT INTO messages (conversation_id, sender_id, content, scheduled_delivery, tenant_id)
       VALUES (?, ?, ?, ?, ?)
     `;
-    
-    let scheduledTime = null;
-    if (scheduled_delivery && scheduled_delivery !== 'immediate') {
-      if (scheduled_delivery === 'break_time') {
-        // Pausenzeit berechnen (Standard: 12:00 Uhr am selben Tag)
-        const today = new Date();
-        today.setHours(12, 0, 0, 0);
-        if (today <= new Date()) {
-          // Wenn 12:00 bereits vorbei ist, nächster Tag
-          today.setDate(today.getDate() + 1);
+
+      let scheduledTime = null;
+      if (scheduled_delivery && scheduled_delivery !== 'immediate') {
+        if (scheduled_delivery === 'break_time') {
+          // Pausenzeit berechnen (Standard: 12:00 Uhr am selben Tag)
+          const today = new Date();
+          today.setHours(12, 0, 0, 0);
+          if (today <= new Date()) {
+            // Wenn 12:00 bereits vorbei ist, nächster Tag
+            today.setDate(today.getDate() + 1);
+          }
+          scheduledTime = today;
+        } else if (scheduled_delivery === 'after_work') {
+          // Feierabend berechnen (Standard: 17:00 Uhr am selben Tag)
+          const today = new Date();
+          today.setHours(17, 0, 0, 0);
+          if (today <= new Date()) {
+            // Wenn 17:00 bereits vorbei ist, nächster Tag
+            today.setDate(today.getDate() + 1);
+          }
+          scheduledTime = today;
+        } else {
+          scheduledTime = new Date(scheduled_delivery);
         }
-        scheduledTime = today;
-      } else if (scheduled_delivery === 'after_work') {
-        // Feierabend berechnen (Standard: 17:00 Uhr am selben Tag)
-        const today = new Date();
-        today.setHours(17, 0, 0, 0);
-        if (today <= new Date()) {
-          // Wenn 17:00 bereits vorbei ist, nächster Tag
-          today.setDate(today.getDate() + 1);
-        }
-        scheduledTime = today;
-      } else {
-        scheduledTime = new Date(scheduled_delivery);
       }
-    }
 
-    const [messageResult] = await db.query(messageQuery, [
-      conversationId, userId, content, scheduledTime, tenantId
-    ]);
+      const [messageResult] = await db.query(messageQuery, [
+        conversationId,
+        userId,
+        content,
+        scheduledTime,
+        tenantId,
+      ]);
 
-    const messageId = messageResult.insertId;
+      const messageId = messageResult.insertId;
 
-    // Dateianhänge verarbeiten
-    if (files.length > 0) {
-      for (const file of files) {
-        await db.query(`
+      // Dateianhänge verarbeiten
+      if (files.length > 0) {
+        for (const file of files) {
+          await db.query(
+            `
           INSERT INTO message_attachments 
           (message_id, filename, original_filename, file_size, mime_type, tenant_id)
           VALUES (?, ?, ?, ?, ?, ?)
-        `, [
-          messageId, file.filename, file.originalname, file.size, file.mimetype, tenantId
-        ]);
+        `,
+            [
+              messageId,
+              file.filename,
+              file.originalname,
+              file.size,
+              file.mimetype,
+              tenantId,
+            ]
+          );
+        }
       }
-    }
 
-    // Bei sofortiger Zustellung in Queue einreihen
-    if (!scheduledTime) {
-      await db.query(`
+      // Bei sofortiger Zustellung in Queue einreihen
+      if (!scheduledTime) {
+        await db.query(
+          `
         INSERT INTO message_delivery_queue (message_id, recipient_id, status, tenant_id)
         SELECT ?, user_id, 'pending', ?
         FROM conversation_participants 
         WHERE conversation_id = ? AND user_id != ?
-      `, [messageId, tenantId, conversationId, userId]);
-    }
+      `,
+          [messageId, tenantId, conversationId, userId]
+        );
+      }
 
-    res.json({ 
-      id: messageId, 
-      message: 'Nachricht erfolgreich gesendet',
-      scheduled_delivery: scheduledTime 
-    });
-  } catch (error) {
-    console.error('Fehler beim Senden der Nachricht:', error);
-    res.status(500).json({ error: 'Fehler beim Senden der Nachricht' });
+      res.json({
+        id: messageId,
+        message: 'Nachricht erfolgreich gesendet',
+        scheduled_delivery: scheduledTime,
+      });
+    } catch (error) {
+      console.error('Fehler beim Senden der Nachricht:', error);
+      res.status(500).json({ error: 'Fehler beim Senden der Nachricht' });
+    }
   }
-});
+);
 
 // Route: Alle verfügbaren Benutzer für neue Unterhaltung abrufen
 router.get('/users', verifyToken, async (req, res) => {
@@ -470,7 +544,7 @@ router.get('/users', verifyToken, async (req, res) => {
     const tenantId = req.user.tenant_id || 1; // Fallback auf 1
     const userRole = req.user.role;
 
-    let query = `
+    const query = `
       SELECT DISTINCT u.id, u.first_name, u.last_name, u.email, u.role, u.profile_picture_url
       FROM users u
       JOIN chat_permissions cp ON (
@@ -484,7 +558,12 @@ router.get('/users', verifyToken, async (req, res) => {
       ORDER BY u.first_name, u.last_name
     `;
 
-    const [users] = await db.query(query, [userRole, userRole, userId, tenantId]);
+    const [users] = await db.query(query, [
+      userRole,
+      userRole,
+      userId,
+      tenantId,
+    ]);
     res.json(users);
   } catch (error) {
     console.error('Fehler beim Abrufen der Benutzer:', error);
@@ -509,11 +588,17 @@ router.get('/attachments/:filename', verifyToken, async (req, res) => {
       AND ma.tenant_id = ?
       AND cp.user_id = ?
     `;
-    
-    const [attachments] = await db.query(attachmentQuery, [filename, tenantId, userId]);
-    
+
+    const [attachments] = await db.query(attachmentQuery, [
+      filename,
+      tenantId,
+      userId,
+    ]);
+
     if (attachments.length === 0) {
-      return res.status(404).json({ error: 'Datei nicht gefunden oder keine Berechtigung' });
+      return res
+        .status(404)
+        .json({ error: 'Datei nicht gefunden oder keine Berechtigung' });
     }
 
     const attachment = attachments[0];
@@ -538,7 +623,8 @@ router.put('/messages/:id/read', verifyToken, async (req, res) => {
     const userId = req.user.id;
     const tenantId = req.user.tenant_id || 1; // Fallback auf 1
 
-    await db.query(`
+    await db.query(
+      `
       UPDATE messages 
       SET is_read = 1 
       WHERE id = ? 
@@ -548,7 +634,9 @@ router.put('/messages/:id/read', verifyToken, async (req, res) => {
         WHERE cp.conversation_id = messages.conversation_id 
         AND cp.user_id = ?
       )
-    `, [messageId, tenantId, userId]);
+    `,
+      [messageId, tenantId, userId]
+    );
 
     res.json({ message: 'Nachricht als gelesen markiert' });
   } catch (error) {
@@ -567,7 +655,7 @@ router.get('/work-schedules', verifyToken, async (req, res) => {
       WHERE tenant_id = ? 
       ORDER BY day_of_week
     `;
-    
+
     const [schedules] = await db.query(query, [tenantId]);
     res.json(schedules);
   } catch (error) {
@@ -584,25 +672,33 @@ router.delete('/messages/:id', verifyToken, async (req, res) => {
     const tenantId = req.user.tenant_id || 1;
 
     // Prüfen ob der Benutzer die Nachricht löschen darf (nur eigene Nachrichten)
-    const [messages] = await db.query(`
+    const [messages] = await db.query(
+      `
       SELECT sender_id FROM messages 
       WHERE id = ? AND tenant_id = ? AND is_deleted = 0
-    `, [messageId, tenantId]);
+    `,
+      [messageId, tenantId]
+    );
 
     if (messages.length === 0) {
       return res.status(404).json({ error: 'Nachricht nicht gefunden' });
     }
 
     if (messages[0].sender_id !== userId) {
-      return res.status(403).json({ error: 'Keine Berechtigung zum Löschen dieser Nachricht' });
+      return res
+        .status(403)
+        .json({ error: 'Keine Berechtigung zum Löschen dieser Nachricht' });
     }
 
     // Soft delete durchführen
-    await db.query(`
+    await db.query(
+      `
       UPDATE messages 
       SET is_deleted = 1, deleted_at = NOW() 
       WHERE id = ? AND tenant_id = ?
-    `, [messageId, tenantId]);
+    `,
+      [messageId, tenantId]
+    );
 
     res.json({ message: 'Nachricht erfolgreich gelöscht' });
   } catch (error) {
@@ -616,8 +712,9 @@ router.get('/unread-count', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const tenantId = req.user.tenant_id || 1;
-    
-    const [result] = await db.query(`
+
+    const [result] = await db.query(
+      `
       SELECT COUNT(*) as unreadCount
       FROM messages m
       JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
@@ -626,8 +723,10 @@ router.get('/unread-count', verifyToken, async (req, res) => {
       AND m.sender_id != ?
       AND m.is_read = 0
       AND m.is_deleted = 0
-    `, [userId, tenantId, userId]);
-    
+    `,
+      [userId, tenantId, userId]
+    );
+
     res.json({ unreadCount: result[0].unreadCount || 0 });
   } catch (error) {
     console.error('Fehler beim Abrufen der ungelesenen Nachrichten:', error);
@@ -643,23 +742,31 @@ router.put('/messages/:id/archive', verifyToken, async (req, res) => {
     const tenantId = req.user.tenant_id || 1;
 
     // Prüfen ob der Benutzer Zugriff auf die Nachricht hat
-    const [messages] = await db.query(`
+    const [messages] = await db.query(
+      `
       SELECT m.id FROM messages m
       JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
       WHERE m.id = ? AND m.tenant_id = ? AND cp.user_id = ?
-    `, [messageId, tenantId, userId]);
+    `,
+      [messageId, tenantId, userId]
+    );
 
     if (messages.length === 0) {
-      return res.status(404).json({ error: 'Nachricht nicht gefunden oder kein Zugriff' });
+      return res
+        .status(404)
+        .json({ error: 'Nachricht nicht gefunden oder kein Zugriff' });
     }
 
     // Nachricht für diesen Benutzer als archiviert markieren
     // Da wir kein separates archived-Feld haben, verwenden wir eine Hilfstabelle
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO message_read_receipts (message_id, user_id, read_at) 
       VALUES (?, ?, NOW())
       ON DUPLICATE KEY UPDATE read_at = NOW()
-    `, [messageId, userId]);
+    `,
+      [messageId, userId]
+    );
 
     res.json({ message: 'Nachricht erfolgreich archiviert' });
   } catch (error) {
@@ -676,10 +783,13 @@ router.delete('/conversations/:id', verifyToken, async (req, res) => {
     const tenantId = req.user.tenant_id || 1;
 
     // Prüfen ob der Benutzer Zugriff auf die Unterhaltung hat
-    const [participants] = await db.query(`
+    const [participants] = await db.query(
+      `
       SELECT user_id FROM conversation_participants 
       WHERE conversation_id = ? AND user_id = ?
-    `, [conversationId, userId]);
+    `,
+      [conversationId, userId]
+    );
 
     if (participants.length === 0) {
       return res.status(404).json({ error: 'Unterhaltung nicht gefunden' });
@@ -688,11 +798,14 @@ router.delete('/conversations/:id', verifyToken, async (req, res) => {
     // Jeder Teilnehmer kann die Unterhaltung für sich löschen
 
     // Unterhaltung als inaktiv markieren (soft delete)
-    await db.query(`
+    await db.query(
+      `
       UPDATE conversations 
       SET is_active = 0 
       WHERE id = ? AND tenant_id = ?
-    `, [conversationId, tenantId]);
+    `,
+      [conversationId, tenantId]
+    );
 
     res.json({ message: 'Unterhaltung erfolgreich gelöscht' });
   } catch (error) {

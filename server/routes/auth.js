@@ -20,8 +20,8 @@ router.get('/check', authenticateToken, async (req, res) => {
       user: {
         id: req.user.id,
         username: req.user.username,
-        role: req.user.role
-      }
+        role: req.user.role,
+      },
     });
   } catch (error) {
     console.error('Error in auth check:', error);
@@ -37,14 +37,14 @@ router.get('/check', authenticateToken, async (req, res) => {
 router.get('/user', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     // Remove sensitive data
     delete user.password;
-    
+
     res.json(user);
   } catch (error) {
     console.error('Error in get user profile:', error);

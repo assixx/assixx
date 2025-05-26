@@ -3,16 +3,16 @@ require('dotenv').config();
 
 async function addMissingTables() {
   let connection;
-  
+
   try {
     console.log('Verbindung zur Datenbank wird hergestellt...');
-    
+
     connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME || 'lohnabrechnung',
-      multipleStatements: true
+      multipleStatements: true,
     });
 
     console.log('Datenbankverbindung erfolgreich hergestellt');
@@ -76,7 +76,8 @@ async function addMissingTables() {
 
     // Alle Chat-Tabellen anzeigen
     console.log('\nAlle Chat-bezogenen Tabellen:');
-    const [tables] = await connection.execute(`
+    const [tables] = await connection.execute(
+      `
       SELECT TABLE_NAME 
       FROM INFORMATION_SCHEMA.TABLES 
       WHERE TABLE_SCHEMA = ? 
@@ -85,14 +86,15 @@ async function addMissingTables() {
            OR TABLE_NAME LIKE 'message%'
            OR TABLE_NAME LIKE 'work_schedules%')
       ORDER BY TABLE_NAME
-    `, [process.env.DB_NAME]);
+    `,
+      [process.env.DB_NAME]
+    );
 
-    tables.forEach(table => {
+    tables.forEach((table) => {
       console.log(`✓ ${table.TABLE_NAME}`);
     });
 
     console.log('\n✅ Chat-Datenbank-Setup vollständig!');
-    
   } catch (error) {
     console.error('❌ Fehler:', error);
     throw error;

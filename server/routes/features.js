@@ -22,11 +22,15 @@ router.get('/tenant/:tenantId', authenticateToken, async (req, res) => {
     // Nur Root und Admin dürfen andere Tenants einsehen
     const requestedTenantId = parseInt(req.params.tenantId);
     const userTenantId = req.tenantId;
-    
-    if (requestedTenantId !== userTenantId && req.user.role !== 'root' && req.user.role !== 'admin') {
+
+    if (
+      requestedTenantId !== userTenantId &&
+      req.user.role !== 'root' &&
+      req.user.role !== 'admin'
+    ) {
       return res.status(403).json({ error: 'Keine Berechtigung' });
     }
-    
+
     const features = await Feature.getTenantFeatures(requestedTenantId);
     res.json(features);
   } catch (error) {
@@ -53,19 +57,23 @@ router.post('/activate', authenticateToken, async (req, res) => {
     if (req.user.role !== 'root' && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Keine Berechtigung' });
     }
-    
+
     const { tenantId, featureCode, options = {} } = req.body;
-    
+
     if (!tenantId || !featureCode) {
-      return res.status(400).json({ error: 'Tenant ID und Feature Code sind erforderlich' });
+      return res
+        .status(400)
+        .json({ error: 'Tenant ID und Feature Code sind erforderlich' });
     }
-    
+
     // Setze activatedBy
     options.activatedBy = req.user.id;
-    
+
     await Feature.activateForTenant(tenantId, featureCode, options);
-    
-    logger.info(`Feature ${featureCode} activated for tenant ${tenantId} by user ${req.user.username}`);
+
+    logger.info(
+      `Feature ${featureCode} activated for tenant ${tenantId} by user ${req.user.username}`
+    );
     res.json({ message: 'Feature erfolgreich aktiviert' });
   } catch (error) {
     logger.error(`Error activating feature: ${error.message}`);
@@ -79,16 +87,20 @@ router.post('/deactivate', authenticateToken, async (req, res) => {
     if (req.user.role !== 'root' && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Keine Berechtigung' });
     }
-    
+
     const { tenantId, featureCode } = req.body;
-    
+
     if (!tenantId || !featureCode) {
-      return res.status(400).json({ error: 'Tenant ID und Feature Code sind erforderlich' });
+      return res
+        .status(400)
+        .json({ error: 'Tenant ID und Feature Code sind erforderlich' });
     }
-    
+
     await Feature.deactivateForTenant(tenantId, featureCode);
-    
-    logger.info(`Feature ${featureCode} deactivated for tenant ${tenantId} by user ${req.user.username}`);
+
+    logger.info(
+      `Feature ${featureCode} deactivated for tenant ${tenantId} by user ${req.user.username}`
+    );
     res.json({ message: 'Feature erfolgreich deaktiviert' });
   } catch (error) {
     logger.error(`Error deactivating feature: ${error.message}`);
@@ -101,27 +113,37 @@ router.get('/usage/:featureCode', authenticateToken, async (req, res) => {
   try {
     const { featureCode } = req.params;
     const { startDate, endDate } = req.query;
-    
+
     if (!startDate || !endDate) {
-      return res.status(400).json({ error: 'Start- und Enddatum sind erforderlich' });
+      return res
+        .status(400)
+        .json({ error: 'Start- und Enddatum sind erforderlich' });
     }
-    
-    const stats = await Feature.getUsageStats(req.tenantId, featureCode, startDate, endDate);
+
+    const stats = await Feature.getUsageStats(
+      req.tenantId,
+      featureCode,
+      startDate,
+      endDate
+    );
     res.json(stats);
   } catch (error) {
     logger.error(`Error fetching usage stats: ${error.message}`);
-    res.status(500).json({ error: 'Fehler beim Abrufen der Nutzungsstatistiken' });
+    res
+      .status(500)
+      .json({ error: 'Fehler beim Abrufen der Nutzungsstatistiken' });
   }
 });
 
 // Test-Route um Feature-Zugriff zu prüfen
-router.get('/test/:featureCode', 
-  authenticateToken, 
+router.get(
+  '/test/:featureCode',
+  authenticateToken,
   (req, res, next) => checkFeature(req.params.featureCode)(req, res, next),
   (req, res) => {
-    res.json({ 
+    res.json({
       message: `Zugriff auf Feature ${req.params.featureCode} gewährt`,
-      feature: req.params.featureCode 
+      feature: req.params.featureCode,
     });
   }
 );

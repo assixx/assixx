@@ -1,14 +1,15 @@
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
+const { URL } = require('url');
 const db = require('./database');
 
 class ChatWebSocketServer {
   constructor(server) {
-    this.wss = new WebSocket.Server({ 
+    this.wss = new WebSocket.Server({
       server,
-      path: '/chat-ws'
+      path: '/chat-ws',
     });
-    
+
     this.clients = new Map(); // userId -> WebSocket connection
     this.init();
   }
@@ -17,15 +18,15 @@ class ChatWebSocketServer {
     this.wss.on('connection', (ws, request) => {
       this.handleConnection(ws, request);
     });
-
   }
 
   async handleConnection(ws, request) {
     try {
       // Token aus Query-Parameter oder Header extrahieren
       const url = new URL(request.url, `http://${request.headers.host}`);
-      const token = url.searchParams.get('token') || 
-                   request.headers.authorization?.replace('Bearer ', '');
+      const token =
+        url.searchParams.get('token') ||
+        request.headers.authorization?.replace('Bearer ', '');
 
       if (!token) {
         ws.close(1008, 'Token erforderlich');
@@ -50,17 +51,18 @@ class ChatWebSocketServer {
       ws.on('message', (data) => this.handleMessage(ws, data));
       ws.on('close', () => this.handleDisconnection(ws));
       ws.on('error', (error) => this.handleError(ws, error));
-      ws.on('pong', () => { ws.isAlive = true; });
+      ws.on('pong', () => {
+        ws.isAlive = true;
+      });
 
       // Willkommensnachricht senden
       this.sendMessage(ws, {
         type: 'connection_established',
-        data: { userId, timestamp: new Date().toISOString() }
+        data: { userId, timestamp: new Date().toISOString() },
       });
 
       // Online-Status an andere Benutzer senden
       await this.broadcastUserStatus(userId, tenantId, 'online');
-
     } catch (error) {
       console.error('WebSocket Authentifizierung fehlgeschlagen:', error);
       ws.close(1008, 'Authentifizierung fehlgeschlagen');
@@ -70,7 +72,7 @@ class ChatWebSocketServer {
   async handleMessage(ws, data) {
     try {
       const message = JSON.parse(data);
-      
+
       switch (message.type) {
         case 'send_message':
           await this.handleSendMessage(ws, message.data);
@@ -88,48 +90,52 @@ class ChatWebSocketServer {
           await this.handleJoinConversation(ws, message.data);
           break;
         case 'ping':
-          this.sendMessage(ws, { type: 'pong', data: { timestamp: new Date().toISOString() } });
+          this.sendMessage(ws, {
+            type: 'pong',
+            data: { timestamp: new Date().toISOString() },
+          });
           break;
         default:
-
       }
     } catch (error) {
       console.error('Fehler beim Verarbeiten der WebSocket Nachricht:', error);
       this.sendMessage(ws, {
         type: 'error',
-        data: { message: 'Fehler beim Verarbeiten der Nachricht' }
+        data: { message: 'Fehler beim Verarbeiten der Nachricht' },
       });
     }
   }
 
   async handleSendMessage(ws, data) {
     const { conversationId, content, attachments = [] } = data;
-    
+
     console.log(`🔍 DEBUG - Handling send message:`, {
       conversationId,
       userId: ws.userId,
       tenantId: ws.tenantId,
       contentLength: content?.length,
-      hasAttachments: attachments.length > 0
+      hasAttachments: attachments.length > 0,
     });
-    
+
     try {
       // Berechtigung prüfen
       const participantQuery = `
         SELECT user_id FROM conversation_participants 
         WHERE conversation_id = ? AND tenant_id = ?
       `;
-      const [participants] = await db.query(participantQuery, [conversationId, ws.tenantId]);
-      
-      const participantIds = participants.map(p => p.user_id);
+      const [participants] = await db.query(participantQuery, [
+        conversationId,
+        ws.tenantId,
+      ]);
+
+      const participantIds = participants.map((p) => p.user_id);
 
       // Convert IDs to strings for comparison since ws.userId might be a string
-      const participantIdsStr = participantIds.map(id => String(id));
+      const participantIdsStr = participantIds.map((id) => String(id));
       if (!participantIdsStr.includes(String(ws.userId))) {
-
         this.sendMessage(ws, {
           type: 'error',
-          data: { message: 'Keine Berechtigung für diese Unterhaltung' }
+          data: { message: 'Keine Berechtigung für diese Unterhaltung' },
         });
         return;
       }
@@ -140,7 +146,10 @@ class ChatWebSocketServer {
         VALUES (?, ?, ?, ?)
       `;
       const [result] = await db.query(messageQuery, [
-        conversationId, ws.userId, content, ws.tenantId
+        conversationId,
+        ws.userId,
+        content,
+        ws.tenantId,
       ]);
 
       const messageId = result.insertId;
@@ -157,13 +166,13 @@ class ChatWebSocketServer {
       const messageData = {
         id: messageId,
         conversation_id: conversationId,
-        content: content,
+        content,
         sender_id: ws.userId,
-        sender_name: sender ? (
-          [sender.first_name, sender.last_name].filter(n => n).join(' ') || 
-          sender.username || 
-          'Unbekannter Benutzer'
-        ) : 'Unbekannter Benutzer',
+        sender_name: sender
+          ? [sender.first_name, sender.last_name].filter((n) => n).join(' ') ||
+            sender.username ||
+            'Unbekannter Benutzer'
+          : 'Unbekannter Benutzer',
         first_name: sender?.first_name || '',
         last_name: sender?.last_name || '',
         username: sender?.username || '',
@@ -171,7 +180,7 @@ class ChatWebSocketServer {
         created_at: new Date().toISOString(),
         delivery_status: 'sent',
         is_read: false,
-        attachments: attachments || []
+        attachments: attachments || [],
       };
 
       // Nachricht an alle Teilnehmer senden
@@ -180,7 +189,7 @@ class ChatWebSocketServer {
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
             type: 'new_message',
-            data: messageData
+            data: messageData,
           });
         }
       }
@@ -188,21 +197,20 @@ class ChatWebSocketServer {
       // Bestätigung an Sender
       this.sendMessage(ws, {
         type: 'message_sent',
-        data: { messageId, timestamp: new Date().toISOString() }
+        data: { messageId, timestamp: new Date().toISOString() },
       });
-
     } catch (error) {
       console.error('Fehler beim Senden der Nachricht:', error);
       this.sendMessage(ws, {
         type: 'error',
-        data: { message: 'Fehler beim Senden der Nachricht' }
+        data: { message: 'Fehler beim Senden der Nachricht' },
       });
     }
   }
 
   async handleTyping(ws, data, isTyping) {
     const { conversationId } = data;
-    
+
     try {
       // Teilnehmer der Unterhaltung ermitteln
       const participantQuery = `
@@ -210,7 +218,9 @@ class ChatWebSocketServer {
         WHERE conversation_id = ? AND tenant_id = ? AND user_id != ?
       `;
       const [participants] = await db.query(participantQuery, [
-        conversationId, ws.tenantId, ws.userId
+        conversationId,
+        ws.tenantId,
+        ws.userId,
       ]);
 
       // Typing-Event an andere Teilnehmer senden
@@ -222,8 +232,8 @@ class ChatWebSocketServer {
             data: {
               conversationId,
               userId: ws.userId,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
@@ -234,10 +244,11 @@ class ChatWebSocketServer {
 
   async handleMarkRead(ws, data) {
     const { messageId } = data;
-    
+
     try {
       // Nachricht als gelesen markieren
-      await db.query(`
+      await db.query(
+        `
         UPDATE messages 
         SET is_read = 1 
         WHERE id = ? 
@@ -247,26 +258,28 @@ class ChatWebSocketServer {
           WHERE cp.conversation_id = messages.conversation_id 
           AND cp.user_id = ?
         )
-      `, [messageId, ws.tenantId, ws.userId]);
+      `,
+        [messageId, ws.tenantId, ws.userId]
+      );
 
       // Sender über Lesebestätigung informieren
       const messageQuery = `
         SELECT sender_id, conversation_id FROM messages WHERE id = ?
       `;
       const [messageInfo] = await db.query(messageQuery, [messageId]);
-      
+
       if (messageInfo.length > 0) {
         const senderId = messageInfo[0].sender_id;
         const senderWs = this.clients.get(senderId);
-        
+
         if (senderWs && senderWs.readyState === WebSocket.OPEN) {
           this.sendMessage(senderWs, {
             type: 'message_read',
             data: {
               messageId,
               readBy: ws.userId,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
@@ -277,7 +290,7 @@ class ChatWebSocketServer {
 
   async handleJoinConversation(ws, data) {
     const { conversationId } = data;
-    
+
     // Conversation-ID zur WebSocket-Verbindung hinzufügen für Gruppierung
     if (!ws.conversations) {
       ws.conversations = new Set();
@@ -291,7 +304,9 @@ class ChatWebSocketServer {
         WHERE conversation_id = ? AND tenant_id = ? AND user_id != ?
       `;
       const [participants] = await db.query(participantQuery, [
-        conversationId, ws.tenantId, ws.userId
+        conversationId,
+        ws.tenantId,
+        ws.userId,
       ]);
 
       for (const participant of participants) {
@@ -302,8 +317,8 @@ class ChatWebSocketServer {
             data: {
               conversationId,
               userId: ws.userId,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
@@ -334,7 +349,11 @@ class ChatWebSocketServer {
         JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
         WHERE cp1.user_id = ? AND cp1.tenant_id = ? AND cp2.user_id != ?
       `;
-      const [relatedUsers] = await db.query(conversationsQuery, [userId, tenantId, userId]);
+      const [relatedUsers] = await db.query(conversationsQuery, [
+        userId,
+        tenantId,
+        userId,
+      ]);
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {
@@ -345,8 +364,8 @@ class ChatWebSocketServer {
             data: {
               userId,
               status,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           });
         }
       }
@@ -369,7 +388,7 @@ class ChatWebSocketServer {
           ws.terminate();
           return;
         }
-        
+
         ws.isAlive = false;
         ws.ping();
       });
@@ -387,7 +406,7 @@ class ChatWebSocketServer {
         AND m.scheduled_delivery <= NOW()
         AND m.delivery_status = 'scheduled'
       `;
-      
+
       const [scheduledMessages] = await db.query(query);
 
       for (const message of scheduledMessages) {
@@ -402,7 +421,9 @@ class ChatWebSocketServer {
           SELECT user_id FROM conversation_participants 
           WHERE conversation_id = ?
         `;
-        const [participants] = await db.query(participantQuery, [message.conversation_id]);
+        const [participants] = await db.query(participantQuery, [
+          message.conversation_id,
+        ]);
 
         // Sender-Informationen abrufen
         const senderQuery = `
@@ -417,7 +438,11 @@ class ChatWebSocketServer {
           conversation_id: message.conversation_id,
           content: message.content,
           sender_id: message.sender_id,
-          sender_name: sender ? [(sender.first_name || ''), (sender.last_name || '')].filter(n => n).join(' ') || 'Unbekannter Benutzer' : 'Unbekannter Benutzer',
+          sender_name: sender
+            ? [sender.first_name || '', sender.last_name || '']
+                .filter((n) => n)
+                .join(' ') || 'Unbekannter Benutzer'
+            : 'Unbekannter Benutzer',
           first_name: sender?.first_name || '',
           last_name: sender?.last_name || '',
           profile_picture_url: sender?.profile_picture_url || null,
@@ -425,7 +450,7 @@ class ChatWebSocketServer {
           delivery_status: 'delivered',
           is_read: false,
           is_scheduled: true,
-          attachments: []
+          attachments: [],
         };
 
         for (const participant of participants) {
@@ -433,7 +458,7 @@ class ChatWebSocketServer {
           if (clientWs && clientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(clientWs, {
               type: 'scheduled_message_delivered',
-              data: messageData
+              data: messageData,
             });
           }
         }
@@ -473,7 +498,7 @@ class ChatWebSocketServer {
         AND mdq.attempts < 3
         LIMIT 50
       `;
-      
+
       const [queuedMessages] = await db.query(query);
 
       for (const message of queuedMessages) {
@@ -490,14 +515,16 @@ class ChatWebSocketServer {
             conversation_id: message.conversation_id,
             content: message.content,
             sender_id: message.sender_id,
-            sender_name: `${message.first_name || ''} ${message.last_name || ''}`.trim() || 'Unbekannter Benutzer',
+            sender_name:
+              `${message.first_name || ''} ${message.last_name || ''}`.trim() ||
+              'Unbekannter Benutzer',
             first_name: message.first_name || '',
             last_name: message.last_name || '',
             profile_picture_url: message.profile_picture_url || null,
             created_at: message.created_at,
             delivery_status: 'delivered',
             is_read: false,
-            attachments: []
+            attachments: [],
           };
 
           // An Empfänger senden wenn online
@@ -505,7 +532,7 @@ class ChatWebSocketServer {
           if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(recipientWs, {
               type: 'new_message',
-              data: messageData
+              data: messageData,
             });
           }
 
@@ -520,16 +547,18 @@ class ChatWebSocketServer {
             'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
             [message.message_id]
           );
-
         } catch (error) {
-          console.error(`Fehler beim Zustellen der Nachricht ${message.message_id}:`, error);
-          
+          console.error(
+            `Fehler beim Zustellen der Nachricht ${message.message_id}:`,
+            error
+          );
+
           // Bei Fehler als failed markieren wenn max attempts erreicht
           const [result] = await db.query(
             'SELECT attempts FROM message_delivery_queue WHERE id = ?',
             [message.queue_id]
           );
-          
+
           if (result[0]?.attempts >= 3) {
             await db.query(
               'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
@@ -549,7 +578,10 @@ class ChatWebSocketServer {
         }
       }
     } catch (error) {
-      console.error('Fehler beim Verarbeiten der Message Delivery Queue:', error);
+      console.error(
+        'Fehler beim Verarbeiten der Message Delivery Queue:',
+        error
+      );
     }
   }
 
@@ -557,7 +589,7 @@ class ChatWebSocketServer {
   startMessageDeliveryProcessor() {
     // Initial ausführen
     this.processMessageDeliveryQueue();
-    
+
     // Alle 5 Sekunden prüfen
     setInterval(() => {
       this.processMessageDeliveryQueue();

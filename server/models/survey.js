@@ -10,54 +10,59 @@ class Survey {
       await connection.beginTransaction();
 
       // Create survey
-      const [surveyResult] = await connection.query(`
+      const [surveyResult] = await connection.query(
+        `
         INSERT INTO surveys (
           tenant_id, title, description, created_by, status,
           is_anonymous, is_mandatory, start_date, end_date
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        tenantId,
-        surveyData.title,
-        surveyData.description,
-        createdBy,
-        surveyData.status || 'draft',
-        surveyData.is_anonymous || false,
-        surveyData.is_mandatory || false,
-        surveyData.start_date || null,
-        surveyData.end_date || null
-      ]);
+      `,
+        [
+          tenantId,
+          surveyData.title,
+          surveyData.description,
+          createdBy,
+          surveyData.status || 'draft',
+          surveyData.is_anonymous || false,
+          surveyData.is_mandatory || false,
+          surveyData.start_date || null,
+          surveyData.end_date || null,
+        ]
+      );
 
       const surveyId = surveyResult.insertId;
 
       // Add questions
       if (surveyData.questions && surveyData.questions.length > 0) {
         for (const [index, question] of surveyData.questions.entries()) {
-          const [questionResult] = await connection.query(`
+          const [questionResult] = await connection.query(
+            `
             INSERT INTO survey_questions (
               survey_id, question_text, question_type, is_required, order_position
             ) VALUES (?, ?, ?, ?, ?)
-          `, [
-            surveyId,
-            question.question_text,
-            question.question_type,
-            question.is_required !== false,
-            question.order_position || index + 1
-          ]);
+          `,
+            [
+              surveyId,
+              question.question_text,
+              question.question_type,
+              question.is_required !== false,
+              question.order_position || index + 1,
+            ]
+          );
 
           const questionId = questionResult.insertId;
 
           // Add options for multiple choice questions
           if (question.options && question.options.length > 0) {
             for (const [optIndex, option] of question.options.entries()) {
-              await connection.query(`
+              await connection.query(
+                `
                 INSERT INTO survey_question_options (
                   question_id, option_text, order_position
                 ) VALUES (?, ?, ?)
-              `, [
-                questionId,
-                option,
-                optIndex + 1
-              ]);
+              `,
+                [questionId, option, optIndex + 1]
+              );
             }
           }
         }
@@ -66,17 +71,20 @@ class Survey {
       // Add assignments
       if (surveyData.assignments && surveyData.assignments.length > 0) {
         for (const assignment of surveyData.assignments) {
-          await connection.query(`
+          await connection.query(
+            `
             INSERT INTO survey_assignments (
               survey_id, assignment_type, department_id, team_id, user_id
             ) VALUES (?, ?, ?, ?, ?)
-          `, [
-            surveyId,
-            assignment.type,
-            assignment.department_id || null,
-            assignment.team_id || null,
-            assignment.user_id || null
-          ]);
+          `,
+            [
+              surveyId,
+              assignment.type,
+              assignment.department_id || null,
+              assignment.team_id || null,
+              assignment.user_id || null,
+            ]
+          );
         }
       }
 
@@ -128,14 +136,17 @@ class Survey {
    * Get survey by ID with questions and options
    */
   static async getById(surveyId, tenantId) {
-    const [surveys] = await db.query(`
+    const [surveys] = await db.query(
+      `
       SELECT s.*, 
         u.first_name as creator_first_name,
         u.last_name as creator_last_name
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
       WHERE s.id = ? AND s.tenant_id = ?
-    `, [surveyId, tenantId]);
+    `,
+      [surveyId, tenantId]
+    );
 
     if (surveys.length === 0) {
       return null;
@@ -144,20 +155,28 @@ class Survey {
     const survey = surveys[0];
 
     // Get questions
-    const [questions] = await db.query(`
+    const [questions] = await db.query(
+      `
       SELECT * FROM survey_questions
       WHERE survey_id = ?
       ORDER BY order_position
-    `, [surveyId]);
+    `,
+      [surveyId]
+    );
 
     // Get options for each question
     for (const question of questions) {
-      if (['multiple_choice', 'single_choice'].includes(question.question_type)) {
-        const [options] = await db.query(`
+      if (
+        ['multiple_choice', 'single_choice'].includes(question.question_type)
+      ) {
+        const [options] = await db.query(
+          `
           SELECT * FROM survey_question_options
           WHERE question_id = ?
           ORDER BY order_position
-        `, [question.id]);
+        `,
+          [question.id]
+        );
         question.options = options;
       }
     }
@@ -165,10 +184,13 @@ class Survey {
     survey.questions = questions;
 
     // Get assignments
-    const [assignments] = await db.query(`
+    const [assignments] = await db.query(
+      `
       SELECT * FROM survey_assignments
       WHERE survey_id = ?
-    `, [surveyId]);
+    `,
+      [surveyId]
+    );
 
     survey.assignments = assignments;
 
@@ -184,7 +206,8 @@ class Survey {
       await connection.beginTransaction();
 
       // Update survey
-      await connection.query(`
+      await connection.query(
+        `
         UPDATE surveys SET
           title = ?,
           description = ?,
@@ -194,51 +217,58 @@ class Survey {
           start_date = ?,
           end_date = ?
         WHERE id = ? AND tenant_id = ?
-      `, [
-        surveyData.title,
-        surveyData.description,
-        surveyData.status,
-        surveyData.is_anonymous,
-        surveyData.is_mandatory,
-        surveyData.start_date,
-        surveyData.end_date,
-        surveyId,
-        tenantId
-      ]);
+      `,
+        [
+          surveyData.title,
+          surveyData.description,
+          surveyData.status,
+          surveyData.is_anonymous,
+          surveyData.is_mandatory,
+          surveyData.start_date,
+          surveyData.end_date,
+          surveyId,
+          tenantId,
+        ]
+      );
 
       // Update questions if provided
       if (surveyData.questions) {
         // Delete existing questions and options (cascade will handle options)
-        await connection.query('DELETE FROM survey_questions WHERE survey_id = ?', [surveyId]);
+        await connection.query(
+          'DELETE FROM survey_questions WHERE survey_id = ?',
+          [surveyId]
+        );
 
         // Add new questions
         for (const [index, question] of surveyData.questions.entries()) {
-          const [questionResult] = await connection.query(`
+          const [questionResult] = await connection.query(
+            `
             INSERT INTO survey_questions (
               survey_id, question_text, question_type, is_required, order_position
             ) VALUES (?, ?, ?, ?, ?)
-          `, [
-            surveyId,
-            question.question_text,
-            question.question_type,
-            question.is_required !== false,
-            question.order_position || index + 1
-          ]);
+          `,
+            [
+              surveyId,
+              question.question_text,
+              question.question_type,
+              question.is_required !== false,
+              question.order_position || index + 1,
+            ]
+          );
 
           const questionId = questionResult.insertId;
 
           // Add options
           if (question.options && question.options.length > 0) {
             for (const [optIndex, option] of question.options.entries()) {
-              await connection.query(`
+              await connection.query(
+                `
                 INSERT INTO survey_question_options (
                   question_id, option_text, order_position
                 ) VALUES (?, ?, ?)
-              `, [
-                questionId,
-                option,
-                optIndex + 1
-              ]);
+              `,
+                [questionId, option, optIndex + 1]
+              );
             }
           }
         }
@@ -269,11 +299,14 @@ class Survey {
    * Get survey templates
    */
   static async getTemplates(tenantId) {
-    const [templates] = await db.query(`
+    const [templates] = await db.query(
+      `
       SELECT * FROM survey_templates
       WHERE tenant_id = ? OR is_public = 1
       ORDER BY name
-    `, [tenantId]);
+    `,
+      [tenantId]
+    );
     return templates;
   }
 
@@ -281,10 +314,13 @@ class Survey {
    * Create survey from template
    */
   static async createFromTemplate(templateId, tenantId, createdBy) {
-    const [templates] = await db.query(`
+    const [templates] = await db.query(
+      `
       SELECT * FROM survey_templates
       WHERE id = ? AND (tenant_id = ? OR is_public = 1)
-    `, [templateId, tenantId]);
+    `,
+      [templateId, tenantId]
+    );
 
     if (templates.length === 0) {
       throw new Error('Template not found');
@@ -297,17 +333,18 @@ class Survey {
       title: templateData.title,
       description: templateData.description,
       questions: templateData.questions,
-      status: 'draft'
+      status: 'draft',
     };
 
-    return await this.create(surveyData, tenantId, createdBy);
+    return this.create(surveyData, tenantId, createdBy);
   }
 
   /**
    * Get survey statistics
    */
   static async getStatistics(surveyId, tenantId) {
-    const [stats] = await db.query(`
+    const [stats] = await db.query(
+      `
       SELECT 
         COUNT(DISTINCT sr.id) as total_responses,
         COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_responses,
@@ -316,10 +353,13 @@ class Survey {
       FROM surveys s
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
       WHERE s.id = ? AND s.tenant_id = ?
-    `, [surveyId, tenantId]);
+    `,
+      [surveyId, tenantId]
+    );
 
     // Get response rate by assignment
-    const [assignmentStats] = await db.query(`
+    const [assignmentStats] = await db.query(
+      `
       SELECT 
         sa.assignment_type,
         COUNT(DISTINCT u.id) as assigned_users,
@@ -335,11 +375,13 @@ class Survey {
       LEFT JOIN survey_responses sr ON sr.survey_id = sa.survey_id AND sr.user_id = u.id
       WHERE sa.survey_id = ?
       GROUP BY sa.assignment_type
-    `, [tenantId, surveyId]);
+    `,
+      [tenantId, surveyId]
+    );
 
     return {
       ...stats[0],
-      assignmentStats
+      assignmentStats,
     };
   }
 }

@@ -40,12 +40,13 @@ async function getAllEvents(tenantId, userId, options = {}) {
       page = 1,
       limit = 50,
       sortBy = 'start_time',
-      sortDir = 'ASC'
+      sortDir = 'ASC',
     } = options;
 
     // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
-    
+    const { role, departmentId, teamId } =
+      await User.getUserDepartmentAndTeam(userId);
+
     // Build base query
     let query = `
       SELECT e.*, 
@@ -56,15 +57,15 @@ async function getAllEvents(tenantId, userId, options = {}) {
       LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
       WHERE e.tenant_id = ? AND e.status = ?
     `;
-    
+
     const queryParams = [userId, tenantId, status];
-    
+
     // Apply org level filter
     if (filter !== 'all') {
       query += ' AND e.org_level = ?';
       queryParams.push(filter);
     }
-    
+
     // Apply access control for non-admin users
     if (role !== 'admin' && role !== 'root') {
       query += ` AND (
@@ -75,63 +76,68 @@ async function getAllEvents(tenantId, userId, options = {}) {
       )`;
       queryParams.push(departmentId || 0, teamId || 0, userId);
     }
-    
+
     // Apply date range filter
     if (start_date) {
       query += ' AND e.end_time >= ?';
       queryParams.push(start_date);
     }
-    
+
     if (end_date) {
       query += ' AND e.start_time <= ?';
       queryParams.push(end_date);
     }
-    
+
     // Apply search filter
     if (search) {
-      query += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
+      query +=
+        ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm);
     }
-    
+
     // Apply sorting
     query += ` ORDER BY e.${sortBy} ${sortDir}`;
-    
+
     // Apply pagination
     const offset = (page - 1) * limit;
     query += ' LIMIT ? OFFSET ?';
     queryParams.push(parseInt(limit, 10), offset);
-    
+
     // Execute query
     const [events] = await db.query(query, queryParams);
 
     // Convert Buffer description to String if needed
-    events.forEach(event => {
+    events.forEach((event) => {
       if (event.description && Buffer.isBuffer(event.description)) {
-
         event.description = event.description.toString('utf8');
-      } else if (event.description && typeof event.description === 'object' && 
-                event.description.type === 'Buffer' && Array.isArray(event.description.data)) {
-
-        event.description = Buffer.from(event.description.data).toString('utf8');
+      } else if (
+        event.description &&
+        typeof event.description === 'object' &&
+        event.description.type === 'Buffer' &&
+        Array.isArray(event.description.data)
+      ) {
+        event.description = Buffer.from(event.description.data).toString(
+          'utf8'
+        );
       }
     });
-    
+
     // Count total events for pagination
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM calendar_events e
       WHERE e.tenant_id = ? AND e.status = ?
     `;
-    
+
     const countParams = [tenantId, status];
-    
+
     // Apply org level filter for count
     if (filter !== 'all') {
       countQuery += ' AND e.org_level = ?';
       countParams.push(filter);
     }
-    
+
     // Apply access control for non-admin users for count
     if (role !== 'admin' && role !== 'root') {
       countQuery += ` AND (
@@ -142,36 +148,37 @@ async function getAllEvents(tenantId, userId, options = {}) {
       )`;
       countParams.push(departmentId || 0, teamId || 0, userId);
     }
-    
+
     // Apply date range filter for count
     if (start_date) {
       countQuery += ' AND e.end_time >= ?';
       countParams.push(start_date);
     }
-    
+
     if (end_date) {
       countQuery += ' AND e.start_time <= ?';
       countParams.push(end_date);
     }
-    
+
     // Apply search filter for count
     if (search) {
-      countQuery += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
+      countQuery +=
+        ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
       const searchTerm = `%${search}%`;
       countParams.push(searchTerm, searchTerm, searchTerm);
     }
-    
+
     const [countResult] = await db.query(countQuery, countParams);
     const totalEvents = countResult[0].total;
-    
+
     return {
       events,
       pagination: {
         total: totalEvents,
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
-        totalPages: Math.ceil(totalEvents / limit)
-      }
+        totalPages: Math.ceil(totalEvents / limit),
+      },
     };
   } catch (error) {
     console.error('Error in getAllEvents:', error);
@@ -189,8 +196,9 @@ async function getAllEvents(tenantId, userId, options = {}) {
 async function getEventById(id, tenantId, userId) {
   try {
     // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
-    
+    const { role, departmentId, teamId } =
+      await User.getUserDepartmentAndTeam(userId);
+
     // Query the event with user response status
     const query = `
       SELECT e.*, 
@@ -201,23 +209,27 @@ async function getEventById(id, tenantId, userId) {
       LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
       WHERE e.id = ? AND e.tenant_id = ?
     `;
-    
+
     const [events] = await db.query(query, [userId, id, tenantId]);
-    
+
     if (events.length === 0) {
       return null;
     }
-    
+
     const event = events[0];
-    
+
     // Convert Buffer description to String if needed
     if (event.description && Buffer.isBuffer(event.description)) {
       event.description = event.description.toString('utf8');
-    } else if (event.description && typeof event.description === 'object' && 
-              event.description.type === 'Buffer' && Array.isArray(event.description.data)) {
+    } else if (
+      event.description &&
+      typeof event.description === 'object' &&
+      event.description.type === 'Buffer' &&
+      Array.isArray(event.description.data)
+    ) {
       event.description = Buffer.from(event.description.data).toString('utf8');
     }
-    
+
     // Check access control for non-admin users
     if (role !== 'admin' && role !== 'root') {
       // Check if user is an attendee
@@ -225,20 +237,20 @@ async function getEventById(id, tenantId, userId) {
         'SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
         [id, userId]
       );
-      
+
       const isAttendee = attendeeRows.length > 0;
-      
-      const hasAccess = 
-        event.org_level === 'company' || 
+
+      const hasAccess =
+        event.org_level === 'company' ||
         (event.org_level === 'department' && event.org_id === departmentId) ||
         (event.org_level === 'team' && event.org_id === teamId) ||
         isAttendee;
-      
+
       if (!hasAccess) {
         return null; // User doesn't have access to this event
       }
     }
-    
+
     return event;
   } catch (error) {
     console.error('Error in getEventById:', error);
@@ -265,19 +277,27 @@ async function createEvent(eventData) {
       org_id,
       created_by,
       reminder_time,
-      color
+      color,
     } = eventData;
-    
+
     // Validate required fields
-    if (!tenant_id || !title || !start_time || !end_time || !org_level || !org_id || !created_by) {
+    if (
+      !tenant_id ||
+      !title ||
+      !start_time ||
+      !end_time ||
+      !org_level ||
+      !org_id ||
+      !created_by
+    ) {
       throw new Error('Missing required fields');
     }
-    
+
     // Ensure dates are valid
     if (new Date(start_time) > new Date(end_time)) {
       throw new Error('Start time must be before end time');
     }
-    
+
     // Insert new event
     const query = `
       INSERT INTO calendar_events 
@@ -285,7 +305,7 @@ async function createEvent(eventData) {
        org_level, org_id, created_by, reminder_time, color)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     const [result] = await db.query(query, [
       tenant_id,
       title,
@@ -298,17 +318,21 @@ async function createEvent(eventData) {
       org_id,
       created_by,
       reminder_time || null,
-      color || '#3498db'
+      color || '#3498db',
     ]);
-    
+
     // Get the created event
-    const createdEvent = await getEventById(result.insertId, tenant_id, created_by);
-    
+    const createdEvent = await getEventById(
+      result.insertId,
+      tenant_id,
+      created_by
+    );
+
     // Add the creator as an attendee with 'accepted' status
     if (createdEvent) {
       await addEventAttendee(createdEvent.id, created_by, 'accepted');
     }
-    
+
     return createdEvent;
   } catch (error) {
     console.error('Error in createEvent:', error);
@@ -336,77 +360,78 @@ async function updateEvent(id, eventData, tenantId) {
       org_id,
       status,
       reminder_time,
-      color
+      color,
     } = eventData;
-    
+
     // Build query dynamically based on provided fields
     let query = 'UPDATE calendar_events SET updated_at = NOW()';
     const queryParams = [];
-    
+
     if (title !== undefined) {
       query += ', title = ?';
       queryParams.push(title);
     }
-    
+
     if (description !== undefined) {
       query += ', description = ?';
       queryParams.push(description);
     }
-    
+
     if (location !== undefined) {
       query += ', location = ?';
       queryParams.push(location);
     }
-    
+
     if (start_time !== undefined) {
       query += ', start_time = ?';
       queryParams.push(formatDateForMysql(start_time));
     }
-    
+
     if (end_time !== undefined) {
       query += ', end_time = ?';
       queryParams.push(formatDateForMysql(end_time));
     }
-    
+
     if (all_day !== undefined) {
       query += ', all_day = ?';
       queryParams.push(all_day ? 1 : 0);
     }
-    
+
     if (org_level !== undefined) {
       query += ', org_level = ?';
       queryParams.push(org_level);
     }
-    
+
     if (org_id !== undefined) {
       query += ', org_id = ?';
       queryParams.push(org_id);
     }
-    
+
     if (status !== undefined) {
       query += ', status = ?';
       queryParams.push(status);
     }
-    
+
     if (reminder_time !== undefined) {
       query += ', reminder_time = ?';
       // Convert empty string to null for integer field
-      const reminderValue = reminder_time === '' ? null : parseInt(reminder_time) || null;
+      const reminderValue =
+        reminder_time === '' ? null : parseInt(reminder_time) || null;
       queryParams.push(reminderValue);
     }
-    
+
     if (color !== undefined) {
       query += ', color = ?';
       queryParams.push(color);
     }
-    
+
     // Finish query
     query += ' WHERE id = ? AND tenant_id = ?';
     queryParams.push(id, tenantId);
-    
+
     // Execute update
     await db.query(query, queryParams);
-    
+
     // Get the updated event
     const updatedEvent = await getEventById(id, tenantId, eventData.created_by);
     return updatedEvent;
@@ -427,7 +452,7 @@ async function deleteEvent(id, tenantId) {
     // Delete event
     const query = 'DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?';
     const [result] = await db.query(query, [id, tenantId]);
-    
+
     return result.affectedRows > 0;
   } catch (error) {
     console.error('Error in deleteEvent:', error);
@@ -449,7 +474,7 @@ async function addEventAttendee(eventId, userId, responseStatus = 'pending') {
       'SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
       [eventId, userId]
     );
-    
+
     if (attendees.length > 0) {
       // Update existing attendee status
       await db.query(
@@ -463,7 +488,7 @@ async function addEventAttendee(eventId, userId, responseStatus = 'pending') {
         [eventId, userId, responseStatus]
       );
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error in addEventAttendee:', error);
@@ -480,9 +505,10 @@ async function addEventAttendee(eventId, userId, responseStatus = 'pending') {
 async function removeEventAttendee(eventId, userId) {
   try {
     // Remove attendee
-    const query = 'DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?';
+    const query =
+      'DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?';
     const [result] = await db.query(query, [eventId, userId]);
-    
+
     return result.affectedRows > 0;
   } catch (error) {
     console.error('Error in removeEventAttendee:', error);
@@ -504,9 +530,9 @@ async function respondToEvent(eventId, userId, response) {
     if (!validResponses.includes(response)) {
       throw new Error('Invalid response status');
     }
-    
+
     // Update response
-    return addEventAttendee(eventId, userId, response);
+    return await addEventAttendee(eventId, userId, response);
   } catch (error) {
     console.error('Error in respondToEvent:', error);
     throw error;
@@ -530,7 +556,7 @@ async function getEventAttendees(eventId, tenantId) {
       WHERE a.event_id = ? AND e.tenant_id = ?
       ORDER BY u.first_name, u.last_name
     `;
-    
+
     const [attendees] = await db.query(query, [eventId, tenantId]);
     return attendees;
   } catch (error) {
@@ -550,17 +576,18 @@ async function getEventAttendees(eventId, tenantId) {
 async function getDashboardEvents(tenantId, userId, days = 7, limit = 5) {
   try {
     // Get user info for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
-    
+    const { role, departmentId, teamId } =
+      await User.getUserDepartmentAndTeam(userId);
+
     // Calculate date range
     const today = new Date();
     const endDate = new Date();
     endDate.setDate(today.getDate() + days);
-    
+
     // Format dates for MySQL
     const todayStr = today.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
-    
+
     // Build query for dashboard events
     let query = `
       SELECT e.*, 
@@ -572,9 +599,9 @@ async function getDashboardEvents(tenantId, userId, days = 7, limit = 5) {
       WHERE e.tenant_id = ? AND e.status = 'active'
       AND e.start_time >= ? AND e.start_time <= ?
     `;
-    
+
     const queryParams = [userId, tenantId, todayStr, endDateStr];
-    
+
     // Apply access control for non-admin users
     if (role !== 'admin' && role !== 'root') {
       query += ` AND (
@@ -585,26 +612,32 @@ async function getDashboardEvents(tenantId, userId, days = 7, limit = 5) {
       )`;
       queryParams.push(departmentId || 0, teamId || 0, userId);
     }
-    
+
     // Sort by start time, limited to the next few events
     query += `
       ORDER BY e.start_time ASC
       LIMIT ?
     `;
     queryParams.push(parseInt(limit, 10));
-    
+
     const [events] = await db.query(query, queryParams);
-    
+
     // Convert Buffer description to String if needed
-    events.forEach(event => {
+    events.forEach((event) => {
       if (event.description && Buffer.isBuffer(event.description)) {
         event.description = event.description.toString('utf8');
-      } else if (event.description && typeof event.description === 'object' && 
-                event.description.type === 'Buffer' && Array.isArray(event.description.data)) {
-        event.description = Buffer.from(event.description.data).toString('utf8');
+      } else if (
+        event.description &&
+        typeof event.description === 'object' &&
+        event.description.type === 'Buffer' &&
+        Array.isArray(event.description.data)
+      ) {
+        event.description = Buffer.from(event.description.data).toString(
+          'utf8'
+        );
       }
     });
-    
+
     return events;
   } catch (error) {
     console.error('Error in getDashboardEvents:', error);
@@ -626,22 +659,22 @@ async function canManageEvent(eventId, userId, userInfo = null) {
       'SELECT * FROM calendar_events WHERE id = ?',
       [eventId]
     );
-    
+
     if (events.length === 0) {
       return false;
     }
-    
+
     const event = events[0];
-    
+
     // Get user info if not provided
     const userRole = userInfo ? userInfo.role : null;
     const userDeptId = userInfo ? userInfo.departmentId : null;
     const userTeamId = userInfo ? userInfo.teamId : null;
-    
+
     // If already have user info, use it
     let role, departmentId, teamId;
-    
-    if (userRole && (userDeptId !== undefined) && (userTeamId !== undefined)) {
+
+    if (userRole && userDeptId !== undefined && userTeamId !== undefined) {
       role = userRole;
       departmentId = userDeptId;
       teamId = userTeamId;
@@ -652,27 +685,35 @@ async function canManageEvent(eventId, userId, userInfo = null) {
       departmentId = userDetails.departmentId;
       teamId = userDetails.teamId;
     }
-    
+
     // Admins can manage all events
     if (role === 'admin' || role === 'root') {
       return true;
     }
-    
+
     // Event creator can manage their events
     if (event.created_by === userId) {
       return true;
     }
-    
+
     // Department managers can manage department events
-    if (role === 'manager' && event.org_level === 'department' && event.org_id === departmentId) {
+    if (
+      role === 'manager' &&
+      event.org_level === 'department' &&
+      event.org_id === departmentId
+    ) {
       return true;
     }
-    
+
     // Team leads can manage team events
-    if (role === 'team_lead' && event.org_level === 'team' && event.org_id === teamId) {
+    if (
+      role === 'team_lead' &&
+      event.org_level === 'team' &&
+      event.org_id === teamId
+    ) {
       return true;
     }
-    
+
     return false;
   } catch (error) {
     console.error('Error in canManageEvent:', error);
@@ -691,5 +732,5 @@ module.exports = {
   respondToEvent,
   getEventAttendees,
   getDashboardEvents,
-  canManageEvent
+  canManageEvent,
 };
