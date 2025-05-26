@@ -117,12 +117,163 @@ transform: scale(1.1);
 background: rgba(33, 150, 243, 0.15);
 ```
 
-### Custom Dropdowns:
+### Custom Dropdowns (STANDARD DESIGN!):
+
+#### HTML Struktur:
+```html
+<div class="custom-dropdown">
+  <div class="dropdown-display" id="myDropdownDisplay" onclick="toggleDropdown('myDropdown')">
+    <span>Bitte wählen</span>
+    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="dropdown-options" id="myDropdownDropdown">
+    <div class="dropdown-option" onclick="selectOption('value1', 'Text 1')">Text 1</div>
+    <div class="dropdown-option" onclick="selectOption('value2', 'Text 2')">Text 2</div>
+  </div>
+  <input type="hidden" name="fieldName" id="myDropdownValue" required>
+</div>
+```
+
+#### CSS Styles:
 ```css
-background: rgba(18, 18, 18, 0.8);
-backdrop-filter: blur(20px) saturate(180%);
-/* Hover */
-background: rgba(33, 150, 243, 0.2);
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dropdown-display:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-display svg {
+  opacity: 0.6;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 18, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1001;
+}
+
+.dropdown-options.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option:hover {
+  background: rgba(33, 150, 243, 0.2);
+  color: white;
+  padding-left: 16px;
+}
+
+/* Scrollbar Styling */
+.dropdown-options::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+```
+
+#### JavaScript Functions:
+```javascript
+// Toggle dropdown
+function toggleDropdown(type) {
+  const display = document.getElementById(type + 'Display');
+  const dropdown = document.getElementById(type + 'Dropdown');
+  
+  // Close all other dropdowns
+  document.querySelectorAll('.dropdown-display').forEach(d => {
+    if (d !== display) d.classList.remove('active');
+  });
+  document.querySelectorAll('.dropdown-options').forEach(d => {
+    if (d !== dropdown) d.classList.remove('active');
+  });
+  
+  display.classList.toggle('active');
+  dropdown.classList.toggle('active');
+}
+
+// Select option
+function selectOption(value, text) {
+  document.getElementById('myDropdownDisplay').querySelector('span').textContent = text;
+  document.getElementById('myDropdownValue').value = value;
+  document.getElementById('myDropdownDisplay').classList.remove('active');
+  document.getElementById('myDropdownDropdown').classList.remove('active');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+  }
+});
+```
+
+#### WICHTIGE HINWEISE:
+- **IMMER** Custom Dropdowns statt HTML `<select>` verwenden
+- Glassmorphismus mit `rgba(18, 18, 18, 0.8)` für Options
+- SVG-Pfeil dreht sich beim Öffnen (180deg)
+- Hover-Effekt verschiebt Text nach rechts (padding-left: 16px)
+- Z-index: 1001 für korrekte Schichtung über Modal-Content
+- Webkit-Support für Safari
 ```
 
 ### Buttons (Primary):
