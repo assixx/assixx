@@ -352,26 +352,95 @@
     }
     
     /* Custom Dropdown Styles für Modal */
-    .modal select.form-control,
-    .modal select.form-input {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 40px;
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
     }
     
-    .modal select.form-control option,
-    .modal select.form-input option {
-      background: rgba(18, 18, 18, 0.95);
-      backdrop-filter: blur(20px) saturate(180%);
+    .dropdown-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md);
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
       color: #fff;
-      padding: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
     
-    .modal select.form-control option:hover,
-    .modal select.form-input option:hover {
+    .dropdown-display:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .dropdown-display svg {
+      opacity: 0.6;
+      transition: transform 0.3s ease;
+    }
+    
+    .dropdown-display.active svg {
+      transform: rotate(180deg);
+    }
+    
+    .dropdown-options {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: rgba(18, 18, 18, 0.8);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 1001;
+    }
+    
+    .dropdown-options.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    .dropdown-option {
+      padding: 10px 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .dropdown-option:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-option:hover {
       background: rgba(33, 150, 243, 0.2);
+      color: white;
+      padding-left: 16px;
+    }
+    
+    .dropdown-options::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .dropdown-options::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .dropdown-options::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
     }
     
     .modal-form-actions {
@@ -1108,22 +1177,40 @@
         
         <div class="form-group">
           <label class="form-label">Organisationsebene *</label>
-          <select class="form-input" name="org_level" required>
-            <option value="">Bitte wählen</option>
-            <option value="company">Gesamtes Unternehmen</option>
-            <option value="department">Abteilung</option>
-            <option value="team">Team</option>
-          </select>
+          <div class="custom-dropdown">
+            <div class="dropdown-display" id="orgLevelDisplay" onclick="toggleDropdown('orgLevel')">
+              <span>Bitte wählen</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="dropdown-options" id="orgLevelDropdown">
+              <div class="dropdown-option" onclick="selectOrgLevel('', 'Bitte wählen')">Bitte wählen</div>
+              <div class="dropdown-option" onclick="selectOrgLevel('company', 'Gesamtes Unternehmen')">Gesamtes Unternehmen</div>
+              <div class="dropdown-option" onclick="selectOrgLevel('department', 'Abteilung')">Abteilung</div>
+              <div class="dropdown-option" onclick="selectOrgLevel('team', 'Team')">Team</div>
+            </div>
+            <input type="hidden" name="org_level" id="orgLevelValue" required>
+          </div>
         </div>
         
         <div class="form-group">
           <label class="form-label">Priorität</label>
-          <select class="form-input" name="priority">
-            <option value="normal">Normal</option>
-            <option value="low">Niedrig</option>
-            <option value="high">Hoch</option>
-            <option value="urgent">Dringend</option>
-          </select>
+          <div class="custom-dropdown">
+            <div class="dropdown-display" id="priorityDisplay" onclick="toggleDropdown('priority')">
+              <span>Normal</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="dropdown-options" id="priorityDropdown">
+              <div class="dropdown-option" onclick="selectPriority('low', 'Niedrig')">Niedrig</div>
+              <div class="dropdown-option" onclick="selectPriority('normal', 'Normal')">Normal</div>
+              <div class="dropdown-option" onclick="selectPriority('high', 'Hoch')">Hoch</div>
+              <div class="dropdown-option" onclick="selectPriority('urgent', 'Dringend')">Dringend</div>
+            </div>
+            <input type="hidden" name="priority" id="priorityValue" value="normal">
+          </div>
         </div>
         
         <div class="form-group">
@@ -1540,6 +1627,16 @@
         pill.classList.remove('selected');
       });
       document.getElementById('selectedFiles').innerHTML = '';
+      
+      // Reset custom dropdowns
+      document.getElementById('orgLevelDisplay').querySelector('span').textContent = 'Bitte wählen';
+      document.getElementById('orgLevelValue').value = '';
+      document.getElementById('priorityDisplay').querySelector('span').textContent = 'Normal';
+      document.getElementById('priorityValue').value = 'normal';
+      
+      // Close all dropdowns
+      document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+      document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
     }
 
     // Handle file selection
@@ -1977,6 +2074,45 @@
       
       setTimeout(() => messageDiv.remove(), 5000);
     }
+
+    // Custom Dropdown Functions
+    function toggleDropdown(type) {
+      const display = document.getElementById(type + 'Display');
+      const dropdown = document.getElementById(type + 'Dropdown');
+      
+      // Close all other dropdowns
+      document.querySelectorAll('.dropdown-display').forEach(d => {
+        if (d !== display) d.classList.remove('active');
+      });
+      document.querySelectorAll('.dropdown-options').forEach(d => {
+        if (d !== dropdown) d.classList.remove('active');
+      });
+      
+      display.classList.toggle('active');
+      dropdown.classList.toggle('active');
+    }
+    
+    function selectOrgLevel(value, text) {
+      document.getElementById('orgLevelDisplay').querySelector('span').textContent = text;
+      document.getElementById('orgLevelValue').value = value;
+      document.getElementById('orgLevelDisplay').classList.remove('active');
+      document.getElementById('orgLevelDropdown').classList.remove('active');
+    }
+    
+    function selectPriority(value, text) {
+      document.getElementById('priorityDisplay').querySelector('span').textContent = text;
+      document.getElementById('priorityValue').value = value;
+      document.getElementById('priorityDisplay').classList.remove('active');
+      document.getElementById('priorityDropdown').classList.remove('active');
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.custom-dropdown')) {
+        document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+        document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+      }
+    });
 
     // Close modal when clicking outside
     window.addEventListener('click', function(e) {
