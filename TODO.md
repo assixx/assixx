@@ -86,7 +86,12 @@
 
 ## 🚨 KRITISCHE SICHERHEITS-TODOS (Höchste Priorität!)
 
-Siehe [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md) für detaillierte Security-Aufgaben (15 Items).
+### GitHub Security Alerts (26.05.2025)
+- [ ] **Low Severity**: Cookie package vulnerability (GHSA-pxg6-pf52-xh8x)
+  - Betroffene Packages: cookie < 0.7.0, csurf
+  - In separatem Branch beheben wegen möglicher Breaking Changes
+- [ ] **Deprecated Package**: csurf ersetzen durch moderne Alternative
+- [ ] Alle 15 Security-Items aus SECURITY-IMPROVEMENTS.md (Datei wurde gelöscht, Items müssen neu erfasst werden)
 
 ## 📱 Feature-Entwicklung (Hohe Priorität)
 
