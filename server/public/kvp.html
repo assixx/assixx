@@ -256,13 +256,14 @@
     .modal {
       display: none;
       position: fixed;
-      top: 0;
+      z-index: 1000;
       left: 0;
+      top: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.7);
+      background-color: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(10px);
-      z-index: 1000;
+      -webkit-backdrop-filter: blur(10px);
       align-items: center;
       justify-content: center;
     }
@@ -270,6 +271,7 @@
     .modal-content {
       background: rgba(255, 255, 255, 0.02);
       backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--radius-md);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
@@ -293,6 +295,7 @@
       font-size: 20px;
       font-weight: 600;
       color: var(--primary-color);
+      margin: 0;
     }
 
     .modal-close {
@@ -308,21 +311,46 @@
       align-items: center;
       justify-content: center;
       border-radius: var(--radius-sm);
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
     }
 
     .modal-close:hover {
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.1);
+      background-color: var(--background-dark);
+      color: var(--error-color);
     }
 
-    .modal-form-content {
+    .modal form {
       padding: var(--spacing-lg);
+    }
+    
+    .modal .form-group {
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .modal-form-content {
       overflow-y: auto;
       flex: 1;
       margin-top: 0;
     }
 
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .modal .btn-primary {
+      background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+      border-color: rgba(0, 142, 255, 0.3);
+    }
+    
+    .modal .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--primary-color);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
     .modal-form-actions {
       padding: var(--spacing-lg);
       border-top: 1px solid var(--border-color);
@@ -341,25 +369,26 @@
       color: var(--text-primary);
     }
 
+    .modal .form-control,
     .form-input {
       width: 100%;
-      background: rgba(255, 255, 255, 0.04);
-      backdrop-filter: blur(5px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: var(--radius-sm);
       padding: var(--spacing-md);
-      color: var(--text-primary);
+      color: #fff;
       font-size: 1rem;
       transition: all 0.3s ease;
     }
 
+    .modal .form-control:focus,
     .form-input:focus {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(0, 142, 255, 0.5);
+      box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15),
+                  inset 0 1px 2px rgba(0, 0, 0, 0.2);
       outline: none;
-      background: rgba(255, 255, 255, 0.08);
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15),
-                  inset 0 1px 2px rgba(0, 0, 0, 0.1);
-      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
     }
 
     .form-input::placeholder {
@@ -519,32 +548,6 @@
       backdrop-filter: blur(4px);
     }
 
-    .modal-content {
-      position: relative;
-      background: var(--background-light);
-      border-radius: var(--radius-lg);
-      max-width: 800px;
-      max-height: 90vh;
-      width: 90%;
-      overflow: hidden;
-      box-shadow: var(--shadow-xl);
-      animation: slideUp 0.3s ease;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--spacing-lg);
-      border-bottom: 1px solid var(--border-color);
-      background: var(--background-lighter);
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      color: var(--text-primary);
-      font-size: 1.5rem;
-    }
 
 
     .modal-close:hover {
@@ -1054,10 +1057,10 @@
 
   <!-- New Suggestion Modal -->
   <div class="modal" id="newSuggestionModal">
-    <div class="modal-content">
+    <div class="modal-content" style="background: rgba(255, 255, 255, 0.02) !important; backdrop-filter: blur(20px) saturate(180%) !important; -webkit-backdrop-filter: blur(20px) saturate(180%) !important;">
       <div class="modal-header">
         <h3 class="modal-title">Neuen Verbesserungsvorschlag einreichen</h3>
-        <button class="modal-close" onclick="document.getElementById('newSuggestionModal').style.display='none'">&times;</button>
+        <button class="modal-close" onclick="closeNewSuggestionModal()">&times;</button>
       </div>
       
       <div class="modal-form-content">
@@ -1125,9 +1128,9 @@
       </div>
       
       <div class="modal-form-actions">
-        <div class="form-actions">
+        <div class="button-group">
           <button type="submit" class="btn btn-primary" form="newSuggestionForm">Vorschlag einreichen</button>
-          <button type="button" class="btn btn-secondary" id="cancelBtn">Abbrechen</button>
+          <button type="button" class="btn btn-secondary" onclick="closeNewSuggestionModal()">Abbrechen</button>
         </div>
       </div>
     </div>
