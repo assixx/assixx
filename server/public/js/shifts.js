@@ -114,15 +114,14 @@ function closeModal(modalId) {
 async function initializeShiftPlanning() {
     try {
         // Check authentication first
-        console.log('Shift planning init - checking auth...');
+
         const token = getAuthToken();
         if (!token) {
-            console.log('No token found, redirecting to login');
+
             window.location.href = '/login.html';
             return;
         }
-        
-        console.log('Token found, loading user info...');
+
         // Load user info and permissions
         await loadUserInfo();
         
@@ -138,8 +137,7 @@ async function initializeShiftPlanning() {
         
         // Set up date filters with default values
         setupDateFilters();
-        
-        console.log('Shift planning interface initialized successfully');
+
     } catch (error) {
         console.error('Error initializing shift planning:', error);
         showError('Fehler beim Laden der Schichtplanung');
@@ -722,41 +720,41 @@ function loadAvailabilityCalendar() {
 }
 
 function viewShiftPlan(planId) {
-    console.log('View shift plan:', planId);
+
     // TODO: Implement shift plan details view
 }
 
 function editShiftPlan(planId) {
-    console.log('Edit shift plan:', planId);
+
     // TODO: Implement shift plan editing
 }
 
 function viewShifts(planId) {
-    console.log('View shifts for plan:', planId);
+
     // TODO: Implement shifts view
 }
 
 function createExchangeRequest() {
-    console.log('Create exchange request');
+
     // TODO: Implement exchange request creation
 }
 
 function setAvailability() {
-    console.log('Set availability');
+
     // TODO: Implement availability setting
 }
 
 function respondToExchange(requestId, response) {
-    console.log('Respond to exchange:', requestId, response);
+
     // TODO: Implement exchange response
 }
 
 function filterPlans() {
-    console.log('Filter plans');
+
     // TODO: Implement plan filtering
 }
 
 function filterAssignments() {
-    console.log('Filter assignments');
+
     // TODO: Implement assignment filtering
 }

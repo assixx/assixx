@@ -22,8 +22,7 @@ let currentTeamId = null;
 let entriesLoadingEnabled = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-  console.log("Blackboard initializing...");
-  
+
   // Aktiviere das automatische Laden der Einträge
   entriesLoadingEnabled = true;
   
@@ -34,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
   checkLoggedIn().then(() => {
     // Load user data
     fetchUserData().then(userData => {
-      console.log("User data loaded:", userData);
+
       currentUserId = userData.id;
       currentUserRole = userData.role;
       currentDepartmentId = userData.departmentId || userData.department_id;
@@ -46,8 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (newEntryBtn) {
         newEntryBtn.style.display = isAdmin ? 'block' : 'none';
       }
-      console.log(`User role: ${currentUserRole}, isAdmin: ${isAdmin}, New Entry button visibility: ${isAdmin ? 'visible' : 'hidden'}`);
-      
+
       // Load departments and teams for form dropdowns
       loadDepartmentsAndTeams();
       
@@ -85,16 +83,15 @@ document.addEventListener('DOMContentLoaded', function() {
  * Setup close buttons for all modals
  */
 function setupCloseButtons() {
-  console.log("Setting up close buttons for modals");
-  
+
   // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
   document.querySelectorAll('[data-action="close"]').forEach(button => {
     button.addEventListener('click', function() {
-      console.log("Close button clicked");
+
       // Finde das übergeordnete Modal
       const modal = this.closest('.modal-overlay');
       if (modal) {
-        console.log("Closing modal:", modal.id);
+
         window.DashboardUI.closeModal(modal.id);
       } else {
         console.error("No parent modal found for close button");
@@ -107,13 +104,12 @@ function setupCloseButtons() {
     modal.addEventListener('click', function(event) {
       // Nur schließen, wenn der Klick auf den Modal-Hintergrund erfolgt (nicht auf den Inhalt)
       if (event.target === modal) {
-        console.log("Clicked outside modal content, closing modal:", modal.id);
+
         window.DashboardUI.closeModal(modal.id);
       }
     });
   });
-  
-  console.log("Close buttons setup completed");
+
 }
 
 /**
@@ -187,7 +183,7 @@ function setupEventListeners() {
   const newEntryBtn = document.getElementById('newEntryBtn');
   if (newEntryBtn) {
     newEntryBtn.addEventListener('click', function() {
-      console.log('New entry button clicked');
+
       openEntryForm();
     });
   } else {
@@ -231,13 +227,12 @@ function setupEventListeners() {
 async function loadEntries() {
   // Wenn das Laden nicht aktiviert wurde (durch Klick auf den Button), dann abbrechen
   if (!entriesLoadingEnabled) {
-    console.log("Entries loading is disabled. Skipping API call.");
+
     return;
   }
 
   try {
-    console.log("Loading entries...");
-    
+
     // Verstecke die Lade-Button-Karte
     const loadEntriesCard = document.getElementById('loadEntriesCard');
     if (loadEntriesCard) loadEntriesCard.classList.add('d-none');
@@ -317,7 +312,7 @@ async function loadEntries() {
  * Display entries in the UI
  */
 function displayEntries(entries) {
-  console.log("Displaying entries:", entries);
+
   const container = document.getElementById('blackboardEntries');
   if (!container) {
     console.error('Blackboard entries container not found');
@@ -342,7 +337,7 @@ function displayEntries(entries) {
   }
   
   entries.forEach(entry => {
-    console.log("Processing entry:", entry);
+
     const col = document.createElement('div');
     // Use class appropriate for the dashboard grid in admin-grid
     col.className = 'admin-card';
@@ -351,7 +346,7 @@ function displayEntries(entries) {
     let content = entry.content;
     if (typeof content !== 'string') {
       content = JSON.stringify(content) || '';
-      console.warn("Entry content is not a string:", entry.content);
+
     }
     
     // Format content preview (strip HTML and limit length)
@@ -695,7 +690,7 @@ async function viewEntry(entryId) {
  * Open entry form for create/edit
  */
 function openEntryForm(entry = null) {
-  console.log("openEntryForm called");
+
   const formModal = document.getElementById('entryFormModal');
   const modalTitle = document.getElementById('entryFormModalLabel');
   const entryForm = document.getElementById('entryForm');

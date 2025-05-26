@@ -63,9 +63,7 @@ async function getAllEntries(tenantId, userId, options = {}) {
     }
     
     // Debug-Ausgabe der SQL-Abfrage
-    console.log("Blackboard SQL Query:", query);
-    console.log("Query Parameters:", queryParams);
-    
+
     // Apply search filter
     if (search) {
       query += ' AND (e.title LIKE ? OR e.content LIKE ?)';
@@ -85,18 +83,18 @@ async function getAllEntries(tenantId, userId, options = {}) {
     const [entries] = await db.query(query, queryParams);
     
     // Debug der Ergebnisse
-    console.log(`Found ${entries.length} blackboard entries`);
+
     if (entries.length > 0) {
-      console.log("Sample entry:", JSON.stringify(entries[0]).substring(0, 300));
+
     }
     
     // Konvertiere Buffer-Inhalte zu Strings
     entries.forEach(entry => {
       if (entry.content && Buffer.isBuffer(entry.content)) {
-        console.log("Converting Buffer content to string");
+
         entry.content = entry.content.toString('utf8');
       } else if (entry.content && typeof entry.content === 'object' && entry.content.type === 'Buffer' && Array.isArray(entry.content.data)) {
-        console.log("Converting Buffer object to string");
+
         entry.content = Buffer.from(entry.content.data).toString('utf8');
       }
     });
@@ -184,10 +182,10 @@ async function getEntryById(id, tenantId, userId) {
     
     // Konvertiere Buffer-Inhalte zu Strings
     if (entry.content && Buffer.isBuffer(entry.content)) {
-      console.log("Converting Buffer content to string in getEntryById");
+
       entry.content = entry.content.toString('utf8');
     } else if (entry.content && typeof entry.content === 'object' && entry.content.type === 'Buffer' && Array.isArray(entry.content.data)) {
-      console.log("Converting Buffer object to string in getEntryById");
+
       entry.content = Buffer.from(entry.content.data).toString('utf8');
     }
     

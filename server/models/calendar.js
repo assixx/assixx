@@ -104,17 +104,15 @@ async function getAllEvents(tenantId, userId, options = {}) {
     
     // Execute query
     const [events] = await db.query(query, queryParams);
-    
-    console.log(`Found ${events.length} calendar events`);
-    
+
     // Convert Buffer description to String if needed
     events.forEach(event => {
       if (event.description && Buffer.isBuffer(event.description)) {
-        console.log("Converting Buffer description to string");
+
         event.description = event.description.toString('utf8');
       } else if (event.description && typeof event.description === 'object' && 
                 event.description.type === 'Buffer' && Array.isArray(event.description.data)) {
-        console.log("Converting Buffer object to string");
+
         event.description = Buffer.from(event.description.data).toString('utf8');
       }
     });

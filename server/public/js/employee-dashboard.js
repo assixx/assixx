@@ -34,7 +34,7 @@ if (searchForm && searchInput) {
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-            console.log('Logout-Button geklickt');
+
             if (confirm('Möchten Sie sich wirklich abmelden?')) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('role');
@@ -101,8 +101,7 @@ if (searchForm && searchInput) {
             if (userInfo) {
                 userInfo.textContent = `${info.first_name} ${info.last_name}`;
             }
-            
-            console.log('Mitarbeiterinformation aktualisiert:', info);
+
         } catch (error) {
             console.error('Fehler beim Aktualisieren der Mitarbeiterinformationen:', error);
             // Kein Alert anzeigen, um nervige Meldungen zu vermeiden
@@ -144,8 +143,7 @@ if (searchForm && searchInput) {
     }
 
     function displayDocuments(documents) {
-        console.log('Dokumente zum Anzeigen:', documents);
-        
+
         const recentDocs = documentTableBody; // Verwende die bereits definierte Referenz
         if (!recentDocs) {
             console.error('Element für Dokumente nicht gefunden');
@@ -153,11 +151,10 @@ if (searchForm && searchInput) {
         }
         
         // Debug-Informationen
-        console.log('DOM-Element für Dokumente gefunden:', recentDocs);
-        
+
         // Zeige Nachricht, wenn keine Dokumente vorhanden sind
         if (!documents || documents.length === 0) {
-            console.log('Keine Dokumente vorhanden, zeige Leerstandsmeldung');
+
             recentDocs.innerHTML = `
                 <tr>
                     <td colspan="3" style="text-align: center; padding: 20px;">
@@ -176,9 +173,7 @@ if (searchForm && searchInput) {
             
             return;
         }
-        
-        console.log('Sortiere und begrenze Dokumente');
-        
+
         // Elemente sortieren (neueste zuerst)
         const sortedDocuments = [...documents].sort((a, b) => {
             return new Date(b.upload_date) - new Date(a.upload_date);
@@ -187,9 +182,7 @@ if (searchForm && searchInput) {
         // Beschränke die Anzeige auf das neueste Dokument
         const maxDocumentsToShow = Math.min(sortedDocuments.length, 1);
         const recentDocuments = sortedDocuments.slice(0, maxDocumentsToShow);
-        
-        console.log('Anzuzeigende Dokumente:', recentDocuments);
-        
+
         recentDocs.innerHTML = '';
         recentDocuments.forEach(doc => {
             const row = document.createElement('tr');
@@ -233,7 +226,7 @@ if (searchForm && searchInput) {
                     
                     const docId = this.getAttribute('data-document-id');
                     if (docId) {
-                        console.log(`Download-Button geklickt für Dokument ID: ${docId}`);
+
                         // Verwende die downloadDocument-Funktion
                         downloadDocument(docId);
                     }
@@ -245,8 +238,7 @@ if (searchForm && searchInput) {
     // Verbesserte Download-Funktion
     window.downloadDocument = function(documentId) {
         try {
-            console.log(`Starte Download für Dokument ID: ${documentId}`);
-            
+
             // Den Token aus dem localStorage holen
             const token = localStorage.getItem('token');
             if (!token) {

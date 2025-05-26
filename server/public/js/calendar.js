@@ -20,8 +20,7 @@ let calendarView = 'dayGridMonth'; // Default view
 
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', function() {
-  console.log("Calendar initializing...");
-  
+
   // Alle Schließen-Buttons einrichten
   setupCloseButtons();
   
@@ -29,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
   checkLoggedIn().then(() => {
     // Load user data
     fetchUserData().then(userData => {
-      console.log("User data loaded:", userData);
+
       currentUserId = userData.id;
       currentUserRole = userData.role;
       currentDepartmentId = userData.departmentId || userData.department_id;
@@ -41,8 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (newEventBtn) {
         newEventBtn.style.display = isAdmin ? 'block' : 'none';
       }
-      console.log(`User role: ${currentUserRole}, isAdmin: ${isAdmin}`);
-      
+
       // Load departments and teams for form dropdowns
       loadDepartmentsAndTeams();
       
@@ -68,16 +66,15 @@ document.addEventListener('DOMContentLoaded', function() {
  * Setup close buttons for all modals
  */
 function setupCloseButtons() {
-  console.log("Setting up close buttons for modals");
-  
+
   // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
   document.querySelectorAll('[data-action="close"]').forEach(button => {
     button.addEventListener('click', function() {
-      console.log("Close button clicked");
+
       // Finde das übergeordnete Modal
       const modal = this.closest('.modal-overlay');
       if (modal) {
-        console.log("Closing modal:", modal.id);
+
         window.DashboardUI.closeModal(modal.id);
       } else {
         console.error("No parent modal found for close button");
@@ -90,13 +87,12 @@ function setupCloseButtons() {
     modal.addEventListener('click', function(event) {
       // Nur schließen, wenn der Klick auf den Modal-Hintergrund erfolgt (nicht auf den Inhalt)
       if (event.target === modal) {
-        console.log("Clicked outside modal content, closing modal:", modal.id);
+
         window.DashboardUI.closeModal(modal.id);
       }
     });
   });
-  
-  console.log("Close buttons setup completed");
+
 }
 
 /**
@@ -136,7 +132,11 @@ function initializeCalendar() {
     selectable: isAdmin, // Only admins can select dates to create events
     select: function(info) {
       if (isAdmin) {
-        openEventForm(null, info.start, info.end, info.allDay);
+        // Bei Klick auf einzelnen Tag: allDay = false
+        // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
+        const shouldBeAllDay = info.allDay && calendar.view.type === 'dayGridMonth';
+
+        openEventForm(null, info.start, info.end, false); // Immer false für normale Termine
       }
     },
     eventClick: function(info) {
@@ -183,8 +183,7 @@ function initializeCalendar() {
  */
 async function fetchEvents(info, successCallback, failureCallback) {
   try {
-    console.log(`Fetching events from ${info.start.toISOString()} to ${info.end.toISOString()}`);
-    
+
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
@@ -223,10 +222,9 @@ async function fetchEvents(info, successCallback, failureCallback) {
     }
     
     const data = await response.json();
-    console.log('Received calendar data:', data);
+
     const events = data.events.map(event => formatEvent(event));
-    console.log('Formatted events for FullCalendar:', events);
-    
+
     // Call success callback with events
     successCallback(events);
   } catch (error) {
@@ -240,12 +238,13 @@ async function fetchEvents(info, successCallback, failureCallback) {
  * Format event data for FullCalendar
  */
 function formatEvent(event) {
+  console.log('Formatting event:', event); // Debug log
   // Use custom color if provided, otherwise fallback to org_level defaults
   let color;
   if (event.color && event.color !== '') {
     // User selected a custom color
     color = event.color;
-    console.log(`Using custom color for event "${event.title}": ${color}`);
+
   } else {
     // Fallback to org_level defaults
     switch (event.org_level) {
@@ -261,15 +260,31 @@ function formatEvent(event) {
       default:
         color = '#3498db'; // Default blue
     }
-    console.log(`Using org_level color for event "${event.title}" (${event.org_level}): ${color}`);
+
+  }
+  
+  // Bei ganztägigen Events: Korrigiere das End-Datum wenn es zu weit in der Zukunft liegt
+  let endTime = event.end_time;
+  if (event.all_day === 1 || event.all_day === "1") {
+    const start = new Date(event.start_time);
+    const end = new Date(event.end_time);
+    const daysDiff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    
+    // Wenn der Unterschied mehr als 1 Tag ist, korrigiere es
+    if (daysDiff > 1) {
+      const correctedEnd = new Date(start);
+      correctedEnd.setDate(correctedEnd.getDate() + 1);
+      endTime = correctedEnd.toISOString();
+
+    }
   }
   
   return {
     id: event.id,
     title: event.title,
     start: event.start_time,
-    end: event.end_time,
-    allDay: event.all_day === 1,
+    end: endTime,
+    allDay: event.all_day === 1 || event.all_day === "1",
     backgroundColor: color,
     borderColor: color,
     textColor: '#ffffff',
@@ -282,7 +297,8 @@ function formatEvent(event) {
       creator_name: event.creator_name,
       reminder_time: event.reminder_time,
       user_response: event.user_response,
-      custom_color: event.color // Store original color for editing
+      custom_color: event.color, // Store original color for editing
+      all_day: event.all_day // Store all_day flag for editing
     }
   };
 }
@@ -662,14 +678,21 @@ function formatReminderTime(minutes) {
  * Open event form for create/edit
  */
 function openEventForm(event = null, startDate = null, endDate = null, allDay = false) {
-  console.log("openEventForm called");
-  const formModal = document.getElementById('eventFormModal');
+
   const modalTitle = document.getElementById('eventFormModalLabel');
   const eventForm = document.getElementById('eventForm');
   
   // Reset form
   eventForm.reset();
   document.getElementById('eventOrgId').disabled = true;
+  
+  // Stelle sicher, dass Zeitfelder aktiv sind nach Reset
+  const startTimeInput = document.getElementById('eventStartTime');
+  const endTimeInput = document.getElementById('eventEndTime');
+  if (startTimeInput && endTimeInput) {
+    startTimeInput.disabled = false;
+    endTimeInput.disabled = false;
+  }
   
   // Clear attendees
   selectedAttendees = [];
@@ -689,14 +712,27 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
     // Populate form fields
     document.getElementById('eventId').value = event.id;
     document.getElementById('eventTitle').value = event.title;
-    document.getElementById('eventDescription').value = event.description || '';
-    document.getElementById('eventLocation').value = event.location || '';
-    document.getElementById('eventAllDay').checked = event.all_day === 1;
-    document.getElementById('eventReminderTime').value = event.reminder_time || '';
+    document.getElementById('eventDescription').value = event.extendedProps?.description || '';
+    document.getElementById('eventLocation').value = event.extendedProps?.location || '';
+    document.getElementById('eventAllDay').checked = event.allDay || event.extendedProps?.all_day === 1;
     
-    // Parse dates
-    const start = new Date(event.start_time);
-    const end = new Date(event.end_time);
+    // Set reminder in custom dropdown
+    const reminderTime = event.extendedProps?.reminder_time;
+    if (reminderTime) {
+      const reminderText = formatReminderTime(reminderTime);
+      selectReminder(reminderTime, reminderText);
+    } else {
+      selectReminder('', 'Keine Erinnerung');
+    }
+    
+    // Parse dates - FullCalendar provides dates as 'start' and 'end'
+    const start = new Date(event.start);
+    let end = new Date(event.end);
+    
+    // Für ganztägige Events: End-Datum ist einen Tag zu viel (FullCalendar speichert exklusives Ende)
+    if (event.allDay) {
+      end.setDate(end.getDate() - 1);
+    }
     
     // Set date inputs (YYYY-MM-DD format)
     document.getElementById('eventStartDate').value = start.toISOString().split('T')[0];
@@ -707,11 +743,22 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
     document.getElementById('eventEndTime').value = end.toTimeString().substring(0, 5);
     
     // Set organization level and populate org id dropdown
-    document.getElementById('eventOrgLevel').value = event.org_level;
-    updateOrgIdDropdown(event.org_level, event.org_id);
+    const orgLevel = event.extendedProps?.org_level;
+    if (orgLevel === 'company') {
+      selectOrgLevel('company', 'Alle Mitarbeiter');
+    } else if (orgLevel === 'department') {
+      selectOrgLevel('department', 'Bestimmte Abteilung');
+    } else if (orgLevel === 'team') {
+      selectOrgLevel('team', 'Bestimmtes Team');
+    }
+    
+    // Wait a bit then set the org_id
+    setTimeout(() => {
+      updateOrgIdDropdown(orgLevel, event.extendedProps?.org_id);
+    }, 100);
     
     // Set color - use custom_color if available, otherwise display color
-    const colorValue = event.extendedProps?.custom_color || event.color || '#3498db';
+    const colorValue = event.extendedProps?.custom_color || event.backgroundColor || '#3498db';
     document.getElementById('eventColor').value = colorValue;
     document.querySelectorAll('.color-option').forEach(option => {
       option.classList.remove('selected');
@@ -721,7 +768,7 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
     });
     
     // Toggle time inputs based on allDay
-    toggleTimeInputs(event.all_day === 1);
+    toggleTimeInputs(event.allDay);
     
     // Load attendees if any
     loadAttendees(event.id);
@@ -741,6 +788,9 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
       if (!allDay) {
         document.getElementById('eventStartTime').value = start.toTimeString().substring(0, 5);
         document.getElementById('eventEndTime').value = end.toTimeString().substring(0, 5);
+      } else {
+        document.getElementById('eventStartTime').value = '00:00';
+        document.getElementById('eventEndTime').value = '00:00';
       }
       
       document.getElementById('eventAllDay').checked = allDay;
@@ -756,7 +806,10 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
       document.getElementById('eventEndTime').value = later.toTimeString().substring(0, 5);
       
       document.getElementById('eventAllDay').checked = false;
-      toggleTimeInputs(false);
+      // Explizit die Zeitfelder aktivieren
+      setTimeout(() => {
+        toggleTimeInputs(false); // Zeitfelder aktivieren für normalen Termin
+      }, 100);
     }
   }
   
@@ -768,17 +821,28 @@ function openEventForm(event = null, startDate = null, endDate = null, allDay = 
  * Toggle time inputs based on all day checkbox
  */
 function toggleTimeInputs(isAllDay) {
+  console.log('toggleTimeInputs called with isAllDay:', isAllDay); // Debug log
   const startTimeInput = document.getElementById('eventStartTime');
   const endTimeInput = document.getElementById('eventEndTime');
   
-  if (isAllDay) {
+  if (!startTimeInput || !endTimeInput) {
+    console.error('Time input elements not found!');
+    return;
+  }
+  
+  if (isAllDay === true || isAllDay === 'true' || isAllDay === 1 || isAllDay === '1') {
+
     startTimeInput.disabled = true;
     endTimeInput.disabled = true;
     startTimeInput.value = '00:00';
-    endTimeInput.value = '23:59';
+    endTimeInput.value = '00:00'; // FullCalendar interpretiert ganztägige Events korrekt
   } else {
+
     startTimeInput.disabled = false;
     endTimeInput.disabled = false;
+    // Stelle sicher, dass die Felder wirklich aktiviert sind
+    startTimeInput.removeAttribute('disabled');
+    endTimeInput.removeAttribute('disabled');
   }
 }
 
@@ -786,19 +850,21 @@ function toggleTimeInputs(isAllDay) {
  * Update organization ID dropdown based on selected level
  */
 async function updateOrgIdDropdown(level, selectedId = null) {
-  const orgIdSelect = document.getElementById('eventOrgId');
-  orgIdSelect.innerHTML = '';
-  orgIdSelect.disabled = true;
+  const orgIdDropdown = document.getElementById('orgIdDropdown');
+  const orgIdDisplay = document.getElementById('orgIdDisplay');
+  
+  // Clear dropdown
+  orgIdDropdown.innerHTML = '';
   
   if (level === 'company') {
-    // For company level, just add the current tenant
-    const option = document.createElement('option');
-    option.value = '1'; // Assuming tenant ID is 1
-    option.textContent = 'Gesamte Firma';
-    orgIdSelect.appendChild(option);
-    orgIdSelect.disabled = false;
+    // For company level, set directly
+    orgIdDisplay.classList.add('disabled');
+    document.getElementById('selectedOrgId').textContent = 'Gesamte Firma';
+    document.getElementById('eventOrgId').value = '1';
     return;
   }
+  
+  orgIdDisplay.classList.remove('disabled');
   
   if (level === 'department') {
     // If departments aren't loaded yet, load them
@@ -808,19 +874,25 @@ async function updateOrgIdDropdown(level, selectedId = null) {
     
     // Add department options
     departments.forEach(dept => {
-      const option = document.createElement('option');
-      option.value = dept.id;
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.onclick = () => selectOrgId(dept.id, dept.name);
       option.textContent = dept.name;
-      orgIdSelect.appendChild(option);
+      orgIdDropdown.appendChild(option);
     });
     
     // If admin can see all departments, otherwise restrict to user's department
     if (!isAdmin && currentDepartmentId) {
       // Non-admin can only post to their own department
-      orgIdSelect.value = currentDepartmentId;
-      orgIdSelect.disabled = true;
+      const userDept = departments.find(d => d.id === currentDepartmentId);
+      if (userDept) {
+        document.getElementById('selectedOrgId').textContent = userDept.name;
+        document.getElementById('eventOrgId').value = currentDepartmentId;
+        orgIdDisplay.classList.add('disabled');
+      }
     } else {
-      orgIdSelect.disabled = false;
+      document.getElementById('selectedOrgId').textContent = '-- Bitte wählen --';
+      document.getElementById('eventOrgId').value = '';
     }
   }
   
@@ -832,25 +904,48 @@ async function updateOrgIdDropdown(level, selectedId = null) {
     
     // Add team options
     teams.forEach(team => {
-      const option = document.createElement('option');
-      option.value = team.id;
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.onclick = () => selectOrgId(team.id, team.name);
       option.textContent = team.name;
-      orgIdSelect.appendChild(option);
+      orgIdDropdown.appendChild(option);
     });
     
     // If admin can see all teams, otherwise restrict to user's team
     if (!isAdmin && currentTeamId) {
       // Non-admin can only post to their own team
-      orgIdSelect.value = currentTeamId;
-      orgIdSelect.disabled = true;
+      const userTeam = teams.find(t => t.id === currentTeamId);
+      if (userTeam) {
+        document.getElementById('selectedOrgId').textContent = userTeam.name;
+        document.getElementById('eventOrgId').value = currentTeamId;
+        orgIdDisplay.classList.add('disabled');
+      }
     } else {
-      orgIdSelect.disabled = false;
+      document.getElementById('selectedOrgId').textContent = '-- Bitte wählen --';
+      document.getElementById('eventOrgId').value = '';
     }
   }
   
   // Set selected value if provided
   if (selectedId) {
-    orgIdSelect.value = selectedId;
+    // Find the matching option and set it
+    const options = orgIdDropdown.querySelectorAll('.dropdown-option');
+    options.forEach(option => {
+      const optionText = option.textContent;
+      if (level === 'department') {
+        const dept = departments.find(d => d.id == selectedId);
+        if (dept && dept.name === optionText) {
+          document.getElementById('selectedOrgId').textContent = optionText;
+          document.getElementById('eventOrgId').value = selectedId;
+        }
+      } else if (level === 'team') {
+        const team = teams.find(t => t.id == selectedId);
+        if (team && team.name === optionText) {
+          document.getElementById('selectedOrgId').textContent = optionText;
+          document.getElementById('eventOrgId').value = selectedId;
+        }
+      }
+    });
   }
 }
 
@@ -1092,7 +1187,12 @@ async function saveEvent() {
     
     // Combine date and time
     const startDateTime = new Date(`${startDate}T${allDay ? '00:00' : startTime}`);
-    const endDateTime = new Date(`${endDate}T${allDay ? '23:59' : endTime}`);
+    let endDateTime = new Date(`${endDate}T${allDay ? '00:00' : endTime}`);
+    
+    // Für ganztägige Events: Ende ist der nächste Tag um 00:00 (FullCalendar Standard)
+    if (allDay) {
+      endDateTime.setDate(endDateTime.getDate() + 1);
+    }
     
     // Validate dates
     if (startDateTime > endDateTime) {
@@ -1207,7 +1307,6 @@ async function deleteEvent(eventId) {
  * Show delete confirmation modal
  */
 function showDeleteConfirmation(eventId) {
-  const modal = document.getElementById('confirmationModal');
   const confirmBtn = document.getElementById('confirmActionBtn');
   
   // Set modal content
@@ -1343,7 +1442,8 @@ function setupEventListeners() {
   const newEventBtn = document.getElementById('newEventBtn');
   if (newEventBtn) {
     newEventBtn.addEventListener('click', function() {
-      openEventForm();
+
+      openEventForm(null, null, null, false); // Explizit allDay=false übergeben
     });
   }
   
@@ -1355,13 +1455,8 @@ function setupEventListeners() {
     });
   }
   
-  // Organization level change
-  const eventOrgLevel = document.getElementById('eventOrgLevel');
-  if (eventOrgLevel) {
-    eventOrgLevel.addEventListener('change', function() {
-      updateOrgIdDropdown(this.value);
-    });
-  }
+  // Organization level change is now handled by the custom dropdown onclick
+  // The selectOrgLevel function in calendar.html calls updateOrgIdDropdown
   
   // All day checkbox
   const allDayCheckbox = document.getElementById('eventAllDay');

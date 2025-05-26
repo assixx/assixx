@@ -16,8 +16,6 @@ const dbConfig = {
   charset: 'utf8mb4'
 };
 
-console.log("KVP Model geladen - Benutze DB:", process.env.DB_NAME);
-
 class KVPModel {
   // Helper method to get database connection
   static async getConnection() {
@@ -385,9 +383,9 @@ class KVPModel {
         try {
           // file_path is already absolute, use it directly
           await fs.unlink(attachment.file_path);
-          console.log(`Deleted attachment file: ${attachment.file_path}`);
+
         } catch (fileError) {
-          console.warn(`Could not delete attachment file: ${attachment.file_path}`, fileError.message);
+
         }
       }
       

@@ -9,7 +9,7 @@
     --background-dark: #121212;
     --background-light: #1E1E1E;
     --text-primary: #FFFFFF;
-    --text-secondary: #B0B0B0;
+    --text-secondary: #ffffff;
     --border-color: #333333;
     --success-color: #4CAF50;
     --error-color: #F44336;
@@ -588,7 +588,7 @@ body {
 .main-content {
     flex: 1;
     padding: var(--spacing-lg);
-    background-color: var(--background-dark);
+    
 }
 
 .content-section {

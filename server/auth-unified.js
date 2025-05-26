@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_nur_fuer_entwicklu
  * Benutzerauthentifizierung mit Benutzername/E-Mail und Passwort
  */
 async function authenticateUser(usernameOrEmail, password) {
-  console.log(`Attempting to authenticate user: ${usernameOrEmail}`);
+
   try {
     // Try to find user by username first
     let user = await User.findByUsername(usernameOrEmail);
@@ -27,16 +27,16 @@ async function authenticateUser(usernameOrEmail, password) {
     }
     
     if (!user) {
-      console.log(`User not found: ${usernameOrEmail}`);
+
       return null;
     }
     
     const isValid = await bcrypt.compare(password, user.password);
     if (isValid) {
-      console.log(`User authenticated successfully: ${user.username}`);
+
       return user;
     } else {
-      console.log(`Invalid password for user: ${user.username}`);
+
       return null;
     }
   } catch (error) {
@@ -49,14 +49,14 @@ async function authenticateUser(usernameOrEmail, password) {
  * Token-Generierung für authentifizierte Benutzer
  */
 function generateToken(user) {
-  console.log(`Generating token for user: ${user.username}`);
+
   try {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
-    console.log(`Token generated successfully for user: ${user.username}`);
+
     return token;
   } catch (error) {
     console.error(`Error generating token for user ${user.username}:`, error);
@@ -68,25 +68,22 @@ function generateToken(user) {
  * Middleware zur Token-Authentifizierung
  */
 function authenticateToken(req, res, next) {
-  console.log('Entering authenticateToken middleware for:', req.originalUrl);
+
   const authHeader = req.headers['authorization'];
-  console.log('Auth header:', authHeader ? authHeader.substring(0, 20) + '...' : 'undefined');
-  
+
   const token = authHeader && authHeader.split(' ')[1];
-  console.log('Extracted token:', token ? token.substring(0, 20) + '...' : 'null');
 
   if (token == null) {
-    console.log('No token provided, sending 401');
+
     return res.status(401).json({ error: 'Authentication token required' });
   }
   
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      console.log('Token verification failed:', err.message);
-      console.log('Error details:', err);
+
       return res.status(403).json({ error: 'Invalid or expired token', details: err.message });
     }
-    console.log('Token verified successfully. User:', user);
+
     req.user = user;
     next();
   });
@@ -97,9 +94,7 @@ function authenticateToken(req, res, next) {
  */
 function authorizeRole(role) {
   return (req, res, next) => {
-    console.log('User role:', req.user.role);
-    console.log('Required role:', role);
-    
+
     // Root hat Zugriff auf alles
     if (req.user.role === 'root') {
       return next();

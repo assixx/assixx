@@ -38,11 +38,7 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen mit folgen
 - **Schichtplanung** - Erweiterte Personalplanung
 
 ### 🔧 Technologie-Stack
-- **Backend**: Node.js, Express.js
-- **Datenbank**: MySQL 8.0+ mit Multi-Tenant-Isolation
-- **Frontend**: Vanilla JavaScript, Bootstrap 5
-- **Authentifizierung**: JWT mit Tenant-Isolation
-- **Architektur**: REST API, WebSocket für Echtzeit-Features
+Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Details.
 
 ---
 

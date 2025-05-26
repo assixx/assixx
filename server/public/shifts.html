@@ -47,6 +47,14 @@
                         inset -1px 0 0 rgba(255, 255, 255, 0.1);
         }
         
+        /* Main content area - wie calendar.html */
+        .main-content {
+            padding: var(--spacing-lg);
+            width: 100%;
+            overflow-y: auto;
+            height: calc(100vh - 56px);
+        }
+        
         /* Custom styles for shift planning interface - Glassmorphismus Design */
         .shift-planning-container {
             max-width: 1400px;
@@ -108,8 +116,9 @@
         .info-select {
             width: 100%;
             padding: var(--spacing-sm);
-            background: var(--background-dark);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: var(--radius-sm);
             color: var(--text-primary);
             font-size: 14px;
@@ -129,7 +138,7 @@
         }
 
         .info-select option {
-            background: var(--background-dark);
+            background: rgba(18, 18, 18, 0.95);
             color: var(--text-primary);
             padding: var(--spacing-sm);
         }
@@ -140,11 +149,13 @@
             align-items: center;
             gap: var(--spacing-lg);
             padding: var(--spacing-lg);
-            background: var(--background-dark);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
             border-radius: var(--radius-md);
             margin-bottom: var(--spacing-xl);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .week-nav-btn {
@@ -178,42 +189,46 @@
         }
 
         .week-schedule {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .schedule-header {
-            background: var(--background-dark);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
             color: var(--text-primary);
             padding: var(--spacing-md);
             display: grid;
             grid-template-columns: 120px repeat(6, 1fr);
             gap: 2px;
             font-weight: 600;
-            border-bottom: 2px solid var(--border-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .day-header {
             text-align: center;
             padding: var(--spacing-md) var(--spacing-xs);
-            background: var(--background-dark);
+            background: rgba(255, 255, 255, 0.04);
             color: var(--primary-color);
             border-radius: var(--radius-sm);
+            backdrop-filter: blur(5px);
         }
 
         .shift-row {
             display: grid;
             grid-template-columns: 120px repeat(6, 1fr);
             gap: 2px;
-            background: var(--background-dark);
+            background: transparent;
             padding: 2px;
         }
 
         .shift-label {
-            background: var(--background-dark);
+            background: rgba(255, 255, 255, 0.03);
             color: var(--text-primary);
             padding: var(--spacing-md);
             display: flex;
@@ -224,19 +239,22 @@
             font-size: 13px;
             text-align: center;
             border-radius: var(--radius-sm);
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             min-height: 85px;
+            backdrop-filter: blur(5px);
         }
 
         .shift-info-area {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-sm);
             padding: var(--spacing-md);
             margin-top: 2px;
             min-height: 120px;
             display: flex;
             flex-direction: column;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .shift-info-title {
@@ -251,8 +269,9 @@
 
         .shift-info-textarea {
             flex: 1;
-            background: var(--background-dark);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: var(--radius-sm);
             color: var(--text-primary);
             padding: var(--spacing-sm);
@@ -273,15 +292,16 @@
         }
 
         .shift-info-area.readonly .shift-info-textarea {
-            background: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
             cursor: default;
             resize: none;
         }
 
         .shift-cell {
-            background: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(5px);
             min-height: 85px;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             position: relative;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -342,11 +362,13 @@
         }
 
         .employee-sidebar {
-            background: var(--background-light);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: var(--radius-lg);
             padding: var(--spacing-lg);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         .sidebar-title {
@@ -363,12 +385,13 @@
 
         .employee-item {
             padding: var(--spacing-md);
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: var(--radius-md);
             margin-bottom: var(--spacing-md);
             cursor: grab;
             transition: all 0.3s ease;
-            background: var(--background-dark);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(5px);
             user-select: none;
         }
 
@@ -452,10 +475,12 @@
             margin-top: var(--spacing-xl);
             text-align: center;
             padding: var(--spacing-lg);
-            background: var(--background-dark);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
             border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .admin-btn {

@@ -7,13 +7,11 @@ const USE_MOCK_DB = process.env.USE_MOCK_DB === 'true';
 let pool;
 
 if (USE_MOCK_DB) {
-  console.log('VERWENDE MOCK-DATENBANK FÜR ENTWICKLUNG');
-  
+
   // Mock-Implementierung
   const mockDb = {
     async query(sql, params) {
-      console.log('MOCK DB QUERY:', sql);
-      
+
       // Einfache Mock-Daten für Entwicklung
       if (sql.includes('SELECT * FROM users WHERE role = "employee"')) {
         return [[
@@ -65,22 +63,22 @@ if (USE_MOCK_DB) {
       }
       else if (sql.includes('UPDATE users SET') && sql.includes('WHERE id = ?')) {
         // Mock für update
-        console.log('MOCK DB: Updating user', params);
+
         return [{ affectedRows: 1 }];
       }
       else if (sql.includes('INSERT INTO users')) {
         // Mock für create
-        console.log('MOCK DB: Creating user', params);
+
         return [{ insertId: 4 }];
       }
       else if (sql.includes('DELETE FROM users WHERE id = ?')) {
         // Mock für delete
-        console.log('MOCK DB: Deleting user', params);
+
         return [{ affectedRows: 1 }];
       }
       
       // Standardantwort für nicht implementierte Abfragen
-      console.warn('MOCK DB: Unimplementierte Abfrage:', sql);
+
       return [[]];
     }
   };
@@ -89,9 +87,7 @@ if (USE_MOCK_DB) {
 } else {
   // Echte Datenbankverbindung
   try {
-    console.log('Verbindung zur Datenbank wird hergestellt...');
-    console.log(`Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, Database: ${process.env.DB_NAME}`);
-    
+
     const config = {
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
@@ -116,7 +112,7 @@ if (USE_MOCK_DB) {
     };
     
     pool = mysql.createPool(config);
-    console.log('Datenbank-Verbindung hergestellt');
+
   } catch (error) {
     console.error('Fehler beim Verbinden mit der Datenbank:', error);
   }

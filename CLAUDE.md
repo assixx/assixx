@@ -1,5 +1,23 @@
 # Assixx Project Instructions for Claude
 
+## 🚨 WICHTIG: TODO-LISTE ZUERST LESEN!
+
+**IMMER als erstes die TODO.md Datei lesen**, bevor mit der Arbeit begonnen wird:
+- Die TODO.md enthält alle aktuellen und erledigten Aufgaben
+- Zeigt Prioritäten und aktuelle Arbeitsstände
+- Verhindert doppelte Arbeit
+- Gibt Überblick über das gesamte Projekt
+
+```bash
+# Erste Aktion bei jedem Start:
+cat /home/scs/projects/Assixx/TODO.md
+```
+
+## 📋 Wichtige Hinweise für Claude AI
+
+Diese Datei enthält spezielle Anweisungen für AI-Assistenten.
+Entwickler-Guidelines siehe [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md)
+
 ## 📝 CODE-KOMMENTIERUNG STANDARDS (IMMER BEFOLGEN!)
 
 ### Kommentierungs-Regeln:
@@ -288,6 +306,208 @@ transform: translateY(-1px);
 </div>
 ```
 
+### Modal Design Standards (PERFEKTES DESIGN!)
+
+#### 1. Modal Container (.modal):
+```css
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+```
+
+#### 2. Modal Content (.modal-content):
+```css
+.modal-content {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: fadeInUp 0.3s ease-out;
+}
+```
+
+#### 3. Modal Header (.modal-header):
+```css
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+```
+
+#### 4. Modal Title (.modal-title):
+```css
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+}
+```
+
+#### 5. Modal Close Button (.modal-close):
+```css
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background-color: var(--background-dark);
+    color: var(--error-color);
+}
+```
+
+#### 6. Modal Form Styling:
+```css
+.modal form {
+    padding: var(--spacing-lg);
+}
+
+/* Form Groups innerhalb des Modals */
+.modal .form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+/* Form Controls mit Glassmorphismus */
+.modal .form-control {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.modal .form-control:focus {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 142, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15),
+                inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    outline: none;
+}
+```
+
+#### 7. Modal Button Group:
+```css
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Primary Button im Modal */
+.modal .btn-primary {
+    background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+    border-color: rgba(0, 142, 255, 0.3);
+}
+
+/* Secondary Button im Modal */
+.modal .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--primary-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+```
+
+#### HTML Struktur Beispiel:
+```html
+<!-- Department Modal Beispiel -->
+<div id="department-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Neue Abteilung</h3>
+            <button class="modal-close" onclick="hideModal('department-modal')">&times;</button>
+        </div>
+        <form id="department-form">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Beschreibung</label>
+                <textarea name="description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Erstellen</button>
+                <button type="button" class="btn btn-secondary" onclick="hideModal('department-modal')">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+</div>
+```
+
+#### JavaScript Modal Functions:
+```javascript
+// Modal anzeigen
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Modal verstecken
+function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Modal bei Klick außerhalb schließen
+window.addEventListener('click', function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+});
+```
+
+#### WICHTIGE HINWEISE:
+- **ALLE Modals** müssen diesem Design folgen - keine Ausnahmen!
+- Glassmorphismus-Effekt ist PFLICHT (backdrop-filter)
+- FadeInUp Animation für smooth appearance
+- Modal-close Button mit Hover-Effekt
+- Form Controls mit subtiler Transparenz
+- Buttons mit Gradient und Hover-Effekten
+- IMMER responsive (max-width: 500px, width: 90%)
+- Overflow-y: auto für lange Formulare
+- Z-index: 1000 für korrekte Schichtung
+
 ### Compact-Cards Design (Admin Dashboard):
 ```css
 /* Compact-Card Container */
@@ -526,25 +746,12 @@ document.addEventListener('DOMContentLoaded', () => {
 2. Chat System Checkup
 3. Survey Tool fertigstellen
 
-### 🔧 Technische Details
-- Multi-Tenant SaaS für Industriefirmen
-- Node.js/Express Backend
-- MySQL mit Tenant-Isolation
-- Feature-Management System
-
-### 🌐 Wichtige URLs
-- GitHub: https://github.com/SCS-Technik/Assixx
-- Lokale Dev: http://localhost:3000
-
-### 📊 Aktuelle Features
-- ✅ Benutzer-Management (Root/Admin/Employee)
-- ✅ Dokumenten-System
-- ✅ Schwarzes Brett
-- ✅ Kalender
-- ✅ KVP-System
-- ✅ Schichtplanung
-- ✅ Chat-System (VOLLSTÄNDIG FUNKTIONSFÄHIG)
-- 🔄 Umfragen (in Arbeit)
+### 🔧 Projekt-Übersicht
+- **Was**: Multi-Tenant SaaS für Industriefirmen
+- **Tech Stack**: Siehe [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **Features**: Siehe [FEATURES.md](./FEATURES.md)
+- **GitHub**: https://github.com/SCS-Technik/Assixx
+- **Lokale Dev**: http://localhost:3000
 
 ---
 

@@ -18,7 +18,6 @@ class ChatWebSocketServer {
       this.handleConnection(ws, request);
     });
 
-    console.log('Chat WebSocket Server initialisiert');
   }
 
   async handleConnection(ws, request) {
@@ -46,8 +45,6 @@ class ChatWebSocketServer {
 
       // Verbindung in Map speichern
       this.clients.set(userId, ws);
-
-      console.log(`Chat WebSocket Verbindung für Benutzer ${userId} hergestellt`);
 
       // Event-Handler registrieren
       ws.on('message', (data) => this.handleMessage(ws, data));
@@ -94,7 +91,7 @@ class ChatWebSocketServer {
           this.sendMessage(ws, { type: 'pong', data: { timestamp: new Date().toISOString() } });
           break;
         default:
-          console.warn('Unbekannter WebSocket Message Type:', message.type);
+
       }
     } catch (error) {
       console.error('Fehler beim Verarbeiten der WebSocket Nachricht:', error);
@@ -125,12 +122,11 @@ class ChatWebSocketServer {
       const [participants] = await db.query(participantQuery, [conversationId, ws.tenantId]);
       
       const participantIds = participants.map(p => p.user_id);
-      console.log(`Found participants: ${JSON.stringify(participantIds)}, current user: ${ws.userId}`);
-      
+
       // Convert IDs to strings for comparison since ws.userId might be a string
       const participantIdsStr = participantIds.map(id => String(id));
       if (!participantIdsStr.includes(String(ws.userId))) {
-        console.log(`User ${ws.userId} not found in participants list`);
+
         this.sendMessage(ws, {
           type: 'error',
           data: { message: 'Keine Berechtigung für diese Unterhaltung' }
@@ -319,8 +315,7 @@ class ChatWebSocketServer {
   async handleDisconnection(ws) {
     if (ws.userId) {
       this.clients.delete(ws.userId);
-      console.log(`Chat WebSocket Verbindung für Benutzer ${ws.userId} getrennt`);
-      
+
       // Offline-Status senden
       await this.broadcastUserStatus(ws.userId, ws.tenantId, 'offline');
     }

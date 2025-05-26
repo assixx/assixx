@@ -128,8 +128,6 @@ router.post('/plans', authenticateToken, async (req, res) => {
       created_by: req.user.id
     };
 
-    console.log('Creating shift plan with data:', planData);
-
     // Use the actual model function
     const plan = await Shift.createShiftPlan(planData);
     res.status(201).json({ 

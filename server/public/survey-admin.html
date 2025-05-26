@@ -7,6 +7,8 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/dashboard-theme.css">
     <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
+    <!-- Font Awesome CDN als Fallback -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         /* Glassmorphismus Design-Standards */
         
@@ -210,33 +212,39 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
             z-index: 1000;
-            overflow-y: auto;
+            justify-content: center;
+            align-items: center;
         }
 
         .modal-content {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: var(--radius-lg);
-            margin: 50px auto;
-            padding: var(--spacing-xl);
-            max-width: 800px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeInUp 0.3s ease-out;
+            padding: 0;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .modal-title {
-            font-size: 1.5rem;
+            font-size: 20px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--primary-color);
         }
 
         .close-btn {
@@ -253,6 +261,17 @@
         .close-btn:hover {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
+        }
+        
+        .modal-content form {
+            padding: var(--spacing-lg);
+        }
+        
+        .modal-content .form-actions {
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            margin: 0 calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+            background: rgba(255, 255, 255, 0.02);
         }
 
         /* Question Builder */
@@ -709,7 +728,6 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            loadNavigation();
             loadSurveys();
             loadTemplates();
         });
@@ -849,7 +867,7 @@
             document.getElementById('questionsList').innerHTML = '';
             questionCounter = 0;
             addQuestion(); // Add first question by default
-            document.getElementById('surveyModal').style.display = 'block';
+            document.getElementById('surveyModal').style.display = 'flex';
         }
 
         // Close modal
@@ -1072,7 +1090,7 @@
                     populateSurveyForm(survey);
                     currentSurveyId = surveyId;
                     document.getElementById('modalTitle').textContent = 'Umfrage bearbeiten';
-                    document.getElementById('surveyModal').style.display = 'block';
+                    document.getElementById('surveyModal').style.display = 'flex';
                 }
             } catch (error) {
                 console.error('Error loading survey:', error);

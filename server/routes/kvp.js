@@ -18,8 +18,6 @@ function getTenantId(user) {
   return user.tenant_id || user.tenantId || 1;
 }
 
-console.log("KVP API Routes geladen - Benutze Standard-DB:", process.env.DB_NAME);
-
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: async function (req, file, cb) {

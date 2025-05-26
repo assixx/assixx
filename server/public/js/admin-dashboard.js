@@ -3,8 +3,7 @@ let token;
 
 document.addEventListener('DOMContentLoaded', () => {
     token = localStorage.getItem('token');
-    console.log('Token from localStorage:', token);
-    
+
     // Temporär deaktiviert: Auch ohne Token weitermachen (für Testzwecke)
     // if (!token) {
     //     console.log('No token found, redirecting to login');
@@ -14,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Für Testzwecke ohne Token
     if (!token) {
-        console.log('No token found, but continuing for test purposes');
+
         token = 'test-mode';
     }
     
@@ -81,31 +80,30 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Event-Listener für Mitarbeiter-Buttons
     if (newEmployeeBtn) {
-        console.log('New employee button found, adding event listener');
+
         newEmployeeBtn.addEventListener('click', function() {
-            console.log('New employee button clicked');
+
             showNewEmployeeModal();
         });
     } else {
-        console.warn('New employee button not found');
+
     }
     
     if (employeesSectionNewBtn) {
-        console.log('Employees section new button found, adding event listener');
+
         employeesSectionNewBtn.addEventListener('click', function() {
-            console.log('Employees section new button clicked');
+
             showNewEmployeeModal();
         });
     } else {
-        console.warn('Employees section new button not found');
+
     }
     
     // Funktion zum Anzeigen des Mitarbeiter-Modals
     function showNewEmployeeModal() {
         const modal = document.getElementById('employee-modal');
         if (modal) {
-            console.log('Found employee-modal, showing it');
-            
+
             // Formular zurücksetzen, falls es bereits benutzt wurde
             const form = document.getElementById('create-employee-form');
             if (form) {
@@ -132,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial loads - add slight delay to ensure DOM is ready
     setTimeout(() => {
-        console.log('Starting initial data load...');
+
         loadDashboardStats();
         loadRecentEmployees();
         loadRecentDocuments();
@@ -143,16 +141,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load Dashboard Statistics
     async function loadDashboardStats() {
-        console.log('Loading dashboard stats...');
-        
+
         try {
             // Direkt den Test-Endpunkt verwenden
             const statsRes = await fetch('/test/db/counts');
             
             if (statsRes.ok) {
                 const stats = await statsRes.json();
-                console.log('Received dashboard stats:', stats);
-                
+
                 // Update UI mit den Statistiken aus dem Testendpunkt
                 document.getElementById('employee-count').textContent = stats.employees || 0;
                 document.getElementById('document-count').textContent = stats.documents || 0;
@@ -179,8 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Fallback-Funktion, die Statistiken einzeln lädt
     async function loadDashboardStatsIndividually() {
-        console.log('Loading stats individually as fallback...');
-        
+
         // Mitarbeiter
         try {
             const employeesRes = await fetch('/admin/employees', { 
@@ -188,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (employeesRes.ok) {
                 const employees = await employeesRes.json();
-                console.log(`Loaded ${employees.length} employees`);
+
                 document.getElementById('employee-count').textContent = employees.length;
             } else {
                 console.error('Failed to load employees', employeesRes.statusText);
@@ -204,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (documentsRes.ok) {
                 const documents = await documentsRes.json();
-                console.log(`Loaded ${documents.length} documents`);
+
                 document.getElementById('document-count').textContent = documents.length;
             } else {
                 console.error('Failed to load documents', documentsRes.statusText);
@@ -220,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (departmentsRes.ok) {
                 const departments = await departmentsRes.json();
-                console.log(`Loaded ${departments.length} departments`);
+
                 const deptCountElement = document.getElementById('department-count');
                 if (deptCountElement) {
                     deptCountElement.textContent = departments.length;
@@ -239,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (teamsRes.ok) {
                 const teams = await teamsRes.json();
-                console.log(`Loaded ${teams.length} teams`);
+
                 document.getElementById('team-count').textContent = teams.length;
             } else {
                 console.error('Failed to load teams', teamsRes.statusText);
@@ -306,8 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
             employeeData.department_id = null;
         }
 
-        console.log('Sending employee data:', employeeData);
-        
         try {
             const response = await fetch('/admin/create-employee', {
                 method: 'POST',
@@ -338,16 +331,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load Recent Employees
     async function loadRecentEmployees() {
-        console.log('Loading recent employees...');
-        
+
         try {
             // Direkt den Test-Endpunkt verwenden
             const response = await fetch('/test/db/employees');
 
             if (response.ok) {
                 const employees = await response.json();
-                console.log(`Received ${employees.length} employees from server`);
-                
+
                 // Sicherstellen, dass wir ein Array haben
                 if (!Array.isArray(employees)) {
                     console.error('Expected employees to be an array, got:', typeof employees);
@@ -356,8 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Nehme die neuesten 5 Mitarbeiter und kehre die Reihenfolge um
                 const recentEmployees = employees.slice(-5).reverse();
-                console.log(`Displaying ${recentEmployees.length} recent employees`);
-                
+
                 // Update the employee box on dashboard
                 const container = document.getElementById('recent-employees');
                 if (container) {
@@ -372,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `).join('');
                     }
                 } else {
-                    console.warn('recent-employees container not found');
+
                 }
 
                 // Update the recent employees list in "Recently Added" section
@@ -386,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `).join('');
                     }
                 } else {
-                    console.warn('recent-employees-list not found');
+
                 }
             } else {
                 console.error('Failed to load employees:', response.statusText);
@@ -431,16 +421,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load Departments
     async function loadDepartments() {
-        console.log('Loading departments...');
-        
+
         try {
             // Direkt den Test-Endpunkt verwenden
             const response = await fetch('/test/db/departments');
 
             if (response.ok) {
                 const departments = await response.json();
-                console.log(`Received ${departments.length} departments from server`);
-                
+
                 // Sicherstellen, dass wir ein Array haben
                 if (!Array.isArray(departments)) {
                     console.error('Expected departments to be an array, got:', typeof departments);
@@ -461,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `).join('');
                     }
                 } else {
-                    console.warn('department-list container not found');
+
                 }
                 
                 // Aktualisiere auch die Abteilungen für Auswahlfelder
@@ -635,7 +623,7 @@ async function loadEmployeesTable(filter = '') {
 
             if (response.ok) {
                 allEmployees = await response.json();
-                console.log(`Loaded ${allEmployees.length} employees`);
+
             } else {
                 console.error('Failed to load employees');
                 return;
@@ -788,7 +776,7 @@ async function loadDocumentsTable(filter = '') {
 
             if (response.ok) {
                 allDocuments = await response.json();
-                console.log(`Loaded ${allDocuments.length} documents`);
+
             } else {
                 console.error('Failed to load documents');
                 return;
@@ -1080,8 +1068,7 @@ async function loadDepartmentsForSelectElement(selectElement, token) {
 
 // Lade Abteilungen für das Mitarbeiterformular
 async function loadDepartmentsForEmployeeSelect() {
-    console.log('Loading departments for employee select...');
-    
+
     const token = localStorage.getItem('token');
     const select = document.getElementById('employee-department-select');
     
@@ -1095,8 +1082,7 @@ async function loadDepartmentsForEmployeeSelect() {
             
             if (response.ok) {
                 const departments = await response.json();
-                console.log(`Loaded ${departments.length} departments for select`);
-                
+
                 // Sicherstellen, dass wir ein Array haben
                 if (!Array.isArray(departments)) {
                     console.error('Expected departments to be an array, got:', typeof departments);
@@ -1121,7 +1107,7 @@ async function loadDepartmentsForEmployeeSelect() {
             select.innerHTML = '<option value="">Fehler beim Laden der Abteilungen</option>';
         }
     } else {
-        console.warn('employee-department-select not found');
+
     }
 }
 
@@ -1626,10 +1612,10 @@ async function deleteTeam(teamId) {
 
 // Global hideModal function
 function hideModal(modalId) {
-    console.log('hideModal called for:', modalId);
+
     const modal = document.getElementById(modalId);
     if (modal) {
-        console.log('Modal element found in hideModal, hiding it');
+
         modal.style.display = 'none';
     } else {
         console.error('Modal element not found in hideModal:', modalId);
@@ -1762,32 +1748,32 @@ async function deleteDocument(documentId) {
 
 // Funktionen für "Alle anzeigen" Links
 function showAllEmployees() {
-    console.log('Show all employees');
+
     showSection('employees');
     loadEmployeesTable('all');
 }
 
 function showAllDocuments() {
-    console.log('Show all documents');
+
     showSection('documents');
     loadDocumentsTable('all');
 }
 
 function showAllDepartments() {
-    console.log('Show all departments');
+
     showSection('departments');
     loadDepartmentsTable();
 }
 
 function showAllTeams() {
-    console.log('Show all teams');
+
     showSection('teams');
     loadTeamsTable();
 }
 
 // Globale Funktion für onclick-Events in HTML
 function showEmployeeModal() {
-    console.log('showEmployeeModal called from HTML');
+
     // Diese Funktion wird direkt in HTML-onClick-Attributen verwendet
     // Wir leiten den Aufruf an unsere detaillierte Implementierung weiter
     if (typeof showNewEmployeeModal === 'function') {
@@ -1796,7 +1782,7 @@ function showEmployeeModal() {
         // Fallback, falls die Hauptfunktion nicht verfügbar ist
         const modal = document.getElementById('employee-modal');
         if (modal) {
-            console.log('Found employee-modal, showing it directly');
+
             modal.style.display = 'flex';
             
             // Lade die Abteilungen für das Formular, wenn möglich

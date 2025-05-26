@@ -16,7 +16,6 @@ function getTenantId(user) {
 }
 
 // Debug log zum Überwachen der Datenbankverbindungen
-console.log("Calendar API Routes geladen - Benutze Standard-DB:", process.env.DB_NAME);
 
 // Helper function to check if user can manage the event
 async function canManageEvent(req, res, next) {
@@ -165,9 +164,7 @@ router.post('/api/calendar',
     try {
       // Get tenant ID from user object
       const tenantId = getTenantId(req.user);
-      
-      console.log(`Creating calendar event with tenant ID: ${tenantId} for user ${req.user.username}`);
-      
+
       // Die org_id muss als Zahl vorliegen
       let org_id = req.body.org_id;
       if (typeof org_id === 'string') {
@@ -188,9 +185,7 @@ router.post('/api/calendar',
         reminder_time: req.body.reminder_time,
         color: req.body.color
       };
-      
-      console.log("Calendar event data:", eventData);
-      
+
       // Validate required fields
       if (!eventData.title || !eventData.start_time || !eventData.end_time || 
           !eventData.org_level || !eventData.org_id) {
@@ -264,8 +259,7 @@ router.put('/api/calendar/:id',
           return res.status(400).json({ message: 'Start time must be before end time' });
         }
       }
-      
-      console.log('Updating event with data:', eventData);
+
       const updatedEvent = await calendarModel.updateEvent(
         req.params.id, 
         eventData, 

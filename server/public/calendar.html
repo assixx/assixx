@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/dashboard-theme.css">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <!-- FullCalendar CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
   <!-- Calendar spezifische Styles -->
@@ -81,21 +82,48 @@
     
     /* Modal Overlays - Glassmorphismus */
     .modal-overlay {
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(10px);
     }
     
     .modal-container {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(18, 18, 18, 0.95);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
                     inset 0 1px 0 rgba(255, 255, 255, 0.1);
         animation: fadeInUp 0.3s ease-out;
     }
     
+    /* Modal-lg spezielle Anpassungen */
+    .modal-lg {
+        max-height: 85vh !important;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .modal-lg .modal-body {
+        max-height: calc(85vh - 120px);
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    /* Form in Modal scrollbar */
+    .modal-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .modal-body::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+    
     /* Form Controls mit Glassmorphismus */
-    .form-control, select, input[type="text"], input[type="date"], input[type="time"], textarea {
+    .form-control, input[type="text"], input[type="date"], input[type="time"], textarea {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -103,12 +131,55 @@
         transition: all 0.3s ease;
     }
     
-    .form-control:focus, select:focus, input:focus, textarea:focus {
+    .form-control:focus, input:focus, textarea:focus {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(0, 142, 255, 0.5);
         box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15),
                     inset 0 1px 2px rgba(0, 0, 0, 0.2);
         outline: none;
+    }
+    
+    /* Select Dropdowns - Glassmorphismus wie in signup.html */
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #fff;
+        transition: all 0.3s ease;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 14px;
+        padding-right: 32px;
+        cursor: pointer;
+    }
+    
+    select:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    select:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15),
+                    inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+    }
+    
+    select option {
+        background: rgba(18, 18, 18, 0.95);
+        color: var(--text-primary);
+        padding: 8px;
+    }
+    
+    select:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-image: none;
     }
     
     /* Buttons mit Glassmorphismus und Shine-Effekt */
@@ -188,6 +259,192 @@
             transform: translateY(0);
         }
     }
+    
+    /* Custom Select Dropdowns - Glassmorphismus wie in signup.html */
+    .custom-select-wrapper {
+        position: relative;
+        width: 100%;
+    }
+    
+    .custom-select-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+    
+    .custom-select-display:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .custom-select-display.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+    }
+    
+    .custom-select-display.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .custom-select-display svg {
+        opacity: 0.6;
+        transition: transform 0.3s ease;
+    }
+    
+    .custom-select-display.active svg {
+        transform: rotate(180deg);
+    }
+    
+    /* Custom Dropdown - Transparentes Glassmorphismus */
+    .custom-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.8);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 280px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .custom-dropdown.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    .dropdown-option {
+        padding: 12px 16px;
+        color: var(--text-primary);
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .dropdown-option:last-child {
+        border-bottom: none;
+    }
+    
+    .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 20px;
+    }
+    
+    .dropdown-option:active {
+        background: rgba(33, 150, 243, 0.3);
+    }
+    
+    /* Scrollbar für Dropdown */
+    .custom-dropdown::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .custom-dropdown::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .custom-dropdown::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+    }
+    
+    .custom-dropdown::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Search Input Styling - Glassmorphismus */
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        min-width: 250px;
+    }
+    
+    .search-input-wrapper:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .search-input-wrapper:focus-within {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15),
+                    inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .search-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 10px 15px;
+        color: var(--text-primary);
+        font-size: 14px;
+        outline: none;
+    }
+    
+    .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 14px;
+    }
+    
+    .search-button {
+        background: transparent;
+        border: none;
+        padding: 10px 15px;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .search-button:hover {
+        color: var(--primary-color);
+        background: rgba(33, 150, 243, 0.1);
+    }
+    
+    .search-button:active {
+        background: rgba(33, 150, 243, 0.2);
+    }
+    
+    .search-button i {
+        font-size: 16px;
+    }
+    
+    /* When search has content, highlight button */
+    .search-input:not(:placeholder-shown) ~ .search-button {
+        color: var(--primary-color);
+    }
   </style>
     <link rel="stylesheet" href="/css/user-info-update.css">
 </head>
@@ -252,9 +509,9 @@
             
             <div class="form-group">
               <label for="searchInput" class="form-label">Suche</label>
-              <div class="flex gap-1">
-                <input type="text" id="searchInput" class="form-input" placeholder="Suchbegriff...">
-                <button class="btn btn-primary" type="button" id="searchButton">
+              <div class="search-input-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Termine durchsuchen...">
+                <button class="search-button" type="button" id="searchButton">
                   <i class="fas fa-search"></i>
                 </button>
               </div>
@@ -398,20 +655,37 @@
           
           <!-- Organisationseinheit -->
           <div class="form-group large-form-group">
-            <label for="eventOrgLevel" class="big-label">Wer soll den Termin sehen?</label>
-            <select class="big-input" id="eventOrgLevel" required>
-              <option value="" disabled selected>-- Bitte wählen --</option>
-              <option value="company">Alle Mitarbeiter</option>
-              <option value="department">Bestimmte Abteilung</option>
-              <option value="team">Bestimmtes Team</option>
-            </select>
+            <label class="big-label">Wer soll den Termin sehen?</label>
+            <div class="custom-select-wrapper" id="orgLevelWrapper">
+              <div class="custom-select-display" onclick="toggleOrgLevelDropdown()">
+                <span id="selectedOrgLevel">-- Bitte wählen --</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="custom-dropdown" id="orgLevelDropdown">
+                <div class="dropdown-option" onclick="selectOrgLevel('company', 'Alle Mitarbeiter')">Alle Mitarbeiter</div>
+                <div class="dropdown-option" onclick="selectOrgLevel('department', 'Bestimmte Abteilung')">Bestimmte Abteilung</div>
+                <div class="dropdown-option" onclick="selectOrgLevel('team', 'Bestimmtes Team')">Bestimmtes Team</div>
+              </div>
+            </div>
+            <input type="hidden" id="eventOrgLevel" required>
           </div>
           
           <div class="form-group large-form-group">
-            <label for="eventOrgId" class="big-label">Welche Abteilung/Team?</label>
-            <select class="big-input" id="eventOrgId" required disabled>
-              <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
-            </select>
+            <label class="big-label">Welche Abteilung/Team?</label>
+            <div class="custom-select-wrapper" id="orgIdWrapper">
+              <div class="custom-select-display disabled" id="orgIdDisplay" onclick="toggleOrgIdDropdown()">
+                <span id="selectedOrgId">-- Bitte erst oben auswählen --</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="custom-dropdown" id="orgIdDropdown">
+                <!-- Wird dynamisch befüllt -->
+              </div>
+            </div>
+            <input type="hidden" id="eventOrgId" required>
           </div>
           
           <!-- Farbe und Erinnerung -->
@@ -431,16 +705,25 @@
           </div>
           
           <div class="form-group large-form-group">
-            <label for="eventReminderTime" class="big-label">Erinnerung</label>
-            <select class="big-input" id="eventReminderTime">
-              <option value="">Keine Erinnerung</option>
-              <option value="5">5 Minuten vorher</option>
-              <option value="15">15 Minuten vorher</option>
-              <option value="30">30 Minuten vorher</option>
-              <option value="60">1 Stunde vorher</option>
-              <option value="120">2 Stunden vorher</option>
-              <option value="1440">1 Tag vorher</option>
-            </select>
+            <label class="big-label">Erinnerung</label>
+            <div class="custom-select-wrapper" id="reminderWrapper">
+              <div class="custom-select-display" onclick="toggleReminderDropdown()">
+                <span id="selectedReminder">Keine Erinnerung</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="custom-dropdown" id="reminderDropdown">
+                <div class="dropdown-option" onclick="selectReminder('', 'Keine Erinnerung')">Keine Erinnerung</div>
+                <div class="dropdown-option" onclick="selectReminder('5', '5 Minuten vorher')">5 Minuten vorher</div>
+                <div class="dropdown-option" onclick="selectReminder('15', '15 Minuten vorher')">15 Minuten vorher</div>
+                <div class="dropdown-option" onclick="selectReminder('30', '30 Minuten vorher')">30 Minuten vorher</div>
+                <div class="dropdown-option" onclick="selectReminder('60', '1 Stunde vorher')">1 Stunde vorher</div>
+                <div class="dropdown-option" onclick="selectReminder('120', '2 Stunden vorher')">2 Stunden vorher</div>
+                <div class="dropdown-option" onclick="selectReminder('1440', '1 Tag vorher')">1 Tag vorher</div>
+              </div>
+            </div>
+            <input type="hidden" id="eventReminderTime" value="">
           </div>
           
           <!-- Teilnehmer -->
@@ -624,6 +907,120 @@
   <!-- Calendar Scripts -->
   <!-- Unified Navigation -->
   <script src="/js/components/unified-navigation.js"></script>
+  
+  <!-- Custom Dropdown Functions -->
+  <script>
+    // Custom Dropdown Functions für Calendar
+    let activeDropdown = null;
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (activeDropdown && !e.target.closest('.custom-select-wrapper')) {
+        closeAllDropdowns();
+      }
+    });
+    
+    function closeAllDropdowns() {
+      document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+        dropdown.classList.remove('active');
+      });
+      document.querySelectorAll('.custom-select-display').forEach(display => {
+        display.classList.remove('active');
+      });
+      activeDropdown = null;
+    }
+    
+    // Org Level Dropdown
+    function toggleOrgLevelDropdown() {
+      const dropdown = document.getElementById('orgLevelDropdown');
+      const display = dropdown.previousElementSibling;
+      
+      if (dropdown.classList.contains('active')) {
+        dropdown.classList.remove('active');
+        display.classList.remove('active');
+        activeDropdown = null;
+      } else {
+        closeAllDropdowns();
+        dropdown.classList.add('active');
+        display.classList.add('active');
+        activeDropdown = 'orgLevel';
+      }
+    }
+    
+    function selectOrgLevel(value, text) {
+      document.getElementById('selectedOrgLevel').textContent = text;
+      document.getElementById('eventOrgLevel').value = value;
+      
+      // Update org ID dropdown based on selection
+      const orgIdDisplay = document.getElementById('orgIdDisplay');
+      const orgIdDropdown = document.getElementById('orgIdDropdown');
+      
+      if (value === 'company') {
+        orgIdDisplay.classList.add('disabled');
+        document.getElementById('selectedOrgId').textContent = 'Gesamte Firma';
+        document.getElementById('eventOrgId').value = '1';
+      } else {
+        orgIdDisplay.classList.remove('disabled');
+        document.getElementById('selectedOrgId').textContent = '-- Bitte wählen --';
+        document.getElementById('eventOrgId').value = '';
+        // Trigger the calendar.js updateOrgIdDropdown function
+        if (typeof updateOrgIdDropdown === 'function') {
+          updateOrgIdDropdown(value);
+        }
+      }
+      
+      closeAllDropdowns();
+    }
+    
+    // Org ID Dropdown
+    function toggleOrgIdDropdown() {
+      const display = document.getElementById('orgIdDisplay');
+      if (display.classList.contains('disabled')) return;
+      
+      const dropdown = document.getElementById('orgIdDropdown');
+      
+      if (dropdown.classList.contains('active')) {
+        dropdown.classList.remove('active');
+        display.classList.remove('active');
+        activeDropdown = null;
+      } else {
+        closeAllDropdowns();
+        dropdown.classList.add('active');
+        display.classList.add('active');
+        activeDropdown = 'orgId';
+      }
+    }
+    
+    function selectOrgId(value, text) {
+      document.getElementById('selectedOrgId').textContent = text;
+      document.getElementById('eventOrgId').value = value;
+      closeAllDropdowns();
+    }
+    
+    // Reminder Dropdown
+    function toggleReminderDropdown() {
+      const dropdown = document.getElementById('reminderDropdown');
+      const display = dropdown.previousElementSibling;
+      
+      if (dropdown.classList.contains('active')) {
+        dropdown.classList.remove('active');
+        display.classList.remove('active');
+        activeDropdown = null;
+      } else {
+        closeAllDropdowns();
+        dropdown.classList.add('active');
+        display.classList.add('active');
+        activeDropdown = 'reminder';
+      }
+    }
+    
+    function selectReminder(value, text) {
+      document.getElementById('selectedReminder').textContent = text;
+      document.getElementById('eventReminderTime').value = value;
+      closeAllDropdowns();
+    }
+  </script>
+  
   <script src="/js/calendar.js"></script>
     <!-- Header User Info Loading -->
     <script src="/js/header-user-info.js"></script>

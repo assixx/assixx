@@ -41,10 +41,7 @@ class ChatClient {
   }
 
   async init() {
-    console.log('🚀 Initializing ChatClient...');
-    console.log('👤 Current user:', this.currentUser);
-    console.log('🆔 Current user ID:', this.currentUserId);
-    
+
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
@@ -60,8 +57,7 @@ class ChatClient {
 
   async loadInitialData() {
     try {
-      console.log('📡 Loading initial data...');
-      
+
       // Load conversations
       const response = await fetch('/api/chat/conversations', {
         headers: {
@@ -75,7 +71,7 @@ class ChatClient {
       }
 
       this.conversations = await response.json();
-      console.log(`✅ Loaded ${this.conversations.length} conversations`);
+
       this.renderConversations();
 
       // Load available users
@@ -88,7 +84,7 @@ class ChatClient {
 
       if (usersResponse.ok) {
         this.availableUsers = await usersResponse.json();
-        console.log(`✅ Loaded ${this.availableUsers.length} available users`);
+
       }
 
     } catch (error) {
@@ -99,7 +95,7 @@ class ChatClient {
 
   connectWebSocket() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('⚠️ WebSocket already connected');
+
       return;
     }
 
@@ -107,14 +103,12 @@ class ChatClient {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/chat-ws?token=${this.token}`;
-    
-    console.log(`🔌 Connecting to WebSocket: ${wsUrl}`);
 
     try {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('✅ WebSocket connection established');
+
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.updateConnectionStatus(true);
@@ -131,7 +125,7 @@ class ChatClient {
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('📨 Received message:', message.type);
+
           console.log('🔍 DEBUG - Full WebSocket message:', {
             type: message.type,
             data: message.data,
@@ -145,7 +139,7 @@ class ChatClient {
       };
 
       this.ws.onclose = (event) => {
-        console.log(`🔌 WebSocket connection closed: ${event.code} - ${event.reason}`);
+
         this.isConnected = false;
         this.updateConnectionStatus(false);
         
@@ -170,9 +164,7 @@ class ChatClient {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-      
-      console.log(`🔄 Reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
-      
+
       setTimeout(() => {
         this.connectWebSocket();
       }, delay);
@@ -184,9 +176,7 @@ class ChatClient {
 
   processMessageQueue() {
     if (this.messageQueue.length === 0) return;
-    
-    console.log(`📤 Processing ${this.messageQueue.length} queued messages`);
-    
+
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
       if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
@@ -196,7 +186,7 @@ class ChatClient {
   }
 
   handleWebSocketMessage(message) {
-    console.log('🔍 Processing message type:', message.type);
+
     console.log('🔍 DEBUG - WebSocket message details:', {
       type: message.type,
       hasData: !!message.data,
@@ -207,10 +197,10 @@ class ChatClient {
     
     switch (message.type) {
       case 'connection_established':
-        console.log('✅ Chat connection confirmed');
+
         break;
       case 'new_message':
-        console.log('🔍 DEBUG - new_message received:', message.data);
+
         this.handleNewMessage(message.data);
         break;
       case 'user_typing':
@@ -235,19 +225,19 @@ class ChatClient {
         this.handleMessageDelivered(message.data);
         break;
       case 'pong':
-        console.log('🏓 Received pong');
+
         break;
       case 'error':
         console.error('❌ Server error:', message.data.message);
         this.showNotification(message.data.message, 'error');
         break;
       default:
-        console.warn('⚠️ Unknown message type:', message.type);
+
     }
   }
 
   handleNewMessage(messageData) {
-    console.log('💬 New message received:', messageData);
+
     console.log('🔍 DEBUG - handleNewMessage details:', {
       messageId: messageData.id,
       conversationId: messageData.conversation_id,
@@ -261,7 +251,7 @@ class ChatClient {
     // Check if message already exists to prevent duplicates
     const existingMessage = document.querySelector(`[data-message-id="${messageData.id}"]`);
     if (existingMessage) {
-      console.log('⚠️ Message already exists, skipping duplicate');
+
       return;
     }
     
@@ -269,20 +259,20 @@ class ChatClient {
     if (messageData.sender_id == this.currentUser.id) {
       const tempMessages = document.querySelectorAll('[data-temp-id]');
       tempMessages.forEach(msg => {
-        console.log('🗑️ Removing temporary message');
+
         msg.remove();
       });
     }
     
     // Add message to current conversation
     if (messageData.conversation_id == this.currentConversationId) {
-      console.log('🔍 DEBUG - Message is for current conversation, displaying...');
+
       this.displayMessage(messageData);
       this.scrollToBottom();
       
       // Mark as read if not own message
       if (messageData.sender_id != this.currentUser.id) {
-        console.log('🔍 DEBUG - Marking message as read');
+
         this.markMessageAsRead(messageData.id);
       }
     } else {
@@ -316,11 +306,9 @@ class ChatClient {
     });
     
     if ((!content && this.pendingFiles.length === 0) || !this.currentConversationId) {
-      console.log('⚠️ Cannot send empty message or no conversation selected');
+
       return;
     }
-
-    console.log('📤 Sending message...');
 
     // Send via HTTP API if files attached or scheduled
     if (this.pendingFiles.length > 0 || scheduling !== 'immediate') {
@@ -372,10 +360,9 @@ class ChatClient {
       
       if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
         try {
-          console.log('🔍 DEBUG - Sending message via WebSocket:', messageData);
+
           this.ws.send(JSON.stringify(messageData));
-          console.log('✅ Message sent via WebSocket');
-          
+
           // Show temporary message
           const tempMessage = {
             id: 'temp-' + Date.now(),
@@ -400,7 +387,7 @@ class ChatClient {
         }
       } else {
         // Queue message if not connected
-        console.log('⚠️ WebSocket not connected, queueing message');
+
         this.messageQueue.push(messageData);
         this.showNotification('Nachricht wird gesendet, sobald die Verbindung wiederhergestellt ist', 'warning');
       }
@@ -412,8 +399,7 @@ class ChatClient {
 
   async loadMessages(conversationId) {
     try {
-      console.log(`📥 Loading messages for conversation ${conversationId}`);
-      
+
       const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
         headers: {
           'Authorization': `Bearer ${this.token}`,
@@ -423,7 +409,7 @@ class ChatClient {
 
       if (response.ok) {
         const messages = await response.json();
-        console.log(`✅ Loaded ${messages.length} messages`);
+
         console.log('🔍 DEBUG - First few messages:', messages.slice(0, 3).map(m => ({
           id: m.id,
           content: m.content,
@@ -463,8 +449,7 @@ class ChatClient {
       console.error('❌ Messages container not found');
       return;
     }
-    
-    console.log('📝 Displaying message:', message);
+
     console.log('🔍 DEBUG - Message display details:', {
       messageId: message.id,
       isTemp: message.id?.toString().startsWith('temp-'),
@@ -703,8 +688,7 @@ class ChatClient {
   }
 
   async selectConversation(conversationId) {
-    console.log(`📌 Selecting conversation ${conversationId}`);
-    
+
     // Remove previous selection
     document.querySelectorAll('.conversation-item').forEach(item => {
       item.classList.remove('active');
@@ -784,19 +768,18 @@ class ChatClient {
 
   joinConversation(conversationId) {
     if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-      console.log(`👋 Joining conversation ${conversationId}`);
+
       this.ws.send(JSON.stringify({
         type: 'join_conversation',
         data: { conversationId }
       }));
     } else {
-      console.log('⚠️ Cannot join conversation - WebSocket not connected');
+
     }
   }
 
   showNewConversationModal() {
-    console.log('📋 Opening new conversation modal');
-    
+
     const modal = document.getElementById('newConversationModal');
     const usersList = document.getElementById('availableUsersList');
     const groupChatOptions = document.getElementById('groupChatOptions');
@@ -845,7 +828,7 @@ class ChatClient {
     });
 
     modal.style.display = 'flex';
-    console.log('✅ Modal opened');
+
   }
 
   async createNewConversation() {
@@ -860,8 +843,6 @@ class ChatClient {
     const isGroup = selectedUsers.length > 1;
     const groupNameInput = document.getElementById('groupChatName');
     const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
-
-    console.log('🆕 Creating new conversation...');
 
     try {
       const response = await fetch('/api/chat/conversations', {
@@ -879,7 +860,7 @@ class ChatClient {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Conversation created:', result);
+
         this.showNotification(isGroup ? 'Gruppenchat erfolgreich erstellt' : 'Unterhaltung erfolgreich erstellt', 'success');
         this.closeModal('newConversationModal');
         
@@ -898,8 +879,7 @@ class ChatClient {
   }
 
   initializeEventListeners() {
-    console.log('🎧 Initializing event listeners...');
-    
+
     // Message input
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
@@ -933,7 +913,7 @@ class ChatClient {
       fileInput.addEventListener('change', async (event) => {
         const files = event.target.files;
         if (files.length > 0) {
-          console.log('📎 Files selected:', files);
+
           await this.handleFileUpload(files);
           fileInput.value = '';
         }
@@ -1049,7 +1029,7 @@ class ChatClient {
       indicator.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
       indicator.textContent = connected ? 'Verbunden' : 'Getrennt';
     }
-    console.log(`🔌 Connection status: ${connected ? 'Connected' : 'Disconnected'}`);
+
   }
 
   formatSchedulingTime(scheduling) {
@@ -1061,8 +1041,7 @@ class ChatClient {
   }
 
   showNotification(message, type = 'info') {
-    console.log(`🔔 ${type.toUpperCase()}: ${message}`);
-    
+
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -1153,8 +1132,7 @@ class ChatClient {
   }
 
   handleUserStatusChange(data) {
-    console.log(`👤 User ${data.userId} is now ${data.status}`);
-    
+
     // Update user status in availableUsers
     const user = this.availableUsers.find(u => u.id === data.userId);
     if (user) {
@@ -1333,8 +1311,7 @@ class ChatClient {
   }
   
   handleMessageSent(data) {
-    console.log('✅ Message sent confirmation:', data);
-    
+
     // Update temporary message with real message ID
     const tempMessages = document.querySelectorAll('[data-temp-id]');
     
@@ -1351,8 +1328,7 @@ class ChatClient {
   }
   
   handleMessageDelivered(data) {
-    console.log('✅ Message delivered:', data);
-    
+
     // Update message status to delivered
     const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
@@ -1515,7 +1491,7 @@ class ChatClient {
       });
       
       if (response.ok) {
-        console.log('✅ Reaction added');
+
       }
     } catch (error) {
       console.error('❌ Error adding reaction:', error);
@@ -1541,7 +1517,7 @@ class ChatClient {
       });
       
       if (response.ok) {
-        console.log('✅ Conversation deleted');
+
         this.showNotification('Unterhaltung gelöscht', 'success');
         
         // Remove from conversations list
@@ -1580,7 +1556,7 @@ class ChatClient {
 
 // Initialize chat client when page loads
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📄 DOM loaded, initializing chat client...');
+
   window.chatClient = new ChatClient();
   
   // Add CSS for animations

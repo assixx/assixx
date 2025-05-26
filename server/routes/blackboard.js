@@ -16,7 +16,6 @@ function getTenantId(user) {
 }
 
 // Debug log zum Überwachen der Datenbankverbindungen
-console.log("Blackboard API Routes geladen - Benutze Standard-DB:", process.env.DB_NAME);
 
 // Helper function to check if user can manage the entry
 async function canManageEntry(req, res, next) {
@@ -36,24 +35,23 @@ async function canManageEntry(req, res, next) {
     const isAuthor = entry.author_id === req.user.id;
     
     // Debug-Info
-    console.log(`User role: ${req.user.role}, isAdmin: ${isAdmin}, isAuthor: ${isAuthor}, entry author: ${entry.author_id}, user: ${req.user.id}`);
-    
+
     // Admins haben immer die Berechtigung
     if (isAdmin) {
-      console.log("Admin has permission to manage entry");
+
       req.entry = entry;
       return next();
     }
     
     // Autoren nur, wenn sie nicht Admins sind
     if (isAuthor) {
-      console.log("Author has permission to manage entry");
+
       req.entry = entry;
       return next();
     }
     
     // Weder Admin noch Autor
-    console.log("User has no permission to manage entry");
+
     return res.status(403).json({ message: 'You do not have permission to manage this entry' });
   } catch (error) {
     console.error('Error in canManageEntry middleware:', error);
@@ -128,10 +126,9 @@ router.get('/api/blackboard',
       const result = await blackboardModel.getAllEntries(tenantId, req.user.id, options);
       
       // Debug-Logging für Ergebnisse
-      console.log("Blackboard entries result:", JSON.stringify(result).substring(0, 200));
+
       if (result.entries && result.entries.length > 0) {
-        console.log("First entry content type:", typeof result.entries[0].content);
-        console.log("First entry sample:", JSON.stringify(result.entries[0]).substring(0, 200));
+
       }
       
       res.json(result);
@@ -202,9 +199,7 @@ router.post('/api/blackboard',
     try {
       // Get tenant ID from user object
       const tenantId = getTenantId(req.user);
-      
-      console.log(`Creating blackboard entry with tenant ID: ${tenantId} for user ${req.user.username}`);
-      
+
       // Die org_id muss als Zahl vorliegen
       let org_id = req.body.org_id;
       if (typeof org_id === 'string') {
@@ -224,9 +219,7 @@ router.post('/api/blackboard',
         tags: req.body.tags || [],
         requires_confirmation: req.body.requires_confirmation || false
       };
-      
-      console.log("Blackboard entry data:", entryData);
-      
+
       const entry = await blackboardModel.createEntry(entryData);
       res.status(201).json(entry);
     } catch (error) {
