@@ -376,14 +376,7 @@ app.use('/api/areas', require('./routes/areas'));
 
 // TEST Routes without authentication - SECURITY RISK - FOR DEVELOPMENT ONLY
 // WARNING: These routes bypass all authentication and authorization
-if (process.env.NODE_ENV !== 'production') {
-  console.warn('WARNING: Test routes enabled - these routes bypass authentication!');
-  // app.use('/test/employee', employeeTestRoutes);
-  
-  // Import and register DB test routes
-  const testDbRoutes = require('./routes/test-db');
-  app.use('/test/db', testDbRoutes);
-}
+// All test routes have been removed for production readiness
 
 // Error handling - MUST be last
 app.use((req, res, next) => {
