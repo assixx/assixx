@@ -132,9 +132,13 @@ function validateSubdomain(value) {
 | **Lokale Dev** | http://localhost:3000 |
 
 ### 📌 AKTUELLE SCHWERPUNKTE
-1. ✅ Signup.html UI Design verbessern
-2. 🔄 Chat System Checkup
-3. 📝 Survey Tool fertigstellen
+1. ✅ Root Features Management Page (27.05.2025)
+2. 📝 Survey Tool Checkup - MORGEN WEITER (28.05.2025)
+   - API Response Format Issue
+   - Survey.getStatistics Implementation
+   - Excel Export Fixes
+   - Navigation Fixes
+3. 🔄 Chat System weitere Verbesserungen
 
 ---
 

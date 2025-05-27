@@ -286,10 +286,13 @@ body::after {
 
 ### 4. Buttons
 
-**Primary Button:**
+**WICHTIG: Es gibt 2 Button-Level mit unterschiedlichen Styles!**
+
+**First-Level Button (Haupt-CTAs wie "Registrieren"):**
 ```css
+/* First-Level: KEIN background, nur Shadow-Effekt */
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    background: none; /* WICHTIG: KEIN background! Komplett transparent! */
     color: white;
     border: none;
     padding: 10px 24px;
@@ -316,7 +319,8 @@ body::after {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btn-primary:hover::before {
@@ -324,7 +328,53 @@ body::after {
 }
 ```
 
-**Secondary Button:**
+**Second-Level Button (Sekundäre Actions wie "Upload"):**
+```css
+/* Second-Level: MIT background-gradient */
+.btn-primary.btn-secondary-action,
+.btn-upload {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    /* Alle anderen Styles bleiben gleich wie First-Level */
+}
+```
+
+```
+
+**Button-Verwendung:**
+- **First-Level (TRANSPARENT - kein Background!)**: Hauptaktionen wie "Registrieren", "Login", "Jetzt starten"
+  - Verwendet für primäre CTAs in Header/Hero-Bereichen
+  - Nur Shadow-Effekt, komplett transparent
+  - Exakt wie der "Registrieren" Button in index.html
+- **Second-Level (mit Gradient-Background)**: Sekundäre Aktionen wie "Upload", "Speichern", "Senden"
+  - Verwendet in Formularen und Content-Bereichen
+  - Blauer Gradient-Background
+  - Wie Upload-Button in document-upload.html
+
+**Base Button Styles:**
+```css
+/* Basis für alle Buttons */
+.btn {
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* SVG Icons in Buttons */
+.btn svg {
+    width: 20px;
+    height: 20px;
+}
+```
+
+**Secondary Button (Outline Style):**
 ```css
 .btn-secondary {
     background: rgba(255, 255, 255, 0.04);
@@ -495,6 +545,7 @@ body::after {
 
 ### 7. Cards (Compact Design)
 ```css
+/* WICHTIG: backdrop-filter NUR auf der Card selbst, NICHT auf card-header! */
 .compact-card {
     position: relative;
     overflow: hidden;
@@ -752,6 +803,7 @@ transition: all 0.6s ease-out;
 8. **NIEMALS** vergessen die Logo-Animation anzuwenden
 9. **NIEMALS** verschiedene Dropdown-Implementierungen mischen
 10. **NIEMALS** das Dark Theme aufhellen oder Light Theme Elemente einführen
+11. **NIEMALS** backdrop-filter auf .card-header anwenden (nur auf Container/Cards selbst)
 
 ### Z-Index Hierarchie
 - Modals: 1000
@@ -990,7 +1042,7 @@ document.addEventListener('click', function(e) {
 
 .card-header {
     background: rgba(255, 255, 255, 0.01);
-    backdrop-filter: blur(10px);
+    /* WICHTIG: Kein backdrop-filter für card-header! */
     padding: var(--spacing-md) var(--spacing-lg);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 10px 10px 0 0;

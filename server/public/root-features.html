@@ -61,6 +61,67 @@
             animation: fadeInUp 0.6s ease-out;
         }
         
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+            padding: var(--spacing-sm);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .category-tab {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .category-tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .category-tab.active {
+            background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+            border-color: rgba(0, 142, 255, 0.3);
+            color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0, 142, 255, 0.2);
+        }
+        
+        .category-tab::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg) translate(-70%, -70%);
+            transition: transform 0.6s;
+        }
+        
+        .category-tab:hover::after {
+            transform: rotate(45deg) translate(-30%, -30%);
+        }
+        
         /* Feature Categories */
         .feature-category {
             margin-bottom: var(--spacing-xl);
@@ -373,258 +434,33 @@
                 <div class="summary-card">
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <div class="summary-value">8</div>
+                            <div id="total-features" class="summary-value">0</div>
                             <div class="summary-label">Verfügbare Features</div>
                         </div>
                         <div class="summary-item">
-                            <div class="summary-value">3</div>
+                            <div id="active-features" class="summary-value">0</div>
                             <div class="summary-label">Aktive Features</div>
                         </div>
                         <div class="summary-item">
-                            <div class="summary-value">45€</div>
+                            <div id="monthly-cost" class="summary-value">0€</div>
                             <div class="summary-label">Monatliche Kosten</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Core Features -->
-                <div class="feature-category">
-                    <div class="category-header">
-                        <div class="category-icon">⚙️</div>
-                        <h2 class="category-title">Kern-Features</h2>
-                    </div>
-                    <div class="features-grid">
-                        <!-- Employee Management -->
-                        <div class="feature-card active">
-                            <span class="feature-status status-active">Aktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Mitarbeiterverwaltung</h3>
-                            </div>
-                            <p class="feature-description">
-                                Vollständige Mitarbeiterverwaltung mit Profilen, Dokumenten und Berechtigungen.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">Kostenlos</span>
-                                <span class="price-period">/ immer</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Unbegrenzte Mitarbeiter</li>
-                                    <li>Dokumentenverwaltung</li>
-                                    <li>Abteilungen & Teams</li>
-                                    <li>Berechtigungssystem</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-info" disabled>Kern-Feature</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Document Management -->
-                        <div class="feature-card active">
-                            <span class="feature-status status-active">Aktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Dokumentenverwaltung</h3>
-                            </div>
-                            <p class="feature-description">
-                                Sichere Dokumentenablage mit Kategorisierung und Zugriffskontrollen.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">Kostenlos</span>
-                                <span class="price-period">/ immer</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>PDF-Upload</li>
-                                    <li>Kategorisierung</li>
-                                    <li>Versionierung</li>
-                                    <li>Zugriffsprotokoll</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-info" disabled>Kern-Feature</button>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Category Tabs -->
+                <div class="category-tabs">
+                    <button class="category-tab active" data-category="all">Alle Features</button>
+                    <button class="category-tab" data-category="basis">Basis</button>
+                    <button class="category-tab" data-category="premium">Premium</button>
+                    <button class="category-tab" data-category="enterprise">Enterprise</button>
                 </div>
                 
-                <!-- Communication Features -->
-                <div class="feature-category">
-                    <div class="category-header">
-                        <div class="category-icon">💬</div>
-                        <h2 class="category-title">Kommunikation</h2>
-                    </div>
-                    <div class="features-grid">
-                        <!-- Blackboard -->
-                        <div class="feature-card active">
-                            <span class="feature-status status-active">Aktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Schwarzes Brett</h3>
-                            </div>
-                            <p class="feature-description">
-                                Digitales schwarzes Brett für Ankündigungen und wichtige Mitteilungen.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">15€</span>
-                                <span class="price-period">/ Monat</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Ankündigungen erstellen</li>
-                                    <li>Kategorien & Tags</li>
-                                    <li>Prioritätsstufen</li>
-                                    <li>Lesebestätigungen</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-deactivate">Deaktivieren</button>
-                                <button class="btn btn-info">Details</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Chat System -->
-                        <div class="feature-card">
-                            <span class="feature-status status-inactive">Inaktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Chat System</h3>
-                            </div>
-                            <p class="feature-description">
-                                Integriertes Chat-System für die interne Kommunikation.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">25€</span>
-                                <span class="price-period">/ Monat</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Einzel- und Gruppenchats</li>
-                                    <li>Dateifreigabe</li>
-                                    <li>Suchfunktion</li>
-                                    <li>Benachrichtigungen</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-activate">Aktivieren</button>
-                                <button class="btn btn-info">Details</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Organization Features -->
-                <div class="feature-category">
-                    <div class="category-header">
-                        <div class="category-icon">📊</div>
-                        <h2 class="category-title">Organisation</h2>
-                    </div>
-                    <div class="features-grid">
-                        <!-- Calendar -->
-                        <div class="feature-card">
-                            <span class="feature-status status-inactive">Inaktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Firmenkalender</h3>
-                            </div>
-                            <p class="feature-description">
-                                Gemeinsamer Kalender für Termine, Events und Urlaubsplanung.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">20€</span>
-                                <span class="price-period">/ Monat</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Terminverwaltung</li>
-                                    <li>Urlaubskalender</li>
-                                    <li>Wiederkehrende Events</li>
-                                    <li>Erinnerungen</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-activate">Aktivieren</button>
-                                <button class="btn btn-info">Details</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Shift Planning -->
-                        <div class="feature-card">
-                            <span class="feature-status status-inactive">Inaktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Schichtplanung</h3>
-                            </div>
-                            <p class="feature-description">
-                                Professionelle Schichtplanung mit automatischer Verteilung.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">35€</span>
-                                <span class="price-period">/ Monat</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Schichtvorlagen</li>
-                                    <li>Automatische Planung</li>
-                                    <li>Tauschbörse</li>
-                                    <li>Überstundenverwaltung</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-activate">Aktivieren</button>
-                                <button class="btn btn-info">Details</button>
-                            </div>
-                        </div>
-                        
-                        <!-- KVP -->
-                        <div class="feature-card">
-                            <span class="feature-status status-inactive">Inaktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">KVP System</h3>
-                            </div>
-                            <p class="feature-description">
-                                Kontinuierlicher Verbesserungsprozess mit Belohnungssystem.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">30€</span>
-                                <span class="price-period">/ Monat</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Vorschlagswesen</li>
-                                    <li>Bewertungssystem</li>
-                                    <li>Punkte & Prämien</li>
-                                    <li>Statistiken</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-activate">Aktivieren</button>
-                                <button class="btn btn-info">Details</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Surveys -->
-                        <div class="feature-card">
-                            <span class="feature-status status-inactive">Inaktiv</span>
-                            <div class="feature-header">
-                                <h3 class="feature-name">Umfragen</h3>
-                            </div>
-                            <p class="feature-description">
-                                Erstellen Sie Umfragen für Mitarbeiterfeedback und Analysen.
-                            </p>
-                            <div class="feature-pricing">
-                                <span class="price-amount">25€</span>
-                                <span class="price-period">/ Monat</span>
-                            </div>
-                            <div class="feature-details">
-                                <ul class="feature-list">
-                                    <li>Multiple-Choice Fragen</li>
-                                    <li>Anonyme Teilnahme</li>
-                                    <li>Auswertungen</li>
-                                    <li>Export-Funktionen</li>
-                                </ul>
-                            </div>
-                            <div class="feature-actions">
-                                <button class="btn btn-activate">Aktivieren</button>
-                                <button class="btn btn-info">Details</button>
-                            </div>
-                        </div>
+                <!-- Features werden hier dynamisch eingefügt -->
+                <div id="features-container">
+                    <!-- Loading state -->
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <p>Features werden geladen...</p>
                     </div>
                 </div>
             </div>
@@ -662,55 +498,280 @@
             window.location.href = '/login.html';
         }
         
-        // Display user info
-        document.getElementById('user-info').textContent = userInfo?.username || 'Root User';
-        
-        // Feature activation/deactivation (Frontend only for now)
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-activate')) {
-                const card = e.target.closest('.feature-card');
-                const featureName = card.querySelector('.feature-name').textContent;
-                
-                if (confirm(`Möchten Sie das Feature "${featureName}" aktivieren?`)) {
-                    // Update UI
-                    card.classList.add('active');
-                    card.querySelector('.feature-status').className = 'feature-status status-active';
-                    card.querySelector('.feature-status').textContent = 'Aktiv';
-                    
-                    // Change button
-                    e.target.className = 'btn btn-deactivate';
-                    e.target.textContent = 'Deaktivieren';
-                    
-                    // Show success message
-                    alert(`Feature "${featureName}" wurde aktiviert!`);
-                    
-                    // TODO: API call to activate feature
+        // Feature Category Mapping
+        const featureCategories = {
+            'Kern-Features': {
+                icon: '⚙️',
+                features: {
+                    'basic_employees': {
+                        name: 'Mitarbeiterverwaltung',
+                        details: ['Unbegrenzte Mitarbeiter', 'Dokumentenverwaltung', 'Abteilungen & Teams', 'Berechtigungssystem'],
+                        tier: 'basis'
+                    },
+                    'unlimited_employees': {
+                        name: 'Unbegrenzte Mitarbeiter',
+                        details: ['Keine Limitierung', 'Vollständige Verwaltung', 'Alle Funktionen', 'Premium Support'],
+                        tier: 'enterprise'
+                    },
+                    'document_upload': {
+                        name: 'Dokumentenverwaltung',
+                        details: ['PDF-Upload', 'Kategorisierung', 'Versionierung', 'Zugriffsprotokoll'],
+                        tier: 'basis'
+                    }
                 }
-            } else if (e.target.classList.contains('btn-deactivate')) {
-                const card = e.target.closest('.feature-card');
-                const featureName = card.querySelector('.feature-name').textContent;
-                
-                if (confirm(`Möchten Sie das Feature "${featureName}" wirklich deaktivieren?`)) {
-                    // Update UI
-                    card.classList.remove('active');
-                    card.querySelector('.feature-status').className = 'feature-status status-inactive';
-                    card.querySelector('.feature-status').textContent = 'Inaktiv';
-                    
-                    // Change button
-                    e.target.className = 'btn btn-activate';
-                    e.target.textContent = 'Aktivieren';
-                    
-                    // Show success message
-                    alert(`Feature "${featureName}" wurde deaktiviert!`);
-                    
-                    // TODO: API call to deactivate feature
+            },
+            'Kommunikation': {
+                icon: '💬',
+                features: {
+                    'blackboard': {
+                        name: 'Schwarzes Brett',
+                        details: ['Ankündigungen erstellen', 'Kategorien & Tags', 'Prioritätsstufen', 'Lesebestätigungen'],
+                        tier: 'premium'
+                    },
+                    'chat': {
+                        name: 'Chat System',
+                        details: ['Einzel- und Gruppenchats', 'Dateifreigabe', 'Suchfunktion', 'Benachrichtigungen'],
+                        tier: 'premium'
+                    },
+                    'surveys': {
+                        name: 'Umfragen',
+                        details: ['Multiple-Choice Fragen', 'Anonyme Teilnahme', 'Auswertungen', 'Export-Funktionen'],
+                        tier: 'enterprise'
+                    }
                 }
-            } else if (e.target.classList.contains('btn-info')) {
-                const card = e.target.closest('.feature-card');
-                const featureName = card.querySelector('.feature-name').textContent;
-                alert(`Detaillierte Informationen zu "${featureName}" kommen bald!`);
+            },
+            'Organisation': {
+                icon: '📊',
+                features: {
+                    'calendar': {
+                        name: 'Firmenkalender',
+                        details: ['Terminverwaltung', 'Urlaubskalender', 'Wiederkehrende Events', 'Erinnerungen'],
+                        tier: 'premium'
+                    },
+                    'shifts': {
+                        name: 'Schichtplanung',
+                        details: ['Schichtvorlagen', 'Automatische Planung', 'Tauschbörse', 'Überstundenverwaltung'],
+                        tier: 'enterprise'
+                    },
+                    'kvp': {
+                        name: 'KVP System',
+                        details: ['Vorschlagswesen', 'Bewertungssystem', 'Punkte & Prämien', 'Statistiken'],
+                        tier: 'enterprise'
+                    }
+                }
             }
-        });
+        };
+        
+        // Global variables
+        let allFeatures = [];
+        let currentTenant = null;
+        let currentCategoryFilter = 'all';
+        
+        // Load current tenant info
+        async function loadCurrentTenant() {
+            try {
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load user profile');
+                
+                const userData = await response.json();
+                
+                currentTenant = {
+                    id: userData.tenant_id,
+                    company_name: userData.company_name || 'Ihre Organisation',
+                    subdomain: userData.subdomain || 'your-company'
+                };
+                
+                await loadTenantFeatures(currentTenant.id);
+            } catch (error) {
+                console.error('Error loading current tenant:', error);
+                alert('Fehler beim Laden der Organisation');
+            }
+        }
+        
+        // Load all available features
+        async function loadAvailableFeatures() {
+            try {
+                const response = await fetch('/api/features/available', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load features');
+                
+                allFeatures = await response.json();
+                displayFeatures();
+            } catch (error) {
+                console.error('Error loading features:', error);
+                alert('Fehler beim Laden der Features');
+            }
+        }
+        
+        // Load features for selected tenant
+        async function loadTenantFeatures(tenantId) {
+            if (!tenantId || !currentTenant) return;
+            
+            try {
+                const response = await fetch(`/api/features/tenant/${tenantId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load tenant features');
+                
+                currentTenant.features = await response.json();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading tenant features:', error);
+            }
+        }
+        
+        // Update summary statistics
+        function updateSummary() {
+            if (!currentTenant || !currentTenant.features) return;
+            
+            const activeFeatures = currentTenant.features.filter(f => f.is_available);
+            const monthlyCost = activeFeatures.reduce((sum, f) => {
+                const feature = allFeatures.find(af => af.code === f.code);
+                const price = feature ? parseFloat(feature.base_price) || 0 : 0;
+                return sum + price;
+            }, 0);
+            
+            document.getElementById('total-features').textContent = allFeatures.length;
+            document.getElementById('active-features').textContent = activeFeatures.length;
+            document.getElementById('monthly-cost').textContent = monthlyCost.toFixed(2) + '€';
+        }
+        
+        // Display features
+        function displayFeatures() {
+            const container = document.getElementById('features-container');
+            container.innerHTML = '';
+            
+            // Filter features based on current category
+            let filteredFeatures = allFeatures;
+            if (currentCategoryFilter !== 'all') {
+                filteredFeatures = allFeatures.filter(f => {
+                    // Find the feature in our mapping to get its tier
+                    for (const category of Object.values(featureCategories)) {
+                        if (category.features[f.code]) {
+                            return category.features[f.code].tier === currentCategoryFilter;
+                        }
+                    }
+                    return false;
+                });
+            }
+            
+            // Create categories
+            Object.entries(featureCategories).forEach(([categoryName, categoryData]) => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'feature-category';
+                
+                const categoryFeatures = filteredFeatures.filter(f => categoryData.features[f.code]);
+                if (categoryFeatures.length === 0) return;
+                
+                categoryDiv.innerHTML = `
+                    <div class="category-header">
+                        <div class="category-icon">${categoryData.icon}</div>
+                        <h2 class="category-title">${categoryName}</h2>
+                    </div>
+                    <div class="features-grid">
+                        ${categoryFeatures.map(feature => {
+                            const isActive = currentTenant?.features?.find(tf => tf.code === feature.code && tf.is_available);
+                            const mappedFeature = categoryData.features[feature.code];
+                            const displayName = mappedFeature?.name || feature.name;
+                            const details = mappedFeature?.details || [];
+                            
+                            return `
+                                <div class="feature-card ${isActive ? 'active' : ''}" data-feature-code="${feature.code}">
+                                    <span class="feature-status ${isActive ? 'status-active' : 'status-inactive'}">
+                                        ${isActive ? 'Aktiv' : 'Inaktiv'}
+                                    </span>
+                                    <div class="feature-header">
+                                        <h3 class="feature-name">${displayName}</h3>
+                                    </div>
+                                    <p class="feature-description">${feature.description}</p>
+                                    <div class="feature-pricing">
+                                        <span class="price-amount">${feature.base_price === 0 || feature.base_price === '0.00' ? 'Kostenlos' : parseFloat(feature.base_price).toFixed(2) + '€'}</span>
+                                        <span class="price-period">${feature.base_price === 0 || feature.base_price === '0.00' ? '/ immer' : '/ Monat'}</span>
+                                    </div>
+                                    ${details.length > 0 ? `
+                                        <div class="feature-details">
+                                            <ul class="feature-list">
+                                                ${details.map(detail => `<li>${detail}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                    <div class="feature-actions">
+                                        ${feature.base_price === 0 ? 
+                                            `<button class="btn btn-info" disabled>Kern-Feature</button>` :
+                                            (isActive ? 
+                                                `<button class="btn btn-deactivate" onclick="toggleFeature('${feature.code}', false)">Deaktivieren</button>` :
+                                                `<button class="btn btn-activate" onclick="toggleFeature('${feature.code}', true)">Aktivieren</button>`
+                                            ) + 
+                                            `<button class="btn btn-info" onclick="showFeatureInfo('${feature.code}')">Details</button>`
+                                        }
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                
+                container.appendChild(categoryDiv);
+            });
+        }
+        
+        // Toggle feature activation
+        async function toggleFeature(featureCode, activate) {
+            if (!currentTenant) return;
+            
+            const feature = allFeatures.find(f => f.code === featureCode);
+            const action = activate ? 'aktivieren' : 'deaktivieren';
+            
+            if (!confirm(`Möchten Sie das Feature "${feature.name}" für ${currentTenant.company_name} ${action}?`)) {
+                return;
+            }
+            
+            try {
+                const endpoint = activate ? '/api/features/activate' : '/api/features/deactivate';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tenantId: currentTenant.id,
+                        featureCode: featureCode
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Operation failed');
+                }
+                
+                await loadTenantFeatures(currentTenant.id);
+                await loadAvailableFeatures();
+                
+                alert(`Feature "${feature.name}" wurde erfolgreich ${action === 'aktivieren' ? 'aktiviert' : 'deaktiviert'}!`);
+            } catch (error) {
+                console.error('Error toggling feature:', error);
+                alert(`Fehler beim ${action} des Features: ${error.message}`);
+            }
+        }
+        
+        // Show feature info
+        function showFeatureInfo(featureCode) {
+            const feature = allFeatures.find(f => f.code === featureCode);
+            alert(`Detaillierte Informationen zu "${feature.name}" kommen bald!`);
+        }
         
         // Logout
         document.getElementById('logout-btn').addEventListener('click', () => {
@@ -718,6 +779,32 @@
             localStorage.removeItem('role');
             window.location.href = '/login.html';
         });
+        
+        // Initialize category tabs
+        function initializeCategoryTabs() {
+            const tabs = document.querySelectorAll('.category-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    // Add active class to clicked tab
+                    e.target.classList.add('active');
+                    // Update current filter
+                    currentCategoryFilter = e.target.getAttribute('data-category');
+                    // Re-display features
+                    displayFeatures();
+                });
+            });
+        }
+        
+        // Initialize
+        async function init() {
+            initializeCategoryTabs();
+            await loadCurrentTenant();
+            await loadAvailableFeatures();
+        }
+        
+        init();
     </script>
     <!-- Header User Info Loading -->
     <script src="/js/header-user-info.js"></script>

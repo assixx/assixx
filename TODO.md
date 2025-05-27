@@ -1,6 +1,6 @@
 # Assixx Project - Zentrale TODO-Liste
 
-> **Letzte Aktualisierung:** 26.05.2025 - 19:30
+> **Letzte Aktualisierung:** 27.05.2025 - 18:00
 > **Erstellt aus:** README.md, ROADMAP.md, CLAUDE.md, CLAUDE.local.md, SECURITY-IMPROVEMENTS.md, CHAT-SYSTEM-FIXES.md
 
 ## ✅ ERLEDIGTE AUFGABEN
@@ -73,6 +73,15 @@
   - [x] Typing Indicators
   - [x] Ungelesene Nachrichten Badge
 
+### Feature Management (27.05.2025)
+- [x] **Root Features Seite**
+  - [x] Feature Routes Fix (/api/features statt /features)
+  - [x] Tenant-Isolation für Root User (kein Tenant-Selector)
+  - [x] Glassmorphismus Design wiederhergestellt
+  - [x] Category Tabs implementiert (Alle, Basis, Premium, Enterprise)
+  - [x] Monthly Cost Berechnung korrigiert
+  - [x] Feature Tier Mapping hinzugefügt
+
 ### Code-Qualität & Wartung (26.05.2025)
 - [x] **ESLint & Prettier Setup**
   - [x] ESLint Konfiguration hinzugefügt
@@ -96,10 +105,15 @@
 ## 📱 Feature-Entwicklung (Hohe Priorität)
 
 ### Q1 2025 - In Arbeit
-- [ ] **Umfrage-Tool (Survey System)**
+- [ ] **Umfrage-Tool (Survey System)** - MORGEN WEITER (28.05.2025)
   - [x] Grundstruktur implementiert
   - [x] Admin-Interface
   - [x] Employee-Interface
+  - [ ] **MORGEN: Survey Feature Checkup durchführen**
+    - [ ] API Response Format prüfen (data wrapper issue)
+    - [ ] Survey.getStatistics implementieren
+    - [ ] Excel Export Property Paths korrigieren
+    - [ ] Navigation in survey-employee.html fixen
   - [ ] Backend-Integration vervollständigen
   - [ ] Auswertungs-Dashboard
   - [ ] Export-Funktionen
@@ -219,9 +233,10 @@
 
 ## 📊 Status-Übersicht
 
-### Erledigte Aufgaben: ✅ 54 Items
+### Erledigte Aufgaben: ✅ 60 Items
 - **UI/UX & Design:** 15 Items
 - **Features:** 20 Items
+- **Feature Management:** 6 Items
 - **Code-Qualität:** 9 Items
 - **Dokumentation:** 5 Items
 - **Bug Fixes:** 5 Items
@@ -234,8 +249,8 @@
 - **Dokumentation:** 9 TODOs
 - **Bugs:** 6 TODOs
 
-**Gesamt:** 125 Items (54 erledigt, 71 offen)
-**Fortschritt:** 43% abgeschlossen
+**Gesamt:** 131 Items (60 erledigt, 71 offen)
+**Fortschritt:** 46% abgeschlossen
 
 ---
 

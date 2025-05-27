@@ -367,6 +367,44 @@ Das Assixx-System verwendet **39 Haupttabellen** in 10 Kategorien:
 - `plan_features` - Plan ↔ Feature-Zuordnung
 - `feature_usage_logs` - Nutzungsstatistiken
 
+##### Feature-Tabellen-Details:
+
+**features:**
+```sql
+CREATE TABLE features (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(50) UNIQUE NOT NULL,  -- z.B. 'surveys', 'chat', 'calendar'
+  name VARCHAR(100) NOT NULL,         -- Anzeigename
+  description TEXT,                   -- Beschreibung
+  category ENUM('core', 'premium', 'enterprise'),
+  base_price DECIMAL(10,2),          -- Monatspreis
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**tenant_features:**
+```sql
+CREATE TABLE tenant_features (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  tenant_id INT NOT NULL,
+  feature_id INT NOT NULL,
+  status ENUM('active', 'trial', 'expired', 'disabled') DEFAULT 'active',
+  valid_from DATE,
+  valid_until DATE,
+  custom_price DECIMAL(10,2),        -- Optionaler Custom-Preis
+  trial_days INT DEFAULT 14,
+  usage_limit INT,                   -- Optionales Nutzungslimit
+  current_usage INT DEFAULT 0,
+  activated_by INT,                  -- User ID des Aktivierenden
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  FOREIGN KEY (feature_id) REFERENCES features(id),
+  UNIQUE KEY unique_tenant_feature (tenant_id, feature_id)
+);
+```
+
 #### 5. **Blackboard System** (3 Tabellen)
 - `blackboard_entries` - Ankündigungen
 - `blackboard_tags` - Tags für Kategorisierung
@@ -417,6 +455,63 @@ erDiagram
     users ||--o{ documents : "besitzt"
     users ||--o{ messages : "sendet"
     tenants ||--o{ tenant_features : "aktiviert"
+```
+
+---
+
+## 🎯 Feature-Management-System
+
+### Übersicht
+
+Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Tenant individuell zu aktivieren/deaktivieren:
+
+### Feature-Verwaltung für Root-Benutzer
+
+1. **Root-Dashboard:**
+   ```
+   http://localhost:3000/root-features.html
+   ```
+
+2. **Features aktivieren/deaktivieren:**
+   - Tenant aus Dropdown auswählen
+   - Feature-Karte finden
+   - "Aktivieren" oder "Deaktivieren" klicken
+
+3. **API-Endpoints:**
+   ```javascript
+   // Alle Tenants mit Features abrufen
+   GET /api/features/all-tenants
+   
+   // Feature aktivieren
+   POST /api/features/activate
+   Body: { tenantId: 3, featureCode: "surveys" }
+   
+   // Feature deaktivieren
+   POST /api/features/deactivate
+   Body: { tenantId: 3, featureCode: "surveys" }
+   ```
+
+### Verfügbare Features
+
+| Code | Name | Kategorie | Preis/Monat |
+|------|------|-----------|-------------|
+| basic_employees | Basis Mitarbeiterverwaltung | core | 9.99€ |
+| document_upload | Dokument Upload | core | 14.99€ |
+| chat | Chat System | premium | 19.99€ |
+| surveys | Umfrage-Tool | premium | 29.99€ |
+| calendar | Kalender-System | premium | 24.99€ |
+| blackboard | Digitale Schwarzes Brett | premium | 19.99€ |
+| shift_planning | Schichtplanungs-System | enterprise | 49.99€ |
+| kvp | Kontinuierlicher Verbesserungsprozess | enterprise | 39.99€ |
+
+### Feature-Prüfung in Code
+
+```javascript
+// In Routes mit Middleware
+router.use(checkFeature('surveys'));
+
+// In Frontend prüfen
+const hasFeature = tenantFeatures.some(f => f.code === 'surveys' && f.is_available);
 ```
 
 ---

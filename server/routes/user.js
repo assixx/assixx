@@ -48,6 +48,18 @@ router.get('/profile', authenticateToken, async (req, res) => {
       }
     }
 
+    // Get tenant information
+    let tenantInfo = null;
+    if (user.tenant_id) {
+      const [tenants] = await db.query('SELECT * FROM tenants WHERE id = ?', [
+        user.tenant_id,
+      ]);
+
+      if (tenants && tenants.length > 0) {
+        tenantInfo = tenants[0];
+      }
+    }
+
     // Remove sensitive information
     delete user.password;
 
@@ -57,6 +69,8 @@ router.get('/profile', authenticateToken, async (req, res) => {
       departmentId: user.department_id,
       team: teamInfo ? teamInfo.name : null,
       teamId: user.team_id,
+      company_name: tenantInfo ? tenantInfo.company_name : null,
+      subdomain: tenantInfo ? tenantInfo.subdomain : null,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);

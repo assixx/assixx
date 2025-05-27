@@ -288,4 +288,90 @@ router.get('/:id/my-response', async (req, res) => {
   }
 });
 
+// Export survey results to Excel
+router.get('/:id/export', async (req, res) => {
+  try {
+    const surveyId = req.params.id;
+    const format = req.query.format || 'excel';
+    
+    // Get survey with all responses
+    const survey = await Survey.getById(surveyId, req.user.tenant_id);
+    if (!survey) {
+      return res.status(404).json({ error: 'Umfrage nicht gefunden' });
+    }
+    
+    // Get statistics with all responses
+    const statistics = await Survey.getStatistics(surveyId, req.user.tenant_id);
+    
+    if (format === 'excel') {
+      // Create Excel export
+      const ExcelJS = require('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      
+      // Summary sheet
+      const summarySheet = workbook.addWorksheet('Zusammenfassung');
+      summarySheet.columns = [
+        { header: 'Eigenschaft', key: 'property', width: 30 },
+        { header: 'Wert', key: 'value', width: 50 }
+      ];
+      
+      summarySheet.addRows([
+        { property: 'Umfrage-Titel', value: survey.data.title },
+        { property: 'Erstellt am', value: new Date(survey.data.created_at).toLocaleDateString('de-DE') },
+        { property: 'Endet am', value: new Date(survey.data.end_date).toLocaleDateString('de-DE') },
+        { property: 'Status', value: survey.data.status },
+        { property: 'Anonym', value: survey.data.is_anonymous ? 'Ja' : 'Nein' },
+        { property: 'Anzahl Antworten', value: statistics.data.totalResponses || 0 },
+        { property: 'Teilnahmequote', value: `${statistics.data.responseRate || 0}%` }
+      ]);
+      
+      // Questions sheet
+      const questionsSheet = workbook.addWorksheet('Fragen & Antworten');
+      
+      // Add headers based on question types
+      const headers = ['Frage', 'Typ', 'Antworten'];
+      questionsSheet.addRow(headers);
+      
+      // Add question results
+      if (statistics.data.questions) {
+        statistics.data.questions.forEach(question => {
+          const row = [
+            question.question_text,
+            question.type,
+            question.totalResponses || 0
+          ];
+          questionsSheet.addRow(row);
+          
+          // Add details based on question type
+          if (question.options) {
+            question.options.forEach(option => {
+              questionsSheet.addRow(['', option.text, `${option.count} (${Math.round((option.count / (question.totalResponses || 1)) * 100)}%)`]);
+            });
+          } else if (question.responses) {
+            question.responses.forEach(response => {
+              questionsSheet.addRow(['', survey.data.is_anonymous ? 'Anonym' : response.user_name || 'N/A', response.text]);
+            });
+          }
+          
+          // Add empty row for spacing
+          questionsSheet.addRow([]);
+        });
+      }
+      
+      // Set response headers
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=umfrage_${surveyId}_export.xlsx`);
+      
+      // Write to response
+      await workbook.xlsx.write(res);
+      res.end();
+    } else {
+      res.status(400).json({ error: 'Nicht unterstütztes Format' });
+    }
+  } catch (error) {
+    console.error('Error exporting survey:', error);
+    res.status(500).json({ error: 'Fehler beim Exportieren der Umfrage' });
+  }
+});
+
 module.exports = router;

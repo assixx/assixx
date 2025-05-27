@@ -405,7 +405,7 @@ app.use('/departments', authenticateToken, departmentRoutes);
 app.use('/teams', authenticateToken, teamRoutes);
 app.use('/users', userRoutes);
 app.use('/documents', authenticateToken, documentRoutes);
-app.use('/features', featureRoutes);
+app.use('/api/features', featureRoutes);
 app.use('/unsubscribe', unsubscribeRoutes); // E-Mail-Abmeldung (ohne Authentifizierung)
 app.use('/api/auth', authRoutes); // Authentifizierungs-API
 app.use('/api/user', userProfileRoutes); // Benutzer-Profil-API

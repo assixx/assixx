@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Standards - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <style>
+        /* Glassmorphismus Design-Standards */
+        
+        /* Dramatischer Hintergrund-Gradient */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #000;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus für Header */
+        .header {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glassmorphismus für Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Fix for sidebar title alignment */
+        .sidebar-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            margin: 0 0 16px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+        }
+        
+        /* Demo Section Styles */
+        .demo-section {
+            margin-bottom: 60px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .demo-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .demo-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+            border-radius: 2px;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        /* Card Styles */
+        .card, .demo-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .card::before, .demo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card:hover::before, .demo-card:hover::before {
+            opacity: 1;
+        }
+        
+        .card:hover, .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .card-header {
+            background: rgba(255, 255, 255, 0.01);
+            /* WICHTIG: Kein backdrop-filter für card-header! */
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+            border-radius: 2px;
+        }
+        
+        .card-body {
+            padding: var(--spacing-lg);
+        }
+        
+        /* Button Styles */
+        .btn {
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 5px;
+        }
+        
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* First-Level Button (EXAKT wie index.html - KEIN Background!) */
+        .btn-primary-first {
+            background: none !important; /* Explizit kein Background */
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Second-Level Button (mit Gradient) */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary::before, .btn-primary-first::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover, .btn-primary-first:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary:hover::before, .btn-primary-first:hover::before {
+            left: 100%;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--primary-color);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background-color: var(--background-dark);
+            color: var(--error-color);
+        }
+        
+        /* Custom Dropdown */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .dropdown-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 46px;
+        }
+        
+        .dropdown-display:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .dropdown-display.active {
+            border-color: rgba(0, 142, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
+        }
+        
+        .dropdown-display svg {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-display.active svg {
+            transform: rotate(180deg);
+        }
+        
+        .dropdown-options {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .dropdown-options.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-option {
+            padding: 10px 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .dropdown-option:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-option:hover {
+            background: rgba(33, 150, 243, 0.2);
+            color: white;
+            padding-left: 16px;
+        }
+        
+        /* Form Controls */
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+        }
+        
+        .form-control:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+            outline: none;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Code Block Styles */
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 15px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .code-block code {
+            color: #64B5F6;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+        
+        /* Page specific styles */
+        .page-header {
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            text-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
+        }
+        
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        
+        /* Stat Card */
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            padding: 20px;
+            border-radius: var(--radius-md);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/admin-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        </a>
+        <div class="header-actions">
+            <div id="user-info">
+                <img id="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                <span id="user-name">Design Standards</span>
+            </div>
+            <button class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Demo</button>
+        </div>
+    </header>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3 class="sidebar-title">
+                    <span class="title-icon">📐</span>
+                    Navigation
+                </h3>
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item active">
+                        <a href="#background" class="sidebar-link">
+                            <span class="icon">🎨</span>
+                            <span>Background</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#cards" class="sidebar-link">
+                            <span class="icon">📦</span>
+                            <span>Cards</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#buttons" class="sidebar-link">
+                            <span class="icon">🔘</span>
+                            <span>Buttons</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#forms" class="sidebar-link">
+                            <span class="icon">📝</span>
+                            <span>Forms</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="#modals" class="sidebar-link">
+                            <span class="icon">🪟</span>
+                            <span>Modals</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Assixx Design Standards</h1>
+                <p class="page-subtitle">Glassmorphismus UI Components & Guidelines</p>
+            </div>
+            
+            <!-- Background Section -->
+            <section id="background" class="demo-section">
+                <h2 class="demo-title">Background & Theme</h2>
+                <div class="demo-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Dramatischer Gradient</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Der Hintergrund verwendet einen dramatischen Gradient mit folgenden Eigenschaften:</p>
+                        <div class="code-block">
+                            <code>background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, ...)</code>
+                        </div>
+                        <p>Dieser Gradient erzeugt die charakteristische dunkle Atmosphäre mit subtilen blauen Akzenten.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Cards Section -->
+            <section id="cards" class="demo-section">
+                <h2 class="demo-title">Cards & Container</h2>
+                <div class="demo-grid">
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Standard Card</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Dies ist eine Standard-Card mit Glassmorphismus-Effekt.</p>
+                            <ul>
+                                <li>Backdrop-filter: blur(20px)</li>
+                                <li>Transparenter Background</li>
+                                <li>Hover-Animation</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3 style="color: var(--primary-color); margin: 0 0 10px 0;">Stat Card</h3>
+                        <p style="font-size: 2rem; font-weight: 600; color: var(--text-primary); margin: 0;">1,234</p>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0;">Beispiel Metrik</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Buttons Section -->
+            <section id="buttons" class="demo-section">
+                <h2 class="demo-title">Buttons</h2>
+                <div class="demo-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Button Varianten</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4 style="color: var(--text-primary); margin-bottom: 15px;">First-Level Buttons (Hauptaktionen)</h4>
+                        <a href="#" class="btn btn-primary-first" style="text-decoration: none;">Registrieren</a>
+                        <a href="#" class="btn btn-primary-first" style="text-decoration: none;">Login</a>
+                        <button class="btn btn-primary-first">Jetzt starten</button>
+                        
+                        <h4 style="color: var(--text-primary); margin: 20px 0 15px 0;">Second-Level Buttons (Sekundäre Aktionen)</h4>
+                        <button class="btn btn-primary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z"/>
+                            </svg>
+                            Upload
+                        </button>
+                        <button class="btn btn-primary">Speichern</button>
+                        <button class="btn btn-primary">Senden</button>
+                        
+                        <h4 style="color: var(--text-primary); margin: 20px 0 15px 0;">Secondary Buttons (Outline Style)</h4>
+                        <button class="btn btn-secondary">Abbrechen</button>
+                        <button class="btn btn-secondary">Zurück</button>
+                        <button class="btn btn-secondary">Mehr Info</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Forms Section -->
+            <section id="forms" class="demo-section">
+                <h2 class="demo-title">Forms & Inputs</h2>
+                <div class="demo-grid">
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Form Controls</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" style="color: var(--text-primary); font-weight: 500; display: block; margin-bottom: 8px;">Text Input</label>
+                                <input type="text" class="form-control" placeholder="Beispiel Eingabe">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" style="color: var(--text-primary); font-weight: 500; display: block; margin-bottom: 8px;">Textarea</label>
+                                <textarea class="form-control" rows="3" placeholder="Mehrzeilige Eingabe"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Custom Dropdown</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label" style="color: var(--text-primary); font-weight: 500; display: block; margin-bottom: 8px;">Dropdown Auswahl</label>
+                                <div class="custom-dropdown">
+                                    <div class="dropdown-display" id="demoDisplay" onclick="toggleDropdown('demo')">
+                                        <span>Bitte wählen</span>
+                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="dropdown-options" id="demoDropdown">
+                                        <div class="dropdown-option" onclick="selectOption('demo', 'option1', 'Option 1')">Option 1</div>
+                                        <div class="dropdown-option" onclick="selectOption('demo', 'option2', 'Option 2')">Option 2</div>
+                                        <div class="dropdown-option" onclick="selectOption('demo', 'option3', 'Option 3')">Option 3</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Modals Section -->
+            <section id="modals" class="demo-section">
+                <h2 class="demo-title">Modals</h2>
+                <div class="demo-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Modal Dialog</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Klicken Sie auf den Button, um ein Modal zu öffnen:</p>
+                        <button class="btn btn-primary" onclick="showModal('demoModal')">Modal öffnen</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Colors & Variables -->
+            <section id="colors" class="demo-section">
+                <h2 class="demo-title">Farben & Variablen</h2>
+                <div class="demo-grid">
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Primärfarben</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <div style="width: 100px; height: 100px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">Primary</div>
+                                <div style="width: 100px; height: 100px; background: var(--primary-hover); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">Primary Hover</div>
+                                <div style="width: 100px; height: 100px; background: var(--primary-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">Primary Light</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="demo-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Status-Farben</h3>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <div style="width: 100px; height: 100px; background: var(--success-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">Success</div>
+                                <div style="width: 100px; height: 100px; background: var(--error-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">Error</div>
+                                <div style="width: 100px; height: 100px; background: var(--warning-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">Warning</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Demo Modal -->
+    <div id="demoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Demo Modal</h3>
+                <button class="modal-close" onclick="hideModal('demoModal')">&times;</button>
+            </div>
+            <form style="padding: var(--spacing-lg);">
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--text-primary); font-weight: 500; display: block; margin-bottom: 8px;">Name</label>
+                    <input type="text" class="form-control" placeholder="Ihr Name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--text-primary); font-weight: 500; display: block; margin-bottom: 8px;">Nachricht</label>
+                    <textarea class="form-control" rows="3" placeholder="Ihre Nachricht"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Speichern</button>
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="hideModal('demoModal')">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Dropdown Functions
+        function toggleDropdown(type) {
+            const display = document.getElementById(type + 'Display');
+            const dropdown = document.getElementById(type + 'Dropdown');
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown-display').forEach(d => {
+                if (d !== display) d.classList.remove('active');
+            });
+            document.querySelectorAll('.dropdown-options').forEach(d => {
+                if (d !== dropdown) d.classList.remove('active');
+            });
+            
+            display.classList.toggle('active');
+            dropdown.classList.toggle('active');
+        }
+        
+        function selectOption(type, value, text) {
+            const display = document.getElementById(type + 'Display');
+            const dropdown = document.getElementById(type + 'Dropdown');
+            
+            display.querySelector('span').textContent = text;
+            display.classList.remove('active');
+            dropdown.classList.remove('active');
+        }
+        
+        // Modal Functions
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+        
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Click outside to close
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+                document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+            }
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+        
+        // Smooth scroll for navigation
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // Update active state
+                    document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+                    this.parentElement.classList.add('active');
+                }
+            });
+        });
+    </script>
+    
+    <!-- Header User Info Loading -->
+    <script src="/js/header-user-info.js"></script>
+</body>
+</html>

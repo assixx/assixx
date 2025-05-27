@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umfrage-Details - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Glassmorphismus Design-Standards */
+        
+        /* Dramatischer Hintergrund-Gradient */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #000;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus für Header */
+        .header {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glassmorphismus für Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Fix for sidebar title alignment */
+        .sidebar-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            margin: 0 0 16px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+        }
+        
+        /* Survey Details Specific Styles */
+        .details-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            margin-bottom: var(--spacing-lg);
+            overflow: hidden;
+        }
+        
+        .details-header {
+            background: rgba(255, 255, 255, 0.01);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .details-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .details-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+            border-radius: 2px;
+        }
+        
+        .details-body {
+            padding: var(--spacing-lg);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+        
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .info-value {
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .status-draft {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+        
+        .status-completed {
+            background: rgba(158, 158, 158, 0.2);
+            color: #9E9E9E;
+            border: 1px solid rgba(158, 158, 158, 0.3);
+        }
+        
+        .question-list {
+            margin-top: var(--spacing-lg);
+        }
+        
+        .question-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .question-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        
+        .question-content {
+            flex: 1;
+        }
+        
+        .question-text {
+            color: var(--text-primary);
+            margin: 0 0 var(--spacing-xs) 0;
+        }
+        
+        .question-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-lg);
+        }
+        
+        .btn {
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--primary-color);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(5px);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        /* Respondents Section */
+        .respondents-list {
+            display: grid;
+            gap: var(--spacing-md);
+        }
+        
+        .respondent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+        }
+        
+        .respondent-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .respondent-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .respondent-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .respondent-name {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .respondent-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .response-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: 0.85rem;
+        }
+        
+        .status-completed {
+            color: #4CAF50;
+        }
+        
+        .status-pending {
+            color: #FF9800;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/admin-dashboard.html" class="logo-container">
+            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+        </a>
+        <div class="header-actions">
+            <div id="user-info">
+                <img id="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                <span id="user-name">Lade...</span>
+            </div>
+            <button id="logout-btn" class="btn btn-secondary">
+                <i class="fas fa-sign-out-alt"></i> Abmelden
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3 class="sidebar-title">
+                    <span class="title-icon">📋</span>
+                    Navigation
+                </h3>
+                <ul class="sidebar-menu" id="nav-menu">
+                    <!-- Wird dynamisch gefüllt -->
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Umfrage-Details</h1>
+            </div>
+            
+            <div id="content-area">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Lade Umfrage-Details...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let surveyId = null;
+        let surveyData = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Survey Details page loaded');
+            
+            // URL-Parameter auslesen
+            const urlParams = new URLSearchParams(window.location.search);
+            surveyId = urlParams.get('id');
+            
+            if (!surveyId) {
+                showError('Keine Umfrage-ID angegeben');
+                return;
+            }
+            
+            // Navigation und User-Info einrichten
+            setupNavigation();
+            setupUserInfo();
+            
+            // Umfrage-Details laden
+            loadSurveyDetails();
+        });
+        
+        function setupNavigation() {
+            const navMenu = document.getElementById('nav-menu');
+            const role = localStorage.getItem('role');
+            
+            const navItems = [
+                { href: '/admin-dashboard.html', icon: '🏠', text: 'Dashboard', roles: ['admin', 'root'] },
+                { href: '/survey-admin.html', icon: '📋', text: 'Umfragen verwalten', roles: ['admin', 'root'] },
+                { href: '#', icon: '📊', text: 'Ergebnisse anzeigen', onclick: `viewResults(${surveyId})`, roles: ['admin', 'root'] },
+            ];
+            
+            navMenu.innerHTML = navItems
+                .filter(item => item.roles.includes(role))
+                .map(item => `
+                    <li class="sidebar-item">
+                        <a href="${item.href}" class="sidebar-link" ${item.onclick ? `onclick="${item.onclick}; return false;"` : ''}>
+                            <span class="icon">${item.icon}</span>
+                            <span>${item.text}</span>
+                        </a>
+                    </li>
+                `).join('');
+        }
+        
+        function setupUserInfo() {
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    if (confirm('Möchten Sie sich wirklich abmelden?')) {
+                        localStorage.clear();
+                        window.location.href = '/';
+                    }
+                });
+            }
+        }
+        
+        async function loadSurveyDetails() {
+            try {
+                const token = localStorage.getItem('token');
+                
+                const response = await fetch(`/api/surveys/${surveyId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Fehler beim Laden der Umfrage');
+                }
+                
+                const result = await response.json();
+                surveyData = result.data;
+                
+                renderDetails();
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            }
+        }
+        
+        function renderDetails() {
+            const contentArea = document.getElementById('content-area');
+            
+            if (!surveyData) {
+                showError('Keine Daten verfügbar');
+                return;
+            }
+            
+            contentArea.innerHTML = `
+                <!-- Allgemeine Informationen -->
+                <div class="details-card">
+                    <div class="details-header">
+                        <h2 class="details-title">Allgemeine Informationen</h2>
+                    </div>
+                    <div class="details-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Titel</span>
+                                <span class="info-value">${surveyData.title}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Status</span>
+                                <span class="info-value">
+                                    <span class="status-badge status-${surveyData.status}">
+                                        ${getStatusLabel(surveyData.status)}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Erstellt am</span>
+                                <span class="info-value">${formatDate(surveyData.created_at)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Endet am</span>
+                                <span class="info-value">${formatDate(surveyData.end_date)}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Anonymität</span>
+                                <span class="info-value">${surveyData.is_anonymous ? 'Anonym' : 'Nicht anonym'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Mehrfachteilnahme</span>
+                                <span class="info-value">${surveyData.allow_multiple_responses ? 'Erlaubt' : 'Nicht erlaubt'}</span>
+                            </div>
+                        </div>
+                        
+                        ${surveyData.description ? `
+                            <div style="margin-top: var(--spacing-lg);">
+                                <span class="info-label">Beschreibung</span>
+                                <p style="color: var(--text-primary); margin-top: var(--spacing-xs);">
+                                    ${surveyData.description}
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Fragen -->
+                <div class="details-card">
+                    <div class="details-header">
+                        <h2 class="details-title">Fragen (${surveyData.questions ? surveyData.questions.length : 0})</h2>
+                    </div>
+                    <div class="details-body">
+                        <div class="question-list">
+                            ${renderQuestions()}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aktionen -->
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="editSurvey()">
+                        <i class="fas fa-edit"></i> Bearbeiten
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewResults(${surveyId})">
+                        <i class="fas fa-chart-bar"></i> Ergebnisse anzeigen
+                    </button>
+                    <button class="btn btn-secondary" onclick="duplicateSurvey()">
+                        <i class="fas fa-copy"></i> Duplizieren
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteSurvey()">
+                        <i class="fas fa-trash"></i> Löschen
+                    </button>
+                </div>
+            `;
+        }
+        
+        function renderQuestions() {
+            if (!surveyData.questions || surveyData.questions.length === 0) {
+                return '<p style="color: var(--text-secondary);">Keine Fragen vorhanden</p>';
+            }
+            
+            return surveyData.questions
+                .sort((a, b) => a.order_number - b.order_number)
+                .map((question, index) => `
+                    <div class="question-item">
+                        <div class="question-number">${index + 1}</div>
+                        <div class="question-content">
+                            <p class="question-text">${question.question_text}</p>
+                            <div class="question-meta">
+                                ${getQuestionTypeLabel(question.type)} 
+                                ${question.is_required ? '• Pflichtfeld' : '• Optional'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+        
+        function getStatusLabel(status) {
+            const labels = {
+                'draft': 'Entwurf',
+                'active': 'Aktiv',
+                'completed': 'Abgeschlossen'
+            };
+            return labels[status] || status;
+        }
+        
+        function getQuestionTypeLabel(type) {
+            const labels = {
+                'text': 'Textantwort',
+                'single_choice': 'Einzelauswahl',
+                'multiple_choice': 'Mehrfachauswahl',
+                'rating': 'Bewertung',
+                'yes_no': 'Ja/Nein',
+                'number': 'Zahl',
+                'date': 'Datum'
+            };
+            return labels[type] || type;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+        
+        function showError(message) {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">❌</div>
+                    <p>${message}</p>
+                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin.html'">
+                        Zurück zur Übersicht
+                    </button>
+                </div>
+            `;
+        }
+        
+        function editSurvey() {
+            // Placeholder - sollte zum Bearbeitungsmodus führen
+            alert('Bearbeitungsfunktion wird implementiert...');
+        }
+        
+        function viewResults(id) {
+            window.location.href = `/survey-results.html?id=${id || surveyId}`;
+        }
+        
+        function duplicateSurvey() {
+            if (confirm('Möchten Sie diese Umfrage duplizieren?')) {
+                // Placeholder für Duplizierung
+                alert('Duplizierungsfunktion wird implementiert...');
+            }
+        }
+        
+        async function deleteSurvey() {
+            if (!confirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/surveys/${surveyId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('Umfrage wurde erfolgreich gelöscht');
+                    window.location.href = '/survey-admin.html';
+                } else {
+                    throw new Error('Fehler beim Löschen der Umfrage');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        }
+    </script>
+    
+    <!-- Header User Info Loading -->
+    <script src="/js/header-user-info.js"></script>
+</body>
+</html>

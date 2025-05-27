@@ -6,31 +6,35 @@ const checkFeature =
   (featureCode, options = {}) =>
   async (req, res, next) => {
     try {
-      // Tenant ID aus Request holen (gesetzt durch tenant middleware)
-      const tenantSubdomain = req.tenantId;
+      // Tenant ID aus Request holen
+      // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
+      let numericTenantId;
+      
+      if (req.tenantId) {
+        // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
+        const db = require('../database');
+        const [tenantRows] = await db.query(
+          'SELECT id FROM tenants WHERE subdomain = ?',
+          [req.tenantId]
+        );
 
-      if (!tenantSubdomain) {
+        if (tenantRows.length === 0) {
+          return res.status(404).json({
+            error: 'Tenant nicht gefunden',
+            upgrade_required: true,
+          });
+        }
+        
+        numericTenantId = tenantRows[0].id;
+      } else if (req.user && req.user.tenant_id) {
+        // Fallback: Verwende tenant_id aus JWT Token
+        numericTenantId = req.user.tenant_id;
+      } else {
         return res.status(400).json({
           error: 'Tenant nicht identifiziert',
           upgrade_required: true,
         });
       }
-
-      // Hole numerische Tenant ID aus Datenbank
-      const db = require('../database');
-      const [tenantRows] = await db.query(
-        'SELECT id FROM tenants WHERE subdomain = ?',
-        [tenantSubdomain]
-      );
-
-      if (tenantRows.length === 0) {
-        return res.status(404).json({
-          error: 'Tenant nicht gefunden',
-          upgrade_required: true,
-        });
-      }
-
-      const numericTenantId = tenantRows[0].id;
 
       // Prüfe ob Tenant das Feature hat
       const hasAccess = await Feature.checkTenantAccess(
@@ -40,7 +44,7 @@ const checkFeature =
 
       if (!hasAccess) {
         logger.warn(
-          `Tenant ${tenantSubdomain} tried to access feature ${featureCode} without permission`
+          `Tenant ${numericTenantId} tried to access feature ${featureCode} without permission`
         );
 
         // Hole Feature-Details für bessere Fehlermeldung
@@ -75,28 +79,33 @@ const checkFeatures =
   (featureCodes, requireAll = true) =>
   async (req, res, next) => {
     try {
-      const tenantSubdomain = req.tenantId;
+      // Tenant ID aus Request holen
+      // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
+      let numericTenantId;
+      
+      if (req.tenantId) {
+        // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
+        const db = require('../database');
+        const [tenantRows] = await db.query(
+          'SELECT id FROM tenants WHERE subdomain = ?',
+          [req.tenantId]
+        );
 
-      if (!tenantSubdomain) {
+        if (tenantRows.length === 0) {
+          return res.status(404).json({
+            error: 'Tenant nicht gefunden',
+          });
+        }
+        
+        numericTenantId = tenantRows[0].id;
+      } else if (req.user && req.user.tenant_id) {
+        // Fallback: Verwende tenant_id aus JWT Token
+        numericTenantId = req.user.tenant_id;
+      } else {
         return res.status(400).json({
           error: 'Tenant nicht identifiziert',
         });
       }
-
-      // Hole numerische Tenant ID aus Datenbank
-      const db = require('../database');
-      const [tenantRows] = await db.query(
-        'SELECT id FROM tenants WHERE subdomain = ?',
-        [tenantSubdomain]
-      );
-
-      if (tenantRows.length === 0) {
-        return res.status(404).json({
-          error: 'Tenant nicht gefunden',
-        });
-      }
-
-      const numericTenantId = tenantRows[0].id;
 
       const results = {};
       const missingFeatures = [];
@@ -143,26 +152,31 @@ const checkFeatures =
 // Middleware um alle Features eines Tenants zu laden
 const loadTenantFeatures = async (req, res, next) => {
   try {
-    const tenantSubdomain = req.tenantId;
+    // Tenant ID aus Request holen
+    // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
+    let numericTenantId;
+    
+    if (req.tenantId) {
+      // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
+      const db = require('../database');
+      const [tenantRows] = await db.query(
+        'SELECT id FROM tenants WHERE subdomain = ?',
+        [req.tenantId]
+      );
 
-    if (!tenantSubdomain) {
+      if (tenantRows.length === 0) {
+        req.availableFeatures = [];
+        return next();
+      }
+      
+      numericTenantId = tenantRows[0].id;
+    } else if (req.user && req.user.tenant_id) {
+      // Fallback: Verwende tenant_id aus JWT Token
+      numericTenantId = req.user.tenant_id;
+    } else {
       req.availableFeatures = [];
       return next();
     }
-
-    // Hole numerische Tenant ID aus Datenbank
-    const db = require('../database');
-    const [tenantRows] = await db.query(
-      'SELECT id FROM tenants WHERE subdomain = ?',
-      [tenantSubdomain]
-    );
-
-    if (tenantRows.length === 0) {
-      req.availableFeatures = [];
-      return next();
-    }
-
-    const numericTenantId = tenantRows[0].id;
     const features = await Feature.getTenantFeatures(numericTenantId);
     req.availableFeatures = features.filter((f) => f.is_available);
     req.allFeatures = features;

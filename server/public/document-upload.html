@@ -7,20 +7,129 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/dashboard-theme.css">
     <style>
+        /* Glassmorphismus Design-Standards - Wie im Admin Dashboard */
+        
+        /* Dramatischer Hintergrund-Gradient */
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: #000;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Glassmorphismus für Header */
+        .header {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glassmorphismus für Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
+                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Fix for sidebar title alignment */
+        .sidebar-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            margin: 0 0 16px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(33, 150, 243, 0.2);
+        }
+        
+        /* Glassmorphismus Upload Section - wie card im Dashboard */
         .upload-section {
-            background-color: var(--background-light);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            padding: var(--spacing-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
             margin-bottom: var(--spacing-lg);
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .upload-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .upload-section:hover::before {
+            opacity: 1;
+        }
+        
+        .upload-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        /* Card Header für Upload Title - wie im Dashboard */
+        .card-header {
+            background: rgba(255, 255, 255, 0.01);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .upload-title {
+            font-size: 1.1rem;
+            font-weight: 600;
             color: var(--text-primary);
-            font-size: 24px;
-            margin-bottom: var(--spacing-lg);
-            padding-bottom: var(--spacing-sm);
-            border-bottom: 2px solid var(--primary-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .upload-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+            border-radius: 2px;
+        }
+        
+        .card-body {
+            padding: var(--spacing-lg);
         }
         
         .upload-form {
@@ -32,115 +141,161 @@
             margin-bottom: var(--spacing-md);
         }
         
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: var(--spacing-xs);
-        }
-        
-        /* Überschreibe Stile von dashboard-theme.css mit spezifischeren Selektoren */
-        .upload-form .form-control {
+        /* Form Controls - wie im Dashboard */
+        .form-control {
             width: 100%;
-            padding: 12px 15px;
-            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-sm);
-            background-color: #2a2a2a; /* Dunklerer Hintergrund für bessere Lesbarkeit */
-            color: #ffffff; /* Weiße Schrift für guten Kontrast */
-            font-size: 16px;
+            color: var(--text-primary);
+            font-size: 14px;
             transition: all 0.3s ease;
         }
         
-        .upload-form .form-control:hover {
-            border-color: #4a4a4a;
-            background-color: #333333;
+        .form-control:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
         }
         
-        .upload-form .form-control:focus {
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.08);
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3); /* Blauer Fokus wie im Dashboard */
-            background-color: #333333; /* Dunklerer Hintergrund im Fokus */
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
             outline: none;
         }
         
-        /* Select-Dropdown-Styling */
-        .upload-form select.form-control {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 30px; /* Platz für den Pfeil */
+        /* Form Label */
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        /* Custom Glassmorphismus Dropdown - Nach Design Standards */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        
+        .dropdown-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            color: #fff;
             cursor: pointer;
-            font-weight: 500; /* Etwas dickere Schrift für bessere Lesbarkeit */
+            transition: all 0.3s ease;
+            min-height: 46px;
         }
         
-        /* Spezielle Markierung für Selektfelder mit ausgewähltem Wert */
-        .upload-form select.form-control:has(option:checked:not([value=""])) {
-            border-left: 3px solid var(--primary-color); /* Farbige Markierung für ausgewählte Elemente */
+        .dropdown-display:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
         }
         
-        /* Alternative für Browser, die :has nicht unterstützen */
-        .upload-form select.form-control.has-value {
-            border-left: 3px solid var(--primary-color);
+        .dropdown-display.active {
+            border-color: rgba(0, 142, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
         }
         
-        /* Option-Styling für Dropdown */
-        .upload-form select.form-control option {
-            background-color: #333333;
-            color: #ffffff;
-            padding: 12px;
+        .dropdown-display.active svg {
+            transform: rotate(180deg);
         }
         
-        /* Hervorheben des gewählten Elements */
-        .upload-form select.form-control option:checked {
-            background-color: var(--primary-color);
+        .dropdown-display span {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .dropdown-display svg {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-options {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .dropdown-options.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-option {
+            padding: 10px 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .dropdown-option:last-child {
+            border-bottom: none;
+        }
+        
+        .dropdown-option:hover {
+            background: rgba(33, 150, 243, 0.2);
             color: white;
-            font-weight: bold;
+            padding-left: 16px;
         }
         
-        /* Hover-Effekt für Optionen */
-        .upload-form select.form-control option:hover {
-            background-color: #444444;
+        .dropdown-option.selected {
+            background: rgba(33, 150, 243, 0.15);
+            font-weight: 500;
         }
         
-        /* Spezifisches Styling für verschiedene Eingabefelder */
-        .upload-form textarea.form-control {
+        /* Placeholder Styling */
+        .dropdown-display.placeholder span {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+        
+        /* Textarea spezifisch */
+        textarea.form-control {
             min-height: 100px;
             resize: vertical;
         }
         
-        .upload-form input[type="number"].form-control {
-            text-align: center;
-            font-weight: 500;
+        /* Page Header - wie im Dashboard */
+        .page-header {
+            margin-bottom: var(--spacing-lg);
         }
         
-        /* Hervorhebung für fokussierte Elemente */
-        .upload-form .form-control:focus {
-            border-left: 3px solid #64B5F6; /* Helleres Blau für Fokus */
-        }
-        
-        /* Spezielle Animation beim Fokussieren */
-        .upload-form .form-group {
-            position: relative;
-        }
-        
-        .upload-form .form-group::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background-color: var(--primary-color);
-            transition: width 0.3s ease, left 0.3s ease;
-            z-index: 2;
-        }
-        
-        .upload-form .form-group:focus-within::after {
-            width: 100%;
-            left: 0;
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            text-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
         }
         
         .form-row {
@@ -157,18 +312,21 @@
         
         .file-drop-area {
             position: relative;
-            border: 2px dashed var(--border-color);
+            border: 2px dashed rgba(255, 255, 255, 0.15);
             border-radius: var(--radius-md);
             padding: 30px;
             text-align: center;
             transition: all 0.3s;
             margin-bottom: var(--spacing-md);
-            background-color: var(--background-dark);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         
         .file-drop-area:hover, .file-drop-area.drag-over {
-            border-color: var(--primary-color);
-            background-color: rgba(27, 142, 1, 0.05);
+            border-color: rgba(33, 150, 243, 0.5);
+            background: rgba(33, 150, 243, 0.05);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
         }
         
         .file-icon {
@@ -190,12 +348,15 @@
         }
         
         .file-restrictions {
-            background-color: rgba(27, 142, 1, 0.05);
+            background: rgba(33, 150, 243, 0.05);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(33, 150, 243, 0.1);
             border-radius: var(--radius-sm);
             padding: var(--spacing-sm);
             margin-top: var(--spacing-xs);
             margin-bottom: var(--spacing-md);
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 12px;
         }
         
@@ -211,31 +372,40 @@
         
         .file-info {
             display: none;
-            background-color: rgba(27, 142, 1, 0.1);
+            background: rgba(33, 150, 243, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(33, 150, 243, 0.2);
             border-radius: var(--radius-sm);
             padding: 10px 15px;
             margin-top: var(--spacing-sm);
             color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
         }
         
         .file-info.active {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            animation: fadeInUp 0.3s ease-out;
         }
         
         .pdf-preview-container {
             display: none;
             margin: var(--spacing-md) 0;
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: var(--radius-md);
             overflow: hidden;
             max-height: 400px;
-            background-color: #f5f5f5;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
         
         .pdf-preview-container.active {
             display: block;
+            animation: fadeInUp 0.3s ease-out;
         }
         
         .pdf-preview {
@@ -248,9 +418,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: var(--background-dark);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: var(--spacing-sm);
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .preview-title {
@@ -270,8 +442,9 @@
         }
         
         .preview-close:hover {
-            color: var(--text-primary);
-            background-color: rgba(0,0,0,0.1);
+            color: var(--error-color);
+            background: rgba(255, 255, 255, 0.05);
+            transform: scale(1.1);
         }
         
         .file-name {
@@ -287,41 +460,70 @@
             font-size: 14px;
         }
         
-        .btn-upload {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px 24px;
+        /* Button Styles wie im Dashboard */
+        .btn {
+            padding: 10px 24px;
             border-radius: var(--radius-sm);
-            font-size: 16px;
-            font-weight: 600;
+            font-weight: 500;
+            font-size: 14px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            border: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
         }
         
-        .btn-upload:hover {
-            background-color: #157300;
+        /* Second-Level Button für Upload (mit Gradient) */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
         }
         
-        .btn-upload:active {
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:active {
             transform: translateY(0);
         }
         
-        .btn-upload .icon {
-            margin-right: 10px;
+        .btn svg {
+            margin-right: 8px;
         }
         
+        /* Alert Styles - wie stat-cards im Dashboard */
         .alert {
             padding: 15px 20px;
             border-radius: var(--radius-sm);
             margin-bottom: var(--spacing-md);
             display: flex;
             align-items: center;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            animation: fadeInUp 0.3s ease-out;
+            transition: all 0.3s ease;
         }
         
         .alert .icon {
@@ -330,18 +532,33 @@
         }
         
         .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
-        /* Animation für den Spinner */
+        /* Animationen */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -431,27 +648,46 @@
             </div>
             
             <div class="upload-section">
-                <h2 class="upload-title">Dokument-Informationen</h2>
-                <form id="upload-form" class="upload-form">
+                <div class="card-header">
+                    <h2 class="upload-title">Dokument-Informationen</h2>
+                </div>
+                <div class="card-body">
+                    <form id="upload-form" class="upload-form">
                     <div class="form-row">
                         <div class="form-col">
                             <div class="form-group">
                                 <label for="user-select" class="form-label">Mitarbeiter auswählen</label>
-                                <select id="user-select" name="userId" class="form-control" required>
-                                    <option value="" disabled selected style="color: #999; font-style: italic;">Bitte Mitarbeiter auswählen</option>
-                                    <!-- Wird dynamisch befüllt -->
-                                </select>
+                                <div class="custom-dropdown">
+                                    <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
+                                        <span>Bitte Mitarbeiter auswählen</span>
+                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="dropdown-options" id="userDropdown">
+                                        <!-- Wird dynamisch befüllt -->
+                                    </div>
+                                    <input type="hidden" name="userId" id="userValue" required>
+                                </div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="category-select" class="form-label">Kategorie</label>
-                                <select id="category-select" name="category" class="form-control" required>
-                                    <option value="" disabled selected style="color: #999; font-style: italic;">Bitte Kategorie auswählen</option>
-                                    <option value="salary">Gehaltsabrechnung</option>
-                                    <option value="contract">Vertrag</option>
-                                    <option value="certificate">Zertifikat/Zeugnis</option>
-                                    <option value="other">Sonstiges</option>
-                                </select>
+                                <div class="custom-dropdown">
+                                    <div class="dropdown-display placeholder" id="categoryDisplay" onclick="toggleDropdown('category')">
+                                        <span>Bitte Kategorie auswählen</span>
+                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="dropdown-options" id="categoryDropdown">
+                                        <div class="dropdown-option" onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')">Gehaltsabrechnung</div>
+                                        <div class="dropdown-option" onclick="selectOption('category', 'contract', 'Vertrag')">Vertrag</div>
+                                        <div class="dropdown-option" onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')">Zertifikat/Zeugnis</div>
+                                        <div class="dropdown-option" onclick="selectOption('category', 'other', 'Sonstiges')">Sonstiges</div>
+                                    </div>
+                                    <input type="hidden" name="category" id="categoryValue" required>
+                                </div>
                             </div>
                         </div>
                         
@@ -463,21 +699,30 @@
                             
                             <div class="form-group">
                                 <label for="month-select" class="form-label">Monat (optional)</label>
-                                <select id="month-select" name="month" class="form-control">
-                                    <option value="" disabled selected style="color: #999; font-style: italic;">Monat auswählen (optional)</option>
-                                    <option value="Januar">Januar</option>
-                                    <option value="Februar">Februar</option>
-                                    <option value="März">März</option>
-                                    <option value="April">April</option>
-                                    <option value="Mai">Mai</option>
-                                    <option value="Juni">Juni</option>
-                                    <option value="Juli">Juli</option>
-                                    <option value="August">August</option>
-                                    <option value="September">September</option>
-                                    <option value="Oktober">Oktober</option>
-                                    <option value="November">November</option>
-                                    <option value="Dezember">Dezember</option>
-                                </select>
+                                <div class="custom-dropdown">
+                                    <div class="dropdown-display placeholder" id="monthDisplay" onclick="toggleDropdown('month')">
+                                        <span>Monat auswählen (optional)</span>
+                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div class="dropdown-options" id="monthDropdown">
+                                        <div class="dropdown-option" onclick="selectOption('month', '', 'Kein Monat')">Kein Monat</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Januar', 'Januar')">Januar</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Februar', 'Februar')">Februar</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'März', 'März')">März</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'April', 'April')">April</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Mai', 'Mai')">Mai</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Juni', 'Juni')">Juni</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Juli', 'Juli')">Juli</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'August', 'August')">August</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'September', 'September')">September</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Oktober', 'Oktober')">Oktober</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'November', 'November')">November</div>
+                                        <div class="dropdown-option" onclick="selectOption('month', 'Dezember', 'Dezember')">Dezember</div>
+                                    </div>
+                                    <input type="hidden" name="month" id="monthValue">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -516,16 +761,15 @@
                     </div>
                     
                     <div class="form-group" style="text-align: center; margin-top: 30px;">
-                        <button type="submit" class="btn-upload" id="upload-button">
-                            <span class="icon">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
-                                </svg>
-                            </span>
+                        <button type="submit" class="btn btn-primary" id="upload-button">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
+                            </svg>
                             Dokument hochladen
                         </button>
                     </div>
                 </form>
+                </div>
             </div>
         </main>
     </div>
@@ -550,20 +794,20 @@
                 uploadForm.addEventListener('submit', uploadDocument);
             }
             
-            // Select-Boxen für besseres Styling verbessern
-            setupSelectBoxes();
+            // Dropdown-Funktionalität einrichten
+            setupDropdowns();
         });
         
         // Bestätigungsdialog anzeigen
         function showConfirmationDialog(formData, callback) {
-            const employee = document.getElementById('user-select').options[document.getElementById('user-select').selectedIndex].text;
-            const categoryText = document.getElementById('category-select').options[document.getElementById('category-select').selectedIndex].text;
+            const employeeDisplay = document.getElementById('userDisplay').querySelector('span').textContent;
+            const categoryDisplay = document.getElementById('categoryDisplay').querySelector('span').textContent;
             const fileInput = document.getElementById('file-input');
             const fileName = fileInput.files[0].name;
             
             const confirmMsg = `Bitte bestätigen Sie den Dokument-Upload:\n\n` +
-                            `Mitarbeiter: ${employee}\n` +
-                            `Kategorie: ${categoryText}\n` +
+                            `Mitarbeiter: ${employeeDisplay}\n` +
+                            `Kategorie: ${categoryDisplay}\n` +
                             `Dateiname: ${fileName}\n` +
                             (formData.get('year') ? `Jahr: ${formData.get('year')}\n` : '') + 
                             (formData.get('month') ? `Monat: ${formData.get('month')}\n` : '') +
@@ -814,9 +1058,9 @@
         // Mitarbeiter für das Dropdown laden
         async function loadEmployees() {
             const token = localStorage.getItem('token');
-            const userSelect = document.getElementById('user-select');
+            const userDropdown = document.getElementById('userDropdown');
             
-            if (!userSelect) return;
+            if (!userDropdown) return;
             
             try {
                 const response = await fetch('/admin/employees', {
@@ -829,12 +1073,16 @@
                     const employees = await response.json();
                     console.log(`Loaded ${employees.length} employees`);
                     
+                    // Dropdown leeren
+                    userDropdown.innerHTML = '';
+                    
                     // Mitarbeiter zum Dropdown hinzufügen
                     employees.forEach(employee => {
-                        const option = document.createElement('option');
-                        option.value = employee.id;
+                        const option = document.createElement('div');
+                        option.className = 'dropdown-option';
                         option.textContent = `${employee.first_name} ${employee.last_name}`;
-                        userSelect.appendChild(option);
+                        option.onclick = () => selectOption('user', employee.id, `${employee.first_name} ${employee.last_name}`);
+                        userDropdown.appendChild(option);
                     });
                 } else {
                     console.error('Failed to load employees');
@@ -871,11 +1119,9 @@
                 if (uploadButton) {
                     uploadButton.disabled = true;
                     uploadButton.innerHTML = `
-                        <span class="loading-spinner">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
-                            </svg>
-                        </span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
+                            <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
+                        </svg>
                         Wird hochgeladen...
                     `;
                 }
@@ -931,11 +1177,9 @@
                 if (uploadButton) {
                     uploadButton.disabled = false;
                     uploadButton.innerHTML = `
-                        <span class="icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
-                            </svg>
-                        </span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
+                        </svg>
                         Dokument hochladen
                     `;
                 }
@@ -988,26 +1232,51 @@
             }
         }
         
-        // Verbesserte Darstellung für Select-Boxen
-        function setupSelectBoxes() {
-            // Alle Select-Elemente im Formular finden
-            const selectElements = document.querySelectorAll('.upload-form select.form-control');
+        // Dropdown-Funktionen
+        function toggleDropdown(type) {
+            const display = document.getElementById(type + 'Display');
+            const dropdown = document.getElementById(type + 'Dropdown');
             
-            // Für jedes Select-Element
-            selectElements.forEach(select => {
-                // Initial prüfen, ob ein Wert ausgewählt ist
-                if (select.value) {
-                    select.classList.add('has-value');
+            // Alle anderen schließen
+            document.querySelectorAll('.dropdown-display').forEach(d => {
+                if (d !== display) d.classList.remove('active');
+            });
+            document.querySelectorAll('.dropdown-options').forEach(d => {
+                if (d !== dropdown) d.classList.remove('active');
+            });
+            
+            display.classList.toggle('active');
+            dropdown.classList.toggle('active');
+        }
+        
+        function selectOption(type, value, text) {
+            const display = document.getElementById(type + 'Display');
+            const dropdown = document.getElementById(type + 'Dropdown');
+            const input = document.getElementById(type + 'Value');
+            
+            display.querySelector('span').textContent = text;
+            display.classList.remove('placeholder');
+            input.value = value;
+            
+            display.classList.remove('active');
+            dropdown.classList.remove('active');
+            
+            // Markiere ausgewählte Option
+            dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.textContent === text) {
+                    opt.classList.add('selected');
                 }
-                
-                // Event-Listener für Änderungen hinzufügen
-                select.addEventListener('change', function() {
-                    if (this.value) {
-                        this.classList.add('has-value');
-                    } else {
-                        this.classList.remove('has-value');
-                    }
-                });
+            });
+        }
+        
+        function setupDropdowns() {
+            // Click-Outside-to-Close
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.custom-dropdown')) {
+                    document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+                    document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+                }
             });
         }
     </script>
