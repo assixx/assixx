@@ -56,7 +56,7 @@ router.get(`${API_PREFIX}/health`, (req, res) => {
 });
 
 // 404 handler for API routes
-router.use(`${API_PREFIX}/*`, (req, res) => {
+router.use(`${API_PREFIX}`, (req, res) => {
   res.status(404).json({
     error: 'API endpoint not found',
     path: req.originalUrl,
