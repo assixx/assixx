@@ -16,53 +16,78 @@ const db = mysql.createPool({
 class ChatService {
   /**
    * Holt alle verfügbaren Chat-Benutzer für einen Tenant
-   * @param {string} tenantId - Die Tenant-ID
-   * @param {number} userId - Die aktuelle Benutzer-ID
+   * @param {string|number} tenantId - Die Tenant-ID
+   * @param {string|number} userId - Die aktuelle Benutzer-ID
    * @returns {Promise<Array>} Liste der Benutzer
    */
   async getUsers(tenantId, userId) {
-    const query = `
-      SELECT 
-        u.id,
-        u.username,
-        u.first_name,
-        u.last_name,
-        u.email,
-        u.employee_number,
-        u.position,
-        u.department,
-        NULL as profile_image_url,
-        CASE WHEN ws.id IS NOT NULL THEN 1 ELSE 0 END AS is_online,
-        ws.shift_type,
-        ws.start_time,
-        ws.end_time,
-        ws.location
-      FROM users u
-      LEFT JOIN work_schedules ws ON u.id = ws.user_id 
-        AND ws.date = CURDATE()
-        AND ws.tenant_id = ?
-      WHERE u.tenant_id = ? 
-        AND u.id != ?
-        AND u.archive = 0
-      ORDER BY u.last_name, u.first_name
-    `;
+    try {
+      // Log input parameters
+      console.log('ChatService.getUsers - tenantId:', tenantId, 'type:', typeof tenantId);
+      console.log('ChatService.getUsers - userId:', userId, 'type:', typeof userId);
+      
+      // Ensure parameters are numbers
+      const numericTenantId = parseInt(tenantId);
+      const numericUserId = parseInt(userId);
+      
+      if (isNaN(numericTenantId) || isNaN(numericUserId)) {
+        throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
+      }
+      
+      const query = `
+        SELECT 
+          u.id,
+          u.username,
+          u.first_name,
+          u.last_name,
+          u.email,
+          NULL as employee_number,
+          NULL as position,
+          NULL as department,
+          NULL as profile_image_url,
+          0 AS is_online,
+          NULL as shift_type,
+          NULL as start_time,
+          NULL as end_time,
+          NULL as location
+        FROM users u
+        WHERE u.tenant_id = ? 
+          AND u.id != ?
+          ORDER BY u.last_name, u.first_name
+      `;
 
-    const [users] = await db
-      .promise()
-      .query(query, [tenantId, tenantId, userId]);
-    return users;
+      console.log('ChatService.getUsers - Executing query with params:', [numericTenantId, numericUserId]);
+      
+      const [users] = await db
+        .promise()
+        .query(query, [numericTenantId, numericUserId]);
+        
+      console.log('ChatService.getUsers - Found users:', users.length);
+      return users;
+    } catch (error) {
+      console.error('ChatService.getUsers - Error:', error);
+      throw error;
+    }
   }
 
   /**
    * Holt alle Konversationen für einen Benutzer
-   * @param {string} tenantId - Die Tenant-ID
-   * @param {number} userId - Die Benutzer-ID
+   * @param {string|number} tenantId - Die Tenant-ID
+   * @param {string|number} userId - Die Benutzer-ID
    * @returns {Promise<Array>} Liste der Konversationen
    */
   async getConversations(tenantId, userId) {
     try {
       console.log('ChatService.getConversations called with:', { tenantId, userId });
       console.log('DB pool status:', db.pool ? 'exists' : 'not initialized');
+      
+      // Ensure parameters are numbers
+      const numericTenantId = parseInt(tenantId);
+      const numericUserId = parseInt(userId);
+      
+      if (isNaN(numericTenantId) || isNaN(numericUserId)) {
+        throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
+      }
     
     const query = `
       SELECT 
@@ -106,19 +131,20 @@ class ChatService {
         GROUP BY m.conversation_id
       ) unread ON c.id = unread.conversation_id
       WHERE cp.user_id = ? AND c.tenant_id = ?
-      GROUP BY c.id
+      GROUP BY c.id, c.name, c.is_group, c.created_at, u.first_name, u.last_name, 
+               m.content, m.created_at, sender.username, unread.count
       ORDER BY COALESCE(m.created_at, c.created_at) DESC
     `;
 
     const [conversations] = await db
       .promise()
       .query(query, [
-        userId,
-        tenantId,
-        tenantId,
-        userId,
-        userId,
-        tenantId,
+        numericUserId,
+        numericTenantId,
+        numericTenantId,
+        numericUserId,
+        numericUserId,
+        numericTenantId,
       ]);
 
     return conversations;

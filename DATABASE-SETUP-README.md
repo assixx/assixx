@@ -53,6 +53,14 @@ Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Detail
   - Component-basierte Architektur
   - Asset-Optimierung
 
+### 🔄 Migration Update (Mai 2025)
+
+- **server/** Ordner wurde zu **backend/** umbenannt
+- Alle Pfade und Imports wurden aktualisiert
+- Frontend Build-System mit Vite eingeführt
+- Express 5 Migration abgeschlossen
+- Chat-System Datenbankschema erstellt
+
 ---
 
 ## ⚡ Schnellstart
@@ -74,11 +82,10 @@ chmod +x setup-wsl-ubuntu.sh
 ./setup-wsl-ubuntu.sh
 
 # 3. Anwendung starten
-cd server
-npm start
+npm run dev
 
 # 4. Browser öffnen
-# http://localhost:3000/signup.html
+# http://localhost:3000/signup
 ```
 
 ### Windows Automatisch
@@ -962,5 +969,5 @@ Bei Problemen:
 
 **🎉 Herzlichen Glückwunsch! Assixx ist jetzt einsatzbereit!**
 
-_Generiert am: $(date)_  
-_Version: 2025-01-23_
+_Generiert am: 2025-05-29_  
+_Version: 2025-05-29_

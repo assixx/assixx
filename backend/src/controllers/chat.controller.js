@@ -9,10 +9,18 @@ class ChatController {
    */
   async getUsers(req, res) {
     try {
-      const users = await chatService.getUsers(
-        req.user.tenantId,
-        req.user.userId
-      );
+      // Debug logging
+      console.log('getUsers - Full req.user:', req.user);
+      console.log('getUsers - tenantId type:', typeof req.user.tenantId, 'value:', req.user.tenantId);
+      console.log('getUsers - userId type:', typeof req.user.userId, 'value:', req.user.userId);
+      
+      // Convert to numbers to ensure proper data types
+      const tenantId = parseInt(req.user.tenantId);
+      const userId = parseInt(req.user.userId);
+      
+      console.log('getUsers - Parsed tenantId:', tenantId, 'userId:', userId);
+      
+      const users = await chatService.getUsers(tenantId, userId);
       res.json(users);
     } catch (error) {
       console.error('Fehler beim Abrufen der Benutzer:', error);
@@ -29,10 +37,11 @@ class ChatController {
       console.log('Chat getConversations - user:', req.user);
       console.log('tenantId:', req.user.tenantId, 'userId:', req.user.userId);
       
-      const conversations = await chatService.getConversations(
-        req.user.tenantId,
-        req.user.userId
-      );
+      // Convert to numbers to ensure proper data types
+      const tenantId = parseInt(req.user.tenantId);
+      const userId = parseInt(req.user.userId);
+      
+      const conversations = await chatService.getConversations(tenantId, userId);
       res.json(conversations);
     } catch (error) {
       console.error('Fehler beim Abrufen der Konversationen:', error);

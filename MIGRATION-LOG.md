@@ -136,8 +136,45 @@ Assixx/
 └── uploads/        # User-generierte Inhalte
 ```
 
+## 🚀 29.05.2025 - DEPENDENCY UPDATES & CHAT SYSTEM FIXES
+
+**Zeit:** 20:00 - 22:30 Uhr
+
+### Durchgeführte Arbeiten:
+
+1. ✅ **Dependabot PRs bearbeitet:**
+   - Express 5 Migration abgeschlossen (Breaking Change: Wildcard Patterns)
+   - Multi-Update PR geschlossen (zu komplex)
+   - Alle Dependencies aktualisiert
+
+2. ✅ **Frontend Path Fixes:**
+   - MIME Type Conflicts behoben
+   - Script-Pfade von `/js/` auf `/scripts/` korrigiert
+   - API-Pfade von `/users` auf `/api/users` korrigiert
+
+3. ✅ **Express 5 Breaking Changes:**
+   - Wildcard Pattern `/api/*` → `/api` geändert
+   - Route-Registrierung angepasst
+   - Fehlende Routen (machines, areas) hinzugefügt
+
+4. ✅ **Chat System Database Fixes:**
+   - Chat-Tabellen aus Schema erstellt
+   - MySQL GROUP BY Fehler behoben
+   - Fehlende Spalten durch NULL ersetzt:
+     - `employee_number` → NULL
+     - `position` → NULL
+     - `department` → NULL
+     - `archive` Bedingung entfernt
+   - JWT Token Type Conversion (String → Number)
+
+### Ergebnis:
+- Alle Dependencies aktuell
+- Chat-System vollständig funktionsfähig
+- Keine 500-Fehler mehr auf allen Chat-Endpoints
+
 ---
 
-**Umstrukturierung abgeschlossen:** 29.05.2025  
-**Dauer:** 1 Tag (statt geplanter 10-12 Tage!)  
-**Ergebnis:** Moderne, skalierbare Architektur ✅
+**Umstrukturierung abgeschlossen:** 28.05.2025  
+**Dependency Updates abgeschlossen:** 29.05.2025  
+**Dauer:** 1.5 Tage total  
+**Ergebnis:** Moderne, skalierbare Architektur mit aktuellen Dependencies ✅

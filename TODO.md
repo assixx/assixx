@@ -1,17 +1,38 @@
 # Assixx Project - Zentrale TODO-Liste
 
-> **Letzte Aktualisierung:** 28.01.2025 - 15:30
+> **Letzte Aktualisierung:** 29.05.2025 - 22:30
 > **Erstellt aus:** README.md, ROADMAP.md, CLAUDE.md, CLAUDE.local.md, SECURITY-IMPROVEMENTS.md, CHAT-SYSTEM-FIXES.md
 >
-> **🔴 WICHTIG:** Backend-Migration abgeschlossen (28.01.2025):
+> **🔴 WICHTIG:** Backend-Migration abgeschlossen (28.05.2025):
 >
 > - Server/ → Backend/ Migration erfolgreich
 > - MVC-Architektur implementiert
 > - Frontend/Backend Trennung vollständig
+> - Express 5 Migration abgeschlossen (29.05.2025)
+> - Chat-System vollständig funktionsfähig (29.05.2025)
 
 ## ✅ ERLEDIGTE AUFGABEN
 
-### Backend-Migration & Refactoring (Abgeschlossen am 28.01.2025)
+### Dependency Updates & Chat Fixes (Abgeschlossen am 29.05.2025)
+
+- [x] **Express 5 Migration**
+  - [x] Wildcard Pattern Breaking Change behoben (`/api/*` → `/api`)
+  - [x] Route-Registrierung angepasst
+  - [x] Fehlende Routen (machines, areas) hinzugefügt
+
+- [x] **Chat-System Database Fixes**
+  - [x] Chat-Tabellen aus Schema erstellt
+  - [x] MySQL GROUP BY Fehler behoben
+  - [x] Fehlende Spalten durch NULL ersetzt
+  - [x] JWT Token Type Conversion implementiert
+  - [x] Alle Chat-Endpoints funktionsfähig
+
+- [x] **Frontend Path Fixes**
+  - [x] MIME Type Conflicts behoben
+  - [x] Script-Pfade von `/js/` auf `/scripts/` korrigiert
+  - [x] API-Pfade angepasst
+
+### Backend-Migration & Refactoring (Abgeschlossen am 28.05.2025)
 
 - [x] **Server/ → Backend/ Migration**
   - [x] Alle Server-Dateien nach backend/src verschoben
@@ -375,15 +396,18 @@
 
 ## 📊 Status-Übersicht
 
-### Erledigte Aufgaben: ✅ 86 Items
+### Erledigte Aufgaben: ✅ 98 Items
 
 - **Backend-Migration:** 14 Items
+- **Dependency Updates:** 3 Items
+- **Chat-System Fixes:** 5 Items
+- **Frontend Path Fixes:** 3 Items
 - **UI/UX & Design:** 15 Items
 - **Features:** 20 Items
 - **Feature Management:** 6 Items
 - **Code-Qualität:** 9 Items
 - **Clean URLs:** 8 Items
-- **Dokumentation:** 9 Items (inkl. PROJEKTSTRUKTUR.md)
+- **Dokumentation:** 10 Items (inkl. PROJEKTSTRUKTUR.md, DATABASE-SETUP-README.md Update)
 - **Bug Fixes:** 5 Items
 
 ### Offene Aufgaben: ⏳ 117 Items
@@ -399,8 +423,8 @@
 - **Dokumentation:** 9 TODOs
 - **Bugs:** 6 TODOs
 
-**Gesamt:** 203 Items (86 erledigt, 117 offen)
-**Fortschritt:** 42% abgeschlossen
+**Gesamt:** 215 Items (98 erledigt, 117 offen)
+**Fortschritt:** 46% abgeschlossen
 
 ---
 
