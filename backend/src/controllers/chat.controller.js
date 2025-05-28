@@ -26,6 +26,9 @@ class ChatController {
    */
   async getConversations(req, res) {
     try {
+      console.log('Chat getConversations - user:', req.user);
+      console.log('tenantId:', req.user.tenantId, 'userId:', req.user.userId);
+      
       const conversations = await chatService.getConversations(
         req.user.tenantId,
         req.user.userId
@@ -33,6 +36,7 @@ class ChatController {
       res.json(conversations);
     } catch (error) {
       console.error('Fehler beim Abrufen der Konversationen:', error);
+      console.error('Stack:', error.stack);
       res.status(500).json({ error: 'Fehler beim Abrufen der Konversationen' });
     }
   }
