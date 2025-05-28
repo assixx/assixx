@@ -1,5 +1,6 @@
 const mysql = require('mysql2');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
 // Create database connection pool
 const db = mysql.createPool({
@@ -59,7 +60,8 @@ class ChatService {
    * @returns {Promise<Array>} Liste der Konversationen
    */
   async getConversations(tenantId, userId) {
-    console.log('ChatService.getConversations called with:', { tenantId, userId });
+    try {
+      console.log('ChatService.getConversations called with:', { tenantId, userId });
     
     const query = `
       SELECT 
@@ -119,6 +121,11 @@ class ChatService {
       ]);
 
     return conversations;
+    } catch (error) {
+      console.error('Error in ChatService.getConversations:', error);
+      console.error('Query error details:', error.message);
+      throw error;
+    }
   }
 
   /**
