@@ -554,7 +554,7 @@ class ShiftPlanningSystem {
 
   async loadTeamLeaders() {
     try {
-      const response = await fetch('/users', {
+      const response = await fetch('/api/users', {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json',

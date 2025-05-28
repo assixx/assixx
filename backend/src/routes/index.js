@@ -22,6 +22,8 @@ const teamRoutes = require('./teams');
 const adminRoutes = require('./admin');
 const rootRoutes = require('./root');
 const employeeRoutes = require('./employee');
+const machineRoutes = require('./machines');
+const areaRoutes = require('./areas');
 
 // API Version prefix
 const API_PREFIX = '/api';
@@ -45,6 +47,8 @@ router.use(`${API_PREFIX}/teams`, teamRoutes);
 router.use(`${API_PREFIX}/admin`, adminRoutes);
 router.use(`${API_PREFIX}/root`, rootRoutes);
 router.use(`${API_PREFIX}/employee`, employeeRoutes);
+router.use(`${API_PREFIX}/machines`, machineRoutes);
+router.use(`${API_PREFIX}/areas`, areaRoutes);
 
 // Health check endpoint
 router.get(`${API_PREFIX}/health`, (req, res) => {
