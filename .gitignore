@@ -1,16 +1,47 @@
+# Dependencies
 node_modules/
+
+# Environment
 .env
+.env.local
+.env.production
+
+# Logs
 *.log
 *.pid
 combined.log
 error.log
 server.log
-# Upload-Ordner (Dateien werden lokal gespeichert, nicht in Git)
-server/uploads/
-# Windows-spezifische Dateien
+backend/logs/
+
+# Uploads (User-generated content)
+uploads/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+*.min.js
+*.min.css
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 *:Zone.Identifier
-# Temporäre Dateien und Setup-Skripte
-server/temp/
-# CLAUDE.md und .claude/ sind jetzt im Repository für bessere Kontinuität
-# CLAUDE.md
-# .claude/
+
+# Temporary files
+temp/
+*.tmp
+*.cache
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# ESLint
+eslint-report.json

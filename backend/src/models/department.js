@@ -1,0 +1,204 @@
+const db = require('../database');
+const { logger } = require('../utils/logger');
+
+class Department {
+  static async create(departmentData) {
+    const {
+      name,
+      description,
+      manager_id,
+      parent_id,
+      status = 'active',
+      visibility = 'public',
+      tenant_id,
+    } = departmentData;
+    logger.info(`Creating new department: ${name}`);
+
+    // Check if columns exist, fallback to basic query if not
+    try {
+      const [columns] = await db.query('DESCRIBE departments');
+      const hasStatus = columns.some((col) => col.Field === 'status');
+      const hasVisibility = columns.some((col) => col.Field === 'visibility');
+
+      let query, params;
+
+      if (hasStatus && hasVisibility) {
+        query = `
+          INSERT INTO departments (name, description, manager_id, parent_id, status, visibility, tenant_id) 
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        params = [
+          name,
+          description,
+          manager_id,
+          parent_id,
+          status,
+          visibility,
+          tenant_id,
+        ];
+      } else {
+        logger.warn('Status/visibility columns not found, using basic query');
+        query = `
+          INSERT INTO departments (name, description, manager_id, parent_id, tenant_id) 
+          VALUES (?, ?, ?, ?, ?)
+        `;
+        params = [name, description, manager_id, parent_id, tenant_id];
+      }
+
+      const [result] = await db.query(query, params);
+      logger.info(`Department created successfully with ID ${result.insertId}`);
+      return result.insertId;
+    } catch (error) {
+      logger.error(`Error creating department: ${error.message}`);
+      throw error;
+    }
+  }
+
+  static async findAll(tenant_id = null) {
+    logger.info(
+      `Fetching all departments${tenant_id ? ` for tenant ${tenant_id}` : ''}`
+    );
+
+    try {
+      // First try with extended query
+      const query = `
+        SELECT d.*, 
+          u.username as manager_name,
+          (SELECT COUNT(*) FROM users WHERE department_id = d.id AND tenant_id = d.tenant_id) as employee_count,
+          (SELECT COUNT(*) FROM teams WHERE department_id = d.id) as team_count
+        FROM departments d
+        LEFT JOIN users u ON d.manager_id = u.id
+        ${tenant_id ? 'WHERE d.tenant_id = ?' : ''}
+        ORDER BY d.name
+      `;
+
+      const [rows] = await db.query(query, tenant_id ? [tenant_id] : []);
+      logger.info(`Retrieved ${rows.length} departments with extended info`);
+      return rows;
+    } catch (error) {
+      logger.warn(
+        `Error with extended query: ${error.message}, falling back to simple query`
+      );
+
+      // Fallback to simple query
+      const simpleQuery = tenant_id
+        ? 'SELECT * FROM departments WHERE tenant_id = ? ORDER BY name'
+        : 'SELECT * FROM departments ORDER BY name';
+      const [rows] = await db.query(simpleQuery, tenant_id ? [tenant_id] : []);
+      logger.info(`Retrieved ${rows.length} departments with simple query`);
+      return rows;
+    }
+  }
+
+  static async findById(id) {
+    logger.info(`Fetching department with ID ${id}`);
+    const query = 'SELECT * FROM departments WHERE id = ?';
+
+    try {
+      const [rows] = await db.query(query, [id]);
+      if (rows.length === 0) {
+        logger.warn(`Department with ID ${id} not found`);
+        return null;
+      }
+      logger.info(`Department ${id} retrieved successfully`);
+      return rows[0];
+    } catch (error) {
+      logger.error(`Error fetching department ${id}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  static async update(id, departmentData) {
+    logger.info(`Updating department ${id}`);
+    const fields = [];
+    const values = [];
+
+    // Only update provided fields
+    if (departmentData.name !== undefined) {
+      fields.push('name = ?');
+      values.push(departmentData.name);
+    }
+    if (departmentData.description !== undefined) {
+      fields.push('description = ?');
+      values.push(departmentData.description);
+    }
+    if (departmentData.manager_id !== undefined) {
+      fields.push('manager_id = ?');
+      values.push(departmentData.manager_id);
+    }
+    if (departmentData.parent_id !== undefined) {
+      fields.push('parent_id = ?');
+      values.push(departmentData.parent_id);
+    }
+    if (departmentData.status !== undefined) {
+      fields.push('status = ?');
+      values.push(departmentData.status);
+    }
+    if (departmentData.visibility !== undefined) {
+      fields.push('visibility = ?');
+      values.push(departmentData.visibility);
+    }
+
+    if (fields.length === 0) {
+      return false;
+    }
+
+    values.push(id);
+    const query = `UPDATE departments SET ${fields.join(', ')} WHERE id = ?`;
+
+    try {
+      const [result] = await db.query(query, values);
+      if (result.affectedRows === 0) {
+        logger.warn(`No department found with ID ${id} for update`);
+        return false;
+      }
+      logger.info(`Department ${id} updated successfully`);
+      return true;
+    } catch (error) {
+      logger.error(`Error updating department ${id}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    logger.info(`Deleting department ${id}`);
+    const query = 'DELETE FROM departments WHERE id = ?';
+
+    try {
+      const [result] = await db.query(query, [id]);
+      if (result.affectedRows === 0) {
+        logger.warn(`No department found with ID ${id} for deletion`);
+        return false;
+      }
+      logger.info(`Department ${id} deleted successfully`);
+      return true;
+    } catch (error) {
+      logger.error(`Error deleting department ${id}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  static async getUsersByDepartment(departmentId) {
+    logger.info(`Fetching users for department ${departmentId}`);
+    const query = `
+      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id 
+      FROM users u 
+      WHERE u.department_id = ?
+    `;
+
+    try {
+      const [rows] = await db.query(query, [departmentId]);
+      logger.info(
+        `Retrieved ${rows.length} users for department ${departmentId}`
+      );
+      return rows;
+    } catch (error) {
+      logger.error(
+        `Error fetching users for department ${departmentId}: ${error.message}`
+      );
+      throw error;
+    }
+  }
+}
+
+module.exports = Department;

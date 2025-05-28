@@ -3,7 +3,7 @@ const { authenticateToken, authorizeRole } = require('../auth');
 const Team = require('../models/team');
 const Department = require('../models/department');
 const User = require('../models/user');
-const logger = require('../utils/logger');
+const { logger } = require('../utils/logger');
 
 const router = express.Router();
 

@@ -1,19 +1,7 @@
 class ChatClient {
   constructor() {
     this.ws = null;
-    this.token = localStorage.getItem('token');
     this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    // Fallback für currentUserId wenn user object nicht komplett ist
-    if (!this.currentUser.id && this.token && this.token !== 'test-mode') {
-      try {
-        const payload = JSON.parse(atob(this.token.split('.')[1]));
-        this.currentUser.id = payload.userId || payload.id;
-        this.currentUser.username =
-          this.currentUser.username || payload.username;
-      } catch (e) {
-        console.error('Error parsing token:', e);
-      }
-    }
     this.currentUserId = this.currentUser.id || null;
     this.currentConversationId = null;
     this.conversations = [];
@@ -631,9 +619,9 @@ class ChatClient {
   }
 
   async init() {
-    // Check if token exists
-    if (!this.token) {
-      console.error('❌ No authentication token found');
+    // Check if user is authenticated via cookies
+    if (!this.currentUser.id) {
+      console.error('❌ No authentication found');
       window.location.href = '/login';
       return;
     }
@@ -648,8 +636,8 @@ class ChatClient {
     try {
       // Load conversations
       const response = await fetch('/api/chat/conversations', {
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${this.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -664,8 +652,8 @@ class ChatClient {
 
       // Load available users
       const usersResponse = await fetch('/api/chat/users', {
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${this.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -687,7 +675,7 @@ class ChatClient {
     // Get the correct protocol and host
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/chat-ws?token=${this.token}`;
+    const wsUrl = `${protocol}//${host}/chat-ws`;
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -915,9 +903,7 @@ class ChatClient {
           `/api/chat/conversations/${this.currentConversationId}/messages`,
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this.token}`,
-            },
+            credentials: 'include',
             body: formData,
           }
         );
@@ -1003,8 +989,8 @@ class ChatClient {
       const response = await fetch(
         `/api/chat/conversations/${conversationId}/messages`,
         {
+          credentials: 'include',
           headers: {
-            Authorization: `Bearer ${this.token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -1514,8 +1500,8 @@ class ChatClient {
     try {
       const response = await fetch('/api/chat/conversations', {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${this.token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -1584,7 +1570,7 @@ class ChatClient {
       fileInput.addEventListener('change', async (event) => {
         const files = event.target.files;
         if (files.length > 0) {
-          await this.handleFileUpload(files);
+          this.handleFileUpload(files);
           fileInput.value = '';
         }
       });
@@ -1862,9 +1848,7 @@ class ChatClient {
     try {
       const response = await fetch(`/api/chat/messages/${messageId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -1889,9 +1873,7 @@ class ChatClient {
     try {
       const response = await fetch(`/api/chat/messages/${messageId}/archive`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -2152,8 +2134,8 @@ class ChatClient {
       const response = await fetch(
         `/api/chat/conversations/${this.currentConversationId}/search?q=${encodeURIComponent(query)}`,
         {
+          credentials: 'include',
           headers: {
-            Authorization: `Bearer ${this.token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -2211,8 +2193,8 @@ class ChatClient {
         `/api/chat/messages/${messageId}/reactions`,
         {
           method: 'POST',
+          credentials: 'include',
           headers: {
-            Authorization: `Bearer ${this.token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ emoji }),
@@ -2246,9 +2228,7 @@ class ChatClient {
         `/api/chat/conversations/${this.currentConversationId}`,
         {
           method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
+          credentials: 'include',
         }
       );
 

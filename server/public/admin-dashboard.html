@@ -1132,12 +1132,14 @@
         // Departments-Tabelle laden
         async function loadDepartmentsTable() {
             console.log("Loading departments table");
-            const token = localStorage.getItem('token');
             
             try {
-                const response = await fetch('/departments', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch('/api/departments', {
+                    credentials: 'include'
                 });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
                 
                 if (response.ok) {
                     const departments = await response.json();
@@ -1175,7 +1177,9 @@
                         console.error("Departments table body not found");
                     }
                 } else {
-                    console.error("Failed to load departments");
+                    const errorText = await response.text();
+                    console.error("Failed to load departments. Status:", response.status);
+                    console.error("Error response:", errorText);
                 }
             } catch (error) {
                 console.error('Error loading departments table:', error);
@@ -1425,8 +1429,8 @@
                         // Hilfsfunktion zum Laden der Abteilungen
                         const loadDepts = async () => {
                             try {
-                                const deptResponse = await fetch('/departments', {
-                                    headers: { 'Authorization': `Bearer ${token}` }
+                                const deptResponse = await fetch('/api/departments', {
+                                    credentials: 'include'
                                 });
                                 
                                 if (deptResponse.ok) {
@@ -1573,18 +1577,15 @@
         // Upload payslip function
         async function uploadPayslip(e) {
             e.preventDefault();
-            const token = localStorage.getItem('token');
             const formData = new FormData(e.target);
             
             // Set category to payslip
             formData.append('category', 'payslip');
 
             try {
-                const response = await fetch('/documents/upload', {
+                const response = await fetch('/api/documents/upload', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
+                    credentials: 'include',
                     body: formData
                 });
 

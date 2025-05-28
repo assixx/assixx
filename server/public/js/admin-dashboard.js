@@ -1,21 +1,6 @@
 /* eslint-disable no-unused-vars */
-// Global token variable
-let token;
-
 document.addEventListener('DOMContentLoaded', () => {
-  token = localStorage.getItem('token');
-
-  // Temporär deaktiviert: Auch ohne Token weitermachen (für Testzwecke)
-  // if (!token) {
-  //     console.log('No token found, redirecting to login');
-  //     window.location.href = '/';
-  //     return;
-  // }
-
-  // Für Testzwecke ohne Token
-  if (!token) {
-    token = 'test-mode';
-  }
+  // Cookie-based authentication - no need for token
 
   // Load user info in header
   loadHeaderUserInfo();
@@ -180,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mitarbeiter
     try {
       const employeesRes = await fetch('/admin/employees', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
       });
       if (employeesRes.ok) {
         const employees = await employeesRes.json();
@@ -197,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dokumente
     try {
       const documentsRes = await fetch('/documents', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
       });
       if (documentsRes.ok) {
         const documents = await documentsRes.json();
@@ -213,8 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Abteilungen
     try {
-      const departmentsRes = await fetch('/departments', {
-        headers: { Authorization: `Bearer ${token}` },
+      const departmentsRes = await fetch('/api/departments', {
+        credentials: 'include'
       });
       if (departmentsRes.ok) {
         const departments = await departmentsRes.json();
@@ -232,8 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Teams
     try {
-      const teamsRes = await fetch('/teams', {
-        headers: { Authorization: `Bearer ${token}` },
+      const teamsRes = await fetch('/api/teams', {
+        credentials: 'include'
       });
       if (teamsRes.ok) {
         const teams = await teamsRes.json();
@@ -310,9 +295,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/admin/create-employee', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(employeeData),
       });
 
@@ -495,8 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Teams
   async function loadTeams() {
     try {
-      const response = await fetch('/teams', {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch('/api/teams', {
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -529,12 +514,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('/departments', {
+      const response = await fetch('/api/departments', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 
@@ -566,12 +551,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('/teams', {
+      const response = await fetch('/api/teams', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 
@@ -592,43 +577,49 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Logout
-  function logout() {
+  async function logout() {
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
-      window.location.href = '/';
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (response.ok) {
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        window.location.href = '/';
+      }
     }
   }
 });
 
 // Global functions for modals
 function loadEmployeesForSelect() {
-  const token = localStorage.getItem('token');
   const select = document.getElementById('upload-employee-select');
   if (select) {
-    loadEmployeesForSelectElement(select, token);
+    loadEmployeesForSelectElement(select);
   }
 }
 
 function loadDepartmentsForSelect() {
-  const token = localStorage.getItem('token');
   const select = document.querySelector(
     '#team-form select[name="department_id"]'
   );
   if (select) {
-    loadDepartmentsForSelectElement(select, token);
+    loadDepartmentsForSelectElement(select);
   }
 }
 
 // Load employees for payslip select
 async function loadEmployeesForPayslipSelect() {
-  const token = localStorage.getItem('token');
   const select = document.getElementById('payslip-employee-select');
 
   if (select) {
     try {
       const response = await fetch('/admin/employees', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -652,12 +643,11 @@ async function loadEmployeesForPayslipSelect() {
 let allEmployees = [];
 
 async function loadEmployeesTable(filter = '') {
-  const token = localStorage.getItem('token');
   try {
     // Wenn wir noch keine Mitarbeiter haben oder ein Neuladeflag gesetzt ist, laden wir sie neu
     if (allEmployees.length === 0 || filter === 'reload') {
       const response = await fetch('/admin/employees', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -815,12 +805,11 @@ document.addEventListener('DOMContentLoaded', () => {
 let allDocuments = [];
 
 async function loadDocumentsTable(filter = '') {
-  const token = localStorage.getItem('token');
   try {
     // Wenn wir noch keine Dokumente haben oder ein Neuladeflag gesetzt ist, laden wir sie neu
     if (allDocuments.length === 0 || filter === 'reload') {
       const response = await fetch('/documents', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -979,10 +968,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadPayslipsTable() {
-  const token = localStorage.getItem('token');
   try {
     const response = await fetch('/documents?category=payslip', {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1014,10 +1002,9 @@ async function loadPayslipsTable() {
 }
 
 async function loadDepartmentsTable() {
-  const token = localStorage.getItem('token');
   try {
-    const response = await fetch('/departments', {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch('/api/departments', {
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1063,10 +1050,9 @@ async function loadDepartmentsTable() {
 }
 
 async function loadTeamsTable() {
-  const token = localStorage.getItem('token');
   try {
-    const response = await fetch('/teams', {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch('/api/teams', {
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1098,10 +1084,10 @@ async function loadTeamsTable() {
 }
 
 // Helper functions for select elements
-async function loadEmployeesForSelectElement(selectElement, token) {
+async function loadEmployeesForSelectElement(selectElement) {
   try {
     const response = await fetch('/admin/employees', {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1119,10 +1105,10 @@ async function loadEmployeesForSelectElement(selectElement, token) {
   }
 }
 
-async function loadDepartmentsForSelectElement(selectElement, token) {
+async function loadDepartmentsForSelectElement(selectElement) {
   try {
-    const response = await fetch('/departments', {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch('/api/departments', {
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1142,7 +1128,6 @@ async function loadDepartmentsForSelectElement(selectElement, token) {
 
 // Lade Abteilungen für das Mitarbeiterformular
 async function loadDepartmentsForEmployeeSelect() {
-  const token = localStorage.getItem('token');
   const select = document.getElementById('employee-department-select');
 
   if (select) {
@@ -1196,16 +1181,15 @@ async function loadDepartmentsForEmployeeSelect() {
 
 // Department management functions
 async function toggleDepartmentStatus(departmentId, currentStatus) {
-  const token = localStorage.getItem('token');
   const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ status: newStatus }),
     });
 
@@ -1227,7 +1211,6 @@ async function toggleDepartmentStatus(departmentId, currentStatus) {
 
 // Employee management functions
 async function toggleEmployeeStatus(employeeId, currentStatus) {
-  const token = localStorage.getItem('token');
   const newStatus = currentStatus === 'inactive' ? 'active' : 'inactive';
 
   // Bestätigungsdialog anzeigen
@@ -1247,9 +1230,9 @@ async function toggleEmployeeStatus(employeeId, currentStatus) {
       {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ status: newStatus }),
       }
     );
@@ -1286,11 +1269,9 @@ async function toggleEmployeeStatus(employeeId, currentStatus) {
 }
 
 async function editEmployee(employeeId) {
-  const token = localStorage.getItem('token');
-
   try {
     const response = await fetch(`/admin/employees/${employeeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1359,7 +1340,7 @@ async function editEmployee(employeeId) {
       const departmentSelect = document.getElementById(
         'edit-employee-department-select'
       );
-      await loadDepartmentsForSelectElement(departmentSelect, token);
+      await loadDepartmentsForSelectElement(departmentSelect);
 
       // Setze den ausgewählten Wert für die Abteilung
       if (employee.department_id && departmentSelect) {
@@ -1382,7 +1363,6 @@ async function editEmployee(employeeId) {
 
 async function updateEmployee(event, employeeId) {
   event.preventDefault();
-  const token = localStorage.getItem('token');
   const formData = new FormData(event.target);
   const data = Object.fromEntries(formData.entries());
 
@@ -1395,9 +1375,9 @@ async function updateEmployee(event, employeeId) {
     const response = await fetch(`/admin/employees/${employeeId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -1419,13 +1399,12 @@ async function updateEmployee(event, employeeId) {
 
 async function deleteEmployee(employeeId) {
   // Mitarbeiterinformationen holen für einen detaillierteren Bestätigungsdialog
-  const token = localStorage.getItem('token');
   let employeeName = 'Mitarbeiter';
 
   try {
     // Mitarbeiterdaten abrufen
     const response = await fetch(`/admin/employees/${employeeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1450,7 +1429,7 @@ async function deleteEmployee(employeeId) {
   try {
     const response = await fetch(`/admin/delete-employee/${employeeId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     const result = await response.json();
@@ -1479,11 +1458,9 @@ async function deleteEmployee(employeeId) {
 }
 
 async function editDepartment(departmentId) {
-  const token = localStorage.getItem('token');
-
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await fetch(`/api/departments/${departmentId}`, {
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1540,17 +1517,16 @@ async function editDepartment(departmentId) {
 
 async function updateDepartment(event, departmentId) {
   event.preventDefault();
-  const token = localStorage.getItem('token');
   const formData = new FormData(event.target);
   const data = Object.fromEntries(formData.entries());
 
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -1574,12 +1550,10 @@ async function deleteDepartment(departmentId) {
     return;
   }
 
-  const token = localStorage.getItem('token');
-
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1598,12 +1572,10 @@ async function deleteDepartment(departmentId) {
 
 // Team Management Functions
 async function editTeam(teamId) {
-  const token = localStorage.getItem('token');
-
   try {
-    const response = await fetch(`/teams/${teamId}`, {
+    const response = await fetch(`/api/teams/${teamId}`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1628,9 +1600,8 @@ async function editTeam(teamId) {
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Abteilung</label>
-                                <select name="department_id" class="form-control">
+                                <select name="department_id" class="form-control" id="edit-team-department-select">
                                     <option value="">Keine Abteilung</option>
-                                    ${await getDepartmentOptions(team.department_id)}
                                 </select>
                             </div>
                             <div class="form-actions">
@@ -1643,6 +1614,16 @@ async function editTeam(teamId) {
             `;
 
       document.body.insertAdjacentHTML('beforeend', modalHtml);
+      
+      // Load departments for select field
+      const departmentSelect = document.getElementById('edit-team-department-select');
+      if (departmentSelect) {
+        await loadDepartmentsForSelectElement(departmentSelect);
+        // Set the selected department
+        if (team.department_id) {
+          departmentSelect.value = team.department_id;
+        }
+      }
     } else {
       alert('Fehler beim Laden des Teams');
     }
@@ -1654,17 +1635,16 @@ async function editTeam(teamId) {
 
 async function updateTeam(event, teamId) {
   event.preventDefault();
-  const token = localStorage.getItem('token');
   const formData = new FormData(event.target);
   const data = Object.fromEntries(formData.entries());
 
   try {
-    const response = await fetch(`/teams/${teamId}`, {
+    const response = await fetch(`/api/teams/${teamId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -1688,12 +1668,10 @@ async function deleteTeam(teamId) {
     return;
   }
 
-  const token = localStorage.getItem('token');
-
   try {
-    const response = await fetch(`/teams/${teamId}`, {
+    const response = await fetch(`/api/teams/${teamId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1722,7 +1700,6 @@ function hideModal(modalId) {
 
 // Dokument archivieren oder wiederherstellen
 async function toggleDocumentArchive(documentId, isArchived) {
-  const token = localStorage.getItem('token');
   const action = isArchived ? 'wiederherstellen' : 'archivieren';
 
   if (!confirm(`Möchten Sie dieses Dokument wirklich ${action}?`)) {
@@ -1733,9 +1710,9 @@ async function toggleDocumentArchive(documentId, isArchived) {
     const response = await fetch(`/documents/${documentId}/archive`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ archived: !isArchived }),
     });
 
@@ -1790,8 +1767,6 @@ async function toggleDocumentArchive(documentId, isArchived) {
 
 // Dokument herunterladen
 async function downloadDocument(documentId) {
-  const token = localStorage.getItem('token');
-
   try {
     // Öffne das Dokument in einem neuen Tab
     window.open(`/documents/${documentId}?inline=true`, '_blank');
@@ -1803,8 +1778,6 @@ async function downloadDocument(documentId) {
 
 // Dokument löschen
 async function deleteDocument(documentId) {
-  const token = localStorage.getItem('token');
-
   if (
     !confirm(
       'Möchten Sie dieses Dokument wirklich löschen? Dies kann nicht rückgängig gemacht werden.'
@@ -1816,9 +1789,7 @@ async function deleteDocument(documentId) {
   try {
     const response = await fetch(`/documents/${documentId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (response.ok) {
@@ -1910,64 +1881,49 @@ function showEmployeeModal() {
 // Function to load user info in the header
 async function loadHeaderUserInfo() {
   try {
-    const token = localStorage.getItem('token');
-    if (token && token !== 'test-mode') {
-      // Parse JWT token to get user info
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+    // Try to fetch full user profile for more details
+    try {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
 
-        // Update the username in header
+      if (response.ok) {
+        const userData = await response.json();
+        const user = userData.user || userData;
+
+        // Update username with full name if available
         const userNameElement = document.getElementById('user-name');
         if (userNameElement) {
-          userNameElement.textContent = payload.username || 'Admin';
-        }
-      } catch (e) {
-        console.error('Error parsing JWT token:', e);
-      }
-
-      // Try to fetch full user profile for more details
-      try {
-        const response = await fetch('/api/user/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          const user = userData.user || userData;
-
-          // Update username with full name if available
-          const userNameElement = document.getElementById('user-name');
-          if (userNameElement) {
-            if (user.first_name || user.last_name) {
-              const fullName =
-                `${user.first_name || ''} ${user.last_name || ''}`.trim();
-              userNameElement.textContent =
-                fullName || user.username || 'Admin';
-            }
-          }
-
-          // Update avatar if available
-          const userAvatar = document.getElementById('user-avatar');
-          if (userAvatar && user.profile_picture) {
-            userAvatar.src = user.profile_picture;
-          }
-
-          // Also trigger unified navigation to update
-          if (
-            window.unifiedNav &&
-            typeof window.unifiedNav.loadFullUserProfile === 'function'
-          ) {
-            window.unifiedNav.loadFullUserProfile();
+          if (user.first_name || user.last_name) {
+            const fullName =
+              `${user.first_name || ''} ${user.last_name || ''}`.trim();
+            userNameElement.textContent =
+              fullName || user.username || 'Admin';
+          } else {
+            userNameElement.textContent = user.username || 'Admin';
           }
         }
-      } catch (err) {
-        console.error('Error fetching user profile:', err);
-        // Keep the JWT-based info as fallback
+
+        // Update avatar if available
+        const userAvatar = document.getElementById('user-avatar');
+        if (userAvatar && user.profile_picture) {
+          userAvatar.src = user.profile_picture;
+        }
+
+        // Also trigger unified navigation to update
+        if (
+          window.unifiedNav &&
+          typeof window.unifiedNav.loadFullUserProfile === 'function'
+        ) {
+          window.unifiedNav.loadFullUserProfile();
+        }
+      } else {
+        // Not authenticated, redirect to login
+        window.location.href = '/';
       }
-    } else {
-      // No token or test mode, set default values
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      // Set default values
       const userNameElement = document.getElementById('user-name');
       if (userNameElement) {
         userNameElement.textContent = 'Admin';

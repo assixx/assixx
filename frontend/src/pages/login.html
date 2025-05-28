@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assixx - Login</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Fragezeichen oben rechts - Glassmorphismus -->
+    <div class="help-button" onclick="showHelp()">?</div>
+    <div class="login-container">
+        <!-- Logo Section -->
+        <div class="login-header">
+            <img src="/images/logo.png" alt="Assixx Logo" class="login-logo">
+        </div>
+
+        <!-- Login Form -->
+        <div class="login-card card">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Benutzername</label>
+                    <input type="text" id="username" class="form-control" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+            </form>
+            
+            <div class="login-footer">
+                <a href="#" onclick="showPasswordReset()" class="text-secondary">Passwort vergessen?</a>
+                <a href="#" onclick="requestAccess()" class="text-secondary" style="margin-left: 20px;">Zugangsdaten beantragen</a>
+            </div>
+        </div>
+
+        <!-- Company Footer -->
+        <div class="login-company">
+            <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
+        </div>
+    </div>
+
+    <script>
+        function showHelp() {
+            alert('Hilfe:\n\nFür neue Kunden: Klicken Sie auf "Zugangsdaten beantragen"\n\nFür bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort');
+        }
+        
+        function showPasswordReset() {
+            alert('Passwort zurücksetzen - Feature kommt bald');
+        }
+        
+        function requestAccess() {
+            window.location.href = '/';
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store token for JavaScript API calls
+                    localStorage.setItem('token', data.token);
+                    
+                    // Also store user info
+                    if (data.user) {
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                    }
+                    
+                    // Redirect based on role
+                    switch(data.role) {
+                        case 'root':
+                            window.location.href = '/root-dashboard';
+                            break;
+                        case 'admin':
+                            window.location.href = '/admin-dashboard';
+                            break;
+                        case 'employee':
+                            window.location.href = '/employee-dashboard';
+                            break;
+                        default:
+                            alert('Unknown role');
+                    }
+                } else {
+                    alert(data.message || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('An error occurred during login');
+            }
+        });
+
+        function showPasswordReset() {
+            alert('Passwort-Reset Funktion - Coming Soon!');
+        }
+        
+        function requestAccess() {
+            alert('Zugangsdaten beantragen - Coming Soon!');
+        }
+        
+        function showHelp() {
+            alert('Hilfe - Coming Soon!');
+        }
+    </script>
+
+    <style>
+        /* Login page specific styles */
+        body {
+            background: #000000;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, #1E1E1E 0%, #121212 50%, #0A0A0A 100%);
+            opacity: 0.9;
+            z-index: -1;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+  z-index: -1;
+        }
+        
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            position: relative;
+            top: -50px;
+        }
+
+        .login-logo {
+            width: 156px;
+            height: auto;
+            display: block;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        .login-title {
+            font-size: 36px;
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-top: -100px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        .login-company {
+            margin-top: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .btn-block {
+            width: 50%;
+            padding: var(--spacing-md);
+            font-size: 16px;
+            font-family: 'Ubuntu', sans-serif;
+            font-weight: 500;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .login-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .login-footer a:hover {
+            color: var(--primary-light);
+            text-decoration: underline;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: var(--spacing-lg);
+            }
+            
+            .login-title {
+                font-size: 28px;
+            }
+            
+            .login-logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Help Button - Glassmorphismus wie in signup? */
+        .help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 19px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .help-button:hover {
+            background: rgba(33, 150, 243, 0.15);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        /* Form Controls - Glassmorphismus */
+        .form-control {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(5px);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15),
+                        inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Form Labels */
+        .form-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 5px;
+        }
+
+        /* Logo Animation */
+        .login-logo {
+            animation: subtle-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes subtle-pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.95;
+                transform: scale(1.02);
+            }
+        }
+
+        /* Button Glassmorphismus */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+    </style>
+</body>
+</html>

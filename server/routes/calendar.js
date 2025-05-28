@@ -70,7 +70,7 @@ async function canManageEvent(req, res, next) {
  * @desc Get all calendar events visible to the user
  */
 router.get(
-  '/api/calendar',
+  '/',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -110,7 +110,7 @@ router.get(
  * @desc Get upcoming events for dashboard widget
  */
 router.get(
-  '/api/calendar/dashboard',
+  '/dashboard',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -142,7 +142,7 @@ router.get(
  * @desc Get a specific calendar event
  */
 router.get(
-  '/api/calendar/:id',
+  '/:id',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -174,7 +174,7 @@ router.get(
  * @desc Create a new calendar event
  */
 router.post(
-  '/api/calendar',
+  '/',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -256,7 +256,7 @@ router.post(
  * @desc Update a calendar event
  */
 router.put(
-  '/api/calendar/:id',
+  '/:id',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -311,7 +311,7 @@ router.put(
  * @desc Delete a calendar event
  */
 router.delete(
-  '/api/calendar/:id',
+  '/:id',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -340,7 +340,7 @@ router.delete(
  * @desc Get attendees for a calendar event
  */
 router.get(
-  '/api/calendar/:id/attendees',
+  '/:id/attendees',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -378,7 +378,7 @@ router.get(
  * @desc Respond to a calendar event invitation
  */
 router.post(
-  '/api/calendar/:id/respond',
+  '/:id/respond',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -421,7 +421,7 @@ router.post(
  * @desc Add attendees to a calendar event
  */
 router.post(
-  '/api/calendar/:id/attendees',
+  '/:id/attendees',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled
@@ -461,7 +461,7 @@ router.post(
  * @desc Remove an attendee from a calendar event
  */
 router.delete(
-  '/api/calendar/:id/attendees/:userId',
+  '/:id/attendees/:userId',
   authenticateToken,
   // tenantMiddleware, // Temporarily disabled
   // checkFeature('calendar_system'), // Temporarily disabled

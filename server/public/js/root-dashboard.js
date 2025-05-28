@@ -1,16 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Root dashboard script loaded');
-  const token = localStorage.getItem('token');
-  console.log(
-    'Stored token:',
-    token ? 'Token vorhanden' : 'Kein Token gefunden'
-  );
-
-  if (!token) {
-    console.error('No token found. Redirecting to login...');
-    window.location.href = '/';
-    return;
-  }
 
   // Elemente aus dem DOM holen
   const createAdminForm = document.getElementById('create-admin-form');
@@ -41,9 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/root/create-admin', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(adminData),
       });
 
@@ -69,9 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Loading dashboard data...');
     try {
       const response = await fetch('/api/root-dashboard-data', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -106,10 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const [adminsResponse, usersResponse] = await Promise.all([
         fetch('/root/admins', {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include'
         }),
         fetch('/api/users', {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include'
         }),
       ]);
 
@@ -132,9 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       console.log('Loading admins...');
       const response = await fetch('/root/admins', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -214,9 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(`/root/delete-admin/${adminId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -236,11 +219,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Ausloggen
-  function logout() {
+  async function logout() {
     console.log('Logging out...');
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
       window.location.href = '/';
     }
   }
@@ -248,25 +237,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load user info in header
   async function loadHeaderUserInfo() {
     try {
-      const token = localStorage.getItem('token');
       const userNameElement = document.getElementById('user-name');
       const userAvatar = document.getElementById('user-avatar');
 
-      if (!token || !userNameElement) return;
+      if (!userNameElement) return;
 
-      // Parse JWT token to get basic user info
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userNameElement.textContent = payload.username || 'Root';
-      } catch (e) {
-        console.error('Error parsing JWT token:', e);
-      }
-
-      // Try to fetch full user profile for more details
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // Try to fetch full user profile
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -289,15 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
             this.src = '/images/default-avatar.svg';
           };
         }
+      } else if (response.status === 401) {
+        // Not authenticated, redirect to login
+        window.location.href = '/login.html';
       }
     } catch (error) {
       console.error('Error loading user info:', error);
-      // Fallback to local storage
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userName = document.getElementById('user-name');
-      if (userName) {
-        userName.textContent = user.username || 'Root';
-      }
     }
   }
 });

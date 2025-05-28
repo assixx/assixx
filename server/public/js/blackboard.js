@@ -249,20 +249,11 @@ async function loadEntries() {
     // Parse sort option
     const [sortBy, sortDir] = currentSort.split('|');
 
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
-    // Fetch entries with authentication token
+    // Fetch entries with cookie authentication
     const response = await fetch(
       `/api/blackboard?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include'
       }
     );
 
@@ -530,18 +521,9 @@ function updatePagination(pagination) {
  */
 async function viewEntry(entryId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
-    // Fetch entry details with authentication
+    // Fetch entry details with cookie authentication
     const response = await fetch(`/api/blackboard/${entryId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -862,18 +844,9 @@ async function updateOrgIdDropdown(level, selectedId = null) {
  */
 async function loadDepartmentsAndTeams() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Load departments
     const deptResponse = await fetch('/api/departments', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (deptResponse.ok) {
@@ -886,9 +859,7 @@ async function loadDepartmentsAndTeams() {
 
     // Load teams
     const teamResponse = await fetch('/api/teams', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (teamResponse.ok) {
@@ -963,20 +934,13 @@ async function saveEntry() {
       method = 'PUT';
     }
 
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
-    // Send request with authentication
+    // Send request with cookie authentication
     const response = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify(entryData),
     });
 
@@ -1006,18 +970,9 @@ async function saveEntry() {
  */
 async function deleteEntry(entryId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const response = await fetch(`/api/blackboard/${entryId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -1065,18 +1020,9 @@ function showDeleteConfirmation(entryId) {
  */
 async function confirmEntry(entryId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const response = await fetch(`/api/blackboard/${entryId}/confirm`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -1105,17 +1051,8 @@ async function confirmEntry(entryId) {
  */
 async function viewConfirmationStatus(entryId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const response = await fetch(`/api/blackboard/${entryId}/confirmations`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -1180,15 +1117,8 @@ async function viewConfirmationStatus(entryId) {
  */
 async function fetchUserData() {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No token found');
-    }
-
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const response = await fetch('/api/auth/user', {
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -1207,17 +1137,8 @@ async function fetchUserData() {
  */
 async function checkLoggedIn() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const response = await fetch('/api/auth/check', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -1239,15 +1160,8 @@ async function checkLoggedIn() {
  */
 async function loadEntryTags(entryId) {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return;
-    }
-
     const response = await fetch(`/api/blackboard/${entryId}/tags`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include'
     });
 
     if (response.ok) {

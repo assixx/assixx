@@ -73,8 +73,14 @@ function generateToken(user) {
  */
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
+  
+  // Try to get token from Authorization header first
+  let token = authHeader && authHeader.split(' ')[1];
 
-  const token = authHeader && authHeader.split(' ')[1];
+  // If no token in header, try cookie (for HTML pages)
+  if (!token && req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
 
   if (token == null) {
     return res.status(401).json({ error: 'Authentication token required' });

@@ -3,44 +3,62 @@
  * Muss in allen Seiten mit Navigation eingebunden werden
  */
 
+// Cache für User-Daten
+let userDataCache = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 60000; // 1 Minute
+
 // Header User Info laden
 async function loadHeaderUserInfo() {
-  const token = localStorage.getItem('token');
-  if (!token || token === 'test-mode') return;
-
+  // Check cache first
+  if (userDataCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
+    updateHeaderDisplay(userDataCache);
+    return;
+  }
   try {
-    // Username aus Token für sofortige Anzeige
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const userNameElement = document.getElementById('user-name');
-    if (userNameElement) {
-      userNameElement.textContent = payload.username || 'User';
-    }
-
-    // Vollständiges Profil laden
-    const response = await fetch('/api/user/profile', {
-      headers: { Authorization: `Bearer ${token}` },
+    // Vollständiges Profil laden mit Cookie-Authentifizierung
+    const response = await fetch('/api/auth/user', {
+      credentials: 'include'
     });
 
     if (response.ok) {
       const userData = await response.json();
       const user = userData.user || userData;
-
-      // Update mit vollständigem Namen
-      if (userNameElement && (user.first_name || user.last_name)) {
-        const fullName =
-          `${user.first_name || ''} ${user.last_name || ''}`.trim();
-        userNameElement.textContent =
-          fullName || user.username || payload.username;
-      }
-
-      // Avatar update
-      const avatarElement = document.getElementById('user-avatar');
-      if (avatarElement && user.profile_picture) {
-        avatarElement.src = user.profile_picture;
-      }
+      
+      // Cache the data
+      userDataCache = user;
+      cacheTimestamp = Date.now();
+      
+      // Update display
+      updateHeaderDisplay(user);
+    } else if (response.status === 401) {
+      // Nicht eingeloggt - zur Login-Seite weiterleiten
+      window.location.href = '/login.html';
     }
   } catch (error) {
     console.error('Error loading user info:', error);
+  }
+}
+
+// Helper function to update header display
+function updateHeaderDisplay(user) {
+  // Update Username/Name
+  const userNameElement = document.getElementById('user-name');
+  if (userNameElement) {
+    if (user.first_name || user.last_name) {
+      const fullName =
+        `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      userNameElement.textContent =
+        fullName || user.username || 'User';
+    } else {
+      userNameElement.textContent = user.username || 'User';
+    }
+  }
+
+  // Avatar update
+  const avatarElement = document.getElementById('user-avatar');
+  if (avatarElement && user.profile_picture) {
+    avatarElement.src = user.profile_picture;
   }
 }
 

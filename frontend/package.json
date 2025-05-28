@@ -1,0 +1,24 @@
+{
+  "name": "assixx-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "cssnano": "^7.0.7",
+    "postcss": "^8.5.3",
+    "terser": "^5.24.0",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0",
+    "marked": "^11.0.0",
+    "moment": "^2.29.4"
+  }
+}

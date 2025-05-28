@@ -27,47 +27,42 @@ async function loadNavigation() {
     const navPlaceholder = document.getElementById('navigation-placeholder');
     if (!navPlaceholder) return;
 
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
     let userRole = null;
     let userData = null;
 
-    if (token) {
-      // Check if user is logged in and get role
-      const userResponse = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    // Check if user is logged in and get role
+    const userResponse = await fetch('/api/auth/user', {
+      credentials: 'include'
+    });
 
-      if (userResponse.ok) {
-        userData = await userResponse.json();
-        userRole = userData.role;
+    if (userResponse.ok) {
+      userData = await userResponse.json();
+      const user = userData.user || userData;
+      userRole = user.role;
+      
+      // Load proper navigation based on role
+      if (userRole === 'admin' || userRole === 'root') {
+        navPlaceholder.innerHTML = createAdminNavigation(user);
       } else {
-        // Token invalid or expired, show guest navigation
-        navPlaceholder.innerHTML = createGuestNavigation();
-        return;
+        navPlaceholder.innerHTML = createEmployeeNavigation(user);
       }
+
+      // Initialize Bootstrap components
+      initializeBootstrapComponents();
+
+      // Check for unread notifications
+      checkUnreadNotifications();
     } else {
-      // No token, show guest navigation
+      // Not logged in, show guest navigation
       navPlaceholder.innerHTML = createGuestNavigation();
-      return;
     }
-
-    // Load proper navigation based on role
-    if (userRole === 'admin' || userRole === 'root') {
-      navPlaceholder.innerHTML = createAdminNavigation(userData);
-    } else {
-      navPlaceholder.innerHTML = createEmployeeNavigation(userData);
-    }
-
-    // Initialize Bootstrap components
-    initializeBootstrapComponents();
-
-    // Check for unread notifications
-    checkUnreadNotifications();
   } catch (error) {
     console.error('Error loading navigation:', error);
+    // Show guest navigation on error
+    const navPlaceholder = document.getElementById('navigation-placeholder');
+    if (navPlaceholder) {
+      navPlaceholder.innerHTML = createGuestNavigation();
+    }
   }
 }
 
@@ -271,17 +266,11 @@ function initializeBootstrapComponents() {
  */
 async function checkUnreadNotifications() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     // Check if we have unread blackboard entries that require confirmation
     const response = await fetch(
       '/api/blackboard?requires_confirmation=true&unread=true&limit=1',
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include'
       }
     );
 
@@ -348,52 +337,26 @@ async function checkUnreadNotifications() {
  */
 async function logout() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
 
-    if (token) {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        // Clear token and redirect to login page
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      } else {
-        console.error('Logout failed');
-      }
-    } else {
-      // No token, just redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    if (!response.ok) {
+      console.error('Logout failed');
     }
   } catch (error) {
     console.error('Error during logout:', error);
   }
+  
+  // Always redirect to login page
+  window.location.href = '/login.html';
 }
 
 /**
  * Check if token is expired
  */
 function checkTokenExpiry() {
-  const token = localStorage.getItem('token');
-
-  if (!token) return;
-
-  try {
-    // Parse token to get expiry time
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const expiryTime = payload.exp * 1000; // Convert to milliseconds
-
-    // If token is expired or about to expire (less than 5 minutes), redirect to login
-    if (Date.now() >= expiryTime - 5 * 60 * 1000) {
-      logout();
-    }
-  } catch (error) {
-    console.error('Error checking token expiry:', error);
-  }
+  // Token expiry is now handled server-side with cookies
+  // This function is kept for compatibility but does nothing
 }

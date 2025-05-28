@@ -570,15 +570,22 @@
         // Load current tenant info
         async function loadCurrentTenant() {
             try {
-                const response = await fetch('/api/user/profile', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                console.log('Loading user profile...');
+                const response = await fetch('/api/users/profile', {
+                    credentials: 'include'
                 });
                 
-                if (!response.ok) throw new Error('Failed to load user profile');
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`Failed to load user profile: ${response.status} ${errorText}`);
+                }
                 
                 const userData = await response.json();
+                console.log('User data loaded:', userData);
                 
                 currentTenant = {
                     id: userData.tenant_id,
@@ -597,9 +604,7 @@
         async function loadAvailableFeatures() {
             try {
                 const response = await fetch('/api/features/available', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    credentials: 'include'
                 });
                 
                 if (!response.ok) throw new Error('Failed to load features');
@@ -618,9 +623,7 @@
             
             try {
                 const response = await fetch(`/api/features/tenant/${tenantId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    credentials: 'include'
                 });
                 
                 if (!response.ok) throw new Error('Failed to load tenant features');
@@ -743,9 +746,9 @@
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         tenantId: currentTenant.id,
                         featureCode: featureCode

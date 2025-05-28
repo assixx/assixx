@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neues Dokument verfügbar</title>
+    <style>
+        body {
+            font-family: 'Ubuntu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 150px;
+            height: auto;
+        }
+        .content {
+            background-color: #f7f9fc;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .document-info {
+            background-color: #ffffff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .footer {
+            font-size: 0.9em;
+            color: #777;
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e4e8;
+        }
+        .unsubscribe {
+            font-size: 0.8em;
+            color: #999;
+            text-align: center;
+            margin-top: 20px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+            }
+            .content {
+                background-color: #2a2a2a;
+                border-color: #3a3a3a;
+            }
+            .document-info {
+                background-color: #333333;
+                border-left-color: #1e88e5;
+            }
+            a {
+                color: #64b5f6;
+            }
+            .btn {
+                background-color: #1e88e5;
+            }
+            .footer {
+                color: #aaa;
+                border-top-color: #3a3a3a;
+            }
+            .unsubscribe {
+                color: #888;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://app.assixx.de/images/logo.png" alt="Assixx Logo" class="logo">
+    </div>
+    
+    <div class="content">
+        <h1>Neues Dokument für Sie verfügbar</h1>
+        
+        <p>Hallo {{userName}},</p>
+        
+        <p>es wurde ein neues Dokument für Sie hochgeladen und steht in Ihrem Assixx-Portal zur Verfügung.</p>
+        
+        <div class="document-info">
+            <p><strong>Dokument:</strong> {{documentName}}</p>
+            <p><strong>Kategorie:</strong> {{documentCategory}}</p>
+            <p><strong>Datum:</strong> {{documentDate}}</p>
+        </div>
+        
+        <p>Sie können das Dokument direkt in Ihrem Dashboard einsehen und herunterladen.</p>
+        
+        <div style="text-align: center;">
+            <a href="{{dashboardUrl}}" class="btn">Zum Dashboard</a>
+        </div>
+        
+        <p>Falls Sie Fragen haben, kontaktieren Sie bitte Ihren Administrator.</p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 Assixx - Eine SaaS-Plattform für Industriefirmen</p>
+        <p>Dies ist eine automatisierte Nachricht. Bitte antworten Sie nicht auf diese E-Mail.</p>
+    </div>
+    
+    <div class="unsubscribe">
+        <p>Sie erhalten diese E-Mail, weil Sie Mitarbeiter bei einem Unternehmen sind, das Assixx nutzt.<br>
+        <a href="{{unsubscribeUrl}}">Vom Newsletter abmelden</a></p>
+    </div>
+</body>
+</html>

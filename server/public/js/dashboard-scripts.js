@@ -103,41 +103,42 @@ function setupUserAndLogout() {
   const logoutBtn = document.getElementById('logout-btn');
 
   if (userInfo) {
-    // Lade Benutzerdaten
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    // Lade Benutzerdaten mit Cookie-Authentifizierung
+    fetch('/api/auth/user', {
+      credentials: 'include'
+    })
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Fehler beim Laden der Benutzerdaten');
       })
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }
-          throw new Error('Fehler beim Laden der Benutzerdaten');
-        })
-        .then((data) => {
-          // Anzeigename setzen (Name oder Username)
-          const displayName = data.first_name
-            ? `${data.first_name} ${data.last_name || ''}`
-            : data.username;
-          userInfo.textContent = displayName;
-        })
-        .catch((error) => {
-          console.error('Fehler beim Laden der Benutzerdaten:', error);
-          // Bei Fehler zur Login-Seite weiterleiten
-          window.location.href = '/login';
-        });
-    } else {
-      window.location.href = '/login';
-    }
+      .then((data) => {
+        // Anzeigename setzen (Name oder Username)
+        const user = data.user || data;
+        const displayName = user.first_name
+          ? `${user.first_name} ${user.last_name || ''}`
+          : user.username;
+        userInfo.textContent = displayName;
+      })
+      .catch((error) => {
+        console.error('Fehler beim Laden der Benutzerdaten:', error);
+        // Bei Fehler zur Login-Seite weiterleiten
+        window.location.href = '/login.html';
+      });
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+      window.location.href = '/login.html';
     });
   }
 }

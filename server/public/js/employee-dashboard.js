@@ -3,9 +3,6 @@
  * @param {string} docId - Document ID
  */
 function downloadDocument(docId) {
-  const token = localStorage.getItem('token');
-  if (!token) return;
-
   // Create a download link and trigger it
   const link = document.createElement('a');
   link.href = `/api/documents/${docId}/download`;
@@ -32,9 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const response = await fetch(
             `/employee/search-documents?query=${encodeURIComponent(query)}`,
             {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-              },
+              credentials: 'include'
             }
           );
           if (response.ok) {
@@ -55,11 +50,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', async () => {
       if (confirm('Möchten Sie sich wirklich abmelden?')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/login'; // Umleitung zur Login-Seite
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+        window.location.href = '/login.html'; // Umleitung zur Login-Seite
       }
     });
   } else {
@@ -72,9 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadEmployeeInfo() {
     try {
       const response = await fetch('/employee/info', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -136,9 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadDocuments() {
     try {
       const response = await fetch('/employee/documents', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -263,12 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Verbesserte Download-Funktion
   window.downloadDocument = function (documentId) {
     try {
-      // Den Token aus dem localStorage holen
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Sie müssen angemeldet sein, um Dokumente herunterzuladen.');
-        return;
-      }
 
       // Einen Lade-Indikator anzeigen
       const downloadBtn = document.querySelector(
@@ -286,12 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
       }
 
-      // Fetch API mit Auth-Header verwenden
+      // Fetch API mit Cookie-Authentifizierung verwenden
       fetch(`/employee/documents/${documentId}?inline=true`, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include'
       })
         .then((response) => {
           if (!response.ok) {

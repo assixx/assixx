@@ -2,41 +2,37 @@
  * Authentication utilities for Assixx
  */
 
-// Get authentication token from localStorage (compatible with existing system)
+// Get authentication token from localStorage (kept for compatibility)
 function getAuthToken() {
-  return localStorage.getItem('token') || localStorage.getItem('authToken');
+  // No longer used with cookie auth, but kept for backward compatibility
+  return null;
 }
 
 // Set authentication token
 function setAuthToken(token) {
-  localStorage.setItem('token', token);
-  localStorage.setItem('authToken', token);
+  // No longer used with cookie auth
 }
 
 // Remove authentication token
 function removeAuthToken() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('role');
+  // No longer used with cookie auth
 }
 
-// Check if user is authenticated
-function isAuthenticated() {
-  const token = getAuthToken();
-  return token && token.length > 0;
-}
-
-// Fetch with authentication
-async function fetchWithAuth(url, options = {}) {
-  const token = getAuthToken();
-
-  if (!token) {
-    window.location.href = '/login';
-    throw new Error('No authentication token');
+// Check if user is authenticated (now checks via API)
+async function isAuthenticated() {
+  try {
+    const response = await fetch('/api/auth/check', {
+      credentials: 'include'
+    });
+    return response.ok;
+  } catch (error) {
+    return false;
   }
+}
 
+// Fetch with authentication (now uses cookies)
+async function fetchWithAuth(url, options = {}) {
   const headers = {
-    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
     ...options.headers,
   };
@@ -44,12 +40,12 @@ async function fetchWithAuth(url, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers,
+    credentials: 'include'
   });
 
   // If unauthorized, redirect to login
   if (response.status === 401) {
-    removeAuthToken();
-    window.location.href = '/login';
+    window.location.href = '/login.html';
     throw new Error('Unauthorized');
   }
 
@@ -60,7 +56,7 @@ async function fetchWithAuth(url, options = {}) {
 async function loadUserInfo() {
   try {
     console.log('loadUserInfo: Attempting to fetch user profile...');
-    const response = await fetchWithAuth('/api/user/profile');
+    const response = await fetchWithAuth('/api/auth/user');
     console.log('loadUserInfo: Response status:', response.status);
 
     const data = await response.json();
@@ -110,9 +106,16 @@ async function loadUserInfo() {
 }
 
 // Logout function
-function logout() {
-  removeAuthToken();
-  window.location.href = '/login';
+async function logout() {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+  window.location.href = '/login.html';
 }
 
 // Show success message
@@ -134,26 +137,27 @@ function showInfo(message) {
 }
 
 // Initialize authentication on page load
-document.addEventListener('DOMContentLoaded', () => {
-  const token = getAuthToken();
-  console.log('Auth check - Token found:', !!token);
+document.addEventListener('DOMContentLoaded', async () => {
   console.log('Auth check - Current path:', window.location.pathname);
 
-  // Check if user is authenticated
-  if (!isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.log('No authentication token found, redirecting to login');
-    window.location.href = '/login';
+  // Skip auth check on login page
+  if (window.location.pathname.includes('login')) {
     return;
   }
 
-  // Load user info if on authenticated page
-  if (isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.log('Loading user info...');
-    loadUserInfo().catch((error) => {
-      console.error('Failed to load user info:', error);
-      // Don't redirect immediately, let the user see the error
-    });
+  // Check if user is authenticated
+  const authenticated = await isAuthenticated();
+  if (!authenticated) {
+    console.log('Not authenticated, redirecting to login');
+    window.location.href = '/login.html';
+    return;
   }
+
+  // Load user info if authenticated
+  console.log('Loading user info...');
+  loadUserInfo().catch((error) => {
+    console.error('Failed to load user info:', error);
+  });
 });
 
 // Export functions for global use

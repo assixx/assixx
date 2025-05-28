@@ -19,6 +19,15 @@ let selectedAttendees = [];
 let calendarView = 'dayGridMonth'; // Default view
 
 /**
+ * Get headers for API calls
+ */
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json'
+  };
+}
+
+/**
  * Helper function to set selected organization ID
  * @param {number} id - The organization ID
  * @param {string} name - The organization name
@@ -200,13 +209,6 @@ function initializeCalendar() {
  */
 async function fetchEvents(info, successCallback, failureCallback) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const start_date = info.start.toISOString().split('T')[0];
     const end_date = info.end.toISOString().split('T')[0];
 
@@ -221,11 +223,10 @@ async function fetchEvents(info, successCallback, failureCallback) {
       url += `&search=${encodeURIComponent(currentSearch)}`;
     }
 
-    // Fetch events with authentication token
+    // Fetch events with authentication
     const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -321,18 +322,10 @@ function formatEvent(event) {
  */
 async function loadUpcomingEvents() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Fetch upcoming events
     const response = await fetch('/api/calendar/dashboard', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -445,18 +438,10 @@ function getResponseText(response) {
  */
 async function viewEvent(eventId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Fetch event details with authentication
     const response = await fetch(`/api/calendar/${eventId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -587,7 +572,7 @@ async function viewEvent(eventId) {
     `;
 
     // Load attendees
-    loadEventAttendees(eventId, token);
+    loadEventAttendees(eventId);
 
     // Prepare footer buttons
     const detailFooter = document.getElementById('eventDetailFooter');
@@ -652,15 +637,14 @@ async function viewEvent(eventId) {
 /**
  * Load event attendees
  */
-async function loadEventAttendees(eventId, token) {
+async function loadEventAttendees(eventId) {
   try {
     const attendeesList = document.getElementById('attendeesList');
 
     // Fetch attendees
     const response = await fetch(`/api/calendar/${eventId}/attendees`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -1039,18 +1023,10 @@ async function updateOrgIdDropdown(level, selectedId = null) {
  */
 async function loadDepartmentsAndTeams() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Load departments
     const deptResponse = await fetch('/api/departments', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (deptResponse.ok) {
@@ -1063,9 +1039,8 @@ async function loadDepartmentsAndTeams() {
 
     // Load teams
     const teamResponse = await fetch('/api/teams', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (teamResponse.ok) {
@@ -1078,9 +1053,8 @@ async function loadDepartmentsAndTeams() {
 
     // Load employees for attendees
     const employeeResponse = await fetch('/api/users?role=employee', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (employeeResponse.ok) {
@@ -1101,18 +1075,10 @@ async function loadDepartmentsAndTeams() {
  */
 async function loadAttendees(eventId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Fetch attendees
     const response = await fetch(`/api/calendar/${eventId}/attendees`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -1331,20 +1297,11 @@ async function saveEvent() {
       method = 'PUT';
     }
 
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Send request with authentication
     const response = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include',
+      headers: getHeaders(),
       body: JSON.stringify(eventData),
     });
 
@@ -1379,18 +1336,10 @@ async function saveEvent() {
  */
 async function deleteEvent(eventId) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const response = await fetch(`/api/calendar/${eventId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getHeaders(),
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -1468,20 +1417,11 @@ function openResponseForm(event) {
  */
 async function respondToEvent(eventId, response) {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     // Send response
     const apiResponse = await fetch(`/api/calendar/${eventId}/respond`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include',
+      headers: getHeaders(),
       body: JSON.stringify({ response }),
     });
 
@@ -1674,15 +1614,8 @@ function setCalendarView(view, button) {
  */
 async function fetchUserData() {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No token found');
-    }
-
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const response = await fetch('/api/auth/user', {
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -1701,17 +1634,8 @@ async function fetchUserData() {
  */
 async function checkLoggedIn() {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      throw new Error('No token found');
-    }
-
     const response = await fetch('/api/auth/check', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include',
     });
 
     if (!response.ok) {

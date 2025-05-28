@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const fs = require('fs').promises;
 const db = require('./database');
 const User = require('./models/user');
@@ -63,6 +64,7 @@ app.use(...sanitizeInputs);
 // Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Multi-tenant support (temporär deaktiviert)
 // app.use(tenantMiddleware);
@@ -90,16 +92,16 @@ app.use(apiSecurityHeaders);
 // Logging with security considerations
 app.use(
   morgan('combined', {
-    skip: (req, res) =>
+    skip: (_req, _res) =>
       // Don't log sensitive endpoints
-      req.path.includes('/api/auth') || req.path.includes('/api/login'),
+      _req.path.includes('/api/auth') || _req.path.includes('/api/login'),
   })
 );
 
 // Secure Logging Middleware - never log tokens
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   console.log(
-    `${req.method} ${req.path} - Auth: ${req.headers['authorization'] ? 'Present' : 'None'}`
+    `${req.method} ${req.originalUrl || req.path} - Auth: ${req.headers['authorization'] ? 'Present' : 'None'}`
   );
   next();
 });
@@ -143,15 +145,15 @@ app.use((req, res, next) => {
 });
 
 // Öffentliche Seiten (OHNE tenantMiddleware)
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/login', (req, res) => {
+app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-app.get('/signup', (req, res) => {
+app.get('/signup', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 });
 
@@ -227,12 +229,12 @@ app.post('/login', authLimiter, async (req, res) => {
 });
 
 // HTML routes - Clean URLs ohne .html
-app.get('/root-dashboard', (req, res) => {
+app.get('/root-dashboard', (_req, res) => {
   console.log('Accessing root dashboard');
   res.sendFile(path.join(__dirname, 'public', 'root-dashboard.html'));
 });
 
-app.get('/admin-config', (req, res) => {
+app.get('/admin-config', (_req, res) => {
   console.log('Accessing admin configuration page');
   res.sendFile(path.join(__dirname, 'public', 'admin-config.html'));
 });
@@ -245,7 +247,7 @@ app.get('/org-management', authenticateToken, (req, res) => {
 });
 
 // API Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
-app.get('/api-test', (req, res) => {
+app.get('/api-test', (_req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
@@ -253,7 +255,7 @@ app.get('/api-test', (req, res) => {
 });
 
 // Datenbank-Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
-app.get('/test-db', (req, res) => {
+app.get('/test-db', (_req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
@@ -261,7 +263,7 @@ app.get('/test-db', (req, res) => {
 });
 
 // Debug-Dashboard (im Entwicklungsmodus ohne Authentifizierung verfügbar)
-app.get('/debug-dashboard', (req, res) => {
+app.get('/debug-dashboard', (_req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
@@ -269,7 +271,7 @@ app.get('/debug-dashboard', (req, res) => {
 });
 
 // Token-Debug Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
-app.get('/token-debug', (req, res) => {
+app.get('/token-debug', (_req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
@@ -299,7 +301,7 @@ app.get('/api/token-test', (req, res) => {
   });
 });
 
-app.get('/employee-profile', authenticateToken, (req, res) => {
+app.get('/employee-profile', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee-profile.html'));
 });
 
@@ -307,101 +309,101 @@ app.get(
   '/document-upload',
   authenticateToken,
   authorizeRole('admin'),
-  (req, res) => {
+  (_req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'document-upload.html'));
   }
 );
 
-app.get('/salary-documents', authenticateToken, (req, res) => {
+app.get('/salary-documents', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'salary-documents.html'));
 });
 
-app.get('/chat', authenticateToken, (req, res) => {
+app.get('/chat', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 
 // Weitere HTML Routen mit Clean URLs
-app.get('/dashboard', authenticateToken, (req, res) => {
+app.get('/dashboard', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-app.get('/admin-dashboard', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.get('/admin-dashboard', authenticateToken, authorizeRole('admin'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
 });
 
-app.get('/employee-dashboard', authenticateToken, (req, res) => {
+app.get('/employee-dashboard', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee-dashboard.html'));
 });
 
-app.get('/profile', authenticateToken, (req, res) => {
+app.get('/profile', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-app.get('/profile-picture', authenticateToken, (req, res) => {
+app.get('/profile-picture', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile-picture.html'));
 });
 
-app.get('/blackboard', authenticateToken, (req, res) => {
+app.get('/blackboard', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'blackboard.html'));
 });
 
-app.get('/calendar', authenticateToken, (req, res) => {
+app.get('/calendar', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'calendar.html'));
 });
 
-app.get('/shifts', authenticateToken, (req, res) => {
+app.get('/shifts', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'shifts.html'));
 });
 
-app.get('/kvp', authenticateToken, (req, res) => {
+app.get('/kvp', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'kvp.html'));
 });
 
-app.get('/employee-documents', authenticateToken, (req, res) => {
+app.get('/employee-documents', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'employee-documents.html'));
 });
 
-app.get('/archived-employees', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.get('/archived-employees', authenticateToken, authorizeRole('admin'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'archived-employees.html'));
 });
 
-app.get('/feature-management', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.get('/feature-management', authenticateToken, authorizeRole('admin'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'feature-management.html'));
 });
 
-app.get('/survey-admin', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.get('/survey-admin', authenticateToken, authorizeRole('admin'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'survey-admin.html'));
 });
 
-app.get('/survey-employee', authenticateToken, (req, res) => {
+app.get('/survey-employee', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'survey-employee.html'));
 });
 
-app.get('/survey-details', authenticateToken, (req, res) => {
+app.get('/survey-details', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'survey-details.html'));
 });
 
-app.get('/survey-results', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.get('/survey-results', authenticateToken, authorizeRole('admin'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'survey-results.html'));
 });
 
-app.get('/root-features', authenticateToken, authorizeRole('root'), (req, res) => {
+app.get('/root-features', authenticateToken, authorizeRole('root'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'root-features.html'));
 });
 
-app.get('/root-profile', authenticateToken, authorizeRole('root'), (req, res) => {
+app.get('/root-profile', authenticateToken, authorizeRole('root'), (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'root-profile.html'));
 });
 
-app.get('/settings', authenticateToken, (req, res) => {
+app.get('/settings', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
-app.get('/hilfe', authenticateToken, (req, res) => {
+app.get('/hilfe', authenticateToken, (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'hilfe.html'));
 });
 
-app.get('/design-standards', (req, res) => {
+app.get('/design-standards', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'design-standards.html'));
 });
 
@@ -525,12 +527,12 @@ app.use('/api/areas', require('./routes/areas'));
 // All test routes have been removed for production readiness
 
 // Error handling - MUST be last
-app.use((req, res, next) => {
+app.use((req, res, _next) => {
   console.log(`404 - Not Found: ${req.method} ${req.url}`);
   res.status(404).send('Sorry, diese Seite wurde nicht gefunden!');
 });
 
-app.use((err, req, res, next) => {
+app.use((err, _req, res, _next) => {
   console.error(`500 - Internal Server Error: ${err.stack}`);
   res.status(500).send('Etwas ist schief gelaufen!');
 });

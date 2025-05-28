@@ -8,79 +8,70 @@ class UnifiedNavigation {
     this.currentUser = null;
     this.currentRole = null;
     this.navigationItems = this.getNavigationItems();
-    this.init();
+    // init() wird jetzt explizit aufgerufen nach der Instanziierung
   }
 
-  init() {
-    this.loadUserInfo();
+  async init() {
+    await this.loadUserInfo();
+    // Aktualisiere navigationItems nach dem Laden der Benutzerinformationen
+    this.navigationItems = this.getNavigationItems();
     this.injectNavigationHTML();
     this.attachEventListeners();
   }
 
-  loadUserInfo() {
-    // User-Info aus Token oder Session laden
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        this.currentUser = payload;
-        this.currentRole = payload.role;
-
-        // Also try to load full user profile
-        this.loadFullUserProfile();
-      } catch (error) {
-        console.error('Error parsing token:', error);
-      }
-    }
-  }
-
-  async loadFullUserProfile() {
+  async loadUserInfo() {
+    // User-Info aus Cookie-basierten Session laden
     try {
-      const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
-
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
       });
 
       if (response.ok) {
         const userData = await response.json();
         const user = userData.user || userData;
+        this.currentUser = user;
+        this.currentRole = user.role;
 
-        // Update user info card with full details
-        const sidebarUserName = document.getElementById('sidebar-user-name');
-        if (sidebarUserName) {
-          sidebarUserName.textContent =
-            user.username || this.currentUser?.username || 'User';
-        }
-
-        const sidebarFullName = document.getElementById(
-          'sidebar-user-fullname'
-        );
-        if (sidebarFullName && (user.first_name || user.last_name)) {
-          const fullName =
-            `${user.first_name || ''} ${user.last_name || ''}`.trim();
-          sidebarFullName.textContent = fullName;
-        }
-
-        const sidebarBirthdate = document.getElementById(
-          'sidebar-user-birthdate'
-        );
-        if (sidebarBirthdate && user.birthdate) {
-          const birthdate = new Date(user.birthdate);
-          sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
-        }
-
-        // Update avatar if we have profile picture
-        const sidebarAvatar = document.getElementById('sidebar-user-avatar');
-        if (sidebarAvatar && user.profile_picture) {
-          sidebarAvatar.src = user.profile_picture;
-        }
+        // Load full user profile details
+        this.updateUserProfileDisplay(user);
+      } else if (response.status === 401) {
+        // Not authenticated, redirect to login
+        window.location.href = '/login.html';
       }
     } catch (error) {
-      console.error('Error loading full user profile:', error);
+      console.error('Error loading user info:', error);
+    }
+  }
+
+  updateUserProfileDisplay(user) {
+    // Update user info card with full details
+    const sidebarUserName = document.getElementById('sidebar-user-name');
+    if (sidebarUserName) {
+      sidebarUserName.textContent =
+        user.username || this.currentUser?.username || 'User';
+    }
+
+    const sidebarFullName = document.getElementById(
+      'sidebar-user-fullname'
+    );
+    if (sidebarFullName && (user.first_name || user.last_name)) {
+      const fullName =
+        `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      sidebarFullName.textContent = fullName;
+    }
+
+    const sidebarBirthdate = document.getElementById(
+      'sidebar-user-birthdate'
+    );
+    if (sidebarBirthdate && user.birthdate) {
+      const birthdate = new Date(user.birthdate);
+      sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
+    }
+
+    // Update avatar if we have profile picture
+    const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+    if (sidebarAvatar && user.profile_picture) {
+      sidebarAvatar.src = user.profile_picture;
     }
   }
 
@@ -371,6 +362,12 @@ class UnifiedNavigation {
 
   createNavigationHTML() {
     const menuItems = this.getNavigationForRole(this.currentRole);
+    
+    console.log('UnifiedNavigation DEBUG:', {
+      currentRole: this.currentRole,
+      menuItemsCount: menuItems.length,
+      menuItems: menuItems
+    });
 
     return `
             <nav class="sidebar-nav">
@@ -454,16 +451,23 @@ class UnifiedNavigation {
     this.updateActiveNavigation();
   }
 
-  handleLogout() {
-    // Remove token and redirect to login
-    localStorage.removeItem('token');
-    localStorage.removeItem('activeNavigation');
+  async handleLogout() {
+    // Logout via API
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
 
-    // Clear user session
+    // Clear local storage
+    localStorage.removeItem('activeNavigation');
     sessionStorage.clear();
 
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.href = '/login.html';
   }
 
   handleNavigationClick(link, event) {
@@ -548,14 +552,11 @@ class UnifiedNavigation {
   // Ungelesene Chat-Nachrichten aktualisieren
   async updateUnreadMessages() {
     try {
-      const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
-
       const response = await fetch('/api/chat/unread-count', {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -837,8 +838,11 @@ if (!document.querySelector('#unified-navigation-styles')) {
 }
 
 // Navigation automatisch initialisieren
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   window.unifiedNav = new UnifiedNavigation();
+  
+  // Warte bis die Navigation vollständig initialisiert ist
+  await window.unifiedNav.init();
 
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assixx - Die SaaS-Lösung für Industriefirmen</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Main CSS will be injected by Vite -->
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../assets/images/logo.svg" alt="Assixx Logo" class="logo">
+                <span class="brand-text">Assixx</span>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Preise</a></li>
+                <li><a href="#about">Über uns</a></li>
+                <li><a href="#contact">Kontakt</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="/login" class="btn btn-outline">Anmelden</a>
+                <a href="/signup" class="btn btn-primary">Kostenlos testen</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Die All-in-One SaaS-Lösung für Industriefirmen</h1>
+                <p class="hero-subtitle">
+                    Digitalisieren Sie Ihre Prozesse, steigern Sie die Effizienz und 
+                    verbessern Sie die Kommunikation in Ihrem Unternehmen.
+                </p>
+                <div class="hero-actions">
+                    <a href="/signup" class="btn btn-primary btn-lg">
+                        Jetzt 30 Tage kostenlos testen
+                    </a>
+                    <a href="#demo" class="btn btn-outline btn-lg">
+                        Demo anfordern
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="../assets/images/dashboard-preview.png" alt="Assixx Dashboard">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Leistungsstarke Features für Ihr Unternehmen</h2>
+            <div class="features-grid">
+                <!-- Feature cards will be dynamically loaded -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="../assets/images/logo.svg" alt="Assixx Logo" class="logo">
+                    <p>&copy; 2025 Assixx. Alle Rechte vorbehalten.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="/terms">Nutzungsbedingungen</a>
+                    <a href="/privacy">Datenschutz</a>
+                    <a href="/imprint">Impressum</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Main JavaScript Module -->
+    <script type="module" src="../scripts/main.js"></script>
+    
+    <!-- Page specific script -->
+    <script type="module">
+        import { initLandingPage } from '../scripts/pages/landing.js';
+        initLandingPage();
+    </script>
+</body>
+</html>
