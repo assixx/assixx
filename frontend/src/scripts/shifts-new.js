@@ -741,7 +741,7 @@ class ShiftPlanningSystem {
 
   async loadEmployees() {
     try {
-      let url = '/users';
+      let url = '/api/users';
       const params = new URLSearchParams();
 
       // Add context filters
