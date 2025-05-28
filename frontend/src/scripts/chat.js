@@ -1102,8 +1102,8 @@ class ChatClient {
       ${
         !isOwnMessage
           ? `
-        <img src="${message.profile_picture_url || '/images/default-avatar.svg'}" 
-             alt="Avatar" class="message-avatar" onerror="this.src='/images/default-avatar.svg'">
+        <img src="${message.profile_picture_url || '/assets/images/default-avatar.svg'}" 
+             alt="Avatar" class="message-avatar" onerror="this.src='/assets/images/default-avatar.svg'">
       `
           : ''
       }
@@ -1292,10 +1292,10 @@ class ChatClient {
         </div>`;
       } else {
         // Bei Einzelchat: Profilbild des anderen Users anzeigen
-        avatarContent = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/images/default-avatar.svg'}" 
+        avatarContent = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/assets/images/default-avatar.svg'}" 
              alt="Avatar" 
              style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover;"
-             onerror="this.src='/images/default-avatar.svg'">
+             onerror="this.src='/assets/images/default-avatar.svg'">
          <span class="status-indicator ${conversation.user_status || 'offline'}" 
                data-user-status="${conversation.other_user_id}"
                style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--background-primary); background: ${conversation.user_status === 'online' ? '#4caf50' : '#9e9e9e'};"
@@ -1390,10 +1390,10 @@ class ChatClient {
             conversation.other_user_picture ||
             conversation.profile_picture_url
           ) {
-            chatAvatar.innerHTML = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/images/default-avatar.svg'}" 
+            chatAvatar.innerHTML = `<img src="${conversation.other_user_picture || conversation.profile_picture_url || '/assets/images/default-avatar.svg'}" 
                                         alt="Avatar" 
                                         style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
-                                        onerror="this.src='/images/default-avatar.svg'">`;
+                                        onerror="this.src='/assets/images/default-avatar.svg'">`;
             chatAvatar.style.background = 'none';
           } else {
             // Fallback zu Initialen
@@ -1466,7 +1466,7 @@ class ChatClient {
         <input type="checkbox" id="user_${user.id}" value="${user.id}" class="user-checkbox">
         <label for="user_${user.id}" style="display: flex; align-items: center; gap: 8px; flex: 1;">
           <div style="position: relative;">
-            <img src="${user.profile_picture_url || '/images/default-avatar.svg'}" alt="Avatar" onerror="this.src='/images/default-avatar.svg'">
+            <img src="${user.profile_picture_url || '/assets/images/default-avatar.svg'}" alt="Avatar" onerror="this.src='/assets/images/default-avatar.svg'">
             <span class="status-indicator ${user.online_status || 'offline'}" 
                   data-user-status="${user.id}"
                   style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #1a1a2e; background: ${user.online_status === 'online' ? '#4caf50' : '#9e9e9e'};"

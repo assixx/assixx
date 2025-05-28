@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Dashboard - Assixx</title>
     <!-- Dashboard Theme CSS -->
-    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link rel="stylesheet" href="/styles/dashboard-theme.css">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="/css/lib/fontawesome.min.css">
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css">
     <style>
         /* Glassmorphismus Design-Standards */
         
@@ -571,17 +571,17 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/css/user-info-update.css">
+    <link rel="stylesheet" href="/styles/user-info-update.css">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <a href="/employee-dashboard" class="logo-container">
-            <img src="/images/logo.png" alt="Assixx Logo" class="logo">
+            <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo">
         </a>
         <div class="header-actions">
             <div id="user-info">
-                <img id="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
                 <span id="user-name">Lade...</span>
             </div>
             <button id="logout-btn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Abmelden</button>
@@ -798,7 +798,7 @@
                     if (userData.profile_picture_url) {
                         userAvatar.src = userData.profile_picture_url;
                         userAvatar.onerror = function() {
-                            this.src = '/images/default-avatar.svg';
+                            this.src = '/assets/images/default-avatar.svg';
                         };
                     }
                 }
@@ -993,8 +993,8 @@
     </script>
     
     <!-- Unified Navigation -->
-    <script src="/js/components/unified-navigation.js"></script>
+    <script src="/scripts/components/unified-navigation.js"></script>
     <!-- Header User Info Loading -->
-    <script src="/js/header-user-info.js"></script>
+    <script src="/scripts/header-user-info.js"></script>
 </body>
 </html>

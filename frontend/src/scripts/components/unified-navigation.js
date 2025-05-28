@@ -383,7 +383,7 @@ class UnifiedNavigation {
                     Navigation
                 </h3>
                 <div class="user-info-card" id="sidebar-user-info-card">
-                    <img id="sidebar-user-avatar" class="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                    <img id="sidebar-user-avatar" class="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
                     <div class="user-details">
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
                         <div class="user-role-badge">${this.getRoleDisplay()}</div>

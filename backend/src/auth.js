@@ -99,7 +99,12 @@ function authenticateToken(req, res, next) {
         .json({ error: 'Invalid or expired token', details: err.message });
     }
 
-    req.user = user;
+    // Normalize user object for consistency
+    req.user = {
+      ...user,
+      userId: user.id,
+      tenantId: user.tenant_id
+    };
     next();
   });
 }

@@ -14,7 +14,19 @@ cat /home/scs/projects/Assixx/TODO.md
 - 🚫 Verhindert doppelte Arbeit
 - 🗺️ Gibt Überblick über das gesamte Projekt
 
-### 2️⃣ DESIGN-STANDARDS (ZWEITE PRIORITÄT!)
+### 2️⃣ PROJEKTSTRUKTUR (ZWEITE PRIORITÄT!)
+```bash
+# Projektstruktur überprüfen und bei Bedarf aktualisieren:
+cat /home/scs/projects/Assixx/PROJEKTSTRUKTUR.md
+```
+
+**Warum?**
+- 📁 Zeigt die aktuelle Ordnerstruktur
+- 🔍 Hilft beim Finden von Dateien
+- ⚠️ Zeigt was fehlt oder migriert werden muss
+- 📝 Muss bei Strukturänderungen aktualisiert werden
+
+### 3️⃣ DESIGN-STANDARDS (DRITTE PRIORITÄT!)
 ```bash
 # Design-Standards für konsistentes UI/UX:
 cat /home/scs/projects/Assixx/DESIGN-STANDARDS.md
@@ -26,7 +38,7 @@ cat /home/scs/projects/Assixx/DESIGN-STANDARDS.md
 - 📐 UI-Komponenten Dokumentation
 - 🔽 Custom Dropdown Pattern
 
-### 3️⃣ WEITERE WICHTIGE DOKUMENTE
+### 4️⃣ WEITERE WICHTIGE DOKUMENTE
 - **Entwickler-Guidelines**: [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md)
 - **Architektur**: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - **Features**: [FEATURES.md](./FEATURES.md)
@@ -94,6 +106,7 @@ function validateSubdomain(value) {
 1. **📚 PFLICHTLEKTÜRE** (in dieser Reihenfolge):
    ```bash
    cat TODO.md           # Aktuelle Aufgaben
+   cat PROJEKTSTRUKTUR.md # Projekt-Struktur prüfen/aktualisieren
    cat CLAUDE.md         # Diese Anweisungen
    cat README.md         # Projekt-Übersicht
    cat ROADMAP.md        # Zukünftige Features
@@ -120,6 +133,7 @@ function validateSubdomain(value) {
    - Bei DB-Änderungen → DATABASE-SETUP-README.md aktualisieren
    - Bei neuen Features → FEATURES.md ergänzen
    - Bei UI-Änderungen → DESIGN-STANDARDS.md prüfen
+   - Bei Struktur-Änderungen → PROJEKTSTRUKTUR.md aktualisieren
 
 ### 📊 PROJEKT-ÜBERSICHT
 

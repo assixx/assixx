@@ -34,26 +34,24 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files - serve from multiple directories during migration
-const oldStaticPath = path.join(__dirname, '../../server/public');
-const newStaticPath = path.join(__dirname, '../../frontend/src');
+// Static files - serve from frontend directory
+const staticPath = path.join(__dirname, '../../frontend/src');
 
-// Serve new frontend structure first
+// Serve frontend files with correct MIME types
 app.use(
-  express.static(newStaticPath, {
-    setHeaders: (res) => {
+  express.static(staticPath, {
+    setHeaders: (res, filePath) => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
-    },
-  })
-);
-
-// Fallback to old structure for missing files
-app.use(
-  express.static(oldStaticPath, {
-    setHeaders: (res) => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
+      
+      // Set correct MIME types
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Content-Type', 'text/html');
+      }
     },
   })
 );

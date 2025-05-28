@@ -61,16 +61,16 @@ window.Assixx = {
     // Load page-specific module
     switch(page) {
       case 'dashboard':
-        import('./pages/dashboard.js').then(m => m.init());
+        import('./pages/dashboard.js').then(m => m.initDashboard && m.initDashboard()).catch(() => {});
         break;
       case 'profile':
-        import('./pages/profile.js').then(m => m.init());
+        // import('./pages/profile.js').then(m => m.init());
         break;
       case 'chat':
-        import('./pages/chat.js').then(m => m.init());
+        // import('./pages/chat.js').then(m => m.init());
         break;
       case 'calendar':
-        import('./pages/calendar.js').then(m => m.init());
+        // import('./pages/calendar.js').then(m => m.init());
         break;
       // Add more pages as needed
     }

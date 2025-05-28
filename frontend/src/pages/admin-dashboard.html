@@ -366,17 +366,17 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/css/user-info-update.css">
+    <link rel="stylesheet" href="/styles/user-info-update.css">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <a href="/admin-dashboard" class="logo-container">
-            <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
+            <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
             <div id="user-info">
-                <img id="user-avatar" src="/images/default-avatar.svg" alt="Avatar">
+                <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
                 <span id="user-name">Lade...</span>
             </div>
             <button id="logout-btn" class="btn-logout" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Abmelden</button>
@@ -961,7 +961,7 @@
 
     <!-- JavaScript -->
     <!-- Verhindert mehrfache Bestätigungsdialoge -->
-    <script src="/js/confirm-once.js"></script>
+    <script src="/scripts/confirm-once.js"></script>
     
     <script>
         console.log('Admin dashboard HTML loaded');
@@ -988,10 +988,10 @@
         }
     </script>
     <!-- Unified Navigation -->
-    <script src="/js/components/unified-navigation.js"></script>
-    <script src="/js/show-section.js"></script>
-    <script src="/js/admin-dashboard.js"></script>
-    <script src="/js/employee-deletion.js"></script>
+    <script src="/scripts/components/unified-navigation.js"></script>
+    <script src="/scripts/show-section.js"></script>
+    <script src="/scripts/admin-dashboard.js"></script>
+    <script src="/scripts/employee-deletion.js"></script>
     <script>
         // Direkte Event-Listener hinzufügen
         console.log('Adding direct event listeners');
@@ -1035,18 +1035,12 @@
             });
             
             // Spezieller Listener für den Dokument-Upload-Button
-            const docUploadBtn = document.querySelector('button[onclick="showDocumentModal()"]');
-            if (docUploadBtn) {
-                console.log('Dokument Upload Button gefunden');
-                docUploadBtn.addEventListener('click', function(e) {
-                    console.log('Dokument Upload Button geklickt');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Navigiere direkt zur Upload-Seite
-                    window.location.href = '/document-upload';
-                });
+            const docUploadBtn = document.querySelector('button[type="submit"]');
+            if (docUploadBtn && docUploadBtn.textContent.includes('Gehaltsabrechnung hochladen')) {
+                console.log('Dokument Upload Button gefunden:', docUploadBtn.textContent);
+                // Button ist bereits Teil eines Formulars, kein zusätzlicher Listener nötig
             } else {
-                console.error('Dokument Upload Button NICHT gefunden');
+                console.log('Dokument Upload Button ist ein Submit-Button im Formular');
             }
             
             // Direkter Link für Sidebar-Links
