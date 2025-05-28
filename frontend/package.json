@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "chart.js": "^4.4.0",
-    "marked": "^11.0.0",
+    "marked": "^15.0.12",
     "moment": "^2.29.4"
   }
 }
