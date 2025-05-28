@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Abteilungen
     try {
-      const departmentsRes = await fetch('/departments', {
+      const departmentsRes = await fetch('/api/departments', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (departmentsRes.ok) {
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('/departments', {
+      const response = await fetch('/api/departments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1016,7 +1016,7 @@ async function loadPayslipsTable() {
 async function loadDepartmentsTable() {
   const token = localStorage.getItem('token');
   try {
-    const response = await fetch('/departments', {
+    const response = await fetch('/api/departments', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1121,7 +1121,7 @@ async function loadEmployeesForSelectElement(selectElement, token) {
 
 async function loadDepartmentsForSelectElement(selectElement, token) {
   try {
-    const response = await fetch('/departments', {
+    const response = await fetch('/api/departments', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1200,7 +1200,7 @@ async function toggleDepartmentStatus(departmentId, currentStatus) {
   const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1482,7 +1482,7 @@ async function editDepartment(departmentId) {
   const token = localStorage.getItem('token');
 
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1545,7 +1545,7 @@ async function updateDepartment(event, departmentId) {
   const data = Object.fromEntries(formData.entries());
 
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1577,7 +1577,7 @@ async function deleteDepartment(departmentId) {
   const token = localStorage.getItem('token');
 
   try {
-    const response = await fetch(`/departments/${departmentId}`, {
+    const response = await fetch(`/api/departments/${departmentId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/css/dashboard-theme.css">
+    <link rel="stylesheet" href="/styles/dashboard-theme.css">
     <style>
         /* Glassmorphismus Design-Standards */
         
@@ -1135,7 +1135,7 @@
             const token = localStorage.getItem('token');
             
             try {
-                const response = await fetch('/departments', {
+                const response = await fetch('/api/departments', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -1189,7 +1189,7 @@
             const newStatus = currentStatus === "active" ? "inactive" : "active";
             
             try {
-                const response = await fetch(`/departments/${departmentId}`, {
+                const response = await fetch(`/api/departments/${departmentId}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -1217,7 +1217,7 @@
             const token = localStorage.getItem("token");
             
             try {
-                const response = await fetch(`/departments/${departmentId}`, {
+                const response = await fetch(`/api/departments/${departmentId}`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 
@@ -1294,7 +1294,7 @@
             };
             
             try {
-                const response = await fetch(`/departments/${departmentId}`, {
+                const response = await fetch(`/api/departments/${departmentId}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
@@ -1330,7 +1330,7 @@
             const token = localStorage.getItem("token");
             
             try {
-                const response = await fetch(`/departments/${departmentId}`, {
+                const response = await fetch(`/api/departments/${departmentId}`, {
                     method: "DELETE",
                     headers: { "Authorization": `Bearer ${token}` }
                 });
@@ -1425,7 +1425,7 @@
                         // Hilfsfunktion zum Laden der Abteilungen
                         const loadDepts = async () => {
                             try {
-                                const deptResponse = await fetch('/departments', {
+                                const deptResponse = await fetch('/api/departments', {
                                     headers: { 'Authorization': `Bearer ${token}` }
                                 });
                                 

@@ -34,11 +34,23 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files - serve from server/public for now (until frontend migration is complete)
-const staticPath = path.join(__dirname, '../../server/public');
+// Static files - serve from multiple directories during migration
+const oldStaticPath = path.join(__dirname, '../../server/public');
+const newStaticPath = path.join(__dirname, '../../frontend/src');
 
+// Serve new frontend structure first
 app.use(
-  express.static(staticPath, {
+  express.static(newStaticPath, {
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+    },
+  })
+);
+
+// Fallback to old structure for missing files
+app.use(
+  express.static(oldStaticPath, {
     setHeaders: (res) => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
@@ -94,7 +106,7 @@ const authController = require('./controllers/auth.controller');
 // Legacy login endpoints (for backward compatibility) - MUST BE BEFORE OTHER ROUTES
 app.get('/login', (req, res) => {
   console.log('[DEBUG] GET /login - serving login page');
-  res.sendFile(path.join(staticPath, 'login.html'));
+  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'login.html'));
 });
 
 app.post('/login', async (req, res, next) => {
