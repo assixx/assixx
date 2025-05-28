@@ -8,17 +8,17 @@ class User {
     try {
       let query = 'SELECT * FROM users WHERE 1=1';
       const params = [];
-      
+
       if (filter.role) {
         query += ' AND role = ?';
         params.push(filter.role);
       }
-      
+
       if (filter.tenantId) {
         query += ' AND tenant_id = ?';
         params.push(filter.tenantId);
       }
-      
+
       const [rows] = await db.query(query, params);
       return rows;
     } catch (error) {
@@ -26,17 +26,17 @@ class User {
       throw error;
     }
   }
-  
+
   static async count(filter = {}) {
     try {
       let query = 'SELECT COUNT(*) as count FROM users WHERE 1=1';
       const params = [];
-      
+
       if (filter.role) {
         query += ' AND role = ?';
         params.push(filter.role);
       }
-      
+
       const [rows] = await db.query(query, params);
       return rows[0].count;
     } catch (error) {

@@ -7,13 +7,13 @@ jest.mock('../../../src/models/user');
 // Mock bcrypt
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
-  hash: jest.fn()
+  hash: jest.fn(),
 }));
 
 // Mock auth module
 jest.mock('../../../src/auth', () => ({
   authenticateUser: jest.fn(),
-  generateToken: jest.fn()
+  generateToken: jest.fn(),
 }));
 
 describe('AuthService', () => {
@@ -27,21 +27,27 @@ describe('AuthService', () => {
         id: 1,
         username: 'testuser',
         role: 'employee',
-        password: 'hashedpassword'
+        password: 'hashedpassword',
       };
 
-      const { authenticateUser: mockAuthUser, generateToken } = require('../../../src/auth');
+      const {
+        authenticateUser: mockAuthUser,
+        generateToken,
+      } = require('../../../src/auth');
       mockAuthUser.mockResolvedValue(mockUser);
       generateToken.mockReturnValue('test-token');
 
-      const result = await authService.authenticateUser('testuser', 'password123');
+      const result = await authService.authenticateUser(
+        'testuser',
+        'password123'
+      );
 
       expect(result.success).toBe(true);
       expect(result.token).toBe('test-token');
       expect(result.user).toEqual({
         id: 1,
         username: 'testuser',
-        role: 'employee'
+        role: 'employee',
       });
       expect(result.user.password).toBeUndefined();
     });
@@ -50,7 +56,10 @@ describe('AuthService', () => {
       const { authenticateUser: mockAuthUser } = require('../../../src/auth');
       mockAuthUser.mockResolvedValue(null);
 
-      const result = await authService.authenticateUser('testuser', 'wrongpassword');
+      const result = await authService.authenticateUser(
+        'testuser',
+        'wrongpassword'
+      );
 
       expect(result.success).toBe(false);
       expect(result.message).toBe('Invalid username or password');
@@ -65,7 +74,7 @@ describe('AuthService', () => {
         password: 'password123',
         email: 'newuser@example.com',
         vorname: 'New',
-        nachname: 'User'
+        nachname: 'User',
       };
 
       User.findByUsername.mockResolvedValue(null);
@@ -75,7 +84,7 @@ describe('AuthService', () => {
         id: 123,
         username: 'newuser',
         email: 'newuser@example.com',
-        password: 'hashedpassword'
+        password: 'hashedpassword',
       });
 
       const bcrypt = require('bcrypt');
@@ -92,17 +101,20 @@ describe('AuthService', () => {
         email: 'newuser@example.com',
         vorname: 'New',
         nachname: 'User',
-        role: 'employee'
+        role: 'employee',
       });
     });
 
     it('should fail if username already exists', async () => {
-      User.findByUsername.mockResolvedValue({ id: 1, username: 'existinguser' });
+      User.findByUsername.mockResolvedValue({
+        id: 1,
+        username: 'existinguser',
+      });
 
       const result = await authService.registerUser({
         username: 'existinguser',
         password: 'password123',
-        email: 'new@example.com'
+        email: 'new@example.com',
       });
 
       expect(result.success).toBe(false);

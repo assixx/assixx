@@ -278,36 +278,47 @@ router.get(
 );
 
 // Dashboard-Daten für Root-User
-router.get('/dashboard-data', authenticateToken, authorizeRole('root'), async (req, res) => {
-  logger.info(`Root user ${req.user.username} requesting dashboard data`);
-  
-  try {
-    // Anzahl der Admins abrufen
-    const admins = await User.findByRole('admin', false, req.user.tenant_id);
-    const adminCount = admins.length;
-    
-    // Anzahl der Mitarbeiter abrufen
-    const employees = await User.findByRole('employee', false, req.user.tenant_id);
-    const employeeCount = employees.length;
-    
-    // Tenant-Informationen könnten hier ergänzt werden
-    const dashboardData = {
-      adminCount,
-      employeeCount,
-      totalUsers: adminCount + employeeCount + 1, // +1 für Root-User
-      tenantId: req.user.tenant_id,
-      features: [] // Könnte mit Feature-Informationen ergänzt werden
-    };
-    
-    logger.info(`Dashboard data retrieved successfully for root user ${req.user.username}`);
-    res.json(dashboardData);
-  } catch (error) {
-    logger.error(`Error retrieving dashboard data:`, error);
-    res.status(500).json({
-      message: 'Fehler beim Abrufen der Dashboard-Daten',
-      error: error.message
-    });
+router.get(
+  '/dashboard-data',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res) => {
+    logger.info(`Root user ${req.user.username} requesting dashboard data`);
+
+    try {
+      // Anzahl der Admins abrufen
+      const admins = await User.findByRole('admin', false, req.user.tenant_id);
+      const adminCount = admins.length;
+
+      // Anzahl der Mitarbeiter abrufen
+      const employees = await User.findByRole(
+        'employee',
+        false,
+        req.user.tenant_id
+      );
+      const employeeCount = employees.length;
+
+      // Tenant-Informationen könnten hier ergänzt werden
+      const dashboardData = {
+        adminCount,
+        employeeCount,
+        totalUsers: adminCount + employeeCount + 1, // +1 für Root-User
+        tenantId: req.user.tenant_id,
+        features: [], // Könnte mit Feature-Informationen ergänzt werden
+      };
+
+      logger.info(
+        `Dashboard data retrieved successfully for root user ${req.user.username}`
+      );
+      res.json(dashboardData);
+    } catch (error) {
+      logger.error(`Error retrieving dashboard data:`, error);
+      res.status(500).json({
+        message: 'Fehler beim Abrufen der Dashboard-Daten',
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 module.exports = router;

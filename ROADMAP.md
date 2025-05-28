@@ -14,12 +14,14 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 🚀 Q1 2025 (Januar - März)
 
 ### Umfrage-Tool (80% fertig)
+
 - [ ] Backend-Integration vervollständigen
 - [ ] Auswertungs-Dashboard
 - [ ] Export-Funktionen (CSV, PDF)
 - [ ] E-Mail-Benachrichtigungen
 
 ### Security Improvements
+
 - [ ] HTTPS/TLS Implementation
 - [ ] Security Headers
 - [ ] Token-Rotation
@@ -28,6 +30,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 📱 Q2 2025 (April - Juni)
 
 ### Urlaubsantrag-System
+
 - [ ] Antragsformular mit Kalender-Integration
 - [ ] Mehrstufiger Genehmigungsworkflow
 - [ ] Resturlaubsberechnung
@@ -35,6 +38,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 - [ ] Mobile-optimierte Ansicht
 
 ### Mobile PWA
+
 - [ ] Service Worker Implementation
 - [ ] Offline-Funktionalität
 - [ ] Push-Benachrichtigungen
@@ -42,6 +46,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 - [ ] Touch-optimierte UI
 
 ### Stripe Integration
+
 - [ ] Payment Gateway Setup
 - [ ] Subscription Management
 - [ ] Automatische Rechnungserstellung
@@ -50,6 +55,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 🌍 Q3 2025 (Juli - September)
 
 ### Mehrsprachigkeit
+
 - [ ] i18n Framework Integration
 - [ ] Übersetzungen: Englisch
 - [ ] Übersetzungen: Türkisch
@@ -57,6 +63,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 - [ ] Sprachumschaltung im UI
 
 ### TPM-Kalender
+
 - [ ] Wartungsplanung für Maschinen
 - [ ] Digitale Checklisten
 - [ ] Automatische Erinnerungen
@@ -64,6 +71,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 - [ ] QR-Code Integration
 
 ### KVP-Erweiterungen
+
 - [ ] Bewertungssystem
 - [ ] Analytics Dashboard
 - [ ] Prämienberechnung
@@ -72,18 +80,21 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 🤖 Q4 2025 (Oktober - Dezember)
 
 ### KI-Integration
+
 - [ ] Automatische Dokumentenkategorisierung
 - [ ] Intelligente Suchfunktion
 - [ ] Predictive Maintenance
 - [ ] Chatbot für Mitarbeiter-Support
 
 ### Enterprise Features
+
 - [ ] Single Sign-On (SSO)
 - [ ] Active Directory Integration
 - [ ] Advanced API v2
 - [ ] White-Label Option
 
 ### QS-Checklisten
+
 - [ ] Digitale Qualitätsprüfung
 - [ ] Foto-Dokumentation
 - [ ] Automatische Reports
@@ -92,12 +103,14 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 🎯 2026 Ausblick
 
 ### Erweiterte Automatisierung
+
 - Workflow-Engine
 - RPA-Integration
 - IoT-Anbindung
 - Echtzeit-Dashboards
 
 ### Compliance & Zertifizierung
+
 - ISO 9001 Modul
 - DSGVO-Compliance Tools
 - Audit-Trail Export
@@ -106,12 +119,14 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 📊 Success Metrics
 
 ### Business KPIs
+
 - 100+ zahlende Kunden bis Q4 2025
 - €500k ARR bis Ende 2025
 - 90% Customer Retention Rate
 - NPS Score > 50
 
 ### Technical KPIs
+
 - 99.9% Uptime
 - < 200ms API Response Time
 - Zero Security Breaches

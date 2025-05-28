@@ -14,7 +14,7 @@ const routeMappings = [
   { route: 'shifts.js', controller: 'shift' },
   { route: 'features.js', controller: 'feature' },
   { route: 'admin.js', controller: 'admin' },
-  { route: 'employee.js', controller: 'employee' }
+  { route: 'employee.js', controller: 'employee' },
 ];
 
 // Einfaches Route Template
@@ -44,30 +44,35 @@ async function updateRoutes() {
   const routesPath = path.join(__dirname, '../src/routes');
 
   console.log('📝 Erstelle Backup der Route-Dateien...');
-  
+
   for (const mapping of routeMappings) {
     const routeFile = path.join(routesPath, mapping.route);
     const backupFile = `${routeFile}.backup`;
-    
+
     try {
       // Erstelle Backup
       const content = await fs.readFile(routeFile, 'utf8');
       await fs.writeFile(backupFile, content);
       console.log(`✓ Backup erstellt: ${mapping.route}.backup`);
-      
+
       // Schreibe neue Route mit Controller
       // await fs.writeFile(routeFile, routeTemplate(mapping.controller));
       // console.log(`✓ Route aktualisiert: ${mapping.route}`);
-      
-      console.log(`⚠️  ${mapping.route} - Manuelles Update empfohlen (spezifische Routes erhalten)`);
-      
+
+      console.log(
+        `⚠️  ${mapping.route} - Manuelles Update empfohlen (spezifische Routes erhalten)`
+      );
     } catch (error) {
       console.error(`✗ Fehler bei ${mapping.route}:`, error.message);
     }
   }
 
-  console.log('\n📌 Hinweis: Die Backups wurden erstellt. Die Routes müssen manuell aktualisiert werden,');
-  console.log('   um spezifische Implementierungen zu erhalten. Verwende die Controller-Methoden');
+  console.log(
+    '\n📌 Hinweis: Die Backups wurden erstellt. Die Routes müssen manuell aktualisiert werden,'
+  );
+  console.log(
+    '   um spezifische Implementierungen zu erhalten. Verwende die Controller-Methoden'
+  );
   console.log('   anstatt der direkten Datenbankabfragen.');
 }
 

@@ -22,10 +22,10 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`WebSocket server running on ws://localhost:${PORT}`);
-  
+
   // Log environment
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  
+
   // Create required directories
   createRequiredDirectories();
 });
@@ -34,17 +34,17 @@ server.listen(PORT, () => {
 function createRequiredDirectories() {
   const fs = require('fs');
   const path = require('path');
-  
+
   const dirs = [
     path.join(__dirname, '../../uploads'),
     path.join(__dirname, '../../uploads/profile_pictures'),
     path.join(__dirname, '../../uploads/documents'),
     path.join(__dirname, '../../uploads/chat-attachments'),
     path.join(__dirname, '../../uploads/kvp-attachments'),
-    path.join(__dirname, '../logs')
+    path.join(__dirname, '../logs'),
   ];
 
-  dirs.forEach(dir => {
+  dirs.forEach((dir) => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
       logger.info(`Created directory: ${dir}`);

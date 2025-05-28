@@ -20,21 +20,22 @@ class DocumentService {
   async getDocuments(options) {
     try {
       const { tenantId, category, userId, limit, offset } = options;
-      
+
       const result = await Document.findAll({
         tenantId,
         category,
         userId,
         limit,
-        offset
+        offset,
       });
 
       return {
         data: result.documents,
-        pagination: formatPaginationResponse(result.total, 
-          Math.floor(offset / limit) + 1, 
+        pagination: formatPaginationResponse(
+          result.total,
+          Math.floor(offset / limit) + 1,
           limit
-        )
+        ),
       };
     } catch (error) {
       logger.error('Error in document service getDocuments:', error);
@@ -119,7 +120,7 @@ class DocumentService {
    */
   async getDocumentPath(filename) {
     const filePath = path.join(this.uploadDir, filename);
-    
+
     // Check if file exists
     try {
       await fs.access(filePath);
@@ -151,7 +152,8 @@ class DocumentService {
         totalDocuments: stats.total || 0,
         byCategory: stats.byCategory || {},
         totalSize: stats.totalSize || 0,
-        averageSize: stats.total > 0 ? Math.round(stats.totalSize / stats.total) : 0
+        averageSize:
+          stats.total > 0 ? Math.round(stats.totalSize / stats.total) : 0,
       };
     } catch (error) {
       logger.error('Error in document service getDocumentStats:', error);

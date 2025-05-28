@@ -1,1 +1,3 @@
-export function initUtils() { console.log("Utils initialized"); }
+export function initUtils() {
+  console.log('Utils initialized');
+}

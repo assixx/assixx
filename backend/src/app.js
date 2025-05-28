@@ -17,7 +17,7 @@ const {
   generalLimiter,
   authLimiter,
   uploadLimiter,
-  apiSecurityHeaders
+  apiSecurityHeaders,
 } = require('./middleware/security-enhanced');
 
 // Routes
@@ -43,7 +43,7 @@ app.use(
     setHeaders: (res, filePath) => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
-      
+
       // Set correct MIME types
       if (filePath.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
@@ -87,14 +87,23 @@ app.use('/api/upload', uploadLimiter);
 app.use((req, res, next) => {
   if (req.path.endsWith('.html')) {
     const cleanPath = req.path.slice(0, -5);
-    return res.redirect(301, cleanPath + (req.originalUrl.includes('?') ? req.originalUrl.substring(req.originalUrl.indexOf('?')) : ''));
+    return res.redirect(
+      301,
+      cleanPath +
+        (req.originalUrl.includes('?')
+          ? req.originalUrl.substring(req.originalUrl.indexOf('?'))
+          : '')
+    );
   }
   next();
 });
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
-  console.log(`[DEBUG] ${req.method} ${req.originalUrl} - Body:`, req.body ? Object.keys(req.body) : 'No body');
+  console.log(
+    `[DEBUG] ${req.method} ${req.originalUrl} - Body:`,
+    req.body ? Object.keys(req.body) : 'No body'
+  );
   next();
 });
 
@@ -111,13 +120,15 @@ app.post('/login', async (req, res, next) => {
   console.log('[DEBUG] POST /login endpoint hit');
   console.log('[DEBUG] Original URL:', req.originalUrl);
   console.log('[DEBUG] Request body:', req.body);
-  
+
   try {
     // Call auth controller directly
     await authController.login(req, res, next);
   } catch (error) {
     console.error('[DEBUG] Error in /login endpoint:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Internal server error', error: error.message });
   }
 });
 
@@ -140,18 +151,23 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
 
 // 404 handler
 app.use((req, res) => {
   console.log(`[DEBUG] 404 hit: ${req.method} ${req.originalUrl}`);
-  console.log('[DEBUG] Available routes:', app._router.stack.filter(r => r.route).map(r => `${Object.keys(r.route.methods).join(',')} ${r.route.path}`));
+  console.log(
+    '[DEBUG] Available routes:',
+    app._router.stack
+      .filter((r) => r.route)
+      .map((r) => `${Object.keys(r.route.methods).join(',')} ${r.route.path}`)
+  );
   res.status(404).json({
     message: 'Route not found',
     path: req.originalUrl,
-    method: req.method
+    method: req.method,
   });
 });
 

@@ -11,9 +11,9 @@ class TenantController {
       res.json(result);
     } catch (error) {
       console.error('Error in TenantController.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -31,9 +31,9 @@ class TenantController {
       res.json(result);
     } catch (error) {
       console.error('Error in TenantController.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -48,9 +48,9 @@ class TenantController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in TenantController.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -62,16 +62,16 @@ class TenantController {
   async update(req, res) {
     try {
       const result = await tenantService.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in TenantController.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -86,9 +86,9 @@ class TenantController {
       res.status(204).send();
     } catch (error) {
       console.error('Error in TenantController.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message,
       });
     }
   }

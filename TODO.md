@@ -1,23 +1,44 @@
 # Assixx Project - Zentrale TODO-Liste
 
-> **Letzte Aktualisierung:** 29.05.2025 - 10:00
+> **Letzte Aktualisierung:** 28.01.2025 - 15:30
 > **Erstellt aus:** README.md, ROADMAP.md, CLAUDE.md, CLAUDE.local.md, SECURITY-IMPROVEMENTS.md, CHAT-SYSTEM-FIXES.md
-> 
-> **🔴 WICHTIG:** 3 neue hochprioritäre Aufgaben hinzugefügt (29.05.2025):
-> 1. Projektstruktur-Optimierung
-> 2. Git Branch-Strategie 
-> 3. Setup-Guide Konsolidierung
+>
+> **🔴 WICHTIG:** Backend-Migration abgeschlossen (28.01.2025):
+>
+> - Server/ → Backend/ Migration erfolgreich
+> - MVC-Architektur implementiert
+> - Frontend/Backend Trennung vollständig
 
 ## ✅ ERLEDIGTE AUFGABEN
 
+### Backend-Migration & Refactoring (Abgeschlossen am 28.01.2025)
+
+- [x] **Server/ → Backend/ Migration**
+  - [x] Alle Server-Dateien nach backend/src verschoben
+  - [x] MVC-Architektur implementiert
+  - [x] Controllers für Auth und Documents erstellt
+  - [x] Services Layer für Business Logic
+  - [x] app.js und server.js getrennt
+  - [x] Frontend komplett nach frontend/ verschoben
+  - [x] Build-System mit Vite konfiguriert
+  - [x] Alle Pfade und Importe aktualisiert
+  - [x] Tests migriert und strukturiert
+  - [x] Scripts und Utilities organisiert
+  - [x] Logs-Verzeichnis eingerichtet
+  - [x] Package.json Scripts angepasst
+  - [x] Dokumentation aktualisiert
+
 ### UI/UX & Design (Abgeschlossen am 26.05.2025)
+
 - [x] **Glassmorphismus Design Standards** implementiert
+
   - [x] Alle Container mit transparenten Hintergründen
   - [x] Backdrop-filter blur(20px) saturate(180%)
   - [x] Einheitliche Box-Shadows und Borders
   - [x] Dramatischer Background Gradient
 
 - [x] **Modal Design Standardisierung**
+
   - [x] Department-Modal als Muster definiert
   - [x] Modal Design Standards in CLAUDE.md dokumentiert
   - [x] Alle Modals auf einheitliches Design angepasst:
@@ -30,6 +51,7 @@
     - [x] survey-employee.html
 
 - [x] **Calendar Optimierungen**
+
   - [x] All-day Events Anzeige korrigiert
   - [x] Zeit-Auswahl bei Event-Erstellung gefixt
   - [x] FullCalendar Navigation Icons positioniert
@@ -41,32 +63,39 @@
   - [x] Konsistentes Design mit calendar.html
 
 ### Features (Bereits implementiert)
+
 - [x] **Benutzer-Management System**
+
   - [x] Root/Admin/Employee Rollen
   - [x] Multi-Tenant Architektur
   - [x] JWT Authentication
 
 - [x] **Dokumenten-System**
+
   - [x] Upload/Download Funktionalität
   - [x] Kategorisierung
   - [x] Zugriffsrechte
 
 - [x] **Schwarzes Brett (Blackboard)**
+
   - [x] Grundfunktionalität
   - [x] Tags und Farben
   - [x] Lesebestätigungen
 
 - [x] **Kalender System**
+
   - [x] Event-Verwaltung
   - [x] Organisationsebenen-Filter
   - [x] Drag & Drop
 
 - [x] **KVP-System (Kontinuierlicher Verbesserungsprozess)**
+
   - [x] Vorschlag einreichen
   - [x] Status-Tracking
   - [x] Punkte-System
 
 - [x] **Schichtplanung**
+
   - [x] Wochenansicht
   - [x] Drag & Drop Zuweisung
   - [x] Mitarbeiter-Verfügbarkeit
@@ -79,6 +108,7 @@
   - [x] Ungelesene Nachrichten Badge
 
 ### Feature Management (27.05.2025)
+
 - [x] **Root Features Seite**
   - [x] Feature Routes Fix (/api/features statt /features)
   - [x] Tenant-Isolation für Root User (kein Tenant-Selector)
@@ -88,6 +118,7 @@
   - [x] Feature Tier Mapping hinzugefügt
 
 ### Code-Qualität & Wartung (26.05.2025)
+
 - [x] **ESLint & Prettier Setup**
   - [x] ESLint Konfiguration hinzugefügt
   - [x] Prettier Integration
@@ -99,6 +130,7 @@
   - [x] 127 ESLint-Fehler verbleiben (meist unused variables in HTML-Templates)
 
 ### Clean URLs Implementation (28.05.2025)
+
 - [x] **Alle .html Endungen aus URLs entfernt**
   - [x] Server-Routen ohne .html angelegt
   - [x] Middleware für automatische .html → clean URL Redirects
@@ -109,6 +141,7 @@
   - [x] Survey-Admin/Results/Details URLs gefixt
 
 ### Projektdokumentation (28.05.2025)
+
 - [x] **PROJEKTSTRUKTUR.md erstellt**
   - [x] Vollständige Verzeichnisstruktur dokumentiert
   - [x] Mit Beschreibungen und Kategorisierung
@@ -117,6 +150,7 @@
 ## 🎯 NEUE HOCHPRIORITÄRE AUFGABEN (29.05.2025)
 
 ### 1. Projektstruktur-Optimierung
+
 - [ ] **PROJEKTSTRUKTUR.md analysieren und optimieren**
   - [ ] Aktuelle Struktur auf Standards und Effizienz prüfen
   - [ ] Best Practices für SaaS-Projekte recherchieren
@@ -130,15 +164,16 @@
     - [ ] Environment-spezifische Configs
 
 ### 2. Git Branch-Strategie
+
 - [ ] **Branches analysieren und optimieren**
   - [ ] Aktuelle Branches auflisten und dokumentieren
   - [ ] Unnötige/veraltete Branches identifizieren und löschen
   - [ ] Branch-Strategie definieren:
     - [ ] main/master (production)
     - [ ] develop (integration)
-    - [ ] feature/* (für jedes Feature)
-    - [ ] hotfix/* (für kritische Fixes)
-    - [ ] release/* (für Releases)
+    - [ ] feature/\* (für jedes Feature)
+    - [ ] hotfix/\* (für kritische Fixes)
+    - [ ] release/\* (für Releases)
   - [ ] Für jedes aktive Feature eigenen Branch erstellen:
     - [ ] feature/survey-tool
     - [ ] feature/vacation-management
@@ -149,6 +184,7 @@
   - [ ] Git-Flow Dokumentation erstellen
 
 ### 3. Setup-Guide Konsolidierung
+
 - [ ] **Zentrale Setup-Guides erstellen (Anfängerfreundlich)**
   - [ ] Alle existierenden Setup-Dateien analysieren:
     - [ ] SETUP-QUICKSTART.md
@@ -185,6 +221,7 @@
 ## 🚨 KRITISCHE SICHERHEITS-TODOS (Höchste Priorität!)
 
 ### GitHub Security Alerts (26.05.2025)
+
 - [ ] **Low Severity**: Cookie package vulnerability (GHSA-pxg6-pf52-xh8x)
   - Betroffene Packages: cookie < 0.7.0, csurf
   - In separatem Branch beheben wegen möglicher Breaking Changes
@@ -194,6 +231,7 @@
 ## 📱 Feature-Entwicklung (Hohe Priorität)
 
 ### Q1 2025 - In Arbeit
+
 - [ ] **Umfrage-Tool (Survey System)** - VERSCHOBEN (nach Priorität 1 Aufgaben)
   - [x] Grundstruktur implementiert
   - [x] Admin-Interface
@@ -209,7 +247,9 @@
   - [ ] E-Mail-Benachrichtigungen
 
 ### Q2 2025 - Geplant
+
 - [ ] **Urlaubsantrag-System**
+
   - [ ] Antragsformular
   - [ ] Genehmigungsworkflow
   - [ ] Kalenderintegration
@@ -217,6 +257,7 @@
   - [ ] E-Mail-Benachrichtigungen
 
 - [ ] **Mobile PWA (Progressive Web App)**
+
   - [ ] Service Worker implementieren
   - [ ] Offline-Funktionalität
   - [ ] Push-Benachrichtigungen
@@ -232,18 +273,21 @@
 ## 🔧 Feature-Erweiterungen (Mittlere Priorität)
 
 ### Schichtplanung Erweiterungen
+
 - [ ] Mitarbeiter-Tauschbörse für Schichten
 - [ ] Erweiterte Benachrichtigungen (E-Mail, Push)
 - [ ] Überstunden-/Fehlzeitenerfassung
 - [ ] Schichtvorlagen und -muster
 
 ### KVP-System Erweiterungen
+
 - [ ] Bewertungssystem für Vorschläge
 - [ ] E-Mail-Benachrichtigungen bei Status-Updates
 - [ ] Analytics und Reporting Dashboard
 - [ ] Prämienberechnung und -verwaltung
 
 ### Chat-System Verbesserungen
+
 - [x] Grundfunktionalität
 - [x] WebSocket Integration
 - [x] Typing Indicators
@@ -257,13 +301,16 @@
 - [ ] Chat Export Funktionalität
 
 ### Weitere Features
+
 - [ ] **TPM-Kalender (Total Productive Maintenance)**
+
   - [ ] Wartungsplanung
   - [ ] Checklisten
   - [ ] Erinnerungen
   - [ ] Historie
 
 - [ ] **Qualitätssicherungs-Checklisten**
+
   - [ ] Digitale Checklisten
   - [ ] Automatische Reports
   - [ ] Fehlertracking
@@ -276,6 +323,7 @@
 ## 📝 Dokumentation & Wartung (Niedrige Priorität)
 
 ### Code & Dokumentation
+
 - [x] README.md erstellt
 - [x] ROADMAP.md erstellt
 - [x] DATABASE-SETUP-README.md erstellt
@@ -288,6 +336,7 @@
 - [ ] Testing-Dokumentation
 
 ### Code-Qualität
+
 - [x] ESLint & Prettier Setup (26.05.2025)
 - [ ] Verbleibende ESLint-Warnungen beheben (127 Items)
 - [ ] Unit Tests implementieren
@@ -295,25 +344,29 @@
 - [ ] E2E Tests mit Cypress
 
 ### Lohnabrechnungs-Erweiterungen
+
 - [ ] Erweiterte Filter-Optionen
-- [ ] Bulk-Upload Funktionalität  
+- [ ] Bulk-Upload Funktionalität
 - [ ] Jahresübersichten
 - [ ] Steuerrelevante Exporte
 
 ## 🐛 Bekannte Bugs & Fixes
 
 ### Calendar/Kalender
+
 - [x] All-day Events spanning multiple days - FIXED
 - [x] Time selection disabled issue - FIXED
 - [ ] Backend all-day Event Storage Issue
 - [ ] Timezone-Handling verbessern
 
 ### Font Awesome
+
 - [x] CDN als Fallback in survey-admin.html hinzugefügt
 - [ ] Font Awesome CDN in allen HTML-Dateien hinzufügen
 - [ ] Lokale Font-Dateien bereitstellen als Fallback
 
 ### UI/UX
+
 - [x] Modal-Zentrierung in survey-admin.html - FIXED
 - [x] kvp.html Modal Close-Button - FIXED
 - [ ] Responsive Design für alle neuen Features
@@ -322,7 +375,9 @@
 
 ## 📊 Status-Übersicht
 
-### Erledigte Aufgaben: ✅ 72 Items
+### Erledigte Aufgaben: ✅ 86 Items
+
+- **Backend-Migration:** 14 Items
 - **UI/UX & Design:** 15 Items
 - **Features:** 20 Items
 - **Feature Management:** 6 Items
@@ -332,19 +387,20 @@
 - **Bug Fixes:** 5 Items
 
 ### Offene Aufgaben: ⏳ 117 Items
+
 - **NEUE Hochprioritäre Aufgaben:** 46 TODOs
   - Projektstruktur-Optimierung: 10 TODOs
   - Git Branch-Strategie: 11 TODOs
   - Setup-Guide Konsolidierung: 25 TODOs
 - **Kritisch/Security:** 15 TODOs
-- **Feature-Entwicklung:** 16 TODOs  
+- **Feature-Entwicklung:** 16 TODOs
 - **Erweiterungen:** 21 TODOs
 - **Code-Qualität:** 4 TODOs
 - **Dokumentation:** 9 TODOs
 - **Bugs:** 6 TODOs
 
-**Gesamt:** 189 Items (72 erledigt, 117 offen)
-**Fortschritt:** 38% abgeschlossen
+**Gesamt:** 203 Items (86 erledigt, 117 offen)
+**Fortschritt:** 42% abgeschlossen
 
 ---
 

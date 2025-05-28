@@ -3,7 +3,7 @@
   <div class="nav-logo">
     <span class="nav-title">Lohnabrechnung Online</span>
   </div>
-  
+
   <div class="nav-user">
     <div id="nav-profile-pic" class="nav-profile-pic">
       <!-- Wird dynamisch befüllt (Bild oder Initialen) -->
@@ -13,7 +13,7 @@
       <span id="nav-role" class="nav-role">Rolle</span>
     </div>
   </div>
-  
+
   <ul class="nav-menu">
     <!-- Diese Menüpunkte werden je nach Benutzerrolle ein-/ausgeblendet -->
     <li class="nav-item" data-role="employee,admin,root">
@@ -22,14 +22,14 @@
         <span>Dashboard</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="employee">
       <a href="/employee-profile" class="nav-link">
         <i class="nav-icon profile-icon"></i>
         <span>Mein Profil</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="employee">
       <a href="/employee-documents" class="nav-link">
         <i class="nav-icon documents-icon"></i>
@@ -38,53 +38,55 @@
     </li>
 
     <!-- Neuer Menüpunkt für Gehaltsabrechnungen -->
-<li class="nav-item" data-role="employee">
-  <a href="/salary-documents" class="nav-link">
-    <i class="nav-icon salary-icon"></i>
-    <span>Gehaltsabrechnungen</span>
-  </a>
-</li>
+    <li class="nav-item" data-role="employee">
+      <a href="/salary-documents" class="nav-link">
+        <i class="nav-icon salary-icon"></i>
+        <span>Gehaltsabrechnungen</span>
+      </a>
+    </li>
 
-<style>
-  /* Icon für Gehaltsabrechnungen */
-  .salary-icon::before { content: "💰"; }
-</style>
-    
+    <style>
+      /* Icon für Gehaltsabrechnungen */
+      .salary-icon::before {
+        content: '💰';
+      }
+    </style>
+
     <li class="nav-item" data-role="admin,root">
       <a href="/admin-dashboard" class="nav-link">
         <i class="nav-icon admin-icon"></i>
         <span>Mitarbeiter</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="admin,root">
       <a href="/org-management" class="nav-link">
         <i class="nav-icon org-icon"></i>
         <span>Abteilungen & Teams</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="admin,root">
       <a href="/document-upload" class="nav-link">
         <i class="nav-icon upload-icon"></i>
         <span>Dokumente hochladen</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="root">
       <a href="/root-dashboard" class="nav-link">
         <i class="nav-icon root-icon"></i>
         <span>Root Dashboard</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="admin,root">
       <a href="/api-test" class="nav-link">
         <i class="nav-icon api-icon"></i>
         <span>API Test</span>
       </a>
     </li>
-    
+
     <li class="nav-item" data-role="employee,admin,root">
       <a href="/settings" class="nav-link">
         <i class="nav-icon settings-icon"></i>
@@ -92,7 +94,7 @@
       </a>
     </li>
   </ul>
-  
+
   <div class="nav-footer">
     <button id="logout-btn" class="nav-logout">
       <i class="nav-icon logout-icon"></i>
@@ -117,25 +119,25 @@
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     z-index: 1000;
   }
-  
+
   .nav-logo {
     display: flex;
     align-items: center;
     padding: 0 20px;
     margin-bottom: 20px;
   }
-  
+
   .nav-logo img {
     width: 40px;
     height: 40px;
     margin-right: 10px;
   }
-  
+
   .nav-title {
     font-size: 18px;
     font-weight: bold;
   }
-  
+
   .nav-user {
     display: flex;
     align-items: center;
@@ -143,7 +145,7 @@
     background-color: #444;
     margin-bottom: 20px;
   }
-  
+
   .nav-profile-pic {
     width: 40px;
     height: 40px;
@@ -157,28 +159,28 @@
     margin-right: 10px;
     overflow: hidden;
   }
-  
+
   .nav-profile-pic img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  
+
   .nav-user-info {
     display: flex;
     flex-direction: column;
   }
-  
+
   .nav-username {
     font-weight: bold;
     margin-bottom: 2px;
   }
-  
+
   .nav-role {
     font-size: 12px;
     color: #ccc;
   }
-  
+
   .nav-menu {
     flex-grow: 1;
     list-style: none;
@@ -186,11 +188,11 @@
     margin: 0;
     overflow-y: auto;
   }
-  
+
   .nav-item {
     margin-bottom: 5px;
   }
-  
+
   .nav-link {
     display: flex;
     align-items: center;
@@ -199,12 +201,13 @@
     text-decoration: none;
     transition: background-color 0.3s;
   }
-  
-  .nav-link:hover, .nav-link.active {
+
+  .nav-link:hover,
+  .nav-link.active {
     background-color: #1b8e01;
     color: white;
   }
-  
+
   .nav-icon {
     margin-right: 10px;
     width: 20px;
@@ -216,23 +219,43 @@
     but for simplicity we'll use Unicode symbols
     */
   }
-  
-  .dashboard-icon::before { content: "📊"; }
-  .profile-icon::before { content: "👤"; }
-  .documents-icon::before { content: "📄"; }
-  .admin-icon::before { content: "👥"; }
-  .org-icon::before { content: "🏢"; }
-  .upload-icon::before { content: "📤"; }
-  .root-icon::before { content: "⚙️"; }
-  .api-icon::before { content: "🧪"; }
-  .settings-icon::before { content: "🔧"; }
-  .logout-icon::before { content: "🚪"; }
-  
+
+  .dashboard-icon::before {
+    content: '📊';
+  }
+  .profile-icon::before {
+    content: '👤';
+  }
+  .documents-icon::before {
+    content: '📄';
+  }
+  .admin-icon::before {
+    content: '👥';
+  }
+  .org-icon::before {
+    content: '🏢';
+  }
+  .upload-icon::before {
+    content: '📤';
+  }
+  .root-icon::before {
+    content: '⚙️';
+  }
+  .api-icon::before {
+    content: '🧪';
+  }
+  .settings-icon::before {
+    content: '🔧';
+  }
+  .logout-icon::before {
+    content: '🚪';
+  }
+
   .nav-footer {
     padding: 20px;
     border-top: 1px solid #444;
   }
-  
+
   .nav-logout {
     width: 100%;
     display: flex;
@@ -245,73 +268,75 @@
     cursor: pointer;
     transition: background-color 0.3s;
   }
-  
+
   .nav-logout:hover {
     background-color: #d9534f;
     color: white;
     border-color: #d9534f;
   }
-  
+
   /* Responsive layout */
   @media (max-width: 992px) {
     .main-nav {
       width: 200px;
     }
   }
-  
+
   @media (max-width: 768px) {
     .main-nav {
       width: 60px;
       transition: width 0.3s;
     }
-    
-    .nav-title, .nav-user-info, .nav-link span {
+
+    .nav-title,
+    .nav-user-info,
+    .nav-link span {
       display: none;
     }
-    
+
     .nav-link {
       justify-content: center;
     }
-    
+
     .nav-icon {
       margin-right: 0;
     }
-    
+
     .nav-logout span {
       display: none;
     }
-    
+
     .main-nav:hover {
       width: 200px;
     }
-    
-    .main-nav:hover .nav-title, 
-    .main-nav:hover .nav-user-info, 
+
+    .main-nav:hover .nav-title,
+    .main-nav:hover .nav-user-info,
     .main-nav:hover .nav-link span,
     .main-nav:hover .nav-logout span {
       display: block;
     }
-    
+
     .main-nav:hover .nav-link {
       justify-content: flex-start;
     }
-    
+
     .main-nav:hover .nav-icon {
       margin-right: 10px;
     }
   }
-  
+
   /* Adjust main content to make room for the navigation */
   body {
     margin-left: 250px;
   }
-  
+
   @media (max-width: 992px) {
     body {
       margin-left: 200px;
     }
   }
-  
+
   @media (max-width: 768px) {
     body {
       margin-left: 60px;
@@ -327,29 +352,29 @@
     const navProfilePic = document.getElementById('nav-profile-pic');
     const logoutBtn = document.getElementById('logout-btn');
     const navLinks = document.querySelectorAll('.nav-link');
-    
+
     // Aktuelle Seite hervorheben
     const currentPage = window.location.pathname;
-    navLinks.forEach(link => {
+    navLinks.forEach((link) => {
       if (link.getAttribute('href') === currentPage) {
         link.classList.add('active');
       }
     });
-    
+
     // Menüelemente basierend auf der Benutzerrolle anzeigen/ausblenden
     const userRole = localStorage.getItem('role') || '';
     const navItems = document.querySelectorAll('.nav-item');
-    
-    navItems.forEach(item => {
+
+    navItems.forEach((item) => {
       const roles = item.getAttribute('data-role').split(',');
       if (!roles.includes(userRole)) {
         item.style.display = 'none';
       }
     });
-    
+
     // Benutzerdaten laden
     loadUserData();
-    
+
     // Logout-Funktion
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
@@ -358,35 +383,39 @@
         window.location.href = '/';
       });
     }
-    
+
     // Benutzerdaten für die Navigation laden
     async function loadUserData() {
       try {
         const response = await fetch('/users/current', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
         });
-        
+
         if (response.ok) {
           const userData = await response.json();
-          
+
           // Benutzernamen anzeigen
           if (navUsername) {
             navUsername.textContent = userData.username;
           }
-          
+
           // Rolle anzeigen (erster Buchstabe groß)
           if (navRole && userData.role) {
-            navRole.textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
+            navRole.textContent =
+              userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
           }
-          
+
           // Profilbild oder Initialen anzeigen
           if (navProfilePic) {
             if (userData.profile_picture) {
               navProfilePic.innerHTML = `<img src="/${userData.profile_picture}" alt="${userData.username}">`;
             } else {
-              const initials = getInitials(userData.first_name, userData.last_name);
+              const initials = getInitials(
+                userData.first_name,
+                userData.last_name
+              );
               navProfilePic.textContent = initials;
             }
           }
@@ -397,7 +426,7 @@
         console.error('Error loading user data:', error);
       }
     }
-    
+
     // Initialen aus Vor- und Nachname extrahieren
     function getInitials(firstName = '', lastName = '') {
       const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';

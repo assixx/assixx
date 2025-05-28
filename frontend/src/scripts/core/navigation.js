@@ -1,1 +1,3 @@
-export function initNavigation() { console.log("Navigation initialized"); }
+export function initNavigation() {
+  console.log('Navigation initialized');
+}

@@ -1,1 +1,3 @@
-export function initDropdowns() { console.log("Dropdowns initialized"); }
+export function initDropdowns() {
+  console.log('Dropdowns initialized');
+}

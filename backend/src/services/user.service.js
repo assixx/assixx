@@ -15,12 +15,12 @@ class UserService {
   async getUserById(userId) {
     try {
       const user = await User.findById(userId);
-      
+
       if (user) {
         // Remove sensitive data
         delete user.password;
       }
-      
+
       return user;
     } catch (error) {
       logger.error('Error getting user by ID:', error);
@@ -51,20 +51,20 @@ class UserService {
     try {
       const { page = 1, limit = 10, role, tenantId } = options;
       const offset = (page - 1) * limit;
-      
+
       const users = await User.findAll({
         limit,
         offset,
         role,
-        tenantId
+        tenantId,
       });
-      
+
       // Remove passwords from results
-      users.data = users.data.map(user => {
+      users.data = users.data.map((user) => {
         delete user.password;
         return user;
       });
-      
+
       return users;
     } catch (error) {
       logger.error('Error getting users:', error);
@@ -84,7 +84,7 @@ class UserService {
       delete updateData.id;
       delete updateData.password;
       delete updateData.role;
-      
+
       await User.update(userId, updateData);
       return await this.getUserById(userId);
     } catch (error) {
@@ -103,7 +103,7 @@ class UserService {
     try {
       const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
+
       await User.update(userId, { password: hashedPassword });
       return true;
     } catch (error) {

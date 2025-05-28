@@ -77,8 +77,14 @@ app.use(
     },
   })
 );
-app.use('/js', express.static(path.join(__dirname, '../../frontend/src/scripts')));
-app.use('/css', express.static(path.join(__dirname, '../../frontend/src/styles')));
+app.use(
+  '/js',
+  express.static(path.join(__dirname, '../../frontend/src/scripts'))
+);
+app.use(
+  '/css',
+  express.static(path.join(__dirname, '../../frontend/src/styles'))
+);
 app.use(
   '/components',
   express.static(path.join(__dirname, '../../frontend/src/components'))
@@ -137,7 +143,13 @@ app.use('/api/upload', uploadLimiter);
 app.use((req, res, next) => {
   if (req.path.endsWith('.html') && req.path !== '/') {
     const cleanPath = req.path.slice(0, -5); // Remove .html
-    return res.redirect(301, cleanPath + (req.originalUrl.includes('?') ? req.originalUrl.substring(req.originalUrl.indexOf('?')) : ''));
+    return res.redirect(
+      301,
+      cleanPath +
+        (req.originalUrl.includes('?')
+          ? req.originalUrl.substring(req.originalUrl.indexOf('?'))
+          : '')
+    );
   }
   next();
 });
@@ -229,19 +241,25 @@ app.post('/login', authLimiter, async (req, res) => {
 // HTML routes - Clean URLs ohne .html
 app.get('/root-dashboard', (req, res) => {
   console.log('Accessing root dashboard');
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'root-dashboard.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'root-dashboard.html')
+  );
 });
 
 app.get('/admin-config', (req, res) => {
   console.log('Accessing admin configuration page');
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'admin-config.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'admin-config.html')
+  );
 });
 
 app.get('/org-management', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'root') {
     return res.status(403).send('Zugriff verweigert');
   }
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'org-management.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'org-management.html')
+  );
 });
 
 // API Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
@@ -249,7 +267,9 @@ app.get('/api-test', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'api-test.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'api-test.html')
+  );
 });
 
 // Datenbank-Test-Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
@@ -257,7 +277,9 @@ app.get('/test-db', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'test-db.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'test-db.html')
+  );
 });
 
 // Debug-Dashboard (im Entwicklungsmodus ohne Authentifizierung verfügbar)
@@ -265,7 +287,9 @@ app.get('/debug-dashboard', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'debug-dashboard.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'debug-dashboard.html')
+  );
 });
 
 // Token-Debug Seite (im Entwicklungsmodus ohne Authentifizierung verfügbar)
@@ -273,7 +297,9 @@ app.get('/token-debug', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).send('Seite nicht verfügbar');
   }
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'token-debug.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'token-debug.html')
+  );
 });
 
 // Token-Validierungs-Endpoint für Debugging
@@ -300,7 +326,9 @@ app.get('/api/token-test', (req, res) => {
 });
 
 app.get('/employee-profile', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'employee-profile.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'employee-profile.html')
+  );
 });
 
 app.get(
@@ -308,12 +336,16 @@ app.get(
   authenticateToken,
   authorizeRole('admin'),
   (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'document-upload.html'));
+    res.sendFile(
+      path.join(__dirname, '../../frontend/src/pages', 'document-upload.html')
+    );
   }
 );
 
 app.get('/salary-documents', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'salary-documents.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'salary-documents.html')
+  );
 });
 
 app.get('/chat', authenticateToken, (req, res) => {
@@ -322,31 +354,50 @@ app.get('/chat', authenticateToken, (req, res) => {
 
 // Weitere HTML Routen mit Clean URLs
 app.get('/dashboard', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'dashboard.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'dashboard.html')
+  );
 });
 
-app.get('/admin-dashboard', authenticateToken, authorizeRole('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'admin-dashboard.html'));
-});
+app.get(
+  '/admin-dashboard',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, '../../frontend/src/pages', 'admin-dashboard.html')
+    );
+  }
+);
 
 app.get('/employee-dashboard', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'employee-dashboard.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'employee-dashboard.html')
+  );
 });
 
 app.get('/profile', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'profile.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'profile.html')
+  );
 });
 
 app.get('/profile-picture', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'profile-picture.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'profile-picture.html')
+  );
 });
 
 app.get('/blackboard', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'blackboard.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'blackboard.html')
+  );
 });
 
 app.get('/calendar', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'calendar.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'calendar.html')
+  );
 });
 
 app.get('/shifts', authenticateToken, (req, res) => {
@@ -358,43 +409,101 @@ app.get('/kvp', authenticateToken, (req, res) => {
 });
 
 app.get('/employee-documents', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'employee-documents.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'employee-documents.html')
+  );
 });
 
-app.get('/archived-employees', authenticateToken, authorizeRole('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'archived-employees.html'));
-});
+app.get(
+  '/archived-employees',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        '../../frontend/src/pages',
+        'archived-employees.html'
+      )
+    );
+  }
+);
 
-app.get('/feature-management', authenticateToken, authorizeRole('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'feature-management.html'));
-});
+app.get(
+  '/feature-management',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    res.sendFile(
+      path.join(
+        __dirname,
+        '../../frontend/src/pages',
+        'feature-management.html'
+      )
+    );
+  }
+);
 
-app.get('/survey-admin', authenticateToken, authorizeRole('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'survey-admin.html'));
-});
+app.get(
+  '/survey-admin',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, '../../frontend/src/pages', 'survey-admin.html')
+    );
+  }
+);
 
 app.get('/survey-employee', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'survey-employee.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'survey-employee.html')
+  );
 });
 
 app.get('/survey-details', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'survey-details.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'survey-details.html')
+  );
 });
 
-app.get('/survey-results', authenticateToken, authorizeRole('admin'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'survey-results.html'));
-});
+app.get(
+  '/survey-results',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, '../../frontend/src/pages', 'survey-results.html')
+    );
+  }
+);
 
-app.get('/root-features', authenticateToken, authorizeRole('root'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'root-features.html'));
-});
+app.get(
+  '/root-features',
+  authenticateToken,
+  authorizeRole('root'),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, '../../frontend/src/pages', 'root-features.html')
+    );
+  }
+);
 
-app.get('/root-profile', authenticateToken, authorizeRole('root'), (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'root-profile.html'));
-});
+app.get(
+  '/root-profile',
+  authenticateToken,
+  authorizeRole('root'),
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, '../../frontend/src/pages', 'root-profile.html')
+    );
+  }
+);
 
 app.get('/settings', authenticateToken, (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'settings.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'settings.html')
+  );
 });
 
 app.get('/hilfe', authenticateToken, (req, res) => {
@@ -402,7 +511,9 @@ app.get('/hilfe', authenticateToken, (req, res) => {
 });
 
 app.get('/design-standards', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/src/pages', 'design-standards.html'));
+  res.sendFile(
+    path.join(__dirname, '../../frontend/src/pages', 'design-standards.html')
+  );
 });
 
 // API routes

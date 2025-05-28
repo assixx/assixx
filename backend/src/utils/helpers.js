@@ -40,14 +40,14 @@ function parsePagination(query) {
  */
 function formatPaginationResponse(total, page, limit) {
   const totalPages = Math.ceil(total / limit);
-  
+
   return {
     total,
     page,
     limit,
     totalPages,
     hasNext: page < totalPages,
-    hasPrev: page > 1
+    hasPrev: page > 1,
   };
 }
 
@@ -58,7 +58,7 @@ function formatPaginationResponse(total, page, limit) {
  */
 function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
-  
+
   return input
     .trim()
     .replace(/[<>]/g, '') // Remove potential HTML tags
@@ -86,12 +86,12 @@ function generateSlug(text) {
  */
 function formatDate(date) {
   if (!date) return '';
-  
+
   const d = new Date(date);
   return d.toLocaleDateString('de-DE', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
   });
 }
 
@@ -102,14 +102,14 @@ function formatDate(date) {
  */
 function formatDateTime(date) {
   if (!date) return '';
-  
+
   const d = new Date(date);
   return d.toLocaleDateString('de-DE', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 }
 
@@ -165,7 +165,7 @@ function groupBy(array, key) {
  */
 function removeDuplicates(array, key) {
   const seen = new Set();
-  return array.filter(item => {
+  return array.filter((item) => {
     const value = item[key];
     if (seen.has(value)) return false;
     seen.add(value);
@@ -185,5 +185,5 @@ module.exports = {
   deepClone,
   isEmpty,
   groupBy,
-  removeDuplicates
+  removeDuplicates,
 };

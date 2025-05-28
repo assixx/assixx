@@ -149,23 +149,34 @@ router.get(
 );
 
 // Alle Tenants mit Features abrufen (nur Root)
-router.get('/all-tenants', authenticateToken, authorizeRole('root'), async (req, res) => {
-  try {
-    const db = require('../database');
-    
-    // Alle Tenants abrufen
-    const [tenants] = await db.query('SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name');
-    
-    // Für jeden Tenant die aktivierten Features abrufen
-    for (let tenant of tenants) {
-      tenant.features = await Feature.getTenantFeatures(tenant.id);
+router.get(
+  '/all-tenants',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res) => {
+    try {
+      const db = require('../database');
+
+      // Alle Tenants abrufen
+      const [tenants] = await db.query(
+        'SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name'
+      );
+
+      // Für jeden Tenant die aktivierten Features abrufen
+      for (const tenant of tenants) {
+        tenant.features = await Feature.getTenantFeatures(tenant.id);
+      }
+
+      res.json(tenants);
+    } catch (error) {
+      logger.error(
+        `Error fetching all tenants with features: ${error.message}`
+      );
+      res
+        .status(500)
+        .json({ error: 'Fehler beim Abrufen der Tenant-Features' });
     }
-    
-    res.json(tenants);
-  } catch (error) {
-    logger.error(`Error fetching all tenants with features: ${error.message}`);
-    res.status(500).json({ error: 'Fehler beim Abrufen der Tenant-Features' });
   }
-});
+);
 
 module.exports = router;

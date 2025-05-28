@@ -60,12 +60,12 @@ class AuthController {
     try {
       const { username, password } = req.body;
       console.log('[DEBUG] Login attempt for username:', username);
-      
+
       // Validate input
       if (!username || !password) {
         console.log('[DEBUG] Missing username or password');
-        return res.status(400).json({ 
-          message: 'Username and password are required' 
+        return res.status(400).json({
+          message: 'Username and password are required',
         });
       }
 
@@ -73,10 +73,10 @@ class AuthController {
       console.log('[DEBUG] Calling authService.authenticateUser');
       const result = await authService.authenticateUser(username, password);
       console.log('[DEBUG] Auth result:', result ? 'Success' : 'Failed');
-      
+
       if (!result.success) {
-        return res.status(401).json({ 
-          message: result.message || 'Invalid credentials' 
+        return res.status(401).json({
+          message: result.message || 'Invalid credentials',
         });
       }
 
@@ -85,7 +85,7 @@ class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
       // Return user data and token (compatible with legacy frontend)
@@ -93,7 +93,7 @@ class AuthController {
         message: 'Login erfolgreich',
         token: result.token,
         role: result.user.role,
-        user: result.user
+        user: result.user,
       });
     } catch (error) {
       logger.error('Login error:', error);
@@ -109,19 +109,19 @@ class AuthController {
   async register(req, res) {
     try {
       const userData = req.body;
-      
+
       // Register user through service
       const result = await authService.registerUser(userData);
-      
+
       if (!result.success) {
-        return res.status(400).json({ 
-          message: result.message || 'Registration failed' 
+        return res.status(400).json({
+          message: result.message || 'Registration failed',
         });
       }
 
       res.status(201).json({
         message: 'Registration successful',
-        user: result.user
+        user: result.user,
       });
     } catch (error) {
       logger.error('Registration error:', error);
@@ -139,9 +139,9 @@ class AuthController {
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
     });
-    
+
     res.json({ message: 'Logout successful' });
   }
 }

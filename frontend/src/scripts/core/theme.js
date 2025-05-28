@@ -1,1 +1,3 @@
-export function initTheme() { console.log("Theme initialized"); }
+export function initTheme() {
+  console.log('Theme initialized');
+}

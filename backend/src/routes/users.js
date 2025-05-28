@@ -15,17 +15,19 @@ router.get('/profile', authenticateToken, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Benutzer nicht gefunden' });
     }
-    
+
     // Passwort aus der Antwort entfernen
     const { password, ...userProfile } = user;
-    
+
     logger.info(`User ${req.user.id} retrieved their profile`);
     res.json(userProfile);
   } catch (error) {
-    logger.error(`Error retrieving profile for user ${req.user.id}: ${error.message}`);
-    res.status(500).json({ 
+    logger.error(
+      `Error retrieving profile for user ${req.user.id}: ${error.message}`
+    );
+    res.status(500).json({
       message: 'Fehler beim Abrufen des Profils',
-      error: error.message 
+      error: error.message,
     });
   }
 });

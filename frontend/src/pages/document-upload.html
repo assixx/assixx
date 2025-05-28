@@ -1,1286 +1,1593 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dokument hochladen - Assixx</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/styles/dashboard-theme.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <style>
-        /* Glassmorphismus Design-Standards - Wie im Admin Dashboard */
-        
-        /* Dramatischer Hintergrund-Gradient */
-        body {
-            position: relative;
-            min-height: 100vh;
-            overflow-x: hidden;
-            background: #000;
+      /* Glassmorphismus Design-Standards - Wie im Admin Dashboard */
+
+      /* Dramatischer Hintergrund-Gradient */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          135deg,
+          transparent 0%,
+          rgba(0, 142, 255, 0.08) 100%,
+          #01000482 60%,
+          rgba(0, 0, 4, 0.6) 90%,
+          black 100%
+        );
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Glassmorphismus für Header */
+      .header {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      /* Glassmorphismus für Sidebar */
+      .sidebar {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          8px 0 32px rgba(0, 0, 0, 0.3),
+          inset -1px 0 0 rgba(255, 255, 255, 0.1);
+      }
+
+      /* Fix for sidebar title alignment */
+      .sidebar-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        margin: 0 0 16px 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: rgba(33, 150, 243, 0.1);
+        border-radius: 12px;
+        border: 1px solid rgba(33, 150, 243, 0.2);
+      }
+
+      /* Glassmorphismus Upload Section - wie card im Dashboard */
+      .upload-section {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        margin-bottom: var(--spacing-lg);
+        overflow: hidden;
+        position: relative;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      .upload-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(
+          90deg,
+          var(--primary-color),
+          var(--primary-light)
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .upload-section:hover::before {
+        opacity: 1;
+      }
+
+      .upload-section:hover {
+        transform: translateY(-5px);
+        box-shadow:
+          0 12px 40px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      /* Card Header für Upload Title - wie im Dashboard */
+      .card-header {
+        background: rgba(255, 255, 255, 0.01);
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .upload-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .upload-title::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(
+          180deg,
+          var(--primary-color),
+          var(--primary-light)
+        );
+        border-radius: 2px;
+      }
+
+      .card-body {
+        padding: var(--spacing-lg);
+      }
+
+      .upload-form {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .form-group {
+        margin-bottom: var(--spacing-md);
+      }
+
+      /* Form Controls - wie im Dashboard */
+      .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .form-control:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        outline: none;
+      }
+
+      /* Form Label */
+      .form-label {
+        display: block;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      /* Custom Glassmorphismus Dropdown - Nach Design Standards */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 46px;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-display.active {
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-display span {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.8);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
+      }
+
+      .dropdown-option.selected {
+        background: rgba(33, 150, 243, 0.15);
+        font-weight: 500;
+      }
+
+      /* Placeholder Styling */
+      .dropdown-display.placeholder span {
+        color: rgba(255, 255, 255, 0.5);
+        font-style: italic;
+      }
+
+      /* Textarea spezifisch */
+      textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      /* Page Header - wie im Dashboard */
+      .page-header {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .page-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        text-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
+      }
+
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+      }
+
+      .form-col {
+        flex: 1;
+        min-width: 200px;
+        padding: 0 10px;
+      }
+
+      .file-drop-area {
+        position: relative;
+        border: 2px dashed rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s;
+        margin-bottom: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .file-drop-area:hover,
+      .file-drop-area.drag-over {
+        border-color: rgba(33, 150, 243, 0.5);
+        background: rgba(33, 150, 243, 0.05);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+      }
+
+      .file-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .file-icon svg {
+        width: 48px;
+        height: 48px;
+      }
+
+      .file-message {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .file-restrictions {
+        background: rgba(33, 150, 243, 0.05);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(33, 150, 243, 0.1);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-sm);
+        margin-top: var(--spacing-xs);
+        margin-bottom: var(--spacing-md);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+      }
+
+      .file-input {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .file-info {
+        display: none;
+        background: rgba(33, 150, 243, 0.08);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(33, 150, 243, 0.2);
+        border-radius: var(--radius-sm);
+        padding: 10px 15px;
+        margin-top: var(--spacing-sm);
+        color: var(--text-primary);
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+      }
+
+      .file-info.active {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      .pdf-preview-container {
+        display: none;
+        margin: var(--spacing-md) 0;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        max-height: 400px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      }
+
+      .pdf-preview-container.active {
+        display: block;
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      .pdf-preview {
+        width: 100%;
+        height: 400px;
+        border: none;
+      }
+
+      .preview-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: var(--spacing-sm);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .preview-title {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .preview-close {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 5px;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s;
+      }
+
+      .preview-close:hover {
+        color: var(--error-color);
+        background: rgba(255, 255, 255, 0.05);
+        transform: scale(1.1);
+      }
+
+      .file-name {
+        font-weight: 600;
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .file-size {
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      /* Button Styles wie im Dashboard */
+      .btn {
+        padding: 10px 24px;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      /* Second-Level Button für Upload (mit Gradient) */
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--primary-hover)
+        );
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+          0 1px 4px rgba(33, 150, 243, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+        transition: left 0.5s ease;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+      }
+
+      .btn-primary:hover::before {
+        left: 100%;
+      }
+
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+
+      .btn svg {
+        margin-right: 8px;
+      }
+
+      /* Alert Styles - wie stat-cards im Dashboard */
+      .alert {
+        padding: 15px 20px;
+        border-radius: var(--radius-sm);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        animation: fadeInUp 0.3s ease-out;
+        transition: all 0.3s ease;
+      }
+
+      .alert .icon {
+        margin-right: 15px;
+        font-size: 24px;
+      }
+
+      .alert-success {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        box-shadow:
+          0 4px 12px rgba(16, 185, 129, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .alert-danger {
+        background: rgba(244, 67, 54, 0.15);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        box-shadow:
+          0 4px 12px rgba(244, 67, 54, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      /* Animationen */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
-        
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
-            pointer-events: none;
-            z-index: -1;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-        
-        /* Glassmorphismus für Header */
-        .header {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
-        
-        /* Glassmorphismus für Sidebar */
-        .sidebar {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3),
-                        inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        100% {
+          transform: rotate(360deg);
         }
-        
-        /* Fix for sidebar title alignment */
-        .sidebar-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 16px;
-            margin: 0 0 16px 0;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            background: rgba(33, 150, 243, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(33, 150, 243, 0.2);
-        }
-        
-        /* Glassmorphismus Upload Section - wie card im Dashboard */
-        .upload-section {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius-md);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            margin-bottom: var(--spacing-lg);
-            overflow: hidden;
-            position: relative;
-            transition: all 0.3s ease;
-            animation: fadeInUp 0.6s ease-out;
-        }
-        
-        .upload-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .upload-section:hover::before {
-            opacity: 1;
-        }
-        
-        .upload-section:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.03);
-        }
-        
-        /* Card Header für Upload Title - wie im Dashboard */
-        .card-header {
-            background: rgba(255, 255, 255, 0.01);
-            padding: var(--spacing-md) var(--spacing-lg);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .upload-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-        }
-        
-        .upload-title::before {
-            content: '';
-            width: 4px;
-            height: 20px;
-            background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-            border-radius: 2px;
-        }
-        
-        .card-body {
-            padding: var(--spacing-lg);
-        }
-        
-        .upload-form {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .form-group {
-            margin-bottom: var(--spacing-md);
-        }
-        
-        /* Form Controls - wie im Dashboard */
-        .form-control {
-            width: 100%;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .form-control:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
-            outline: none;
-        }
-        
-        /* Form Label */
-        .form-label {
-            display: block;
-            font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        /* Custom Glassmorphismus Dropdown - Nach Design Standards */
-        .custom-dropdown {
-            position: relative;
-            width: 100%;
-        }
-        
-        .dropdown-display {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--spacing-md);
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: var(--radius-sm);
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 46px;
-        }
-        
-        .dropdown-display:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .dropdown-display.active {
-            border-color: rgba(0, 142, 255, 0.5);
-            box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
-        }
-        
-        .dropdown-display.active svg {
-            transform: rotate(180deg);
-        }
-        
-        .dropdown-display span {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .dropdown-display svg {
-            transition: transform 0.3s ease;
-        }
-        
-        .dropdown-options {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background: rgba(18, 18, 18, 0.8);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: var(--radius-sm);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            max-height: 200px;
-            overflow-y: auto;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            z-index: 1001;
-        }
-        
-        .dropdown-options.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        
-        .dropdown-option {
-            padding: 10px 12px;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .dropdown-option:last-child {
-            border-bottom: none;
-        }
-        
-        .dropdown-option:hover {
-            background: rgba(33, 150, 243, 0.2);
-            color: white;
-            padding-left: 16px;
-        }
-        
-        .dropdown-option.selected {
-            background: rgba(33, 150, 243, 0.15);
-            font-weight: 500;
-        }
-        
-        /* Placeholder Styling */
-        .dropdown-display.placeholder span {
-            color: rgba(255, 255, 255, 0.5);
-            font-style: italic;
-        }
-        
-        /* Textarea spezifisch */
-        textarea.form-control {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        /* Page Header - wie im Dashboard */
-        .page-header {
-            margin-bottom: var(--spacing-lg);
-        }
-        
-        .page-title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-            text-shadow: 0 0 20px rgba(33, 150, 243, 0.3);
-        }
-        
+      }
+
+      .loading-spinner {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 8px;
+      }
+
+      .loading-spinner svg {
+        animation: spin 1.5s linear infinite;
+      }
+
+      /* Anpassungen für mobile Geräte */
+      @media (max-width: 768px) {
         .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            margin: 0 -10px;
+          flex-direction: column;
         }
-        
+
         .form-col {
-            flex: 1;
-            min-width: 200px;
-            padding: 0 10px;
+          width: 100%;
+          margin-bottom: var(--spacing-md);
         }
-        
-        .file-drop-area {
-            position: relative;
-            border: 2px dashed rgba(255, 255, 255, 0.15);
-            border-radius: var(--radius-md);
-            padding: 30px;
-            text-align: center;
-            transition: all 0.3s;
-            margin-bottom: var(--spacing-md);
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        
-        .file-drop-area:hover, .file-drop-area.drag-over {
-            border-color: rgba(33, 150, 243, 0.5);
-            background: rgba(33, 150, 243, 0.05);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-        }
-        
-        .file-icon {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--primary-color);
-            margin-bottom: var(--spacing-sm);
-        }
-        
-        .file-icon svg {
-            width: 48px;
-            height: 48px;
-        }
-        
-        .file-message {
-            color: var(--text-secondary);
-            margin-bottom: var(--spacing-xs);
-        }
-        
-        .file-restrictions {
-            background: rgba(33, 150, 243, 0.05);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(33, 150, 243, 0.1);
-            border-radius: var(--radius-sm);
-            padding: var(--spacing-sm);
-            margin-top: var(--spacing-xs);
-            margin-bottom: var(--spacing-md);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-        }
-        
-        .file-input {
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-        
-        .file-info {
-            display: none;
-            background: rgba(33, 150, 243, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(33, 150, 243, 0.2);
-            border-radius: var(--radius-sm);
-            padding: 10px 15px;
-            margin-top: var(--spacing-sm);
-            color: var(--text-primary);
-            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
-        }
-        
-        .file-info.active {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            animation: fadeInUp 0.3s ease-out;
-        }
-        
-        .pdf-preview-container {
-            display: none;
-            margin: var(--spacing-md) 0;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            max-height: 400px;
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-        
-        .pdf-preview-container.active {
-            display: block;
-            animation: fadeInUp 0.3s ease-out;
-        }
-        
-        .pdf-preview {
-            width: 100%;
-            height: 400px;
-            border: none;
-        }
-        
-        .preview-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: var(--spacing-sm);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .preview-title {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .preview-close {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 18px;
-            padding: 5px;
-            border-radius: var(--radius-sm);
-            transition: all 0.2s;
-        }
-        
-        .preview-close:hover {
-            color: var(--error-color);
-            background: rgba(255, 255, 255, 0.05);
-            transform: scale(1.1);
-        }
-        
-        .file-name {
-            font-weight: 600;
-            max-width: 70%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .file-size {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-        
-        /* Button Styles wie im Dashboard */
-        .btn {
-            padding: 10px 24px;
-            border-radius: var(--radius-sm);
-            font-weight: 500;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        /* Second-Level Button für Upload (mit Gradient) */
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-            color: white;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-        
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s ease;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
-        }
-        
-        .btn-primary:hover::before {
-            left: 100%;
-        }
-        
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-        
-        .btn svg {
-            margin-right: 8px;
-        }
-        
-        /* Alert Styles - wie stat-cards im Dashboard */
-        .alert {
-            padding: 15px 20px;
-            border-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-md);
-            display: flex;
-            align-items: center;
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            animation: fadeInUp 0.3s ease-out;
-            transition: all 0.3s ease;
-        }
-        
-        .alert .icon {
-            margin-right: 15px;
-            font-size: 24px;
-        }
-        
-        .alert-success {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        
-        .alert-danger {
-            background: rgba(244, 67, 54, 0.15);
-            color: #f44336;
-            border: 1px solid rgba(244, 67, 54, 0.3);
-            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Animationen */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-spinner {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 8px;
-        }
-        
-        .loading-spinner svg {
-            animation: spin 1.5s linear infinite;
-        }
-        
-        /* Anpassungen für mobile Geräte */
-        @media (max-width: 768px) {
-            .form-row {
-                flex-direction: column;
-            }
-            
-            .form-col {
-                width: 100%;
-                margin-bottom: var(--spacing-md);
-            }
-        }
+      }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/user-info-update.css">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+  </head>
+  <body>
     <!-- Header -->
     <header class="header">
-        <a href="/admin-dashboard" class="logo-container">
-            <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
-        </a>
-        <div class="header-actions">
-            <div id="user-info">
-                <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
-                <span id="user-name">Lade...</span>
-            </div>
-            <button id="logout-btn" class="btn-logout" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Abmelden</button>
+      <a href="/admin-dashboard" class="logo-container">
+        <img
+          src="/assets/images/logo.png"
+          alt="Assixx Logo"
+          class="logo"
+          style="height: 40px; width: auto; filter: none"
+        />
+      </a>
+      <div class="header-actions">
+        <div id="user-info">
+          <img
+            id="user-avatar"
+            src="/assets/images/default-avatar.svg"
+            alt="Avatar"
+          />
+          <span id="user-name">Lade...</span>
         </div>
+        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+          <i class="fas fa-sign-out-alt"></i> Abmelden
+        </button>
+      </div>
     </header>
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <h3 class="sidebar-title">Navigation</h3>
-                <ul class="sidebar-menu" id="nav-menu">
-                    <!-- Wird dynamisch gefüllt -->
-                </ul>
-            </nav>
-        </aside>
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <h3 class="sidebar-title">Navigation</h3>
+          <ul class="sidebar-menu" id="nav-menu">
+            <!-- Wird dynamisch gefüllt -->
+          </ul>
+        </nav>
+      </aside>
 
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <div class="page-header">
-                <h1 class="page-title">Dokument hochladen</h1>
-            </div>
-            
-            <div id="upload-success" class="alert alert-success" style="display: none;">
-                <span class="icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <div class="page-header">
+          <h1 class="page-title">Dokument hochladen</h1>
+        </div>
+
+        <div
+          id="upload-success"
+          class="alert alert-success"
+          style="display: none"
+        >
+          <span class="icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+              />
+            </svg>
+          </span>
+          <div>
+            <strong>Erfolg!</strong>
+            <p>Dokument wurde erfolgreich hochgeladen.</p>
+          </div>
+        </div>
+
+        <div id="upload-error" class="alert alert-danger" style="display: none">
+          <span class="icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+              />
+            </svg>
+          </span>
+          <div>
+            <strong>Fehler!</strong>
+            <p id="error-message">
+              Beim Hochladen des Dokuments ist ein Fehler aufgetreten.
+            </p>
+          </div>
+        </div>
+
+        <div class="upload-section">
+          <div class="card-header">
+            <h2 class="upload-title">Dokument-Informationen</h2>
+          </div>
+          <div class="card-body">
+            <form id="upload-form" class="upload-form">
+              <div class="form-row">
+                <div class="form-col">
+                  <div class="form-group">
+                    <label for="user-select" class="form-label"
+                      >Mitarbeiter auswählen</label
+                    >
+                    <div class="custom-dropdown">
+                      <div
+                        class="dropdown-display placeholder"
+                        id="userDisplay"
+                        onclick="toggleDropdown('user')"
+                      >
+                        <span>Bitte Mitarbeiter auswählen</span>
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                        >
+                          <path
+                            d="M1 1L6 6L11 1"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <div class="dropdown-options" id="userDropdown">
+                        <!-- Wird dynamisch befüllt -->
+                      </div>
+                      <input
+                        type="hidden"
+                        name="userId"
+                        id="userValue"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="category-select" class="form-label"
+                      >Kategorie</label
+                    >
+                    <div class="custom-dropdown">
+                      <div
+                        class="dropdown-display placeholder"
+                        id="categoryDisplay"
+                        onclick="toggleDropdown('category')"
+                      >
+                        <span>Bitte Kategorie auswählen</span>
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                        >
+                          <path
+                            d="M1 1L6 6L11 1"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <div class="dropdown-options" id="categoryDropdown">
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')"
+                        >
+                          Gehaltsabrechnung
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('category', 'contract', 'Vertrag')"
+                        >
+                          Vertrag
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')"
+                        >
+                          Zertifikat/Zeugnis
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('category', 'other', 'Sonstiges')"
+                        >
+                          Sonstiges
+                        </div>
+                      </div>
+                      <input
+                        type="hidden"
+                        name="category"
+                        id="categoryValue"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-col">
+                  <div class="form-group">
+                    <label for="year-input" class="form-label"
+                      >Jahr (optional)</label
+                    >
+                    <input
+                      type="number"
+                      id="year-input"
+                      name="year"
+                      class="form-control"
+                      min="1900"
+                      max="2100"
+                      placeholder="z.B. 2025"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="month-select" class="form-label"
+                      >Monat (optional)</label
+                    >
+                    <div class="custom-dropdown">
+                      <div
+                        class="dropdown-display placeholder"
+                        id="monthDisplay"
+                        onclick="toggleDropdown('month')"
+                      >
+                        <span>Monat auswählen (optional)</span>
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                        >
+                          <path
+                            d="M1 1L6 6L11 1"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <div class="dropdown-options" id="monthDropdown">
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', '', 'Kein Monat')"
+                        >
+                          Kein Monat
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Januar', 'Januar')"
+                        >
+                          Januar
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Februar', 'Februar')"
+                        >
+                          Februar
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'März', 'März')"
+                        >
+                          März
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'April', 'April')"
+                        >
+                          April
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Mai', 'Mai')"
+                        >
+                          Mai
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Juni', 'Juni')"
+                        >
+                          Juni
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Juli', 'Juli')"
+                        >
+                          Juli
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'August', 'August')"
+                        >
+                          August
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'September', 'September')"
+                        >
+                          September
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Oktober', 'Oktober')"
+                        >
+                          Oktober
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'November', 'November')"
+                        >
+                          November
+                        </div>
+                        <div
+                          class="dropdown-option"
+                          onclick="selectOption('month', 'Dezember', 'Dezember')"
+                        >
+                          Dezember
+                        </div>
+                      </div>
+                      <input type="hidden" name="month" id="monthValue" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="description-input" class="form-label"
+                  >Beschreibung (optional)</label
+                >
+                <textarea
+                  id="description-input"
+                  name="description"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Zusätzliche Informationen zum Dokument"
+                ></textarea>
+              </div>
+
+              <div class="file-drop-area" id="drop-area">
+                <span class="file-icon">
+                  <svg
+                    width="40"
+                    height="40"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
+                    />
+                  </svg>
                 </span>
-                <div>
-                    <strong>Erfolg!</strong>
-                    <p>Dokument wurde erfolgreich hochgeladen.</p>
+                <div class="file-message">
+                  Datei hierher ziehen oder klicken, um auszuwählen
                 </div>
-            </div>
-            
-            <div id="upload-error" class="alert alert-danger" style="display: none;">
-                <span class="icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                </span>
-                <div>
-                    <strong>Fehler!</strong>
-                    <p id="error-message">Beim Hochladen des Dokuments ist ein Fehler aufgetreten.</p>
+                <p class="text-secondary">
+                  (Nur PDF-Dateien erlaubt, max. 5MB)
+                </p>
+                <div class="file-restrictions">
+                  <small>Erlaubte Dateitypen: PDF (.pdf)</small><br />
+                  <small>Maximale Dateigröße: 5 MB</small>
                 </div>
-            </div>
-            
-            <div class="upload-section">
-                <div class="card-header">
-                    <h2 class="upload-title">Dokument-Informationen</h2>
+                <input
+                  type="file"
+                  id="file-input"
+                  name="document"
+                  class="file-input"
+                  accept=".pdf"
+                  required
+                />
+              </div>
+
+              <div class="file-info" id="file-info">
+                <div class="file-name" id="file-name">document.pdf</div>
+                <div class="file-size" id="file-size">0 KB</div>
+              </div>
+
+              <div class="pdf-preview-container" id="pdf-preview-container">
+                <div class="preview-controls">
+                  <span class="preview-title">Dokument-Vorschau</span>
+                  <button
+                    type="button"
+                    class="preview-close"
+                    id="preview-close"
+                  >
+                    ×
+                  </button>
                 </div>
-                <div class="card-body">
-                    <form id="upload-form" class="upload-form">
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="user-select" class="form-label">Mitarbeiter auswählen</label>
-                                <div class="custom-dropdown">
-                                    <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
-                                        <span>Bitte Mitarbeiter auswählen</span>
-                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                    </div>
-                                    <div class="dropdown-options" id="userDropdown">
-                                        <!-- Wird dynamisch befüllt -->
-                                    </div>
-                                    <input type="hidden" name="userId" id="userValue" required>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="category-select" class="form-label">Kategorie</label>
-                                <div class="custom-dropdown">
-                                    <div class="dropdown-display placeholder" id="categoryDisplay" onclick="toggleDropdown('category')">
-                                        <span>Bitte Kategorie auswählen</span>
-                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                    </div>
-                                    <div class="dropdown-options" id="categoryDropdown">
-                                        <div class="dropdown-option" onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')">Gehaltsabrechnung</div>
-                                        <div class="dropdown-option" onclick="selectOption('category', 'contract', 'Vertrag')">Vertrag</div>
-                                        <div class="dropdown-option" onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')">Zertifikat/Zeugnis</div>
-                                        <div class="dropdown-option" onclick="selectOption('category', 'other', 'Sonstiges')">Sonstiges</div>
-                                    </div>
-                                    <input type="hidden" name="category" id="categoryValue" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label for="year-input" class="form-label">Jahr (optional)</label>
-                                <input type="number" id="year-input" name="year" class="form-control" min="1900" max="2100" placeholder="z.B. 2025">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="month-select" class="form-label">Monat (optional)</label>
-                                <div class="custom-dropdown">
-                                    <div class="dropdown-display placeholder" id="monthDisplay" onclick="toggleDropdown('month')">
-                                        <span>Monat auswählen (optional)</span>
-                                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                        </svg>
-                                    </div>
-                                    <div class="dropdown-options" id="monthDropdown">
-                                        <div class="dropdown-option" onclick="selectOption('month', '', 'Kein Monat')">Kein Monat</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Januar', 'Januar')">Januar</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Februar', 'Februar')">Februar</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'März', 'März')">März</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'April', 'April')">April</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Mai', 'Mai')">Mai</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Juni', 'Juni')">Juni</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Juli', 'Juli')">Juli</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'August', 'August')">August</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'September', 'September')">September</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Oktober', 'Oktober')">Oktober</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'November', 'November')">November</div>
-                                        <div class="dropdown-option" onclick="selectOption('month', 'Dezember', 'Dezember')">Dezember</div>
-                                    </div>
-                                    <input type="hidden" name="month" id="monthValue">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="description-input" class="form-label">Beschreibung (optional)</label>
-                        <textarea id="description-input" name="description" class="form-control" rows="3" placeholder="Zusätzliche Informationen zum Dokument"></textarea>
-                    </div>
-                    
-                    <div class="file-drop-area" id="drop-area">
-                        <span class="file-icon">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                            </svg>
-                        </span>
-                        <div class="file-message">Datei hierher ziehen oder klicken, um auszuwählen</div>
-                        <p class="text-secondary">(Nur PDF-Dateien erlaubt, max. 5MB)</p>
-                        <div class="file-restrictions">
-                            <small>Erlaubte Dateitypen: PDF (.pdf)</small><br>
-                            <small>Maximale Dateigröße: 5 MB</small>
-                        </div>
-                        <input type="file" id="file-input" name="document" class="file-input" accept=".pdf" required>
-                    </div>
-                    
-                    <div class="file-info" id="file-info">
-                        <div class="file-name" id="file-name">document.pdf</div>
-                        <div class="file-size" id="file-size">0 KB</div>
-                    </div>
-                    
-                    <div class="pdf-preview-container" id="pdf-preview-container">
-                        <div class="preview-controls">
-                            <span class="preview-title">Dokument-Vorschau</span>
-                            <button type="button" class="preview-close" id="preview-close">×</button>
-                        </div>
-                        <iframe class="pdf-preview" id="pdf-preview"></iframe>
-                    </div>
-                    
-                    <div class="form-group" style="text-align: center; margin-top: 30px;">
-                        <button type="submit" class="btn btn-primary" id="upload-button">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
-                            </svg>
-                            Dokument hochladen
-                        </button>
-                    </div>
-                </form>
-                </div>
-            </div>
-        </main>
+                <iframe class="pdf-preview" id="pdf-preview"></iframe>
+              </div>
+
+              <div
+                class="form-group"
+                style="text-align: center; margin-top: 30px"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  id="upload-button"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z"
+                    />
+                  </svg>
+                  Dokument hochladen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Document upload page loaded');
-            
-            // Benutzer-Info, Logout-Button und Navigation einrichten
-            setupUserInfo();
-            setupNavigation();
-            
-            // Datei-Upload-Bereich einrichten
-            setupFileUpload();
-            
-            // Mitarbeiter-Liste laden
-            loadEmployees();
-            
-            // Formular-Einreichung einrichten
-            const uploadForm = document.getElementById('upload-form');
-            if (uploadForm) {
-                uploadForm.addEventListener('submit', uploadDocument);
-            }
-            
-            // Dropdown-Funktionalität einrichten
-            setupDropdowns();
-        });
-        
-        // Bestätigungsdialog anzeigen
-        function showConfirmationDialog(formData, callback) {
-            const employeeDisplay = document.getElementById('userDisplay').querySelector('span').textContent;
-            const categoryDisplay = document.getElementById('categoryDisplay').querySelector('span').textContent;
-            const fileInput = document.getElementById('file-input');
-            const fileName = fileInput.files[0].name;
-            
-            const confirmMsg = `Bitte bestätigen Sie den Dokument-Upload:\n\n` +
-                            `Mitarbeiter: ${employeeDisplay}\n` +
-                            `Kategorie: ${categoryDisplay}\n` +
-                            `Dateiname: ${fileName}\n` +
-                            (formData.get('year') ? `Jahr: ${formData.get('year')}\n` : '') + 
-                            (formData.get('month') ? `Monat: ${formData.get('month')}\n` : '') +
-                            (formData.get('description') ? `\nBeschreibung: ${formData.get('description')}` : '');
-            
-            if (confirm(confirmMsg)) {
-                callback();
-            }
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('Document upload page loaded');
+
+        // Benutzer-Info, Logout-Button und Navigation einrichten
+        setupUserInfo();
+        setupNavigation();
+
+        // Datei-Upload-Bereich einrichten
+        setupFileUpload();
+
+        // Mitarbeiter-Liste laden
+        loadEmployees();
+
+        // Formular-Einreichung einrichten
+        const uploadForm = document.getElementById('upload-form');
+        if (uploadForm) {
+          uploadForm.addEventListener('submit', uploadDocument);
         }
-        
-        // Benutzerinfo im Header anzeigen
-        function setupUserInfo() {
-            const userInfo = document.getElementById('user-info');
-            const username = localStorage.getItem('username') || 'Admin';
-            if (userInfo) {
-                userInfo.textContent = username;
-            }
-            
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', () => {
-                    if (confirm('Möchten Sie sich wirklich abmelden?')) {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('role');
-                        window.location.href = '/';
-                    }
-                });
-            }
+
+        // Dropdown-Funktionalität einrichten
+        setupDropdowns();
+      });
+
+      // Bestätigungsdialog anzeigen
+      function showConfirmationDialog(formData, callback) {
+        const employeeDisplay = document
+          .getElementById('userDisplay')
+          .querySelector('span').textContent;
+        const categoryDisplay = document
+          .getElementById('categoryDisplay')
+          .querySelector('span').textContent;
+        const fileInput = document.getElementById('file-input');
+        const fileName = fileInput.files[0].name;
+
+        const confirmMsg =
+          `Bitte bestätigen Sie den Dokument-Upload:\n\n` +
+          `Mitarbeiter: ${employeeDisplay}\n` +
+          `Kategorie: ${categoryDisplay}\n` +
+          `Dateiname: ${fileName}\n` +
+          (formData.get('year') ? `Jahr: ${formData.get('year')}\n` : '') +
+          (formData.get('month') ? `Monat: ${formData.get('month')}\n` : '') +
+          (formData.get('description')
+            ? `\nBeschreibung: ${formData.get('description')}`
+            : '');
+
+        if (confirm(confirmMsg)) {
+          callback();
         }
-        
-        // Navigation einrichten
-        function setupNavigation() {
-            const navMenu = document.getElementById('nav-menu');
-            if (!navMenu) return;
-            
-            const role = localStorage.getItem('role') || 'admin';
-            const currentPage = '/document-upload';
-            
-            // Navigationseinträge basierend auf der Rolle
-            const navItems = [
-                { 
-                    href: '/admin-dashboard', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', 
-                    text: 'Dashboard', 
-                    roles: ['admin', 'root'] 
-                },
-                { 
-                    href: '/employee-dashboard', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', 
-                    text: 'Dashboard', 
-                    roles: ['employee'] 
-                },
-                { 
-                    href: '/document-upload', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,15V17H16V15H8M8,11V13H16V11H8"/></svg>', 
-                    text: 'Dokumente hochladen', 
-                    roles: ['admin', 'root'] 
-                },
-                { 
-                    href: '/admin-dashboard#departments', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>', 
-                    text: 'Abteilungen', 
-                    roles: ['admin', 'root'] 
-                },
-                { 
-                    href: '/admin-dashboard#employees', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>', 
-                    text: 'Mitarbeiter', 
-                    roles: ['admin', 'root'] 
-                },
-                { 
-                    href: '/admin-dashboard#documents', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>', 
-                    text: 'Dokumente', 
-                    roles: ['admin', 'root'] 
-                },
-                { 
-                    href: '/employee-documents', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>', 
-                    text: 'Meine Dokumente', 
-                    roles: ['employee'] 
-                },
-                { 
-                    href: '/salary-documents', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>', 
-                    text: 'Gehaltsabrechnungen', 
-                    roles: ['employee'] 
-                },
-                { 
-                    href: '/feature-management', 
-                    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>', 
-                    text: 'Feature Management', 
-                    roles: ['admin', 'root'] 
-                }
-            ];
-            
-            // Navigationseinträge filtern und anzeigen
-            const filteredItems = navItems.filter(item => item.roles.includes(role));
-            navMenu.innerHTML = filteredItems.map(item => `
+      }
+
+      // Benutzerinfo im Header anzeigen
+      function setupUserInfo() {
+        const userInfo = document.getElementById('user-info');
+        const username = localStorage.getItem('username') || 'Admin';
+        if (userInfo) {
+          userInfo.textContent = username;
+        }
+
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+            if (confirm('Möchten Sie sich wirklich abmelden?')) {
+              localStorage.removeItem('token');
+              localStorage.removeItem('role');
+              window.location.href = '/';
+            }
+          });
+        }
+      }
+
+      // Navigation einrichten
+      function setupNavigation() {
+        const navMenu = document.getElementById('nav-menu');
+        if (!navMenu) return;
+
+        const role = localStorage.getItem('role') || 'admin';
+        const currentPage = '/document-upload';
+
+        // Navigationseinträge basierend auf der Rolle
+        const navItems = [
+          {
+            href: '/admin-dashboard',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+            text: 'Dashboard',
+            roles: ['admin', 'root'],
+          },
+          {
+            href: '/employee-dashboard',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+            text: 'Dashboard',
+            roles: ['employee'],
+          },
+          {
+            href: '/document-upload',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,15V17H16V15H8M8,11V13H16V11H8"/></svg>',
+            text: 'Dokumente hochladen',
+            roles: ['admin', 'root'],
+          },
+          {
+            href: '/admin-dashboard#departments',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
+            text: 'Abteilungen',
+            roles: ['admin', 'root'],
+          },
+          {
+            href: '/admin-dashboard#employees',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+            text: 'Mitarbeiter',
+            roles: ['admin', 'root'],
+          },
+          {
+            href: '/admin-dashboard#documents',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+            text: 'Dokumente',
+            roles: ['admin', 'root'],
+          },
+          {
+            href: '/employee-documents',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+            text: 'Meine Dokumente',
+            roles: ['employee'],
+          },
+          {
+            href: '/salary-documents',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
+            text: 'Gehaltsabrechnungen',
+            roles: ['employee'],
+          },
+          {
+            href: '/feature-management',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
+            text: 'Feature Management',
+            roles: ['admin', 'root'],
+          },
+        ];
+
+        // Navigationseinträge filtern und anzeigen
+        const filteredItems = navItems.filter((item) =>
+          item.roles.includes(role)
+        );
+        navMenu.innerHTML = filteredItems
+          .map(
+            (item) => `
                 <li class="sidebar-item ${currentPage === item.href ? 'active' : ''}">
                     <a href="${item.href}" class="sidebar-link">
                         <span class="icon">${item.icon}</span>
                         <span>${item.text}</span>
                     </a>
                 </li>
-            `).join('');
-        }
-        
-        // Datei-Upload-Bereich einrichten
-        function setupFileUpload() {
-            const dropArea = document.getElementById('drop-area');
-            const fileInput = document.getElementById('file-input');
-            const fileInfo = document.getElementById('file-info');
-            const fileName = document.getElementById('file-name');
-            const fileSize = document.getElementById('file-size');
-            
-            if (!dropArea || !fileInput) return;
-            
-            // Drag & Drop Events
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, () => {
-                    dropArea.classList.add('drag-over');
-                });
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, () => {
-                    dropArea.classList.remove('drag-over');
-                });
-            });
-            
-            // Datei fallen lassen
-            dropArea.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                
-                if (files.length > 0) {
-                    fileInput.files = files;
-                    updateFileInfo(files[0]);
-                }
-            });
-            
-            // Datei auswählen
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    updateFileInfo(fileInput.files[0]);
-                } else {
-                    fileInfo.classList.remove('active');
-                }
-            });
-            
-            // Datei-Informationen aktualisieren und Vorschau anzeigen
-            function updateFileInfo(file) {
-                if (!file) return;
-                
-                // Überprüfen, ob es eine PDF-Datei ist
-                if (!file.type || file.type !== 'application/pdf') {
-                    const fileExt = file.name.split('.').pop().toLowerCase();
-                    
-                    // Detaillierte Fehlermeldung basierend auf dem Dateityp
-                    if (fileExt === 'jpg' || fileExt === 'jpeg' || fileExt === 'png' || fileExt === 'gif') {
-                        showError('Bilddateien sind nicht erlaubt. Bitte konvertieren Sie das Bild in ein PDF-Dokument.');
-                    } else if (fileExt === 'doc' || fileExt === 'docx') {
-                        showError('Word-Dokumente sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.');
-                    } else if (fileExt === 'xls' || fileExt === 'xlsx') {
-                        showError('Excel-Dateien sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.');
-                    } else if (fileExt === 'txt') {
-                        showError('Textdateien sind nicht erlaubt. Bitte konvertieren Sie die Datei in ein PDF-Dokument.');
-                    } else {
-                        showError(`Dateityp "${fileExt}" wird nicht unterstützt. Nur PDF-Dateien sind erlaubt.`);
-                    }
-                    
-                    // Dateiauswahl zurücksetzen
-                    const fileInput = document.getElementById('file-input');
-                    if (fileInput) {
-                        fileInput.value = '';
-                    }
-                    
-                    return;
-                }
-                
-                // Überprüfen Sie die Dateigröße (max. 5 MB)
-                const maxSize = 5 * 1024 * 1024; // 5 MB in Bytes
-                if (file.size > maxSize) {
-                    showError(`Die Datei ist zu groß (${formatFileSize(file.size)}). Die maximale Dateigröße beträgt 5 MB.`);
-                    
-                    // Dateiauswahl zurücksetzen
-                    const fileInput = document.getElementById('file-input');
-                    if (fileInput) {
-                        fileInput.value = '';
-                    }
-                    
-                    return;
-                }
-                
-                // Fehlermeldung ausblenden, wenn alles in Ordnung ist
-                hideError();
-                
-                fileName.textContent = file.name;
-                fileSize.textContent = formatFileSize(file.size);
-                fileInfo.classList.add('active');
-                
-                // PDF-Vorschau erstellen
-                const pdfPreviewContainer = document.getElementById('pdf-preview-container');
-                const pdfPreview = document.getElementById('pdf-preview');
-                const previewClose = document.getElementById('preview-close');
-                
-                if (pdfPreviewContainer && pdfPreview) {
-                    // Datei-URL erstellen
-                    const fileUrl = URL.createObjectURL(file);
-                    
-                    // iframe-Quelle setzen
-                    pdfPreview.src = fileUrl;
-                    
-                    // Container anzeigen
-                    pdfPreviewContainer.classList.add('active');
-                    
-                    // Schließen-Button-Funktionalität
-                    if (previewClose) {
-                        previewClose.addEventListener('click', () => {
-                            pdfPreviewContainer.classList.remove('active');
-                            // Optional: URL-Objekt freigeben, wenn die Vorschau geschlossen wird
-                            URL.revokeObjectURL(fileUrl);
-                        });
-                    }
-                }
-            }
-            
-            // Dateigröße formatieren
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-        }
-        
-        // Mitarbeiter für das Dropdown laden
-        async function loadEmployees() {
-            const token = localStorage.getItem('token');
-            const userDropdown = document.getElementById('userDropdown');
-            
-            if (!userDropdown) return;
-            
-            try {
-                const response = await fetch('/admin/employees', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const employees = await response.json();
-                    console.log(`Loaded ${employees.length} employees`);
-                    
-                    // Dropdown leeren
-                    userDropdown.innerHTML = '';
-                    
-                    // Mitarbeiter zum Dropdown hinzufügen
-                    employees.forEach(employee => {
-                        const option = document.createElement('div');
-                        option.className = 'dropdown-option';
-                        option.textContent = `${employee.first_name} ${employee.last_name}`;
-                        option.onclick = () => selectOption('user', employee.id, `${employee.first_name} ${employee.last_name}`);
-                        userDropdown.appendChild(option);
-                    });
-                } else {
-                    console.error('Failed to load employees');
-                    showError('Mitarbeiterliste konnte nicht geladen werden.');
-                }
-            } catch (error) {
-                console.error('Error loading employees:', error);
-                showError('Fehler beim Laden der Mitarbeiterliste: ' + error.message);
-            }
-        }
-        
-        // Dokument hochladen
-        async function uploadDocument(e) {
+            `
+          )
+          .join('');
+      }
+
+      // Datei-Upload-Bereich einrichten
+      function setupFileUpload() {
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+
+        if (!dropArea || !fileInput) return;
+
+        // Drag & Drop Events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+          dropArea.addEventListener(eventName, (e) => {
             e.preventDefault();
-            
-            const form = e.target;
-            const formData = new FormData(form);
-            const token = localStorage.getItem('token');
-            const uploadButton = document.getElementById('upload-button');
-            
-            // Überprüfen, ob alle erforderlichen Felder ausgefüllt sind
-            const userId = formData.get('userId');
-            const category = formData.get('category');
-            const fileInput = document.getElementById('file-input');
-            
-            if (!userId || !category || !fileInput.files.length) {
-                showError('Bitte füllen Sie alle erforderlichen Felder aus und wählen Sie eine Datei aus.');
-                return;
+            e.stopPropagation();
+          });
+        });
+
+        ['dragenter', 'dragover'].forEach((eventName) => {
+          dropArea.addEventListener(eventName, () => {
+            dropArea.classList.add('drag-over');
+          });
+        });
+
+        ['dragleave', 'drop'].forEach((eventName) => {
+          dropArea.addEventListener(eventName, () => {
+            dropArea.classList.remove('drag-over');
+          });
+        });
+
+        // Datei fallen lassen
+        dropArea.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+
+          if (files.length > 0) {
+            fileInput.files = files;
+            updateFileInfo(files[0]);
+          }
+        });
+
+        // Datei auswählen
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files.length > 0) {
+            updateFileInfo(fileInput.files[0]);
+          } else {
+            fileInfo.classList.remove('active');
+          }
+        });
+
+        // Datei-Informationen aktualisieren und Vorschau anzeigen
+        function updateFileInfo(file) {
+          if (!file) return;
+
+          // Überprüfen, ob es eine PDF-Datei ist
+          if (!file.type || file.type !== 'application/pdf') {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+
+            // Detaillierte Fehlermeldung basierend auf dem Dateityp
+            if (
+              fileExt === 'jpg' ||
+              fileExt === 'jpeg' ||
+              fileExt === 'png' ||
+              fileExt === 'gif'
+            ) {
+              showError(
+                'Bilddateien sind nicht erlaubt. Bitte konvertieren Sie das Bild in ein PDF-Dokument.'
+              );
+            } else if (fileExt === 'doc' || fileExt === 'docx') {
+              showError(
+                'Word-Dokumente sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.'
+              );
+            } else if (fileExt === 'xls' || fileExt === 'xlsx') {
+              showError(
+                'Excel-Dateien sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.'
+              );
+            } else if (fileExt === 'txt') {
+              showError(
+                'Textdateien sind nicht erlaubt. Bitte konvertieren Sie die Datei in ein PDF-Dokument.'
+              );
+            } else {
+              showError(
+                `Dateityp "${fileExt}" wird nicht unterstützt. Nur PDF-Dateien sind erlaubt.`
+              );
             }
-            
-            // Bestätigungsdialog anzeigen
-            showConfirmationDialog(formData, async () => {
-                // Button-Zustand ändern
-                if (uploadButton) {
-                    uploadButton.disabled = true;
-                    uploadButton.innerHTML = `
+
+            // Dateiauswahl zurücksetzen
+            const fileInput = document.getElementById('file-input');
+            if (fileInput) {
+              fileInput.value = '';
+            }
+
+            return;
+          }
+
+          // Überprüfen Sie die Dateigröße (max. 5 MB)
+          const maxSize = 5 * 1024 * 1024; // 5 MB in Bytes
+          if (file.size > maxSize) {
+            showError(
+              `Die Datei ist zu groß (${formatFileSize(file.size)}). Die maximale Dateigröße beträgt 5 MB.`
+            );
+
+            // Dateiauswahl zurücksetzen
+            const fileInput = document.getElementById('file-input');
+            if (fileInput) {
+              fileInput.value = '';
+            }
+
+            return;
+          }
+
+          // Fehlermeldung ausblenden, wenn alles in Ordnung ist
+          hideError();
+
+          fileName.textContent = file.name;
+          fileSize.textContent = formatFileSize(file.size);
+          fileInfo.classList.add('active');
+
+          // PDF-Vorschau erstellen
+          const pdfPreviewContainer = document.getElementById(
+            'pdf-preview-container'
+          );
+          const pdfPreview = document.getElementById('pdf-preview');
+          const previewClose = document.getElementById('preview-close');
+
+          if (pdfPreviewContainer && pdfPreview) {
+            // Datei-URL erstellen
+            const fileUrl = URL.createObjectURL(file);
+
+            // iframe-Quelle setzen
+            pdfPreview.src = fileUrl;
+
+            // Container anzeigen
+            pdfPreviewContainer.classList.add('active');
+
+            // Schließen-Button-Funktionalität
+            if (previewClose) {
+              previewClose.addEventListener('click', () => {
+                pdfPreviewContainer.classList.remove('active');
+                // Optional: URL-Objekt freigeben, wenn die Vorschau geschlossen wird
+                URL.revokeObjectURL(fileUrl);
+              });
+            }
+          }
+        }
+
+        // Dateigröße formatieren
+        function formatFileSize(bytes) {
+          if (bytes === 0) return '0 Bytes';
+
+          const k = 1024;
+          const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+          return (
+            parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+          );
+        }
+      }
+
+      // Mitarbeiter für das Dropdown laden
+      async function loadEmployees() {
+        const token = localStorage.getItem('token');
+        const userDropdown = document.getElementById('userDropdown');
+
+        if (!userDropdown) return;
+
+        try {
+          const response = await fetch('/admin/employees', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const employees = await response.json();
+            console.log(`Loaded ${employees.length} employees`);
+
+            // Dropdown leeren
+            userDropdown.innerHTML = '';
+
+            // Mitarbeiter zum Dropdown hinzufügen
+            employees.forEach((employee) => {
+              const option = document.createElement('div');
+              option.className = 'dropdown-option';
+              option.textContent = `${employee.first_name} ${employee.last_name}`;
+              option.onclick = () =>
+                selectOption(
+                  'user',
+                  employee.id,
+                  `${employee.first_name} ${employee.last_name}`
+                );
+              userDropdown.appendChild(option);
+            });
+          } else {
+            console.error('Failed to load employees');
+            showError('Mitarbeiterliste konnte nicht geladen werden.');
+          }
+        } catch (error) {
+          console.error('Error loading employees:', error);
+          showError('Fehler beim Laden der Mitarbeiterliste: ' + error.message);
+        }
+      }
+
+      // Dokument hochladen
+      async function uploadDocument(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+        const token = localStorage.getItem('token');
+        const uploadButton = document.getElementById('upload-button');
+
+        // Überprüfen, ob alle erforderlichen Felder ausgefüllt sind
+        const userId = formData.get('userId');
+        const category = formData.get('category');
+        const fileInput = document.getElementById('file-input');
+
+        if (!userId || !category || !fileInput.files.length) {
+          showError(
+            'Bitte füllen Sie alle erforderlichen Felder aus und wählen Sie eine Datei aus.'
+          );
+          return;
+        }
+
+        // Bestätigungsdialog anzeigen
+        showConfirmationDialog(formData, async () => {
+          // Button-Zustand ändern
+          if (uploadButton) {
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = `
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
                             <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
                         </svg>
                         Wird hochgeladen...
                     `;
-                }
-                
-                // Erfolgs- und Fehlerelemente
-                hideError();
-                hideSuccess();
-            
-            try {
-                const response = await fetch('/documents/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    console.log('Upload successful:', result);
-                    form.reset();
-                    
-                    // Datei-Info und Vorschau zurücksetzen
-                    const fileInfo = document.getElementById('file-info');
-                    const pdfPreviewContainer = document.getElementById('pdf-preview-container');
-                    const pdfPreview = document.getElementById('pdf-preview');
-                    
-                    if (fileInfo) {
-                        fileInfo.classList.remove('active');
-                    }
-                    
-                    if (pdfPreviewContainer) {
-                        pdfPreviewContainer.classList.remove('active');
-                    }
-                    
-                    if (pdfPreview && pdfPreview.src) {
-                        // URL-Objekt freigeben
-                        URL.revokeObjectURL(pdfPreview.src);
-                        pdfPreview.src = '';
-                    }
-                    
-                    showSuccess('Dokument wurde erfolgreich hochgeladen!');
-                } else {
-                    console.error('Upload failed:', result);
-                    showError('Fehler: ' + (result.message || 'Unbekannter Fehler'));
-                }
-            } catch (error) {
-                console.error('Error uploading document:', error);
-                showError('Fehler: ' + (error.message || 'Unbekannter Fehler'));
-            } finally {
-                // Button-Zustand zurücksetzen
-                if (uploadButton) {
-                    uploadButton.disabled = false;
-                    uploadButton.innerHTML = `
+          }
+
+          // Erfolgs- und Fehlerelemente
+          hideError();
+          hideSuccess();
+
+          try {
+            const response = await fetch('/documents/upload', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              console.log('Upload successful:', result);
+              form.reset();
+
+              // Datei-Info und Vorschau zurücksetzen
+              const fileInfo = document.getElementById('file-info');
+              const pdfPreviewContainer = document.getElementById(
+                'pdf-preview-container'
+              );
+              const pdfPreview = document.getElementById('pdf-preview');
+
+              if (fileInfo) {
+                fileInfo.classList.remove('active');
+              }
+
+              if (pdfPreviewContainer) {
+                pdfPreviewContainer.classList.remove('active');
+              }
+
+              if (pdfPreview && pdfPreview.src) {
+                // URL-Objekt freigeben
+                URL.revokeObjectURL(pdfPreview.src);
+                pdfPreview.src = '';
+              }
+
+              showSuccess('Dokument wurde erfolgreich hochgeladen!');
+            } else {
+              console.error('Upload failed:', result);
+              showError('Fehler: ' + (result.message || 'Unbekannter Fehler'));
+            }
+          } catch (error) {
+            console.error('Error uploading document:', error);
+            showError('Fehler: ' + (error.message || 'Unbekannter Fehler'));
+          } finally {
+            // Button-Zustand zurücksetzen
+            if (uploadButton) {
+              uploadButton.disabled = false;
+              uploadButton.innerHTML = `
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
                         </svg>
                         Dokument hochladen
                     `;
-                }
             }
-            });
+          }
+        });
+      }
+
+      // Erfolgsmeldung anzeigen
+      function showSuccess(message) {
+        const successAlert = document.getElementById('upload-success');
+        if (successAlert) {
+          const messageElement = successAlert.querySelector('p');
+          if (messageElement) {
+            messageElement.textContent = message;
+          }
+          successAlert.style.display = 'flex';
+
+          // Nach 5 Sekunden ausblenden
+          setTimeout(() => {
+            successAlert.style.display = 'none';
+          }, 5000);
         }
-        
-        // Erfolgsmeldung anzeigen
-        function showSuccess(message) {
-            const successAlert = document.getElementById('upload-success');
-            if (successAlert) {
-                const messageElement = successAlert.querySelector('p');
-                if (messageElement) {
-                    messageElement.textContent = message;
-                }
-                successAlert.style.display = 'flex';
-                
-                // Nach 5 Sekunden ausblenden
-                setTimeout(() => {
-                    successAlert.style.display = 'none';
-                }, 5000);
-            }
+      }
+
+      // Erfolgsmeldung ausblenden
+      function hideSuccess() {
+        const successAlert = document.getElementById('upload-success');
+        if (successAlert) {
+          successAlert.style.display = 'none';
         }
-        
-        // Erfolgsmeldung ausblenden
-        function hideSuccess() {
-            const successAlert = document.getElementById('upload-success');
-            if (successAlert) {
-                successAlert.style.display = 'none';
-            }
+      }
+
+      // Fehlermeldung anzeigen
+      function showError(message) {
+        const errorAlert = document.getElementById('upload-error');
+        if (errorAlert) {
+          const messageElement = document.getElementById('error-message');
+          if (messageElement) {
+            messageElement.textContent = message;
+          }
+          errorAlert.style.display = 'flex';
         }
-        
-        // Fehlermeldung anzeigen
-        function showError(message) {
-            const errorAlert = document.getElementById('upload-error');
-            if (errorAlert) {
-                const messageElement = document.getElementById('error-message');
-                if (messageElement) {
-                    messageElement.textContent = message;
-                }
-                errorAlert.style.display = 'flex';
-            }
+      }
+
+      // Fehlermeldung ausblenden
+      function hideError() {
+        const errorAlert = document.getElementById('upload-error');
+        if (errorAlert) {
+          errorAlert.style.display = 'none';
         }
-        
-        // Fehlermeldung ausblenden
-        function hideError() {
-            const errorAlert = document.getElementById('upload-error');
-            if (errorAlert) {
-                errorAlert.style.display = 'none';
-            }
-        }
-        
-        // Dropdown-Funktionen
-        function toggleDropdown(type) {
-            const display = document.getElementById(type + 'Display');
-            const dropdown = document.getElementById(type + 'Dropdown');
-            
-            // Alle anderen schließen
-            document.querySelectorAll('.dropdown-display').forEach(d => {
-                if (d !== display) d.classList.remove('active');
-            });
-            document.querySelectorAll('.dropdown-options').forEach(d => {
-                if (d !== dropdown) d.classList.remove('active');
-            });
-            
-            display.classList.toggle('active');
-            dropdown.classList.toggle('active');
-        }
-        
-        function selectOption(type, value, text) {
-            const display = document.getElementById(type + 'Display');
-            const dropdown = document.getElementById(type + 'Dropdown');
-            const input = document.getElementById(type + 'Value');
-            
-            display.querySelector('span').textContent = text;
-            display.classList.remove('placeholder');
-            input.value = value;
-            
-            display.classList.remove('active');
-            dropdown.classList.remove('active');
-            
-            // Markiere ausgewählte Option
-            dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
-                opt.classList.remove('selected');
-                if (opt.textContent === text) {
-                    opt.classList.add('selected');
-                }
-            });
-        }
-        
-        function setupDropdowns() {
-            // Click-Outside-to-Close
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.custom-dropdown')) {
-                    document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
-                    document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
-                }
-            });
-        }
+      }
+
+      // Dropdown-Funktionen
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+
+        // Alle anderen schließen
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      function selectOption(type, value, text) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+        const input = document.getElementById(type + 'Value');
+
+        display.querySelector('span').textContent = text;
+        display.classList.remove('placeholder');
+        input.value = value;
+
+        display.classList.remove('active');
+        dropdown.classList.remove('active');
+
+        // Markiere ausgewählte Option
+        dropdown.querySelectorAll('.dropdown-option').forEach((opt) => {
+          opt.classList.remove('selected');
+          if (opt.textContent === text) {
+            opt.classList.add('selected');
+          }
+        });
+      }
+
+      function setupDropdowns() {
+        // Click-Outside-to-Close
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('.custom-dropdown')) {
+            document
+              .querySelectorAll('.dropdown-display')
+              .forEach((d) => d.classList.remove('active'));
+            document
+              .querySelectorAll('.dropdown-options')
+              .forEach((d) => d.classList.remove('active'));
+          }
+        });
+      }
     </script>
     <!-- Header User Info Loading -->
     <script src="/scripts/header-user-info.js"></script>
-</body>
+  </body>
 </html>

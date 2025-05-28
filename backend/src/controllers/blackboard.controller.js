@@ -11,9 +11,9 @@ class BlackboardController {
       res.json(result);
     } catch (error) {
       console.error('Error in BlackboardController.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -24,16 +24,19 @@ class BlackboardController {
    */
   async getById(req, res) {
     try {
-      const result = await blackboardService.getById(req.tenantDb, req.params.id);
+      const result = await blackboardService.getById(
+        req.tenantDb,
+        req.params.id
+      );
       if (!result) {
         return res.status(404).json({ error: 'Nicht gefunden' });
       }
       res.json(result);
     } catch (error) {
       console.error('Error in BlackboardController.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -48,9 +51,9 @@ class BlackboardController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in BlackboardController.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -62,16 +65,16 @@ class BlackboardController {
   async update(req, res) {
     try {
       const result = await blackboardService.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in BlackboardController.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -86,9 +89,9 @@ class BlackboardController {
       res.status(204).send();
     } catch (error) {
       console.error('Error in BlackboardController.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message,
       });
     }
   }

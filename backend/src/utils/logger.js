@@ -5,13 +5,15 @@ const path = require('path');
 const logDir = path.join(__dirname, '../../../backend/logs');
 
 // Custom format for better readability
-const customFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
-  let msg = `${timestamp} [${level.toUpperCase()}]: ${message}`;
-  if (Object.keys(metadata).length > 0) {
-    msg += ` ${JSON.stringify(metadata)}`;
+const customFormat = winston.format.printf(
+  ({ level, message, timestamp, ...metadata }) => {
+    let msg = `${timestamp} [${level.toUpperCase()}]: ${message}`;
+    if (Object.keys(metadata).length > 0) {
+      msg += ` ${JSON.stringify(metadata)}`;
+    }
+    return msg;
   }
-  return msg;
-});
+);
 
 // Create logger instance
 const logger = winston.createLogger({
@@ -25,29 +27,31 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'assixx-backend' },
   transports: [
     // Error logs
-    new winston.transports.File({ 
-      filename: path.join(logDir, 'error.log'), 
+    new winston.transports.File({
+      filename: path.join(logDir, 'error.log'),
       level: 'error',
       maxsize: 5242880, // 5MB
-      maxFiles: 5
+      maxFiles: 5,
     }),
     // Combined logs
-    new winston.transports.File({ 
+    new winston.transports.File({
       filename: path.join(logDir, 'combined.log'),
       maxsize: 5242880, // 5MB
-      maxFiles: 5
-    })
-  ]
+      maxFiles: 5,
+    }),
+  ],
 });
 
 // Console logging for development
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
+  logger.add(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      ),
+    })
+  );
 }
 
 // Export logger instance

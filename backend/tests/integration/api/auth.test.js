@@ -13,15 +13,13 @@ describe('Auth API Integration Tests', () => {
       jest.spyOn(authService, 'authenticateUser').mockResolvedValue({
         success: true,
         token: 'test-token',
-        user: { id: 1, username: 'testuser', role: 'employee' }
+        user: { id: 1, username: 'testuser', role: 'employee' },
       });
 
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: 'testuser',
-          password: 'password123'
-        });
+      const response = await request(app).post('/api/login').send({
+        username: 'testuser',
+        password: 'password123',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('token', 'test-token');
@@ -33,27 +31,26 @@ describe('Auth API Integration Tests', () => {
       const authService = require('../../../src/services/auth.service');
       jest.spyOn(authService, 'authenticateUser').mockResolvedValue({
         success: false,
-        message: 'Invalid username or password'
+        message: 'Invalid username or password',
       });
 
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: 'wronguser',
-          password: 'wrongpassword'
-        });
+      const response = await request(app).post('/api/login').send({
+        username: 'wronguser',
+        password: 'wrongpassword',
+      });
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('message', 'Invalid credentials');
     });
 
     it('should require username and password', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send({});
+      const response = await request(app).post('/api/login').send({});
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('message', 'Username and password are required');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Username and password are required'
+      );
     });
   });
 
@@ -68,8 +65,7 @@ describe('Auth API Integration Tests', () => {
     });
 
     it('should return 401 without token', async () => {
-      const response = await request(app)
-        .get('/api/auth/check');
+      const response = await request(app).get('/api/auth/check');
 
       expect(response.status).toBe(401);
     });
@@ -77,8 +73,7 @@ describe('Auth API Integration Tests', () => {
 
   describe('GET /api/health', () => {
     it('should return health status', async () => {
-      const response = await request(app)
-        .get('/api/health');
+      const response = await request(app).get('/api/health');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'ok');

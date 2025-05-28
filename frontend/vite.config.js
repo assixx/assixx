@@ -7,19 +7,19 @@ const getHtmlInputs = () => {
   const inputs = {};
   const pagesDir = resolve(__dirname, 'src/pages');
   const htmlFiles = readdirSync(pagesDir)
-    .filter(file => file.endsWith('.html'))
-    .forEach(file => {
+    .filter((file) => file.endsWith('.html'))
+    .forEach((file) => {
       const name = file.replace('.html', '');
       inputs[name] = resolve(pagesDir, file);
     });
-  
+
   return inputs;
 };
 
 export default defineConfig({
   root: 'src',
   base: '/',
-  
+
   build: {
     outDir: '../dist',
     emptyOutDir: true,
@@ -50,38 +50,38 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
-      }
+        drop_debugger: true,
+      },
     },
     // Chunk size warnings
     chunkSizeWarningLimit: 1000,
   },
-  
+
   server: {
     port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
-        changeOrigin: true
+        changeOrigin: true,
       },
       '/uploads': {
         target: 'http://localhost:3000',
-        changeOrigin: true
-      }
-    }
+        changeOrigin: true,
+      },
+    },
   },
-  
+
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
       '@styles': resolve(__dirname, 'src/styles'),
       '@scripts': resolve(__dirname, 'src/scripts'),
       '@components': resolve(__dirname, 'src/components'),
-      '@assets': resolve(__dirname, 'src/assets')
-    }
+      '@assets': resolve(__dirname, 'src/assets'),
+    },
   },
-  
+
   optimizeDeps: {
-    include: ['marked', 'chart.js', 'moment']
-  }
+    include: ['marked', 'chart.js', 'moment'],
+  },
 });

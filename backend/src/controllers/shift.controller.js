@@ -11,9 +11,9 @@ class ShiftController {
       res.json(result);
     } catch (error) {
       console.error('Error in ShiftController.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -31,9 +31,9 @@ class ShiftController {
       res.json(result);
     } catch (error) {
       console.error('Error in ShiftController.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -48,9 +48,9 @@ class ShiftController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in ShiftController.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -62,16 +62,16 @@ class ShiftController {
   async update(req, res) {
     try {
       const result = await shiftService.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in ShiftController.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -86,9 +86,9 @@ class ShiftController {
       res.status(204).send();
     } catch (error) {
       console.error('Error in ShiftController.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message,
       });
     }
   }

@@ -1,1 +1,3 @@
-export function initTooltips() { console.log("Tooltips initialized"); }
+export function initTooltips() {
+  console.log('Tooltips initialized');
+}

@@ -8,7 +8,7 @@ module.exports = {
   ROLES: {
     ROOT: 'root',
     ADMIN: 'admin',
-    EMPLOYEE: 'employee'
+    EMPLOYEE: 'employee',
   },
 
   // HTTP Status Codes
@@ -20,7 +20,7 @@ module.exports = {
     FORBIDDEN: 403,
     NOT_FOUND: 404,
     CONFLICT: 409,
-    SERVER_ERROR: 500
+    SERVER_ERROR: 500,
   },
 
   // File Upload
@@ -32,28 +32,28 @@ module.exports = {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ]
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ],
   },
 
   // Pagination
   PAGINATION: {
     DEFAULT_PAGE: 1,
     DEFAULT_LIMIT: 10,
-    MAX_LIMIT: 100
+    MAX_LIMIT: 100,
   },
 
   // Token
   TOKEN: {
     EXPIRES_IN: '24h',
-    REFRESH_EXPIRES_IN: '7d'
+    REFRESH_EXPIRES_IN: '7d',
   },
 
   // Feature Categories
   FEATURE_CATEGORIES: {
     BASIC: 'basic',
     PREMIUM: 'premium',
-    ENTERPRISE: 'enterprise'
+    ENTERPRISE: 'enterprise',
   },
 
   // Survey Status
@@ -61,7 +61,7 @@ module.exports = {
     DRAFT: 'draft',
     ACTIVE: 'active',
     CLOSED: 'closed',
-    ARCHIVED: 'archived'
+    ARCHIVED: 'archived',
   },
 
   // KVP Status
@@ -70,7 +70,7 @@ module.exports = {
     IN_REVIEW: 'in_pruefung',
     APPROVED: 'genehmigt',
     REJECTED: 'abgelehnt',
-    IMPLEMENTED: 'umgesetzt'
+    IMPLEMENTED: 'umgesetzt',
   },
 
   // Shift Types
@@ -78,6 +78,6 @@ module.exports = {
     MORNING: 'morning',
     AFTERNOON: 'afternoon',
     NIGHT: 'night',
-    FLEXIBLE: 'flexible'
-  }
+    FLEXIBLE: 'flexible',
+  },
 };

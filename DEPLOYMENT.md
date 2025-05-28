@@ -9,7 +9,7 @@ Assixx nutzt eine Multi-Tenant-Architektur, bei der jede Firma eine eigene Subdo
 ### 1. Tenant erstellen
 
 ```bash
-cd server/scripts
+cd backend/scripts
 node setup-tenant.js <tenant-id> "<Firmenname>"
 
 # Beispiel:
@@ -19,6 +19,7 @@ node setup-tenant.js mercedes "Mercedes-Benz AG"
 ### 2. DNS-Eintrag konfigurieren
 
 Fügen Sie einen A-Record oder CNAME für die neue Subdomain hinzu:
+
 ```
 mercedes.assixx.de → Server-IP
 ```
@@ -32,23 +33,30 @@ sudo certbot --nginx -d mercedes.assixx.de
 ### 4. Logo hochladen
 
 Platzieren Sie das Firmenlogo unter:
+
 ```
-server/public/assets/mercedes-logo.png
+frontend/src/assets/images/mercedes-logo.png
 ```
 
 ### 5. Nginx aktivieren
 
 ```bash
-sudo ln -s /path/to/project/server/nginx/mercedes.conf /etc/nginx/sites-enabled/
+sudo ln -s /path/to/project/infrastructure/nginx/mercedes.conf /etc/nginx/sites-enabled/
 sudo nginx -s reload
 ```
 
 ## Docker Deployment
 
-### 1. Docker Image bauen
+### 1. Docker Images bauen
 
 ```bash
-docker build -t assixx:latest .
+# Backend
+cd backend
+docker build -t assixx-backend:latest .
+
+# Frontend
+cd ../frontend
+docker build -t assixx-frontend:latest .
 ```
 
 ### 2. Container für neue Firma starten
@@ -72,22 +80,30 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./nginx:/etc/nginx/conf.d
       - ./certs:/etc/nginx/certs
     depends_on:
       - app
 
-  app:
-    image: assixx:latest
+  backend:
+    image: assixx-backend:latest
     environment:
       - NODE_ENV=production
     volumes:
-      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
     ports:
-      - "3000:3000"
+      - '3000:3000'
+
+  frontend:
+    image: assixx-frontend:latest
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
 
   mysql:
     image: mysql:8
@@ -109,7 +125,7 @@ volumes:
 docker logs assixx-mercedes
 
 # Application-Logs
-tail -f /app/logs/combined.log
+tail -f backend/logs/combined.log
 ```
 
 ### Health Checks
@@ -140,7 +156,7 @@ done
 
 ```bash
 # Uploads und Assets
-tar -czf assixx_files_$(date +%Y%m%d).tar.gz uploads/ public/assets/
+tar -czf assixx_files_$(date +%Y%m%d).tar.gz uploads/ frontend/dist/assets/
 ```
 
 ## Skalierung

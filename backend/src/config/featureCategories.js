@@ -15,8 +15,8 @@ const featureCategories = {
         details: [
           'Mitarbeiterprofile erstellen',
           'Grundlegende Stammdaten verwalten',
-          'Zugriffsrechte verwalten'
-        ]
+          'Zugriffsrechte verwalten',
+        ],
       },
       unlimited_employees: {
         displayName: 'Unbegrenzte Mitarbeiter',
@@ -24,8 +24,8 @@ const featureCategories = {
         details: [
           'Unbegrenzte Mitarbeiteranzahl',
           'Erweiterte Verwaltungsfunktionen',
-          'Bulk-Import/Export'
-        ]
+          'Bulk-Import/Export',
+        ],
       },
       document_upload: {
         displayName: 'Dokument Upload',
@@ -33,10 +33,10 @@ const featureCategories = {
         details: [
           'Sichere Dokumentenverwaltung',
           'Lohnabrechnungen hochladen',
-          'Mitarbeiterdokumente verwalten'
-        ]
-      }
-    }
+          'Mitarbeiterdokumente verwalten',
+        ],
+      },
+    },
   },
 
   // Kommunikation (Communication) - Team collaboration features
@@ -51,8 +51,8 @@ const featureCategories = {
           'Direkte Nachrichten',
           'Gruppenchats',
           'Dateiübertragung',
-          'Nachrichtenplanung'
-        ]
+          'Nachrichtenplanung',
+        ],
       },
       blackboard: {
         displayName: 'Schwarzes Brett',
@@ -61,8 +61,8 @@ const featureCategories = {
           'Firmenweite Ankündigungen',
           'Abteilungsspezifische Mitteilungen',
           'Prioritätsstufen',
-          'Lesebestätigungen'
-        ]
+          'Lesebestätigungen',
+        ],
       },
       surveys: {
         displayName: 'Umfrage-Tool',
@@ -71,10 +71,10 @@ const featureCategories = {
           'Anonyme Umfragen',
           'Verschiedene Fragetypen',
           'Automatische Auswertung',
-          'Vorlagen-Bibliothek'
-        ]
-      }
-    }
+          'Vorlagen-Bibliothek',
+        ],
+      },
+    },
   },
 
   // Organisation (Organization) - Planning and management features
@@ -89,8 +89,8 @@ const featureCategories = {
           'Firmentermine verwalten',
           'Abteilungskalender',
           'Teamkalender',
-          'Erinnerungen'
-        ]
+          'Erinnerungen',
+        ],
       },
       shifts: {
         displayName: 'Schichtplanung',
@@ -99,8 +99,8 @@ const featureCategories = {
           'Schichtvorlagen',
           'Mitarbeiter-Zuweisung',
           'Tauschbörse',
-          'Überstunden-Tracking'
-        ]
+          'Überstunden-Tracking',
+        ],
       },
       kvp: {
         displayName: 'KVP System',
@@ -109,11 +109,11 @@ const featureCategories = {
           'Verbesserungsvorschläge',
           'Bewertungssystem',
           'Prämienberechnung',
-          'Statistiken'
-        ]
-      }
-    }
-  }
+          'Statistiken',
+        ],
+      },
+    },
+  },
 };
 
 /**
@@ -128,7 +128,7 @@ function getFeatureCategory(featureCode) {
         categoryKey,
         categoryName: category.name,
         categoryIcon: category.icon,
-        feature: category.features[featureCode]
+        feature: category.features[featureCode],
       };
     }
   }
@@ -141,18 +141,18 @@ function getFeatureCategory(featureCode) {
  */
 function getFeaturesByCategory() {
   const result = {};
-  
+
   for (const [categoryKey, category] of Object.entries(featureCategories)) {
     result[categoryKey] = {
       name: category.name,
       icon: category.icon,
       features: Object.entries(category.features).map(([code, feature]) => ({
         code,
-        ...feature
-      }))
+        ...feature,
+      })),
     };
   }
-  
+
   return result;
 }
 
@@ -170,5 +170,5 @@ module.exports = {
   featureCategories,
   getFeatureCategory,
   getFeaturesByCategory,
-  getFeatureCodesForCategory
+  getFeatureCodesForCategory,
 };

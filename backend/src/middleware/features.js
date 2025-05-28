@@ -9,7 +9,7 @@ const checkFeature =
       // Tenant ID aus Request holen
       // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
       let numericTenantId;
-      
+
       if (req.tenantId) {
         // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
         const db = require('../database');
@@ -24,7 +24,7 @@ const checkFeature =
             upgrade_required: true,
           });
         }
-        
+
         numericTenantId = tenantRows[0].id;
       } else if (req.user && req.user.tenant_id) {
         // Fallback: Verwende tenant_id aus JWT Token
@@ -82,7 +82,7 @@ const checkFeatures =
       // Tenant ID aus Request holen
       // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
       let numericTenantId;
-      
+
       if (req.tenantId) {
         // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
         const db = require('../database');
@@ -96,7 +96,7 @@ const checkFeatures =
             error: 'Tenant nicht gefunden',
           });
         }
-        
+
         numericTenantId = tenantRows[0].id;
       } else if (req.user && req.user.tenant_id) {
         // Fallback: Verwende tenant_id aus JWT Token
@@ -155,7 +155,7 @@ const loadTenantFeatures = async (req, res, next) => {
     // Tenant ID aus Request holen
     // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
     let numericTenantId;
-    
+
     if (req.tenantId) {
       // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
       const db = require('../database');
@@ -168,7 +168,7 @@ const loadTenantFeatures = async (req, res, next) => {
         req.availableFeatures = [];
         return next();
       }
-      
+
       numericTenantId = tenantRows[0].id;
     } else if (req.user && req.user.tenant_id) {
       // Fallback: Verwende tenant_id aus JWT Token

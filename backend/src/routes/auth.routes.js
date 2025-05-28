@@ -18,7 +18,7 @@ router.post('/login', (req, res, next) => {
 });
 router.post('/register', authController.register);
 router.get('/logout', authController.logout);
-router.post('/logout', authController.logout);  // Support both GET and POST
+router.post('/logout', authController.logout); // Support both GET and POST
 
 // Protected routes
 router.get('/check', authenticateToken, authController.checkAuth);

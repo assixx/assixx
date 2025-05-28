@@ -28,11 +28,11 @@ export default class ApiService {
     const headers = {
       'Content-Type': 'application/json',
     };
-    
+
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
-    
+
     return headers;
   }
 
@@ -52,11 +52,11 @@ export default class ApiService {
 
     try {
       const response = await fetch(url, options);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
@@ -122,15 +122,15 @@ export default class ApiService {
     const response = await fetch(`${this.baseURL}/documents`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.token}`
+        Authorization: `Bearer ${this.token}`,
       },
-      body: formData
+      body: formData,
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.json();
   }
 }

@@ -73,7 +73,7 @@ function generateToken(user) {
  */
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  
+
   // Try to get token from Authorization header first
   let token = authHeader && authHeader.split(' ')[1];
 
@@ -103,7 +103,7 @@ function authenticateToken(req, res, next) {
     req.user = {
       ...user,
       userId: user.id,
-      tenantId: user.tenant_id
+      tenantId: user.tenant_id,
     };
     next();
   });

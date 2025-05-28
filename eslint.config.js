@@ -57,9 +57,9 @@ module.exports = [
   // Browser environment for client-side JavaScript
   {
     files: [
-      'public/js/**/*.js',
-      'middleware/public/js/**/*.js',
-      'public/components/**/*.js',
+      'frontend/src/scripts/**/*.js',
+      'frontend/src/components/**/*.js',
+      'frontend/src/pages/**/*.js',
     ],
     languageOptions: {
       ecmaVersion: 2021,
@@ -100,7 +100,22 @@ module.exports = [
         // App-specific globals
         API_BASE_URL: 'readonly',
         WS_URL: 'readonly',
+        // Additional globals for frontend scripts
+        fetchWithAuth: 'readonly',
+        showError: 'readonly',
+        showSuccess: 'readonly',
+        fileNameSpan: 'readonly',
+        authService: 'readonly',
       },
+    },
+  },
+
+  // Vite config needs ES modules
+  {
+    files: ['frontend/vite.config.js'],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'module',
     },
   },
 
@@ -114,8 +129,10 @@ module.exports = [
       'dist/**',
       'build/**',
       'coverage/**',
-      'public/js/lib/**',
-      'public/css/lib/**',
+      'frontend/dist/**',
+      'frontend/src/scripts/lib/**',
+      'frontend/src/styles/lib/**',
+      'backend/logs/**',
     ],
   },
 ];

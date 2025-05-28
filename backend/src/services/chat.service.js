@@ -9,7 +9,7 @@ const db = mysql.createPool({
   database: process.env.DB_NAME || 'assixx',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 class ChatService {
@@ -46,7 +46,9 @@ class ChatService {
       ORDER BY u.last_name, u.first_name
     `;
 
-    const [users] = await db.promise().query(query, [tenantId, tenantId, userId]);
+    const [users] = await db
+      .promise()
+      .query(query, [tenantId, tenantId, userId]);
     return users;
   }
 
@@ -104,9 +106,17 @@ class ChatService {
       ORDER BY COALESCE(m.created_at, c.created_at) DESC
     `;
 
-    const [conversations] = await db.promise().query(query, [
-      userId, tenantId, userId, tenantId, userId, userId, tenantId
-    ]);
+    const [conversations] = await db
+      .promise()
+      .query(query, [
+        userId,
+        tenantId,
+        userId,
+        tenantId,
+        userId,
+        userId,
+        tenantId,
+      ]);
 
     return conversations;
   }
@@ -120,9 +130,15 @@ class ChatService {
    * @param {string} name - Name der Gruppe (optional)
    * @returns {Promise<Object>} Die erstellte Konversation
    */
-  async createConversation(tenantId, userId, participantIds, isGroup = false, name = null) {
+  async createConversation(
+    tenantId,
+    userId,
+    participantIds,
+    isGroup = false,
+    name = null
+  ) {
     const connection = await db.promise().getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
@@ -176,7 +192,6 @@ class ChatService {
 
       await connection.commit();
       return { id: conversationId, existing: false };
-
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -196,10 +211,12 @@ class ChatService {
    */
   async getMessages(tenantId, conversationId, userId, limit = 50, offset = 0) {
     // Prüfe Berechtigung
-    const [participant] = await db.promise().query(
-      'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-      [conversationId, userId]
-    );
+    const [participant] = await db
+      .promise()
+      .query(
+        'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+        [conversationId, userId]
+      );
 
     if (participant.length === 0) {
       throw new Error('Nicht autorisiert');
@@ -255,7 +272,7 @@ class ChatService {
     return {
       conversation: conversationData[0],
       messages: messages.reverse(),
-      participants
+      participants,
     };
   }
 
@@ -268,12 +285,20 @@ class ChatService {
    * @param {Object} attachment - Anhang-Informationen (optional)
    * @returns {Promise<Object>} Die gesendete Nachricht
    */
-  async sendMessage(tenantId, conversationId, senderId, content, attachment = null) {
+  async sendMessage(
+    tenantId,
+    conversationId,
+    senderId,
+    content,
+    attachment = null
+  ) {
     // Prüfe Berechtigung
-    const [participant] = await db.promise().query(
-      'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-      [conversationId, senderId]
-    );
+    const [participant] = await db
+      .promise()
+      .query(
+        'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+        [conversationId, senderId]
+      );
 
     if (participant.length === 0) {
       throw new Error('Nicht autorisiert');
@@ -284,13 +309,13 @@ class ChatService {
       `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, attachment_path, attachment_name, attachment_type)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        tenantId, 
-        conversationId, 
-        senderId, 
+        tenantId,
+        conversationId,
+        senderId,
         content,
         attachment?.path || null,
         attachment?.name || null,
-        attachment?.type || null
+        attachment?.type || null,
       ]
     );
 
@@ -328,11 +353,13 @@ class ChatService {
    * @returns {Promise<boolean>} Erfolg
    */
   async deleteMessage(messageId, userId) {
-    const [result] = await db.promise().query(
-      'UPDATE messages SET deleted_at = NOW() WHERE id = ? AND sender_id = ?',
-      [messageId, userId]
-    );
-    
+    const [result] = await db
+      .promise()
+      .query(
+        'UPDATE messages SET deleted_at = NOW() WHERE id = ? AND sender_id = ?',
+        [messageId, userId]
+      );
+
     return result.affectedRows > 0;
   }
 
@@ -347,7 +374,7 @@ class ChatService {
     try {
       // Chat-Daten sind in der Hauptdatenbank, nicht in der Tenant-DB
       const [result] = await db.promise().query(
-      `SELECT COUNT(DISTINCT m.id) as count
+        `SELECT COUNT(DISTINCT m.id) as count
        FROM messages m
        INNER JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
        LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
@@ -356,8 +383,8 @@ class ChatService {
          AND m.sender_id != ?
          AND (ms.is_read IS NULL OR ms.is_read = 0)
          AND m.deleted_at IS NULL`,
-      [userId, userId, tenantId, userId]
-    );
+        [userId, userId, tenantId, userId]
+      );
 
       return result[0].count;
     } catch (error) {
@@ -379,7 +406,7 @@ class ChatService {
        ON DUPLICATE KEY UPDATE is_archived = 1, archived_at = NOW()`,
       [messageId, userId]
     );
-    
+
     return true;
   }
 
@@ -391,7 +418,7 @@ class ChatService {
    */
   async deleteConversation(conversationId, userId) {
     const connection = await db.promise().getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
@@ -420,7 +447,6 @@ class ChatService {
 
       await connection.commit();
       return true;
-
     } catch (error) {
       await connection.rollback();
       throw error;

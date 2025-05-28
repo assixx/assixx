@@ -11,9 +11,9 @@ class AdminLogController {
       res.json(result);
     } catch (error) {
       console.error('Error in AdminLogController.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -31,9 +31,9 @@ class AdminLogController {
       res.json(result);
     } catch (error) {
       console.error('Error in AdminLogController.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -48,9 +48,9 @@ class AdminLogController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in AdminLogController.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -62,16 +62,16 @@ class AdminLogController {
   async update(req, res) {
     try {
       const result = await adminService.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in AdminLogController.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -86,9 +86,9 @@ class AdminLogController {
       res.status(204).send();
     } catch (error) {
       console.error('Error in AdminLogController.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message,
       });
     }
   }

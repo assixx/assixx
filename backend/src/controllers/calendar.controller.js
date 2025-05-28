@@ -11,9 +11,9 @@ class CalendarController {
       res.json(result);
     } catch (error) {
       console.error('Error in CalendarController.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -31,9 +31,9 @@ class CalendarController {
       res.json(result);
     } catch (error) {
       console.error('Error in CalendarController.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -48,9 +48,9 @@ class CalendarController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in CalendarController.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -62,16 +62,16 @@ class CalendarController {
   async update(req, res) {
     try {
       const result = await calendarService.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in CalendarController.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -86,9 +86,9 @@ class CalendarController {
       res.status(204).send();
     } catch (error) {
       console.error('Error in CalendarController.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message,
       });
     }
   }

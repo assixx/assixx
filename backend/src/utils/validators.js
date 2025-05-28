@@ -48,12 +48,14 @@ function validatePassword(password) {
     errors.push('Password must contain at least one number');
   }
   if (!/[!@#$%^&*]/.test(password)) {
-    errors.push('Password must contain at least one special character (!@#$%^&*)');
+    errors.push(
+      'Password must contain at least one special character (!@#$%^&*)'
+    );
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -64,7 +66,7 @@ function validatePassword(password) {
  */
 function validateUsername(username) {
   const errors = [];
-  
+
   if (username.length < 3) {
     errors.push('Username must be at least 3 characters long');
   }
@@ -72,12 +74,14 @@ function validateUsername(username) {
     errors.push('Username must not exceed 30 characters');
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-    errors.push('Username can only contain letters, numbers, underscores, and hyphens');
+    errors.push(
+      'Username can only contain letters, numbers, underscores, and hyphens'
+    );
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -89,7 +93,7 @@ function validateUsername(username) {
 function isValidDate(date) {
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(date)) return false;
-  
+
   const d = new Date(date);
   return d instanceof Date && !isNaN(d);
 }
@@ -112,7 +116,7 @@ function isValidFileType(filename, allowedTypes) {
  */
 function validateSubdomain(subdomain) {
   const errors = [];
-  
+
   if (subdomain.length < 3) {
     errors.push('Subdomain must be at least 3 characters long');
   }
@@ -120,12 +124,14 @@ function validateSubdomain(subdomain) {
     errors.push('Subdomain must not exceed 63 characters');
   }
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(subdomain)) {
-    errors.push('Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)');
+    errors.push(
+      'Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)'
+    );
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -137,16 +143,19 @@ function validateSubdomain(subdomain) {
  */
 function validateRequiredFields(data, requiredFields) {
   const missingFields = [];
-  
-  requiredFields.forEach(field => {
-    if (!data[field] || (typeof data[field] === 'string' && data[field].trim() === '')) {
+
+  requiredFields.forEach((field) => {
+    if (
+      !data[field] ||
+      (typeof data[field] === 'string' && data[field].trim() === '')
+    ) {
       missingFields.push(field);
     }
   });
 
   return {
     isValid: missingFields.length === 0,
-    missingFields
+    missingFields,
   };
 }
 
@@ -180,5 +189,5 @@ module.exports = {
   validateSubdomain,
   validateRequiredFields,
   isInRange,
-  isPositiveInteger
+  isPositiveInteger,
 };

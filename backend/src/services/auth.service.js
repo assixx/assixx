@@ -18,24 +18,24 @@ class AuthService {
     try {
       // Use existing auth function
       const user = await authUser(username, password);
-      
+
       if (!user) {
         return {
           success: false,
-          message: 'Invalid username or password'
+          message: 'Invalid username or password',
         };
       }
 
       // Generate JWT token - pass the whole user object
       const token = generateToken(user);
-      
+
       // Remove sensitive data
       delete user.password;
-      
+
       return {
         success: true,
         token,
-        user
+        user,
       };
     } catch (error) {
       logger.error('Authentication error:', error);
@@ -50,14 +50,21 @@ class AuthService {
    */
   async registerUser(userData) {
     try {
-      const { username, password, email, vorname, nachname, role = 'employee' } = userData;
-      
+      const {
+        username,
+        password,
+        email,
+        vorname,
+        nachname,
+        role = 'employee',
+      } = userData;
+
       // Check if user already exists
       const existingUser = await User.findByUsername(username);
       if (existingUser) {
         return {
           success: false,
-          message: 'Username already exists'
+          message: 'Username already exists',
         };
       }
 
@@ -66,14 +73,14 @@ class AuthService {
       if (existingEmail) {
         return {
           success: false,
-          message: 'Email already exists'
+          message: 'Email already exists',
         };
       }
 
       // Hash password
       const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash(password, 10);
-      
+
       // Create user
       const userId = await User.create({
         username,
@@ -81,16 +88,16 @@ class AuthService {
         email,
         vorname,
         nachname,
-        role
+        role,
       });
 
       // Get created user (without password)
       const user = await User.findById(userId);
       delete user.password;
-      
+
       return {
         success: true,
-        user
+        user,
       };
     } catch (error) {
       logger.error('Registration error:', error);

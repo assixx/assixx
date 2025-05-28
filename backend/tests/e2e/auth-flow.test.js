@@ -17,26 +17,25 @@ describe('E2E: Authentication Flow', () => {
       password: 'Test123!@#',
       email: `test_${Date.now()}@example.com`,
       vorname: 'Test',
-      nachname: 'User'
+      nachname: 'User',
     };
   });
 
   describe('User Registration', () => {
     it('should successfully register a new user', async () => {
-      const response = await request(app)
-        .post('/api/register')
-        .send(testUser);
+      const response = await request(app).post('/api/register').send(testUser);
 
       expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty('message', 'Registration successful');
+      expect(response.body).toHaveProperty(
+        'message',
+        'Registration successful'
+      );
       expect(response.body).toHaveProperty('user');
       expect(response.body.user.username).toBe(testUser.username);
     });
 
     it('should not allow duplicate registration', async () => {
-      const response = await request(app)
-        .post('/api/register')
-        .send(testUser);
+      const response = await request(app).post('/api/register').send(testUser);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message');
@@ -46,28 +45,24 @@ describe('E2E: Authentication Flow', () => {
 
   describe('User Login', () => {
     it('should login with correct credentials', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: testUser.password
-        });
+      const response = await request(app).post('/api/login').send({
+        username: testUser.username,
+        password: testUser.password,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('token');
       expect(response.body).toHaveProperty('user');
-      
+
       // Save token for further tests
       authToken = response.body.token;
     });
 
     it('should fail with wrong password', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: 'WrongPassword123'
-        });
+      const response = await request(app).post('/api/login').send({
+        username: testUser.username,
+        password: 'WrongPassword123',
+      });
 
       expect(response.status).toBe(401);
     });
@@ -84,8 +79,7 @@ describe('E2E: Authentication Flow', () => {
     });
 
     it('should fail without token', async () => {
-      const response = await request(app)
-        .get('/api/auth/user');
+      const response = await request(app).get('/api/auth/user');
 
       expect(response.status).toBe(401);
     });
@@ -103,7 +97,7 @@ describe('E2E: Authentication Flow', () => {
     it('should update user profile', async () => {
       const updateData = {
         email: `updated_${Date.now()}@example.com`,
-        vorname: 'Updated'
+        vorname: 'Updated',
       };
 
       const response = await request(app)

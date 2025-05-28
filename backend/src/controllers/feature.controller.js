@@ -11,9 +11,9 @@ class FeatureController {
       res.json(result);
     } catch (error) {
       console.error('Error in FeatureController.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -31,9 +31,9 @@ class FeatureController {
       res.json(result);
     } catch (error) {
       console.error('Error in FeatureController.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -48,9 +48,9 @@ class FeatureController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in FeatureController.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -62,16 +62,16 @@ class FeatureController {
   async update(req, res) {
     try {
       const result = await featureService.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in FeatureController.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message,
       });
     }
   }
@@ -86,9 +86,9 @@ class FeatureController {
       res.status(204).send();
     } catch (error) {
       console.error('Error in FeatureController.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message,
       });
     }
   }

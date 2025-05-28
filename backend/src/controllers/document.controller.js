@@ -16,24 +16,24 @@ class DocumentController {
     try {
       const { page, limit, offset } = parsePagination(req.query);
       const { category, userId } = req.query;
-      
+
       const result = await documentService.getDocuments({
         tenantId: req.user.tenantId,
         category,
         userId,
         limit,
-        offset
+        offset,
       });
 
       res.json({
         success: true,
-        ...result
+        ...result,
       });
     } catch (error) {
       logger.error('Error getting documents:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error retrieving documents'
+        message: 'Error retrieving documents',
       });
     }
   }
@@ -44,25 +44,28 @@ class DocumentController {
   async getDocumentById(req, res) {
     try {
       const { id } = req.params;
-      
-      const document = await documentService.getDocumentById(id, req.user.tenantId);
-      
+
+      const document = await documentService.getDocumentById(
+        id,
+        req.user.tenantId
+      );
+
       if (!document) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found',
         });
       }
 
       res.json({
         success: true,
-        data: document
+        data: document,
       });
     } catch (error) {
       logger.error('Error getting document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error retrieving document'
+        message: 'Error retrieving document',
       });
     }
   }
@@ -75,7 +78,7 @@ class DocumentController {
       if (!req.file) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          message: 'No file uploaded'
+          message: 'No file uploaded',
         });
       }
 
@@ -88,7 +91,7 @@ class DocumentController {
         description: req.body.description,
         userId: req.body.userId || req.user.id,
         uploadedBy: req.user.id,
-        tenantId: req.user.tenantId
+        tenantId: req.user.tenantId,
       };
 
       const result = await documentService.createDocument(documentData);
@@ -96,13 +99,13 @@ class DocumentController {
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
         message: 'Document uploaded successfully',
-        data: result
+        data: result,
       });
     } catch (error) {
       logger.error('Error uploading document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error uploading document'
+        message: 'Error uploading document',
       });
     }
   }
@@ -115,31 +118,31 @@ class DocumentController {
       const { id } = req.params;
       const updateData = {
         category: req.body.category,
-        description: req.body.description
+        description: req.body.description,
       };
 
       const result = await documentService.updateDocument(
-        id, 
-        updateData, 
+        id,
+        updateData,
         req.user.tenantId
       );
 
       if (!result) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found',
         });
       }
 
       res.json({
         success: true,
-        message: 'Document updated successfully'
+        message: 'Document updated successfully',
       });
     } catch (error) {
       logger.error('Error updating document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error updating document'
+        message: 'Error updating document',
       });
     }
   }
@@ -152,26 +155,26 @@ class DocumentController {
       const { id } = req.params;
 
       const result = await documentService.deleteDocument(
-        id, 
+        id,
         req.user.tenantId
       );
 
       if (!result) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found',
         });
       }
 
       res.json({
         success: true,
-        message: 'Document deleted successfully'
+        message: 'Document deleted successfully',
       });
     } catch (error) {
       logger.error('Error deleting document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error deleting document'
+        message: 'Error deleting document',
       });
     }
   }
@@ -184,14 +187,14 @@ class DocumentController {
       const { id } = req.params;
 
       const document = await documentService.getDocumentById(
-        id, 
+        id,
         req.user.tenantId
       );
 
       if (!document) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found'
+          message: 'Document not found',
         });
       }
 
@@ -202,7 +205,7 @@ class DocumentController {
       logger.error('Error downloading document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error downloading document'
+        message: 'Error downloading document',
       });
     }
   }

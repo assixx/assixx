@@ -4,21 +4,21 @@
 #user-info,
 .user-info,
 .header .header-actions #user-info {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.4rem !important;
-    padding: 0.2rem 0.5rem !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    border-radius: 0 !important;
-    border: none !important;
-    transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  padding: 0.2rem 0.5rem !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  transition: all 0.3s ease !important;
 }
 
 #user-info:hover,
 .user-info:hover,
 .header .header-actions #user-info:hover {
-    background: transparent !important;
+  background: transparent !important;
 }
 
 /* Remove all pseudo-elements that might create extra circles */
@@ -28,45 +28,45 @@
 .user-info::after,
 .header .header-actions #user-info::before,
 .header .header-actions #user-info::after {
-    display: none !important;
-    content: none !important;
+  display: none !important;
+  content: none !important;
 }
 
 /* Profile picture styling - only target the avatar */
 #user-avatar,
 .header .header-actions #user-info #user-avatar {
-    display: block !important;
-    width: 24px !important;
-    height: 24px !important;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    transition: all 0.3s ease !important;
+  display: block !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  transition: all 0.3s ease !important;
 }
 
 /* Hide ALL images in user-info except the user-avatar */
 #user-info img,
 .user-info img,
 .header .header-actions #user-info img {
-    display: none !important;
+  display: none !important;
 }
 
 /* Show only the user-avatar */
 #user-info #user-avatar,
 .user-info #user-avatar,
 .header .header-actions #user-info #user-avatar {
-    display: block !important;
+  display: block !important;
 }
 
 /* User name styling */
 #user-name,
 .user-name,
 .header .header-actions #user-info #user-name {
-    font-size: 0.7rem !important;
-    font-weight: 400 !important;
-    color: rgba(255, 255, 255, 0.8) !important;
-    margin: 0 !important;
-    letter-spacing: 0.1px !important;
+  font-size: 0.7rem !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  margin: 0 !important;
+  letter-spacing: 0.1px !important;
 }
 
 /* Logout button with awesome gradient style like Register button */
@@ -74,63 +74,69 @@
 .logout-btn,
 .btn-logout,
 .header .header-actions #logout-btn {
-    background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
-    color: white !important;
-    border: none !important;
-    padding: 0.3rem 0.8rem !important;
-    border-radius: 6px !important;
-    font-size: 0.7rem !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.3rem !important;
-    text-decoration: none !important;
-    position: relative !important;
-    overflow: hidden !important;
-    box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4) !important;
+  background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.3rem 0.8rem !important;
+  border-radius: 6px !important;
+  font-size: 0.7rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.3rem !important;
+  text-decoration: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4) !important;
 }
 
 /* Shine effect on hover */
 #logout-btn::before,
 .logout-btn::before,
 .btn-logout::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.5s ease;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
 }
 
 #logout-btn:hover,
 .logout-btn:hover,
 .btn-logout:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 12px rgba(244, 67, 54, 0.35),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow:
+    0 3px 12px rgba(244, 67, 54, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 #logout-btn:hover::before,
 .logout-btn:hover::before,
 .btn-logout:hover::before {
-    left: 100%;
+  left: 100%;
 }
 
 /* Header actions container */
 .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 /* Make the entire header more compact if needed */
 .header .header-actions {
-    margin-left: auto;
+  margin-left: auto;
 }
 
 /* Icon inside logout button */
@@ -138,25 +144,25 @@
 .logout-btn i,
 .btn-logout i,
 .header .header-actions #logout-btn i {
-    font-size: 0.65rem !important;
+  font-size: 0.65rem !important;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    #user-info,
-    .user-info {
-        padding: 0.4rem 0.75rem;
-    }
-    
-    #user-name,
-    .user-name {
-        display: none; /* Hide name on mobile for space */
-    }
-    
-    #logout-btn,
-    .logout-btn,
-    .btn-logout {
-        padding: 0.4rem 1rem;
-        font-size: 0.8rem;
-    }
+  #user-info,
+  .user-info {
+    padding: 0.4rem 0.75rem;
+  }
+
+  #user-name,
+  .user-name {
+    display: none; /* Hide name on mobile for space */
+  }
+
+  #logout-btn,
+  .logout-btn,
+  .btn-logout {
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+  }
 }

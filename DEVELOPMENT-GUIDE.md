@@ -12,35 +12,38 @@
 ## 📝 Code-Kommentierung Standards
 
 ### JavaScript Funktionen
+
 ```javascript
 // Validiert die Subdomain-Eingabe und zeigt Fehler an
 // @param {string} value - Die eingegebene Subdomain
 // @returns {boolean} - True wenn gültig, false wenn ungültig
 function validateSubdomain(value) {
-    // Regex für erlaubte Zeichen: a-z, 0-9, Bindestrich
-    const regex = /^[a-z0-9-]+$/;
-    return regex.test(value);
+  // Regex für erlaubte Zeichen: a-z, 0-9, Bindestrich
+  const regex = /^[a-z0-9-]+$/;
+  return regex.test(value);
 }
 ```
 
 ### CSS Strukturierung
+
 ```css
 /* ========================================
    HEADER SECTION - Glassmorphismus Design
    ======================================== */
 .header {
-    /* Transparenter Hintergrund mit Blur für Glaseffekt */
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(20px) saturate(180%);
+  /* Transparenter Hintergrund mit Blur für Glaseffekt */
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
 }
 ```
 
 ### HTML Bereiche
+
 ```html
 <!-- Signup Form - 3 Spalten Layout für 16-Zoll Monitore -->
 <!-- Erste Zeile: Firma, Subdomain, Email -->
 <div class="form-grid">
-    <!-- Form fields -->
+  <!-- Form fields -->
 </div>
 ```
 
@@ -48,31 +51,93 @@ function validateSubdomain(value) {
 
 Siehe [CLAUDE.md](./CLAUDE.md#-glassmorphismus-design-standards-immer-verwenden) für vollständige Glassmorphismus Design-Standards.
 
+## 🏛️ MVC-Architektur
+
+### Model-View-Controller Pattern
+
+```javascript
+// Model (backend/src/models/user.js)
+class User {
+  static async findById(id) {
+    // Datenbanklogik
+  }
+}
+
+// Controller (backend/src/controllers/user.controller.js)
+class UserController {
+  async getUser(req, res) {
+    try {
+      const user = await UserService.findById(req.params.id);
+      res.json({ success: true, data: user });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+}
+
+// Service (backend/src/services/user.service.js)
+class UserService {
+  static async findById(id) {
+    // Business Logic
+    const user = await User.findById(id);
+    return this.sanitizeUser(user);
+  }
+}
+
+// Route (backend/src/routes/users.js)
+router.get('/:id', authenticate, userController.getUser);
+```
+
+### Separation of Concerns
+
+- **Models**: Datenbankzugriff und Datenstrukturen
+- **Controllers**: HTTP Request/Response Handling
+- **Services**: Business Logic und Datenverarbeitung
+- **Routes**: URL-Mapping und Middleware-Konfiguration
+- **Middleware**: Cross-cutting Concerns (Auth, Validation, etc.)
+
 ## 🏗️ Projekt-Struktur
 
 ```
-server/
-├── index.js              # Hauptserver-Datei
-├── models/               # Datenmodelle (User, Document, etc.)
-├── routes/               # API-Routes (auth.js, users.js, etc.)
-├── middleware/           # Auth, Tenant, Security Middleware
-├── utils/                # Hilfsfunktionen (emailService, logger)
-├── public/               # Frontend-Dateien
-│   ├── css/             # Stylesheets
-│   ├── js/              # Client-Scripts
-│   └── *.html           # HTML-Seiten
-└── database/            # Migrations & Schema
+backend/
+├── src/                  # Source Code
+│   ├── app.js           # Express App Konfiguration
+│   ├── server.js        # Server Bootstrap
+│   ├── controllers/     # MVC Controllers
+│   ├── models/          # Datenmodelle (User, Document, etc.)
+│   ├── routes/          # API-Routes (auth.js, users.js, etc.)
+│   ├── middleware/      # Auth, Tenant, Security Middleware
+│   ├── services/        # Business Logic Services
+│   ├── utils/           # Hilfsfunktionen (emailService, logger)
+│   └── database/        # Migrations & Schema
+├── tests/                # Test-Dateien
+│   ├── unit/           # Unit Tests
+│   ├── integration/    # Integration Tests
+│   └── e2e/            # End-to-End Tests
+├── scripts/              # Utility Scripts
+└── logs/                 # Log-Dateien
+
+frontend/
+├── src/                  # Frontend Source Code
+│   ├── pages/          # HTML-Seiten
+│   ├── scripts/        # JavaScript
+│   ├── styles/         # CSS/SCSS
+│   ├── assets/         # Bilder, Fonts
+│   └── components/     # UI-Komponenten
+└── dist/                 # Build Output
 ```
 
 ## 🔐 Sicherheits-Best-Practices
 
 ### Niemals im Code
+
 - Passwörter oder Secrets hardcoden
 - Console.log mit sensiblen Daten
 - SQL-Queries ohne Prepared Statements
 - User-Input ohne Validierung verwenden
 
 ### Immer implementieren
+
 - JWT-Token Validierung
 - Tenant-Isolation Checks
 - Input-Sanitization
@@ -81,50 +146,57 @@ server/
 ## 🌐 API-Entwicklung
 
 ### RESTful Endpoints
+
 ```javascript
 // GET - Liste abrufen
 router.get('/api/users', authenticate, tenantMiddleware, async (req, res) => {
-    // Implementation
+  // Implementation
 });
 
 // POST - Ressource erstellen
 router.post('/api/users', authenticate, validateInput, async (req, res) => {
-    // Implementation
+  // Implementation
 });
 ```
 
 ### Response-Format
+
 ```javascript
 // Erfolg
 res.json({
-    success: true,
-    data: result,
-    message: 'Operation successful'
+  success: true,
+  data: result,
+  message: 'Operation successful',
 });
 
 // Fehler
 res.status(400).json({
-    success: false,
-    error: 'Validation failed',
-    details: errors
+  success: false,
+  error: 'Validation failed',
+  details: errors,
 });
 ```
 
 ## 🧪 Testing
 
 ### Lokales Testen
+
 ```bash
-# Server starten
+# Backend starten
+cd backend
 npm start
 
 # In neuem Terminal - API testen
 curl http://localhost:3000/api/health
 
-# Frontend testen
-# Browser: http://localhost:3000
+# Frontend testen (falls separater Dev-Server)
+cd frontend
+npm run dev
+# Browser: http://localhost:5173 (Vite) oder http://localhost:3000 (Express)
 ```
 
 ### Test-Accounts
+
 - **Root**: root@test.com / test123
 - **Admin**: admin@test.com / test123
 - **Employee**: employee@test.com / test123
@@ -132,6 +204,7 @@ curl http://localhost:3000/api/health
 ## 📦 Dependencies
 
 ### Wichtige Packages
+
 - `express`: Web-Framework
 - `mysql2`: MySQL-Connector
 - `jsonwebtoken`: JWT-Auth
@@ -141,6 +214,7 @@ curl http://localhost:3000/api/health
 - `nodemailer`: E-Mail
 
 ### Dev-Dependencies
+
 - `nodemon`: Auto-Restart
 - `eslint`: Code-Linting
 - `prettier`: Code-Formatting
@@ -148,12 +222,16 @@ curl http://localhost:3000/api/health
 ## 🚀 Deployment
 
 ### Entwicklung
+
 ```bash
+cd backend
 npm run dev  # Mit nodemon
 ```
 
 ### Production
+
 ```bash
+cd backend
 npm start    # Ohne nodemon
 ```
 
@@ -162,35 +240,40 @@ Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) für Cloud-Deployment.
 ## 📐 Code-Standards
 
 ### Naming Conventions
+
 - **Variablen**: camelCase (`userName`, `isActive`)
 - **Konstanten**: UPPER_SNAKE (`MAX_RETRIES`, `API_KEY`)
 - **Klassen**: PascalCase (`UserModel`, `ChatService`)
 - **Dateien**: kebab-case (`user-profile.js`, `admin-dashboard.html`)
 
 ### Async/Await Pattern
+
 ```javascript
 // ✅ Gut
 async function getUser(id) {
-    try {
-        const user = await UserModel.findById(id);
-        return user;
-    } catch (error) {
-        logger.error('User fetch failed:', error);
-        throw error;
-    }
+  try {
+    const user = await UserModel.findById(id);
+    return user;
+  } catch (error) {
+    logger.error('User fetch failed:', error);
+    throw error;
+  }
 }
 
 // ❌ Vermeiden
 function getUser(id) {
-    return UserModel.findById(id)
-        .then(user => user)
-        .catch(err => { throw err; });
+  return UserModel.findById(id)
+    .then((user) => user)
+    .catch((err) => {
+      throw err;
+    });
 }
 ```
 
 ## 🐛 Debugging
 
 ### Console Logs
+
 ```javascript
 // Entwicklung
 console.log('🔍 Debug:', variable);
@@ -203,6 +286,7 @@ logger.error('System error', { error, context });
 ```
 
 ### Chrome DevTools
+
 - Network Tab: API-Calls prüfen
 - Console: JavaScript-Fehler
 - Application: LocalStorage/Cookies
@@ -211,6 +295,6 @@ logger.error('System error', { error, context });
 ## 📚 Weiterführende Dokumentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System-Architektur
-- [API-TEST-README.md](./server/API-TEST-README.md) - API-Dokumentation
-- [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md) - Sicherheit
+- [API-TEST-README.md](./backend/API-TEST-README.md) - API-Dokumentation
+- [SECURITY-IMPROVEMENTS.md](./backend/SECURITY-IMPROVEMENTS.md) - Sicherheit
 - [CLAUDE.md](./CLAUDE.md) - AI-Assistant Instructions

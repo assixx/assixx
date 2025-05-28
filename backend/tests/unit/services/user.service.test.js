@@ -16,7 +16,7 @@ describe('UserService', () => {
         username: 'testuser',
         email: 'test@example.com',
         password: 'hashedpassword',
-        role: 'employee'
+        role: 'employee',
       };
 
       User.findById.mockResolvedValue(mockUser);
@@ -27,7 +27,7 @@ describe('UserService', () => {
         id: 1,
         username: 'testuser',
         email: 'test@example.com',
-        role: 'employee'
+        role: 'employee',
       });
       expect(result.password).toBeUndefined();
     });
@@ -46,9 +46,9 @@ describe('UserService', () => {
       const mockUsers = {
         data: [
           { id: 1, username: 'user1', password: 'hash1' },
-          { id: 2, username: 'user2', password: 'hash2' }
+          { id: 2, username: 'user2', password: 'hash2' },
         ],
-        total: 2
+        total: 2,
       };
 
       User.findAll.mockResolvedValue(mockUsers);
@@ -67,7 +67,7 @@ describe('UserService', () => {
     it('should update user and return updated data', async () => {
       const updateData = {
         email: 'newemail@example.com',
-        vorname: 'Updated'
+        vorname: 'Updated',
       };
 
       User.update.mockResolvedValue(true);
@@ -75,7 +75,7 @@ describe('UserService', () => {
         id: 1,
         username: 'testuser',
         email: 'newemail@example.com',
-        vorname: 'Updated'
+        vorname: 'Updated',
       });
 
       const result = await userService.updateUser(1, updateData);
@@ -89,7 +89,7 @@ describe('UserService', () => {
         id: 999,
         password: 'newpassword',
         role: 'admin',
-        email: 'newemail@example.com'
+        email: 'newemail@example.com',
       };
 
       User.update.mockResolvedValue(true);
@@ -98,7 +98,7 @@ describe('UserService', () => {
       await userService.updateUser(1, updateData);
 
       expect(User.update).toHaveBeenCalledWith(1, {
-        email: 'newemail@example.com'
+        email: 'newemail@example.com',
       });
     });
   });

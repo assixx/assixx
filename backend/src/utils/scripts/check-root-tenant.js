@@ -9,7 +9,7 @@ async function checkRootTenant() {
       JOIN tenants t ON u.tenant_id = t.id 
       WHERE u.email = 'info@scs-technik.de'
     `);
-    
+
     if (users.length > 0) {
       console.log('Root user tenant info:');
       console.log('- Tenant ID:', users[0].tenant_id);

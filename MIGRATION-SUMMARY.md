@@ -7,10 +7,12 @@
 ## 🎯 Was wurde erreicht:
 
 ### 1. Static File Reference entfernt ✅
+
 - `backend/src/app.js` bereinigt
 - Keine Abhängigkeit mehr zu `server/public`
 
 ### 2. Controller/Services implementiert ✅
+
 - **14 Controller** erstellt:
   - chat.controller.js (manuell optimiert)
   - blackboard, calendar, kvp, survey, team, department, shift, tenant, feature, admin, employee (generiert)
@@ -18,11 +20,13 @@
 - Generator-Script für zukünftige Erweiterungen: `backend/scripts/generate-controllers.js`
 
 ### 3. Frontend Build-Pipeline ✅
+
 - Vite bereits konfiguriert
 - Build-Scripts vorhanden
 - Kleine Anpassungen für fehlende Dateien
 
 ### 4. Server-Ordner entfernt ✅
+
 - Backup erstellt: `server-backup-20250528-210532`
 - Alle wichtigen Dateien migriert:
   - Utility Scripts → `backend/src/utils/scripts/`

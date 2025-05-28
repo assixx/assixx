@@ -5,6 +5,7 @@
 ## 🚀 Option 1: Automatisches Setup (Empfohlen)
 
 ### WSL/Ubuntu/Linux
+
 ```bash
 # 1. Repository klonen
 git clone [YOUR-REPO-URL] Assixx
@@ -15,10 +16,11 @@ chmod +x setup-wsl-ubuntu.sh
 ./setup-wsl-ubuntu.sh
 
 # 3. Fertig! Browser öffnen
-# http://localhost:3000/signup.html
+# http://localhost:3000/signup
 ```
 
 ### Windows (PowerShell als Admin)
+
 ```powershell
 # 1. Repository klonen
 git clone [YOUR-REPO-URL] Assixx
@@ -28,23 +30,30 @@ cd Assixx
 .\setup-windows.ps1
 
 # 3. Fertig! Browser öffnen
-# http://localhost:3000/signup.html
+# http://localhost:3000/signup
 ```
 
 ## ⚡ Option 2: Manuelles Setup (3 Schritte)
 
 ### Voraussetzungen
+
 - Node.js 18+
 - MySQL 8.0+
 - Git
 
 ### Schritt 1: Dependencies installieren
+
 ```bash
-cd server
+# Root-Dependencies
 npm install
+
+# Frontend-Dependencies
+cd frontend && npm install
+cd ..
 ```
 
 ### Schritt 2: Datenbank einrichten
+
 ```bash
 # MySQL starten und als root einloggen
 mysql -u root -p
@@ -55,6 +64,7 @@ exit
 ```
 
 ### Schritt 3: Umgebungsvariablen
+
 ```bash
 # .env Datei erstellen
 cp .env.example .env
@@ -65,19 +75,27 @@ cp .env.example .env
 ```
 
 ### Server starten
+
 ```bash
+# Entwicklungsmodus (mit Auto-Restart)
+npm run dev
+
+# Oder Produktionsmodus
 npm start
+
 # Server läuft auf http://localhost:3000
 ```
 
 ## 🎯 Erste Schritte
 
 1. **Tenant registrieren**: http://localhost:3000/signup.html
+
    - Firmenname eingeben
    - Subdomain wählen (z.B. "demo")
    - Admin-Account erstellen
 
 2. **Einloggen**: http://localhost:3000/login.html
+
    - Mit Admin-Credentials einloggen
    - Dashboard erkunden
 
@@ -88,6 +106,7 @@ npm start
 ## 🆘 Troubleshooting
 
 ### MySQL Connection Error
+
 ```bash
 # MySQL Service prüfen
 sudo service mysql status
@@ -96,12 +115,14 @@ sudo service mysql start
 ```
 
 ### Port 3000 belegt
+
 ```bash
 # In .env ändern:
 PORT=3001
 ```
 
 ### Node Module Fehler
+
 ```bash
 # Clean Install
 rm -rf node_modules package-lock.json

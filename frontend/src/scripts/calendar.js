@@ -1518,13 +1518,13 @@ function setupEventListeners() {
       try {
         // Clear token from localStorage
         localStorage.removeItem('token');
-        
+
         // Clear cookie by calling logout endpoint
         await fetch('/api/auth/logout', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
         });
-        
+
         // Redirect to login
         window.location.href = '/login';
       } catch (error) {

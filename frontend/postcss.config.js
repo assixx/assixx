@@ -1,6 +1,6 @@
 export default {
   plugins: {
     autoprefixer: {},
-    cssnano: process.env.NODE_ENV === 'production' ? {} : false
-  }
-}
+    cssnano: process.env.NODE_ENV === 'production' ? {} : false,
+  },
+};

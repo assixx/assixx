@@ -11,12 +11,10 @@ global.testUtils = {
   // Beispiel: Token für Tests generieren
   generateTestToken: (userId, role) => {
     const jwt = require('jsonwebtoken');
-    return jwt.sign(
-      { userId, role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-  }
+    return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+  },
 };
 
 // Cleanup nach Tests

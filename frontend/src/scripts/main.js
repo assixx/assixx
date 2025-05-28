@@ -28,40 +28,42 @@ window.Assixx = {
   api: new ApiService(),
   storage: new StorageService(),
   notification: new NotificationService(),
-  
+
   // State
   user: null,
   theme: 'light',
-  
+
   // Methods
   init() {
     console.log('Initializing Assixx Application...');
-    
+
     // Initialize core modules
     initAuth();
     initNavigation();
     initTheme();
     initUtils();
-    
+
     // Initialize UI components
     initModals();
     initTooltips();
     initDropdowns();
-    
+
     // Page specific initialization
     this.initPageSpecific();
-    
+
     console.log('Assixx Application initialized successfully');
   },
-  
+
   initPageSpecific() {
     // Get current page
     const page = window.location.pathname.split('/').pop().replace('.html', '');
-    
+
     // Load page-specific module
-    switch(page) {
+    switch (page) {
       case 'dashboard':
-        import('./pages/dashboard.js').then(m => m.initDashboard && m.initDashboard()).catch(() => {});
+        import('./pages/dashboard.js')
+          .then((m) => m.initDashboard && m.initDashboard())
+          .catch(() => {});
         break;
       case 'profile':
         // import('./pages/profile.js').then(m => m.init());
@@ -74,7 +76,7 @@ window.Assixx = {
         break;
       // Add more pages as needed
     }
-  }
+  },
 };
 
 // Initialize on DOM ready

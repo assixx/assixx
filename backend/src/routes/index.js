@@ -51,7 +51,7 @@ router.get(`${API_PREFIX}/health`, (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -59,7 +59,7 @@ router.get(`${API_PREFIX}/health`, (req, res) => {
 router.use(`${API_PREFIX}/*`, (req, res) => {
   res.status(404).json({
     error: 'API endpoint not found',
-    path: req.originalUrl
+    path: req.originalUrl,
   });
 });
 

@@ -9,7 +9,10 @@ class ChatController {
    */
   async getUsers(req, res) {
     try {
-      const users = await chatService.getUsers(req.user.tenantId, req.user.userId);
+      const users = await chatService.getUsers(
+        req.user.tenantId,
+        req.user.userId
+      );
       res.json(users);
     } catch (error) {
       console.error('Fehler beim Abrufen der Benutzer:', error);
@@ -100,7 +103,9 @@ class ChatController {
       const { content } = req.body;
 
       if (!content && !req.file) {
-        return res.status(400).json({ error: 'Nachricht oder Anhang erforderlich' });
+        return res
+          .status(400)
+          .json({ error: 'Nachricht oder Anhang erforderlich' });
       }
 
       let attachment = null;
@@ -108,7 +113,7 @@ class ChatController {
         attachment = {
           path: `/uploads/chat/${req.file.filename}`,
           name: req.file.originalname,
-          type: req.file.mimetype
+          type: req.file.mimetype,
         };
       }
 
@@ -125,7 +130,7 @@ class ChatController {
       if (io) {
         io.to(`tenant_${req.user.tenantId}`).emit('new_message', {
           conversationId,
-          message
+          message,
         });
       }
 
@@ -171,9 +176,9 @@ class ChatController {
   async markAsRead(req, res) {
     try {
       const messageId = parseInt(req.params.id);
-      
+
       await chatService.markAsRead(messageId, req.user.userId);
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error('Fehler beim Markieren als gelesen:', error);
@@ -188,15 +193,20 @@ class ChatController {
   async getWorkSchedules(req, res) {
     try {
       // Diese Funktion könnte in einen separaten Service verschoben werden
-      const users = await chatService.getUsers(req.user.tenantId, req.user.userId);
-      const workSchedules = users.filter(user => user.shift_type).map(user => ({
-        user_id: user.id,
-        username: user.username,
-        shift_type: user.shift_type,
-        start_time: user.start_time,
-        end_time: user.end_time,
-        location: user.location
-      }));
+      const users = await chatService.getUsers(
+        req.user.tenantId,
+        req.user.userId
+      );
+      const workSchedules = users
+        .filter((user) => user.shift_type)
+        .map((user) => ({
+          user_id: user.id,
+          username: user.username,
+          shift_type: user.shift_type,
+          start_time: user.start_time,
+          end_time: user.end_time,
+          location: user.location,
+        }));
 
       res.json(workSchedules);
     } catch (error) {
@@ -212,13 +222,18 @@ class ChatController {
   async deleteMessage(req, res) {
     try {
       const messageId = parseInt(req.params.id);
-      
-      const success = await chatService.deleteMessage(messageId, req.user.userId);
-      
+
+      const success = await chatService.deleteMessage(
+        messageId,
+        req.user.userId
+      );
+
       if (success) {
         res.json({ success: true });
       } else {
-        res.status(403).json({ error: 'Nicht autorisiert oder Nachricht nicht gefunden' });
+        res
+          .status(403)
+          .json({ error: 'Nicht autorisiert oder Nachricht nicht gefunden' });
       }
     } catch (error) {
       console.error('Fehler beim Löschen der Nachricht:', error);
@@ -237,11 +252,13 @@ class ChatController {
         req.user.tenantId,
         req.user.userId
       );
-      
+
       res.json({ unreadCount: count });
     } catch (error) {
       console.error('Fehler beim Abrufen der ungelesenen Nachrichten:', error);
-      res.status(500).json({ error: 'Fehler beim Abrufen der ungelesenen Nachrichten' });
+      res
+        .status(500)
+        .json({ error: 'Fehler beim Abrufen der ungelesenen Nachrichten' });
     }
   }
 
@@ -252,9 +269,9 @@ class ChatController {
   async archiveMessage(req, res) {
     try {
       const messageId = parseInt(req.params.id);
-      
+
       await chatService.archiveMessage(messageId, req.user.userId);
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error('Fehler beim Archivieren der Nachricht:', error);
@@ -269,9 +286,9 @@ class ChatController {
   async deleteConversation(req, res) {
     try {
       const conversationId = parseInt(req.params.id);
-      
+
       await chatService.deleteConversation(conversationId, req.user.userId);
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error('Fehler beim Löschen der Konversation:', error);

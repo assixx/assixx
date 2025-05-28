@@ -15,7 +15,7 @@ router.use((req, res, next) => {
   console.log(
     `Departments route - User: ${req.user?.username}, Role: ${req.user?.role}, Method: ${req.method}`
   );
-  
+
   // Allow GET requests for all authenticated users
   if (req.method === 'GET') {
     next();

@@ -1,1 +1,3 @@
-export function initModals() { console.log("Modals initialized"); }
+export function initModals() {
+  console.log('Modals initialized');
+}

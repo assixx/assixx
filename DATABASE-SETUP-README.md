@@ -1,7 +1,7 @@
 # 🚀 ASSIXX - Database Setup Guide
 
 **SaaS Platform für Industrieunternehmen**  
-*Komplette Anleitung für neue Entwickler*
+_Komplette Anleitung für neue Entwickler_
 
 ---
 
@@ -28,6 +28,7 @@
 Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen mit folgenden Hauptfunktionen:
 
 ### 🏢 Kernfunktionen
+
 - **Multi-Tenant-Architektur** - Mehrere Unternehmen in einer Instanz
 - **Mitarbeiterverwaltung** - Umfassende HR-Funktionen
 - **Dokumentenmanagement** - Sichere Dokumentenverwaltung
@@ -38,7 +39,19 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen mit folgen
 - **Schichtplanung** - Erweiterte Personalplanung
 
 ### 🔧 Technologie-Stack
+
 Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Details.
+
+### 🏛️ MVC-Architektur (Neu seit Januar 2025)
+
+- **Backend**: Express.js mit MVC-Pattern
+  - Controllers für Request/Response Handling
+  - Services für Business Logic
+  - Models für Datenzugriff
+- **Frontend**: Modernes Build-System mit Vite
+  - Strukturierte Pages, Scripts, Styles
+  - Component-basierte Architektur
+  - Asset-Optimierung
 
 ---
 
@@ -47,6 +60,7 @@ Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Detail
 ### WSL Ubuntu Automatisch
 
 **Voraussetzungen:**
+
 - Windows 10/11 mit WSL2
 - Ubuntu 20.04+ in WSL
 
@@ -70,6 +84,7 @@ npm start
 ### Windows Automatisch
 
 **Voraussetzungen:**
+
 - Windows 10/11
 - PowerShell als Administrator
 
@@ -85,11 +100,11 @@ cd C:\Assixx
 .\setup-windows.ps1
 
 # 4. Anwendung starten
-cd server
+cd backend
 npm start
 
 # 5. Browser öffnen
-# http://localhost:3000/signup.html
+# http://localhost:3000/signup
 ```
 
 ---
@@ -136,7 +151,7 @@ sudo systemctl enable mysql
 sudo mysql_secure_installation
 # Folgen Sie den Anweisungen:
 # - Root-Passwort setzen: JA
-# - Anonyme Benutzer entfernen: JA  
+# - Anonyme Benutzer entfernen: JA
 # - Root-Remote-Login deaktivieren: JA
 # - Test-Datenbank entfernen: JA
 # - Privilegien neu laden: JA
@@ -347,20 +362,24 @@ npm start
 Das Assixx-System verwendet **39 Haupttabellen** in 10 Kategorien:
 
 #### 1. **Tenant Management** (3 Tabellen)
+
 - `tenants` - Unternehmensdaten
 - `tenant_admins` - Zuordnung Admin → Tenant
 - `tenant_subscriptions` - Abonnements
 
 #### 2. **User Management** (4 Tabellen)
+
 - `users` - Alle Benutzer (Root/Admin/Employee)
 - `departments` - Abteilungen
 - `teams` - Teams
 - `user_teams` - Benutzer ↔ Team-Zuordnung
 
 #### 3. **Document Management** (1 Tabelle)
+
 - `documents` - Alle Dokumente mit Kategorisierung
 
 #### 4. **Feature Management** (5 Tabellen)
+
 - `features` - Verfügbare Features
 - `tenant_features` - Feature-Aktivierung pro Tenant
 - `subscription_plans` - Abo-Pläne
@@ -370,6 +389,7 @@ Das Assixx-System verwendet **39 Haupttabellen** in 10 Kategorien:
 ##### Feature-Tabellen-Details:
 
 **features:**
+
 ```sql
 CREATE TABLE features (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -384,6 +404,7 @@ CREATE TABLE features (
 ```
 
 **tenant_features:**
+
 ```sql
 CREATE TABLE tenant_features (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -406,17 +427,20 @@ CREATE TABLE tenant_features (
 ```
 
 #### 5. **Blackboard System** (3 Tabellen)
+
 - `blackboard_entries` - Ankündigungen
 - `blackboard_tags` - Tags für Kategorisierung
 - `blackboard_confirmations` - Lesebestätigungen
 
 #### 6. **Calendar System** (4 Tabellen)
+
 - `calendar_events` - Termine und Events
 - `calendar_attendees` - Teilnehmer
 - `calendar_reminders` - Erinnerungen
 - `calendar_recurring_rules` - Wiederholungsregeln
 
 #### 7. **KVP System** (6 Tabellen)
+
 - `kvp_categories` - Verbesserungskategorien
 - `kvp_suggestions` - Verbesserungsvorschläge
 - `kvp_attachments` - Dateianhänge
@@ -425,6 +449,7 @@ CREATE TABLE tenant_features (
 - `kvp_points` - Belohnungssystem
 
 #### 8. **Chat System** (6 Tabellen)
+
 - `conversations` - Chat-Räume
 - `conversation_participants` - Teilnehmer
 - `messages` - Nachrichten mit Planungsfunktion
@@ -433,6 +458,7 @@ CREATE TABLE tenant_features (
 - `work_schedules` - Arbeitszeiten
 
 #### 9. **Shift Planning** (7 Tabellen)
+
 - `shift_templates` - Schichtvorlagen
 - `shift_plans` - Schichtpläne
 - `shifts` - Einzelne Schichten
@@ -442,6 +468,7 @@ CREATE TABLE tenant_features (
 - `absences` - Abwesenheiten
 
 #### 10. **Admin & Audit** (1 Tabelle)
+
 - `admin_logs` - Audit Trail
 
 ### 🔗 Wichtige Beziehungen
@@ -468,24 +495,27 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 ### Feature-Verwaltung für Root-Benutzer
 
 1. **Root-Dashboard:**
+
    ```
-   http://localhost:3000/root-features.html
+   http://localhost:3000/root-features
    ```
 
 2. **Features aktivieren/deaktivieren:**
+
    - Tenant aus Dropdown auswählen
    - Feature-Karte finden
    - "Aktivieren" oder "Deaktivieren" klicken
 
 3. **API-Endpoints:**
+
    ```javascript
    // Alle Tenants mit Features abrufen
    GET /api/features/all-tenants
-   
+
    // Feature aktivieren
    POST /api/features/activate
    Body: { tenantId: 3, featureCode: "surveys" }
-   
+
    // Feature deaktivieren
    POST /api/features/deactivate
    Body: { tenantId: 3, featureCode: "surveys" }
@@ -493,16 +523,16 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 
 ### Verfügbare Features
 
-| Code | Name | Kategorie | Preis/Monat |
-|------|------|-----------|-------------|
-| basic_employees | Basis Mitarbeiterverwaltung | core | 9.99€ |
-| document_upload | Dokument Upload | core | 14.99€ |
-| chat | Chat System | premium | 19.99€ |
-| surveys | Umfrage-Tool | premium | 29.99€ |
-| calendar | Kalender-System | premium | 24.99€ |
-| blackboard | Digitale Schwarzes Brett | premium | 19.99€ |
-| shift_planning | Schichtplanungs-System | enterprise | 49.99€ |
-| kvp | Kontinuierlicher Verbesserungsprozess | enterprise | 39.99€ |
+| Code            | Name                                  | Kategorie  | Preis/Monat |
+| --------------- | ------------------------------------- | ---------- | ----------- |
+| basic_employees | Basis Mitarbeiterverwaltung           | core       | 9.99€       |
+| document_upload | Dokument Upload                       | core       | 14.99€      |
+| chat            | Chat System                           | premium    | 19.99€      |
+| surveys         | Umfrage-Tool                          | premium    | 29.99€      |
+| calendar        | Kalender-System                       | premium    | 24.99€      |
+| blackboard      | Digitale Schwarzes Brett              | premium    | 19.99€      |
+| shift_planning  | Schichtplanungs-System                | enterprise | 49.99€      |
+| kvp             | Kontinuierlicher Verbesserungsprozess | enterprise | 39.99€      |
 
 ### Feature-Prüfung in Code
 
@@ -511,7 +541,9 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 router.use(checkFeature('surveys'));
 
 // In Frontend prüfen
-const hasFeature = tenantFeatures.some(f => f.code === 'surveys' && f.is_available);
+const hasFeature = tenantFeatures.some(
+  (f) => f.code === 'surveys' && f.is_available
+);
 ```
 
 ---
@@ -527,11 +559,13 @@ Assixx verwendet eine **Shared Database, Shared Schema**-Architektur mit Tenant-
 **WICHTIG:** Es gibt **keinen hardcodierten Root-Benutzer** mehr!
 
 1. **Neues Unternehmen registrieren:**
+
    ```
    http://localhost:3000/signup.html
    ```
 
 2. **Tenant wird automatisch erstellt:**
+
    - Neue Zeile in `tenants`-Tabelle
    - Eindeutige `tenant_id` generiert
    - Admin-Benutzer automatisch zugeordnet
@@ -545,12 +579,12 @@ Assixx verwendet eine **Shared Database, Shared Schema**-Architektur mit Tenant-
 
 ```sql
 -- Neue Tenants anzeigen
-SELECT id, company_name, subdomain, status, created_at 
-FROM tenants 
+SELECT id, company_name, subdomain, status, created_at
+FROM tenants
 ORDER BY created_at DESC;
 
 -- Tenant-Statistiken
-SELECT 
+SELECT
     t.company_name,
     COUNT(u.id) as user_count,
     COUNT(d.id) as document_count
@@ -626,11 +660,12 @@ ALLOWED_FILE_TYPES=pdf,jpg,jpeg,png,doc,docx,xls,xlsx
 ### 🔐 Sicherheits-Secrets generieren
 
 #### Linux/WSL:
+
 ```bash
 # JWT Secret (64 Zeichen)
 openssl rand -base64 64
 
-# Session Secret (64 Zeichen)  
+# Session Secret (64 Zeichen)
 openssl rand -base64 64
 
 # Encryption Key (128 Zeichen Hex)
@@ -638,6 +673,7 @@ openssl rand -hex 64
 ```
 
 #### Windows PowerShell:
+
 ```powershell
 # Zufällige Secrets generieren
 -join ((1..64) | ForEach {[char](Get-Random -Min 48 -Max 123)})
@@ -674,12 +710,14 @@ Assixx/
 ### 1️⃣ Erstes Unternehmen erstellen
 
 1. **Anwendung starten:**
+
    ```bash
    cd server
    npm start
    ```
 
 2. **Signup-Seite öffnen:**
+
    ```
    http://localhost:3000/signup.html
    ```
@@ -693,16 +731,19 @@ Assixx/
 ### 2️⃣ System konfigurieren
 
 1. **Als Admin anmelden:**
+
    ```
    http://localhost:3000/login.html
    ```
 
 2. **Abteilungen erstellen:**
+
    - Admin Dashboard → Organisationsverwaltung
    - Neue Abteilung anlegen
    - Manager zuweisen
 
 3. **Teams erstellen:**
+
    - Teams innerhalb von Abteilungen
    - Teamleiter bestimmen
 
@@ -714,6 +755,7 @@ Assixx/
 ### 3️⃣ Features aktivieren
 
 1. **Feature-Management:**
+
    ```
    http://localhost:3000/feature-management.html
    ```
@@ -727,11 +769,11 @@ Assixx/
 
 ### 4️⃣ Benutzerrollen verstehen
 
-| Rolle | Berechtigung | Funktionen |
-|-------|-------------|------------|
-| **Root** | Systemweit | Tenant-Verwaltung, Feature-Management |
-| **Admin** | Tenant-weit | Mitarbeiterverwaltung, Konfiguration |
-| **Employee** | Begrenzt | Eigene Daten, Dokumentenzugriff |
+| Rolle        | Berechtigung | Funktionen                            |
+| ------------ | ------------ | ------------------------------------- |
+| **Root**     | Systemweit   | Tenant-Verwaltung, Feature-Management |
+| **Admin**    | Tenant-weit  | Mitarbeiterverwaltung, Konfiguration  |
+| **Employee** | Begrenzt     | Eigene Daten, Dokumentenzugriff       |
 
 ---
 
@@ -744,6 +786,7 @@ Assixx/
 **Problem:** `Error: connect ECONNREFUSED 127.0.0.1:3306`
 
 **Lösung:**
+
 ```bash
 # MySQL-Status prüfen
 sudo systemctl status mysql
@@ -760,6 +803,7 @@ mysql -u root -p -e "SHOW DATABASES;"
 **Problem:** `TypeError: Cannot read properties of undefined`
 
 **Lösung:**
+
 ```bash
 # .env-Datei erstellen
 cp server/.env.example server/.env
@@ -773,6 +817,7 @@ cat server/.env | grep DB_
 **Problem:** `Error: listen EADDRINUSE :::3000`
 
 **Lösung:**
+
 ```bash
 # Prozess auf Port 3000 finden
 sudo lsof -i :3000
@@ -789,6 +834,7 @@ PORT=3001 npm start
 **Problem:** `Module not found`
 
 **Lösung:**
+
 ```bash
 # NPM-Cache löschen
 npm cache clean --force
@@ -801,6 +847,7 @@ npm install
 #### 🔴 MySQL Root-Passwort vergessen
 
 **Lösung für Ubuntu/WSL:**
+
 ```bash
 # MySQL sicher stoppen
 sudo systemctl stop mysql
@@ -857,7 +904,7 @@ sudo systemctl status mysql
 
 - **[CLAUDE.md](./CLAUDE.md)** - Entwickler-Dokumentation
 - **[ROADMAP.md](./ROADMAP.md)** - Geplante Features
-- **[API-Dokumentation](./server/API-TEST-README.md)** - REST API Reference
+- **[API-Dokumentation](./backend/API-TEST-README.md)** - REST API Reference
 
 ### 🛠️ Entwickler-Tools
 
@@ -915,5 +962,5 @@ Bei Problemen:
 
 **🎉 Herzlichen Glückwunsch! Assixx ist jetzt einsatzbereit!**
 
-*Generiert am: $(date)*  
-*Version: 2025-01-23*
+_Generiert am: $(date)_  
+_Version: 2025-01-23_

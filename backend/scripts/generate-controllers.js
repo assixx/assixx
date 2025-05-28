@@ -15,11 +15,14 @@ const features = [
   { name: 'tenant', model: 'Tenant' },
   { name: 'feature', model: 'Feature' },
   { name: 'admin', model: 'AdminLog' },
-  { name: 'employee', model: 'User' }
+  { name: 'employee', model: 'User' },
 ];
 
 // Service Template
-const serviceTemplate = (name, model) => `const ${model} = require('../models/${name}');
+const serviceTemplate = (
+  name,
+  model
+) => `const ${model} = require('../models/${name}');
 const db = require('../database');
 
 class ${model}Service {
@@ -103,7 +106,10 @@ class ${model}Service {
 module.exports = new ${model}Service();`;
 
 // Controller Template
-const controllerTemplate = (name, model) => `const ${name}Service = require('../services/${name}.service');
+const controllerTemplate = (
+  name,
+  model
+) => `const ${name}Service = require('../services/${name}.service');
 
 class ${model}Controller {
   /**
@@ -207,7 +213,10 @@ async function generateAll() {
   const servicesPath = path.join(__dirname, '../src/services');
 
   for (const feature of features) {
-    const controllerFile = path.join(controllersPath, `${feature.name}.controller.js`);
+    const controllerFile = path.join(
+      controllersPath,
+      `${feature.name}.controller.js`
+    );
     const serviceFile = path.join(servicesPath, `${feature.name}.service.js`);
 
     // Prüfe ob bereits existiert
@@ -216,7 +225,10 @@ async function generateAll() {
       console.log(`✓ ${feature.name}.controller.js bereits vorhanden`);
     } catch {
       // Erstelle Controller
-      await fs.writeFile(controllerFile, controllerTemplate(feature.name, feature.model));
+      await fs.writeFile(
+        controllerFile,
+        controllerTemplate(feature.name, feature.model)
+      );
       console.log(`✓ ${feature.name}.controller.js erstellt`);
     }
 
@@ -225,7 +237,10 @@ async function generateAll() {
       console.log(`✓ ${feature.name}.service.js bereits vorhanden`);
     } catch {
       // Erstelle Service
-      await fs.writeFile(serviceFile, serviceTemplate(feature.name, feature.model));
+      await fs.writeFile(
+        serviceFile,
+        serviceTemplate(feature.name, feature.model)
+      );
       console.log(`✓ ${feature.name}.service.js erstellt`);
     }
   }
