@@ -62,6 +62,7 @@ class ChatService {
   async getConversations(tenantId, userId) {
     try {
       console.log('ChatService.getConversations called with:', { tenantId, userId });
+      console.log('DB pool status:', db.pool ? 'exists' : 'not initialized');
     
     const query = `
       SELECT 
@@ -253,14 +254,13 @@ class ChatService {
         u.first_name,
         u.last_name,
         NULL as profile_image_url,
-        CASE WHEN ms.is_read = 1 THEN 1 ELSE 0 END AS is_read
+        0 AS is_read
       FROM messages m
       LEFT JOIN users u ON m.sender_id = u.id
-      LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
       WHERE m.conversation_id = ? AND m.tenant_id = ?
       ORDER BY m.created_at DESC
       LIMIT ? OFFSET ?`,
-      [userId, conversationId, tenantId, limit, offset]
+      [conversationId, tenantId, limit, offset]
     );
 
     // Hole Teilnehmer für Gruppenkonversationen
