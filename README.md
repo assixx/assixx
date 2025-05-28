@@ -18,6 +18,7 @@ Siehe [SETUP-QUICKSTART.md](./SETUP-QUICKSTART.md) für 5-Minuten Setup oder [DA
 
 | Dokument | Beschreibung |
 |----------|-------------|
+| 📁 [PROJEKTSTRUKTUR.md](./PROJEKTSTRUKTUR.md) | Vollständige Verzeichnisstruktur |
 | 📋 [FEATURES.md](./FEATURES.md) | Komplette Feature-Übersicht & Preise |
 | 🏗️ [ARCHITECTURE.md](./ARCHITECTURE.md) | Technische Architektur & Stack |
 | 🚀 [SETUP-QUICKSTART.md](./SETUP-QUICKSTART.md) | 5-Minuten Setup Guide |

@@ -634,7 +634,7 @@ class ChatClient {
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
-      window.location.href = '/login.html';
+      window.location.href = '/login';
       return;
     }
 

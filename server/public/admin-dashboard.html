@@ -371,7 +371,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/admin-dashboard.html" class="logo-container">
+        <a href="/admin-dashboard" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
@@ -438,7 +438,7 @@
                     <h2 class="card-title">Dokumente</h2>
                 </div>
                 <div class="compact-content">
-                    <a href="/document-upload.html" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
+                    <a href="/document-upload" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
                     <div class="compact-list" id="recent-documents">
                         <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
                     </div>
@@ -480,7 +480,7 @@
                     <h2 class="card-title">Kalender</h2>
                 </div>
                 <div class="compact-content">
-                    <a href="/calendar.html" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
+                    <a href="/calendar" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
                     <div class="compact-list" id="calendar-events-list">
                         <!-- Wird dynamisch gefüllt -->
                         <div class="list-item">
@@ -490,7 +490,7 @@
                             </div>
                         </div>
                     </div>
-                    <a href="/calendar.html" class="view-all-link">Alle anzeigen <span class="arrow">→</span></a>
+                    <a href="/calendar" class="view-all-link">Alle anzeigen <span class="arrow">→</span></a>
                 </div>
             </div>
         </div>
@@ -621,7 +621,7 @@
             <section id="documents-section" class="content-section" style="display: none;">
                 <h1>Dokumentenverwaltung</h1>
                 <div class="flex-between mb-3">
-                    <a href="/document-upload.html" class="btn btn-primary">Dokument hochladen</a>
+                    <a href="/document-upload" class="btn btn-primary">Dokument hochladen</a>
                     <div class="search-container">
                         <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie...">
                         <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
@@ -1043,7 +1043,7 @@
                     e.preventDefault();
                     e.stopPropagation();
                     // Navigiere direkt zur Upload-Seite
-                    window.location.href = '/document-upload.html';
+                    window.location.href = '/document-upload';
                 });
             } else {
                 console.error('Dokument Upload Button NICHT gefunden');

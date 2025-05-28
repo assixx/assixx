@@ -406,7 +406,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/root-dashboard.html" class="logo-container">
+        <a href="/root-dashboard" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
@@ -476,7 +476,7 @@
         // Authentication Check
         const token = localStorage.getItem('token');
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         }
         
         // Decode JWT to get user info
@@ -495,7 +495,7 @@
         
         const userInfo = parseJwt(token);
         if (userInfo && userInfo.role !== 'root') {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         }
         
         // Feature Category Mapping
@@ -777,7 +777,7 @@
         document.getElementById('logout-btn').addEventListener('click', () => {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         });
         
         // Initialize category tabs

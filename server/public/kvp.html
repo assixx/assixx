@@ -1004,7 +1004,7 @@
 <body>
   <!-- Header -->
   <header class="header">
-    <a href="/admin-dashboard.html" class="logo-container">
+    <a href="/admin-dashboard" class="logo-container">
       <img src="/images/logo.png" alt="Assixx Logo" class="logo">
     </a>
     <div class="header-actions">
@@ -1263,7 +1263,7 @@
       // Initialize logout button
       document.getElementById('logout-btn').addEventListener('click', function() {
         localStorage.removeItem('token');
-        window.location.href = '/login.html';
+        window.location.href = '/login';
       });
       
       // Initialize KVP buttons based on user role
@@ -1312,7 +1312,7 @@
     function checkAuth() {
       const token = localStorage.getItem('token');
       if (!token) {
-        window.location.href = '/login.html';
+        window.location.href = '/login';
         return;
       }
       
@@ -1323,7 +1323,7 @@
         document.getElementById('user-info').textContent = payload.username || 'User';
       } catch(e) {
         localStorage.removeItem('token');
-        window.location.href = '/login.html';
+        window.location.href = '/login';
       }
     }
 
@@ -1394,7 +1394,7 @@
       
       if (response.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = '/login.html';
+        window.location.href = '/login';
         return;
       }
       

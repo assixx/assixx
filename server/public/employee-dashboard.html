@@ -576,7 +576,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/employee-dashboard.html" class="logo-container">
+        <a href="/employee-dashboard" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo">
         </a>
         <div class="header-actions">
@@ -601,7 +601,7 @@
             <!-- Page Header -->
             <div class="page-header">
                 <div class="breadcrumb">
-                    <a href="/employee-dashboard.html">Dashboard</a> / Übersicht
+                    <a href="/employee-dashboard">Dashboard</a> / Übersicht
                 </div>
             </div>
 
@@ -660,7 +660,7 @@
             <!-- Quick Access Features -->
             <div class="dashboard-grid">
                 <!-- Documents Card -->
-                <div class="feature-card" onclick="window.location.href='/employee-documents.html'">
+                <div class="feature-card" onclick="window.location.href='/employee-documents'">
                     <div class="feature-icon">📄</div>
                     <h3 class="feature-title">Meine Dokumente</h3>
                     <p class="feature-description">
@@ -670,7 +670,7 @@
                 </div>
 
                 <!-- Calendar Card -->
-                <div class="feature-card" onclick="window.location.href='/calendar.html'">
+                <div class="feature-card" onclick="window.location.href='/calendar'">
                     <div class="feature-icon">📅</div>
                     <h3 class="feature-title">Firmenkalender</h3>
                     <p class="feature-description">
@@ -680,7 +680,7 @@
                 </div>
 
                 <!-- Blackboard Card -->
-                <div class="feature-card" onclick="window.location.href='/blackboard.html'">
+                <div class="feature-card" onclick="window.location.href='/blackboard'">
                     <div class="feature-icon">📋</div>
                     <h3 class="feature-title">Schwarzes Brett</h3>
                     <p class="feature-description">
@@ -690,7 +690,7 @@
                 </div>
 
                 <!-- KVP Card -->
-                <div class="feature-card" onclick="window.location.href='/kvp.html'">
+                <div class="feature-card" onclick="window.location.href='/kvp'">
                     <div class="feature-icon">💡</div>
                     <h3 class="feature-title">Verbesserungsvorschläge</h3>
                     <p class="feature-description">
@@ -700,7 +700,7 @@
                 </div>
 
                 <!-- Shifts Card -->
-                <div class="feature-card" onclick="window.location.href='/shifts.html'">
+                <div class="feature-card" onclick="window.location.href='/shifts'">
                     <div class="feature-icon">🕒</div>
                     <h3 class="feature-title">Schichtplanung</h3>
                     <p class="feature-description">
@@ -710,7 +710,7 @@
                 </div>
 
                 <!-- Profile Card -->
-                <div class="feature-card" onclick="window.location.href='/employee-profile.html'">
+                <div class="feature-card" onclick="window.location.href='/employee-profile'">
                     <div class="feature-icon">👤</div>
                     <h3 class="feature-title">Mein Profil</h3>
                     <p class="feature-description">
@@ -772,7 +772,7 @@
             // Initialize logout button
             document.getElementById('logout-btn').addEventListener('click', function() {
                 localStorage.removeItem('token');
-                window.location.href = '/login.html';
+                window.location.href = '/login';
             });
         });
 
@@ -814,7 +814,7 @@
         function checkAuth() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login.html';
+                window.location.href = '/login';
                 return;
             }
             
@@ -830,11 +830,11 @@
                 
                 // Redirect if not employee
                 if (payload.role !== 'employee') {
-                    window.location.href = payload.role === 'admin' ? '/admin-dashboard.html' : '/login.html';
+                    window.location.href = payload.role === 'admin' ? '/admin-dashboard' : '/login';
                 }
             } catch(e) {
                 localStorage.removeItem('token');
-                window.location.href = '/login.html';
+                window.location.href = '/login';
             }
         }
 
@@ -851,7 +851,7 @@
             
             if (response.status === 401) {
                 localStorage.removeItem('token');
-                window.location.href = '/login.html';
+                window.location.href = '/login';
                 return;
             }
             

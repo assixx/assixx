@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminUsername = e.target.getAttribute('data-username');
 
     // Zur Konfigurationsseite navigieren und die Admin-ID übergeben
-    window.location.href = `/admin-config.html?id=${adminId}&username=${encodeURIComponent(adminUsername)}`;
+    window.location.href = `/admin-config?id=${adminId}&username=${encodeURIComponent(adminUsername)}`;
   }
 
   async function deleteAdmin(e) {

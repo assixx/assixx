@@ -31,7 +31,7 @@ async function fetchWithAuth(url, options = {}) {
   const token = getAuthToken();
 
   if (!token) {
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     throw new Error('No authentication token');
   }
 
@@ -49,7 +49,7 @@ async function fetchWithAuth(url, options = {}) {
   // If unauthorized, redirect to login
   if (response.status === 401) {
     removeAuthToken();
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
 
@@ -112,7 +112,7 @@ async function loadUserInfo() {
 // Logout function
 function logout() {
   removeAuthToken();
-  window.location.href = '/login.html';
+  window.location.href = '/login';
 }
 
 // Show success message
@@ -140,14 +140,14 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Auth check - Current path:', window.location.pathname);
 
   // Check if user is authenticated
-  if (!isAuthenticated() && !window.location.pathname.includes('login.html')) {
+  if (!isAuthenticated() && !window.location.pathname.includes('login')) {
     console.log('No authentication token found, redirecting to login');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     return;
   }
 
   // Load user info if on authenticated page
-  if (isAuthenticated() && !window.location.pathname.includes('login.html')) {
+  if (isAuthenticated() && !window.location.pathname.includes('login')) {
     console.log('Loading user info...');
     loadUserInfo().catch((error) => {
       console.error('Failed to load user info:', error);

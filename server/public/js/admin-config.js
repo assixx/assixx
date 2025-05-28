@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Event-Listener
   updateAdminForm.addEventListener('submit', updateAdmin);
   backBtn.addEventListener('click', () => {
-    window.location.href = '/root-dashboard.html';
+    window.location.href = '/root-dashboard';
   });
 
   // Daten laden

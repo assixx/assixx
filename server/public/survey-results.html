@@ -328,7 +328,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/admin-dashboard.html" class="logo-container">
+        <a href="/admin-dashboard" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
@@ -402,9 +402,9 @@
             const role = localStorage.getItem('role');
             
             const navItems = [
-                { href: '/admin-dashboard.html', icon: '🏠', text: 'Dashboard', roles: ['admin', 'root'] },
-                { href: '/survey-admin.html', icon: '📋', text: 'Umfragen verwalten', roles: ['admin', 'root'] },
-                { href: '/survey-admin.html', icon: '➕', text: 'Neue Umfrage', roles: ['admin', 'root'] },
+                { href: '/admin-dashboard', icon: '🏠', text: 'Dashboard', roles: ['admin', 'root'] },
+                { href: '/survey-admin', icon: '📋', text: 'Umfragen verwalten', roles: ['admin', 'root'] },
+                { href: '/survey-admin', icon: '➕', text: 'Neue Umfrage', roles: ['admin', 'root'] },
             ];
             
             navMenu.innerHTML = navItems
@@ -694,7 +694,7 @@
                 <div class="empty-state">
                     <div class="empty-icon">❌</div>
                     <p>${message}</p>
-                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin.html'">
+                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin'">
                         Zurück zur Übersicht
                     </button>
                 </div>

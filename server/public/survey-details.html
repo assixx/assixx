@@ -325,7 +325,7 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <a href="/admin-dashboard.html" class="logo-container">
+        <a href="/admin-dashboard" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none;">
         </a>
         <div class="header-actions">
@@ -398,8 +398,8 @@
             const role = localStorage.getItem('role');
             
             const navItems = [
-                { href: '/admin-dashboard.html', icon: '🏠', text: 'Dashboard', roles: ['admin', 'root'] },
-                { href: '/survey-admin.html', icon: '📋', text: 'Umfragen verwalten', roles: ['admin', 'root'] },
+                { href: '/admin-dashboard', icon: '🏠', text: 'Dashboard', roles: ['admin', 'root'] },
+                { href: '/survey-admin', icon: '📋', text: 'Umfragen verwalten', roles: ['admin', 'root'] },
                 { href: '#', icon: '📊', text: 'Ergebnisse anzeigen', onclick: `viewResults(${surveyId})`, roles: ['admin', 'root'] },
             ];
             
@@ -598,7 +598,7 @@
                 <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
                     <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">❌</div>
                     <p>${message}</p>
-                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin.html'">
+                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin'">
                         Zurück zur Übersicht
                     </button>
                 </div>
@@ -611,7 +611,7 @@
         }
         
         function viewResults(id) {
-            window.location.href = `/survey-results.html?id=${id || surveyId}`;
+            window.location.href = `/survey-results?id=${id || surveyId}`;
         }
         
         function duplicateSurvey() {
@@ -637,7 +637,7 @@
                 
                 if (response.ok) {
                     alert('Umfrage wurde erfolgreich gelöscht');
-                    window.location.href = '/survey-admin.html';
+                    window.location.href = '/survey-admin';
                 } else {
                     throw new Error('Fehler beim Löschen der Umfrage');
                 }

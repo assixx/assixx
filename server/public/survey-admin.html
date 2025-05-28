@@ -579,7 +579,7 @@
 </head>
 <body>
     <header class="header">
-        <a href="/admin-dashboard.html" class="logo-container">
+        <a href="/admin-dashboard" class="logo-container">
             <img src="/images/logo.png" alt="Assixx Logo" class="logo">
         </a>
         <div class="header-actions">
@@ -1072,7 +1072,7 @@
 
         // View survey
         function viewSurvey(surveyId) {
-            window.location.href = `/survey-details.html?id=${surveyId}`;
+            window.location.href = `/survey-details?id=${surveyId}`;
         }
 
         // Edit survey
@@ -1100,7 +1100,7 @@
 
         // View results
         function viewResults(surveyId) {
-            window.location.href = `/survey-results.html?id=${surveyId}`;
+            window.location.href = `/survey-results?id=${surveyId}`;
         }
 
         // Delete survey

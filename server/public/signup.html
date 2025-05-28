@@ -821,7 +821,7 @@
                     <button type="submit" class="submit-button" id="submitButton">
                         Jetzt registrieren →
                     </button>
-                    <a href="/login.html" class="login-link">Bereits registriert?</a>
+                    <a href="/login" class="login-link">Bereits registriert?</a>
                 </div>
             </div>
         </form>
@@ -1092,7 +1092,7 @@
                     
                     // Redirect after 3 seconds
                     setTimeout(() => {
-                        window.location.href = '/login.html';
+                        window.location.href = '/login';
                     }, 3000);
                 } else {
                     alert(result.message || 'Fehler bei der Registrierung');

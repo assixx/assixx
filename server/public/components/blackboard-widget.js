@@ -102,7 +102,7 @@ class BlackboardWidget {
           <h3 class="widget-title">
             <i class="fas fa-clipboard-list me-2"></i>Ankündigungen
           </h3>
-          <a href="/blackboard.html" class="widget-action">Alle anzeigen</a>
+          <a href="/blackboard" class="widget-action">Alle anzeigen</a>
         </div>
       `;
     }
@@ -152,7 +152,7 @@ class BlackboardWidget {
             </div>
             <p class="card-text">${this.truncateText(entry.content, 100)}</p>
             <div class="entry-actions">
-              <a href="/blackboard.html?id=${entry.id}" class="btn btn-sm btn-primary">Details</a>
+              <a href="/blackboard?id=${entry.id}" class="btn btn-sm btn-primary">Details</a>
               ${
                 entry.requires_confirmation && !entry.is_confirmed
                   ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${entry.id}">
@@ -207,7 +207,7 @@ class BlackboardWidget {
       html += `
         <li class="list-group-item d-flex justify-content-between align-items-center ${priorityClass} ${unreadIndicator}">
           <div>
-            <a href="/blackboard.html?id=${entry.id}" class="blackboard-entry-link">
+            <a href="/blackboard?id=${entry.id}" class="blackboard-entry-link">
               ${entry.title}
             </a>
             <small class="d-block text-muted">${formattedDate}</small>

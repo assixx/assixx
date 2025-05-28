@@ -1,7 +1,12 @@
 # Assixx Project - Zentrale TODO-Liste
 
-> **Letzte Aktualisierung:** 27.05.2025 - 18:00
+> **Letzte Aktualisierung:** 29.05.2025 - 10:00
 > **Erstellt aus:** README.md, ROADMAP.md, CLAUDE.md, CLAUDE.local.md, SECURITY-IMPROVEMENTS.md, CHAT-SYSTEM-FIXES.md
+> 
+> **🔴 WICHTIG:** 3 neue hochprioritäre Aufgaben hinzugefügt (29.05.2025):
+> 1. Projektstruktur-Optimierung
+> 2. Git Branch-Strategie 
+> 3. Setup-Guide Konsolidierung
 
 ## ✅ ERLEDIGTE AUFGABEN
 
@@ -93,6 +98,90 @@
   - [x] Fehlende Funktionen implementiert
   - [x] 127 ESLint-Fehler verbleiben (meist unused variables in HTML-Templates)
 
+### Clean URLs Implementation (28.05.2025)
+- [x] **Alle .html Endungen aus URLs entfernt**
+  - [x] Server-Routen ohne .html angelegt
+  - [x] Middleware für automatische .html → clean URL Redirects
+  - [x] Alle href Links in HTML-Dateien aktualisiert
+  - [x] JavaScript window.location Redirects angepasst
+  - [x] Navigation in unified-navigation.js bereinigt
+  - [x] Blackboard-Widget Links korrigiert
+  - [x] Survey-Admin/Results/Details URLs gefixt
+
+### Projektdokumentation (28.05.2025)
+- [x] **PROJEKTSTRUKTUR.md erstellt**
+  - [x] Vollständige Verzeichnisstruktur dokumentiert
+  - [x] Mit Beschreibungen und Kategorisierung
+  - [x] In README.md verlinkt
+
+## 🎯 NEUE HOCHPRIORITÄRE AUFGABEN (29.05.2025)
+
+### 1. Projektstruktur-Optimierung
+- [ ] **PROJEKTSTRUKTUR.md analysieren und optimieren**
+  - [ ] Aktuelle Struktur auf Standards und Effizienz prüfen
+  - [ ] Best Practices für SaaS-Projekte recherchieren
+  - [ ] PROJEKTSTRUKTUR-BETA.md erstellen mit Verbesserungsvorschlägen
+  - [ ] Nach Genehmigung: Neue Struktur implementieren
+  - [ ] Folgende Aspekte berücksichtigen:
+    - [ ] Modularität und Skalierbarkeit
+    - [ ] Separation of Concerns
+    - [ ] Test-Struktur
+    - [ ] Build/Dist Ordner
+    - [ ] Environment-spezifische Configs
+
+### 2. Git Branch-Strategie
+- [ ] **Branches analysieren und optimieren**
+  - [ ] Aktuelle Branches auflisten und dokumentieren
+  - [ ] Unnötige/veraltete Branches identifizieren und löschen
+  - [ ] Branch-Strategie definieren:
+    - [ ] main/master (production)
+    - [ ] develop (integration)
+    - [ ] feature/* (für jedes Feature)
+    - [ ] hotfix/* (für kritische Fixes)
+    - [ ] release/* (für Releases)
+  - [ ] Für jedes aktive Feature eigenen Branch erstellen:
+    - [ ] feature/survey-tool
+    - [ ] feature/vacation-management
+    - [ ] feature/mobile-pwa
+    - [ ] feature/stripe-integration
+    - [ ] feature/multi-language
+  - [ ] Branch-Protection Rules definieren
+  - [ ] Git-Flow Dokumentation erstellen
+
+### 3. Setup-Guide Konsolidierung
+- [ ] **Zentrale Setup-Guides erstellen (Anfängerfreundlich)**
+  - [ ] Alle existierenden Setup-Dateien analysieren:
+    - [ ] SETUP-QUICKSTART.md
+    - [ ] DATABASE-SETUP-README.md
+    - [ ] DEVELOPMENT-GUIDE.md
+    - [ ] setup-windows.ps1
+    - [ ] setup-wsl-ubuntu.sh
+  - [ ] Drei neue zentrale Guides erstellen:
+    - [ ] **SETUP-WINDOWS.md** (inkl. WSL)
+      - [ ] VSCode Installation
+      - [ ] Git Installation & Konfiguration
+      - [ ] GitHub Account & SSH-Keys
+      - [ ] Projekt klonen (Schritt-für-Schritt)
+      - [ ] Node.js & npm Installation
+      - [ ] MySQL Installation (inkl. Workbench)
+      - [ ] Datenbank-Setup
+      - [ ] Environment-Variablen
+      - [ ] Projekt starten
+      - [ ] Troubleshooting
+    - [ ] **SETUP-UBUNTU.md**
+      - [ ] Gleiche Struktur wie Windows
+      - [ ] Linux-spezifische Befehle
+      - [ ] apt-get Commands
+      - [ ] Permissions & sudo
+    - [ ] **SETUP-MAC.md**
+      - [ ] Homebrew Installation
+      - [ ] Mac-spezifische Anpassungen
+      - [ ] Xcode Command Line Tools
+  - [ ] Jeden Befehl mit Erklärung versehen
+  - [ ] Screenshots/Diagramme hinzufügen wo nötig
+  - [ ] Häufige Fehler und Lösungen dokumentieren
+  - [ ] Alte Setup-Dateien archivieren
+
 ## 🚨 KRITISCHE SICHERHEITS-TODOS (Höchste Priorität!)
 
 ### GitHub Security Alerts (26.05.2025)
@@ -105,11 +194,11 @@
 ## 📱 Feature-Entwicklung (Hohe Priorität)
 
 ### Q1 2025 - In Arbeit
-- [ ] **Umfrage-Tool (Survey System)** - MORGEN WEITER (28.05.2025)
+- [ ] **Umfrage-Tool (Survey System)** - VERSCHOBEN (nach Priorität 1 Aufgaben)
   - [x] Grundstruktur implementiert
   - [x] Admin-Interface
   - [x] Employee-Interface
-  - [ ] **MORGEN: Survey Feature Checkup durchführen**
+  - [ ] **Survey Feature Checkup durchführen**
     - [ ] API Response Format prüfen (data wrapper issue)
     - [ ] Survey.getStatistics implementieren
     - [ ] Excel Export Property Paths korrigieren
@@ -233,15 +322,20 @@
 
 ## 📊 Status-Übersicht
 
-### Erledigte Aufgaben: ✅ 60 Items
+### Erledigte Aufgaben: ✅ 72 Items
 - **UI/UX & Design:** 15 Items
 - **Features:** 20 Items
 - **Feature Management:** 6 Items
 - **Code-Qualität:** 9 Items
-- **Dokumentation:** 5 Items
+- **Clean URLs:** 8 Items
+- **Dokumentation:** 9 Items (inkl. PROJEKTSTRUKTUR.md)
 - **Bug Fixes:** 5 Items
 
-### Offene Aufgaben: ⏳ 71 Items
+### Offene Aufgaben: ⏳ 117 Items
+- **NEUE Hochprioritäre Aufgaben:** 46 TODOs
+  - Projektstruktur-Optimierung: 10 TODOs
+  - Git Branch-Strategie: 11 TODOs
+  - Setup-Guide Konsolidierung: 25 TODOs
 - **Kritisch/Security:** 15 TODOs
 - **Feature-Entwicklung:** 16 TODOs  
 - **Erweiterungen:** 21 TODOs
@@ -249,8 +343,8 @@
 - **Dokumentation:** 9 TODOs
 - **Bugs:** 6 TODOs
 
-**Gesamt:** 131 Items (60 erledigt, 71 offen)
-**Fortschritt:** 46% abgeschlossen
+**Gesamt:** 189 Items (72 erledigt, 117 offen)
+**Fortschritt:** 38% abgeschlossen
 
 ---
 
@@ -260,7 +354,11 @@
 2. Erledigte Items mit Datum markieren
 3. Neue TODOs immer mit Priorität und Kategorie versehen
 4. Bei größeren Features: Unterpunkte erstellen
-5. Security-TODOs haben IMMER höchste Priorität
+5. **AKTUELLE PRIORITÄTEN (Stand 29.05.2025):**
+   - 1️⃣ Neue hochprioritäre Aufgaben (Projektstruktur, Git, Setup)
+   - 2️⃣ Security-TODOs
+   - 3️⃣ Feature-Entwicklung
+   - 4️⃣ Sonstige Erweiterungen
 
 ## 📅 Nächste Review-Termine
 
@@ -272,6 +370,11 @@
 
 - **Q4 2024:** Grundsystem mit 7 Hauptfeatures live ✅
 - **Q1 2025:** UI/UX Überarbeitung, Survey-Tool
-- **Q2 2025:** Mobile App, Urlaubssystem, Stripe
+- **Q2 2025 - AKTUALISIERT:**
+  - Projektstruktur-Optimierung (Mai)
+  - Git Branch-Strategie (Mai)
+  - Setup-Guide Konsolidierung (Juni)
+  - Mobile App, Urlaubssystem (Juni-Juli)
+  - Stripe Integration (Juli-August)
 - **Q3 2025:** Mehrsprachigkeit, TPM-Kalender
 - **Q4 2025:** Vollständige Feature-Suite
