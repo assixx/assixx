@@ -31,7 +31,7 @@ class ChatService {
         u.employee_number,
         u.position,
         u.department,
-        u.profile_image_url,
+        NULL as profile_image_url,
         CASE WHEN ws.id IS NOT NULL THEN 1 ELSE 0 END AS is_online,
         ws.shift_type,
         ws.start_time,
@@ -80,7 +80,7 @@ class ChatService {
         m.content AS last_message,
         m.created_at AS last_message_time,
         sender.username AS last_message_sender,
-        u.profile_image_url,
+        NULL as profile_image_url,
         COALESCE(unread.count, 0) AS unread_count
       FROM conversations c
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
@@ -236,7 +236,7 @@ class ChatService {
           WHEN c.is_group = 1 THEN c.name
           ELSE CONCAT(u.first_name, ' ', u.last_name)
         END AS display_name,
-        u.profile_image_url
+        NULL as profile_image_url
       FROM conversations c
       LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id 
         AND cp.user_id != ? AND c.is_group = 0
@@ -252,7 +252,7 @@ class ChatService {
         u.username,
         u.first_name,
         u.last_name,
-        u.profile_image_url,
+        NULL as profile_image_url,
         CASE WHEN ms.is_read = 1 THEN 1 ELSE 0 END AS is_read
       FROM messages m
       LEFT JOIN users u ON m.sender_id = u.id
@@ -267,7 +267,7 @@ class ChatService {
     let participants = [];
     if (conversationData[0]?.is_group) {
       const [participantData] = await db.promise().query(
-        `SELECT u.id, u.username, u.first_name, u.last_name, u.profile_image_url
+        `SELECT u.id, u.username, u.first_name, u.last_name, NULL as profile_image_url
          FROM conversation_participants cp
          JOIN users u ON cp.user_id = u.id
          WHERE cp.conversation_id = ?`,
@@ -328,7 +328,7 @@ class ChatService {
 
     // Hole die erstellte Nachricht mit Benutzerdetails
     const [message] = await db.promise().query(
-      `SELECT m.*, u.username, u.first_name, u.last_name, u.profile_image_url
+      `SELECT m.*, u.username, u.first_name, u.last_name, NULL as profile_image_url
        FROM messages m
        LEFT JOIN users u ON m.sender_id = u.id
        WHERE m.id = ?`,
@@ -380,17 +380,17 @@ class ChatService {
   async getUnreadCount(tenantDb, tenantId, userId) {
     try {
       // Chat-Daten sind in der Hauptdatenbank, nicht in der Tenant-DB
+      // Temporarily return 0 since message_status table doesn't exist
+      // TODO: Create message_status table and restore proper unread counting
       const [result] = await db.promise().query(
         `SELECT COUNT(DISTINCT m.id) as count
        FROM messages m
        INNER JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
-       LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
        WHERE cp.user_id = ? 
          AND m.tenant_id = ?
          AND m.sender_id != ?
-         AND (ms.is_read IS NULL OR ms.is_read = 0)
          AND m.deleted_at IS NULL`,
-        [userId, userId, tenantId, userId]
+        [userId, tenantId, userId]
       );
 
       return result[0].count;
