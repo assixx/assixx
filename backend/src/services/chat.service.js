@@ -59,6 +59,8 @@ class ChatService {
    * @returns {Promise<Array>} Liste der Konversationen
    */
   async getConversations(tenantId, userId) {
+    console.log('ChatService.getConversations called with:', { tenantId, userId });
+    
     const query = `
       SELECT 
         c.id,
@@ -95,10 +97,9 @@ class ChatService {
       LEFT JOIN (
         SELECT m.conversation_id, COUNT(*) AS count
         FROM messages m
-        LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
         WHERE m.tenant_id = ? 
           AND m.sender_id != ?
-          AND (ms.is_read IS NULL OR ms.is_read = 0)
+          AND m.deleted_at IS NULL
         GROUP BY m.conversation_id
       ) unread ON c.id = unread.conversation_id
       WHERE cp.user_id = ? AND c.tenant_id = ?
@@ -111,7 +112,6 @@ class ChatService {
       .query(query, [
         userId,
         tenantId,
-        userId,
         tenantId,
         userId,
         userId,
