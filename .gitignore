@@ -22,6 +22,9 @@ frontend/dist/
 frontend/build/
 *.min.js
 *.min.css
+dist/
+*.tsbuildinfo
+*.d.ts.map
 
 # IDE
 .vscode/
