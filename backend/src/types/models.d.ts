@@ -57,11 +57,14 @@ export interface Tenant {
 export interface DatabaseTenant {
   id: number;
   name: string;
+  company_name: string;
   subdomain: string;
   email: string;
   phone: string | null;
   address: string | null;
   is_active: boolean;
+  status: 'active' | 'trial' | 'suspended' | 'cancelled';
+  current_plan: string | null;
   features: string;
   created_at: Date;
   updated_at: Date;

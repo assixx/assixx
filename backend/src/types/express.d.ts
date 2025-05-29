@@ -1,6 +1,6 @@
 // Express Request Extensions Type Definitions
 
-import { User, Tenant } from './models';
+import { TenantInfo } from './tenant.types';
 
 declare global {
   namespace Express {
@@ -10,8 +10,8 @@ declare global {
       userId?: number;
       
       // Tenant Information
-      tenant?: Tenant;
-      tenantId?: number;
+      tenant?: TenantInfo | null;
+      tenantId?: number | null;
       subdomain?: string;
       
       // File Upload

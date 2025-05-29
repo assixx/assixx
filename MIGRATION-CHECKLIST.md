@@ -44,8 +44,9 @@
 ## 🔄 Phase 3: Core Module Migration (Tag 5-10)
 
 ### Security Layer (Priorität 1)
-- [ ] `auth.service.js` → `auth.service.ts`
-- [ ] `auth.middleware.js` → `auth.middleware.ts`
+- [x] `auth.service.js` → `auth.service.ts`
+- [x] `auth.middleware.js` → `auth.middleware.ts`
+- [x] `auth.js` → `auth.ts`
 - [ ] `tenant.middleware.js` → `tenant.middleware.ts`
 - [ ] `validators.js` → `validators.ts`
 - [ ] `security.middleware.js` → `security.middleware.ts`
