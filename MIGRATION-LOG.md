@@ -143,16 +143,19 @@ Assixx/
 ### Durchgeführte Arbeiten:
 
 1. ✅ **Dependabot PRs bearbeitet:**
+
    - Express 5 Migration abgeschlossen (Breaking Change: Wildcard Patterns)
    - Multi-Update PR geschlossen (zu komplex)
    - Alle Dependencies aktualisiert
 
 2. ✅ **Frontend Path Fixes:**
+
    - MIME Type Conflicts behoben
    - Script-Pfade von `/js/` auf `/scripts/` korrigiert
    - API-Pfade von `/users` auf `/api/users` korrigiert
 
 3. ✅ **Express 5 Breaking Changes:**
+
    - Wildcard Pattern `/api/*` → `/api` geändert
    - Route-Registrierung angepasst
    - Fehlende Routen (machines, areas) hinzugefügt
@@ -168,6 +171,7 @@ Assixx/
    - JWT Token Type Conversion (String → Number)
 
 ### Ergebnis:
+
 - Alle Dependencies aktuell
 - Chat-System vollständig funktionsfähig
 - Keine 500-Fehler mehr auf allen Chat-Endpoints

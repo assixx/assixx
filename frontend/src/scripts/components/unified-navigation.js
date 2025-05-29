@@ -469,7 +469,7 @@ class UnifiedNavigation {
     window.location.href = '/login';
   }
 
-  handleNavigationClick(link, event) {
+  handleNavigationClick(link, _event) {
     // Update active state
     document.querySelectorAll('.sidebar-item').forEach((item) => {
       item.classList.remove('active');

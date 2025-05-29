@@ -50,12 +50,13 @@ export async function tenantMiddleware(
     if (!tenantSubdomain) {
       const headerTenant = req.headers['x-tenant-id'];
       const queryTenant = req.query.tenant;
-      
-      tenantSubdomain = typeof headerTenant === 'string' 
-        ? headerTenant 
-        : typeof queryTenant === 'string' 
-          ? queryTenant 
-          : null;
+
+      tenantSubdomain =
+        typeof headerTenant === 'string'
+          ? headerTenant
+          : typeof queryTenant === 'string'
+            ? queryTenant
+            : null;
     }
 
     // Für Login/Signup: Tenant aus Body
@@ -80,7 +81,8 @@ export async function tenantMiddleware(
     }
 
     // 2. Tenant aus Datenbank laden
-    const tenant: DatabaseTenant | null = await TenantModel.findBySubdomain(tenantSubdomain);
+    const tenant: DatabaseTenant | null =
+      await TenantModel.findBySubdomain(tenantSubdomain);
 
     if (!tenant) {
       res.status(404).json({
@@ -100,7 +102,8 @@ export async function tenantMiddleware(
     }
 
     // 4. Trial-Status prüfen
-    const trialStatus: TenantTrialStatus | null = await TenantModel.checkTrialStatus(tenant.id);
+    const trialStatus: TenantTrialStatus | null =
+      await TenantModel.checkTrialStatus(tenant.id);
     if (trialStatus && trialStatus.isExpired && tenant.status === 'trial') {
       res.status(402).json({
         error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
@@ -159,8 +162,3 @@ export function skipTenantCheck(
   next();
 }
 
-// CommonJS compatibility
-module.exports = {
-  tenantMiddleware,
-  skipTenantCheck,
-};

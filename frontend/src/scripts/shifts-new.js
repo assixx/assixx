@@ -1564,7 +1564,7 @@ function getAuthToken() {
 }
 
 // Helper function to get stored user data (should be available from auth.js)
-async function getStoredUserData() {
+function getStoredUserData() {
   const token = getAuthToken();
   if (!token) return null;
 

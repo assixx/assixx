@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        const _result = await response.json();
 
         // Reset form
         fileInput.value = '';
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const result = await response.json();
+        const _result = await response.json();
 
         // Reload profile picture
         loadProfilePicture();

@@ -8,9 +8,10 @@
 
 ## 🚀 Was ist Assixx?
 
-Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehmen was Sie bereits auf Papier haben - von TPM-Checklisten bis zu Gehaltsabrechnungen - und machen es digital, sicher und effizient. 
+Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehmen was Sie bereits auf Papier haben - von TPM-Checklisten bis zu Gehaltsabrechnungen - und machen es digital, sicher und effizient.
 
 ### 🎯 Zielgruppe
+
 - **Branchen**: Automotive, Maschinenbau, Chemie, Metallverarbeitung, Lebensmittel
 - **Firmengröße**: 50-500 Mitarbeiter
 - **Region**: Deutschland (später weltweit)
@@ -46,6 +47,7 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 ## 🎯 Kernfeatures
 
 ### ✅ Bereits verfügbar:
+
 - **Benutzerverwaltung** (Multi-Tenant, Rollen)
 - **Dokumenten-System** (Upload, Kategorien, Zugriffsrechte)
 - **Schwarzes Brett** (Digitale Mitteilungen)
@@ -55,12 +57,14 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 - **Chat-System** (Echtzeit, Gruppen, Dateianhänge)
 
 ### 🚨 Deal-Breaker Features (in Entwicklung):
+
 - **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut QUESTIONS.md)
 - **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut QUESTIONS.md)
 - **Chat-System** - Bereits implementiert (KRITISCH laut QUESTIONS.md)
 - **Urlaubsantrag** - Digitaler Workflow
 
 ### 🔮 Geplant:
+
 - **Microsoft Integration** (Outlook, Azure AD, SharePoint)
 - **Mobile App** (iOS/Android)
 - **Mehrsprachigkeit** (DE, EN, TR, PL)

@@ -15,25 +15,25 @@ class AuthService {
   async authenticateUser(username, password, subdomain = null) {
     try {
       const user = await User.findByUsername(username, subdomain);
-      
+
       if (!user || !user.is_active) {
         return { success: false, user: null };
       }
 
       const isValid = await bcrypt.compare(password, user.password_hash);
-      
+
       if (!isValid) {
         return { success: false, user: null };
       }
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         user: {
           id: user.id,
           username: user.username,
           role: user.role,
-          tenantId: user.tenant_id
-        }
+          tenantId: user.tenant_id,
+        },
       };
     } catch (error) {
       console.error('Auth error:', error);
@@ -43,11 +43,11 @@ class AuthService {
 
   generateToken(user) {
     return jwt.sign(
-      { 
+      {
         id: user.id,
         username: user.username,
         role: user.role,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
       },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
@@ -102,19 +102,25 @@ class AuthService {
    * Authentifiziert einen Benutzer mit Username und Passwort
    */
   async authenticateUser(
-    username: string, 
-    password: string, 
+    username: string,
+    password: string,
     subdomain: string | null = null
   ): Promise<AuthResult> {
     try {
-      const user: DatabaseUser | null = await User.findByUsername(username, subdomain);
-      
+      const user: DatabaseUser | null = await User.findByUsername(
+        username,
+        subdomain
+      );
+
       if (!user || !user.is_active) {
         return { success: false, user: null };
       }
 
-      const isValid: boolean = await bcrypt.compare(password, user.password_hash);
-      
+      const isValid: boolean = await bcrypt.compare(
+        password,
+        user.password_hash
+      );
+
       if (!isValid) {
         await this.logFailedAttempt(username, subdomain);
         return { success: false, user: null };
@@ -124,19 +130,19 @@ class AuthService {
         id: user.id,
         username: user.username,
         role: user.role as AuthUser['role'],
-        tenantId: user.tenant_id
+        tenantId: user.tenant_id,
       };
 
-      return { 
-        success: true, 
-        user: authUser
+      return {
+        success: true,
+        user: authUser,
       };
     } catch (error) {
       console.error('Auth error:', error);
-      return { 
-        success: false, 
-        user: null, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        user: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -146,17 +152,17 @@ class AuthService {
    */
   generateToken(user: AuthUser): string {
     const secret = process.env.JWT_SECRET;
-    
+
     if (!secret) {
       throw new Error('JWT_SECRET is not defined');
     }
 
     return jwt.sign(
-      { 
+      {
         id: user.id,
         username: user.username,
         role: user.role,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
       },
       secret,
       { expiresIn: '24h' }
@@ -167,14 +173,14 @@ class AuthService {
    * Protokolliert fehlgeschlagene Login-Versuche
    */
   private async logFailedAttempt(
-    username: string, 
+    username: string,
     subdomain: string | null
   ): Promise<void> {
     try {
       await AdminLog.create({
         action: 'LOGIN_FAILED',
         details: { username, subdomain },
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     } catch (error) {
       console.error('Failed to log attempt:', error);
@@ -186,7 +192,7 @@ class AuthService {
    */
   verifyToken(token: string): AuthUser | null {
     const secret = process.env.JWT_SECRET;
-    
+
     if (!secret) {
       throw new Error('JWT_SECRET is not defined');
     }
@@ -240,17 +246,20 @@ describe('AuthService', () => {
 ## 🎯 Migration Checkliste für JEDE Datei:
 
 1. **Types definieren**
+
    - [ ] Input Parameter Types
-   - [ ] Return Types  
+   - [ ] Return Types
    - [ ] Interface für Datenbank-Objekte
 
 2. **Code migrieren**
+
    - [ ] require → import
    - [ ] Type Annotations hinzufügen
    - [ ] Error Handling typisieren
    - [ ] any vermeiden
 
 3. **Verbesserungen**
+
    - [ ] Null-Checks mit TypeScript
    - [ ] Enum statt String-Literale
    - [ ] Private Methods kennzeichnen

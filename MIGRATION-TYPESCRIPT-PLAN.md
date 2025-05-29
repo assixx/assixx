@@ -16,6 +16,7 @@
 ### Woche 1: Basis-Setup & Core Types
 
 #### Tag 1-2: TypeScript Setup
+
 ```bash
 # 1. Dependencies installieren
 npm install --save-dev typescript @types/node @types/express @types/bcrypt
@@ -26,6 +27,7 @@ npm install --save-dev ts-node nodemon
 ```
 
 **tsconfig.json:**
+
 ```json
 {
   "compilerOptions": {
@@ -42,22 +44,17 @@ npm install --save-dev ts-node nodemon
     "allowJs": true, // Wichtig für schrittweise Migration
     "checkJs": false
   },
-  "include": [
-    "backend/**/*",
-    "frontend/src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "frontend/dist"
-  ]
+  "include": ["backend/**/*", "frontend/src/**/*"],
+  "exclude": ["node_modules", "dist", "frontend/dist"]
 }
 ```
 
 #### Tag 3-4: Core Type Definitions
+
 Erstelle `backend/src/types/` Verzeichnis:
 
 1. **models.d.ts** - Datenbank Models
+
 ```typescript
 export interface User {
   id: number;
@@ -87,6 +84,7 @@ export interface Document {
 ```
 
 2. **api.d.ts** - API Request/Response Types
+
 ```typescript
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -107,6 +105,7 @@ export interface AuthResponse {
 ```
 
 3. **express.d.ts** - Express Erweiterungen
+
 ```typescript
 import { User } from './models';
 
@@ -124,11 +123,13 @@ declare global {
 #### Tag 5-7: Kritische Module migrieren
 
 **Priorität 1: Authentication & Security**
+
 - `backend/src/services/auth.service.js` → `.ts`
 - `backend/src/middleware/auth.js` → `.ts`
 - `backend/src/middleware/tenant.js` → `.ts`
 
 **Beispiel Migration:**
+
 ```typescript
 // auth.service.ts
 import { User, LoginRequest } from '../types/models';
@@ -137,7 +138,7 @@ import jwt from 'jsonwebtoken';
 
 export class AuthService {
   async authenticateUser(
-    username: string, 
+    username: string,
     password: string
   ): Promise<User | null> {
     // Type-safe implementation
@@ -148,15 +149,18 @@ export class AuthService {
 ### Woche 2: Schrittweise Migration
 
 #### Tag 8-10: Models & Services
+
 - Alle Models zu TypeScript
 - Alle Services zu TypeScript
 - Unit Tests anpassen
 
 #### Tag 11-12: Controllers & Routes
+
 - Controllers mit Request/Response Types
 - Route Handlers typisieren
 
 #### Tag 13-14: Frontend Scripts
+
 - Kritische Frontend-Scripts
 - API Service Layer
 
@@ -165,6 +169,7 @@ export class AuthService {
 ### Vorbereitung (Tag 1)
 
 1. **package.json anpassen:**
+
 ```json
 {
   "type": "module",
@@ -175,6 +180,7 @@ export class AuthService {
 ```
 
 2. **tsconfig.json Update:**
+
 ```json
 {
   "compilerOptions": {
@@ -187,6 +193,7 @@ export class AuthService {
 ### Migration (Tag 2-5)
 
 **Automatisiertes Script für Basis-Konvertierung:**
+
 ```bash
 # Tool installieren
 npm install -g cjs-to-esm
@@ -198,11 +205,13 @@ npm install -g cjs-to-esm
 ```
 
 **Manuelle Anpassungen:**
+
 1. `__dirname` → `import.meta.url`
 2. Dynamic imports anpassen
 3. JSON imports fixen
 
 ### Testing & Fixes (Tag 6-7)
+
 - Alle Tests durchlaufen
 - Import-Pfade korrigieren
 - Build-Process testen
@@ -210,17 +219,20 @@ npm install -g cjs-to-esm
 ## 🛡️ Risiko-Minimierung
 
 ### 1. Feature-Branch Strategie
+
 ```bash
 git checkout -b feature/typescript-migration
 # Nach jedem erfolgreichen Schritt committen
 ```
 
 ### 2. Rollback-Plan
+
 - Täglich Backups
 - Git Tags für funktionierende Zustände
 - Parallele Entwicklung möglich
 
 ### 3. Test-Strategie
+
 ```json
 // package.json
 {
@@ -235,18 +247,21 @@ git checkout -b feature/typescript-migration
 ## 📈 Migrations-Reihenfolge
 
 ### Priorität 1 (Security-kritisch)
+
 1. Auth System (auth.service, auth.middleware)
 2. Tenant Isolation (tenant.middleware)
 3. Input Validation (validators)
 4. Database Layer
 
-### Priorität 2 (Feature-kritisch)  
+### Priorität 2 (Feature-kritisch)
+
 1. Document Management
 2. Chat System
 3. Survey System
 4. KVP System
 
 ### Priorität 3 (Nice-to-have)
+
 1. Admin Features
 2. Utility Functions
 3. Email Services
@@ -254,12 +269,14 @@ git checkout -b feature/typescript-migration
 ## ✅ Success Criteria
 
 ### Nach TypeScript Migration:
+
 - [ ] Keine `any` Types in kritischen Bereichen
 - [ ] 100% Type Coverage für Models
 - [ ] Alle Tests grün
 - [ ] Build ohne Fehler
 
 ### Nach ES Modules Migration:
+
 - [ ] Keine require() Statements
 - [ ] Import Maps funktionieren
 - [ ] Performance gleich oder besser
@@ -268,11 +285,13 @@ git checkout -b feature/typescript-migration
 ## 🚀 Quick Wins
 
 ### Sofort umsetzbar:
+
 1. JSDoc zu TypeScript Types
 2. Neue Features direkt in TypeScript
 3. Kritische Bugs mit Types verhindern
 
 ### Tools & Helpers:
+
 ```bash
 # Type Coverage Report
 npx type-coverage
@@ -286,11 +305,11 @@ npx ts-migrate
 
 ## 📅 Zeitplan
 
-| Woche | Phase | Fokus |
-|-------|-------|-------|
-| 1 | TypeScript Setup | Core Types, Auth, Models |
-| 2 | TypeScript Migration | Services, Controllers, Tests |
-| 3 | ES Modules | Migration & Testing |
+| Woche | Phase                | Fokus                        |
+| ----- | -------------------- | ---------------------------- |
+| 1     | TypeScript Setup     | Core Types, Auth, Models     |
+| 2     | TypeScript Migration | Services, Controllers, Tests |
+| 3     | ES Modules           | Migration & Testing          |
 
 ## 🎯 Nächste Schritte
 

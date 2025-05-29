@@ -16,11 +16,13 @@
 ### Dependency Updates & Chat Fixes (Abgeschlossen am 29.05.2025)
 
 - [x] **Express 5 Migration**
+
   - [x] Wildcard Pattern Breaking Change behoben (`/api/*` → `/api`)
   - [x] Route-Registrierung angepasst
   - [x] Fehlende Routen (machines, areas) hinzugefügt
 
 - [x] **Chat-System Database Fixes**
+
   - [x] Chat-Tabellen aus Schema erstellt
   - [x] MySQL GROUP BY Fehler behoben
   - [x] Fehlende Spalten durch NULL ersetzt

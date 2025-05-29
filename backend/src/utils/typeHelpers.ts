@@ -23,7 +23,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     hireDate: dbUser.hire_date,
     birthDate: dbUser.birth_date,
     createdAt: dbUser.created_at,
-    updatedAt: dbUser.updated_at
+    updatedAt: dbUser.updated_at,
   };
 }
 
@@ -48,10 +48,14 @@ export function safeJsonParse<T>(json: string, defaultValue: T): T {
 /**
  * Creates a type-safe API response
  */
-export function createApiResponse<T>(success: boolean, data?: T, error?: string) {
+export function createApiResponse<T>(
+  success: boolean,
+  data?: T,
+  error?: string
+) {
   return {
     success,
     ...(data !== undefined && { data }),
-    ...(error && { error, message: error })
+    ...(error && { error, message: error }),
   };
 }

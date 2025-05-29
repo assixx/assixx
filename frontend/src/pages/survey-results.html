@@ -59,7 +59,6 @@
           inset -1px 0 0 rgba(255, 255, 255, 0.1);
       }
 
-
       /* Survey Results Container */
       .survey-results-container {
         padding: var(--spacing-xl);
@@ -494,7 +493,7 @@
                     <div class="survey-meta">
                         <span><i class="fas fa-calendar"></i> Erstellt: ${formatDate(surveyData.created_at)}</span>
                         <span><i class="fas fa-calendar-check"></i> Endet: ${formatDate(surveyData.end_date)}</span>
-                        <span><i class="fas fa-user-shield"></i> ${(surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true) ? 'Anonym' : 'Nicht anonym'}</span>
+                        <span><i class="fas fa-user-shield"></i> ${surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true ? 'Anonym' : 'Nicht anonym'}</span>
                     </div>
                 </div>
                 
@@ -587,7 +586,10 @@
         }
 
         // Calculate total responses from all options
-        const totalResponses = question.options.reduce((sum, opt) => sum + (parseInt(opt.count) || 0), 0);
+        const totalResponses = question.options.reduce(
+          (sum, opt) => sum + (parseInt(opt.count) || 0),
+          0
+        );
 
         return question.options
           .map((option) => {
@@ -655,7 +657,10 @@
           return '<p>Keine Textantworten vorhanden</p>';
         }
 
-        const isAnonymous = surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true;
+        const isAnonymous =
+          surveyData.is_anonymous === '1' ||
+          surveyData.is_anonymous === 1 ||
+          surveyData.is_anonymous === true;
 
         return `
                 <div class="text-responses">
@@ -685,7 +690,7 @@
         const stats = question.statistics || {};
         const average = parseFloat(stats.average) || 0;
         const count = parseInt(stats.count) || 0;
-        
+
         return `
                 <div style="text-align: center;">
                     <h4 style="font-size: 2rem; color: var(--primary-color); margin: 0;">

@@ -2,15 +2,24 @@ module.exports = {
   // Test environment
   testEnvironment: 'node',
 
-  // Test file patterns
-  testMatch: ['**/backend/tests/**/*.test.js', '**/backend/tests/**/*.spec.js'],
+  // TypeScript preset
+  preset: 'ts-jest',
 
-  // Coverage settings
+  // Test file patterns - support both JS and TS
+  testMatch: [
+    '**/backend/tests/**/*.test.js',
+    '**/backend/tests/**/*.spec.js',
+    '**/backend/tests/**/*.test.ts',
+    '**/backend/tests/**/*.spec.ts',
+  ],
+
+  // Coverage settings - include both JS and TS files
   collectCoverageFrom: [
-    'backend/src/**/*.js',
-    '!backend/src/server.js',
+    'backend/src/**/*.{js,ts}',
+    '!backend/src/server.{js,ts}',
     '!backend/src/database.js',
     '!**/node_modules/**',
+    '!**/*.d.ts',
   ],
 
   // Coverage thresholds
@@ -28,8 +37,29 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/backend/src/$1',
   },
 
-  // Setup files
-  setupFilesAfterEnv: ['<rootDir>/backend/tests/setup.js'],
+  // Setup files - support both JS and TS
+  setupFilesAfterEnv: ['<rootDir>/backend/tests/setup.ts'],
+
+  // Transform configuration for TypeScript
+  transform: {
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          module: 'commonjs',
+          target: 'es2020',
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
+          strict: false, // Relaxed for tests
+          skipLibCheck: true,
+        },
+      },
+    ],
+    '^.+\\.js$': 'babel-jest',
+  },
+
+  // Module file extensions
+  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
 
   // Verbose output
   verbose: true,

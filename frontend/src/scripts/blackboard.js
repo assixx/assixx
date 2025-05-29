@@ -10,10 +10,10 @@ let currentSearch = '';
 let currentSort = 'created_at|DESC';
 let departments = [];
 let teams = [];
-let totalPages = 1;
+let _totalPages = 1;
 let isAdmin = false;
 let currentUserId = null;
-let currentUserRole = null;
+let _currentUserRole = null;
 let currentDepartmentId = null;
 let currentTeamId = null;
 
@@ -89,9 +89,9 @@ function setupCloseButtons() {
   document.querySelectorAll('[data-action="close"]').forEach((button) => {
     button.addEventListener('click', function () {
       // Finde das übergeordnete Modal
-      const modal = this.closest('.modal-overlay');
-      if (modal) {
-        window.DashboardUI.closeModal(modal.id);
+      const _modal = this.closest('.modal-overlay');
+      if (_modal) {
+        window.DashboardUI.closeModal(_modal.id);
       } else {
         console.error('No parent modal found for close button');
       }
@@ -718,7 +718,7 @@ async function viewEntry(entryId) {
  * Open entry form for create/edit
  */
 function openEntryForm(entry = null) {
-  const formModal = document.getElementById('entryFormModal');
+  const _formModal = document.getElementById('entryFormModal');
   const modalTitle = document.getElementById('entryFormModalLabel');
   const entryForm = document.getElementById('entryForm');
 
@@ -779,10 +779,10 @@ function openEntryForm(entry = null) {
   }
 
   // Show modal
-  const modal = document.getElementById('entryFormModal');
-  modal.style.opacity = '1';
-  modal.style.visibility = 'visible';
-  modal.classList.add('active');
+  const _modal = document.getElementById('entryFormModal');
+  _modal.style.opacity = '1';
+  _modal.style.visibility = 'visible';
+  _modal.classList.add('active');
 }
 
 /**
@@ -1039,7 +1039,7 @@ async function deleteEntry(entryId) {
  * Show delete confirmation modal
  */
 function showDeleteConfirmation(entryId) {
-  const modal = document.getElementById('confirmationModal');
+  const _modal = document.getElementById('confirmationModal');
   const confirmBtn = document.getElementById('confirmActionBtn');
 
   // Set modal content

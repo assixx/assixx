@@ -6,7 +6,6 @@
  */
 
 const { initializeTenantDatabase } = require('../database/tenantDb');
-const tenants = require('../config/tenants');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -62,7 +61,7 @@ async function setupNewTenant(tenantId, companyName) {
     try {
       await fs.copyFile(defaultLogo, tenantLogo);
       console.log('✓ Logo-Platzhalter erstellt');
-    } catch (err) {
+    } catch {
       console.log('⚠ Kein Standard-Logo gefunden, überspringe...');
     }
 

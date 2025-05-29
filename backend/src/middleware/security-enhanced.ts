@@ -2,10 +2,11 @@
 import helmet from 'helmet';
 import * as cors from 'cors';
 import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-const hpp = require('hpp');
+// import mongoSanitize from 'express-mongo-sanitize'; // Disabled - not compatible with Express 5.x
+// import xss from 'xss-clean'; // Disabled - not compatible with Express 5.x
+import hpp from 'hpp';
 import { Request, Response, NextFunction } from 'express';
+import { doubleCsrf } from 'csrf-csrf';
 
 // Type definitions
 interface AuditEntry {
@@ -23,8 +24,84 @@ interface AuditEntry {
   success: boolean;
 }
 
+// CSRF Protection Configuration
+const csrfSecret =
+  process.env.CSRF_SECRET || 'assixx-csrf-secret-change-in-production';
+const csrfProtection = doubleCsrf({
+  getSecret: () => csrfSecret,
+  getSessionIdentifier: (req) => {
+    // Use the user's ID if authenticated, otherwise use IP address
+    if (req.user && req.user.id) {
+      return `user-${req.user.id}`;
+    }
+    return req.ip || 'anonymous';
+  },
+  cookieName: '__CSRF-Token__',
+  cookieOptions: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60, // 1 hour
+  },
+  size: 64,
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
+});
+
+// Extract the functions from csrfProtection
+const { generateCsrfToken, doubleCsrfProtection } = csrfProtection;
+
+// CSRF Token Generation Endpoint
+export const generateCSRFTokenMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    const token = generateCsrfToken(req, res);
+    res.locals.csrfToken = token;
+    next();
+  } catch (error) {
+    console.error('Error generating CSRF token:', error);
+    res.status(500).json({ error: 'Could not generate CSRF token' });
+  }
+};
+
+// CSRF Token Validation Middleware using doubleCsrf protection
+export const validateCSRFToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Skip CSRF validation for API endpoints that use Bearer token authentication
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer ')
+  ) {
+    return next();
+  }
+
+  // Use the doubleCsrf protection middleware
+  doubleCsrfProtection(req, res, next);
+};
+
+// CSRF Token Response Helper
+export const attachCSRFToken = (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (res.locals.csrfToken) {
+    res.setHeader('X-CSRF-Token', res.locals.csrfToken);
+  }
+  next();
+};
+
 // HTTPS Enforcement
-export const enforceHTTPS = (req: Request, res: Response, next: NextFunction): void => {
+export const enforceHTTPS = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   if (
     req.header('x-forwarded-proto') !== 'https' &&
     process.env.NODE_ENV === 'production'
@@ -110,7 +187,10 @@ export const corsOptions: cors.CorsOptions = {
 };
 
 // Enhanced Rate Limiting per Tenant
-const createTenantRateLimiter = (windowMs: number, max: number): RateLimitRequestHandler =>
+const createTenantRateLimiter = (
+  windowMs: number,
+  max: number
+): RateLimitRequestHandler =>
   rateLimit({
     windowMs,
     max,
@@ -122,13 +202,86 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
     legacyHeaders: false,
   });
 
-// API Rate Limiters
+// API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(15 * 60 * 1000, 1000); // 1000 requests per 15 minutes
 export const authLimiter = createTenantRateLimiter(15 * 60 * 1000, 5); // 5 auth attempts per 15 minutes
 export const uploadLimiter = createTenantRateLimiter(15 * 60 * 1000, 10); // 10 uploads per 15 minutes
 
+// Specific API endpoint rate limiters
+export const strictAuthLimiter = createTenantRateLimiter(5 * 60 * 1000, 3); // 3 login attempts per 5 minutes (stricter)
+export const apiLimiter = createTenantRateLimiter(60 * 1000, 100); // 100 API requests per minute
+export const searchLimiter = createTenantRateLimiter(60 * 1000, 30); // 30 search requests per minute
+export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 5); // 5 bulk operations per hour
+export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 20); // 20 reports per hour
+
+// Progressive Rate Limiting - increases delay based on violations
+const createProgressiveRateLimiter = (
+  windowMs: number,
+  max: number
+): RateLimitRequestHandler =>
+  rateLimit({
+    windowMs,
+    max,
+    keyGenerator: (req: Request) => `${req.tenant?.id || 'public'}_${req.ip}`,
+    message: {
+      error: 'Rate limit exceeded',
+      retryAfter: Math.ceil(windowMs / 1000),
+      message: 'Too many requests. Please slow down and try again later.',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Log rate limit violations using a handler function
+    handler: (req: Request, res: Response) => {
+      console.warn('Rate limit exceeded:', {
+        ip: req.ip,
+        tenant: req.tenant?.id,
+        path: req.path,
+        userAgent: req.get('User-Agent'),
+        timestamp: new Date().toISOString(),
+      });
+
+      res.status(429).json({
+        error: 'Rate limit exceeded',
+        retryAfter: Math.ceil(windowMs / 1000),
+        message: 'Too many requests. Please slow down and try again later.',
+      });
+    },
+  });
+
+// IP-based strict rate limiting for suspicious activity
+export const suspiciousActivityLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 requests per hour for suspicious IPs
+  keyGenerator: (req: Request) => req.ip || 'unknown',
+  message: {
+    error: 'Suspicious activity detected',
+    message:
+      'Your IP has been temporarily restricted due to unusual activity patterns.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req: Request) => {
+    // Skip for authenticated users with valid sessions
+    return !!(req.headers.authorization || req.user);
+  },
+});
+
+// Enhanced progressive limiters
+export const progressiveApiLimiter = createProgressiveRateLimiter(
+  60 * 1000,
+  200
+); // 200 requests per minute
+export const progressiveAuthLimiter = createProgressiveRateLimiter(
+  15 * 60 * 1000,
+  10
+); // 10 auth attempts per 15 minutes
+
 // Tenant Context Validation
-export const validateTenantContext = (req: Request, res: Response, next: NextFunction): void => {
+export const validateTenantContext = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   if (req.user && req.tenant) {
     const userTenant = req.user.tenantId;
     const requestTenant = req.tenant.id;
@@ -150,7 +303,8 @@ export const validateTenantContext = (req: Request, res: Response, next: NextFun
 };
 
 // Security Audit Logger
-export const auditLogger = (action: string, resource: string) => 
+export const auditLogger =
+  (action: string, resource: string) =>
   (req: Request, res: Response, next: NextFunction): void => {
     const startTime = Date.now();
 
@@ -158,7 +312,7 @@ export const auditLogger = (action: string, resource: string) =>
     const originalEnd = res.end;
 
     // Override end function with proper typing
-    res.end = function(chunk?: any, encoding?: any): Response {
+    res.end = function (chunk?: any, encoding?: any): Response {
       // Call original end function
       originalEnd.call(res, chunk, encoding);
 
@@ -167,14 +321,14 @@ export const auditLogger = (action: string, resource: string) =>
       const auditEntry: AuditEntry = {
         timestamp: new Date().toISOString(),
         tenantId: req.tenant?.id || 'public',
-        userId: req.user?.id || 'anonymous',
+        userId: req.user?.id ? req.user.id.toString() : 'anonymous',
         action,
         resource,
         method: req.method,
         path: req.path,
         statusCode: res.statusCode,
         duration,
-        ip: req.ip,
+        ip: req.ip || 'unknown',
         userAgent: req.get('user-agent'),
         success: res.statusCode < 400,
       };
@@ -183,7 +337,7 @@ export const auditLogger = (action: string, resource: string) =>
       console.log('AUDIT:', JSON.stringify(auditEntry));
 
       // TODO: Save to database or send to SIEM system
-      
+
       return res;
     };
 
@@ -192,13 +346,17 @@ export const auditLogger = (action: string, resource: string) =>
 
 // Input Sanitization Middleware
 export const sanitizeInputs = [
-  mongoSanitize(), // Prevent NoSQL injection
-  xss(), // Clean user input from malicious HTML
+  // mongoSanitize(), // Disabled - not compatible with Express 5.x
+  // xss(), // Disabled - not compatible with Express 5.x
   hpp(), // Prevent HTTP Parameter Pollution
 ];
 
 // Security Headers for API Responses
-export const apiSecurityHeaders = (_req: Request, res: Response, next: NextFunction): void => {
+export const apiSecurityHeaders = (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -216,7 +374,8 @@ export const apiSecurityHeaders = (_req: Request, res: Response, next: NextFunct
 };
 
 // Content-Type Validation
-export const validateContentType = (expectedType: string) => 
+export const validateContentType =
+  (expectedType: string) =>
   (req: Request, res: Response, next: NextFunction): void => {
     if (req.is(expectedType) || !req.get('content-type')) {
       next();
@@ -228,7 +387,11 @@ export const validateContentType = (expectedType: string) =>
   };
 
 // File Upload Security
-export const fileUploadSecurity = (req: Request, res: Response, next: NextFunction): void => {
+export const fileUploadSecurity = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   if (!req.files || Object.keys(req.files).length === 0) {
     return next();
   }
@@ -242,7 +405,7 @@ export const fileUploadSecurity = (req: Request, res: Response, next: NextFuncti
   ];
 
   const files = Array.isArray(req.files) ? req.files : Object.values(req.files);
-  
+
   for (const file of files) {
     if ('mimetype' in file && !allowedMimeTypes.includes(file.mimetype)) {
       res.status(400).json({
@@ -266,19 +429,3 @@ export const fileUploadSecurity = (req: Request, res: Response, next: NextFuncti
 // Export everything including cors for backward compatibility
 export { cors };
 
-// CommonJS compatibility
-module.exports = {
-  enforceHTTPS,
-  securityHeaders,
-  corsOptions,
-  generalLimiter,
-  authLimiter,
-  uploadLimiter,
-  validateTenantContext,
-  auditLogger,
-  sanitizeInputs,
-  apiSecurityHeaders,
-  validateContentType,
-  fileUploadSecurity,
-  cors,
-};

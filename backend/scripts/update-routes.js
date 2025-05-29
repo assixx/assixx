@@ -17,7 +17,8 @@ const routeMappings = [
   { route: 'employee.js', controller: 'employee' },
 ];
 
-// Einfaches Route Template
+// Einfaches Route Template (not used in current implementation)
+/*
 const routeTemplate = (controllerName) => `const express = require('express');
 const router = express.Router();
 const ${controllerName}Controller = require('../controllers/${controllerName}.controller');
@@ -38,6 +39,7 @@ router.delete('/:id', ${controllerName}Controller.delete);
 // TODO: Spezifische Routes aus der alten Implementierung übernehmen
 
 module.exports = router;`;
+*/
 
 // Update alle Route-Dateien
 async function updateRoutes() {

@@ -12,7 +12,7 @@ let teams = [];
 let employees = [];
 let isAdmin = false;
 let currentUserId = null;
-let currentUserRole = null;
+let _currentUserRole = null;
 let currentDepartmentId = null;
 let currentTeamId = null;
 let selectedAttendees = [];
@@ -767,7 +767,7 @@ function openEventForm(
     // Set reminder in custom dropdown
     const reminderTime = event.extendedProps?.reminder_time;
     if (reminderTime) {
-      const reminderText = formatReminderTime(reminderTime);
+      const _reminderText = formatReminderTime(reminderTime);
       const reminderSelect = document.getElementById('eventReminder');
       if (reminderSelect) reminderSelect.value = reminderTime;
     } else {

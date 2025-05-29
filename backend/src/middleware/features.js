@@ -1,5 +1,6 @@
-const Feature = require('../models/feature');
-const { logger } = require('../utils/logger');
+import Feature from '../models/feature.js';
+import { logger } from '../utils/logger.js';
+import db from '../database.js';
 
 // Middleware um zu prüfen ob ein Tenant ein bestimmtes Feature hat
 const checkFeature =
@@ -12,7 +13,6 @@ const checkFeature =
 
       if (req.tenantId) {
         // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
-        const db = require('../database');
         const [tenantRows] = await db.query(
           'SELECT id FROM tenants WHERE subdomain = ?',
           [req.tenantId]
@@ -85,7 +85,6 @@ const checkFeatures =
 
       if (req.tenantId) {
         // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
-        const db = require('../database');
         const [tenantRows] = await db.query(
           'SELECT id FROM tenants WHERE subdomain = ?',
           [req.tenantId]
@@ -158,7 +157,6 @@ const loadTenantFeatures = async (req, res, next) => {
 
     if (req.tenantId) {
       // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
-      const db = require('../database');
       const [tenantRows] = await db.query(
         'SELECT id FROM tenants WHERE subdomain = ?',
         [req.tenantId]
@@ -193,7 +191,7 @@ const loadTenantFeatures = async (req, res, next) => {
 const hasFeature = (features, featureCode) =>
   features.some((f) => f.code === featureCode && f.is_available);
 
-module.exports = {
+export {
   checkFeature,
   checkFeatures,
   loadTenantFeatures,

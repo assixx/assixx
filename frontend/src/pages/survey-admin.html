@@ -832,17 +832,46 @@
           <div class="form-group">
             <label class="form-label">Zielgruppe</label>
             <div class="custom-dropdown">
-              <div class="dropdown-display" id="assignmentDropdownDisplay" onclick="toggleDropdown('assignmentDropdown')">
+              <div
+                class="dropdown-display"
+                id="assignmentDropdownDisplay"
+                onclick="toggleDropdown('assignmentDropdown')"
+              >
                 <span>Alle Mitarbeiter</span>
                 <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path
+                    d="M1 1L6 6L11 1"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
                 </svg>
               </div>
               <div class="dropdown-options" id="assignmentDropdownDropdown">
-                <div class="dropdown-option" onclick="selectAssignmentOption('all_users', 'Alle Mitarbeiter')">Alle Mitarbeiter</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('department', 'Bestimmte Abteilung')">Bestimmte Abteilung</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('team', 'Bestimmtes Team')">Bestimmtes Team</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('individual', 'Einzelne Mitarbeiter')">Einzelne Mitarbeiter</div>
+                <div
+                  class="dropdown-option"
+                  onclick="selectAssignmentOption('all_users', 'Alle Mitarbeiter')"
+                >
+                  Alle Mitarbeiter
+                </div>
+                <div
+                  class="dropdown-option"
+                  onclick="selectAssignmentOption('department', 'Bestimmte Abteilung')"
+                >
+                  Bestimmte Abteilung
+                </div>
+                <div
+                  class="dropdown-option"
+                  onclick="selectAssignmentOption('team', 'Bestimmtes Team')"
+                >
+                  Bestimmtes Team
+                </div>
+                <div
+                  class="dropdown-option"
+                  onclick="selectAssignmentOption('individual', 'Einzelne Mitarbeiter')"
+                >
+                  Einzelne Mitarbeiter
+                </div>
               </div>
               <input type="hidden" id="assignmentType" value="all_users" />
             </div>
@@ -907,45 +936,57 @@
       function toggleDropdown(dropdownId) {
         const dropdown = document.getElementById(dropdownId + 'Dropdown');
         const display = document.getElementById(dropdownId + 'Display');
-        
+
         // Close all other dropdowns
-        document.querySelectorAll('.dropdown-options').forEach(d => {
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
           if (d !== dropdown) {
             d.classList.remove('active');
           }
         });
-        document.querySelectorAll('.dropdown-display').forEach(d => {
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
           if (d !== display) {
             d.classList.remove('active');
           }
         });
-        
+
         dropdown.classList.toggle('active');
         display.classList.toggle('active');
       }
 
       function selectAssignmentOption(value, text) {
         document.getElementById('assignmentType').value = value;
-        document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
-        document.getElementById('assignmentDropdownDropdown').classList.remove('active');
-        document.getElementById('assignmentDropdownDisplay').classList.remove('active');
+        document
+          .getElementById('assignmentDropdownDisplay')
+          .querySelector('span').textContent = text;
+        document
+          .getElementById('assignmentDropdownDropdown')
+          .classList.remove('active');
+        document
+          .getElementById('assignmentDropdownDisplay')
+          .classList.remove('active');
       }
 
       function selectQuestionType(questionId, type, text) {
         document.getElementById(questionId + '_typeValue').value = type;
-        document.getElementById(questionId + '_typeDisplay').querySelector('span').textContent = text;
-        document.getElementById(questionId + '_typeDropdown').classList.remove('active');
-        document.getElementById(questionId + '_typeDisplay').classList.remove('active');
+        document
+          .getElementById(questionId + '_typeDisplay')
+          .querySelector('span').textContent = text;
+        document
+          .getElementById(questionId + '_typeDropdown')
+          .classList.remove('active');
+        document
+          .getElementById(questionId + '_typeDisplay')
+          .classList.remove('active');
         handleQuestionTypeChange(questionId, type);
       }
 
       // Close dropdowns when clicking outside
-      document.addEventListener('click', function(event) {
+      document.addEventListener('click', function (event) {
         if (!event.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-options').forEach(d => {
+          document.querySelectorAll('.dropdown-options').forEach((d) => {
             d.classList.remove('active');
           });
-          document.querySelectorAll('.dropdown-display').forEach(d => {
+          document.querySelectorAll('.dropdown-display').forEach((d) => {
             d.classList.remove('active');
           });
         }
@@ -1298,8 +1339,12 @@
         questionElements.forEach((element, index) => {
           const questionText =
             element.querySelector('input[type="text"]').value;
-          const questionTypeInput = element.querySelector('input[type="hidden"][id$="_typeValue"]');
-          const questionType = questionTypeInput ? questionTypeInput.value : 'text';
+          const questionTypeInput = element.querySelector(
+            'input[type="hidden"][id$="_typeValue"]'
+          );
+          const questionType = questionTypeInput
+            ? questionTypeInput.value
+            : 'text';
           const isRequired = element.querySelector(
             'input[type="checkbox"]'
           ).checked;
@@ -1401,20 +1446,24 @@
       // Populate survey form (for editing)
       function populateSurveyForm(survey) {
         // Handle title (might be Buffer)
-        document.getElementById('surveyTitle').value = getTextFromBuffer(survey.title);
-        
+        document.getElementById('surveyTitle').value = getTextFromBuffer(
+          survey.title
+        );
+
         // Handle description (might be Buffer)
-        document.getElementById('surveyDescription').value = getTextFromBuffer(survey.description);
-        
+        document.getElementById('surveyDescription').value = getTextFromBuffer(
+          survey.description
+        );
+
         // Handle boolean fields (might be strings)
-        document.getElementById('isAnonymous').checked = 
-          survey.is_anonymous === '1' || 
-          survey.is_anonymous === 1 || 
+        document.getElementById('isAnonymous').checked =
+          survey.is_anonymous === '1' ||
+          survey.is_anonymous === 1 ||
           survey.is_anonymous === true;
-        
-        document.getElementById('isMandatory').checked = 
-          survey.is_mandatory === '1' || 
-          survey.is_mandatory === 1 || 
+
+        document.getElementById('isMandatory').checked =
+          survey.is_mandatory === '1' ||
+          survey.is_mandatory === 1 ||
           survey.is_mandatory === true;
         document.getElementById('startDate').value = survey.start_date
           ? new Date(survey.start_date).toISOString().slice(0, 16)
@@ -1434,34 +1483,43 @@
             '.question-item:last-child'
           );
           // Set question text
-          questionElement.querySelector('input[type="text"]').value = getTextFromBuffer(question.question_text);
-          
+          questionElement.querySelector('input[type="text"]').value =
+            getTextFromBuffer(question.question_text);
+
           // Set question type using custom dropdown
-          const typeInput = questionElement.querySelector('input[type="hidden"][id$="_typeValue"]');
+          const typeInput = questionElement.querySelector(
+            'input[type="hidden"][id$="_typeValue"]'
+          );
           if (typeInput) {
             typeInput.value = question.question_type;
             // Update dropdown display
-            const typeDisplay = questionElement.querySelector('[id$="_typeDisplay"] span');
+            const typeDisplay = questionElement.querySelector(
+              '[id$="_typeDisplay"] span'
+            );
             if (typeDisplay) {
               const typeLabels = {
-                'text': 'Textantwort',
-                'single_choice': 'Einzelauswahl',
-                'multiple_choice': 'Mehrfachauswahl',
-                'rating': 'Bewertung (1-5)',
-                'yes_no': 'Ja/Nein',
-                'number': 'Zahl',
-                'date': 'Datum'
+                text: 'Textantwort',
+                single_choice: 'Einzelauswahl',
+                multiple_choice: 'Mehrfachauswahl',
+                rating: 'Bewertung (1-5)',
+                yes_no: 'Ja/Nein',
+                number: 'Zahl',
+                date: 'Datum',
               };
-              typeDisplay.textContent = typeLabels[question.question_type] || 'Textantwort';
+              typeDisplay.textContent =
+                typeLabels[question.question_type] || 'Textantwort';
             }
           }
-          
+
           // Set required checkbox
-          const requiredCheckbox = questionElement.querySelector('input[type="checkbox"]');
+          const requiredCheckbox = questionElement.querySelector(
+            'input[type="checkbox"]'
+          );
           if (requiredCheckbox) {
-            requiredCheckbox.checked = question.is_required === '1' || 
-                                     question.is_required === 1 || 
-                                     question.is_required === true;
+            requiredCheckbox.checked =
+              question.is_required === '1' ||
+              question.is_required === 1 ||
+              question.is_required === true;
           }
 
           // Handle options
@@ -1477,10 +1535,9 @@
 
             question.options.forEach((option) => {
               // Handle option text (might be string or object)
-              const optionText = typeof option === 'string' 
-                ? option 
-                : (option.option_text || '');
-              
+              const optionText =
+                typeof option === 'string' ? option : option.option_text || '';
+
               const optionHtml = `
                             <div class="option-item">
                                 <input type="text" class="option-input" value="${optionText}">

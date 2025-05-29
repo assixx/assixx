@@ -35,13 +35,13 @@ export interface SignupRequest {
   subdomain: string;
   email: string;
   phone: string;
-  
+
   // Admin User
   firstName: string;
   lastName: string;
   username: string;
   password: string;
-  
+
   // Features
   features: string[];
 }

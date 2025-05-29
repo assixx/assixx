@@ -6,7 +6,7 @@ import { readdirSync } from 'fs';
 const getHtmlInputs = () => {
   const inputs = {};
   const pagesDir = resolve(__dirname, 'src/pages');
-  const htmlFiles = readdirSync(pagesDir)
+  readdirSync(pagesDir)
     .filter((file) => file.endsWith('.html'))
     .forEach((file) => {
       const name = file.replace('.html', '');
@@ -73,11 +73,11 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-      '@styles': resolve(__dirname, 'src/styles'),
-      '@scripts': resolve(__dirname, 'src/scripts'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@assets': resolve(__dirname, 'src/assets'),
+      '@': resolve(__dirname, './src'),
+      '@styles': resolve(__dirname, './src/styles'),
+      '@scripts': resolve(__dirname, './src/scripts'),
+      '@components': resolve(__dirname, './src/components'),
+      '@assets': resolve(__dirname, './src/assets'),
     },
   },
 

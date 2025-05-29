@@ -6,7 +6,7 @@
  */
 
 import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import UserModel from './models/user';
 import { DatabaseUser } from './types';
@@ -15,6 +15,30 @@ import { TokenPayload, TokenValidationResult } from './types/auth.types';
 // Konstante für das JWT-Secret aus der Umgebungsvariable
 const JWT_SECRET: string =
   process.env.JWT_SECRET || 'fallback_secret_nur_fuer_entwicklung';
+
+// Helper function to convert DbUser to DatabaseUser
+function dbUserToDatabaseUser(dbUser: any): DatabaseUser {
+  return {
+    id: dbUser.id,
+    username: dbUser.username,
+    email: dbUser.email,
+    password_hash: dbUser.password || '',
+    first_name: dbUser.first_name,
+    last_name: dbUser.last_name,
+    role: dbUser.role,
+    tenant_id: dbUser.tenant_id,
+    department_id: dbUser.department_id,
+    is_active: dbUser.status === 'active',
+    is_archived: dbUser.is_archived || false,
+    profile_picture: dbUser.profile_picture,
+    phone_number: dbUser.phone || null,
+    position: dbUser.position,
+    hire_date: dbUser.hire_date,
+    birth_date: dbUser.birthday || null,
+    created_at: dbUser.created_at || new Date(),
+    updated_at: dbUser.updated_at || new Date(),
+  };
+}
 
 /**
  * Benutzerauthentifizierung mit Benutzername/E-Mail und Passwort
@@ -38,7 +62,7 @@ export async function authenticateUser(
 
     const isValid = await bcrypt.compare(password, user.password);
     if (isValid) {
-      return user;
+      return dbUserToDatabaseUser(user);
     } else {
       return null;
     }
@@ -60,7 +84,9 @@ export function generateToken(user: DatabaseUser): string {
       id: parseInt(user.id.toString(), 10), // Ensure ID is a number
       username: user.username,
       role: user.role as TokenPayload['role'],
-      tenant_id: user.tenant_id ? parseInt(user.tenant_id.toString(), 10) : null,
+      tenant_id: user.tenant_id
+        ? parseInt(user.tenant_id.toString(), 10)
+        : null,
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
@@ -103,9 +129,9 @@ export function authenticateToken(
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err || !decoded || typeof decoded === 'string') {
-      res.status(403).json({ 
-        error: 'Invalid or expired token', 
-        details: err?.message 
+      res.status(403).json({
+        error: 'Invalid or expired token',
+        details: err?.message,
       });
       return;
     }

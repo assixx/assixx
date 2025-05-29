@@ -143,8 +143,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Dashboard Statistics
   async function loadDashboardStats() {
     try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
       // Direkt den Test-Endpunkt verwenden
-      const statsRes = await fetch('/test/db/counts');
+      const statsRes = await fetch('/test/db/counts', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (statsRes.ok) {
         const stats = await statsRes.json();
@@ -163,6 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('team-count').textContent = stats.teams || 0;
       } else {
         console.error('Failed to load dashboard stats', statsRes.statusText);
+        
+        // Check if unauthorized
+        if (statsRes.status === 401) {
+          console.error('Token expired or invalid, redirecting to login');
+          window.location.href = '/pages/login.html';
+          return;
+        }
 
         // Fallback: Einzeln laden, wenn der stats-Endpunkt fehlschlägt
         await loadDashboardStatsIndividually();
@@ -177,6 +193,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fallback-Funktion, die Statistiken einzeln lädt
   async function loadDashboardStatsIndividually() {
+    // Get auth token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No auth token found for individual stats loading');
+      return;
+    }
+
     // Mitarbeiter
     try {
       const employeesRes = await fetch('/admin/employees', {
@@ -339,8 +362,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Recent Employees
   async function loadRecentEmployees() {
     try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
       // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/employees');
+      const response = await fetch('/test/db/employees', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (response.ok) {
         const employees = await response.json();
@@ -405,8 +437,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Recent Documents
   async function loadRecentDocuments() {
     try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
       // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/documents');
+      const response = await fetch('/test/db/documents', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (response.ok) {
         const documents = await response.json();
@@ -446,8 +487,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Departments
   async function loadDepartments() {
     try {
+      // Get auth token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+
       // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/departments');
+      const response = await fetch('/test/db/departments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (response.ok) {
         const departments = await response.json();
@@ -1152,7 +1202,9 @@ async function loadDepartmentsForEmployeeSelect() {
         '<option value="">Abteilungen werden geladen...</option>';
 
       // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/departments');
+      const response = await fetch('/test/db/departments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (response.ok) {
         const departments = await response.json();

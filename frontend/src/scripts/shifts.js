@@ -775,15 +775,15 @@ function loadAvailabilityCalendar() {
     '<div class="no-data">Verfügbarkeitskalender wird in der nächsten Version implementiert.</div>';
 }
 
-function viewShiftPlan(planId) {
+function viewShiftPlan(_planId) {
   // TODO: Implement shift plan details view
 }
 
-function editShiftPlan(planId) {
+function editShiftPlan(_planId) {
   // TODO: Implement shift plan editing
 }
 
-function viewShifts(planId) {
+function viewShifts(_planId) {
   // TODO: Implement shifts view
 }
 
@@ -795,7 +795,7 @@ function setAvailability() {
   // TODO: Implement availability setting
 }
 
-function respondToExchange(requestId, response) {
+function respondToExchange(_requestId, _response) {
   // TODO: Implement exchange response
 }
 

@@ -8,10 +8,10 @@ import * as jwt from 'jsonwebtoken';
 import UserModel from '../models/user';
 import { authenticateUser as authUser, generateToken } from '../auth';
 import { logger } from '../utils/logger';
-import { 
-  AuthResult, 
-  UserRegistrationData, 
-  TokenValidationResult 
+import {
+  AuthResult,
+  UserRegistrationData,
+  TokenValidationResult,
 } from '../types/auth.types';
 import { DatabaseUser } from '../types/models';
 
@@ -22,7 +22,10 @@ class AuthService {
    * @param {string} password - Plain text password
    * @returns {Promise<AuthResult>} Result with success status, token, and user data
    */
-  async authenticateUser(username: string, password: string): Promise<AuthResult> {
+  async authenticateUser(
+    username: string,
+    password: string
+  ): Promise<AuthResult> {
     try {
       // Use existing auth function
       const user = await authUser(username, password);
@@ -45,7 +48,9 @@ class AuthService {
       return {
         success: true,
         token,
-        user: this.mapDatabaseUserToAppUser(userWithoutPassword),
+        user: this.mapDatabaseUserToAppUser(
+          this.dbUserToDatabaseUser(userWithoutPassword)
+        ),
       };
     } catch (error) {
       logger.error('Authentication error:', error);
@@ -97,9 +102,10 @@ class AuthService {
         username,
         password: hashedPassword,
         email,
-        vorname,
-        nachname,
+        first_name: vorname,
+        last_name: nachname,
         role,
+        tenant_id: userData.tenantId,
       });
 
       // Get created user (without password)
@@ -112,7 +118,7 @@ class AuthService {
 
       return {
         success: true,
-        user: this.mapDatabaseUserToAppUser(user),
+        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(user)),
       };
     } catch (error) {
       logger.error('Registration error:', error);
@@ -166,6 +172,33 @@ class AuthService {
       updatedAt: dbUser.updated_at,
     };
   }
+
+  /**
+   * Convert DbUser to DatabaseUser format
+   * @private
+   */
+  private dbUserToDatabaseUser(dbUser: any): DatabaseUser {
+    return {
+      id: dbUser.id,
+      username: dbUser.username,
+      email: dbUser.email,
+      password_hash: dbUser.password || '',
+      first_name: dbUser.first_name,
+      last_name: dbUser.last_name,
+      role: dbUser.role,
+      tenant_id: dbUser.tenant_id,
+      department_id: dbUser.department_id,
+      is_active: dbUser.status === 'active',
+      is_archived: dbUser.is_archived || false,
+      profile_picture: dbUser.profile_picture,
+      phone_number: dbUser.phone || null,
+      position: dbUser.position,
+      hire_date: dbUser.hire_date,
+      birth_date: dbUser.birthday || null,
+      created_at: dbUser.created_at || new Date(),
+      updated_at: dbUser.updated_at || new Date(),
+    };
+  }
 }
 
 // Create singleton instance
@@ -178,5 +211,3 @@ export default authServiceInstance;
 export { AuthService };
 
 // CommonJS compatibility
-module.exports = authServiceInstance;
-module.exports.AuthService = AuthService;

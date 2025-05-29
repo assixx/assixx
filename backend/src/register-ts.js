@@ -7,6 +7,6 @@ require('ts-node').register({
     target: 'es2022',
     allowJs: true,
     esModuleInterop: true,
-    skipLibCheck: true
-  }
+    skipLibCheck: true,
+  },
 });

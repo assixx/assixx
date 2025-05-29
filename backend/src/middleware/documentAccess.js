@@ -1,9 +1,9 @@
 /**
  * Middleware für die Überprüfung der Dokumentenzugriffsberechtigungen
  */
-const Document = require('../models/document');
-const User = require('../models/user');
-const { logger } = require('../utils/logger');
+import Document from '../models/document.js';
+import User from '../models/user.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Prüft, ob der Benutzer Zugriff auf ein Dokument hat
@@ -101,4 +101,4 @@ const checkDocumentAccess =
     }
   };
 
-module.exports = { checkDocumentAccess };
+export { checkDocumentAccess };

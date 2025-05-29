@@ -137,7 +137,7 @@ function showDeleteEmployeeDialog(employeeId) {
 /**
  * Verarbeitet die Mitarbeiter-Löschung basierend auf der gewählten Option
  */
-function processEmployeeDeletion() {
+function _processEmployeeDeletion() {
   // Gewählte Option ermitteln
   const options = document.getElementsByName('deletion-option');
   let selectedOption = '';
@@ -286,7 +286,7 @@ function processEmployeeDeletion() {
 /**
  * Überschreibt die ursprüngliche deleteEmployee-Funktion mit der verbesserten Version
  */
-function deleteEmployee(employeeId) {
+function _deleteEmployee(employeeId) {
   showDeleteEmployeeDialog(employeeId);
 }
 

@@ -14,7 +14,6 @@ const User = require('../models/user');
 const Feature = require('../models/feature');
 const logger = require('../utils/logger');
 const db = require('../database');
-const path = require('path');
 
 // Kommandozeilenargumente parsen
 const args = process.argv.slice(2).reduce((acc, arg) => {
