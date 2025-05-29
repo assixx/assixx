@@ -343,46 +343,108 @@ class Survey {
    * Get survey statistics
    */
   static async getStatistics(surveyId, tenantId) {
-    const [stats] = await db.query(
-      `
-      SELECT 
-        COUNT(DISTINCT sr.id) as total_responses,
-        COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_responses,
-        MIN(sr.started_at) as first_response,
-        MAX(sr.completed_at) as last_response
-      FROM surveys s
-      LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      WHERE s.id = ? AND s.tenant_id = ?
-    `,
-      [surveyId, tenantId]
-    );
+    try {
+      // Get basic statistics
+      const [stats] = await db.query(
+        `
+        SELECT 
+          COUNT(DISTINCT sr.id) as total_responses,
+          COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_responses,
+          MIN(sr.started_at) as first_response,
+          MAX(sr.completed_at) as last_response
+        FROM surveys s
+        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+        WHERE s.id = ? AND s.tenant_id = ?
+      `,
+        [surveyId, tenantId]
+      );
 
-    // Get response rate by assignment
-    const [assignmentStats] = await db.query(
-      `
-      SELECT 
-        sa.assignment_type,
-        COUNT(DISTINCT u.id) as assigned_users,
-        COUNT(DISTINCT sr.user_id) as responded_users
-      FROM survey_assignments sa
-      LEFT JOIN users u ON 
-        (sa.assignment_type = 'all_users' AND u.tenant_id = ?) OR
-        (sa.assignment_type = 'department' AND u.department_id = sa.department_id) OR
-        (sa.assignment_type = 'team' AND u.id IN (
-          SELECT user_id FROM team_members WHERE team_id = sa.team_id
-        )) OR
-        (sa.assignment_type = 'individual' AND u.id = sa.user_id)
-      LEFT JOIN survey_responses sr ON sr.survey_id = sa.survey_id AND sr.user_id = u.id
-      WHERE sa.survey_id = ?
-      GROUP BY sa.assignment_type
-    `,
-      [tenantId, surveyId]
-    );
+      // Get survey details with questions
+      const survey = await this.getById(surveyId, tenantId);
+      if (!survey) {
+        throw new Error('Survey not found');
+      }
 
-    return {
-      ...stats[0],
-      assignmentStats,
-    };
+      // Get question statistics
+      const questionStats = [];
+      
+      for (const question of survey.questions || []) {
+        const questionStat = {
+          id: question.id,
+          question_text: question.question_text,
+          question_type: question.question_type,
+          responses: []
+        };
+
+        if (question.question_type === 'single_choice' || question.question_type === 'multiple_choice') {
+          // Get option statistics
+          const [optionStats] = await db.query(
+            `
+            SELECT 
+              sqo.id as option_id,
+              sqo.option_text,
+              COUNT(DISTINCT sa.response_id) as count
+            FROM survey_question_options sqo
+            LEFT JOIN survey_answers sa ON sa.option_id = sqo.id
+            WHERE sqo.question_id = ?
+            GROUP BY sqo.id, sqo.option_text
+            ORDER BY sqo.order_position
+          `,
+            [question.id]
+          );
+          questionStat.options = optionStats;
+        } else if (question.question_type === 'text') {
+          // Get text responses
+          const [textResponses] = await db.query(
+            `
+            SELECT 
+              sa.answer_text,
+              sr.user_id,
+              u.first_name,
+              u.last_name
+            FROM survey_answers sa
+            JOIN survey_responses sr ON sa.response_id = sr.id
+            LEFT JOIN users u ON sr.user_id = u.id
+            WHERE sa.question_id = ? AND sa.answer_text IS NOT NULL
+          `,
+            [question.id]
+          );
+          questionStat.responses = textResponses;
+        } else if (question.question_type === 'rating' || question.question_type === 'number') {
+          // Get numeric statistics
+          const [numericStats] = await db.query(
+            `
+            SELECT 
+              AVG(sa.answer_number) as average,
+              MIN(sa.answer_number) as min,
+              MAX(sa.answer_number) as max,
+              COUNT(sa.answer_number) as count
+            FROM survey_answers sa
+            WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
+          `,
+            [question.id]
+          );
+          questionStat.statistics = numericStats[0];
+        }
+
+        questionStats.push(questionStat);
+      }
+
+      return {
+        survey_id: surveyId,
+        total_responses: parseInt(stats[0].total_responses) || 0,
+        completed_responses: parseInt(stats[0].completed_responses) || 0,
+        completion_rate: stats[0].total_responses > 0 
+          ? Math.round((stats[0].completed_responses / stats[0].total_responses) * 100) 
+          : 0,
+        first_response: stats[0].first_response,
+        last_response: stats[0].last_response,
+        questions: questionStats
+      };
+    } catch (error) {
+      console.error('Error in getStatistics:', error);
+      throw error;
+    }
   }
 }
 

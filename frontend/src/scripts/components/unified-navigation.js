@@ -232,6 +232,7 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('poll'),
           label: 'Umfragen',
           url: '/survey-employee',
+          badge: 'pending-surveys',
         },
         {
           id: 'profile',
@@ -404,10 +405,12 @@ class UnifiedNavigation {
       ? `onclick="showSection('${item.section}')"`
       : '';
 
-    // Badge für ungelesene Nachrichten
+    // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
     if (item.badge === 'unread-messages') {
       badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    } else if (item.badge === 'pending-surveys') {
+      badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
     return `
@@ -573,6 +576,41 @@ class UnifiedNavigation {
       }
     } catch (error) {
       console.error('Error updating unread messages:', error);
+    }
+  }
+
+  // Offene Umfragen aktualisieren
+  async updatePendingSurveys() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+
+      // Nur für Employees
+      const role = localStorage.getItem('userRole');
+      if (role !== 'employee') return;
+
+      const response = await fetch('/api/surveys/pending-count', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById('surveys-pending-badge');
+        if (badge) {
+          const count = data.pendingCount || 0;
+          if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating pending surveys:', error);
     }
   }
 }
@@ -847,6 +885,15 @@ document.addEventListener('DOMContentLoaded', () => {
   ) {
     window.unifiedNav.updateUnreadMessages();
     setInterval(() => window.unifiedNav.updateUnreadMessages(), 10000); // Alle 10 Sekunden
+  }
+
+  // Offene Umfragen beim Start und periodisch aktualisieren
+  if (
+    window.unifiedNav &&
+    typeof window.unifiedNav.updatePendingSurveys === 'function'
+  ) {
+    window.unifiedNav.updatePendingSurveys();
+    setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
   }
 });
 

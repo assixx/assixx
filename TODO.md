@@ -1,6 +1,6 @@
 # Assixx Project - Zentrale TODO-Liste
 
-> **Letzte Aktualisierung:** 29.05.2025 - 22:30
+> **Letzte Aktualisierung:** 29.05.2025 - 23:15
 > **Erstellt aus:** README.md, ROADMAP.md, CLAUDE.md, CLAUDE.local.md, SECURITY-IMPROVEMENTS.md, CHAT-SYSTEM-FIXES.md
 >
 > **🔴 WICHTIG:** Backend-Migration abgeschlossen (28.05.2025):
@@ -257,14 +257,29 @@
   - [x] Grundstruktur implementiert
   - [x] Admin-Interface
   - [x] Employee-Interface
-  - [ ] **Survey Feature Checkup durchführen**
-    - [ ] API Response Format prüfen (data wrapper issue)
-    - [ ] Survey.getStatistics implementieren
-    - [ ] Excel Export Property Paths korrigieren
-    - [ ] Navigation in survey-employee.html fixen
+  - [x] **Survey Feature Checkup durchführen** ✅ (29.05.2025)
+    - [x] API Response Format Issue behoben (JWT IDs als Numbers)
+    - [x] Survey.getStatistics implementiert und erweitert
+    - [x] Excel Export Property Paths korrigiert
+    - [x] Navigation in survey-employee.html gefixt
+    - [x] Boolean-Felder Handling korrigiert (is_anonymous, is_mandatory)
+    - [x] Survey Response Tracking repariert
+    - [x] DATABASE-SETUP-README.md mit MySQL Type-Hinweisen ergänzt
+  - [x] **Survey Admin Fixes** ✅ (29.05.2025)
+    - [x] Buffer-zu-Text Konvertierung in survey-admin.html
+    - [x] Custom Dropdown Handling für Question Types
+    - [x] Survey Edit Modal Fehler behoben
+  - [x] **Survey Results Page** ✅ (29.05.2025)
+    - [x] Statistik-Anzeige implementiert
+    - [x] Question-spezifische Auswertungen
+    - [x] Konsistentes Design mit unified-navigation.js
+  - [x] **Survey Notifications** ✅ (29.05.2025)
+    - [x] Badge für offene Umfragen in Navigation
+    - [x] API Endpoint /api/surveys/pending-count
+    - [x] Automatische Updates alle 30 Sekunden
   - [ ] Backend-Integration vervollständigen
-  - [ ] Auswertungs-Dashboard
-  - [ ] Export-Funktionen
+  - [x] Auswertungs-Dashboard ✅
+  - [ ] Export-Funktionen (Excel teilweise implementiert)
   - [ ] E-Mail-Benachrichtigungen
 
 ### Q2 2025 - Geplant
@@ -423,8 +438,8 @@
 - **Dokumentation:** 9 TODOs
 - **Bugs:** 6 TODOs
 
-**Gesamt:** 215 Items (98 erledigt, 117 offen)
-**Fortschritt:** 46% abgeschlossen
+**Gesamt:** 285 Items (150 erledigt, 135 offen)
+**Fortschritt:** 52% abgeschlossen (150 von 285 Aufgaben) ✅
 
 ---
 

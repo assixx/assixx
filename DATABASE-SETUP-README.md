@@ -948,6 +948,62 @@ Bei Problemen:
 
 ---
 
+## ⚠️ Wichtige Hinweise zu MySQL-Datentypen
+
+### Boolean-Felder (TINYINT/BOOLEAN)
+
+MySQL speichert Boolean-Werte als TINYINT(1) und gibt sie als **Strings** zurück:
+- `true` wird zu `'1'` (String)
+- `false` wird zu `'0'` (String)
+
+**Probleme die auftreten können:**
+```javascript
+// ❌ FALSCH - funktioniert nicht richtig
+if (survey.is_anonymous) { // '0' ist truthy!
+  // Wird IMMER ausgeführt, auch wenn false
+}
+
+// ✅ RICHTIG - explizite Prüfung
+if (survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true) {
+  // Wird nur bei true ausgeführt
+}
+```
+
+### ID-Felder
+
+MySQL kann IDs je nach Kontext als Strings oder Numbers zurückgeben:
+
+**Best Practices:**
+```javascript
+// Im Backend (auth.js) - IDs in JWT als Numbers speichern
+const token = jwt.sign({
+  id: parseInt(user.id, 10),
+  tenant_id: parseInt(user.tenant_id, 10)
+});
+
+// In Routes - parseInt für URL-Parameter
+const surveyId = parseInt(req.params.id);
+const userId = req.user.id; // Bereits Number aus Auth
+```
+
+### Empfehlungen für neue Features
+
+1. **Immer Datentypen prüfen:**
+   ```javascript
+   console.log('Type:', typeof value, 'Value:', value);
+   ```
+
+2. **Explizite Boolean-Checks:**
+   ```javascript
+   const isTrue = value === '1' || value === 1 || value === true;
+   const isFalse = value === '0' || value === 0 || value === false;
+   ```
+
+3. **Konsistente ID-Behandlung:**
+   - JWT: IDs als Numbers speichern
+   - Database: IDs können als Strings kommen
+   - Always parseInt() für Sicherheit
+
 ## ✅ Checkliste für neue Entwickler
 
 - [ ] ✅ WSL/Windows vorbereitet

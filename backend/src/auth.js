@@ -52,10 +52,10 @@ function generateToken(user) {
   try {
     const token = jwt.sign(
       {
-        id: user.id,
+        id: parseInt(user.id, 10), // Ensure ID is a number
         username: user.username,
         role: user.role,
-        tenant_id: user.tenant_id, // Wichtig für Multi-Tenant
+        tenant_id: parseInt(user.tenant_id, 10), // Ensure tenant_id is a number
       },
       JWT_SECRET,
       { expiresIn: '1h' }
@@ -99,11 +99,13 @@ function authenticateToken(req, res, next) {
         .json({ error: 'Invalid or expired token', details: err.message });
     }
 
-    // Normalize user object for consistency
+    // Normalize user object for consistency and ensure IDs are numbers
     req.user = {
       ...user,
-      userId: user.id,
-      tenantId: user.tenant_id,
+      id: parseInt(user.id, 10), // Ensure ID is a number
+      userId: parseInt(user.id, 10),
+      tenant_id: parseInt(user.tenant_id, 10), // Ensure tenant_id is a number
+      tenantId: parseInt(user.tenant_id, 10),
     };
     next();
   });

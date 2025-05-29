@@ -6,10 +6,8 @@
     <title>Umfrage-Ergebnisse - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
     <style>
       /* Glassmorphismus Design-Standards */
 
@@ -61,20 +59,12 @@
           inset -1px 0 0 rgba(255, 255, 255, 0.1);
       }
 
-      /* Fix for sidebar title alignment */
-      .sidebar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        margin: 0 0 16px 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 12px;
-        border: 1px solid rgba(33, 150, 243, 0.2);
+
+      /* Survey Results Container */
+      .survey-results-container {
+        padding: var(--spacing-xl);
+        max-width: 1400px;
+        margin: 0 auto;
       }
 
       /* Survey Results Specific Styles */
@@ -96,6 +86,19 @@
         font-weight: 600;
         color: var(--primary-color);
         margin: 0 0 var(--spacing-sm) 0;
+      }
+
+      .page-header {
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
       }
 
       .survey-meta {
@@ -356,12 +359,7 @@
     <!-- Header -->
     <header class="header">
       <a href="/admin-dashboard" class="logo-container">
-        <img
-          src="/assets/images/logo.png"
-          alt="Assixx Logo"
-          class="logo"
-          style="height: 40px; width: auto; filter: none"
-        />
+        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
       </a>
       <div class="header-actions">
         <div id="user-info">
@@ -372,7 +370,7 @@
           />
           <span id="user-name">Lade...</span>
         </div>
-        <button id="logout-btn" class="btn btn-secondary">
+        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
           <i class="fas fa-sign-out-alt"></i> Abmelden
         </button>
       </div>
@@ -380,29 +378,26 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Sidebar Navigation -->
+      <!-- Sidebar Navigation wird durch unified-navigation.js eingefügt -->
       <aside class="sidebar">
-        <nav class="sidebar-nav">
-          <h3 class="sidebar-title">
-            <span class="title-icon">📊</span>
-            Navigation
-          </h3>
-          <ul class="sidebar-menu" id="nav-menu">
-            <!-- Wird dynamisch gefüllt -->
-          </ul>
-        </nav>
+        <!-- Navigation wird durch unified-navigation.js injiziert -->
       </aside>
 
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="page-header">
-          <h1 class="page-title">Umfrage-Ergebnisse</h1>
-        </div>
+        <div class="survey-results-container">
+          <div class="page-header">
+            <h1 class="page-title">
+              <i class="fas fa-chart-bar"></i>
+              Umfrage-Ergebnisse
+            </h1>
+          </div>
 
-        <div id="content-area">
-          <div class="loading">
-            <div class="spinner"></div>
-            <p>Lade Umfrage-Ergebnisse...</p>
+          <div id="content-area">
+            <div class="loading">
+              <div class="spinner"></div>
+              <p>Lade Umfrage-Ergebnisse...</p>
+            </div>
           </div>
         </div>
       </main>
@@ -425,66 +420,9 @@
           return;
         }
 
-        // Navigation und User-Info einrichten
-        setupNavigation();
-        setupUserInfo();
-
         // Umfrage-Daten laden
         loadSurveyResults();
       });
-
-      function setupNavigation() {
-        const navMenu = document.getElementById('nav-menu');
-        const role = localStorage.getItem('role');
-
-        const navItems = [
-          {
-            href: '/admin-dashboard',
-            icon: '🏠',
-            text: 'Dashboard',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/survey-admin',
-            icon: '📋',
-            text: 'Umfragen verwalten',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/survey-admin',
-            icon: '➕',
-            text: 'Neue Umfrage',
-            roles: ['admin', 'root'],
-          },
-        ];
-
-        navMenu.innerHTML = navItems
-          .filter((item) => item.roles.includes(role))
-          .map(
-            (item) => `
-                    <li class="sidebar-item">
-                        <a href="${item.href}" class="sidebar-link">
-                            <span class="icon">${item.icon}</span>
-                            <span>${item.text}</span>
-                        </a>
-                    </li>
-                `
-          )
-          .join('');
-      }
-
-      function setupUserInfo() {
-        const logoutBtn = document.getElementById('logout-btn');
-
-        if (logoutBtn) {
-          logoutBtn.addEventListener('click', () => {
-            if (confirm('Möchten Sie sich wirklich abmelden?')) {
-              localStorage.clear();
-              window.location.href = '/';
-            }
-          });
-        }
-      }
 
       async function loadSurveyResults() {
         try {
@@ -502,7 +440,7 @@
           }
 
           const surveyResult = await surveyResponse.json();
-          surveyData = surveyResult.data;
+          surveyData = surveyResult; // API returns data directly, not wrapped
 
           // Statistiken laden
           const statsResponse = await fetch(
@@ -519,13 +457,27 @@
           }
 
           const statsResult = await statsResponse.json();
-          statistics = statsResult.data;
+          statistics = statsResult; // API returns data directly, not wrapped
 
           renderResults();
         } catch (error) {
           console.error('Error:', error);
           showError(error.message);
         }
+      }
+
+      // Helper function to convert Buffer to text
+      function getTextFromBuffer(value) {
+        if (typeof value === 'string') {
+          return value;
+        }
+        if (value && value.type === 'Buffer' && Array.isArray(value.data)) {
+          return String.fromCharCode.apply(null, value.data);
+        }
+        if (value && typeof value === 'object') {
+          return '';
+        }
+        return value || '';
       }
 
       function renderResults() {
@@ -538,11 +490,11 @@
 
         contentArea.innerHTML = `
                 <div class="results-header">
-                    <h2 class="survey-title">${surveyData.title}</h2>
+                    <h2 class="survey-title">${getTextFromBuffer(surveyData.title)}</h2>
                     <div class="survey-meta">
                         <span><i class="fas fa-calendar"></i> Erstellt: ${formatDate(surveyData.created_at)}</span>
                         <span><i class="fas fa-calendar-check"></i> Endet: ${formatDate(surveyData.end_date)}</span>
-                        <span><i class="fas fa-user-shield"></i> ${surveyData.is_anonymous ? 'Anonym' : 'Nicht anonym'}</span>
+                        <span><i class="fas fa-user-shield"></i> ${(surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true) ? 'Anonym' : 'Nicht anonym'}</span>
                     </div>
                 </div>
                 
@@ -560,16 +512,16 @@
                 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3 class="stat-value">${statistics.totalResponses || 0}</h3>
+                        <h3 class="stat-value">${statistics.total_responses || 0}</h3>
                         <p class="stat-label">Antworten</p>
                     </div>
                     <div class="stat-card">
-                        <h3 class="stat-value">${statistics.responseRate || 0}%</h3>
-                        <p class="stat-label">Teilnahmequote</p>
+                        <h3 class="stat-value">${statistics.completed_responses || 0}</h3>
+                        <p class="stat-label">Abgeschlossen</p>
                     </div>
                     <div class="stat-card">
-                        <h3 class="stat-value">${statistics.avgCompletionTime || 'N/A'}</h3>
-                        <p class="stat-label">Ø Bearbeitungszeit</p>
+                        <h3 class="stat-value">${statistics.completion_rate || 0}%</h3>
+                        <p class="stat-label">Abschlussrate</p>
                     </div>
                     <div class="stat-card">
                         <h3 class="stat-value">${surveyData.status === 'active' ? 'Aktiv' : 'Beendet'}</h3>
@@ -592,7 +544,7 @@
           .map((question) => {
             let resultContent = '';
 
-            switch (question.type) {
+            switch (question.question_type) {
               case 'single_choice':
               case 'multiple_choice':
               case 'yes_no':
@@ -617,8 +569,8 @@
             return `
                     <div class="question-card">
                         <div class="question-header">
-                            <h3 class="question-text">${question.question_text}</h3>
-                            <p class="question-type">Typ: ${getQuestionTypeLabel(question.type)} | ${question.totalResponses || 0} Antworten</p>
+                            <h3 class="question-text">${getTextFromBuffer(question.question_text)}</h3>
+                            <p class="question-type">Typ: ${getQuestionTypeLabel(question.question_type)}</p>
                         </div>
                         <div class="question-body">
                             ${resultContent}
@@ -634,20 +586,22 @@
           return '<p>Keine Optionen verfügbar</p>';
         }
 
-        const totalResponses = question.totalResponses || 1;
+        // Calculate total responses from all options
+        const totalResponses = question.options.reduce((sum, opt) => sum + (parseInt(opt.count) || 0), 0);
 
         return question.options
           .map((option) => {
+            const count = parseInt(option.count) || 0;
             const percentage =
               totalResponses > 0
-                ? Math.round((option.count / totalResponses) * 100)
+                ? Math.round((count / totalResponses) * 100)
                 : 0;
 
             return `
                     <div class="option-result">
                         <div class="option-header">
-                            <span class="option-text">${option.text}</span>
-                            <span class="option-count">${option.count} Stimmen</span>
+                            <span class="option-text">${getTextFromBuffer(option.option_text)}</span>
+                            <span class="option-count">${count} Stimmen</span>
                         </div>
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: ${percentage}%">
@@ -661,17 +615,22 @@
       }
 
       function renderRatingResults(question) {
-        const avgRating = question.averageRating || 0;
-        const maxRating = question.maxRating || 5;
+        const stats = question.statistics || {};
+        const avgRating = parseFloat(stats.average) || 0;
+        const maxRating = 5;
+        const count = parseInt(stats.count) || 0;
 
         return `
                 <div style="text-align: center;">
                     <h4 style="font-size: 3rem; color: var(--primary-color); margin: 0;">
                         ${avgRating.toFixed(1)}
                     </h4>
-                    <p style="color: var(--text-secondary);">von ${maxRating} Sternen</p>
+                    <p style="color: var(--text-secondary);">von ${maxRating} Sternen (${count} Bewertungen)</p>
                     <div style="font-size: 2rem; color: #ffc107; margin: 20px 0;">
                         ${renderStars(avgRating, maxRating)}
+                    </div>
+                    <div style="margin-top: 20px; font-size: 0.9rem; color: var(--text-secondary);">
+                        Min: ${stats.min || 0} | Max: ${stats.max || 0}
                     </div>
                 </div>
             `;
@@ -696,19 +655,20 @@
           return '<p>Keine Textantworten vorhanden</p>';
         }
 
+        const isAnonymous = surveyData.is_anonymous === '1' || surveyData.is_anonymous === 1 || surveyData.is_anonymous === true;
+
         return `
                 <div class="text-responses">
                     ${question.responses
                       .map(
                         (response) => `
                         <div class="text-response">
-                            <p class="response-text">${response.text}</p>
+                            <p class="response-text">${getTextFromBuffer(response.answer_text)}</p>
                             ${
-                              !surveyData.is_anonymous
+                              !isAnonymous && response.user_id
                                 ? `
                                 <p class="response-meta">
-                                    <i class="fas fa-user"></i> ${response.user_name || 'Anonym'} | 
-                                    <i class="fas fa-clock"></i> ${formatDate(response.created_at)}
+                                    <i class="fas fa-user"></i> ${response.first_name || ''} ${response.last_name || ''} 
                                 </p>
                             `
                                 : ''
@@ -722,10 +682,19 @@
       }
 
       function renderNumberResults(question) {
+        const stats = question.statistics || {};
+        const average = parseFloat(stats.average) || 0;
+        const count = parseInt(stats.count) || 0;
+        
         return `
                 <div style="text-align: center;">
-                    <p><strong>Durchschnitt:</strong> ${question.average || 0}</p>
-                    <p><strong>Min:</strong> ${question.min || 0} | <strong>Max:</strong> ${question.max || 0}</p>
+                    <h4 style="font-size: 2rem; color: var(--primary-color); margin: 0;">
+                        ${average.toFixed(2)}
+                    </h4>
+                    <p style="color: var(--text-secondary);">Durchschnittswert (${count} Antworten)</p>
+                    <div style="margin-top: 20px; font-size: 0.9rem; color: var(--text-secondary);">
+                        <strong>Min:</strong> ${stats.min || 0} | <strong>Max:</strong> ${stats.max || 0}
+                    </div>
                 </div>
             `;
       }
@@ -811,6 +780,8 @@
       }
     </script>
 
+    <!-- Unified Navigation -->
+    <script src="/scripts/components/unified-navigation.js"></script>
     <!-- Header User Info Loading -->
     <script src="/scripts/header-user-info.js"></script>
   </body>

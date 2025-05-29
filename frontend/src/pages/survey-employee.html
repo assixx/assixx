@@ -115,12 +115,35 @@
         padding: var(--spacing-lg);
         transition: all 0.3s ease;
         cursor: pointer;
+        position: relative;
+        overflow: hidden;
       }
 
       .survey-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         border-color: var(--primary-color);
+      }
+      
+      /* Completed survey card styling */
+      .survey-card.completed {
+        background: rgba(76, 175, 80, 0.05);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+      
+      .survey-card.completed::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4caf50, #81c784);
+      }
+      
+      .survey-card.completed:hover {
+        border-color: #4caf50;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.2);
       }
 
       .survey-card-header {
@@ -215,6 +238,72 @@
         background: rgba(76, 175, 80, 0.2);
         color: #4caf50;
         border: 1px solid rgba(76, 175, 80, 0.3);
+        cursor: pointer;
+      }
+      
+      .survey-action.completed:hover {
+        background: rgba(76, 175, 80, 0.3);
+        box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+      }
+      
+      /* Success Animation */
+      .success-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        animation: fadeIn 0.3s ease-out;
+      }
+      
+      .success-message {
+        background: rgba(76, 175, 80, 0.1);
+        border: 2px solid #4caf50;
+        backdrop-filter: blur(20px);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
+        text-align: center;
+        animation: scaleIn 0.5s ease-out;
+      }
+      
+      .success-icon {
+        font-size: 4rem;
+        color: #4caf50;
+        margin-bottom: var(--spacing-lg);
+        animation: checkmark 0.6s ease-out 0.3s both;
+      }
+      
+      .success-text {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @keyframes scaleIn {
+        from { 
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to { 
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes checkmark {
+        0% { transform: scale(0) rotate(0deg); }
+        50% { transform: scale(1.2) rotate(360deg); }
+        100% { transform: scale(1) rotate(360deg); }
       }
 
       /* Empty State */
@@ -265,13 +354,15 @@
         max-height: 90vh;
         overflow-y: auto;
         animation: fadeInUp 0.3s ease-out;
+        padding: 30px;
       }
 
       .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: var(--spacing-lg);
+        padding: 0 0 var(--spacing-lg) 0;
+        margin-bottom: var(--spacing-lg);
         border-bottom: 1px solid var(--border-color);
       }
 
@@ -433,6 +524,14 @@
         margin-top: var(--spacing-xl);
         padding-top: var(--spacing-xl);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      #surveyForm {
+        padding: 0;
+      }
+      
+      .survey-progress {
+        margin-bottom: var(--spacing-lg);
       }
 
       .btn {
@@ -611,15 +710,14 @@
 
       // Initialize
       document.addEventListener('DOMContentLoaded', function () {
-        loadNavigation();
         loadSurveys();
       });
 
       // Load available surveys
       async function loadSurveys() {
         try {
-          // Get all active surveys
-          const response = await fetch('/api/surveys?status=active', {
+          // Get all surveys (not just active ones, so we can show completed ones too)
+          const response = await fetch('/api/surveys', {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -627,7 +725,11 @@
 
           if (response.ok) {
             const surveys = await response.json();
-            displaySurveys(surveys);
+            // Filter only active and closed surveys (not draft or archived)
+            const relevantSurveys = surveys.filter(s => 
+              s.status === 'active' || s.status === 'closed'
+            );
+            displaySurveys(relevantSurveys);
           }
         } catch (error) {
           console.error('Error loading surveys:', error);
@@ -642,9 +744,12 @@
         pendingContainer.innerHTML = '';
         completedContainer.innerHTML = '';
 
+        console.log('Displaying surveys:', surveys.length);
+
         for (const survey of surveys) {
           // Check if user has already responded
           const responseCheck = await checkUserResponse(survey.id);
+          console.log(`Survey ${survey.id} - Response check:`, responseCheck);
 
           if (responseCheck.responded) {
             completedContainer.appendChild(createSurveyCard(survey, true));
@@ -683,7 +788,11 @@
           });
 
           if (response.ok) {
-            return await response.json();
+            const data = await response.json();
+            console.log(`Response check for survey ${surveyId}:`, data);
+            return data;
+          } else {
+            console.error(`Failed to check response for survey ${surveyId}:`, response.status);
           }
         } catch (error) {
           console.error('Error checking response:', error);
@@ -694,7 +803,7 @@
       // Create survey card
       function createSurveyCard(survey, completed) {
         const card = document.createElement('div');
-        card.className = 'survey-card';
+        card.className = completed ? 'survey-card completed' : 'survey-card';
 
         const deadline = survey.end_date ? new Date(survey.end_date) : null;
         const daysLeft = deadline
@@ -704,13 +813,13 @@
 
         card.innerHTML = `
                 <div class="survey-card-header">
-                    <h3 class="survey-card-title">${survey.title}</h3>
+                    <h3 class="survey-card-title">${getQuestionText(survey.title)}</h3>
                     <div>
-                        ${survey.is_mandatory ? '<span class="survey-badge mandatory">Pflicht</span>' : '<span class="survey-badge optional">Freiwillig</span>'}
-                        ${survey.is_anonymous ? '<span class="survey-badge anonymous">Anonym</span>' : ''}
+                        ${(survey.is_mandatory === '1' || survey.is_mandatory === 1 || survey.is_mandatory === true) ? '<span class="survey-badge mandatory">Pflicht</span>' : '<span class="survey-badge optional">Freiwillig</span>'}
+                        ${(survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true) ? '<span class="survey-badge anonymous">Anonym</span>' : ''}
                     </div>
                 </div>
-                <p class="survey-card-description">${survey.description || 'Keine Beschreibung verfügbar'}</p>
+                <p class="survey-card-description">${getQuestionText(survey.description) || 'Keine Beschreibung verfügbar'}</p>
                 <div class="survey-meta">
                     ${
                       deadline
@@ -754,19 +863,43 @@
         }
       }
 
+      // Helper function to convert Buffer to text
+      function getQuestionText(questionText) {
+        if (typeof questionText === 'string') {
+          return questionText;
+        }
+        
+        // Handle Buffer object
+        if (questionText && questionText.type === 'Buffer' && Array.isArray(questionText.data)) {
+          // Convert array of byte values to string
+          return String.fromCharCode.apply(null, questionText.data);
+        }
+        
+        // Handle other object types
+        if (questionText && typeof questionText === 'object') {
+          return JSON.stringify(questionText);
+        }
+        
+        return 'Frage';
+      }
+
       // Display survey form
       function displaySurveyForm() {
-        document.getElementById('modalTitle').textContent = currentSurvey.title;
+        document.getElementById('modalTitle').textContent = getQuestionText(currentSurvey.title);
         const container = document.getElementById('questionsContainer');
         container.innerHTML = '';
 
+        console.log('Current Survey:', currentSurvey); // Debug
+        console.log('Questions:', currentSurvey.questions); // Debug
+
         currentSurvey.questions.forEach((question, index) => {
+          console.log('Question:', question); // Debug
           const questionEl = createQuestionElement(question, index);
           container.appendChild(questionEl);
         });
 
         updateProgress();
-        document.getElementById('surveyModal').style.display = 'block';
+        document.getElementById('surveyModal').style.display = 'flex';
       }
 
       // Create question element
@@ -778,7 +911,7 @@
                 <div class="question-header">
                     <span class="question-number">${index + 1}</span>
                     <div class="question-text">
-                        ${question.question_text}
+                        ${getQuestionText(question.question_text)}
                         ${question.is_required ? '<span class="required-indicator">*</span>' : ''}
                     </div>
                 </div>
@@ -972,6 +1105,12 @@
             }
           }
 
+          console.log('Submitting survey answers:', {
+            surveyId: currentSurvey.id,
+            answersCount: answersArray.length,
+            answers: answersArray
+          });
+
           try {
             const response = await fetch(
               `/api/surveys/${currentSurvey.id}/responses`,
@@ -986,9 +1125,18 @@
             );
 
             if (response.ok) {
-              alert('Vielen Dank für Ihre Teilnahme!');
-              closeModal();
-              loadSurveys(); // Reload to update status
+              // Success animation and message
+              showSuccessMessage();
+              
+              // Wait a bit longer for database to update
+              setTimeout(() => {
+                closeModal();
+                // Force reload with a small delay to ensure database is updated
+                setTimeout(() => {
+                  console.log('Reloading surveys after submission...');
+                  loadSurveys();
+                }, 500);
+              }, 2000);
             } else {
               const error = await response.json();
               alert('Fehler: ' + error.error);
@@ -1000,8 +1148,35 @@
         });
 
       // View response (for completed surveys)
-      function viewResponse(surveyId) {
-        alert('Die Anzeige Ihrer Antworten wird in Kürze implementiert.');
+      async function viewResponse(surveyId) {
+        try {
+          const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.responded && data.response) {
+              // Show response in a nice format
+              const formattedDate = new Date(data.response.completed_at).toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              
+              alert(`Sie haben diese Umfrage am ${formattedDate} abgeschlossen.\n\nAnzahl Antworten: ${data.response.answers.length}`);
+            } else {
+              alert('Keine Antworten für diese Umfrage gefunden.');
+            }
+          }
+        } catch (error) {
+          console.error('Error viewing response:', error);
+          alert('Fehler beim Abrufen Ihrer Antworten');
+        }
       }
 
       // Close modal
@@ -1009,6 +1184,28 @@
         document.getElementById('surveyModal').style.display = 'none';
         currentSurvey = null;
         answers = {};
+      }
+      
+      // Show success message
+      function showSuccessMessage() {
+        const overlay = document.createElement('div');
+        overlay.className = 'success-overlay';
+        overlay.innerHTML = `
+          <div class="success-message">
+            <div class="success-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="success-text">
+              Vielen Dank für Ihre Teilnahme!
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        // Remove after animation
+        setTimeout(() => {
+          overlay.remove();
+        }, 2000);
       }
     </script>
     <!-- Header User Info Loading -->
