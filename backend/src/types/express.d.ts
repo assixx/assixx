@@ -6,7 +6,7 @@ declare global {
   namespace Express {
     interface Request {
       // User Authentication
-      user?: User;
+      user?: any; // Will be properly typed once User model is migrated
       userId?: number;
       
       // Tenant Information

@@ -1,3 +1,4 @@
-// Diese Datei wurde durch auth-unified.js ersetzt
-// Sie leitet alle Importe zur neuen Implementierung weiter
-module.exports = require('../auth');
+// Compatibility wrapper for TypeScript migration
+// This file ensures backward compatibility during migration
+require('../register-ts');
+module.exports = require('./auth.ts');
