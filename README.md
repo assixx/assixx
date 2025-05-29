@@ -1,14 +1,20 @@
 # 🏭 Assixx - Multi-Tenant SaaS Platform für Industrieunternehmen
 
 [![Version](https://img.shields.io/badge/Version-2025.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-green.svg)](https://github.com/SCS-Technik/Assixx)
+[![Status](https://img.shields.io/badge/Status-Beta%20Ready-yellow.svg)](https://github.com/SCS-Technik/Assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
-> **Moderne SaaS-Lösung für die digitale Transformation in der Industrie**
+> **Digitalisierung von Papier zu Cloud - Speziell für produzierende Unternehmen**
 
 ## 🚀 Was ist Assixx?
 
-Assixx ist eine **Multi-Tenant SaaS-Plattform** speziell für Industrieunternehmen. Die modulare Architektur ermöglicht es Unternehmen, nur für die Features zu zahlen, die sie wirklich benötigen - von der Mitarbeiterverwaltung bis zur fortgeschrittenen Automatisierung.
+Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehmen was Sie bereits auf Papier haben - von TPM-Checklisten bis zu Gehaltsabrechnungen - und machen es digital, sicher und effizient. 
+
+### 🎯 Zielgruppe
+- **Branchen**: Automotive, Maschinenbau, Chemie, Metallverarbeitung, Lebensmittel
+- **Firmengröße**: 50-500 Mitarbeiter
+- **Region**: Deutschland (später weltweit)
+- **Problem**: Papierprozesse die digitalisiert werden müssen
 
 ## ⚡ Schnellstart
 
@@ -39,11 +45,27 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 
 ## 🎯 Kernfeatures
 
-- ✅ **7 Live Features**: Benutzerverwaltung, Dokumente, Schwarzes Brett, Kalender, KVP, Schichtplanung, Chat
-- 🚧 **In Entwicklung**: Umfrage-Tool, Urlaubsverwaltung
-- 🔮 **Geplant**: Mobile App, Stripe Integration, Multi-Language
+### ✅ Bereits verfügbar:
+- **Benutzerverwaltung** (Multi-Tenant, Rollen)
+- **Dokumenten-System** (Upload, Kategorien, Zugriffsrechte)
+- **Schwarzes Brett** (Digitale Mitteilungen)
+- **Kalender** (Events, Drag & Drop)
+- **KVP-System** (Verbesserungsvorschläge)
+- **Schichtplanung** (Wochenansicht, Drag & Drop)
+- **Chat-System** (Echtzeit, Gruppen, Dateianhänge)
 
-Siehe [FEATURES.md](./FEATURES.md) für Details.
+### 🚨 Deal-Breaker Features (in Entwicklung):
+- **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut QUESTIONS.md)
+- **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut QUESTIONS.md)
+- **Chat-System** - Bereits implementiert (KRITISCH laut QUESTIONS.md)
+- **Urlaubsantrag** - Digitaler Workflow
+
+### 🔮 Geplant:
+- **Microsoft Integration** (Outlook, Azure AD, SharePoint)
+- **Mobile App** (iOS/Android)
+- **Mehrsprachigkeit** (DE, EN, TR, PL)
+
+Siehe [FEATURES.md](./FEATURES.md) für Details und Preise.
 
 ## 🛠️ Tech Stack
 

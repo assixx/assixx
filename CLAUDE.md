@@ -120,15 +120,16 @@ function validateSubdomain(value) {
 
 #### Wenn Simon sagt "weiter machen mit Assixx Projekt":
 
-1. **📚 PFLICHTLEKTÜRE** (in dieser Reihenfolge):
+1. **📚 PFLICHTLEKTÜRE** (IMMER in dieser Reihenfolge):
 
    ```bash
-   cat TODO.md           # Aktuelle Aufgaben
-   cat PROJEKTSTRUKTUR.md # Projekt-Struktur prüfen/aktualisieren
-   cat CLAUDE.md         # Diese Anweisungen
-   cat README.md         # Projekt-Übersicht
-   cat ROADMAP.md        # Zukünftige Features
-   cat DATABASE-SETUP-README.md  # DB-Struktur
+   # WICHTIG: Diese Reihenfolge IMMER einhalten!
+   cat TODO.md           # 1. Aktuelle Aufgaben (ERSTE PRIORITÄT!)
+   cat CLAUDE.md         # 2. Diese Anweisungen
+   cat PROJEKTSTRUKTUR.md # 3. Projekt-Struktur prüfen/aktualisieren
+   cat README.md         # 4. Projekt-Übersicht
+   cat ROADMAP.md        # 5. Zukünftige Features
+   cat DATABASE-SETUP-README.md  # 6. DB-Struktur (optional)
    ```
 
 2. **📊 ZUSAMMENFASSUNG ERSTELLEN**:
