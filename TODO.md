@@ -3,58 +3,77 @@
 > **Fokus:** Was brauchen wir für einen erfolgreichen Beta-Test mit 5-10 Industriefirmen?
 > **Strategie:** Backend-First (70% Backend, 30% Frontend)
 
-## 🚨 PHASE 1: Kritische Basis (Vor Beta-Test)
+## 🐳 PHASE 0: Docker & Deployment (NEU - HÖCHSTE PRIORITÄT!)
+
+### Docker Setup für Beta-Deployment
+
+- [ ] Dockerfile definieren
+- [ ] docker-compose.yml mit allen Services (DB, Backend, Frontend)
+- [ ] Docker Setup-Anleitung für Beta-Kunden
+- [ ] SSL-Zertifikate Setup-Guide
+- [ ] Backup-Strategie implementieren
+- [ ] Monitoring & Logging Setup
+
+## ✅ PHASE 1: Security & Stabilität (ERLEDIGT!)
 
 ### 1. Security & Stabilität
 
-- [ ] Cookie package vulnerability beheben (GHSA-pxg6-pf52-xh8x)
-- [ ] csurf durch moderne CSRF-Protection ersetzen
-- [ ] Rate Limiting implementieren
-- [ ] Input Validation verstärken
+- [x] Cookie package vulnerability beheben (GHSA-pxg6-pf52-xh8x) ✅ 21.01.2025
+- [x] csurf durch moderne CSRF-Protection ersetzen ✅ Helmet + doubleCsrf implementiert
+- [x] Rate Limiting implementieren ✅ Umfangreich in security-enhanced.ts
+- [x] Input Validation verstärken ✅ express-validator in validators.ts
 
 ### 2. Setup & Onboarding
 
-- [ ] SETUP-WINDOWS.md (Schritt-für-Schritt für Anfänger)
-- [ ] SETUP-UBUNTU.md (mit allen Befehlen erklärt)
+- [x] SETUP-WINDOWS-WSL.md ✅ EXISTIERT (417 Zeilen)
+- [x] SETUP-UBUNTU-LINUX.md ✅ EXISTIERT (546 Zeilen)
 - [ ] Automatisches Setup-Script verbessern
-- [ ] .env.example mit allen Variablen dokumentieren
+- [x] .env.example mit allen Variablen dokumentieren ✅ Vollständig
 
-### 3. Mobile Responsiveness
+## 🚨 PHASE 2: DEAL-BREAKER Features (Vor Beta-Test!)
+
+> **⚠️ KRITISCH**: Ohne diese Features ist das System für Industriefirmen NICHT nutzbar!
+
+### 1. 🌴 Urlaubsantrag-System (MVP) - WOCHE 1
+
+- [ ] Backend API (/api/vacation)
+- [ ] Datenbank-Schema (vacation_requests, vacation_balances)
+- [ ] Antragsformular (einfache Version)
+- [ ] Admin-Genehmigung Workflow
+- [ ] Kalender-Integration
+- [ ] E-Mail Benachrichtigung
+- [ ] Resturlaub-Berechnung
+
+### 2. 💰 Gehaltsabrechnung Upload - WOCHE 1-2
+
+- [ ] Backend API für Lohndokumente (/api/payroll)
+- [ ] Sicherer Upload für Lohnabrechnungen
+- [ ] Verschlüsselung für sensible Daten
+- [ ] Archivierung nach gesetzlichen Vorgaben (10 Jahre)
+- [ ] Batch-Upload für HR
+- [ ] Integration mit DATEV/SAP (Beta-Kunden fragen!)
+
+### 3. 🔧 TPM-System (Total Productive Maintenance) - WOCHE 2-3
+
+- [ ] Backend API für Wartungsplanung (/api/tpm)
+- [ ] Datenbank-Schema für Maschinen & Wartungen
+- [ ] Wartungsplan-Templates (Industrie-Standards)
+- [ ] QR-Code für Maschinen-Identifikation
+- [ ] Mobile-First Wartungs-Checklisten
+- [ ] Automatische Erinnerungen (E-Mail + In-App)
+- [ ] Wartungshistorie & Reports
+- [ ] Offline-Viewing mit PWA
+
+### 4. 📱 Mobile Responsiveness - PARALLEL
 
 - [ ] Alle Hauptseiten auf Tablet/Mobile testen
 - [ ] Navigation für Touch optimieren
 - [ ] Schichtplan Mobile-View
 - [ ] Chat Mobile-Optimierung
+- [ ] TPM Mobile-First Design
+- [ ] PWA Manifest & Service Worker
 
-### 4. DEAL-BREAKER Features (HÖCHSTE PRIORITÄT!)
-
-#### 🔧 TPM-System (Total Productive Maintenance) - KRITISCH!
-
-- [ ] Backend API für Wartungsplanung (/api/tpm)
-- [ ] Datenbank-Schema für Maschinen & Wartungen
-- [ ] Wartungsplan-Templates
-- [ ] Automatische Erinnerungen
-- [ ] Wartungshistorie & Reports
-- [ ] Offline-Viewing Capability
-
-#### 💰 Gehaltsabrechnung - KRITISCH!
-
-- [ ] Backend API für Lohndokumente (/api/payroll)
-- [ ] Sicherer Upload für Lohnabrechnungen
-- [ ] Mitarbeiter-Portal zum Download
-- [ ] Verschlüsselung für sensible Daten
-- [ ] Archivierung nach gesetzlichen Vorgaben
-- [ ] Integration mit bestehenden Lohnsystemen
-
-#### 🌴 Urlaubsantrag-System (MVP)
-
-- [ ] Backend API (/api/vacation)
-- [ ] Antragsformular (einfache Version)
-- [ ] Admin-Genehmigung
-- [ ] Kalender-Integration
-- [ ] E-Mail Benachrichtigung
-
-## 📊 PHASE 2: Beta-Test Features
+## 📊 PHASE 3: Beta-Test Features
 
 ### 5. Survey-System (✅ FERTIG - 29.01.2025)
 
@@ -63,7 +82,24 @@
 - [x] Excel Export repariert
 - [x] Navigation Fixes
 
-### 6. Microsoft-Integration (Wichtig für Enterprise)
+### 6. 🔐 Data Privacy & Compliance (NEU - Wichtig für Deutschland!)
+
+- [ ] DSGVO-konforme Datenlöschung
+- [ ] Audit-Log für sensible Operationen
+- [ ] Cookie-Banner implementieren
+- [ ] Datenschutzerklärung-Seite
+- [ ] Recht auf Datenauskunft (Export)
+- [ ] Anonymisierung von Altdaten
+
+### 7. Beta-Test Specifics (NEU)
+
+- [ ] Demo-Daten Generator
+- [ ] Beta-Tester Onboarding Videos
+- [ ] Rollback-Strategie bei Problemen
+- [ ] SLA Definition (99% statt 99.9%?)
+- [ ] Beta-Feedback Auswertungs-Dashboard
+
+### 8. Microsoft-Integration (Nach Beta verschieben?)
 
 - [ ] Outlook Integration (Kalender, E-Mails)
 - [ ] Azure AD Single Sign-On
@@ -71,7 +107,7 @@
 - [ ] SharePoint Connector
 - [ ] Teams Integration für Chat
 
-### 7. Performance & Skalierung (10.000 User!)
+### 9. Performance & Skalierung (10.000 User!)
 
 - [ ] Database Query Optimierung
 - [ ] Redis Caching implementieren
@@ -80,21 +116,21 @@
 - [ ] Performance Monitoring Tools
 - [ ] Horizontal Scaling Strategie
 
-### 8. Basis-Analytics Dashboard
+### 10. Basis-Analytics Dashboard
 
 - [ ] User-Aktivität Übersicht
 - [ ] Feature-Nutzungsstatistiken
 - [ ] System-Health Monitoring
 - [ ] Export-Funktionen
 
-### 9. Beta-Feedback System
+### 11. Beta-Feedback System
 
 - [ ] In-App Feedback Widget
 - [ ] Bug-Report Funktion
 - [ ] Feature-Request Sammlung
 - [ ] Analytics für User-Verhalten
 
-## 🔄 PHASE 3: Nach Beta-Test
+## 🔄 PHASE 4: Nach Beta-Test
 
 ### Backend-Priorität Features
 
@@ -145,6 +181,8 @@
 - [x] Feature Management
 - [x] Glassmorphismus Design
 - [x] Survey-System (29.01.2025)
+- [x] Security-Enhanced Middleware
+- [x] TypeScript Backend Migration (30.05.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
 
@@ -165,13 +203,24 @@
    - NPS Score > 7
    - Konkrete Feature-Requests
 
-## 🎯 Entwicklungs-Reihenfolge
+## 🎯 NEUE Entwicklungs-Reihenfolge (Beta-Fokus!)
 
-1. **Woche 1-2:** Security Fixes + Setup-Guides
-2. **Woche 3-4:** Mobile Optimization + Urlaubssystem
-3. **Woche 5:** Analytics Dashboard + Performance
-4. **Woche 6:** Beta-Feedback System + Final Testing
+1. **SOFORT (1-2 Tage):** Docker Setup für einfaches Deployment
+2. **Woche 1:** Urlaubssystem + Gehaltsabrechnung Upload
+3. **Woche 2-3:** TPM-System Basis-Implementation
+4. **Woche 3-4:** Mobile Optimization + PWA
+5. **Woche 4:** DSGVO Compliance + Beta-Test Tools
+6. **Woche 5:** Performance Tests + Final Testing
 
-**Beta-Start:** Nach Abschluss von Phase 1
+**Beta-Start:** Nach Abschluss von Phase 2 (DEAL-BREAKER Features)
 **Beta-Dauer:** 4-6 Wochen
-**Ziel:** Stabiles System mit positiven Rückmeldungen
+**Ziel:** TPM + Urlaub + Gehalt = Zufriedene Beta-Tester
+
+## ❓ Offene Fragen für Beta-Planung
+
+1. **Beta-Timeline**: Konkretes Startdatum?
+2. **Maschinen-Typen**: Welche Hersteller/Modelle für TPM?
+3. **Lohnsysteme**: DATEV, SAP oder andere?
+4. **Hosting**: On-Premise oder Cloud-Präferenz?
+5. **Mobile Usage**: Smartphones oder Tablets dominant?
+6. **Sprachen**: Nur Deutsch oder auch EN/TR/PL?
