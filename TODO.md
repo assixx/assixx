@@ -183,6 +183,10 @@
 - [x] Survey-System (29.01.2025)
 - [x] Security-Enhanced Middleware
 - [x] TypeScript Backend Migration (30.05.2025)
+- [x] Tenant Deletion Feature (30.05.2025)
+- [x] Signup Flow Optimierung - Features automatisch aktiviert (31.05.2025)
+- [x] Pricing Page mit Feature-Vergleichstabelle (31.05.2025)
+- [x] Premium Badge Design mit Glassmorphismus (31.05.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
 

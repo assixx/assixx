@@ -14,6 +14,14 @@
   --success-color: #4caf50;
   --error-color: #f44336;
   --warning-color: #ff9800;
+  
+  /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
+  --accent-color: rgba(255, 255, 255, 0.1);
+  --accent-gradient: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15), 
+    rgba(255, 255, 255, 0.05), 
+    rgba(255, 255, 255, 0.1));
+  --accent-glow: rgba(255, 255, 255, 0.6);
 
   /* Abstände */
   --spacing-xs: 4px;

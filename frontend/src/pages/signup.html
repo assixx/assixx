@@ -423,49 +423,6 @@
         position: absolute;
       }
 
-      /* Features mit mehr Raum */
-      .features-section {
-        grid-column: 1 / -1;
-        margin-top: 12px;
-      }
-
-      .features-row {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-
-      .feature-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        color: var(--text-secondary);
-        padding: 6px 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: var(--radius-sm);
-        transition: all 0.3s ease;
-      }
-
-      .feature-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.15);
-        transform: translateY(-1px);
-      }
-
-      .feature-item input[type='checkbox'] {
-        accent-color: var(--primary-color);
-        width: 14px;
-        height: 14px;
-      }
-
-      .feature-item input[type='checkbox']:checked + span {
-        color: var(--primary-color);
-        font-weight: 500;
-      }
-
       /* Bottom Section */
       .bottom-section {
         grid-column: 1 / -1;
@@ -812,33 +769,6 @@
             <input type="hidden" name="plan" id="planValue" value="enterprise" />
           </div>
 
-          <!-- Features in kompakter Zeile -->
-          <div class="features-section">
-            <label class="form-label">Features</label>
-            <div class="features-row">
-              <label class="feature-item">
-                <input type="checkbox" name="features" value="blackboard" checked />
-                <span>Schwarzes Brett</span>
-              </label>
-              <label class="feature-item">
-                <input type="checkbox" name="features" value="calendar" checked />
-                <span>Kalender</span>
-              </label>
-              <label class="feature-item">
-                <input type="checkbox" name="features" value="shift_planning" checked />
-                <span>Schichtplanung</span>
-              </label>
-              <label class="feature-item">
-                <input type="checkbox" name="features" value="kvp" checked />
-                <span>KVP</span>
-              </label>
-              <label class="feature-item">
-                <input type="checkbox" name="features" value="survey" checked />
-                <span>Umfragen</span>
-              </label>
-            </div>
-          </div>
-
           <!-- Terms und Submit in einer Zeile -->
           <div class="bottom-section">
             <label class="terms-checkbox">
@@ -1084,9 +1014,6 @@
         const phoneNumber = data.phone;
         const fullPhone = phoneNumber ? `${currentCountryCode} ${phoneNumber}` : '';
 
-        // Collect selected features
-        const selectedFeatures = Array.from(document.querySelectorAll('input[name="features"]:checked')).map((cb) => cb.value);
-
         // Add root user credentials
         const signupData = {
           company_name: data.company_name,
@@ -1098,7 +1025,6 @@
           admin_last_name: data.last_name,
           phone: fullPhone,
           plan: currentPlan,
-          features: selectedFeatures,
         };
 
         try {

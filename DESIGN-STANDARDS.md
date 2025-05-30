@@ -82,6 +82,14 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
   --success-color: #4caf50; /* Grün für Erfolg */
   --error-color: #f44336; /* Rot für Fehler */
   --warning-color: #ff9800; /* Orange für Warnungen */
+  
+  /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
+  --accent-color: rgba(255, 255, 255, 0.1); /* Elegante transparente Basis */
+  --accent-gradient: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15), 
+    rgba(255, 255, 255, 0.05), 
+    rgba(255, 255, 255, 0.1)); /* Subtiler Glassmorphismus Gradient */
+  --accent-glow: rgba(255, 255, 255, 0.6); /* Glow-Effekt für Premium Elements */
 
   /* Abstände */
   --spacing-xs: 4px;

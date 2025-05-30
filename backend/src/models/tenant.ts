@@ -163,15 +163,13 @@ export class Tenant {
   ): Promise<void> {
     const conn = connection || pool;
 
-    // Hole alle Basic und einige Premium Features für Trial
+    // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
+    // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
     const [features] = await (conn as any).query(
-      `SELECT id FROM features 
-       WHERE category IN ('basic', 'premium') 
-       AND code IN ('basic_employees', 'document_upload', 'payslip_management', 
-                    'email_notifications', 'advanced_reports')`
+      `SELECT id FROM features`
     );
 
-    // Aktiviere Features für 14 Tage
+    // Aktiviere alle Features für 14 Tage Trial
     for (const feature of features) {
       await (conn as any).query(
         `INSERT INTO tenant_features (tenant_id, feature_id, status, valid_until, trial_days) 
