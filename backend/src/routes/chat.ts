@@ -8,6 +8,14 @@ import multer from 'multer';
 import path from 'path';
 import chatController from '../controllers/chat.controller';
 import { authenticateToken } from '../middleware/auth';
+import type {
+  AuthenticatedRequest,
+  ChatUsersRequest,
+  GetConversationsRequest,
+  CreateConversationRequest,
+  GetMessagesRequest,
+  SendMessageRequest
+} from '../types/request.types';
 
 const router: Router = express.Router();
 
@@ -51,32 +59,32 @@ const upload = multer({
 });
 
 // Routes with controller methods
-router.get('/users', authenticateToken, (req, res) => chatController.getUsers(req, res));
+router.get('/users', authenticateToken, (req, res) => chatController.getUsers(req as ChatUsersRequest, res));
 router.get(
   '/conversations',
   authenticateToken,
-  (req, res) => chatController.getConversations(req, res)
+  (req, res) => chatController.getConversations(req as GetConversationsRequest, res)
 );
 router.post(
   '/conversations',
   authenticateToken,
-  (req, res) => chatController.createConversation(req, res)
+  (req, res) => chatController.createConversation(req as CreateConversationRequest, res)
 );
 router.get(
   '/conversations/:id/messages',
   authenticateToken,
-  (req, res) => chatController.getMessages(req, res)
+  (req, res) => chatController.getMessages(req as GetMessagesRequest, res)
 );
 router.post(
   '/conversations/:id/messages',
   authenticateToken,
   upload.single('attachment'),
-  (req, res) => chatController.sendMessage(req, res)
+  (req, res) => chatController.sendMessage(req as SendMessageRequest, res)
 );
 router.get(
   '/attachments/:filename',
   authenticateToken,
-  (req, res) => chatController.downloadFile(req, res)
+  (req, res) => chatController.downloadFile(req as AuthenticatedRequest, res)
 );
 // router.put(
 //   '/messages/:id/read',
@@ -96,7 +104,7 @@ router.get(
 router.get(
   '/unread-count',
   authenticateToken,
-  (req, res) => chatController.getUnreadCount(req, res)
+  (req, res) => chatController.getUnreadCount(req as AuthenticatedRequest, res)
 );
 // router.put(
 //   '/messages/:id/archive',

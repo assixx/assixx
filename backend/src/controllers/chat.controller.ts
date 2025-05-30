@@ -10,69 +10,37 @@ import path from 'path';
 import fs from 'fs/promises';
 import {
   AuthenticatedRequest as BaseAuthRequest,
-  FileUploadRequest,
+  ChatUsersRequest as BaseChatUsersRequest,
+  GetConversationsRequest as BaseGetConversationsRequest,
+  CreateConversationRequest as BaseCreateConversationRequest,
+  GetMessagesRequest as BaseGetMessagesRequest,
+  SendMessageRequest as BaseSendMessageRequest,
 } from '../types/request.types';
 
-// Extended Request interface for chat operations with DB pool
+// Extended Request interfaces for chat operations with DB pool
 interface AuthenticatedRequest extends BaseAuthRequest {
   tenantDb?: Pool;
 }
 
-interface ChatUsersRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-}
-
-interface CreateConversationRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-  body: {
-    participantIds: number[];
-    name?: string;
-  };
-}
-
-interface GetConversationsRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-}
-
-interface GetMessagesRequest extends AuthenticatedRequest {
-  params: {
-    id: string;
-  };
-  query: {
-    limit?: string;
-    offset?: string;
-  };
-}
-
-interface SendMessageRequest extends FileUploadRequest {
-  params: {
-    id: string;
-  };
-  body: {
-    content?: string;
-  };
+interface ChatUsersRequest extends BaseChatUsersRequest {
   tenantDb?: Pool;
+}
+
+interface CreateConversationRequest extends BaseCreateConversationRequest {
+  tenantDb?: Pool;
+}
+
+interface GetConversationsRequest extends BaseGetConversationsRequest {
+  tenantDb?: Pool;
+}
+
+interface GetMessagesRequest extends BaseGetMessagesRequest {
+  tenantDb?: Pool;
+}
+
+interface SendMessageRequest extends BaseSendMessageRequest {
+  tenantDb?: Pool;
+  file?: Express.Multer.File;
 }
 
 interface GetConversationParticipantsRequest extends AuthenticatedRequest {
@@ -168,7 +136,7 @@ class ChatController {
         return;
       }
 
-      const { participantIds, name } = req.body;
+      const { participant_ids: participantIds, name } = req.body;
 
       if (
         !participantIds ||
@@ -423,7 +391,7 @@ class ChatController {
   }
 
   // Get unread message count
-  async getUnreadCount(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getUnreadCount(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // For now, return 0 as placeholder
       // TODO: Implement actual unread count logic

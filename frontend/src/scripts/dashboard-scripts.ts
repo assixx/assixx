@@ -2,6 +2,22 @@
  * Dashboard Scripts - gemeinsame Funktionalität für alle Dashboard-Seiten
  */
 
+import type { User } from '../types/api.types';
+import { getAuthToken, removeAuthToken } from './auth';
+import { formatDate as formatDateUtil } from './common';
+
+interface TabClickDetail {
+  value?: string;
+  id: string;
+}
+
+interface DashboardUI {
+  openModal: (modalId: string) => void;
+  closeModal: (modalId: string) => void;
+  showToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
+  formatDate: (dateString: string) => string;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Initialisiere Modals
   initModals();
@@ -16,14 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
 /**
  * Modal-System Initialisierung
  */
-function initModals() {
+function initModals(): void {
   // Close-Buttons für Modals
   document
-    .querySelectorAll('.modal-close, [data-action="close"]')
+    .querySelectorAll<HTMLElement>('.modal-close, [data-action="close"]')
     .forEach((button) => {
       button.addEventListener('click', function () {
         // Find closest modal-overlay
-        const modalOverlay = this.closest('.modal-overlay');
+        const modalOverlay = this.closest('.modal-overlay') as HTMLElement;
         if (modalOverlay) {
           closeModal(modalOverlay.id);
         }
@@ -31,8 +47,8 @@ function initModals() {
     });
 
   // Click outside modal to close
-  document.querySelectorAll('.modal-overlay').forEach((modal) => {
-    modal.addEventListener('click', function (e) {
+  document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
+    modal.addEventListener('click', function (e: MouseEvent) {
       if (e.target === this) {
         closeModal(this.id);
       }
@@ -43,8 +59,8 @@ function initModals() {
 /**
  * Öffnet ein Modal
  */
-function openModal(modalId) {
-  const modal = document.getElementById(modalId);
+function openModal(modalId: string): void {
+  const modal = document.getElementById(modalId) as HTMLElement;
   if (modal) {
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -56,8 +72,8 @@ function openModal(modalId) {
 /**
  * Schließt ein Modal
  */
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
+function closeModal(modalId: string): void {
+  const modal = document.getElementById(modalId) as HTMLElement;
   if (modal) {
     modal.style.opacity = '0';
     modal.style.visibility = 'hidden';
@@ -69,14 +85,14 @@ function closeModal(modalId) {
 /**
  * Tab-Navigation Initialisierung
  */
-function initTabs() {
-  document.querySelectorAll('.tab-btn').forEach((button) => {
+function initTabs(): void {
+  document.querySelectorAll<HTMLElement>('.tab-btn').forEach((button) => {
     button.addEventListener('click', function () {
       // Deactivate all tabs
       const parent = this.closest('.tab-navigation');
       if (!parent) return;
 
-      parent.querySelectorAll('.tab-btn').forEach((btn) => {
+      parent.querySelectorAll<HTMLElement>('.tab-btn').forEach((btn) => {
         btn.classList.remove('active');
       });
 
@@ -84,7 +100,7 @@ function initTabs() {
       this.classList.add('active');
 
       // Trigger the tab click event for custom handlers
-      const event = new CustomEvent('tabClick', {
+      const event = new CustomEvent<TabClickDetail>('tabClick', {
         detail: {
           value: this.dataset.value,
           id: this.id,
@@ -98,13 +114,13 @@ function initTabs() {
 /**
  * Benutzerdaten und Logout-Funktionalität
  */
-function setupUserAndLogout() {
-  const userInfo = document.getElementById('user-info');
-  const logoutBtn = document.getElementById('logout-btn');
+function setupUserAndLogout(): void {
+  const userInfo = document.getElementById('user-info') as HTMLElement;
+  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
 
   if (userInfo) {
     // Lade Benutzerdaten
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     if (token) {
       fetch('/api/user/profile', {
         headers: {
@@ -117,7 +133,7 @@ function setupUserAndLogout() {
           }
           throw new Error('Fehler beim Laden der Benutzerdaten');
         })
-        .then((data) => {
+        .then((data: User) => {
           // Anzeigename setzen (Name oder Username)
           const displayName = data.first_name
             ? `${data.first_name} ${data.last_name || ''}`
@@ -136,7 +152,7 @@ function setupUserAndLogout() {
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('token');
+      removeAuthToken();
       window.location.href = '/pages/login.html';
     });
   }
@@ -145,7 +161,7 @@ function setupUserAndLogout() {
 /**
  * Hilfsfunktion zum Formatieren eines Datums
  */
-function formatDate(dateString) {
+function formatDate(dateString: string): string {
   if (!dateString) return '-';
 
   const date = new Date(dateString);
@@ -161,9 +177,9 @@ function formatDate(dateString) {
 /**
  * Toast-Benachrichtigung anzeigen
  */
-function showToast(message, type = 'info') {
+function showToast(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info'): void {
   // Create toast container if it doesn't exist
-  let toastContainer = document.querySelector('.toast-container');
+  let toastContainer = document.querySelector<HTMLElement>('.toast-container');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container';
@@ -188,9 +204,14 @@ function showToast(message, type = 'info') {
 }
 
 // Expose global utilities
-window.DashboardUI = {
-  openModal,
-  closeModal,
-  showToast,
-  formatDate,
-};
+if (typeof window !== 'undefined') {
+  (window as any).DashboardUI = {
+    openModal,
+    closeModal,
+    showToast,
+    formatDate,
+  } as DashboardUI;
+}
+
+// Export functions for module usage
+export { openModal, closeModal, showToast, formatDate, initModals, initTabs };

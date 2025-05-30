@@ -1,26 +1,36 @@
 /**
- * employee-deletion.js
+ * employee-deletion.ts
  * Erweiterte Funktionen für die Mitarbeiter-Löschung im Admin-Dashboard.
  * Bietet Optionen zum Archivieren oder vollständigem Löschen von Mitarbeitern,
  * inklusive der Verarbeitung von verknüpften Dokumenten und anderen Daten.
  */
 
-/* global hideModal, loadEmployeesTable, loadDashboardStats */
+import type { User, Document } from '../types/api.types';
+import { getAuthToken } from './auth';
+
+interface DeletionResponse {
+  success: boolean;
+  message?: string;
+}
 
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
-let selectedEmployeeId = null;
-let selectedEmployeeName = '';
-let documentCount = 0;
+let selectedEmployeeId: number | null = null;
+let selectedEmployeeName: string = '';
+let documentCount: number = 0;
 
 /**
  * Zeigt das Mitarbeiter-Löschdialog an mit optionalen Archivierungsoptionen
  * @param {number} employeeId - Die ID des zu löschenden Mitarbeiters
  */
-function showDeleteEmployeeDialog(employeeId) {
+function showDeleteEmployeeDialog(employeeId: number): void {
   selectedEmployeeId = employeeId;
 
   // Token abrufen
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
+  if (!token) {
+    alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
+    return;
+  }
 
   // Mitarbeiter-Informationen abrufen für Anzeige im Dialog
   fetch(`/admin/employees/${employeeId}`, {
@@ -32,8 +42,8 @@ function showDeleteEmployeeDialog(employeeId) {
       }
       return response.json();
     })
-    .then((employee) => {
-      selectedEmployeeName = `${employee.first_name} ${employee.last_name}`;
+    .then((employee: User) => {
+      selectedEmployeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim();
 
       // Prüfen, ob der Mitarbeiter Dokumente hat
       return fetch(`/documents?user_id=${employeeId}`, {
@@ -46,7 +56,7 @@ function showDeleteEmployeeDialog(employeeId) {
       }
       return response.json();
     })
-    .then((documents) => {
+    .then((documents: Document[]) => {
       documentCount = documents.length;
 
       // Dialog-Inhalt zusammenstellen basierend auf den Dokumenten
@@ -137,9 +147,9 @@ function showDeleteEmployeeDialog(employeeId) {
 /**
  * Verarbeitet die Mitarbeiter-Löschung basierend auf der gewählten Option
  */
-function _processEmployeeDeletion() {
+function processEmployeeDeletion(): void {
   // Gewählte Option ermitteln
-  const options = document.getElementsByName('deletion-option');
+  const options = document.getElementsByName('deletion-option') as NodeListOf<HTMLInputElement>;
   let selectedOption = '';
 
   for (const option of options) {
@@ -150,7 +160,11 @@ function _processEmployeeDeletion() {
   }
 
   // Token abrufen
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
+  if (!token) {
+    alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
+    return;
+  }
 
   // Basierend auf der gewählten Option unterschiedliche Aktionen ausführen
   if (selectedOption === 'archive') {
@@ -164,7 +178,7 @@ function _processEmployeeDeletion() {
       body: JSON.stringify({}), // Leerer Körper, da keine Daten benötigt werden
     })
       .then((response) => response.json())
-      .then((result) => {
+      .then((result: DeletionResponse) => {
         if (result.success) {
           // Erfolgsmeldung anzeigen
           alert(
@@ -175,13 +189,13 @@ function _processEmployeeDeletion() {
           hideModal('delete-employee-modal');
 
           // Mitarbeiterliste aktualisieren
-          if (typeof loadEmployeesTable === 'function') {
-            loadEmployeesTable('reload');
+          if (typeof (window as any).loadEmployeesTable === 'function') {
+            (window as any).loadEmployeesTable('reload');
           }
 
           // Dashboard-Statistiken aktualisieren
-          if (typeof loadDashboardStats === 'function') {
-            loadDashboardStats();
+          if (typeof (window as any).loadDashboardStats === 'function') {
+            (window as any).loadDashboardStats();
           }
         } else {
           alert(
@@ -215,7 +229,7 @@ function _processEmployeeDeletion() {
         },
       })
         .then((response) => response.json())
-        .then((result) => {
+        .then((result: DeletionResponse) => {
           if (result.success) {
             alert(
               `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`
@@ -223,13 +237,13 @@ function _processEmployeeDeletion() {
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
-            if (typeof loadEmployeesTable === 'function') {
-              loadEmployeesTable('reload');
+            if (typeof (window as any).loadEmployeesTable === 'function') {
+              (window as any).loadEmployeesTable('reload');
             }
 
             // Dashboard-Statistiken aktualisieren
-            if (typeof loadDashboardStats === 'function') {
-              loadDashboardStats();
+            if (typeof (window as any).loadDashboardStats === 'function') {
+              (window as any).loadDashboardStats();
             }
           } else {
             alert(
@@ -253,7 +267,7 @@ function _processEmployeeDeletion() {
         },
       })
         .then((response) => response.json())
-        .then((result) => {
+        .then((result: DeletionResponse) => {
           if (result.success) {
             alert(
               `Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`
@@ -261,13 +275,13 @@ function _processEmployeeDeletion() {
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
-            if (typeof loadEmployeesTable === 'function') {
-              loadEmployeesTable('reload');
+            if (typeof (window as any).loadEmployeesTable === 'function') {
+              (window as any).loadEmployeesTable('reload');
             }
 
             // Dashboard-Statistiken aktualisieren
-            if (typeof loadDashboardStats === 'function') {
-              loadDashboardStats();
+            if (typeof (window as any).loadDashboardStats === 'function') {
+              (window as any).loadDashboardStats();
             }
           } else {
             alert(
@@ -284,12 +298,29 @@ function _processEmployeeDeletion() {
 }
 
 /**
+ * Hide modal utility function
+ */
+function hideModal(modalId: string): void {
+  const modal = document.getElementById(modalId) as HTMLElement;
+  if (modal) {
+    modal.remove();
+  }
+}
+
+/**
  * Überschreibt die ursprüngliche deleteEmployee-Funktion mit der verbesserten Version
  */
-function _deleteEmployee(employeeId) {
+function deleteEmployee(employeeId: number): void {
   showDeleteEmployeeDialog(employeeId);
 }
 
-// Dokumentation für die Verwendung in admin-dashboard.js
-// Um diese Funktionalität einzubinden, fügen Sie folgende Zeile ein:
-// <script src="js/employee-deletion.js"></script>
+// Export functions to window for backwards compatibility
+if (typeof window !== 'undefined') {
+  (window as any).showDeleteEmployeeDialog = showDeleteEmployeeDialog;
+  (window as any).processEmployeeDeletion = processEmployeeDeletion;
+  (window as any).deleteEmployee = deleteEmployee;
+  (window as any).hideModal = hideModal;
+}
+
+// Export for module usage
+export { showDeleteEmployeeDialog, processEmployeeDeletion, deleteEmployee, hideModal };

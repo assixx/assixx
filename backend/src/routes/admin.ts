@@ -377,7 +377,7 @@ router.get(
 router.get('/documents', authenticateToken, authorizeRole('admin'), async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedAdminRequest;
-    const documents = await Document.findAll(authReq.user.tenant_id);
+    const documents = await Document.findAll(authReq.user.tenant_id.toString());
     res.json(documents);
   } catch (error: any) {
     logger.error(`Error retrieving documents: ${error.message}`);

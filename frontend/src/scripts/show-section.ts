@@ -3,13 +3,15 @@
  * Used by admin-dashboard and unified-navigation
  */
 
-// Make showSection globally available
-window.showSection = function (sectionName) {
+/**
+ * Show a specific section and hide all others
+ */
+export function showSection(sectionName: string): void {
   console.log(`[ShowSection] Navigating to section: ${sectionName}`);
 
   // Hide all sections
-  const allSections = document.querySelectorAll('.dashboard-section');
-  allSections.forEach((section) => {
+  const allSections = document.querySelectorAll<HTMLElement>('.dashboard-section');
+  allSections.forEach((section: HTMLElement) => {
     section.style.display = 'none';
     section.classList.remove('active');
   });
@@ -21,8 +23,8 @@ window.showSection = function (sectionName) {
     targetSection.classList.add('active');
 
     // Update navigation active state
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach((item) => {
+    const navItems = document.querySelectorAll<HTMLElement>('.nav-item');
+    navItems.forEach((item: HTMLElement) => {
       item.classList.remove('active');
       if (item.getAttribute('data-section') === sectionName) {
         item.classList.add('active');
@@ -30,7 +32,7 @@ window.showSection = function (sectionName) {
     });
 
     // Update URL without page reload
-    const url = new URL(window.location);
+    const url = new URL(window.location.href);
     url.searchParams.set('section', sectionName);
     window.history.pushState({ section: sectionName }, '', url);
 
@@ -38,4 +40,25 @@ window.showSection = function (sectionName) {
   } else {
     console.error(`[ShowSection] Section ${sectionName} not found`);
   }
-};
+}
+
+// Check URL on page load and show appropriate section
+export function initSectionFromURL(): void {
+  const urlParams = new URLSearchParams(window.location.search);
+  const section = urlParams.get('section');
+  
+  if (section) {
+    showSection(section);
+  }
+}
+
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+  initSectionFromURL();
+});
+
+// Make showSection globally available
+if (typeof window !== 'undefined') {
+  (window as any).showSection = showSection;
+  (window as any).initSectionFromURL = initSectionFromURL;
+}

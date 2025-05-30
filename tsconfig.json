@@ -31,11 +31,11 @@
     "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types", "./backend/src/types"]
   },
-  "include": ["backend/**/*", "frontend/src/**/*"],
+  "include": ["backend/**/*"],
   "exclude": [
     "node_modules",
     "dist",
-    "frontend/dist",
+    "frontend",
     "uploads",
     "logs",
     "*.test.js",

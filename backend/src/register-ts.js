@@ -1,5 +1,7 @@
 // Register TypeScript for runtime compilation
-require('ts-node').register({
+import { register } from 'ts-node';
+
+register({
   transpileOnly: true,
   swc: true,
   compilerOptions: {

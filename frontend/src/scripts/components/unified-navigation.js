@@ -2,378 +2,352 @@
  * Unified Navigation Component für alle Dashboards
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design
  */
-
 class UnifiedNavigation {
-  constructor() {
-    this.currentUser = null;
-    this.currentRole = null;
-    this.navigationItems = this.getNavigationItems();
-    this.init();
-  }
-
-  init() {
-    this.loadUserInfo();
-    this.injectNavigationHTML();
-    this.attachEventListeners();
-  }
-
-  loadUserInfo() {
-    // User-Info aus Token oder Session laden
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        this.currentUser = payload;
-        this.currentRole = payload.role;
-
-        // Also try to load full user profile
-        this.loadFullUserProfile();
-      } catch (error) {
-        console.error('Error parsing token:', error);
-      }
+    constructor() {
+        this.currentUser = null;
+        this.currentRole = null;
+        this.navigationItems = this.getNavigationItems();
+        this.init();
     }
-  }
-
-  async loadFullUserProfile() {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
-
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        const user = userData.user || userData;
-
-        // Update user info card with full details
-        const sidebarUserName = document.getElementById('sidebar-user-name');
-        if (sidebarUserName) {
-          sidebarUserName.textContent =
-            user.username || this.currentUser?.username || 'User';
-        }
-
-        const sidebarFullName = document.getElementById(
-          'sidebar-user-fullname'
-        );
-        if (sidebarFullName && (user.first_name || user.last_name)) {
-          const fullName =
-            `${user.first_name || ''} ${user.last_name || ''}`.trim();
-          sidebarFullName.textContent = fullName;
-        }
-
-        const sidebarBirthdate = document.getElementById(
-          'sidebar-user-birthdate'
-        );
-        if (sidebarBirthdate && user.birthdate) {
-          const birthdate = new Date(user.birthdate);
-          sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
-        }
-
-        // Update avatar if we have profile picture
-        const sidebarAvatar = document.getElementById('sidebar-user-avatar');
-        if (sidebarAvatar && user.profile_picture) {
-          sidebarAvatar.src = user.profile_picture;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading full user profile:', error);
+    init() {
+        this.loadUserInfo();
+        this.injectNavigationHTML();
+        this.attachEventListeners();
     }
-  }
-
-  getNavigationItems() {
-    return {
-      // Admin Navigation (14 Items)
-      admin: [
-        {
-          id: 'dashboard',
-          icon: this.getSVGIcon('home'),
-          label: 'Übersicht',
-          url: '/pages/admin-dashboard.html',
-          section: 'dashboard',
-        },
-        {
-          id: 'employees',
-          icon: this.getSVGIcon('users'),
-          label: 'Mitarbeiter',
-          url: '#employees',
-          section: 'employees',
-        },
-        {
-          id: 'documents',
-          icon: this.getSVGIcon('document'),
-          label: 'Dokumente',
-          url: '#documents',
-          section: 'documents',
-        },
-        {
-          id: 'blackboard',
-          icon: this.getSVGIcon('blackboard'),
-          label: 'Blackboard',
-          url: '/pages/blackboard.html',
-        },
-        {
-          id: 'calendar',
-          icon: this.getSVGIcon('calendar'),
-          label: 'Kalender',
-          url: '/pages/calendar.html',
-        },
-        {
-          id: 'shifts',
-          icon: this.getSVGIcon('clock'),
-          label: 'Schichtplanung',
-          url: '/pages/shifts.html',
-        },
-        {
-          id: 'chat',
-          icon: this.getSVGIcon('chat'),
-          label: 'Chat',
-          url: '/pages/chat.html',
-          badge: 'unread-messages',
-        },
-        {
-          id: 'kvp',
-          icon: this.getSVGIcon('lightbulb'),
-          label: 'KVP System',
-          url: '/pages/kvp.html',
-        },
-        {
-          id: 'surveys',
-          icon: this.getSVGIcon('poll'),
-          label: 'Umfragen',
-          url: '/pages/survey-admin.html',
-        },
-        {
-          id: 'payslips',
-          icon: this.getSVGIcon('money'),
-          label: 'Gehaltsabrechnungen',
-          url: '#payslips',
-          section: 'payslips',
-        },
-        {
-          id: 'departments',
-          icon: this.getSVGIcon('building'),
-          label: 'Abteilungen',
-          url: '#departments',
-          section: 'departments',
-        },
-        {
-          id: 'teams',
-          icon: this.getSVGIcon('team'),
-          label: 'Teams',
-          url: '#teams',
-          section: 'teams',
-        },
-        {
-          id: 'settings',
-          icon: this.getSVGIcon('settings'),
-          label: 'Einstellungen',
-          url: '#settings',
-          section: 'settings',
-        },
-        {
-          id: 'features',
-          icon: this.getSVGIcon('feature'),
-          label: 'Feature Management',
-          url: '/pages/feature-management.html',
-        },
-      ],
-
-      // Employee Navigation (9 Items)
-      employee: [
-        {
-          id: 'dashboard',
-          icon: this.getSVGIcon('home'),
-          label: 'Dashboard',
-          url: '/pages/employee-dashboard.html',
-        },
-        {
-          id: 'documents',
-          icon: this.getSVGIcon('document'),
-          label: 'Meine Dokumente',
-          url: '/pages/employee-documents.html',
-        },
-        {
-          id: 'blackboard',
-          icon: this.getSVGIcon('blackboard'),
-          label: 'Blackboard',
-          url: '/pages/blackboard.html',
-        },
-        {
-          id: 'calendar',
-          icon: this.getSVGIcon('calendar'),
-          label: 'Kalender',
-          url: '/pages/calendar.html',
-        },
-        {
-          id: 'chat',
-          icon: this.getSVGIcon('chat'),
-          label: 'Chat',
-          url: '/pages/chat.html',
-          badge: 'unread-messages',
-        },
-        {
-          id: 'shifts',
-          icon: this.getSVGIcon('clock'),
-          label: 'Schichtplanung',
-          url: '/pages/shifts.html',
-        },
-        {
-          id: 'kvp',
-          icon: this.getSVGIcon('lightbulb'),
-          label: 'KVP System',
-          url: '/pages/kvp.html',
-        },
-        {
-          id: 'surveys',
-          icon: this.getSVGIcon('poll'),
-          label: 'Umfragen',
-          url: '/pages/survey-employee.html',
-          badge: 'pending-surveys',
-        },
-        {
-          id: 'profile',
-          icon: this.getSVGIcon('user'),
-          label: 'Mein Profil',
-          url: '/pages/profile.html',
-        },
-      ],
-
-      // Root Navigation (erweitert)
-      root: [
-        {
-          id: 'dashboard',
-          icon: this.getSVGIcon('home'),
-          label: 'Root Dashboard',
-          url: '/pages/root-dashboard.html',
-        },
-        {
-          id: 'admins',
-          icon: this.getSVGIcon('admin'),
-          label: 'Administratoren',
-          url: '#admins',
-          section: 'admins',
-        },
-        {
-          id: 'tenants',
-          icon: this.getSVGIcon('building'),
-          label: 'Firmen',
-          url: '#tenants',
-          section: 'tenants',
-        },
-        {
-          id: 'features',
-          icon: this.getSVGIcon('feature'),
-          label: 'Features',
-          url: '/pages/root-features.html',
-        },
-        {
-          id: 'profile',
-          icon: this.getSVGIcon('user'),
-          label: 'Mein Profil',
-          url: '/pages/root-profile.html',
-        },
-        {
-          id: 'system',
-          icon: this.getSVGIcon('settings'),
-          label: 'System',
-          url: '#system',
-          section: 'system',
-        },
-      ],
-    };
-  }
-
-  getSVGIcon(name) {
-    const icons = {
-      home: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
-      users:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
-      user: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
-      document:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
-      blackboard:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>',
-      calendar:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>',
-      clock:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
-      chat: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>',
-      lightbulb:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17h8v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/></svg>',
-      money:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
-      building:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
-      team: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
-      settings:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>',
-      feature:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
-      admin:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
-      poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
-    };
-    return icons[name] || icons.home;
-  }
-
-  getNavigationForRole(role) {
-    return this.navigationItems[role] || [];
-  }
-
-  injectNavigationHTML() {
-    const navigation = this.createNavigationHTML();
-
-    // Suche nach bestehender Sidebar und ersetze sie
-    const existingSidebar = document.querySelector('.sidebar');
-    if (existingSidebar) {
-      existingSidebar.innerHTML = navigation;
-    } else {
-      // Erstelle neue Sidebar falls keine existiert
-      this.createSidebarStructure();
+    loadUserInfo() {
+        // User-Info aus Token oder Session laden
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                this.currentUser = payload;
+                this.currentRole = payload.role;
+                // Also try to load full user profile
+                this.loadFullUserProfile();
+            }
+            catch (error) {
+                console.error('Error parsing token:', error);
+            }
+        }
     }
-  }
-
-  createSidebarStructure() {
-    const body = document.body;
-    const existingLayout = document.querySelector('.layout-container');
-
-    if (!existingLayout) {
-      // Erstelle Layout-Container falls nicht vorhanden
-      const header = document.querySelector('.header');
-      const container = document.querySelector('.container');
-
-      const layoutContainer = document.createElement('div');
-      layoutContainer.className = 'layout-container';
-
-      const sidebar = document.createElement('aside');
-      sidebar.className = 'sidebar';
-      sidebar.innerHTML = this.createNavigationHTML();
-
-      const mainContent = document.createElement('main');
-      mainContent.className = 'main-content';
-      if (container) {
-        mainContent.appendChild(container);
-      }
-
-      layoutContainer.appendChild(sidebar);
-      layoutContainer.appendChild(mainContent);
-
-      if (header) {
-        body.insertBefore(layoutContainer, header.nextSibling);
-      } else {
-        body.appendChild(layoutContainer);
-      }
+    async loadFullUserProfile() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || token === 'test-mode')
+                return;
+            const response = await fetch('/api/user/profile', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.ok) {
+                const userData = await response.json();
+                const user = userData.user || userData;
+                // Update user info card with full details
+                const sidebarUserName = document.getElementById('sidebar-user-name');
+                if (sidebarUserName) {
+                    sidebarUserName.textContent =
+                        userData.username || user.username || this.currentUser?.username || 'User';
+                }
+                const sidebarFullName = document.getElementById('sidebar-user-fullname');
+                if (sidebarFullName) {
+                    const firstName = userData.first_name || userData.firstName || user.firstName || '';
+                    const lastName = userData.last_name || userData.lastName || user.lastName || '';
+                    if (firstName || lastName) {
+                        const fullName = `${firstName} ${lastName}`.trim();
+                        sidebarFullName.textContent = fullName;
+                    }
+                }
+                const sidebarBirthdate = document.getElementById('sidebar-user-birthdate');
+                if (sidebarBirthdate) {
+                    const birthDateStr = userData.birthdate || userData.birthDate || user.birthDate;
+                    if (birthDateStr) {
+                        const birthdate = new Date(birthDateStr);
+                        sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
+                    }
+                }
+                // Update avatar if we have profile picture
+                const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+                if (sidebarAvatar) {
+                    const profilePic = userData.profile_picture || userData.profilePicture || user.profilePicture;
+                    if (profilePic) {
+                        sidebarAvatar.src = profilePic;
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.error('Error loading full user profile:', error);
+        }
     }
-  }
-
-  createNavigationHTML() {
-    const menuItems = this.getNavigationForRole(this.currentRole);
-
-    return `
+    getNavigationItems() {
+        return {
+            // Admin Navigation (14 Items)
+            admin: [
+                {
+                    id: 'dashboard',
+                    icon: this.getSVGIcon('home'),
+                    label: 'Übersicht',
+                    url: '/pages/admin-dashboard.html',
+                    section: 'dashboard',
+                },
+                {
+                    id: 'employees',
+                    icon: this.getSVGIcon('users'),
+                    label: 'Mitarbeiter',
+                    url: '#employees',
+                    section: 'employees',
+                },
+                {
+                    id: 'documents',
+                    icon: this.getSVGIcon('document'),
+                    label: 'Dokumente',
+                    url: '#documents',
+                    section: 'documents',
+                },
+                {
+                    id: 'blackboard',
+                    icon: this.getSVGIcon('blackboard'),
+                    label: 'Blackboard',
+                    url: '/pages/blackboard.html',
+                },
+                {
+                    id: 'calendar',
+                    icon: this.getSVGIcon('calendar'),
+                    label: 'Kalender',
+                    url: '/pages/calendar.html',
+                },
+                {
+                    id: 'shifts',
+                    icon: this.getSVGIcon('clock'),
+                    label: 'Schichtplanung',
+                    url: '/pages/shifts.html',
+                },
+                {
+                    id: 'chat',
+                    icon: this.getSVGIcon('chat'),
+                    label: 'Chat',
+                    url: '/pages/chat.html',
+                    badge: 'unread-messages',
+                },
+                {
+                    id: 'kvp',
+                    icon: this.getSVGIcon('lightbulb'),
+                    label: 'KVP System',
+                    url: '/pages/kvp.html',
+                },
+                {
+                    id: 'surveys',
+                    icon: this.getSVGIcon('poll'),
+                    label: 'Umfragen',
+                    url: '/pages/survey-admin.html',
+                },
+                {
+                    id: 'payslips',
+                    icon: this.getSVGIcon('money'),
+                    label: 'Gehaltsabrechnungen',
+                    url: '#payslips',
+                    section: 'payslips',
+                },
+                {
+                    id: 'departments',
+                    icon: this.getSVGIcon('building'),
+                    label: 'Abteilungen',
+                    url: '#departments',
+                    section: 'departments',
+                },
+                {
+                    id: 'teams',
+                    icon: this.getSVGIcon('team'),
+                    label: 'Teams',
+                    url: '#teams',
+                    section: 'teams',
+                },
+                {
+                    id: 'settings',
+                    icon: this.getSVGIcon('settings'),
+                    label: 'Einstellungen',
+                    url: '#settings',
+                    section: 'settings',
+                },
+                {
+                    id: 'features',
+                    icon: this.getSVGIcon('feature'),
+                    label: 'Feature Management',
+                    url: '/pages/feature-management.html',
+                },
+            ],
+            // Employee Navigation (9 Items)
+            employee: [
+                {
+                    id: 'dashboard',
+                    icon: this.getSVGIcon('home'),
+                    label: 'Dashboard',
+                    url: '/pages/employee-dashboard.html',
+                },
+                {
+                    id: 'documents',
+                    icon: this.getSVGIcon('document'),
+                    label: 'Meine Dokumente',
+                    url: '/pages/employee-documents.html',
+                },
+                {
+                    id: 'blackboard',
+                    icon: this.getSVGIcon('blackboard'),
+                    label: 'Blackboard',
+                    url: '/pages/blackboard.html',
+                },
+                {
+                    id: 'calendar',
+                    icon: this.getSVGIcon('calendar'),
+                    label: 'Kalender',
+                    url: '/pages/calendar.html',
+                },
+                {
+                    id: 'chat',
+                    icon: this.getSVGIcon('chat'),
+                    label: 'Chat',
+                    url: '/pages/chat.html',
+                    badge: 'unread-messages',
+                },
+                {
+                    id: 'shifts',
+                    icon: this.getSVGIcon('clock'),
+                    label: 'Schichtplanung',
+                    url: '/pages/shifts.html',
+                },
+                {
+                    id: 'kvp',
+                    icon: this.getSVGIcon('lightbulb'),
+                    label: 'KVP System',
+                    url: '/pages/kvp.html',
+                },
+                {
+                    id: 'surveys',
+                    icon: this.getSVGIcon('poll'),
+                    label: 'Umfragen',
+                    url: '/pages/survey-employee.html',
+                    badge: 'pending-surveys',
+                },
+                {
+                    id: 'profile',
+                    icon: this.getSVGIcon('user'),
+                    label: 'Mein Profil',
+                    url: '/pages/profile.html',
+                },
+            ],
+            // Root Navigation (erweitert)
+            root: [
+                {
+                    id: 'dashboard',
+                    icon: this.getSVGIcon('home'),
+                    label: 'Root Dashboard',
+                    url: '/pages/root-dashboard.html',
+                },
+                {
+                    id: 'admins',
+                    icon: this.getSVGIcon('admin'),
+                    label: 'Administratoren',
+                    url: '#admins',
+                    section: 'admins',
+                },
+                {
+                    id: 'tenants',
+                    icon: this.getSVGIcon('building'),
+                    label: 'Firmen',
+                    url: '#tenants',
+                    section: 'tenants',
+                },
+                {
+                    id: 'features',
+                    icon: this.getSVGIcon('feature'),
+                    label: 'Features',
+                    url: '/pages/root-features.html',
+                },
+                {
+                    id: 'profile',
+                    icon: this.getSVGIcon('user'),
+                    label: 'Mein Profil',
+                    url: '/pages/root-profile.html',
+                },
+                {
+                    id: 'system',
+                    icon: this.getSVGIcon('settings'),
+                    label: 'System',
+                    url: '#system',
+                    section: 'system',
+                },
+            ],
+        };
+    }
+    getSVGIcon(name) {
+        const icons = {
+            home: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+            users: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+            user: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+            document: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+            blackboard: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>',
+            calendar: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>',
+            clock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
+            chat: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>',
+            lightbulb: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17h8v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/></svg>',
+            money: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
+            building: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
+            team: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
+            settings: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>',
+            feature: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
+            admin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
+            poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
+        };
+        return icons[name] || icons.home;
+    }
+    getNavigationForRole(role) {
+        if (!role)
+            return [];
+        return this.navigationItems[role] || [];
+    }
+    injectNavigationHTML() {
+        const navigation = this.createNavigationHTML();
+        // Suche nach bestehender Sidebar und ersetze sie
+        const existingSidebar = document.querySelector('.sidebar');
+        if (existingSidebar) {
+            existingSidebar.innerHTML = navigation;
+        }
+        else {
+            // Erstelle neue Sidebar falls keine existiert
+            this.createSidebarStructure();
+        }
+    }
+    createSidebarStructure() {
+        const body = document.body;
+        const existingLayout = document.querySelector('.layout-container');
+        if (!existingLayout) {
+            // Erstelle Layout-Container falls nicht vorhanden
+            const header = document.querySelector('.header');
+            const container = document.querySelector('.container');
+            const layoutContainer = document.createElement('div');
+            layoutContainer.className = 'layout-container';
+            const sidebar = document.createElement('aside');
+            sidebar.className = 'sidebar';
+            sidebar.innerHTML = this.createNavigationHTML();
+            const mainContent = document.createElement('main');
+            mainContent.className = 'main-content';
+            if (container) {
+                mainContent.appendChild(container);
+            }
+            layoutContainer.appendChild(sidebar);
+            layoutContainer.appendChild(mainContent);
+            if (header) {
+                body.insertBefore(layoutContainer, header.nextSibling);
+            }
+            else {
+                body.appendChild(layoutContainer);
+            }
+        }
+    }
+    createNavigationHTML() {
+        const menuItems = this.getNavigationForRole(this.currentRole);
+        return `
             <nav class="sidebar-nav">
                 <h3 class="sidebar-title">
                     <span class="title-icon">
@@ -397,23 +371,21 @@ class UnifiedNavigation {
                 </ul>
             </nav>
         `;
-  }
-
-  createMenuItem(item, isActive = false) {
-    const activeClass = isActive ? 'active' : '';
-    const clickHandler = item.section
-      ? `onclick="showSection('${item.section}')"`
-      : '';
-
-    // Badge für ungelesene Nachrichten oder offene Umfragen
-    let badgeHtml = '';
-    if (item.badge === 'unread-messages') {
-      badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-    } else if (item.badge === 'pending-surveys') {
-      badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
-
-    return `
+    createMenuItem(item, isActive = false) {
+        const activeClass = isActive ? 'active' : '';
+        const clickHandler = item.section
+            ? `onclick="showSection('${item.section}')"`
+            : '';
+        // Badge für ungelesene Nachrichten oder offene Umfragen
+        let badgeHtml = '';
+        if (item.badge === 'unread-messages') {
+            badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+        }
+        else if (item.badge === 'pending-surveys') {
+            badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+        }
+        return `
             <li class="sidebar-item ${activeClass}" style="position: relative;">
                 <a href="${item.url}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">
                     <span class="icon">${item.icon}</span>
@@ -423,198 +395,180 @@ class UnifiedNavigation {
                 </a>
             </li>
         `;
-  }
-
-  getUserInitials() {
-    if (!this.currentUser?.username) return '👤';
-    return this.currentUser.username.charAt(0).toUpperCase();
-  }
-
-  getRoleDisplay() {
-    const roleMap = {
-      admin: 'Administrator',
-      employee: 'Mitarbeiter',
-      root: 'Root User',
-    };
-    return roleMap[this.currentRole] || this.currentRole;
-  }
-
-  attachEventListeners() {
-    // Navigation Link Clicks
-    document.addEventListener('click', (e) => {
-      const navLink = e.target.closest('.sidebar-link');
-      if (navLink) {
-        this.handleNavigationClick(navLink, e);
-      }
-
-      // Logout Button Click
-      if (e.target && e.target.id === 'logout-btn') {
-        this.handleLogout();
-      }
-    });
-
-    // Update active state on page load
-    this.updateActiveNavigation();
-  }
-
-  handleLogout() {
-    // Remove token and redirect to login
-    localStorage.removeItem('token');
-    localStorage.removeItem('activeNavigation');
-
-    // Clear user session
-    sessionStorage.clear();
-
-    // Redirect to login page
-    window.location.href = '/pages/login.html';
-  }
-
-  handleNavigationClick(link, _event) {
-    // Update active state
-    document.querySelectorAll('.sidebar-item').forEach((item) => {
-      item.classList.remove('active');
-    });
-    link.closest('.sidebar-item').classList.add('active');
-
-    // Store active navigation
-    const navId = link.dataset.navId;
-    if (navId) {
-      localStorage.setItem('activeNavigation', navId);
     }
-
-    // Add navigation animation
-    this.animateNavigation(link);
-  }
-
-  updateActiveNavigation() {
-    const activeNav = localStorage.getItem('activeNavigation');
-    const currentPath = window.location.pathname;
-
-    // Remove all active states
-    document.querySelectorAll('.sidebar-item').forEach((item) => {
-      item.classList.remove('active');
-    });
-
-    // Set active based on current page or stored state
-    if (activeNav) {
-      const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
-      if (activeLink) {
-        activeLink.closest('.sidebar-item').classList.add('active');
-      }
-    } else {
-      // Auto-detect active page
-      this.autoDetectActivePage(currentPath);
+    getUserInitials() {
+        if (!this.currentUser?.username)
+            return '👤';
+        return this.currentUser.username.charAt(0).toUpperCase();
     }
-  }
-
-  autoDetectActivePage(currentPath) {
-    const menuItems = this.getNavigationForRole(this.currentRole);
-    const matchingItem = menuItems.find((item) => {
-      if (item.url.startsWith('#')) return false;
-      return currentPath.includes(item.url.replace('/', ''));
-    });
-
-    if (matchingItem) {
-      const link = document.querySelector(`[data-nav-id="${matchingItem.id}"]`);
-      if (link) {
-        link.closest('.sidebar-item').classList.add('active');
-      }
+    getRoleDisplay() {
+        const roleMap = {
+            admin: 'Administrator',
+            employee: 'Mitarbeiter',
+            root: 'Root User',
+        };
+        return roleMap[this.currentRole || ''] || this.currentRole || '';
     }
-  }
-
-  animateNavigation(link) {
-    // Add ripple effect
-    const ripple = document.createElement('span');
-    ripple.className = 'nav-ripple';
-    link.appendChild(ripple);
-
-    setTimeout(() => {
-      if (ripple.parentNode) {
-        ripple.parentNode.removeChild(ripple);
-      }
-    }, 600);
-  }
-
-  // Public method to refresh navigation
-  refresh() {
-    this.loadUserInfo();
-    this.injectNavigationHTML();
-    this.attachEventListeners();
-  }
-
-  // Public method to set active navigation
-  setActive(navId) {
-    localStorage.setItem('activeNavigation', navId);
-    this.updateActiveNavigation();
-  }
-
-  // Ungelesene Chat-Nachrichten aktualisieren
-  async updateUnreadMessages() {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
-
-      const response = await fetch('/api/chat/unread-count', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const badge = document.getElementById('chat-unread-badge');
-        if (badge) {
-          const count = data.unreadCount || 0;
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = 'inline-block';
-          } else {
-            badge.style.display = 'none';
-          }
+    attachEventListeners() {
+        // Navigation Link Clicks
+        document.addEventListener('click', (e) => {
+            const navLink = e.target.closest('.sidebar-link');
+            if (navLink) {
+                this.handleNavigationClick(navLink, e);
+            }
+            // Logout Button Click
+            if (e.target && e.target.id === 'logout-btn') {
+                this.handleLogout();
+            }
+        });
+        // Update active state on page load
+        this.updateActiveNavigation();
+    }
+    handleLogout() {
+        // Remove token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('activeNavigation');
+        // Clear user session
+        sessionStorage.clear();
+        // Redirect to login page
+        window.location.href = '/pages/login.html';
+    }
+    handleNavigationClick(link, _event) {
+        // Update active state
+        document.querySelectorAll('.sidebar-item').forEach((item) => {
+            item.classList.remove('active');
+        });
+        link.closest('.sidebar-item')?.classList.add('active');
+        // Store active navigation
+        const navId = link.dataset.navId;
+        if (navId) {
+            localStorage.setItem('activeNavigation', navId);
         }
-      }
-    } catch (error) {
-      console.error('Error updating unread messages:', error);
+        // Add navigation animation
+        this.animateNavigation(link);
     }
-  }
-
-  // Offene Umfragen aktualisieren
-  async updatePendingSurveys() {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || token === 'test-mode') return;
-
-      // Nur für Employees
-      const role = localStorage.getItem('userRole');
-      if (role !== 'employee') return;
-
-      const response = await fetch('/api/surveys/pending-count', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const badge = document.getElementById('surveys-pending-badge');
-        if (badge) {
-          const count = data.pendingCount || 0;
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = 'inline-block';
-          } else {
-            badge.style.display = 'none';
-          }
+    updateActiveNavigation() {
+        const activeNav = localStorage.getItem('activeNavigation');
+        const currentPath = window.location.pathname;
+        // Remove all active states
+        document.querySelectorAll('.sidebar-item').forEach((item) => {
+            item.classList.remove('active');
+        });
+        // Set active based on current page or stored state
+        if (activeNav) {
+            const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
+            if (activeLink) {
+                activeLink.closest('.sidebar-item')?.classList.add('active');
+            }
         }
-      }
-    } catch (error) {
-      console.error('Error updating pending surveys:', error);
+        else {
+            // Auto-detect active page
+            this.autoDetectActivePage(currentPath);
+        }
     }
-  }
+    autoDetectActivePage(currentPath) {
+        const menuItems = this.getNavigationForRole(this.currentRole);
+        const matchingItem = menuItems.find((item) => {
+            if (!item.url || item.url.startsWith('#'))
+                return false;
+            return currentPath.includes(item.url.replace('/', ''));
+        });
+        if (matchingItem) {
+            const link = document.querySelector(`[data-nav-id="${matchingItem.id}"]`);
+            if (link) {
+                link.closest('.sidebar-item')?.classList.add('active');
+            }
+        }
+    }
+    animateNavigation(link) {
+        // Add ripple effect
+        const ripple = document.createElement('span');
+        ripple.className = 'nav-ripple';
+        link.appendChild(ripple);
+        setTimeout(() => {
+            if (ripple.parentNode) {
+                ripple.parentNode.removeChild(ripple);
+            }
+        }, 600);
+    }
+    // Public method to refresh navigation
+    refresh() {
+        this.loadUserInfo();
+        this.injectNavigationHTML();
+        this.attachEventListeners();
+    }
+    // Public method to set active navigation
+    setActive(navId) {
+        localStorage.setItem('activeNavigation', navId);
+        this.updateActiveNavigation();
+    }
+    // Ungelesene Chat-Nachrichten aktualisieren
+    async updateUnreadMessages() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || token === 'test-mode')
+                return;
+            const response = await fetch('/api/chat/unread-count', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const badge = document.getElementById('chat-unread-badge');
+                if (badge) {
+                    const count = data.unreadCount || 0;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count.toString();
+                        badge.style.display = 'inline-block';
+                    }
+                    else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.error('Error updating unread messages:', error);
+        }
+    }
+    // Offene Umfragen aktualisieren
+    async updatePendingSurveys() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token || token === 'test-mode')
+                return;
+            // Nur für Employees
+            const role = localStorage.getItem('userRole');
+            if (role !== 'employee')
+                return;
+            const response = await fetch('/api/surveys/pending-count', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const badge = document.getElementById('surveys-pending-badge');
+                if (badge) {
+                    const count = data.pendingCount || 0;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count.toString();
+                        badge.style.display = 'inline-block';
+                    }
+                    else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        }
+        catch (error) {
+            console.error('Error updating pending surveys:', error);
+        }
+    }
 }
-
 // CSS Styles für die Unified Navigation
 const unifiedNavigationCSS = `
     .header .header-actions {
@@ -865,39 +819,33 @@ const unifiedNavigationCSS = `
         }
     }
 `;
-
 // CSS automatisch einbinden
 if (!document.querySelector('#unified-navigation-styles')) {
-  const styleSheet = document.createElement('style');
-  styleSheet.id = 'unified-navigation-styles';
-  styleSheet.textContent = unifiedNavigationCSS;
-  document.head.appendChild(styleSheet);
+    const styleSheet = document.createElement('style');
+    styleSheet.id = 'unified-navigation-styles';
+    styleSheet.textContent = unifiedNavigationCSS;
+    document.head.appendChild(styleSheet);
 }
-
 // Navigation automatisch initialisieren
 document.addEventListener('DOMContentLoaded', () => {
-  window.unifiedNav = new UnifiedNavigation();
-
-  // Ungelesene Nachrichten beim Start und periodisch aktualisieren
-  if (
-    window.unifiedNav &&
-    typeof window.unifiedNav.updateUnreadMessages === 'function'
-  ) {
-    window.unifiedNav.updateUnreadMessages();
-    setInterval(() => window.unifiedNav.updateUnreadMessages(), 10000); // Alle 10 Sekunden
-  }
-
-  // Offene Umfragen beim Start und periodisch aktualisieren
-  if (
-    window.unifiedNav &&
-    typeof window.unifiedNav.updatePendingSurveys === 'function'
-  ) {
-    window.unifiedNav.updatePendingSurveys();
-    setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
-  }
+    window.unifiedNav = new UnifiedNavigation();
+    // Ungelesene Nachrichten beim Start und periodisch aktualisieren
+    if (window.unifiedNav &&
+        typeof window.unifiedNav.updateUnreadMessages === 'function') {
+        window.unifiedNav.updateUnreadMessages();
+        setInterval(() => window.unifiedNav.updateUnreadMessages(), 10000); // Alle 10 Sekunden
+    }
+    // Offene Umfragen beim Start und periodisch aktualisieren
+    if (window.unifiedNav &&
+        typeof window.unifiedNav.updatePendingSurveys === 'function') {
+        window.unifiedNav.updatePendingSurveys();
+        setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
+    }
 });
-
-// Export für Module
+// Export for modules
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = UnifiedNavigation;
+    module.exports = UnifiedNavigation;
 }
+// Export to window for legacy support
+window.UnifiedNavigation = UnifiedNavigation;
+export {};

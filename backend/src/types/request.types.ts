@@ -80,3 +80,40 @@ export interface FullRequest<
   query: TQuery;
   params: TParams;
 }
+
+// Chat-specific request types
+export interface ChatUsersRequest extends AuthenticatedRequest {
+  // No additional properties needed
+}
+
+export interface GetConversationsRequest extends AuthenticatedRequest {
+  // No additional properties needed
+}
+
+export interface CreateConversationRequest extends AuthenticatedRequest {
+  body: {
+    participant_ids: number[];
+    is_group?: boolean;
+    name?: string;
+  };
+}
+
+export interface GetMessagesRequest extends AuthenticatedRequest {
+  params: {
+    id: string;
+  };
+  query: {
+    limit?: string;
+    offset?: string;
+  };
+}
+
+export interface SendMessageRequest extends AuthenticatedRequest {
+  params: {
+    id: string;
+  };
+  body: {
+    content: string;
+    attachment_ids?: number[];
+  };
+}

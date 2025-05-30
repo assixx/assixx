@@ -1,6 +1,40 @@
+/**
+ * Root Dashboard Script
+ * Handles root user dashboard functionality and admin management
+ */
+
+import type { User } from '../types/api.types';
+import { getAuthToken, removeAuthToken } from './auth';
+
+interface AdminUser extends User {
+  company?: string;
+  notes?: string;
+}
+
+interface DashboardData {
+  user: {
+    id: number;
+    username: string;
+    role: string;
+    iat: number;
+    exp: number;
+  };
+}
+
+interface CreateAdminFormElements extends HTMLFormControlsCollection {
+  username: HTMLInputElement;
+  email: HTMLInputElement;
+  password: HTMLInputElement;
+  company?: HTMLInputElement;
+}
+
+interface CreateAdminForm extends HTMLFormElement {
+  readonly elements: CreateAdminFormElements;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Root dashboard script loaded');
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   console.log(
     'Stored token:',
     token ? 'Token vorhanden' : 'Kein Token gefunden'
@@ -13,14 +47,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Elemente aus dem DOM holen
-  const createAdminForm = document.getElementById('create-admin-form');
-  const adminTableBody = document.getElementById('admin-table-body');
-  const logoutBtn = document.getElementById('logout-btn');
-  const dashboardContent = document.getElementById('dashboard-data');
+  const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm;
+  const adminTableBody = document.getElementById('admin-table-body') as HTMLTableSectionElement;
+  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
+  const dashboardContent = document.getElementById('dashboard-data') as HTMLElement;
 
   // Event-Listener hinzufügen
-  createAdminForm.addEventListener('submit', createAdmin);
-  logoutBtn.addEventListener('click', logout);
+  if (createAdminForm) {
+    createAdminForm.addEventListener('submit', createAdmin);
+  }
+  
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
+  }
 
   // Load user info in header
   loadHeaderUserInfo();
@@ -31,9 +70,12 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDashboardStats();
 
   // Admin erstellen
-  async function createAdmin(e) {
+  async function createAdmin(e: Event): Promise<void> {
     e.preventDefault();
     console.log('Creating admin...');
+    
+    if (!createAdminForm) return;
+    
     const formData = new FormData(createAdminForm);
     const adminData = Object.fromEntries(formData.entries());
 
@@ -65,8 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Dashboard-Daten laden
-  async function loadDashboardData() {
+  async function loadDashboardData(): Promise<void> {
     console.log('Loading dashboard data...');
+    
+    if (!dashboardContent) return;
+    
     try {
       const response = await fetch('/api/root-dashboard-data', {
         headers: {
@@ -75,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: DashboardData = await response.json();
         console.log('Dashboard data:', data);
         dashboardContent.innerHTML = `
     <div class="dashboard-stats">
@@ -102,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Dashboard-Statistiken laden
-  async function loadDashboardStats() {
+  async function loadDashboardStats(): Promise<void> {
     try {
       const [adminsResponse, usersResponse] = await Promise.all([
         fetch('/root/admins', {
@@ -114,13 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
       ]);
 
       if (adminsResponse.ok && usersResponse.ok) {
-        const admins = await adminsResponse.json();
-        const users = await usersResponse.json();
+        const admins: AdminUser[] = await adminsResponse.json();
+        const users: User[] = await usersResponse.json();
 
         // Update counters
-        document.getElementById('admin-count').textContent = admins.length;
-        document.getElementById('user-count').textContent = users.length;
-        document.getElementById('tenant-count').textContent = '1'; // TODO: Implement tenant count
+        const adminCount = document.getElementById('admin-count');
+        const userCount = document.getElementById('user-count');
+        const tenantCount = document.getElementById('tenant-count');
+        
+        if (adminCount) adminCount.textContent = admins.length.toString();
+        if (userCount) userCount.textContent = users.length.toString();
+        if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
       }
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -128,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Admin-Liste laden
-  async function loadAdmins() {
+  async function loadAdmins(): Promise<void> {
     try {
       console.log('Loading admins...');
       const response = await fetch('/root/admins', {
@@ -138,11 +187,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const admins = await response.json();
+        const admins: AdminUser[] = await response.json();
         console.log('Loaded admins:', admins);
         displayAdmins(admins);
+        
         // Update admin count
-        document.getElementById('admin-count').textContent = admins.length;
+        const adminCount = document.getElementById('admin-count');
+        if (adminCount) {
+          adminCount.textContent = admins.length.toString();
+        }
       } else {
         console.error('Error loading admins:', response.status);
       }
@@ -152,8 +205,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Admin-Liste anzeigen
-  function displayAdmins(admins) {
+  function displayAdmins(admins: AdminUser[]): void {
     if (!adminTableBody) return;
+    
     adminTableBody.innerHTML = '';
     admins.forEach((admin) => {
       const row = document.createElement('tr');
@@ -180,28 +234,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Event-Listener für Lösch-Buttons hinzufügen
-    document.querySelectorAll('.delete-btn').forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach((button) => {
       button.addEventListener('click', deleteAdmin);
     });
 
     // Event-Listener für Konfigurations-Buttons hinzufügen
-    document.querySelectorAll('.config-btn').forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>('.config-btn').forEach((button) => {
       button.addEventListener('click', configureAdmin);
     });
   }
 
   // Funktion zum Navigieren zur Admin-Konfigurationsseite
-  function configureAdmin(e) {
-    const adminId = e.target.getAttribute('data-id');
-    const adminUsername = e.target.getAttribute('data-username');
+  function configureAdmin(e: Event): void {
+    const button = e.target as HTMLButtonElement;
+    const adminId = button.getAttribute('data-id');
+    const adminUsername = button.getAttribute('data-username');
+
+    if (!adminId || !adminUsername) return;
 
     // Zur Konfigurationsseite navigieren und die Admin-ID übergeben
     window.location.href = `/admin-config?id=${adminId}&username=${encodeURIComponent(adminUsername)}`;
   }
 
-  async function deleteAdmin(e) {
-    const adminId = e.target.getAttribute('data-id');
-    const adminUsername = e.target.getAttribute('data-username');
+  async function deleteAdmin(e: Event): Promise<void> {
+    const button = e.target as HTMLButtonElement;
+    const adminId = button.getAttribute('data-id');
+    const adminUsername = button.getAttribute('data-username');
+
+    if (!adminId || !adminUsername) return;
 
     if (
       !confirm(
@@ -211,11 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const currentToken = getAuthToken();
+    if (!currentToken) return;
+
     try {
       const response = await fetch(`/root/delete-admin/${adminId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${currentToken}`,
         },
       });
 
@@ -236,21 +299,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Ausloggen
-  function logout() {
+  function logout(): void {
     console.log('Logging out...');
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      localStorage.removeItem('token');
+      removeAuthToken();
       localStorage.removeItem('role');
       window.location.href = '/pages/index.html';
     }
   }
 
   // Load user info in header
-  async function loadHeaderUserInfo() {
+  async function loadHeaderUserInfo(): Promise<void> {
     try {
-      const token = localStorage.getItem('token');
-      const userNameElement = document.getElementById('user-name');
-      const userAvatar = document.getElementById('user-avatar');
+      const token = getAuthToken();
+      const userNameElement = document.getElementById('user-name') as HTMLElement;
+      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
 
       if (!token || !userNameElement) return;
 
@@ -270,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const userData = await response.json();
+        const userData: any = await response.json();
         const user = userData.data || userData.user || userData;
 
         // Update username with full name if available

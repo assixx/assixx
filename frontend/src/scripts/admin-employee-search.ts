@@ -1,14 +1,41 @@
-// Admin-Dashboard erweiterte Mitarbeitersuche
+/**
+ * Admin-Dashboard erweiterte Mitarbeitersuche
+ */
+
+import type { User } from '../types/api.types';
+import { getAuthToken } from './auth';
+
+interface Department {
+  id: number;
+  name: string;
+}
+
+interface EmployeeSearchResult extends User {
+  department_name?: string;
+  employee_id?: string;
+}
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+interface SearchResponse {
+  users: EmployeeSearchResult[];
+  pagination: PaginationInfo;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // Bestehende Elemente
-  const employeeTableBody = document.getElementById('employee-table-body');
+  const employeeTableBody = document.getElementById('employee-table-body') as HTMLTableSectionElement;
 
   // Neue Elemente für die erweiterte Suche
-  const searchForm = document.getElementById('employee-search-form');
-  const searchInput = document.getElementById('employee-search-input');
-  const departmentFilter = document.getElementById('department-filter');
-  const paginationContainer = document.getElementById('pagination-container');
+  const searchForm = document.getElementById('employee-search-form') as HTMLFormElement;
+  const searchInput = document.getElementById('employee-search-input') as HTMLInputElement;
+  const departmentFilter = document.getElementById('department-filter') as HTMLSelectElement;
+  const paginationContainer = document.getElementById('pagination-container') as HTMLElement;
 
   // Event-Listener hinzufügen
   if (searchForm) {
@@ -27,16 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Laden der Abteilungen
-  async function loadDepartments() {
+  async function loadDepartments(): Promise<void> {
+    const token = getAuthToken();
+    if (!token) return;
+
     try {
       const response = await fetch('/departments', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
-        const departments = await response.json();
+        const departments: Department[] = await response.json();
 
         // Departmentfilter befüllen
         departmentFilter.innerHTML =
@@ -44,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         departments.forEach((dept) => {
           const option = document.createElement('option');
-          option.value = dept.id;
+          option.value = dept.id.toString();
           option.textContent = dept.name;
           departmentFilter.appendChild(option);
         });
@@ -57,7 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Laden der Mitarbeiter mit Filtern
-  async function loadEmployees(page = 1) {
+  async function loadEmployees(page: number = 1): Promise<void> {
+    const token = getAuthToken();
+    if (!token) return;
+
     try {
       // Suchparameter aufbauen
       const searchTerm = searchInput ? searchInput.value.trim() : '';
@@ -76,12 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const response = await fetch(url, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: SearchResponse = await response.json();
         displayEmployees(data.users);
 
         // Pagination anzeigen
@@ -107,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Event-Handler für die Suche
-  function handleSearch(e) {
+  function handleSearch(e?: Event): void {
     if (e) {
       e.preventDefault();
     }
@@ -115,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Anzeigen der Mitarbeiter
-  function displayEmployees(employees) {
+  function displayEmployees(employees: EmployeeSearchResult[]): void {
     if (!employeeTableBody) return;
 
     employeeTableBody.innerHTML = '';
@@ -132,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Profilbild oder Platzhalter
       const profileImage = employee.profile_picture
         ? `<img src="/${employee.profile_picture}" class="profile-thumbnail" alt="${employee.first_name}" width="40" height="40">`
-        : `<div class="profile-placeholder">${employee.first_name.charAt(0)}${employee.last_name.charAt(0)}</div>`;
+        : `<div class="profile-placeholder">${(employee.first_name || '').charAt(0)}${(employee.last_name || '').charAt(0)}</div>`;
 
       // Abteilungsinformation
       const departmentInfo = employee.department_name
@@ -144,14 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="d-flex align-items-center">
             ${profileImage}
             <div class="ml-3">
-              <div class="employee-name">${employee.first_name} ${employee.last_name}</div>
+              <div class="employee-name">${employee.first_name || ''} ${employee.last_name || ''}</div>
               <div class="employee-position">${employee.position || ''}</div>
             </div>
           </div>
         </td>
         <td>${employee.email}</td>
         <td>
-          ${employee.employee_id}
+          ${employee.employee_id || ''}
           ${departmentInfo}
         </td>
         <td>${employee.phone || '-'}</td>
@@ -159,12 +192,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <button onclick="uploadDocumentFor('${employee.id}')" class="btn btn-sm btn-primary">Dokument hochladen</button>
           <button class="delete-btn btn btn-sm btn-danger" 
                   data-id="${employee.id}" 
-                  data-name="${employee.first_name} ${employee.last_name}">
+                  data-name="${employee.first_name || ''} ${employee.last_name || ''}">
               Löschen
           </button>
           <button class="edit-btn btn btn-sm btn-secondary" 
                   data-id="${employee.id}" 
-                  data-name="${employee.first_name} ${employee.last_name}">
+                  data-name="${employee.first_name || ''} ${employee.last_name || ''}">
               Bearbeiten
           </button>
         </td>
@@ -174,18 +207,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Event-Listener für die Lösch-Buttons hinzufügen
-    document.querySelectorAll('.delete-btn').forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach((button) => {
       button.addEventListener('click', deleteEmployee);
     });
 
     // Event-Listener für die Bearbeiten-Buttons hinzufügen
-    document.querySelectorAll('.edit-btn').forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>('.edit-btn').forEach((button) => {
       button.addEventListener('click', editEmployee);
     });
   }
 
   // Funktion zum Anzeigen der Pagination
-  function displayPagination(pagination, currentPage) {
+  function displayPagination(pagination: PaginationInfo, currentPage: number): void {
     if (!paginationContainer) return;
 
     paginationContainer.innerHTML = '';
@@ -205,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     prevLink.href = '#';
     prevLink.textContent = 'Zurück';
     if (currentPage > 1) {
-      prevLink.addEventListener('click', (e) => {
+      prevLink.addEventListener('click', (e: Event) => {
         e.preventDefault();
         loadEmployees(currentPage - 1);
       });
@@ -224,8 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const link = document.createElement('a');
       link.className = 'page-link';
       link.href = '#';
-      link.textContent = i;
-      link.addEventListener('click', (e) => {
+      link.textContent = i.toString();
+      link.addEventListener('click', (e: Event) => {
         e.preventDefault();
         loadEmployees(i);
       });
@@ -241,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     nextLink.href = '#';
     nextLink.textContent = 'Weiter';
     if (currentPage < pagination.pages) {
-      nextLink.addEventListener('click', (e) => {
+      nextLink.addEventListener('click', (e: Event) => {
         e.preventDefault();
         loadEmployees(currentPage + 1);
       });
@@ -253,9 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Löschen eines Mitarbeiters
-  async function deleteEmployee(e) {
-    const employeeId = e.target.getAttribute('data-id');
-    const employeeName = e.target.getAttribute('data-name');
+  async function deleteEmployee(e: Event): Promise<void> {
+    const button = e.target as HTMLButtonElement;
+    const employeeId = button.getAttribute('data-id');
+    const employeeName = button.getAttribute('data-name');
+
+    if (!employeeId || !employeeName) return;
 
     if (
       !confirm(
@@ -265,11 +301,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const token = getAuthToken();
+    if (!token) return;
+
     try {
       const response = await fetch(`/admin/delete-employee/${employeeId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -290,9 +329,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Funktion zum Bearbeiten eines Mitarbeiters
-  function editEmployee(e) {
-    const employeeId = e.target.getAttribute('data-id');
-    const employeeName = e.target.getAttribute('data-name');
+  function editEmployee(e: Event): void {
+    const button = e.target as HTMLButtonElement;
+    const employeeId = button.getAttribute('data-id');
+    const employeeName = button.getAttribute('data-name');
+
+    if (!employeeId || !employeeName) return;
 
     // Modal oder separate Seite zum Bearbeiten des Mitarbeiters öffnen
     // Hier kann je nach UI-Design eine eigene Implementierung erfolgen
@@ -304,3 +346,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // window.location.href = `/admin/edit-employee.html?id=${employeeId}`;
   }
 });
+
+// Export function to window for backwards compatibility
+if (typeof window !== 'undefined') {
+  (window as any).uploadDocumentFor = (employeeId: string) => {
+    // Redirect to upload page with pre-selected employee
+    window.location.href = `/pages/document-upload.html?userId=${employeeId}`;
+  };
+}
