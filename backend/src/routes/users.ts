@@ -24,6 +24,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
   };
+  // eslint-disable-next-line no-undef
   file?: Express.Multer.File;
 }
 
@@ -115,6 +116,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (
   _req: any,
+  // eslint-disable-next-line no-undef
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {

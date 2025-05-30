@@ -83,14 +83,9 @@ class BlackboardService {
     _tenantDb: Pool,
     _filters: BlackboardFilters = {}
   ): Promise<BlackboardEntry[]> {
-    try {
-      // getAllEntries expects (tenantId, userId, options)
-      // For now, return empty array as we need tenant_id and user_id
-      return [];
-    } catch (error) {
-      console.error('Error in BlackboardService.getAll:', error);
-      throw error;
-    }
+    // getAllEntries expects (tenantId, userId, options)
+    // For now, return empty array as we need tenant_id and user_id
+    return [];
   }
 
   /**

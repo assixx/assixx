@@ -356,9 +356,8 @@ router.get(
  */
 router.get('/', authenticateToken, async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
     const { start, end } = req.query;
-    
+
     if (!start || !end) {
       res.status(400).json({
         success: false,
@@ -370,15 +369,15 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
     // Parse dates from query strings
     const startDate = new Date(String(start));
     const endDate = new Date(String(end));
-    
+
     // Format dates for SQL query
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
-    
+
     // Temporarily return empty shifts array
     // TODO: Implement proper shift fetching when shifts table is created
     console.log(`Shifts requested for date range: ${startStr} to ${endStr}`);
-    
+
     res.json({
       success: true,
       shifts: [],
@@ -398,9 +397,8 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
  */
 router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
     const { week } = req.query;
-    
+
     if (!week) {
       res.status(400).json({
         success: false,
@@ -412,16 +410,18 @@ router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
     // Parse week date
     const weekDate = new Date(String(week));
     const weekStart = weekDate.toISOString().split('T')[0];
-    
+
     // Calculate week end (7 days later)
     const weekEnd = new Date(weekDate);
     weekEnd.setDate(weekEnd.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
-    
+
     // Temporarily return empty notes
     // TODO: Implement proper notes fetching when shift_notes table is created
-    console.log(`Shift notes requested for week: ${weekStart} to ${weekEndStr}`);
-    
+    console.log(
+      `Shift notes requested for week: ${weekStart} to ${weekEndStr}`
+    );
+
     res.json({
       success: true,
       notes: {},

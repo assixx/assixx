@@ -72,7 +72,7 @@ app.use(
 // Fallback to src directory for assets (images, etc.)
 app.use(
   express.static(srcPath, {
-    setHeaders: (res: Response, filePath: string): void => {
+    setHeaders: (res: Response): void => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
     },

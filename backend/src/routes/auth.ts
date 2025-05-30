@@ -37,6 +37,7 @@ router.get('/user', authenticateToken, async (req, res): Promise<void> => {
     }
 
     // Remove sensitive data
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
 
     res.json(userWithoutPassword);

@@ -24,12 +24,15 @@ interface UnsubscribeToken {
 }
 
 // Notification settings interface
+// TODO: Uncomment when notification_settings column is added to users table
+/*
 interface NotificationSettings {
   enabled?: boolean;
   categories?: {
     [key: string]: boolean;
   };
 }
+*/
 
 /**
  * GET /unsubscribe
@@ -85,6 +88,9 @@ router.get('/', async (req, res): Promise<void> => {
 
     // Bestimmte oder alle Benachrichtigungen deaktivieren
     const notificationType = decoded.type || 'all';
+    
+    // TODO: Implement notification settings when notification_settings column is added to users table
+    /*
     let notificationSettings: NotificationSettings = user.notification_settings
       ? JSON.parse(user.notification_settings)
       : {};
@@ -102,10 +108,10 @@ router.get('/', async (req, res): Promise<void> => {
     }
 
     // Einstellungen speichern
-    // TODO: Add notification_settings column to users table
-    // await User.update(user.id, {
-    //   notification_settings: JSON.stringify(notificationSettings),
-    // });
+    await User.update(user.id, {
+      notification_settings: JSON.stringify(notificationSettings),
+    });
+    */
 
     logger.info(
       `Benutzer ${user.email} hat sich von ${notificationType === 'all' ? 'allen Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet`

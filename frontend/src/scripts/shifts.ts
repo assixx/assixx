@@ -740,16 +740,16 @@ async function loadPlanningData(): Promise<void> {
 
     const plans = await response.json();
     const plansList = document.getElementById('plans-list');
-    
+
     if (!plansList) return;
-    
+
     plansList.innerHTML = '';
-    
+
     if (plans.length === 0) {
       plansList.innerHTML = '<p class="no-data">Keine Schichtpläne vorhanden</p>';
       return;
     }
-    
+
     plans.forEach((plan: any) => {
       const item = document.createElement('div');
       item.className = 'plan-item';
@@ -790,16 +790,16 @@ async function loadAssignmentsData(): Promise<void> {
 
     const assignments = await response.json();
     const assignmentsList = document.getElementById('assignments-list');
-    
+
     if (!assignmentsList) return;
-    
+
     assignmentsList.innerHTML = '';
-    
+
     if (assignments.length === 0) {
       assignmentsList.innerHTML = '<p class="no-data">Keine Schichtzuweisungen vorhanden</p>';
       return;
     }
-    
+
     assignments.forEach((assignment: any) => {
       const item = document.createElement('div');
       item.className = 'assignment-item';
@@ -814,8 +814,13 @@ async function loadAssignmentsData(): Promise<void> {
           <span class="shift-type">${assignment.shift_type}</span>
         </div>
         <div class="assignment-status ${assignment.status}">
-          ${assignment.status === 'confirmed' ? 'Bestätigt' : 
-            assignment.status === 'pending' ? 'Ausstehend' : 'Abgelehnt'}
+          ${
+            assignment.status === 'confirmed'
+              ? 'Bestätigt'
+              : assignment.status === 'pending'
+                ? 'Ausstehend'
+                : 'Abgelehnt'
+          }
         </div>
       `;
       assignmentsList.appendChild(item);
@@ -841,16 +846,16 @@ async function loadRequestsData(): Promise<void> {
 
     const requests = await response.json();
     const requestsList = document.getElementById('requests-list');
-    
+
     if (!requestsList) return;
-    
+
     requestsList.innerHTML = '';
-    
+
     if (requests.length === 0) {
       requestsList.innerHTML = '<p class="no-data">Keine Schichtanfragen vorhanden</p>';
       return;
     }
-    
+
     requests.forEach((request: any) => {
       const item = document.createElement('div');
       item.className = 'request-item';
@@ -859,8 +864,7 @@ async function loadRequestsData(): Promise<void> {
         <div class="request-header">
           <h4>${request.employee_name}</h4>
           <span class="request-type ${request.type}">${
-            request.type === 'swap' ? 'Tausch' : 
-            request.type === 'cancel' ? 'Stornierung' : 'Änderung'
+            request.type === 'swap' ? 'Tausch' : request.type === 'cancel' ? 'Stornierung' : 'Änderung'
           }</span>
         </div>
         <div class="request-info">
@@ -898,11 +902,11 @@ async function loadReportsData(): Promise<void> {
 
     const reports = await response.json();
     const reportsContainer = document.getElementById('reports-container');
-    
+
     if (!reportsContainer) return;
-    
+
     reportsContainer.innerHTML = '';
-    
+
     // Summary statistics
     const summarySection = document.createElement('div');
     summarySection.className = 'reports-summary';
@@ -928,13 +932,13 @@ async function loadReportsData(): Promise<void> {
       </div>
     `;
     reportsContainer.appendChild(summarySection);
-    
+
     // Recent reports list
     if (reports.recentReports && reports.recentReports.length > 0) {
       const reportsSection = document.createElement('div');
       reportsSection.className = 'reports-list';
       reportsSection.innerHTML = '<h3>Letzte Berichte</h3>';
-      
+
       reports.recentReports.forEach((report: any) => {
         const reportItem = document.createElement('div');
         reportItem.className = 'report-item';
@@ -956,7 +960,7 @@ async function loadReportsData(): Promise<void> {
         `;
         reportsSection.appendChild(reportItem);
       });
-      
+
       reportsContainer.appendChild(reportsSection);
     }
   } catch (error) {

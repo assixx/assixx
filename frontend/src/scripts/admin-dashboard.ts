@@ -82,7 +82,7 @@ let loadDepartmentsForEmployeeSelect: () => Promise<void>;
 let showNewEmployeeModal: () => void;
 
 // Load Departments for Employee Select (defined globally)
-loadDepartmentsForEmployeeSelect = async function(): Promise<void> {
+loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
   try {
     const authToken = token || getAuthToken();
     const response = await fetch('/api/departments', {
@@ -97,12 +97,12 @@ loadDepartmentsForEmployeeSelect = async function(): Promise<void> {
 
     const departments = await response.json();
     const departmentSelect = document.getElementById('employee-department-select') as HTMLSelectElement;
-    
+
     if (!departmentSelect) return;
-    
+
     // Clear existing options except the first (placeholder)
     departmentSelect.innerHTML = '<option value="">Abteilung wählen</option>';
-    
+
     departments.forEach((dept: Department) => {
       const option = document.createElement('option');
       option.value = dept.id.toString();
@@ -116,7 +116,7 @@ loadDepartmentsForEmployeeSelect = async function(): Promise<void> {
 };
 
 // Show New Employee Modal (defined globally)
-showNewEmployeeModal = function(): void {
+showNewEmployeeModal = function (): void {
   const modal = document.getElementById('employee-modal') as HTMLElement;
   if (modal) {
     // Formular zurücksetzen, falls es bereits benutzt wurde
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTeams();
     loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
   }, 100);
-  
+
   // Setup manage links
   const manageEmployeesLink = document.getElementById('manage-employees-link');
   if (manageEmployeesLink) {
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showSection('employees-section');
     });
   }
-  
+
   const manageDocumentsLink = document.getElementById('manage-documents-link');
   if (manageDocumentsLink) {
     manageDocumentsLink.addEventListener('click', (e) => {
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showSection('documents-section');
     });
   }
-  
+
   const manageDepartmentsLink = document.getElementById('manage-departments-link');
   if (manageDepartmentsLink) {
     manageDepartmentsLink.addEventListener('click', (e) => {
@@ -537,13 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      const employees = Array.isArray(data) ? data : (data.users || data.employees || []);
-      
+      const employees = Array.isArray(data) ? data : data.users || data.employees || [];
+
       // Fill compact card
       const employeeCard = document.getElementById('recent-employees');
       if (employeeCard) {
         employeeCard.innerHTML = '';
-        
+
         if (!employees || employees.length === 0) {
           employeeCard.innerHTML = '<p class="text-muted">Keine neuen Mitarbeiter</p>';
         } else {
@@ -558,12 +558,12 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
       }
-      
+
       // Also fill detailed list if it exists
       const employeeDetailList = document.getElementById('recent-employees-list');
       if (employeeDetailList) {
         employeeDetailList.innerHTML = '';
-        
+
         if (!employees || employees.length === 0) {
           employeeDetailList.innerHTML = '<li class="text-muted">Keine neuen Mitarbeiter</li>';
         } else {
@@ -596,13 +596,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      const documents = Array.isArray(data) ? data : (data.documents || data.data || []);
-      
+      const documents = Array.isArray(data) ? data : data.documents || data.data || [];
+
       // Fill compact card
       const documentCard = document.getElementById('recent-documents');
       if (documentCard) {
         documentCard.innerHTML = '';
-        
+
         if (!documents || documents.length === 0) {
           documentCard.innerHTML = '<p class="text-muted">Keine neuen Dokumente</p>';
         } else {
@@ -618,12 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
       }
-      
+
       // Also fill detailed list if it exists
       const documentDetailList = document.getElementById('recent-documents-list');
       if (documentDetailList) {
         documentDetailList.innerHTML = '';
-        
+
         if (!documents || documents.length === 0) {
           documentDetailList.innerHTML = '<li class="text-muted">Keine neuen Dokumente</li>';
         } else {
@@ -658,16 +658,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const departments = await response.json();
       const departmentList = document.getElementById('department-list');
-      
+
       if (!departmentList) return;
-      
+
       departmentList.innerHTML = '';
-      
+
       if (departments.length === 0) {
         departmentList.innerHTML = '<p class="text-muted">Keine Abteilungen vorhanden</p>';
         return;
       }
-      
+
       departments.slice(0, 5).forEach((dept: Department) => {
         const item = document.createElement('div');
         item.className = 'compact-item';
@@ -697,16 +697,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const teams = await response.json();
       const teamList = document.getElementById('team-list');
-      
+
       if (!teamList) return;
-      
+
       teamList.innerHTML = '';
-      
+
       if (teams.length === 0) {
         teamList.innerHTML = '<p class="text-muted">Keine Teams vorhanden</p>';
         return;
       }
-      
+
       teams.slice(0, 5).forEach((team: Team) => {
         const item = document.createElement('div');
         item.className = 'compact-item';
@@ -725,15 +725,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function createDepartment(e: Event): Promise<void> {
     e.preventDefault();
-    
+
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    
+
     const departmentData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
     };
-    
+
     try {
       const token = getAuthToken();
       const response = await fetch('/api/departments', {
@@ -752,12 +752,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const newDepartment = await response.json();
       showSuccess('Abteilung erfolgreich erstellt');
-      
+
       // Reset form and close modal
       form.reset();
       const modal = document.getElementById('department-modal');
       if (modal) modal.style.display = 'none';
-      
+
       // Reload departments
       await loadDepartments();
       await loadDepartmentsForEmployeeSelect();
@@ -769,16 +769,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function createTeam(e: Event): Promise<void> {
     e.preventDefault();
-    
+
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    
+
     const teamData = {
       name: formData.get('name') as string,
       department_id: parseInt(formData.get('department_id') as string),
       description: formData.get('description') as string,
     };
-    
+
     try {
       const token = getAuthToken();
       const response = await fetch('/api/teams', {
@@ -797,12 +797,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const newTeam = await response.json();
       showSuccess('Team erfolgreich erstellt');
-      
+
       // Reset form and close modal
       form.reset();
       const modal = document.getElementById('team-modal');
       if (modal) modal.style.display = 'none';
-      
+
       // Reload teams
       await loadTeams();
     } catch (error) {

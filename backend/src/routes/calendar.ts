@@ -96,7 +96,9 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
       status: req.query.status ? String(req.query.status) : 'active',
       filter: req.query.filter ? String(req.query.filter) : 'all',
       search: req.query.search ? String(req.query.search) : '',
-      start_date: (req.query.start || req.query.start_date) as string | undefined,
+      start_date: (req.query.start || req.query.start_date) as
+        | string
+        | undefined,
       end_date: (req.query.end || req.query.end_date) as string | undefined,
       page: parseInt(req.query.page ? String(req.query.page) : '1', 10),
       limit: parseInt(req.query.limit ? String(req.query.limit) : '50', 10),
@@ -125,7 +127,7 @@ router.get('/dashboard', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const tenantId = getTenantId(authReq.user);
-    
+
     // Parse days parameter with better validation
     let days = 7; // default
     if (req.query.days) {
@@ -134,7 +136,7 @@ router.get('/dashboard', authenticateToken, async (req, res): Promise<void> => {
         days = parsedDays;
       }
     }
-    
+
     // Parse limit parameter with better validation
     let limit = 5; // default
     if (req.query.limit) {

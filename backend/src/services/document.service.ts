@@ -89,7 +89,6 @@ class DocumentService {
   private uploadDir: string;
 
   constructor() {
-    // @ts-ignore - dirname is defined
     this.uploadDir = path.join(__dirname, '../../../uploads/documents');
   }
 

@@ -1050,7 +1050,11 @@ async function getShiftsForDateRange(
       ORDER BY s.date, s.start_time
     `;
 
-    const [rows] = await executeQuery<any[]>(query, [tenantId, startDate, endDate]);
+    const [rows] = await executeQuery<any[]>(query, [
+      tenantId,
+      startDate,
+      endDate,
+    ]);
     return rows;
   } catch (error) {
     console.error('Error in getShiftsForDateRange:', error);
@@ -1075,14 +1079,18 @@ async function getWeekNotes(
       ORDER BY date
     `;
 
-    const [rows] = await executeQuery<any[]>(query, [tenantId, weekStart, weekEnd]);
-    
+    const [rows] = await executeQuery<any[]>(query, [
+      tenantId,
+      weekStart,
+      weekEnd,
+    ]);
+
     // Convert to object keyed by date
     const notesByDate: Record<string, string> = {};
     rows.forEach((row: any) => {
       notesByDate[row.date] = row.notes;
     });
-    
+
     return notesByDate;
   } catch (error) {
     console.error('Error in getWeekNotes:', error);

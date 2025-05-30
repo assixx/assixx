@@ -75,13 +75,8 @@ class AdminLogService {
    * Holt einen AdminLog Eintrag per ID
    */
   async getById(_tenantDb: Pool, _id: number): Promise<AdminLogData | null> {
-    try {
-      // Model doesn't have getById, return null for now
-      return null;
-    } catch (error) {
-      console.error('Error in AdminLogService.getById:', error);
-      throw error;
-    }
+    // Model doesn't have getById, return null for now
+    return null;
   }
 
   /**
@@ -129,26 +124,16 @@ class AdminLogService {
     _id: number,
     _data: AdminLogUpdateData
   ): Promise<AdminLogData | null> {
-    try {
-      // TODO: Implement update method in AdminLog model
-      return null;
-    } catch (error) {
-      console.error('Error in AdminLogService.update:', error);
-      throw error;
-    }
+    // TODO: Implement update method in AdminLog model
+    return null;
   }
 
   /**
    * Löscht einen AdminLog Eintrag
    */
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
-    try {
-      // TODO: Implement delete method in AdminLog model
-      return false;
-    } catch (error) {
-      console.error('Error in AdminLogService.delete:', error);
-      throw error;
-    }
+    // TODO: Implement delete method in AdminLog model
+    return false;
   }
 }
 

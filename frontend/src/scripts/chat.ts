@@ -1547,37 +1547,41 @@ class ChatClient {
   startTypingTimer(): void {
     let typingTimer: NodeJS.Timeout | null = null;
     let isTyping = false;
-    
+
     const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
     if (!messageInput) return;
-    
+
     messageInput.addEventListener('input', () => {
       if (!isTyping && this.currentConversationId) {
         isTyping = true;
         // Send typing started event
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(JSON.stringify({
-            type: 'typing',
-            data: { conversationId: this.currentConversationId }
-          }));
+          this.socket.send(
+            JSON.stringify({
+              type: 'typing',
+              data: { conversationId: this.currentConversationId },
+            }),
+          );
         }
       }
-      
+
       // Clear existing timer
       if (typingTimer) {
         clearTimeout(typingTimer);
       }
-      
+
       // Set new timer to stop typing after 2 seconds
       typingTimer = setTimeout(() => {
         if (isTyping && this.currentConversationId) {
           isTyping = false;
           // Send typing stopped event
           if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify({
-              type: 'stop_typing',
-              data: { conversationId: this.currentConversationId }
-            }));
+            this.socket.send(
+              JSON.stringify({
+                type: 'stop_typing',
+                data: { conversationId: this.currentConversationId },
+              }),
+            );
           }
         }
       }, 2000);

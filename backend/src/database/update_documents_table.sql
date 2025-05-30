@@ -1,3 +1,0 @@
-ALTER TABLE documents
-ADD COLUMN download_count INT DEFAULT 0,
-ADD COLUMN last_downloaded DATETIME DEFAULT NULL;

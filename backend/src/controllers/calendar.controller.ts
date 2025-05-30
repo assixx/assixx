@@ -114,8 +114,8 @@ class CalendarController {
             total: 0,
             page: filters.page || 1,
             limit: filters.limit || 50,
-            totalPages: 0
-          }
+            totalPages: 0,
+          },
         });
       } catch {
         // Return a helpful error message for the migration period
