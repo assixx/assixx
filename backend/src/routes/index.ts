@@ -11,6 +11,7 @@ const router: Router = express.Router();
 import authRoutes from './auth.routes';
 import adminRoutes from './admin';
 import blackboardRoutes from './blackboard';
+import signupRoutes from './signup';
 
 // Import remaining routes (now ES modules)
 import userRoutes from './users';
@@ -34,6 +35,7 @@ const API_PREFIX = '/api';
 // Public routes (no prefix needed)
 console.log('[DEBUG] Mounting auth routes at /api/auth');
 router.use('/api/auth', authRoutes);
+router.use('/api', signupRoutes); // Signup routes at /api/signup
 
 // Protected routes with prefix
 router.use(`${API_PREFIX}/users`, userRoutes);

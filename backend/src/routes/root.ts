@@ -399,6 +399,70 @@ router.get(
   }
 );
 
+// NEUE ROUTE: Tenant komplett löschen (Root-User löscht sich selbst und seinen Tenant)
+router.delete(
+  '/delete-tenant',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res): Promise<void> => {
+    const rootUser = req.user;
+    logger.warn(`Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`);
+
+    try {
+      // Import Tenant model
+      const Tenant = (await import('../models/tenant')).default;
+      
+      // Bestätigung dass es der Root-User des Tenants ist
+      const tenant = await Tenant.findById(rootUser.tenant_id);
+      
+      if (!tenant) {
+        logger.error(`Tenant ${rootUser.tenant_id} not found`);
+        res.status(404).json({ message: 'Tenant nicht gefunden' });
+        return;
+      }
+
+      // Log this critical action
+      await AdminLog.create({
+        user_id: rootUser.id,
+        action: 'TENANT_DELETE_INITIATED',
+        ip_address: req.ip,
+        status: 'success',
+        details: JSON.stringify({
+          resource_type: 'tenant',
+          resource_id: rootUser.tenant_id,
+          tenant_name: tenant.company_name,
+          subdomain: tenant.subdomain,
+          initiated_by: rootUser.username
+        })
+      });
+
+      // Delete the entire tenant (cascades to all related data)
+      const success = await Tenant.delete(rootUser.tenant_id);
+
+      if (success) {
+        logger.warn(`Tenant ${rootUser.tenant_id} and all associated data deleted successfully`);
+        res.json({ 
+          success: true,
+          message: 'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht' 
+        });
+      } else {
+        logger.error(`Failed to delete tenant ${rootUser.tenant_id}`);
+        res.status(500).json({ 
+          success: false,
+          message: 'Fehler beim Löschen des Tenants' 
+        });
+      }
+    } catch (error: any) {
+      logger.error(`Critical error deleting tenant ${rootUser.tenant_id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Kritischer Fehler beim Löschen des Tenants',
+        error: error.message,
+      });
+    }
+  }
+);
+
 export default router;
 
 // CommonJS compatibility

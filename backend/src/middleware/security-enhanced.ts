@@ -80,6 +80,20 @@ export const validateCSRFToken = (
     return next();
   }
 
+  // Skip CSRF validation for public endpoints
+  const publicEndpoints = [
+    '/api/signup',
+    '/api/check-subdomain',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/login',
+    '/signup'
+  ];
+  
+  if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+    return next();
+  }
+
   // Use the doubleCsrf protection middleware
   doubleCsrfProtection(req, res, next);
 };
