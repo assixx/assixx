@@ -3,11 +3,11 @@
  * Handles user profile operations and profile picture uploads
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
-import { authenticateToken, authorizeRole } from '../auth';
+import { authenticateToken } from '../auth';
 import { logger } from '../utils/logger';
 
 // Import User model (keeping require pattern for compatibility)
@@ -27,29 +27,26 @@ interface AuthenticatedRequest extends Request {
   file?: Express.Multer.File;
 }
 
-interface ProfileUpdateRequest extends AuthenticatedRequest {
-  body: {
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-    phone?: string;
-    bio?: string;
-    preferences?: any;
-  };
-}
+// Removed unused ProfileUpdateRequest interface
 
 // Get all users (admin only)
 router.get(
   '/',
   authenticateToken as any,
-  authorizeRole(['admin', 'root']) as any,
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
+
+      // Check if user is admin or root
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Access denied' });
+        return;
+      }
+
       const users = await User.findAllByTenant(authReq.user.tenant_id);
-      
+
       // Remove sensitive data
-      const sanitizedUsers = users.map(user => ({
+      const sanitizedUsers = users.map((user) => ({
         id: user.id,
         username: user.username,
         email: user.email,
@@ -60,15 +57,15 @@ router.get(
         team_id: user.team_id,
         phone: user.phone,
         created_at: user.created_at,
-        is_active: user.is_active
+        is_active: user.is_active,
       }));
-      
+
       res.json(sanitizedUsers);
     } catch (error: any) {
       logger.error('Error fetching users:', error);
       res.status(500).json({
         message: 'Error fetching users',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -106,10 +103,10 @@ router.get(
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
-  destination(req: any, file: any, cb: any) {
+  destination(_req: any, _file: any, cb: any) {
     cb(null, 'uploads/profile_pictures/');
   },
-  filename(req: any, file: any, cb: any) {
+  filename(_req: any, file: any, cb: any) {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const extension = path.extname(file.originalname);
     cb(null, `profile-${uniqueSuffix}${extension}`);
@@ -117,7 +114,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (
-  req: any,
+  _req: any,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
@@ -195,7 +192,7 @@ router.post(
 
       // Update user's profile picture URL in database
       const success = await User.update(userId, {
-        profile_picture_url: filePath,
+        profile_picture: filePath,
       });
 
       if (success) {
@@ -267,7 +264,7 @@ router.delete(
       }
 
       // Remove profile picture URL from database
-      const success = await User.update(userId, { profile_picture_url: null });
+      const success = await User.update(userId, { profile_picture: undefined });
 
       if (success) {
         logger.info(`User ${userId} deleted their profile picture`);

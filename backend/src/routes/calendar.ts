@@ -43,14 +43,14 @@ async function canManageEvent(
 
     // Get user role, department, and team info for permissions
     const userInfo = {
-      role: req.user.role,
-      departmentId: req.user.departmentId,
-      teamId: req.user.teamId,
+      role: req.user.role || null,
+      departmentId: req.user.departmentId || null,
+      teamId: req.user.teamId || null,
     };
 
     // Check if user can manage this event
     const canManage = await calendarModel.canManageEvent(
-      eventId,
+      parseInt(eventId, 10),
       req.user.id,
       userInfo
     );
@@ -64,7 +64,7 @@ async function canManageEvent(
 
     // Get event details for the request
     const event = await calendarModel.getEventById(
-      eventId,
+      parseInt(eventId, 10),
       tenantId,
       req.user.id
     );
@@ -96,13 +96,13 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
       status: String(req.query.status) || 'active',
       filter: String(req.query.filter) || 'all',
       search: String(req.query.search) || '',
-      start_date: req.query.start_date,
-      end_date: req.query.end_date,
+      start_date: req.query.start_date as string | undefined,
+      end_date: req.query.end_date as string | undefined,
       page: parseInt(String(req.query.page) || '1', 10),
       limit: parseInt(String(req.query.limit) || '50', 10),
       sortBy: String(req.query.sortBy) || 'start_time',
       sortDir: String(req.query.sortDir) || 'ASC',
-    };
+    } as any;
 
     const result = await calendarModel.getAllEvents(
       tenantId,
@@ -152,7 +152,7 @@ router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
     const tenantId = getTenantId(req.user);
 
     const event = await calendarModel.getEventById(
-      req.params.id,
+      parseInt(req.params.id, 10),
       tenantId,
       authReq.user.id
     );
@@ -240,7 +240,7 @@ router.put(
 
       const tenantId = getTenantId(req.user);
       const updatedEvent = await calendarModel.updateEvent(
-        req.params.id,
+        parseInt(req.params.id, 10),
         eventData,
         tenantId
       );
@@ -264,7 +264,10 @@ router.delete(
   async (req, res): Promise<void> => {
     try {
       const tenantId = getTenantId(req.user);
-      const success = await calendarModel.deleteEvent(req.params.id, tenantId);
+      const success = await calendarModel.deleteEvent(
+        parseInt(req.params.id, 10),
+        tenantId
+      );
 
       if (!success) {
         res.status(404).json({ message: 'Event not found' });

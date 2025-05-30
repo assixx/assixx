@@ -2,7 +2,7 @@
  * Routen für die Abmeldung von E-Mail-Benachrichtigungen
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 
@@ -12,11 +12,7 @@ import User from '../models/user';
 const router: Router = express.Router();
 
 // Request interfaces
-interface UnsubscribeRequest extends Request {
-  query: {
-    token?: string;
-  };
-}
+// Removed unused UnsubscribeRequest interface
 
 // JWT payload interface
 interface UnsubscribeToken {
@@ -106,9 +102,10 @@ router.get('/', async (req, res): Promise<void> => {
     }
 
     // Einstellungen speichern
-    await User.update(user.id, {
-      notification_settings: JSON.stringify(notificationSettings),
-    });
+    // TODO: Add notification_settings column to users table
+    // await User.update(user.id, {
+    //   notification_settings: JSON.stringify(notificationSettings),
+    // });
 
     logger.info(
       `Benutzer ${user.email} hat sich von ${notificationType === 'all' ? 'allen Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet`

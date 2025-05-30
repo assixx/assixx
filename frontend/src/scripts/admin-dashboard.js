@@ -150,26 +150,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Direkt den Test-Endpunkt verwenden
-      const statsRes = await fetch('/test/db/counts', {
+      // Admin Dashboard Stats Endpoint verwenden
+      const statsRes = await fetch('/api/admin/dashboard-stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (statsRes.ok) {
         const stats = await statsRes.json();
 
-        // Update UI mit den Statistiken aus dem Testendpunkt
+        // Update UI mit den Statistiken vom Admin Dashboard Endpoint
         document.getElementById('employee-count').textContent =
-          stats.employees || 0;
+          stats.employeeCount || 0;
         document.getElementById('document-count').textContent =
-          stats.documents || 0;
+          stats.documentCount || 0;
 
         const deptCountElement = document.getElementById('department-count');
         if (deptCountElement) {
-          deptCountElement.textContent = stats.departments || 0;
+          deptCountElement.textContent = stats.departmentCount || 0;
         }
 
-        document.getElementById('team-count').textContent = stats.teams || 0;
+        document.getElementById('team-count').textContent = stats.teamCount || 0;
       } else {
         console.error('Failed to load dashboard stats', statsRes.statusText);
         
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mitarbeiter
     try {
-      const employeesRes = await fetch('/admin/employees', {
+      const employeesRes = await fetch('/api/admin/employees', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (employeesRes.ok) {
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dokumente
     try {
-      const documentsRes = await fetch('/documents', {
+      const documentsRes = await fetch('/api/admin/documents', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (documentsRes.ok) {
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Teams
     try {
-      const teamsRes = await fetch('/teams', {
+      const teamsRes = await fetch('/api/teams', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (teamsRes.ok) {
@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch('/admin/create-employee', {
+      const response = await fetch('/api/admin/create-employee', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -369,8 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/employees', {
+      // Admin Employees Endpoint verwenden
+      const response = await fetch('/api/admin/employees', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -444,8 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/documents', {
+      // Admin Documents Endpoint verwenden
+      const response = await fetch('/api/admin/documents', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -495,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/departments', {
+      const response = await fetch('/api/departments', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Teams
   async function loadTeams() {
     try {
-      const response = await fetch('/teams', {
+      const response = await fetch('/api/teams', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('/teams', {
+      const response = await fetch('/api/teams', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      window.location.href = '/';
+      window.location.href = '/pages/index.html';
     }
   }
 });
@@ -677,7 +677,7 @@ async function loadEmployeesForPayslipSelect() {
 
   if (select) {
     try {
-      const response = await fetch('/admin/employees', {
+      const response = await fetch('/api/admin/employees', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -706,7 +706,7 @@ async function loadEmployeesTable(filter = '') {
   try {
     // Wenn wir noch keine Mitarbeiter haben oder ein Neuladeflag gesetzt ist, laden wir sie neu
     if (allEmployees.length === 0 || filter === 'reload') {
-      const response = await fetch('/admin/employees', {
+      const response = await fetch('/api/admin/employees', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -869,7 +869,7 @@ async function loadDocumentsTable(filter = '') {
   try {
     // Wenn wir noch keine Dokumente haben oder ein Neuladeflag gesetzt ist, laden wir sie neu
     if (allDocuments.length === 0 || filter === 'reload') {
-      const response = await fetch('/documents', {
+      const response = await fetch('/api/documents', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1031,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadPayslipsTable() {
   const token = localStorage.getItem('token');
   try {
-    const response = await fetch('/documents?category=payslip', {
+    const response = await fetch('/api/documents?category=payslip', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1115,7 +1115,7 @@ async function loadDepartmentsTable() {
 async function loadTeamsTable() {
   const token = localStorage.getItem('token');
   try {
-    const response = await fetch('/teams', {
+    const response = await fetch('/api/teams', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1150,7 +1150,7 @@ async function loadTeamsTable() {
 // Helper functions for select elements
 async function loadEmployeesForSelectElement(selectElement, token) {
   try {
-    const response = await fetch('/admin/employees', {
+    const response = await fetch('/api/admin/employees', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1202,7 +1202,7 @@ async function loadDepartmentsForEmployeeSelect() {
         '<option value="">Abteilungen werden geladen...</option>';
 
       // Direkt den Test-Endpunkt verwenden
-      const response = await fetch('/test/db/departments', {
+      const response = await fetch('/api/departments', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -1295,7 +1295,7 @@ async function toggleEmployeeStatus(employeeId, currentStatus) {
 
   try {
     const response = await fetch(
-      `/admin/toggle-employee-status/${employeeId}`,
+      `/api/admin/toggle-employee-status/${employeeId}`,
       {
         method: 'PUT',
         headers: {
@@ -1341,7 +1341,7 @@ async function editEmployee(employeeId) {
   const token = localStorage.getItem('token');
 
   try {
-    const response = await fetch(`/admin/employees/${employeeId}`, {
+    const response = await fetch(`/api/admin/employees/${employeeId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1444,7 +1444,7 @@ async function updateEmployee(event, employeeId) {
   }
 
   try {
-    const response = await fetch(`/admin/employees/${employeeId}`, {
+    const response = await fetch(`/api/admin/employees/${employeeId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1476,7 +1476,7 @@ async function deleteEmployee(employeeId) {
 
   try {
     // Mitarbeiterdaten abrufen
-    const response = await fetch(`/admin/employees/${employeeId}`, {
+    const response = await fetch(`/api/admin/employees/${employeeId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -1500,7 +1500,7 @@ async function deleteEmployee(employeeId) {
   }
 
   try {
-    const response = await fetch(`/admin/delete-employee/${employeeId}`, {
+    const response = await fetch(`/api/admin/delete-employee/${employeeId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -1653,7 +1653,7 @@ async function editTeam(teamId) {
   const token = localStorage.getItem('token');
 
   try {
-    const response = await fetch(`/teams/${teamId}`, {
+    const response = await fetch(`/api/teams/${teamId}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -1682,7 +1682,7 @@ async function editTeam(teamId) {
                                 <label class="form-label">Abteilung</label>
                                 <select name="department_id" class="form-control">
                                     <option value="">Keine Abteilung</option>
-                                    ${await getDepartmentOptions(team.department_id)}
+                                    <!-- Department options will be loaded dynamically -->
                                 </select>
                             </div>
                             <div class="form-actions">
@@ -1711,7 +1711,7 @@ async function updateTeam(event, teamId) {
   const data = Object.fromEntries(formData.entries());
 
   try {
-    const response = await fetch(`/teams/${teamId}`, {
+    const response = await fetch(`/api/teams/${teamId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1743,7 +1743,7 @@ async function deleteTeam(teamId) {
   const token = localStorage.getItem('token');
 
   try {
-    const response = await fetch(`/teams/${teamId}`, {
+    const response = await fetch(`/api/teams/${teamId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -1782,7 +1782,7 @@ async function toggleDocumentArchive(documentId, isArchived) {
   }
 
   try {
-    const response = await fetch(`/documents/${documentId}/archive`, {
+    const response = await fetch(`/api/documents/${documentId}/archive`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1846,7 +1846,7 @@ async function downloadDocument(documentId) {
 
   try {
     // Öffne das Dokument in einem neuen Tab
-    window.open(`/documents/${documentId}?inline=true`, '_blank');
+    window.open(`/api/documents/${documentId}?inline=true`, '_blank');
   } catch (error) {
     console.error('Error downloading document:', error);
     alert('Fehler beim Herunterladen des Dokuments');
@@ -1866,7 +1866,7 @@ async function deleteDocument(documentId) {
   }
 
   try {
-    const response = await fetch(`/documents/${documentId}`, {
+    const response = await fetch(`/api/documents/${documentId}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,

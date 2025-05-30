@@ -31,7 +31,7 @@ async function fetchWithAuth(url, options = {}) {
   const token = getAuthToken();
 
   if (!token) {
-    window.location.href = '/login';
+    window.location.href = '/pages/login.html';
     throw new Error('No authentication token');
   }
 
@@ -49,7 +49,7 @@ async function fetchWithAuth(url, options = {}) {
   // If unauthorized, redirect to login
   if (response.status === 401) {
     removeAuthToken();
-    window.location.href = '/login';
+    window.location.href = '/pages/login.html';
     throw new Error('Unauthorized');
   }
 
@@ -112,7 +112,7 @@ async function loadUserInfo() {
 // Logout function
 function logout() {
   removeAuthToken();
-  window.location.href = '/login';
+  window.location.href = '/pages/login.html';
 }
 
 // Show success message
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
     console.log('No authentication token found, redirecting to login');
-    window.location.href = '/login';
+    window.location.href = '/pages/login.html';
     return;
   }
 

@@ -3,44 +3,34 @@
  * Handles document-related requests
  */
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import documentService from '../services/document.service';
 import { logger } from '../utils/logger';
 import { parsePagination } from '../utils/helpers';
 import { HTTP_STATUS } from '../utils/constants';
+import {
+  AuthenticatedRequest as BaseAuthRequest,
+  FileUploadRequest,
+} from '../types/request.types';
 
-// Multer file type
-interface MulterFile {
-  fieldname: string;
-  originalname: string;
-  encoding: string;
-  mimetype: string;
-  size: number;
-  destination: string;
-  filename: string;
-  path: string;
-  buffer: Buffer;
-}
-
-// Extended Request interfaces for document operations
-interface AuthenticatedRequest extends Request {
-  user?: {
+// Extended Request interface for document operations
+interface AuthenticatedRequest extends BaseAuthRequest {
+  user: {
     id: number;
+    userId: number;
     tenantId: number;
-    username?: string;
-    email?: string;
-    role?: string;
+    username: string;
+    email: string;
+    role: string;
+    tenantName?: string;
+    first_name?: string;
+    last_name?: string;
+    department_id?: number | null;
+    position?: string | null;
   };
 }
 
 interface DocumentQueryRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenantId: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   query: {
     page?: string;
     limit?: string;
@@ -50,42 +40,20 @@ interface DocumentQueryRequest extends AuthenticatedRequest {
 }
 
 interface DocumentByIdRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenantId: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   params: {
     id: string;
   };
 }
 
-interface DocumentUploadRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenantId: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
+interface DocumentUploadRequest extends FileUploadRequest {
   body: {
     category?: string;
     description?: string;
     userId?: string;
   };
-  file?: MulterFile;
 }
 
 interface DocumentUpdateRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenantId: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   params: {
     id: string;
   };

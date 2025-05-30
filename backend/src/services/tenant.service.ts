@@ -34,18 +34,7 @@ interface TenantFilters {
   offset?: number;
 }
 
-interface TenantCreateData {
-  subdomain: string;
-  company_name: string;
-  company_email: string;
-  company_phone?: string | null;
-  country: string;
-  status?: 'active' | 'inactive' | 'suspended';
-  trial_ends_at?: Date | string | null;
-  subscription_plan?: string | null;
-  subscription_ends_at?: Date | string | null;
-  max_users?: number;
-}
+// Removed unused TenantCreateData interface - using ModelTenantCreateData instead
 
 interface TenantUpdateData {
   company_name?: string;

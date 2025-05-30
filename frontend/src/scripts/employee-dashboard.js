@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirm('Möchten Sie sich wirklich abmelden?')) {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
-        window.location.href = '/login'; // Umleitung zur Login-Seite
+        window.location.href = '/pages/login.html'; // Umleitung zur Login-Seite
       }
     });
   } else {

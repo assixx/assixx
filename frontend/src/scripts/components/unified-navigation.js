@@ -92,7 +92,7 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Übersicht',
-          url: '/admin-dashboard',
+          url: '/pages/admin-dashboard.html',
           section: 'dashboard',
         },
         {
@@ -113,38 +113,38 @@ class UnifiedNavigation {
           id: 'blackboard',
           icon: this.getSVGIcon('blackboard'),
           label: 'Blackboard',
-          url: '/blackboard',
+          url: '/pages/blackboard.html',
         },
         {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
-          url: '/calendar',
+          url: '/pages/calendar.html',
         },
         {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
-          url: '/shifts',
+          url: '/pages/shifts.html',
         },
         {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
-          url: '/chat',
+          url: '/pages/chat.html',
           badge: 'unread-messages',
         },
         {
           id: 'kvp',
           icon: this.getSVGIcon('lightbulb'),
           label: 'KVP System',
-          url: '/kvp',
+          url: '/pages/kvp.html',
         },
         {
           id: 'surveys',
           icon: this.getSVGIcon('poll'),
           label: 'Umfragen',
-          url: '/survey-admin',
+          url: '/pages/survey-admin.html',
         },
         {
           id: 'payslips',
@@ -178,7 +178,7 @@ class UnifiedNavigation {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Feature Management',
-          url: '/admin/feature-management',
+          url: '/pages/feature-management.html',
         },
       ],
 
@@ -188,57 +188,57 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Dashboard',
-          url: '/employee-dashboard',
+          url: '/pages/employee-dashboard.html',
         },
         {
           id: 'documents',
           icon: this.getSVGIcon('document'),
           label: 'Meine Dokumente',
-          url: '/employee-documents',
+          url: '/pages/employee-documents.html',
         },
         {
           id: 'blackboard',
           icon: this.getSVGIcon('blackboard'),
           label: 'Blackboard',
-          url: '/blackboard',
+          url: '/pages/blackboard.html',
         },
         {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
-          url: '/calendar',
+          url: '/pages/calendar.html',
         },
         {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
-          url: '/chat',
+          url: '/pages/chat.html',
           badge: 'unread-messages',
         },
         {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
-          url: '/shifts',
+          url: '/pages/shifts.html',
         },
         {
           id: 'kvp',
           icon: this.getSVGIcon('lightbulb'),
           label: 'KVP System',
-          url: '/kvp',
+          url: '/pages/kvp.html',
         },
         {
           id: 'surveys',
           icon: this.getSVGIcon('poll'),
           label: 'Umfragen',
-          url: '/survey-employee',
+          url: '/pages/survey-employee.html',
           badge: 'pending-surveys',
         },
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/profile',
+          url: '/pages/profile.html',
         },
       ],
 
@@ -248,7 +248,7 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Root Dashboard',
-          url: '/root-dashboard',
+          url: '/pages/root-dashboard.html',
         },
         {
           id: 'admins',
@@ -268,13 +268,13 @@ class UnifiedNavigation {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Features',
-          url: '/root-features',
+          url: '/pages/root-features.html',
         },
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/root-profile',
+          url: '/pages/root-profile.html',
         },
         {
           id: 'system',
@@ -466,7 +466,7 @@ class UnifiedNavigation {
     sessionStorage.clear();
 
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.href = '/pages/login.html';
   }
 
   handleNavigationClick(link, _event) {

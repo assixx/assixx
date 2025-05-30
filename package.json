@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/backend/src/server.js",
     "start:prod": "node dist/backend/src/server.js",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:backend:ts\" \"npm run dev:frontend\"",
     "dev:backend": "nodemon backend/src/server.js",
     "dev:backend:ts": "nodemon --exec \"tsx\" backend/src/server.ts",
     "dev:frontend": "cd frontend && npm run dev",

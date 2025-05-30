@@ -3,7 +3,7 @@
  * Starts the Express server and WebSocket
  */
 
-import { Application } from 'express';
+// import { Application } from 'express';
 import http, { Server } from 'http';
 import fs from 'fs';
 import path from 'path';
@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 
 // Import app and WebSocket setup
 import app from './app';
-import ChatWebSocketServer from './websocket';
+// import ChatWebSocketServer from './websocket';
 
 // Create HTTP server
 const server: Server = http.createServer(app);

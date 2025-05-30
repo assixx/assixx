@@ -52,7 +52,7 @@ class AdminLogService {
    * Holt alle AdminLog Einträge für einen Tenant
    */
   async getAll(
-    tenantDb: Pool,
+    _tenantDb: Pool,
     filters: AdminLogFilters = {}
   ): Promise<AdminLogData[]> {
     try {
@@ -74,7 +74,7 @@ class AdminLogService {
   /**
    * Holt einen AdminLog Eintrag per ID
    */
-  async getById(tenantDb: Pool, id: number): Promise<AdminLogData | null> {
+  async getById(_tenantDb: Pool, _id: number): Promise<AdminLogData | null> {
     try {
       // Model doesn't have getById, return null for now
       return null;

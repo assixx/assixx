@@ -77,7 +77,7 @@ interface TemplateReplacements {
   [key: string]: string;
 }
 
-interface QueueItem extends EmailOptions {}
+type QueueItem = EmailOptions;
 
 // Queue für Massen-E-Mails
 const emailQueue: QueueItem[] = [];
@@ -246,7 +246,7 @@ async function processQueue(): Promise<void> {
 
       // Kurze Pause zwischen Batches, um SMTP-Limits einzuhalten
       if (emailQueue.length > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => global.setTimeout(resolve, 1000));
       }
     }
   } catch (error: any) {

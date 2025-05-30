@@ -19,28 +19,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-interface MachinesListRequest extends AuthenticatedRequest {
-  query: {
-    department_id?: string;
-  };
-}
-
-interface MachineByIdRequest extends AuthenticatedRequest {
-  params: {
-    id: string;
-  };
-}
-
-interface MachineCreateRequest extends AuthenticatedRequest {
-  body: {
-    name: string;
-    department_id: number;
-    description?: string;
-    location?: string;
-    maintenance_schedule?: string;
-    status?: string;
-  };
-}
+// Removed unused interfaces - MachinesListRequest, MachineByIdRequest, MachineCreateRequest
 
 // Machine type definition
 interface Machine {
@@ -60,7 +39,7 @@ interface Machine {
  */
 router.get('/', authenticateToken, async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
+    // const authReq = req as AuthenticatedRequest;
     // For now, return dummy machine data
     // In production, this would query the machines table
     const machines: Machine[] = [
@@ -101,7 +80,7 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
  */
 router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
+    // const authReq = req as AuthenticatedRequest;
     const machineId = parseInt(req.params.id);
 
     // Dummy machine data

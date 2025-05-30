@@ -45,7 +45,7 @@ async function canManageEntry(
     const tenantId = getTenantId(authReq.user);
 
     const entry = await blackboardModel.getEntryById(
-      entryId,
+      parseInt(entryId, 10),
       tenantId,
       authReq.user.id
     );
@@ -159,7 +159,7 @@ router.get(
       const result = await blackboardModel.getAllEntries(
         tenantId,
         authReq.user.id,
-        options
+        options as any
       );
 
       res.json(result);
@@ -209,7 +209,7 @@ router.get(
       const tenantId = getTenantId(authReq.user);
 
       const entry = await blackboardModel.getEntryById(
-        req.params.id,
+        parseInt(req.params.id, 10),
         tenantId,
         authReq.user.id
       );
@@ -301,7 +301,7 @@ router.put(
 
       const tenantId = getTenantId(authReq.user);
       const updatedEntry = await blackboardModel.updateEntry(
-        req.params.id,
+        parseInt(req.params.id, 10),
         entryData,
         tenantId
       );
@@ -327,7 +327,7 @@ router.delete(
       const authReq = req as AuthenticatedRequest;
       const tenantId = getTenantId(authReq.user);
       const success = await blackboardModel.deleteEntry(
-        req.params.id,
+        parseInt(req.params.id, 10),
         tenantId
       );
 
@@ -355,7 +355,7 @@ router.post(
     try {
       const authReq = req as AuthenticatedRequest;
       const success = await blackboardModel.confirmEntry(
-        req.params.id,
+        parseInt(req.params.id, 10),
         authReq.user.id
       );
 
@@ -393,7 +393,7 @@ router.get(
       }
       const tenantId = getTenantId(authReq.user);
       const confirmations = await blackboardModel.getConfirmationStatus(
-        req.params.id,
+        parseInt(req.params.id, 10),
         tenantId
       );
 

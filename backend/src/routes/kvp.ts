@@ -161,7 +161,7 @@ router.get(
       const authReq = req as any;
       const tenantId = getTenantId(authReq.user);
       const suggestion = await kvpModel.getSuggestionById(
-        req.params.id,
+        parseInt(req.params.id, 10),
         tenantId,
         authReq.user.id,
         authReq.user.role
@@ -231,17 +231,17 @@ router.post(
         return;
       }
 
-      const suggestionData = {
+      const suggestionData: any = {
         tenant_id: tenantId,
         title,
         description,
-        category_id: category_id ? parseInt(category_id) : null,
+        category_id: category_id ? parseInt(category_id) : 1, // Default to 1 if not provided
         org_level,
         org_id: parseInt(org_id),
         submitted_by: authReq.user.id,
         priority: priority || 'normal',
         expected_benefit,
-        estimated_cost: estimated_cost ? parseFloat(estimated_cost) : null,
+        estimated_cost: estimated_cost ? parseFloat(estimated_cost) : undefined,
       };
 
       const suggestion = await kvpModel.createSuggestion(suggestionData);
@@ -306,7 +306,7 @@ router.put(
       }
 
       const updated = await kvpModel.updateSuggestionStatus(
-        req.params.id,
+        parseInt(req.params.id, 10),
         tenantId,
         status,
         authReq.user.id,
@@ -361,7 +361,7 @@ router.post(
         (authReq.user.role === 'admin' || authReq.user.role === 'root');
 
       const commentId = await kvpModel.addComment(
-        req.params.id,
+        parseInt(req.params.id, 10),
         authReq.user.id,
         comment.trim(),
         isInternal

@@ -335,6 +335,22 @@ export class Feature {
       throw error;
     }
   }
+
+  // Check if a feature is enabled for a specific tenant
+  static async isEnabledForTenant(
+    featureKey: string,
+    tenantId: number
+  ): Promise<boolean> {
+    try {
+      // Use the existing checkTenantAccess method which does exactly what we need
+      return await this.checkTenantAccess(tenantId, featureKey);
+    } catch (error) {
+      logger.error(
+        `Error checking if feature ${featureKey} is enabled for tenant ${tenantId}: ${(error as Error).message}`
+      );
+      return false;
+    }
+  }
 }
 
 // Default export for CommonJS compatibility

@@ -341,7 +341,25 @@ export class Document {
     }
   }
 
-  static async count(filters: DocumentCountFilter = {}): Promise<number> {
+  // Count method with optional filters
+  static async count(filters?: DocumentCountFilter): Promise<number> {
+    // If no filters provided, count all documents
+    if (!filters || Object.keys(filters).length === 0) {
+      try {
+        const [rows] = await executeQuery<any[]>(
+          'SELECT COUNT(*) as count FROM documents',
+          []
+        );
+        return rows[0]?.count || 0;
+      } catch (error) {
+        logger.error(
+          `Error counting all documents: ${(error as Error).message}`
+        );
+        return 0;
+      }
+    }
+
+    // Count with filters
     logger.info('Counting documents with filters');
     let query = 'SELECT COUNT(*) as total FROM documents WHERE 1=1';
     const params: any[] = [];
@@ -383,22 +401,111 @@ export class Document {
       );
       return rows[0]?.count || 0;
     } catch (error) {
-      logger.error(`Error counting documents by tenant: ${(error as Error).message}`);
+      logger.error(
+        `Error counting documents by tenant: ${(error as Error).message}`
+      );
       return 0;
     }
   }
 
-  // Simple count method for legacy compatibility
-  static async count(): Promise<number> {
+  // Find documents with flexible filters
+  static async findWithFilters(filters: any): Promise<DbDocument[]> {
+    logger.info('Finding documents with filters', filters);
+
+    let query = `
+      SELECT d.*, u.first_name, u.last_name, 
+             CONCAT(u.first_name, ' ', u.last_name) AS employee_name
+      FROM documents d
+      LEFT JOIN users u ON d.user_id = u.id
+      WHERE 1=1`;
+
+    const params: any[] = [];
+
+    // Add filters
+    if (filters.userId) {
+      query += ' AND d.user_id = ?';
+      params.push(filters.userId);
+    }
+
+    if (filters.tenantId) {
+      query += ' AND d.tenant_id = ?';
+      params.push(filters.tenantId);
+    }
+
+    if (filters.category) {
+      query += ' AND d.category = ?';
+      params.push(filters.category);
+    }
+
+    if (filters.year) {
+      query += ' AND d.year = ?';
+      params.push(filters.year);
+    }
+
+    if (filters.month) {
+      query += ' AND d.month = ?';
+      params.push(filters.month);
+    }
+
+    if (filters.isArchived !== undefined) {
+      query += ' AND d.is_archived = ?';
+      params.push(filters.isArchived);
+    }
+
+    if (filters.searchTerm) {
+      query += ' AND (d.file_name LIKE ? OR d.description LIKE ?)';
+      params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
+    }
+
+    // Add date range filters
+    if (filters.uploadDateFrom) {
+      query += ' AND d.upload_date >= ?';
+      params.push(filters.uploadDateFrom);
+    }
+
+    if (filters.uploadDateTo) {
+      query += ' AND d.upload_date <= ?';
+      params.push(filters.uploadDateTo);
+    }
+
+    // Add ordering
+    if (filters.orderBy) {
+      const validOrderFields = [
+        'upload_date',
+        'file_name',
+        'category',
+        'year',
+        'month',
+      ];
+      const orderField = validOrderFields.includes(filters.orderBy)
+        ? filters.orderBy
+        : 'upload_date';
+      const orderDirection = filters.orderDirection === 'ASC' ? 'ASC' : 'DESC';
+      query += ` ORDER BY d.${orderField} ${orderDirection}`;
+    } else {
+      query += ' ORDER BY d.upload_date DESC';
+    }
+
+    // Add pagination
+    if (filters.limit) {
+      query += ' LIMIT ?';
+      params.push(parseInt(filters.limit));
+
+      if (filters.offset) {
+        query += ' OFFSET ?';
+        params.push(parseInt(filters.offset));
+      }
+    }
+
     try {
-      const [rows] = await executeQuery<any[]>(
-        'SELECT COUNT(*) as count FROM documents',
-        []
-      );
-      return rows[0]?.count || 0;
+      const [rows] = await executeQuery<DbDocument[]>(query, params);
+      logger.info(`Found ${rows.length} documents with filters`);
+      return rows;
     } catch (error) {
-      logger.error(`Error counting all documents: ${(error as Error).message}`);
-      return 0;
+      logger.error(
+        `Error finding documents with filters: ${(error as Error).message}`
+      );
+      throw error;
     }
   }
 }

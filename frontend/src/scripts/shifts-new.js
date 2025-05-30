@@ -127,7 +127,7 @@ class ShiftPlanningSystem {
     // Logout functionality
     document.getElementById('logoutBtn').addEventListener('click', () => {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
     });
   }
 

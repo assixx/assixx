@@ -31,7 +31,7 @@ class UserService {
    * Holt alle User Einträge für einen Tenant
    */
   async getAll(
-    tenantDb: Pool,
+    _tenantDb: Pool,
     filters: EmployeeFilters = {}
   ): Promise<EmployeeData[]> {
     try {
@@ -46,7 +46,7 @@ class UserService {
   /**
    * Holt einen User Eintrag per ID
    */
-  async getById(tenantDb: Pool, id: number): Promise<EmployeeData | null> {
+  async getById(_tenantDb: Pool, id: number): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id);
       return user || null;
@@ -60,7 +60,7 @@ class UserService {
    * Erstellt einen neuen User Eintrag
    */
   async create(
-    tenantDb: Pool,
+    _tenantDb: Pool,
     data: EmployeeCreateData
   ): Promise<EmployeeData> {
     try {
@@ -80,7 +80,7 @@ class UserService {
    * Aktualisiert einen User Eintrag
    */
   async update(
-    tenantDb: Pool,
+    _tenantDb: Pool,
     id: number,
     data: EmployeeUpdateData
   ): Promise<EmployeeData | null> {
@@ -100,7 +100,7 @@ class UserService {
   /**
    * Löscht einen User Eintrag
    */
-  async delete(tenantDb: Pool, id: number): Promise<boolean> {
+  async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {
       return await User.delete(id);
     } catch (error) {

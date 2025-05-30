@@ -428,4 +428,3 @@ export const fileUploadSecurity = (
 
 // Export everything including cors for backward compatibility
 export { cors };
-

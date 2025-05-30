@@ -583,6 +583,133 @@ class ChatService {
       connection.release();
     }
   }
+
+  // Get participants of a conversation
+  async getConversationParticipants(
+    conversationId: number,
+    tenantId: number,
+    tenantDb: Pool
+  ): Promise<any[]> {
+    const query = `
+      SELECT u.id, u.username, u.first_name, u.last_name, u.email,
+             cp.joined_at, cp.is_admin
+      FROM conversation_participants cp
+      JOIN users u ON cp.user_id = u.id
+      WHERE cp.conversation_id = ? AND u.tenant_id = ?
+      ORDER BY u.username
+    `;
+
+    const [participants] = await tenantDb.execute(query, [
+      conversationId,
+      tenantId,
+    ]);
+    return participants as any[];
+  }
+
+  // Add participant to conversation
+  async addParticipant(
+    conversationId: number,
+    userId: number,
+    addedBy: number,
+    _tenantId: number,
+    tenantDb: Pool
+  ): Promise<void> {
+    // Check if user is already in conversation
+    const [existing] = await tenantDb.execute<RowDataPacket[]>(
+      'SELECT id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+      [conversationId, userId]
+    );
+
+    if (existing.length > 0) {
+      throw new Error('User is already a participant');
+    }
+
+    // Add participant
+    await tenantDb.execute(
+      'INSERT INTO conversation_participants (conversation_id, user_id, joined_at) VALUES (?, ?, NOW())',
+      [conversationId, userId]
+    );
+
+    // Add system message about new participant
+    const [userInfo] = await tenantDb.execute<RowDataPacket[]>(
+      'SELECT username FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (userInfo.length > 0) {
+      await tenantDb.execute(
+        'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
+        [
+          conversationId,
+          addedBy,
+          `${userInfo[0].username} wurde zur Unterhaltung hinzugefügt`,
+        ]
+      );
+    }
+  }
+
+  // Remove participant from conversation
+  async removeParticipant(
+    conversationId: number,
+    userId: number,
+    removedBy: number,
+    _tenantId: number,
+    tenantDb: Pool
+  ): Promise<void> {
+    // Check if user is in conversation
+    const [existing] = await tenantDb.execute<RowDataPacket[]>(
+      'SELECT id FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+      [conversationId, userId]
+    );
+
+    if (existing.length === 0) {
+      throw new Error('User is not a participant');
+    }
+
+    // Remove participant
+    await tenantDb.execute(
+      'DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+      [conversationId, userId]
+    );
+
+    // Add system message about removed participant
+    const [userInfo] = await tenantDb.execute<RowDataPacket[]>(
+      'SELECT username FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (userInfo.length > 0) {
+      await tenantDb.execute(
+        'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
+        [
+          conversationId,
+          removedBy,
+          `${userInfo[0].username} hat die Unterhaltung verlassen`,
+        ]
+      );
+    }
+  }
+
+  // Update conversation name
+  async updateConversationName(
+    conversationId: number,
+    name: string,
+    updatedBy: number,
+    _tenantId: number,
+    tenantDb: Pool
+  ): Promise<void> {
+    // Update name
+    await tenantDb.execute('UPDATE conversations SET name = ? WHERE id = ?', [
+      name,
+      conversationId,
+    ]);
+
+    // Add system message about name change
+    await tenantDb.execute(
+      'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
+      [conversationId, updatedBy, `Gruppenname geändert zu "${name}"`]
+    );
+  }
 }
 
 // Export singleton instance

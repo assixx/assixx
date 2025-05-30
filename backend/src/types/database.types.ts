@@ -20,6 +20,11 @@ export interface MockDatabase {
     sql: string,
     params?: any[]
   ): Promise<T>;
+  execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
+    sql: string,
+    params?: any[]
+  ): Promise<T>;
+  getConnection(): Promise<any>;
 }
 
 export type DatabasePool = Pool | MockDatabase;

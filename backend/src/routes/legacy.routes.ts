@@ -3,8 +3,9 @@
  * Handles old API endpoints for backward compatibility
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router } from 'express';
 import { authenticateToken } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 // Import models (now ES modules)
 import User from '../models/user';
@@ -83,8 +84,8 @@ router.get(
         return;
       }
 
-      delete user.password;
-      res.json(user);
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error: any) {
       console.error('Error fetching user profile:', error);
       res.status(500).json({ message: 'Server error' });
@@ -96,9 +97,9 @@ router.get(
 router.get(
   '/test/db/employees',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
-      const authReq = req as any;
+      // const authReq = req as any;
       const employees = await User.findAll({ role: 'employee' });
       res.json(employees);
     } catch (error: any) {
@@ -110,9 +111,9 @@ router.get(
 router.get(
   '/test/db/counts',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
-      const authReq = req as any;
+      // const authReq = req as any;
       const employees = await User.count({ role: 'employee' });
       const documents = await Document.count();
 
@@ -133,7 +134,7 @@ router.get(
 router.get(
   '/test/db/documents',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
       const documents = await Document.findAll();
       res.json(documents);
@@ -146,7 +147,7 @@ router.get(
 router.get(
   '/test/db/departments',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
       const departments = await Department.findAll();
       res.json(departments || []);
@@ -160,7 +161,7 @@ router.get(
 router.get(
   '/teams',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
       const teams = await Team.findAll();
       res.json(teams || []);
@@ -174,9 +175,9 @@ router.get(
 router.get(
   '/admin/employees',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
-      const authReq = req as any;
+      // const authReq = req as any;
       const employees = await User.findAll();
       res.json(employees);
     } catch (error: any) {
@@ -251,22 +252,24 @@ router.post(
       const { username, password, email, company } = req.body;
 
       // Create admin user
-      const newAdmin = await User.create({
+      const newAdminId = await User.create({
         username,
         password,
         email,
         company,
         role: 'admin',
         tenant_id: authReq.user.tenant_id,
+        first_name: '',
+        last_name: '',
       });
 
       const response: CreateAdminResponse = {
         message: 'Admin created successfully',
         admin: {
-          id: newAdmin.id,
-          username: newAdmin.username,
-          email: newAdmin.email,
-          company: newAdmin.company,
+          id: newAdminId,
+          username,
+          email,
+          company,
         },
       };
 
@@ -290,7 +293,7 @@ router.delete(
         return;
       }
 
-      const adminId = req.params.id;
+      const adminId = parseInt(req.params.id, 10);
       await User.delete(adminId);
 
       res.json({ message: 'Admin deleted successfully' });
@@ -323,16 +326,16 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      
+
       // Check if user is admin or root
       if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
         return res.status(403).json({ message: 'Access denied' });
       }
-      
+
       const employees = await User.findAllByTenant(authReq.user.tenant_id);
-      
+
       // Remove sensitive data
-      const sanitizedEmployees = employees.map(user => ({
+      const sanitizedEmployees = employees.map((user) => ({
         id: user.id,
         username: user.username,
         email: user.email,
@@ -343,9 +346,9 @@ router.get(
         team_id: user.team_id,
         phone: user.phone,
         created_at: user.created_at,
-        is_active: user.is_active
+        is_active: user.is_active,
       }));
-      
+
       res.json(sanitizedEmployees);
     } catch (error: any) {
       logger.error('Error fetching employees:', error);
@@ -358,10 +361,10 @@ router.get(
 router.get(
   '/teams',
   [authenticateToken] as any[],
-  async (req: any, res: any) => {
+  async (_req: any, res: any) => {
     try {
-      const authReq = req as any;
-      
+      // const authReq = req as any;
+
       // For now, return empty array since teams table structure needs to be defined
       // This will prevent JSON parse errors
       res.json([]);

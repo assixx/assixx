@@ -3,10 +3,10 @@
  * API endpoints for survey system with responses and analytics
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router } from 'express';
 import { authenticateToken } from '../auth';
 import { checkFeature } from '../middleware/features';
-import { reportLimiter, apiLimiter } from '../middleware/security-enhanced';
+import { reportLimiter } from '../middleware/security-enhanced';
 import {
   validateCreateSurvey,
   validateUpdateSurvey,
@@ -32,7 +32,7 @@ router.get('/pending-count', async (req, res) => {
     const tenantId = authReq.user.tenant_id;
 
     // Get all active surveys for the tenant
-    const [surveys] = await db.query(
+    const [surveys] = await (db as any).execute(
       `SELECT s.id 
        FROM surveys s
        WHERE s.tenant_id = ? 
@@ -44,7 +44,7 @@ router.get('/pending-count', async (req, res) => {
     // Count surveys not yet completed by the user
     let pendingCount = 0;
     for (const survey of surveys) {
-      const [response] = await db.query(
+      const [response] = await (db as any).execute(
         'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND is_complete = 1',
         [survey.id, userId]
       );
@@ -70,7 +70,9 @@ router.get(
       const authReq = req as any;
       const { status, page, limit } = req.query;
       const surveys = await Survey.getAllByTenant(authReq.user.tenant_id, {
-        status: status ? String(status) : undefined,
+        status: status
+          ? (String(status) as 'active' | 'draft' | 'closed')
+          : undefined,
         page: page ? parseInt(String(page)) : 1,
         limit: limit ? parseInt(String(limit)) : 20,
       });
@@ -98,7 +100,10 @@ router.get('/templates', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const authReq = req as any;
-    const survey = await Survey.getById(req.params.id, authReq.user.tenant_id);
+    const survey = await Survey.getById(
+      parseInt(req.params.id, 10),
+      authReq.user.tenant_id
+    );
     if (!survey) {
       res.status(404).json({ error: 'Umfrage nicht gefunden' });
       return;
@@ -120,7 +125,7 @@ router.get('/:id/statistics', async (req, res) => {
     }
 
     const stats = await Survey.getStatistics(
-      req.params.id,
+      parseInt(req.params.id, 10),
       authReq.user.tenant_id
     );
     res.json(stats);
@@ -165,7 +170,7 @@ router.post('/from-template/:templateId', async (req, res) => {
     }
 
     const surveyId = await Survey.createFromTemplate(
-      req.params.templateId,
+      parseInt(req.params.templateId, 10),
       authReq.user.tenant_id,
       authReq.user.id
     );
@@ -192,7 +197,7 @@ router.put('/:id', ...(validateUpdateSurvey as any[]), async (req, res) => {
     }
 
     const success = await Survey.update(
-      req.params.id,
+      parseInt(req.params.id, 10),
       req.body,
       authReq.user.tenant_id
     );
@@ -218,7 +223,10 @@ router.delete('/:id', async (req, res) => {
       return;
     }
 
-    const success = await Survey.delete(req.params.id, authReq.user.tenant_id);
+    const success = await Survey.delete(
+      parseInt(req.params.id, 10),
+      authReq.user.tenant_id
+    );
 
     if (!success) {
       res.status(404).json({ error: 'Umfrage nicht gefunden' });
@@ -270,14 +278,13 @@ router.post(
       );
 
       // Check if user already responded (unless anonymous)
-      if (
-        !(
-          survey.is_anonymous === '1' ||
-          survey.is_anonymous === 1 ||
-          survey.is_anonymous === true
-        )
-      ) {
-        const [existing] = await db.query(
+      const isAnonymous =
+        String(survey.is_anonymous) === '1' ||
+        survey.is_anonymous === 1 ||
+        survey.is_anonymous === true;
+
+      if (!isAnonymous) {
+        const [existing] = await (db as any).execute(
           'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ?',
           [surveyId, userId]
         );
@@ -295,31 +302,25 @@ router.post(
       try {
         await connection.beginTransaction();
 
-        const [responseResult] = await connection.query(
+        const [responseResult] = (await connection.execute(
           `
         INSERT INTO survey_responses (survey_id, user_id, anonymous_id)
         VALUES (?, ?, ?)
       `,
           [
             surveyId,
-            survey.is_anonymous === '1' ||
-            survey.is_anonymous === 1 ||
-            survey.is_anonymous === true
-              ? null
-              : userId,
-            survey.is_anonymous === '1' ||
-            survey.is_anonymous === 1 ||
-            survey.is_anonymous === true
+            isAnonymous ? null : userId,
+            isAnonymous
               ? `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
               : null,
           ]
-        );
+        )) as any;
 
         const responseId = responseResult.insertId;
 
         // Save answers
         for (const answer of answers) {
-          await connection.query(
+          await connection.execute(
             `
           INSERT INTO survey_answers (
             response_id, question_id, answer_text, option_id, 
@@ -338,7 +339,7 @@ router.post(
         }
 
         // Mark response as complete
-        await connection.query(
+        await connection.execute(
           'UPDATE survey_responses SET is_complete = 1, completed_at = NOW() WHERE id = ?',
           [responseId]
         );
@@ -371,7 +372,7 @@ router.get('/:id/my-response', async (req, res) => {
 
     console.log(`Checking response for survey ${surveyId} and user ${userId}`);
 
-    const [responses] = await db.query(
+    const [responses] = await (db as any).execute(
       `
       SELECT sr.*, sa.question_id, sa.answer_text, sa.option_id, 
              sa.answer_number, sa.answer_date
@@ -418,7 +419,7 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const surveyId = req.params.id;
+      const surveyId = parseInt(req.params.id, 10);
       const format = req.query.format ? String(req.query.format) : 'excel';
 
       // Get survey with all responses
@@ -488,7 +489,7 @@ router.get(
             questionsSheet.addRow(row);
 
             // Get responses for this question
-            const [responses] = await db.query(
+            const [responses] = (await (db as any).execute(
               `SELECT sa.*, so.option_text, u.first_name, u.last_name
              FROM survey_answers sa
              LEFT JOIN survey_question_options so ON sa.option_id = so.id
@@ -496,7 +497,7 @@ router.get(
              LEFT JOIN users u ON sr.user_id = u.id
              WHERE sa.question_id = ?`,
               [question.id]
-            );
+            )) as any;
 
             // Add details based on question type
             if (

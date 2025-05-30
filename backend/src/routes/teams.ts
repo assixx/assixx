@@ -172,8 +172,8 @@ router.get('/', async (req, res): Promise<void> => {
 // Get single team
 router.get('/:id', async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
-    const team = await Team.findById(req.params.id);
+    // const authReq = req as AuthenticatedRequest;
+    const team = await Team.findById(parseInt(req.params.id, 10));
 
     if (!team) {
       res.status(404).json({ message: 'Team nicht gefunden' });
@@ -195,7 +195,7 @@ router.put('/:id', async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { name, department_id, leader_id } = req.body;
-    const teamId = req.params.id;
+    const teamId = parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
@@ -254,7 +254,7 @@ router.put('/:id', async (req, res): Promise<void> => {
 router.delete('/:id', async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const teamId = req.params.id;
+    const teamId = parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
@@ -285,8 +285,8 @@ router.delete('/:id', async (req, res): Promise<void> => {
 // Get team members
 router.get('/:id/members', async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
-    const teamId = req.params.id;
+    // const authReq = req as AuthenticatedRequest;
+    const teamId = parseInt(req.params.id, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);
@@ -313,7 +313,7 @@ router.get('/:id/members', async (req, res): Promise<void> => {
 router.post('/:id/members', async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const teamId = req.params.id;
+    const teamId = parseInt(req.params.id, 10);
     const { userId } = req.body;
 
     if (!userId) {
@@ -337,7 +337,7 @@ router.post('/:id/members', async (req, res): Promise<void> => {
       return;
     }
 
-    const success = await Team.addUserToTeam(userId, teamId);
+    const success = await Team.addUserToTeam(parseInt(userId, 10), teamId);
 
     if (success) {
       logger.info(
@@ -365,8 +365,8 @@ router.post('/:id/members', async (req, res): Promise<void> => {
 router.delete('/:id/members/:userId', async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const teamId = req.params.id;
-    const userId = req.params.userId;
+    const teamId = parseInt(req.params.id, 10);
+    const userId = parseInt(req.params.userId, 10);
 
     // Check if team exists
     const team = await Team.findById(teamId);

@@ -46,8 +46,12 @@ router.get(
 );
 
 // Protected routes
-router.get('/check', authenticateToken, authController.checkAuth);
-router.get('/user', authenticateToken, authController.getUserProfile);
+router.get('/check', authenticateToken, (req, res) =>
+  authController.checkAuth(req as any, res)
+);
+router.get('/user', authenticateToken, (req, res) =>
+  authController.getUserProfile(req as any, res)
+);
 
 export default router;
 

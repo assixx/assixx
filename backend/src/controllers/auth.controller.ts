@@ -7,17 +7,7 @@ import { Request, Response } from 'express';
 import authService from '../services/auth.service';
 import userService from '../services/user.service';
 import { logger } from '../utils/logger';
-
-// Extended Request interface from express.d.ts
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    tenantId: number;
-  };
-}
+import { AuthenticatedRequest } from '../types/request.types';
 
 // Interfaces for request bodies
 interface LoginRequest extends Request {

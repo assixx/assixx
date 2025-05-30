@@ -2,7 +2,7 @@
  * User Profile API Routes
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { authenticateToken } from '../middleware/auth';
@@ -24,25 +24,7 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-interface UserProfileRequest extends AuthenticatedRequest {}
-
-interface UserProfileUpdateRequest extends AuthenticatedRequest {
-  body: {
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-    phone?: string;
-    department_id?: number;
-    team_id?: number;
-    position?: string;
-    employee_number?: string;
-    start_date?: string;
-    profile_picture?: string;
-    [key: string]: any; // Allow other fields
-  };
-}
-
-interface UserProfilePictureRequest extends AuthenticatedRequest {}
+// Removed unused interfaces - UserProfileRequest, UserProfileUpdateRequest, UserProfilePictureRequest
 
 /**
  * @route GET /api/user/profile
@@ -63,7 +45,7 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     let departmentInfo = null;
     if (user.department_id) {
       // Verwende db statt req.tenantDb
-      const [departments] = await db.query(
+      const [departments] = await (db as any).execute(
         'SELECT * FROM departments WHERE id = ?',
         [user.department_id]
       );
@@ -77,9 +59,10 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     let teamInfo = null;
     if (user.team_id) {
       // Verwende db statt req.tenantDb
-      const [teams] = await db.query('SELECT * FROM teams WHERE id = ?', [
-        user.team_id,
-      ]);
+      const [teams] = await (db as any).execute(
+        'SELECT * FROM teams WHERE id = ?',
+        [user.team_id]
+      );
 
       if (teams && teams.length > 0) {
         teamInfo = teams[0];
@@ -89,9 +72,10 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     // Get tenant information
     let tenantInfo = null;
     if (user.tenant_id) {
-      const [tenants] = await db.query('SELECT * FROM tenants WHERE id = ?', [
-        user.tenant_id,
-      ]);
+      const [tenants] = await (db as any).execute(
+        'SELECT * FROM tenants WHERE id = ?',
+        [user.tenant_id]
+      );
 
       if (tenants && tenants.length > 0) {
         tenantInfo = tenants[0];
@@ -99,10 +83,10 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     }
 
     // Remove sensitive information
-    delete user.password;
+    const { password, ...userWithoutPassword } = user;
 
     res.json({
-      ...user,
+      ...userWithoutPassword,
       department: departmentInfo ? departmentInfo.name : null,
       departmentId: user.department_id,
       team: teamInfo ? teamInfo.name : null,
@@ -123,26 +107,30 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
  */
 router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
   try {
-    const authReq = req as AuthenticatedRequest;
+    // const authReq = req as AuthenticatedRequest;
     const { id } = req.user;
     const updates = { ...req.body };
 
     // Don't allow updating critical fields
-    delete updates.id;
-    delete updates.username;
-    delete updates.role;
-    delete updates.password;
-    delete updates.created_at;
+    if ('id' in updates) delete updates.id;
+    if ('username' in updates) delete updates.username;
+    if ('role' in updates) delete updates.role;
+    if ('password' in updates) delete updates.password;
+    if ('created_at' in updates) delete updates.created_at;
 
     const result = await User.update(id, updates);
 
     if (result) {
       const updatedUser = await User.findById(id);
-      delete updatedUser.password;
+      if (!updatedUser) {
+        res.status(404).json({ message: 'User not found after update' });
+        return;
+      }
+      const { password, ...userWithoutPassword } = updatedUser;
 
       res.json({
         message: 'Profile updated successfully',
-        user: updatedUser,
+        user: userWithoutPassword,
       });
     } else {
       res.status(400).json({ message: 'Failed to update profile' });

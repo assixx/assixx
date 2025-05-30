@@ -51,63 +51,63 @@ const upload = multer({
 });
 
 // Routes with controller methods
-router.get('/users', authenticateToken, chatController.getUsers as any);
+router.get('/users', authenticateToken, (req, res) => chatController.getUsers(req, res));
 router.get(
   '/conversations',
   authenticateToken,
-  chatController.getConversations as any
+  (req, res) => chatController.getConversations(req, res)
 );
 router.post(
   '/conversations',
   authenticateToken,
-  chatController.createConversation as any
+  (req, res) => chatController.createConversation(req, res)
 );
 router.get(
   '/conversations/:id/messages',
   authenticateToken,
-  chatController.getMessages as any
+  (req, res) => chatController.getMessages(req, res)
 );
 router.post(
   '/conversations/:id/messages',
   authenticateToken,
   upload.single('attachment'),
-  chatController.sendMessage as any
+  (req, res) => chatController.sendMessage(req, res)
 );
 router.get(
   '/attachments/:filename',
   authenticateToken,
-  chatController.getAttachment as any
+  (req, res) => chatController.downloadFile(req, res)
 );
-router.put(
-  '/messages/:id/read',
-  authenticateToken,
-  chatController.markAsRead as any
-);
-router.get(
-  '/work-schedules',
-  authenticateToken,
-  chatController.getWorkSchedules as any
-);
-router.delete(
-  '/messages/:id',
-  authenticateToken,
-  chatController.deleteMessage as any
-);
+// router.put(
+//   '/messages/:id/read',
+//   authenticateToken,
+//   chatController.markAsRead as any
+// );
+// router.get(
+//   '/work-schedules',
+//   authenticateToken,
+//   chatController.getWorkSchedules as any
+// );
+// router.delete(
+//   '/messages/:id',
+//   authenticateToken,
+//   chatController.deleteMessage as any
+// );
 router.get(
   '/unread-count',
   authenticateToken,
-  chatController.getUnreadCount as any
+  (req, res) => chatController.getUnreadCount(req, res)
 );
-router.put(
-  '/messages/:id/archive',
-  authenticateToken,
-  chatController.archiveMessage as any
-);
-router.delete(
-  '/conversations/:id',
-  authenticateToken,
-  chatController.deleteConversation as any
-);
+// router.put(
+//   '/messages/:id/archive',
+//   authenticateToken,
+//   chatController.archiveMessage as any
+// );
+// router.delete(
+//   '/conversations/:id',
+//   authenticateToken,
+//   chatController.deleteConversation as any
+// );
 
 export default router;
 

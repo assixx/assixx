@@ -3,7 +3,7 @@
  * API endpoints for root user admin management and dashboard
  */
 
-import express, { Router, Request } from 'express';
+import express, { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { authenticateToken, authorizeRole } from '../auth';
 import { logger } from '../utils/logger';
@@ -15,15 +15,7 @@ import AdminLog from '../models/adminLog';
 const router: Router = express.Router();
 
 // Extended Request interfaces
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    tenant_id: number;
-  };
-}
+// Removed unused AuthenticatedRequest interface - using the one from auth types
 
 /* Unused interfaces - kept for future reference
 interface CreateAdminRequest extends AuthenticatedRequest {
@@ -167,7 +159,7 @@ router.delete(
 
     try {
       // Zuerst prüfen, ob der zu löschende Benutzer wirklich ein Admin ist
-      const adminToDelete = await User.findById(adminId);
+      const adminToDelete = await User.findById(parseInt(adminId, 10));
 
       if (!adminToDelete) {
         logger.warn(`Admin user with ID ${adminId} not found`);
@@ -184,7 +176,7 @@ router.delete(
       }
 
       // Admin löschen - hier müssen wir eine neue Methode in der User-Klasse erstellen
-      const success = await User.delete(adminId);
+      const success = await User.delete(parseInt(adminId, 10));
 
       if (success) {
         logger.info(`Admin user with ID ${adminId} deleted successfully`);
@@ -219,7 +211,7 @@ router.get(
     );
 
     try {
-      const admin = await User.findById(adminId);
+      const admin = await User.findById(parseInt(adminId, 10));
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -239,7 +231,7 @@ router.get(
       const { password, ...adminData } = admin;
 
       // Letzten Login-Zeitpunkt hinzufügen, falls vorhanden
-      const lastLogin = await AdminLog.getLastLogin(adminId);
+      const lastLogin = await AdminLog.getLastLogin(parseInt(adminId, 10));
       if (lastLogin) {
         adminData.last_login = lastLogin.timestamp;
       }
@@ -268,7 +260,7 @@ router.put(
     logger.info(`Root user ${rootUser} attempting to update admin ${adminId}`);
 
     try {
-      const admin = await User.findById(adminId);
+      const admin = await User.findById(parseInt(adminId, 10));
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -301,7 +293,7 @@ router.put(
       }
 
       // Admin aktualisieren
-      await User.update(adminId, updateData);
+      await User.update(parseInt(adminId, 10), updateData);
 
       logger.info(
         `Admin ${adminId} updated successfully by root user ${rootUser}`
@@ -332,7 +324,7 @@ router.get(
     );
 
     try {
-      const admin = await User.findById(adminId);
+      const admin = await User.findById(parseInt(adminId, 10));
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -349,7 +341,7 @@ router.get(
       }
 
       // Logs abrufen
-      const logs = await AdminLog.getByUserId(adminId, days);
+      const logs = await AdminLog.getByUserId(parseInt(adminId, 10), days);
 
       logger.info(`Retrieved ${logs.length} logs for admin ${adminId}`);
       res.json(logs);

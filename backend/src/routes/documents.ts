@@ -91,7 +91,7 @@ router.post(
         throw new Error('Keine Datei hochgeladen');
       }
 
-      const { originalname, filename, path: filePath } = req.file;
+      const { originalname, path: filePath } = req.file;
       const { userId, category, description, year, month } = req.body;
 
       if (!userId) {
@@ -103,13 +103,12 @@ router.post(
 
       const documentId = await Document.create({
         fileName: originalname,
-        filePath: filename,
-        userId,
+        userId: parseInt(userId, 10),
         fileContent,
         category: category || 'other',
         description: description || '',
-        year: year || null,
-        month: month || null,
+        year: year ? parseInt(year, 10) : undefined,
+        month: month || undefined,
         tenant_id: authReq.user.tenant_id,
       });
 
@@ -128,12 +127,12 @@ router.post(
         );
 
         if (isEmailFeatureEnabled) {
-          const user = await User.findById(userId);
+          const user = await User.findById(parseInt(userId, 10));
           if (user && user.email) {
-            await emailService.sendDocumentNotification(user.email, {
-              documentName: originalname,
+            await emailService.sendNewDocumentNotification(user, {
+              file_name: originalname,
               category: category || 'other',
-              description: description || '',
+              upload_date: new Date(),
             });
             logger.info(
               `Email notification sent to ${user.email} for document ${documentId}`
@@ -200,13 +199,9 @@ router.get(
 
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
-      const offset = (pageNum - 1) * limitNum;
 
-      const { documents, total } = await Document.findWithFilters(
-        filters,
-        limitNum,
-        offset
-      );
+      const documents = await Document.findWithFilters(filters);
+      const total = documents.length;
 
       res.json({
         documents,
@@ -236,7 +231,9 @@ router.get(
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const document = await Document.findById(req.params.documentId);
+      const document = await Document.findById(
+        parseInt(req.params.documentId, 10)
+      );
 
       if (!document) {
         res.status(404).json({ message: 'Dokument nicht gefunden' });
@@ -275,7 +272,9 @@ router.put(
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const success = await Document.archiveDocument(req.params.documentId);
+      const success = await Document.archiveDocument(
+        parseInt(req.params.documentId, 10)
+      );
 
       if (!success) {
         res.status(404).json({ message: 'Dokument nicht gefunden' });
@@ -304,7 +303,9 @@ router.delete(
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const success = await Document.delete(req.params.documentId);
+      const success = await Document.delete(
+        parseInt(req.params.documentId, 10)
+      );
 
       if (!success) {
         res.status(404).json({ message: 'Dokument nicht gefunden' });

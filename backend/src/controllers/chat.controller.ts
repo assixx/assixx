@@ -3,35 +3,18 @@
  * Handles chat-related operations including messages, conversations, and file attachments
  */
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Pool } from 'mysql2/promise';
 import chatService from '../services/chat.service';
 import path from 'path';
 import fs from 'fs/promises';
+import {
+  AuthenticatedRequest as BaseAuthRequest,
+  FileUploadRequest,
+} from '../types/request.types';
 
-// Multer file type
-interface MulterFile {
-  fieldname: string;
-  originalname: string;
-  encoding: string;
-  mimetype: string;
-  size: number;
-  destination: string;
-  filename: string;
-  path: string;
-  buffer: Buffer;
-}
-
-// Extended Request interfaces for chat operations
-interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
+// Extended Request interface for chat operations with DB pool
+interface AuthenticatedRequest extends BaseAuthRequest {
   tenantDb?: Pool;
 }
 
@@ -57,12 +40,42 @@ interface CreateConversationRequest extends AuthenticatedRequest {
   };
   body: {
     participantIds: number[];
-    isGroup?: boolean;
     name?: string;
   };
 }
 
+interface GetConversationsRequest extends AuthenticatedRequest {
+  user: {
+    userId: number;
+    tenantId: number;
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+  };
+}
+
 interface GetMessagesRequest extends AuthenticatedRequest {
+  params: {
+    id: string;
+  };
+  query: {
+    limit?: string;
+    offset?: string;
+  };
+}
+
+interface SendMessageRequest extends FileUploadRequest {
+  params: {
+    id: string;
+  };
+  body: {
+    content?: string;
+  };
+  tenantDb?: Pool;
+}
+
+interface GetConversationParticipantsRequest extends AuthenticatedRequest {
   user: {
     userId: number;
     tenantId: number;
@@ -74,13 +87,9 @@ interface GetMessagesRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
-  query: {
-    limit?: string;
-    offset?: string;
-  };
 }
 
-interface SendMessageRequest extends AuthenticatedRequest {
+interface AddParticipantRequest extends AuthenticatedRequest {
   user: {
     userId: number;
     tenantId: number;
@@ -93,18 +102,26 @@ interface SendMessageRequest extends AuthenticatedRequest {
     id: string;
   };
   body: {
-    content?: string;
+    userId: number;
   };
-  file?: MulterFile;
 }
 
-interface GetAttachmentRequest extends Request {
+interface RemoveParticipantRequest extends AuthenticatedRequest {
+  user: {
+    userId: number;
+    tenantId: number;
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+  };
   params: {
-    filename: string;
+    id: string;
+    userId: string;
   };
 }
 
-interface MessageActionRequest extends AuthenticatedRequest {
+interface UpdateConversationNameRequest extends AuthenticatedRequest {
   user: {
     userId: number;
     tenantId: number;
@@ -116,147 +133,101 @@ interface MessageActionRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
-}
-
-interface ConversationActionRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
+  body: {
+    name: string;
   };
-  params: {
-    id: string;
-  };
-}
-
-interface UnreadCountRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-  tenantDb: Pool;
-}
-
-// Attachment interface
-interface MessageAttachment {
-  path: string;
-  name: string;
-  type: string;
 }
 
 class ChatController {
-  /**
-   * Holt alle verfügbaren Chat-Benutzer
-   * GET /api/chat/users
-   */
+  // Get list of users available for chat
   async getUsers(req: ChatUsersRequest, res: Response): Promise<void> {
     try {
-      // Debug logging
-      console.log('getUsers - Full req.user:', req.user);
-      console.log(
-        'getUsers - tenantId type:',
-        typeof req.user.tenantId,
-        'value:',
-        req.user.tenantId
-      );
-      console.log(
-        'getUsers - userId type:',
-        typeof req.user.userId,
-        'value:',
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const users = await chatService.getUsers(
+        req.user.tenantId,
         req.user.userId
       );
-
-      // Convert to numbers to ensure proper data types
-      const tenantId = parseInt(String(req.user.tenantId));
-      const userId = parseInt(String(req.user.userId));
-
-      console.log('getUsers - Parsed tenantId:', tenantId, 'userId:', userId);
-
-      const users = await chatService.getUsers(tenantId, userId);
       res.json(users);
     } catch (error) {
-      console.error('Fehler beim Abrufen der Benutzer:', error);
-      res.status(500).json({ error: 'Fehler beim Abrufen der Benutzer' });
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Holt alle Konversationen des Benutzers
-   * GET /api/chat/conversations
-   */
-  async getConversations(req: ChatUsersRequest, res: Response): Promise<void> {
-    try {
-      console.log('Chat getConversations - user:', req.user);
-      console.log('tenantId:', req.user.tenantId, 'userId:', req.user.userId);
-
-      // Convert to numbers to ensure proper data types
-      const tenantId = parseInt(String(req.user.tenantId));
-      const userId = parseInt(String(req.user.userId));
-
-      const conversations = await chatService.getConversations(
-        tenantId,
-        userId
-      );
-      res.json(conversations);
-    } catch (error) {
-      console.error('Fehler beim Abrufen der Konversationen:', error);
-      console.error(
-        'Stack:',
-        error instanceof Error ? error.stack : 'Unknown error'
-      );
-      res.status(500).json({ error: 'Fehler beim Abrufen der Konversationen' });
-    }
-  }
-
-  /**
-   * Erstellt eine neue Konversation
-   * POST /api/chat/conversations
-   */
+  // Create a new conversation
   async createConversation(
     req: CreateConversationRequest,
     res: Response
   ): Promise<void> {
     try {
-      const { participantIds, isGroup, name } = req.body;
-
-      if (!participantIds || participantIds.length === 0) {
-        res.status(400).json({ error: 'Keine Teilnehmer angegeben' });
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
-      const result = await chatService.createConversation(
+      const { participantIds, name } = req.body;
+
+      if (
+        !participantIds ||
+        !Array.isArray(participantIds) ||
+        participantIds.length === 0
+      ) {
+        res.status(400).json({ error: 'Invalid participant IDs' });
+        return;
+      }
+
+      const conversation = await chatService.createConversation(
         req.user.tenantId,
         req.user.userId,
         participantIds,
-        isGroup,
+        participantIds.length > 1,
         name
       );
 
-      res.json(result);
+      res.status(201).json(conversation);
     } catch (error) {
-      console.error('Fehler beim Erstellen der Konversation:', error);
-      res.status(500).json({ error: 'Fehler beim Erstellen der Konversation' });
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Holt Nachrichten einer Konversation
-   * GET /api/chat/conversations/:id/messages
-   */
+  // Get user's conversations
+  async getConversations(
+    req: GetConversationsRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const conversations = await chatService.getConversations(
+        req.user.tenantId,
+        req.user.userId
+      );
+
+      res.json(conversations);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+
+  // Get messages for a conversation
   async getMessages(req: GetMessagesRequest, res: Response): Promise<void> {
     try {
-      const conversationId = parseInt(req.params.id, 10);
-      const limit = parseInt(req.query.limit || '50', 10);
-      const offset = parseInt(req.query.offset || '0', 10);
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
 
-      const result = await chatService.getMessages(
+      const conversationId = parseInt(req.params.id);
+      const limit = parseInt(req.query.limit || '50');
+      const offset = parseInt(req.query.offset || '0');
+
+      const messages = await chatService.getMessages(
         req.user.tenantId,
         conversationId,
         req.user.userId,
@@ -264,233 +235,203 @@ class ChatController {
         offset
       );
 
-      res.json(result);
+      res.json(messages);
     } catch (error) {
-      console.error('Fehler beim Abrufen der Nachrichten:', error);
-      if (error instanceof Error && error.message === 'Nicht autorisiert') {
-        res.status(403).json({ error: 'Nicht autorisiert' });
-      } else {
-        res.status(500).json({ error: 'Fehler beim Abrufen der Nachrichten' });
-      }
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Sendet eine Nachricht (mit optionalem Anhang)
-   * POST /api/chat/conversations/:id/messages
-   */
+  // Send a message
   async sendMessage(req: SendMessageRequest, res: Response): Promise<void> {
     try {
-      const conversationId = parseInt(req.params.id, 10);
-      const { content } = req.body;
-
-      if (!content && !req.file) {
-        res.status(400).json({ error: 'Nachricht oder Anhang erforderlich' });
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
-      let attachment: MessageAttachment | null = null;
+      const conversationId = parseInt(req.params.id);
+      let content = req.body.content || '';
+      let attachmentUrl: string | undefined;
+
+      // Handle file upload
       if (req.file) {
-        attachment = {
-          path: `/uploads/chat/${req.file.filename}`,
-          name: req.file.originalname,
-          type: req.file.mimetype,
-        };
+        attachmentUrl = `/uploads/chat/${req.file.filename}`;
+        if (!content) {
+          content = 'Sent an attachment';
+        }
+      }
+
+      if (!content && !attachmentUrl) {
+        res
+          .status(400)
+          .json({ error: 'Message content or attachment is required' });
+        return;
       }
 
       const message = await chatService.sendMessage(
         req.user.tenantId,
         conversationId,
         req.user.userId,
-        content || '',
-        attachment
+        content,
+        attachmentUrl
+          ? {
+              path: attachmentUrl,
+              name: req.file?.originalname || '',
+              type: req.file?.mimetype || '',
+            }
+          : null
       );
 
-      // WebSocket-Benachrichtigung würde hier erfolgen
-      const io = (req.app as any).get('io');
-      if (io) {
-        io.to(`tenant_${req.user.tenantId}`).emit('new_message', {
-          conversationId,
-          message,
-        });
-      }
-
-      res.json(message);
+      res.status(201).json(message);
     } catch (error) {
-      console.error('Fehler beim Senden der Nachricht:', error);
-      if (error instanceof Error && error.message === 'Nicht autorisiert') {
-        res.status(403).json({ error: 'Nicht autorisiert' });
-      } else {
-        res.status(500).json({ error: 'Fehler beim Senden der Nachricht' });
-      }
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Lädt einen Anhang herunter
-   * GET /api/chat/attachments/:filename
-   */
-  async getAttachment(req: GetAttachmentRequest, res: Response): Promise<void> {
+  // Get conversation participants
+  async getConversationParticipants(
+    req: GetConversationParticipantsRequest,
+    res: Response
+  ): Promise<void> {
     try {
-      const filename = req.params.filename;
-      const filePath = path.join(__dirname, '../../uploads/chat', filename);
-
-      // Prüfe ob Datei existiert
-      try {
-        await fs.access(filePath);
-      } catch {
-        res.status(404).json({ error: 'Datei nicht gefunden' });
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
-      // Sende Datei
-      res.sendFile(filePath);
-    } catch (error) {
-      console.error('Fehler beim Abrufen des Anhangs:', error);
-      res.status(500).json({ error: 'Fehler beim Abrufen des Anhangs' });
-    }
-  }
+      const conversationId = parseInt(req.params.id);
 
-  /**
-   * Markiert eine Nachricht als gelesen
-   * PUT /api/chat/messages/:id/read
-   */
-  async markAsRead(req: MessageActionRequest, res: Response): Promise<void> {
-    try {
-      const messageId = parseInt(req.params.id, 10);
-
-      await chatService.markAsRead(messageId, req.user.userId);
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Fehler beim Markieren als gelesen:', error);
-      res.status(500).json({ error: 'Fehler beim Markieren als gelesen' });
-    }
-  }
-
-  /**
-   * Holt Arbeitspläne (für Verfügbarkeitsanzeige)
-   * GET /api/chat/work-schedules
-   */
-  async getWorkSchedules(req: ChatUsersRequest, res: Response): Promise<void> {
-    try {
-      // Diese Funktion könnte in einen separaten Service verschoben werden
-      const users = await chatService.getUsers(
+      const participants = await chatService.getConversationParticipants(
+        conversationId,
         req.user.tenantId,
-        req.user.userId
+        req.tenantDb
       );
 
-      const workSchedules = users
-        .filter((user: any) => user.shift_type)
-        .map((user: any) => ({
-          user_id: user.id,
-          username: user.username,
-          shift_type: user.shift_type,
-          start_time: user.start_time,
-          end_time: user.end_time,
-          location: user.location,
-        }));
-
-      res.json(workSchedules);
+      res.json(participants);
     } catch (error) {
-      console.error('Fehler beim Abrufen der Arbeitspläne:', error);
-      res.status(500).json({ error: 'Fehler beim Abrufen der Arbeitspläne' });
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Löscht eine Nachricht
-   * DELETE /api/chat/messages/:id
-   */
-  async deleteMessage(req: MessageActionRequest, res: Response): Promise<void> {
+  // Add participant to conversation
+  async addParticipant(
+    req: AddParticipantRequest,
+    res: Response
+  ): Promise<void> {
     try {
-      const messageId = parseInt(req.params.id, 10);
-
-      const success = await chatService.deleteMessage(
-        messageId,
-        req.user.userId
-      );
-
-      if (success) {
-        res.json({ success: true });
-      } else {
-        res
-          .status(403)
-          .json({ error: 'Nicht autorisiert oder Nachricht nicht gefunden' });
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
-    } catch (error) {
-      console.error('Fehler beim Löschen der Nachricht:', error);
-      res.status(500).json({ error: 'Fehler beim Löschen der Nachricht' });
-    }
-  }
 
-  /**
-   * Holt die Anzahl ungelesener Nachrichten
-   * GET /api/chat/unread-count
-   */
-  async getUnreadCount(req: UnreadCountRequest, res: Response): Promise<void> {
-    try {
-      const count = await chatService.getUnreadCount(
-        req.tenantDb,
+      const conversationId = parseInt(req.params.id);
+      const { userId } = req.body;
+
+      await chatService.addParticipant(
+        conversationId,
+        userId,
+        req.user.userId,
         req.user.tenantId,
-        req.user.userId
+        req.tenantDb
       );
 
-      res.json({ unreadCount: count });
+      res.json({ message: 'Participant added successfully' });
     } catch (error) {
-      console.error('Fehler beim Abrufen der ungelesenen Nachrichten:', error);
-      res
-        .status(500)
-        .json({ error: 'Fehler beim Abrufen der ungelesenen Nachrichten' });
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Archiviert eine Nachricht
-   * PUT /api/chat/messages/:id/archive
-   */
-  async archiveMessage(
-    req: MessageActionRequest,
+  // Remove participant from conversation
+  async removeParticipant(
+    req: RemoveParticipantRequest,
     res: Response
   ): Promise<void> {
     try {
-      const messageId = parseInt(req.params.id, 10);
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
 
-      await chatService.archiveMessage(messageId, req.user.userId);
+      const conversationId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
 
-      res.json({ success: true });
+      await chatService.removeParticipant(
+        conversationId,
+        userId,
+        req.user.userId,
+        req.user.tenantId,
+        req.tenantDb
+      );
+
+      res.json({ message: 'Participant removed successfully' });
     } catch (error) {
-      console.error('Fehler beim Archivieren der Nachricht:', error);
-      res.status(500).json({ error: 'Fehler beim Archivieren der Nachricht' });
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 
-  /**
-   * Löscht/Verlässt eine Konversation
-   * DELETE /api/chat/conversations/:id
-   */
-  async deleteConversation(
-    req: ConversationActionRequest,
+  // Update conversation name
+  async updateConversationName(
+    req: UpdateConversationNameRequest,
     res: Response
   ): Promise<void> {
     try {
-      const conversationId = parseInt(req.params.id, 10);
+      if (!req.user || !req.tenantDb) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
 
-      await chatService.deleteConversation(conversationId, req.user.userId);
+      const conversationId = parseInt(req.params.id);
+      const { name } = req.body;
 
-      res.json({ success: true });
+      if (!name || name.trim().length === 0) {
+        res.status(400).json({ error: 'Name is required' });
+        return;
+      }
+
+      await chatService.updateConversationName(
+        conversationId,
+        name,
+        req.user.userId,
+        req.user.tenantId,
+        req.tenantDb
+      );
+
+      res.json({ message: 'Conversation name updated successfully' });
     } catch (error) {
-      console.error('Fehler beim Löschen der Konversation:', error);
-      res.status(500).json({ error: 'Fehler beim Löschen der Konversation' });
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+
+  // Handle file download
+  async downloadFile(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const filename = req.params.filename;
+      const filePath = path.join(process.cwd(), 'uploads', 'chat', filename);
+
+      // Check if file exists
+      try {
+        await fs.access(filePath);
+      } catch {
+        res.status(404).json({ error: 'File not found' });
+        return;
+      }
+
+      res.download(filePath);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+
+  // Get unread message count
+  async getUnreadCount(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      // For now, return 0 as placeholder
+      // TODO: Implement actual unread count logic
+      res.json({ count: 0 });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
   }
 }
 
-// Export singleton instance
-const chatController = new ChatController();
-export default chatController;
-
-// Named export for the class
-export { ChatController };
-
-// CommonJS compatibility
+export default new ChatController();

@@ -4,7 +4,6 @@
  */
 
 import {
-  getAllEntries,
   getEntryById,
   createEntry,
   updateEntry,
@@ -81,8 +80,8 @@ class BlackboardService {
    * Holt alle Blackboard Einträge für einen Tenant
    */
   async getAll(
-    tenantDb: Pool,
-    filters: BlackboardFilters = {}
+    _tenantDb: Pool,
+    _filters: BlackboardFilters = {}
   ): Promise<BlackboardEntry[]> {
     try {
       // getAllEntries expects (tenantId, userId, options)

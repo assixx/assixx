@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch((error) => {
           console.error('Error loading user data:', error);
-          window.location.href = '/login';
+          window.location.href = '/pages/login.html';
         });
 
       // Setup event listeners
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch((error) => {
       console.error('Error checking login:', error);
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
     });
 });
 
@@ -252,7 +252,7 @@ async function loadEntries() {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -269,7 +269,7 @@ async function loadEntries() {
     if (!response.ok) {
       if (response.status === 401) {
         // Redirect to login if unauthorized
-        window.location.href = '/login';
+        window.location.href = '/pages/login.html';
         throw new Error('Unauthorized');
       }
       throw new Error('Failed to load entries');
@@ -533,7 +533,7 @@ async function viewEntry(entryId) {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -546,7 +546,7 @@ async function viewEntry(entryId) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        window.location.href = '/login';
+        window.location.href = '/pages/login.html';
         throw new Error('Unauthorized');
       }
       throw new Error('Failed to load entry details');
@@ -865,7 +865,7 @@ async function loadDepartmentsAndTeams() {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -880,7 +880,7 @@ async function loadDepartmentsAndTeams() {
       const deptData = await deptResponse.json();
       departments = deptData;
     } else if (deptResponse.status === 401) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('Unauthorized');
     }
 
@@ -895,7 +895,7 @@ async function loadDepartmentsAndTeams() {
       const teamData = await teamResponse.json();
       teams = teamData;
     } else if (teamResponse.status === 401) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('Unauthorized');
     }
   } catch (error) {
@@ -966,7 +966,7 @@ async function saveEntry() {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -1009,7 +1009,7 @@ async function deleteEntry(entryId) {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -1068,7 +1068,7 @@ async function confirmEntry(entryId) {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -1108,7 +1108,7 @@ async function viewConfirmationStatus(entryId) {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -1210,7 +1210,7 @@ async function checkLoggedIn() {
     // Get token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('No token found');
     }
 
@@ -1222,14 +1222,14 @@ async function checkLoggedIn() {
 
     if (!response.ok) {
       // Redirect to login page
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       throw new Error('User not logged in');
     }
 
     return await response.json();
   } catch (error) {
     console.error('Error checking login status:', error);
-    window.location.href = '/login';
+    window.location.href = '/pages/login.html';
     throw error;
   }
 }

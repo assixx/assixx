@@ -253,7 +253,7 @@ router.get(
   async (_req: any, res: any): Promise<void> => {
     try {
       // Get all tenants
-      const [tenants] = await db.query(
+      const [tenants] = await (db as any).execute(
         'SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name'
       );
 

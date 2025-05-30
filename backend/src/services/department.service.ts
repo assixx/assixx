@@ -28,8 +28,8 @@ class DepartmentService {
    * Holt alle Department Einträge für einen Tenant
    */
   async getAll(
-    tenantDb: Pool,
-    filters: DepartmentFilters = {}
+    _tenantDb: Pool,
+    _filters: DepartmentFilters = {}
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
@@ -44,7 +44,7 @@ class DepartmentService {
   /**
    * Holt einen Department Eintrag per ID
    */
-  async getById(tenantDb: Pool, id: number): Promise<DepartmentData | null> {
+  async getById(_tenantDb: Pool, id: number): Promise<DepartmentData | null> {
     try {
       return await Department.findById(id);
     } catch (error) {

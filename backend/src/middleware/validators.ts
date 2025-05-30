@@ -500,4 +500,3 @@ export const validateFileUpload = (allowedTypes: string[], maxSize: number) => {
 export const sanitizeSQLInput = (input: string): string => {
   return input.replace(/[^\w\s-_.@]/g, '');
 };
-

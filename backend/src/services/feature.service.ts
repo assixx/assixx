@@ -3,7 +3,7 @@
  * Handles feature-related business logic
  */
 
-import Feature from '../models/feature';
+// import Feature from '../models/feature';
 import { Pool } from 'mysql2/promise';
 
 // Interfaces
@@ -42,8 +42,8 @@ class FeatureService {
    * Holt alle Feature Einträge für einen Tenant
    */
   async getAll(
-    tenantDb: Pool,
-    filters: FeatureFilters = {}
+    _tenantDb: Pool,
+    _filters: FeatureFilters = {}
   ): Promise<FeatureData[]> {
     try {
       // TODO: Feature.getAll doesn't exist in the model
@@ -58,7 +58,7 @@ class FeatureService {
   /**
    * Holt einen Feature Eintrag per ID
    */
-  async getById(tenantDb: Pool, id: number): Promise<FeatureData | null> {
+  async getById(_tenantDb: Pool, _id: number): Promise<FeatureData | null> {
     try {
       // TODO: Feature.getById doesn't exist in the model
       console.warn('Feature.getById is not implemented');
@@ -72,7 +72,7 @@ class FeatureService {
   /**
    * Erstellt einen neuen Feature Eintrag
    */
-  async create(tenantDb: Pool, data: FeatureCreateData): Promise<FeatureData> {
+  async create(_tenantDb: Pool, data: FeatureCreateData): Promise<FeatureData> {
     try {
       // TODO: Feature.create doesn't exist in the model
       console.warn('Feature.create is not implemented');

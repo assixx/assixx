@@ -37,9 +37,9 @@ router.get('/user', authenticateToken, async (req, res): Promise<void> => {
     }
 
     // Remove sensitive data
-    delete user.password;
+    const { password, ...userWithoutPassword } = user;
 
-    res.json(user);
+    res.json(userWithoutPassword);
   } catch (error: any) {
     console.error('Error in get user profile:', error);
     res.status(500).json({ message: 'Server error' });

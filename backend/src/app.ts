@@ -166,14 +166,14 @@ app.get('/login', (_req: Request, res: Response): void => {
 
 app.post(
   '/login',
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     console.log('[DEBUG] POST /login endpoint hit');
     console.log('[DEBUG] Original URL:', req.originalUrl);
     console.log('[DEBUG] Request body:', req.body);
 
     try {
       // Call auth controller directly
-      await authController.login(req, res, next);
+      await authController.login(req, res);
     } catch (error: any) {
       console.error('[DEBUG] Error in /login endpoint:', error);
       res

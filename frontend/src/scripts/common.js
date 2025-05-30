@@ -78,7 +78,7 @@ function createAdminNavigation(user) {
   return `
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="/admin-dashboard">
+        <a class="navbar-brand" href="/pages/admin-dashboard.html">
           <img src="/img/logo.png" alt="Assixx" height="30" class="d-inline-block align-text-top me-2">
           Assixx
         </a>
@@ -88,32 +88,32 @@ function createAdminNavigation(user) {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
-              <a class="nav-link" href="/admin-dashboard">
+              <a class="nav-link" href="/pages/admin-dashboard.html">
                 <i class="fas fa-tachometer-alt me-1"></i> Dashboard
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/blackboard">
+              <a class="nav-link" href="/pages/blackboard.html">
                 <i class="fas fa-clipboard-list me-1"></i> Blackboard
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/documents">
+              <a class="nav-link" href="/pages/documents.html">
                 <i class="fas fa-file-alt me-1"></i> Dokumente
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/departments">
+              <a class="nav-link" href="/pages/departments.html">
                 <i class="fas fa-building me-1"></i> Abteilungen
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/employees">
+              <a class="nav-link" href="/pages/employees.html">
                 <i class="fas fa-users me-1"></i> Mitarbeiter
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/feature-management">
+              <a class="nav-link" href="/pages/feature-management.html">
                 <i class="fas fa-toggle-on me-1"></i> Features
               </a>
             </li>
@@ -139,8 +139,8 @@ function createAdminNavigation(user) {
                 <i class="fas fa-user-circle me-1"></i> ${user.username || 'Benutzer'}
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><a class="dropdown-item" href="/profile"><i class="fas fa-id-card me-2"></i>Profil</a></li>
-                <li><a class="dropdown-item" href="/settings"><i class="fas fa-cog me-2"></i>Einstellungen</a></li>
+                <li><a class="dropdown-item" href="/pages/profile.html"><i class="fas fa-id-card me-2"></i>Profil</a></li>
+                <li><a class="dropdown-item" href="/pages/settings.html"><i class="fas fa-cog me-2"></i>Einstellungen</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Abmelden</a></li>
               </ul>
@@ -159,7 +159,7 @@ function createEmployeeNavigation(user) {
   return `
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="/employee-dashboard">
+        <a class="navbar-brand" href="/pages/employee-dashboard.html">
           <img src="/img/logo.png" alt="Assixx" height="30" class="d-inline-block align-text-top me-2">
           Assixx
         </a>
@@ -169,17 +169,17 @@ function createEmployeeNavigation(user) {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
-              <a class="nav-link" href="/employee-dashboard">
+              <a class="nav-link" href="/pages/employee-dashboard.html">
                 <i class="fas fa-tachometer-alt me-1"></i> Dashboard
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/blackboard">
+              <a class="nav-link" href="/pages/blackboard.html">
                 <i class="fas fa-clipboard-list me-1"></i> Blackboard
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/my-documents">
+              <a class="nav-link" href="/pages/my-documents.html">
                 <i class="fas fa-file-alt me-1"></i> Meine Dokumente
               </a>
             </li>
@@ -205,7 +205,7 @@ function createEmployeeNavigation(user) {
                 <i class="fas fa-user-circle me-1"></i> ${user.username || 'Mitarbeiter'}
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><a class="dropdown-item" href="/profile"><i class="fas fa-id-card me-2"></i>Profil</a></li>
+                <li><a class="dropdown-item" href="/pages/profile.html"><i class="fas fa-id-card me-2"></i>Profil</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Abmelden</a></li>
               </ul>
@@ -224,7 +224,7 @@ function createGuestNavigation() {
   return `
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="/index">
+        <a class="navbar-brand" href="/pages/index.html">
           <img src="/img/logo.png" alt="Assixx" height="30" class="d-inline-block align-text-top me-2">
           Assixx
         </a>
@@ -234,7 +234,7 @@ function createGuestNavigation() {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
-              <a class="nav-link" href="/login">
+              <a class="nav-link" href="/pages/login.html">
                 <i class="fas fa-sign-in-alt me-1"></i> Anmelden
               </a>
             </li>
@@ -318,7 +318,7 @@ async function checkUnreadNotifications() {
               <div>
                 <p class="mb-0"><strong>${entry.title}</strong></p>
                 <small class="text-muted">Erfordert Lesebestätigung</small>
-                <a href="/blackboard" class="stretched-link"></a>
+                <a href="/pages/blackboard.html" class="stretched-link"></a>
               </div>
             </div>
           `;
@@ -330,7 +330,7 @@ async function checkUnreadNotifications() {
           const seeAllItem = document.createElement('div');
           seeAllItem.className = 'dropdown-item text-center border-top pt-2';
           seeAllItem.innerHTML = `
-            <a href="/blackboard" class="text-primary">
+            <a href="/pages/blackboard.html" class="text-primary">
               Alle ${unreadCount} Benachrichtigungen anzeigen
             </a>
           `;
@@ -362,14 +362,14 @@ async function logout() {
       if (response.ok) {
         // Clear token and redirect to login page
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.location.href = '/pages/login.html';
       } else {
         console.error('Logout failed');
       }
     } else {
       // No token, just redirect to login
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
     }
   } catch (error) {
     console.error('Error during logout:', error);

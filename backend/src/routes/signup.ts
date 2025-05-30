@@ -3,7 +3,7 @@
  * API endpoints for tenant registration and subdomain validation
  */
 
-import express, { Router, Request } from 'express';
+import express, { Router } from 'express';
 import { logger } from '../utils/logger';
 
 // Import models (keeping require pattern for compatibility)
@@ -28,11 +28,7 @@ interface SignupRequest extends Request {
 }
 */
 
-interface SubdomainCheckRequest extends Request {
-  params: {
-    subdomain: string;
-  };
-}
+// Removed unused SubdomainCheckRequest interface
 
 // Response interfaces
 interface SignupResult {
@@ -64,7 +60,7 @@ router.post('/signup', async (req, res): Promise<void> => {
       admin_password,
       admin_first_name,
       admin_last_name,
-      selectedPlan,
+      // selectedPlan,
     } = req.body;
 
     // Validierung

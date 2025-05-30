@@ -6,6 +6,7 @@
 import { Request, Response } from 'express';
 import surveyService from '../services/survey.service';
 import Survey from '../models/survey';
+import { mapQuestionType } from '../types/survey.types';
 
 // Extended Request interfaces for survey operations
 interface AuthenticatedRequest extends Request {
@@ -71,6 +72,7 @@ interface SurveyCreateRequest extends AuthenticatedRequest {
     start_date?: Date | string;
     end_date?: Date | string;
     target_audience?: string;
+    status?: 'draft' | 'active' | 'closed' | 'archived';
   };
 }
 
@@ -179,8 +181,20 @@ class SurveyController {
     try {
       const tenantId = req.user.tenant_id;
       const createdBy = req.user.id;
+
+      // Map question types before creating
+      const surveyData = {
+        ...req.body,
+        questions: req.body.questions?.map((q: any) => ({
+          ...q,
+          question_type: mapQuestionType(q.question_type),
+        })),
+        // Ensure status is compatible with model
+        status: req.body.status === 'archived' ? 'closed' : req.body.status,
+      };
+
       // Using direct model import since the original controller does this
-      const surveyId = await Survey.create(req.body, tenantId, createdBy);
+      const surveyId = await Survey.create(surveyData, tenantId, createdBy);
       res
         .status(201)
         .json({ id: surveyId, message: 'Umfrage erfolgreich erstellt' });
@@ -200,10 +214,22 @@ class SurveyController {
   async update(req: SurveyUpdateRequest, res: Response): Promise<void> {
     try {
       const tenantId = req.user.tenant_id;
+
+      // Map question types before updating
+      const updateData: any = {
+        ...req.body,
+        questions: req.body.questions?.map((q: any) => ({
+          ...q,
+          question_type: mapQuestionType(q.question_type),
+        })),
+        // Ensure status is compatible with model
+        status: req.body.status === 'archived' ? 'closed' : req.body.status,
+      };
+
       // Using direct model import since the original controller does this
       const result = await Survey.update(
         parseInt(req.params.id, 10),
-        req.body,
+        updateData,
         tenantId
       );
       res.json({

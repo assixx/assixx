@@ -123,7 +123,7 @@ async function initializeShiftPlanning() {
 
     const token = getAuthToken();
     if (!token) {
-      window.location.href = '/login';
+      window.location.href = '/pages/login.html';
       return;
     }
 

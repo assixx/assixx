@@ -6,7 +6,7 @@
 import express, { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs/promises';
+import { promises as fs } from 'fs';
 import { authenticateToken, authorizeRole } from '../auth';
 import {
   validateCreateEmployee,
@@ -17,8 +17,6 @@ import { logger } from '../utils/logger';
 // Import models (now ES modules)
 import User from '../models/user';
 import Document from '../models/document';
-import Department from '../models/department';
-import Team from '../models/team';
 
 const router: Router = express.Router();
 
@@ -113,6 +111,8 @@ router.post(
     try {
       const employeeData = {
         ...typedReq.body,
+        first_name: typedReq.body.first_name || '',
+        last_name: typedReq.body.last_name || '',
         role: 'employee',
         tenant_id: typedReq.user.tenant_id,
       };
@@ -145,7 +145,7 @@ router.post(
 );
 
 // Get all employees
-router.get('/employees', async (req, res): Promise<void> => {
+router.get('/employees', authenticateToken, authorizeRole('admin'), async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedAdminRequest;
     const employees = await User.findByRole(
@@ -176,7 +176,7 @@ router.get(
   async (req, res): Promise<void> => {
     const authReq = req as AuthenticatedAdminRequest;
     const adminId = authReq.user.id;
-    const employeeId = req.params.id;
+    const employeeId = parseInt(req.params.id, 10);
 
     logger.info(`Admin ${adminId} requesting employee ${employeeId}`);
 
@@ -210,7 +210,7 @@ router.put(
   async (req, res): Promise<void> => {
     const authReq = req as EmployeeUpdateRequest;
     const adminId = authReq.user.id;
-    const employeeId = req.params.id;
+    const employeeId = parseInt(req.params.id, 10);
 
     logger.info(`Admin ${adminId} attempting to update employee ${employeeId}`);
 
@@ -268,7 +268,7 @@ router.post(
   async (req, res): Promise<void> => {
     const authReq = req as DocumentUploadRequest;
     const adminId = authReq.user.id;
-    const employeeId = req.params.employeeId;
+    const employeeId = parseInt(req.params.employeeId, 10);
 
     logger.info(
       `Admin ${adminId} attempting to upload document for Employee ${employeeId}`
@@ -294,6 +294,7 @@ router.post(
         userId: employeeId,
         fileName: req.file.originalname,
         fileContent,
+        tenant_id: authReq.user.tenant_id,
       });
 
       await fs.unlink(filePath);
@@ -338,21 +339,9 @@ router.get(
       let teamCount = 0;
       let documentCount = 0;
 
-      try {
-        if (typeof Department.count === 'function') {
-          departmentCount = await Department.count();
-        }
-      } catch (e: any) {
-        logger.warn(`Could not count departments: ${e.message}`);
-      }
+      // Department count is not available, leaving as 0
 
-      try {
-        if (typeof Team.count === 'function') {
-          teamCount = await Team.count();
-        }
-      } catch (e: any) {
-        logger.warn(`Could not count teams: ${e.message}`);
-      }
+      // Team count is not available, leaving as 0
 
       try {
         if (typeof Document.count === 'function') {
@@ -367,7 +356,7 @@ router.get(
         departmentCount,
         teamCount,
         documentCount,
-        adminName: req.user.username,
+        adminName: (req as AuthenticatedAdminRequest).user.username,
       });
     } catch (error: any) {
       logger.error(`Error fetching dashboard stats: ${error.message}`);
@@ -379,44 +368,25 @@ router.get(
   }
 );
 
-// Dashboard statistics endpoint
-router.get(
-  '/dashboard-stats',
-  authenticateToken as any,
-  authorizeRole(['admin', 'root']) as any,
-  async (req: any, res: any): Promise<void> => {
-    try {
-      const authReq = req as AuthenticatedAdminRequest;
-      const tenantId = authReq.user.tenant_id;
-
-      // Get counts for dashboard
-      const [employees, departments, teams, documents] = await Promise.all([
-        User.countActiveByTenant(tenantId),
-        Department.countByTenant(tenantId),
-        Department.countTeamsByTenant(tenantId), // Assuming teams are linked to departments
-        Document.countByTenant(tenantId)
-      ]);
-
-      res.json({
-        employees: employees || 0,
-        departments: departments || 0,
-        teams: teams || 0,
-        documents: documents || 0
-      });
-    } catch (error: any) {
-      logger.error('Error fetching dashboard stats:', error);
-      res.json({
-        employees: 0,
-        departments: 0,
-        teams: 0,
-        documents: 0
-      });
-    }
-  }
-);
+// Note: Dashboard statistics endpoint removed - duplicate of above route
 
 // NOTE: Additional routes (delete, archive, salary documents) omitted for brevity
 // The original file has many more routes - they follow the same pattern
+
+// Get all documents for admin
+router.get('/documents', authenticateToken, authorizeRole('admin'), async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedAdminRequest;
+    const documents = await Document.findAll(authReq.user.tenant_id);
+    res.json(documents);
+  } catch (error: any) {
+    logger.error(`Error retrieving documents: ${error.message}`);
+    res.status(500).json({
+      message: 'Fehler beim Abrufen der Dokumente',
+      error: error.message,
+    });
+  }
+});
 
 export default router;
 

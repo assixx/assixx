@@ -108,47 +108,7 @@ interface UserDepartmentTeam extends RowDataPacket {
 }
 
 export class User {
-  // Add missing static methods for legacy compatibility
-  static async findAll(filter: UserFilter = {}): Promise<DbUser[]> {
-    try {
-      let query = 'SELECT * FROM users WHERE 1=1';
-      const params: any[] = [];
-
-      if (filter.role) {
-        query += ' AND role = ?';
-        params.push(filter.role);
-      }
-
-      if (filter.tenantId || filter.tenant_id) {
-        query += ' AND tenant_id = ?';
-        params.push(filter.tenantId || filter.tenant_id);
-      }
-
-      const [rows] = await executeQuery<DbUser[]>(query, params);
-      return rows;
-    } catch (error) {
-      logger.error(`Error finding all users: ${(error as Error).message}`);
-      throw error;
-    }
-  }
-
-  static async count(filter: UserFilter = {}): Promise<number> {
-    try {
-      let query = 'SELECT COUNT(*) as count FROM users WHERE 1=1';
-      const params: any[] = [];
-
-      if (filter.role) {
-        query += ' AND role = ?';
-        params.push(filter.role);
-      }
-
-      const [rows] = await executeQuery<CountResult[]>(query, params);
-      return rows[0].count;
-    } catch (error) {
-      logger.error(`Error counting users: ${(error as Error).message}`);
-      throw error;
-    }
-  }
+  // Removed duplicate methods - see implementations below
 
   static async create(userData: UserCreateData): Promise<number> {
     const {
@@ -784,7 +744,7 @@ export class User {
   }
 
   // Find all users with optional filters
-  static async findAll(filters: any = {}): Promise<DbUser[]> {
+  static async findAll(filters: UserFilter = {}): Promise<DbUser[]> {
     try {
       let query = 'SELECT * FROM users WHERE 1=1';
       const params: any[] = [];
@@ -794,9 +754,9 @@ export class User {
         params.push(filters.role);
       }
 
-      if (filters.tenant_id) {
+      if (filters.tenantId || filters.tenant_id) {
         query += ' AND tenant_id = ?';
-        params.push(filters.tenant_id);
+        params.push(filters.tenantId || filters.tenant_id);
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, params);
@@ -816,13 +776,15 @@ export class User {
       );
       return rows;
     } catch (error) {
-      logger.error(`Error finding users by tenant: ${(error as Error).message}`);
+      logger.error(
+        `Error finding users by tenant: ${(error as Error).message}`
+      );
       throw error;
     }
   }
 
   // Count users with optional filters
-  static async count(filters: any = {}): Promise<number> {
+  static async count(filters: UserFilter = {}): Promise<number> {
     try {
       let query = 'SELECT COUNT(*) as count FROM users WHERE 1=1';
       const params: any[] = [];
@@ -832,9 +794,9 @@ export class User {
         params.push(filters.role);
       }
 
-      if (filters.tenant_id) {
+      if (filters.tenantId || filters.tenant_id) {
         query += ' AND tenant_id = ?';
-        params.push(filters.tenant_id);
+        params.push(filters.tenantId || filters.tenant_id);
       }
 
       const [rows] = await executeQuery<any[]>(query, params);

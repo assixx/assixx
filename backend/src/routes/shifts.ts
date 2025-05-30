@@ -7,7 +7,7 @@ import express, { Router, Request } from 'express';
 import { authenticateToken } from '../auth';
 
 // Import models (now ES modules)
-import Shift from '../models/shift';
+import Shift, { ShiftPlanFilters, ShiftExchangeFilters } from '../models/shift';
 import db from '../database';
 
 const router: Router = express.Router();
@@ -242,14 +242,22 @@ router.post(
 router.get('/plans', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const options = {
-      department_id: req.query.department_id,
-      team_id: req.query.team_id,
-      start_date: req.query.start_date,
-      end_date: req.query.end_date,
-      status: req.query.status,
-      page: String(req.query.page) || 1,
-      limit: String(req.query.limit) || 20,
+    const options: ShiftPlanFilters = {
+      department_id: req.query.department_id
+        ? parseInt(String(req.query.department_id), 10)
+        : undefined,
+      team_id: req.query.team_id
+        ? parseInt(String(req.query.team_id), 10)
+        : undefined,
+      start_date: req.query.start_date
+        ? String(req.query.start_date)
+        : undefined,
+      end_date: req.query.end_date ? String(req.query.end_date) : undefined,
+      status: req.query.status
+        ? (String(req.query.status) as 'draft' | 'published' | 'archived')
+        : undefined,
+      page: parseInt(String(req.query.page || '1'), 10),
+      limit: parseInt(String(req.query.limit || '20'), 10),
     };
 
     // Use the actual model function
@@ -534,9 +542,15 @@ router.get(
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const options = {
-        status: String(req.query.status) || 'pending',
-        limit: String(req.query.limit) || 50,
+      const options: ShiftExchangeFilters = {
+        status: req.query.status
+          ? (String(req.query.status) as
+              | 'pending'
+              | 'approved'
+              | 'rejected'
+              | 'cancelled')
+          : 'pending',
+        limit: parseInt(String(req.query.limit || '50'), 10),
       };
 
       const requests = await Shift.getShiftExchangeRequests(
@@ -608,8 +622,8 @@ router.get('/my-shifts', authenticateToken, async (req, res): Promise<void> => {
     const shifts = await Shift.getEmployeeShifts(
       authReq.user.tenant_id || 1,
       authReq.user.id,
-      start_date,
-      end_date
+      String(start_date),
+      String(end_date)
     );
 
     res.json({ shifts });
@@ -711,7 +725,11 @@ router.get('/weekly', authenticateToken, async (req, res): Promise<void> => {
       ORDER BY s.date ASC, s.start_time ASC
     `;
 
-    const [shifts] = await db.query(query, [tenantId, start_date, end_date]);
+    const [shifts] = await (db as any).execute(query, [
+      tenantId,
+      start_date,
+      end_date,
+    ]);
 
     res.json({
       success: true,

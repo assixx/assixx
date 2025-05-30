@@ -298,7 +298,9 @@ export class Department {
       );
       return rows[0]?.count || 0;
     } catch (error) {
-      logger.error(`Error counting departments by tenant: ${(error as Error).message}`);
+      logger.error(
+        `Error counting departments by tenant: ${(error as Error).message}`
+      );
       return 0;
     }
   }
@@ -312,7 +314,9 @@ export class Department {
       );
       return rows[0]?.count || 0;
     } catch (error) {
-      logger.error(`Error counting teams by tenant: ${(error as Error).message}`);
+      logger.error(
+        `Error counting teams by tenant: ${(error as Error).message}`
+      );
       return 0;
     }
   }

@@ -120,7 +120,7 @@ router.get('/', async (req, res): Promise<void> => {
 // Get single department
 router.get('/:id', async (req, res): Promise<void> => {
   try {
-    const department = await Department.findById(req.params.id);
+    const department = await Department.findById(parseInt(req.params.id, 10));
 
     if (!department) {
       res.status(404).json({ message: 'Abteilung nicht gefunden' });
@@ -144,7 +144,7 @@ router.put('/:id', async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { name, manager_id, parent_id } = req.body;
-    const departmentId = req.params.id;
+    const departmentId = parseInt(req.params.id, 10);
 
     // Check if department exists
     const department = await Department.findById(departmentId);
@@ -173,7 +173,7 @@ router.put('/:id', async (req, res): Promise<void> => {
     // If a parent department is specified, check if it exists
     if (parent_id) {
       // Prevent circular reference
-      if (parent_id.toString() === departmentId) {
+      if (parent_id === departmentId) {
         res.status(400).json({
           message:
             'Eine Abteilung kann nicht sich selbst als Übergeordnete haben',
@@ -218,7 +218,7 @@ router.put('/:id', async (req, res): Promise<void> => {
 router.delete('/:id', async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const departmentId = req.params.id;
+    const departmentId = parseInt(req.params.id, 10);
 
     // Check if department exists
     const department = await Department.findById(departmentId);
@@ -265,7 +265,7 @@ router.delete('/:id', async (req, res): Promise<void> => {
 // Get department members
 router.get('/:id/members', async (req, res): Promise<void> => {
   try {
-    const departmentId = req.params.id;
+    const departmentId = parseInt(req.params.id, 10);
 
     // Check if department exists
     const department = await Department.findById(departmentId);

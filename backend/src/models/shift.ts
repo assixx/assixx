@@ -1024,6 +1024,9 @@ export async function getEmployeeShifts(
   }
 }
 
+// Export interfaces
+export type { ShiftPlanFilters, ShiftExchangeFilters };
+
 // Default export with all functions
 export default {
   getShiftTemplates,
@@ -1042,4 +1045,3 @@ export default {
   formatDateForMysql,
   formatDateOnlyForMysql,
 };
-

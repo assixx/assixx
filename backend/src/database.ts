@@ -237,6 +237,42 @@ if (USE_MOCK_DB) {
       // Standardantwort für nicht implementierte Abfragen
       return [[]] as unknown as T;
     },
+    // Execute method (alias for query in mock)
+    async execute<
+      T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
+    >(sql: string, params?: any[]): Promise<T> {
+      return this.query<T>(sql, params);
+    },
+    async getConnection() {
+      // Mock connection object
+      const mockConnection = {
+        async query<
+          T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
+        >(sql: string, params?: any[]): Promise<T> {
+          // Use the same mock query function
+          return mockDb.query<T>(sql, params);
+        },
+        async execute<
+          T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
+        >(sql: string, params?: any[]): Promise<T> {
+          // Use the same mock query function
+          return mockDb.execute<T>(sql, params);
+        },
+        async beginTransaction() {
+          // Mock transaction - do nothing
+        },
+        async commit() {
+          // Mock commit - do nothing
+        },
+        async rollback() {
+          // Mock rollback - do nothing
+        },
+        release() {
+          // Mock release - do nothing
+        },
+      };
+      return mockConnection;
+    },
   };
 
   pool = mockDb;
@@ -280,6 +316,12 @@ if (USE_MOCK_DB) {
     // Create a dummy pool that throws errors
     pool = {
       async query(): Promise<any> {
+        throw new Error('Database connection failed');
+      },
+      async execute(): Promise<any> {
+        throw new Error('Database connection failed');
+      },
+      async getConnection(): Promise<any> {
         throw new Error('Database connection failed');
       },
     } as MockDatabase;

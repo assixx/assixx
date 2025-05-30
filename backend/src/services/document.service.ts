@@ -83,10 +83,7 @@ interface RawDocumentStats {
   totalSize?: number;
 }
 
-interface DocumentQueryResult {
-  documents: DocumentData[];
-  total: number;
-}
+// Removed unused DocumentQueryResult interface
 
 class DocumentService {
   private uploadDir: string;
@@ -277,7 +274,7 @@ class DocumentService {
   /**
    * Get document statistics
    */
-  async getDocumentStats(tenantId: number): Promise<DocumentStats> {
+  async getDocumentStats(_tenantId: number): Promise<DocumentStats> {
     try {
       // TODO: Implement getStats method in Document model
       // const stats = await Document.getStats(tenantId) as RawDocumentStats;

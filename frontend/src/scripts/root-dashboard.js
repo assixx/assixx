@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!token) {
     console.error('No token found. Redirecting to login...');
-    window.location.href = '/';
+    window.location.href = '/pages/index.html';
     return;
   }
 
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      window.location.href = '/';
+      window.location.href = '/pages/index.html';
     }
   }
 
