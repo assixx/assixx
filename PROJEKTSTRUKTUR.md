@@ -1,7 +1,7 @@
 # 📁 Assixx Projektstruktur
 
-> **Letzte Aktualisierung:** 28.01.2025  
-> **Status:** ✅ Aktuell und bereinigt nach Migration
+> **Letzte Aktualisierung:** 30.05.2025  
+> **Status:** 🔄 TypeScript Migration im Gange
 
 ## 🗂️ Hauptverzeichnisstruktur
 
@@ -33,76 +33,100 @@ backend/
 │   └── update-users-add-archive.js
 ├── 📂 src/                 # Hauptquellcode
 │   ├── 📂 config/         # Konfigurationsdateien
-│   │   ├── featureCategories.js
-│   │   └── tenants.js
+│   │   ├── featureCategories.ts
+│   │   └── tenants.ts
 │   ├── 📂 controllers/    # MVC Controller
-│   │   ├── auth.controller.js
-│   │   └── document.controller.js
+│   │   ├── admin.controller.ts
+│   │   ├── auth.controller.ts
+│   │   ├── blackboard.controller.ts
+│   │   ├── calendar.controller.ts
+│   │   ├── chat.controller.ts
+│   │   ├── department.controller.ts
+│   │   ├── document.controller.ts
+│   │   ├── employee.controller.ts
+│   │   ├── feature.controller.ts
+│   │   ├── kvp.controller.ts
+│   │   ├── shift.controller.ts
+│   │   ├── survey.controller.ts
+│   │   ├── team.controller.ts
+│   │   └── tenant.controller.ts
 │   ├── 📂 database/       # Datenbankskripte
 │   │   ├── 📂 migrations/ # Migrationsskripte
-│   │   └── tenantDb.js
+│   │   └── tenantDb.ts
 │   ├── 📂 middleware/     # Express Middleware
-│   │   ├── auth.js
-│   │   ├── documentAccess.js
-│   │   ├── features.js
-│   │   ├── security.js
-│   │   ├── tenant.js
-│   │   └── validators.js
+│   │   ├── auth.ts
+│   │   ├── documentAccess.ts
+│   │   ├── features.ts
+│   │   ├── security.ts
+│   │   ├── tenant.ts
+│   │   └── validators.ts
 │   ├── 📂 models/         # Datenmodelle
-│   │   ├── adminLog.js
-│   │   ├── blackboard.js
-│   │   ├── calendar.js
-│   │   ├── department.js
-│   │   ├── document.js
-│   │   ├── feature.js
-│   │   ├── kvp.js
-│   │   ├── shift.js
-│   │   ├── survey.js
-│   │   ├── team.js
-│   │   ├── tenant.js
-│   │   └── user.js
+│   │   ├── adminLog.ts
+│   │   ├── blackboard.ts
+│   │   ├── calendar.ts
+│   │   ├── department.ts
+│   │   ├── document.ts
+│   │   ├── feature.ts
+│   │   ├── kvp.ts
+│   │   ├── shift.ts
+│   │   ├── survey.ts
+│   │   ├── team.ts
+│   │   ├── tenant.ts
+│   │   └── user.ts
 │   ├── 📂 routes/         # API-Routen
-│   │   ├── admin.js
-│   │   ├── areas.js
-│   │   ├── auth.js
-│   │   ├── auth.routes.js
-│   │   ├── blackboard.js
-│   │   ├── calendar.js
-│   │   ├── chat.js
-│   │   ├── departments.js
-│   │   ├── documents.js
-│   │   ├── employee.js
-│   │   ├── features.js
-│   │   ├── html.routes.js
-│   │   ├── index.js
-│   │   ├── kvp.js
-│   │   ├── legacy.routes.js
-│   │   ├── machines.js
-│   │   ├── root.js
-│   │   ├── shifts.js
-│   │   ├── signup.js
-│   │   ├── surveys.js
-│   │   ├── teams.js
-│   │   ├── unsubscribe.js
-│   │   ├── user.js
-│   │   └── users.js
+│   │   ├── admin.ts
+│   │   ├── areas.ts
+│   │   ├── auth.ts
+│   │   ├── auth.routes.ts
+│   │   ├── blackboard.ts
+│   │   ├── calendar.ts
+│   │   ├── chat.ts
+│   │   ├── departments.ts
+│   │   ├── documents.ts
+│   │   ├── employee.ts
+│   │   ├── features.ts
+│   │   ├── html.routes.ts
+│   │   ├── index.ts
+│   │   ├── kvp.ts
+│   │   ├── legacy.routes.ts
+│   │   ├── machines.ts
+│   │   ├── root.ts
+│   │   ├── shifts.ts
+│   │   ├── signup.ts
+│   │   ├── surveys.ts
+│   │   ├── teams.ts
+│   │   ├── unsubscribe.ts
+│   │   ├── user.ts
+│   │   └── users.ts
 │   ├── 📂 services/       # Business Logic Services
-│   │   ├── auth.service.js
-│   │   ├── document.service.js
-│   │   └── user.service.js
+│   │   ├── admin.service.ts
+│   │   ├── auth.service.ts
+│   │   ├── blackboard.service.ts
+│   │   ├── calendar.service.ts
+│   │   ├── chat.service.ts
+│   │   ├── department.service.ts
+│   │   ├── document.service.ts
+│   │   ├── employee.service.ts
+│   │   ├── feature.service.ts
+│   │   ├── kvp.service.ts
+│   │   ├── shift.service.ts
+│   │   ├── survey.service.ts
+│   │   ├── team.service.ts
+│   │   ├── tenant.service.ts
+│   │   └── user.service.ts
 │   ├── 📂 utils/          # Hilfsfunktionen
-│   │   ├── 📂 scripts/    # Utility-Skripte
-│   │   ├── constants.js
-│   │   ├── emailService.js
-│   │   ├── helpers.js
-│   │   ├── logger.js
-│   │   └── validators.js
-│   ├── app.js             # Express App Konfiguration
-│   ├── auth.js            # Auth Utilities
-│   ├── database.js        # Datenbankverbindung
-│   ├── server.js          # Server Entry Point
+│   │   ├── 📂 scripts/    # Utility-Skripte (noch .js)
+│   │   ├── constants.ts
+│   │   ├── emailService.ts
+│   │   ├── helpers.ts
+│   │   ├── logger.ts
+│   │   └── validators.ts
+│   ├── app.ts             # Express App Konfiguration
+│   ├── auth.ts            # Auth Utilities
+│   ├── database.ts        # Datenbankverbindung
+│   ├── server.ts          # Server Entry Point
 │   ├── server-old.js      # Backup der alten Server-Datei
-│   └── websocket.js       # WebSocket Handler
+│   └── websocket.ts       # WebSocket Handler
 ├── 📂 templates/          # E-Mail Templates
 │   └── 📂 email/
 │       ├── new-document.html
@@ -212,9 +236,12 @@ uploads/
 | 📄 DEVELOPMENT-GUIDE.md     | Entwicklungsrichtlinien        |
 | 📄 FEATURES.md              | Feature-Übersicht & Preise     |
 | 📄 LICENSE                  | Lizenzinformationen            |
+| 📄 MIGRATION-CHECKLIST.md   | TypeScript Migration Checklist |
+| 📄 MIGRATION-EXAMPLE.md     | TypeScript Migration Beispiele |
 | 📄 MIGRATION-LOG.md         | Migrationsprotokoll            |
 | 📄 MIGRATION-PLAN.md        | Migrationsplan (abgeschlossen) |
-| 📄 PROJEKTSTRUKTUR-BETA.md  | Beta-Strukturplan              |
+| 📄 MIGRATION-SUMMARY.md     | TypeScript Migration Zusammenf.|
+| 📄 MIGRATION-TYPESCRIPT-PLAN.md | TypeScript Migrationsplan  |
 | 📄 PROJEKTSTRUKTUR.md       | Diese Datei                    |
 | 📄 README.md                | Projekt-Übersicht              |
 | 📄 ROADMAP.md               | Entwicklungsfahrplan           |
@@ -234,11 +261,19 @@ uploads/
 - MVC-Architektur implementiert
 - Frontend Build System eingerichtet
 
+### 🔄 Laufende Migrationen:
+
+- **TypeScript Migration** (30.05.2025 - in Arbeit)
+  - Backend-Quellcode von `.js` zu `.ts` konvertiert
+  - Scripts-Ordner bleibt vorläufig bei `.js`
+  - Typdefinitionen werden schrittweise hinzugefügt
+
 ### 🚧 Ausstehende Bereinigungen:
 
 - Upload-Verzeichnisse konsolidieren (duplicate folders)
 - Frontend-Komponenten modularisieren
 - Test-Coverage erweitern
+- TypeScript Konfiguration vervollständigen
 
 ## 📋 Wichtige Hinweise
 
@@ -252,10 +287,11 @@ uploads/
 
 2. **Naming Conventions:**
 
-   - Dateien: `kebab-case.js`
+   - Backend-Dateien: `kebab-case.ts`
+   - Frontend-Dateien: `kebab-case.js`
    - Komponenten: `PascalCase.js`
    - CSS: `kebab-case.css`
-   - Routen: `plural-nouns.js`
+   - Routen: `plural-nouns.ts`
 
 3. **Verzeichniszwecke:**
    - `controllers/` - Request/Response Handling

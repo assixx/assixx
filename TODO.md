@@ -128,8 +128,9 @@
 
 - [ ] Unit Test Coverage > 80%
 - [ ] E2E Tests für kritische Flows
-- [ ] ESLint Warnings beheben
-- [ ] TypeScript Migration evaluieren
+- [ ] ESLint Warnings beheben (reduziert auf 17 errors, 638 warnings)
+- [x] TypeScript Migration Backend (✅ 30.05.2025 abgeschlossen)
+- [ ] TypeScript Migration Frontend
 
 ## ✅ Bereits erledigt (Kern-Features für Beta)
 

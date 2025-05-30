@@ -44,7 +44,8 @@ Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Detail
 
 ### 🏛️ MVC-Architektur (Neu seit Januar 2025)
 
-- **Backend**: Express.js mit MVC-Pattern
+- **Backend**: Express.js mit TypeScript und MVC-Pattern
+  - TypeScript für Type-Safety und bessere Entwicklererfahrung
   - Controllers für Request/Response Handling
   - Services für Business Logic
   - Models für Datenzugriff
@@ -60,6 +61,7 @@ Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Detail
 - Frontend Build-System mit Vite eingeführt
 - Express 5 Migration abgeschlossen
 - Chat-System Datenbankschema erstellt
+- **TypeScript Migration** im Backend abgeschlossen (30.05.2025)
 
 ---
 
@@ -183,7 +185,7 @@ git clone [YOUR-REPO-URL] Assixx
 cd Assixx
 
 # NPM-Abhängigkeiten installieren
-cd server
+cd backend
 npm install
 cd ..
 ```
@@ -215,10 +217,10 @@ mysql -u assixx_user -p assixx_db < database-setup.sql
 
 ```bash
 # .env-Datei erstellen
-cp server/.env.example server/.env
+cp .env.example .env
 
 # .env-Datei bearbeiten
-nano server/.env
+nano .env
 ```
 
 **Wichtige Einstellungen in `.env`:**
@@ -248,7 +250,7 @@ sudo ufw --force enable
 
 ```bash
 # Entwicklungsmodus
-cd server
+cd backend
 npm start
 
 # Oder Produktionsmodus
@@ -309,7 +311,7 @@ git clone [YOUR-REPO-URL] C:\Assixx
 cd C:\Assixx
 
 # NPM-Abhängigkeiten installieren
-cd server
+cd backend
 npm install
 cd ..
 ```
@@ -356,7 +358,7 @@ New-NetFirewallRule -DisplayName "Assixx Server" -Direction Inbound -Port 3000 -
 
 ```powershell
 # Anwendung starten
-cd server
+cd backend
 npm start
 ```
 
@@ -719,7 +721,7 @@ Assixx/
 1. **Anwendung starten:**
 
    ```bash
-   cd server
+   cd backend
    npm start
    ```
 
@@ -813,7 +815,7 @@ mysql -u root -p -e "SHOW DATABASES;"
 
 ```bash
 # .env-Datei erstellen
-cp server/.env.example server/.env
+cp .env.example .env
 
 # Datenbankeinstellungen prüfen
 cat server/.env | grep DB_
