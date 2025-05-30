@@ -29,13 +29,15 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickel
 
 ### Backend
 
-- **Node.js v18+ & Express.js**
+- **Node.js v18+ & Express.js mit TypeScript**
 
+  - TypeScript für Type-Safety und bessere Entwicklererfahrung
   - MVC-Architektur (Model-View-Controller)
   - RESTful API Design
   - Service Layer für Business Logic
   - Middleware-basierte Architektur
   - Async/Await Pattern
+  - Strict TypeScript Konfiguration für maximale Sicherheit
 
 - **Datenbank**
 

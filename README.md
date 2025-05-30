@@ -73,8 +73,8 @@ Siehe [FEATURES.md](./FEATURES.md) für Details und Preise.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Node.js + Express.js (MVC-Architektur)
-- **Frontend**: Vanilla JS + Vite Build System
+- **Backend**: Node.js + Express.js + TypeScript (MVC-Architektur mit Type-Safety)
+- **Frontend**: Vanilla JS + Vite Build System (TypeScript Migration in Arbeit)
 - **Datenbank**: MySQL mit Multi-Tenant Architektur
 - **Echtzeit**: WebSocket für Chat & Notifications
 

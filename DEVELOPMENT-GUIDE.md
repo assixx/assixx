@@ -55,19 +55,22 @@ Siehe [CLAUDE.md](./CLAUDE.md#-glassmorphismus-design-standards-immer-verwenden)
 
 ### Model-View-Controller Pattern
 
-```javascript
-// Model (backend/src/models/user.js)
-class User {
-  static async findById(id) {
+```typescript
+// Model (backend/src/models/user.ts)
+export class User {
+  static async findById(id: number): Promise<User | null> {
     // Datenbanklogik
   }
 }
 
-// Controller (backend/src/controllers/user.controller.js)
-class UserController {
-  async getUser(req, res) {
+// Controller (backend/src/controllers/user.controller.ts)
+import { Request, Response } from 'express';
+import { UserService } from '../services/user.service';
+
+export class UserController {
+  async getUser(req: Request, res: Response): Promise<void> {
     try {
-      const user = await UserService.findById(req.params.id);
+      const user = await UserService.findById(parseInt(req.params.id));
       res.json({ success: true, data: user });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -75,16 +78,23 @@ class UserController {
   }
 }
 
-// Service (backend/src/services/user.service.js)
-class UserService {
-  static async findById(id) {
+// Service (backend/src/services/user.service.ts)
+import { User } from '../models/user';
+
+export class UserService {
+  static async findById(id: number): Promise<User | null> {
     // Business Logic
     const user = await User.findById(id);
     return this.sanitizeUser(user);
   }
 }
 
-// Route (backend/src/routes/users.js)
+// Route (backend/src/routes/users.ts)
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { userController } from '../controllers/user.controller';
+
+const router = Router();
 router.get('/:id', authenticate, userController.getUser);
 ```
 
@@ -101,8 +111,8 @@ router.get('/:id', authenticate, userController.getUser);
 ```
 backend/
 ├── src/                  # Source Code
-│   ├── app.js           # Express App Konfiguration
-│   ├── server.js        # Server Bootstrap
+│   ├── app.ts           # Express App Konfiguration
+│   ├── server.ts        # Server Bootstrap
 │   ├── controllers/     # MVC Controllers
 │   ├── models/          # Datenmodelle (User, Document, etc.)
 │   ├── routes/          # API-Routes (auth.js, users.js, etc.)
@@ -120,7 +130,7 @@ backend/
 frontend/
 ├── src/                  # Frontend Source Code
 │   ├── pages/          # HTML-Seiten
-│   ├── scripts/        # JavaScript
+│   ├── scripts/        # JavaScript/TypeScript
 │   ├── styles/         # CSS/SCSS
 │   ├── assets/         # Bilder, Fonts
 │   └── components/     # UI-Komponenten
