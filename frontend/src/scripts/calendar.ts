@@ -408,7 +408,23 @@ async function loadCalendarEvents(fetchInfo: any): Promise<any[]> {
       throw new Error('Failed to load events');
     }
 
-    const events: CalendarEvent[] = await response.json();
+    const data = await response.json();
+    
+    // Handle different response formats
+    let events: CalendarEvent[] = [];
+    
+    if (Array.isArray(data)) {
+      // Direct array response
+      events = data;
+    } else if (data && Array.isArray(data.events)) {
+      // Paginated response with events array
+      events = data.events;
+    } else {
+      console.error('Calendar API returned unexpected response format:', data);
+      showError('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
+      return [];
+    }
+    
     return events.map(formatEventForCalendar);
   } catch (error) {
     console.error('Error loading events:', error);

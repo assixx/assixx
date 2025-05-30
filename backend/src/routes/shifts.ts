@@ -375,16 +375,13 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
     
-    // Get shifts for the date range
-    const shifts = await Shift.getShiftsForDateRange(
-      authReq.user.tenant_id || 1,
-      startStr,
-      endStr
-    );
+    // Temporarily return empty shifts array
+    // TODO: Implement proper shift fetching when shifts table is created
+    console.log(`Shifts requested for date range: ${startStr} to ${endStr}`);
     
     res.json({
       success: true,
-      shifts: shifts,
+      shifts: [],
     });
   } catch (error: any) {
     console.error('Error fetching shifts:', error);
@@ -421,16 +418,13 @@ router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
     weekEnd.setDate(weekEnd.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
     
-    // Get notes for the week
-    const notes = await Shift.getWeekNotes(
-      authReq.user.tenant_id || 1,
-      weekStart,
-      weekEndStr
-    );
+    // Temporarily return empty notes
+    // TODO: Implement proper notes fetching when shift_notes table is created
+    console.log(`Shift notes requested for week: ${weekStart} to ${weekEndStr}`);
     
     res.json({
       success: true,
-      notes: notes,
+      notes: {},
     });
   } catch (error: any) {
     console.error('Error fetching shift notes:', error);

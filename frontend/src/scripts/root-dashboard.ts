@@ -39,7 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!token) {
     console.error('No token found. Redirecting to login...');
-    window.location.href = '/pages/index.html';
+    // Hide all content immediately
+    document.body.style.display = 'none';
+    // Redirect to login
+    window.location.href = '/pages/login.html';
     return;
   }
 

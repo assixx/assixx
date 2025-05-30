@@ -46,12 +46,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Input sanitization middleware - apply globally to all routes
 app.use(sanitizeInputs);
 
-// Static files - serve from frontend directory
-const staticPath = path.join(__dirname, '../../frontend/src');
+// Static files - serve from frontend dist directory (compiled JavaScript)
+const distPath = path.join(__dirname, '../../frontend/dist');
+const srcPath = path.join(__dirname, '../../frontend/src');
 
-// Serve frontend files with correct MIME types
+// Serve built files first (HTML, JS, CSS)
 app.use(
-  express.static(staticPath, {
+  express.static(distPath, {
     setHeaders: (res: Response, filePath: string): void => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
@@ -64,6 +65,16 @@ app.use(
       } else if (filePath.endsWith('.html')) {
         res.setHeader('Content-Type', 'text/html');
       }
+    },
+  })
+);
+
+// Fallback to src directory for assets (images, etc.)
+app.use(
+  express.static(srcPath, {
+    setHeaders: (res: Response, filePath: string): void => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
     },
   })
 );

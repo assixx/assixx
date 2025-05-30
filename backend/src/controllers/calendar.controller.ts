@@ -105,8 +105,18 @@ class CalendarController {
           sortDir: req.query.sortDir,
         };
 
-        const result = await calendarService.getAll(req.tenantDb, filters);
-        res.json(result);
+        // Temporarily return paginated response format with empty events
+        // TODO: Implement proper calendar event fetching with tenantId and userId
+        console.log('Calendar events requested with filters:', filters);
+        res.json({
+          events: [],
+          pagination: {
+            total: 0,
+            page: filters.page || 1,
+            limit: filters.limit || 50,
+            totalPages: 0
+          }
+        });
       } catch {
         // Return a helpful error message for the migration period
         res.status(501).json({

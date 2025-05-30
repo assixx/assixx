@@ -134,6 +134,7 @@ export const securityHeaders = helmet({
       imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       fontSrc: [
         "'self'",
+        'data:',
         'https://fonts.gstatic.com',
         'https://cdn.jsdelivr.net',
         'https://cdnjs.cloudflare.com',
