@@ -81,6 +81,7 @@
     "@types/node": "^22.15.24",
     "@types/nodemailer": "^6.4.17",
     "@types/supertest": "^6.0.3",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.33.0",
     "@typescript-eslint/parser": "^8.33.0",
     "concurrently": "^9.1.2",

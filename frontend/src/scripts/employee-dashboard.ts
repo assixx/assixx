@@ -28,10 +28,10 @@ function downloadDocument(docId: string | number): void {
   link.href = `/api/documents/${docId}/download`;
   link.download = '';
   link.style.display = 'none';
-  
+
   // Add authorization header
   link.setAttribute('download', '');
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchForm.addEventListener('submit', async (e: Event) => {
       e.preventDefault();
       const query = searchInput.value.trim();
-      
+
       if (query) {
         await searchDocuments(query);
       }
@@ -81,15 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!token) return;
 
     try {
-      const response = await fetch(
-        `/api/documents/search?query=${encodeURIComponent(query)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
+      const response = await fetch(`/api/documents/search?query=${encodeURIComponent(query)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (response.ok) {
         const documents: Document[] = await response.json();
         displayDocuments(documents);
@@ -214,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .map((doc) => {
         const uploadDate = formatDate(doc.created_at);
         const fileSize = formatFileSize(doc.file_size);
-        
+
         return `
           <tr>
             <td>${escapeHtml(doc.file_name)}</td>
@@ -237,12 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 });
 

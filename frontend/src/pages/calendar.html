@@ -8,15 +8,9 @@
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <!-- FullCalendar CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" />
     <!-- Calendar spezifische Styles -->
     <link rel="stylesheet" href="/styles/calendar.css" />
     <style>
@@ -219,11 +213,7 @@
       }
 
       .btn-primary {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
       }
 
@@ -239,12 +229,7 @@
         left: -50%;
         width: 200%;
         height: 200%;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(255, 255, 255, 0.1) 50%,
-          transparent 70%
-        );
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
         transform: rotate(45deg) translate(-70%, -70%);
         transition: transform 0.6s;
       }
@@ -261,11 +246,7 @@
       }
 
       .view-selector .btn.active {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
       }
 
@@ -278,11 +259,7 @@
       }
 
       .filter-tag.active {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
       }
 
@@ -496,15 +473,12 @@
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -521,27 +495,18 @@
         <div class="flex flex-between mb-4">
           <div>
             <h1 class="card-title mb-2">Firmenkalender</h1>
-            <p class="text-secondary">
-              Alle Termine und Veranstaltungen auf einen Blick
-            </p>
+            <p class="text-secondary">Alle Termine und Veranstaltungen auf einen Blick</p>
           </div>
           <div class="flex gap-2">
             <div class="btn-group view-selector">
-              <button id="monthView" class="btn btn-sm btn-primary active">
-                Monat
-              </button>
-              <button id="weekView" class="btn btn-sm btn-outline-primary">
-                Woche
-              </button>
-              <button id="dayView" class="btn btn-sm btn-outline-primary">
-                Tag
-              </button>
-              <button id="listView" class="btn btn-sm btn-outline-primary">
-                Liste
-              </button>
+              <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
+              <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
+              <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
+              <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
             </div>
             <button id="newEventBtn" class="btn btn-primary">
-              <i class="fas fa-plus"></i> Neuer Termin
+              <i class="fas fa-plus"></i>
+              Neuer Termin
             </button>
           </div>
         </div>
@@ -556,42 +521,17 @@
               <div class="form-group">
                 <label for="levelFilter" class="form-label">Ebene</label>
                 <div class="tab-navigation mb-2" id="levelFilter">
-                  <button
-                    class="tab-btn active"
-                    data-value="all"
-                    id="filterAll"
-                  >
-                    Alle
-                  </button>
-                  <button
-                    class="tab-btn"
-                    data-value="company"
-                    id="filterCompany"
-                  >
-                    Firma
-                  </button>
-                  <button
-                    class="tab-btn"
-                    data-value="department"
-                    id="filterDepartment"
-                  >
-                    Abteilung
-                  </button>
-                  <button class="tab-btn" data-value="team" id="filterTeam">
-                    Team
-                  </button>
+                  <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
+                  <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
+                  <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
+                  <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
                 </div>
               </div>
 
               <div class="form-group">
                 <label for="searchInput" class="form-label">Suche</label>
                 <div class="search-input-wrapper">
-                  <input
-                    type="text"
-                    id="searchInput"
-                    class="search-input"
-                    placeholder="Termine durchsuchen..."
-                  />
+                  <input type="text" id="searchInput" class="search-input" placeholder="Termine durchsuchen..." />
                   <button class="search-button" type="button" id="searchButton">
                     <i class="fas fa-search"></i>
                   </button>
@@ -604,31 +544,19 @@
                 <label class="form-label">Legende</label>
                 <div class="legend-container">
                   <div class="legend-item">
-                    <span
-                      class="legend-color"
-                      style="background-color: #3498db"
-                    ></span>
+                    <span class="legend-color" style="background-color: #3498db"></span>
                     <span class="legend-label">Firma</span>
                   </div>
                   <div class="legend-item">
-                    <span
-                      class="legend-color"
-                      style="background-color: #e67e22"
-                    ></span>
+                    <span class="legend-color" style="background-color: #e67e22"></span>
                     <span class="legend-label">Abteilung</span>
                   </div>
                   <div class="legend-item">
-                    <span
-                      class="legend-color"
-                      style="background-color: #2ecc71"
-                    ></span>
+                    <span class="legend-color" style="background-color: #2ecc71"></span>
                     <span class="legend-label">Team</span>
                   </div>
                   <div class="legend-item">
-                    <span
-                      class="legend-color"
-                      style="background-color: #9b59b6"
-                    ></span>
+                    <span class="legend-color" style="background-color: #9b59b6"></span>
                     <span class="legend-label">Persönlich</span>
                   </div>
                 </div>
@@ -668,9 +596,7 @@
       <div class="modal-container">
         <div class="modal-header">
           <h2 id="eventDetailModalLabel">Termin Details</h2>
-          <button type="button" class="modal-close" data-action="close">
-            &times;
-          </button>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <div id="eventDetailContent" class="fade-in">
@@ -678,9 +604,7 @@
           </div>
         </div>
         <div class="modal-footer" id="eventDetailFooter">
-          <button type="button" class="btn btn-secondary" data-action="close">
-            Schließen
-          </button>
+          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
           <!-- Weitere Buttons werden dynamisch hinzugefügt -->
         </div>
       </div>
@@ -691,9 +615,7 @@
       <div class="modal-container modal-lg">
         <div class="modal-header">
           <h2 id="eventFormModalLabel">Neuer Termin</h2>
-          <button type="button" class="modal-close" data-action="close">
-            &times;
-          </button>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <form id="eventForm" class="simple-form">
@@ -706,14 +628,8 @@
             </div>
 
             <div class="form-group large-form-group">
-              <label for="eventDescription" class="big-label"
-                >Beschreibung</label
-              >
-              <textarea
-                class="big-input"
-                id="eventDescription"
-                rows="4"
-              ></textarea>
+              <label for="eventDescription" class="big-label">Beschreibung</label>
+              <textarea class="big-input" id="eventDescription" rows="4"></textarea>
               <div class="simple-hint">Markdown-Formatierung möglich</div>
             </div>
 
@@ -721,26 +637,12 @@
             <div class="form-group large-form-group">
               <div class="flex gap-4 flex-wrap">
                 <div class="flex-half">
-                  <label for="eventStartDate" class="big-label"
-                    >Startdatum</label
-                  >
-                  <input
-                    type="date"
-                    class="big-input"
-                    id="eventStartDate"
-                    required
-                  />
+                  <label for="eventStartDate" class="big-label">Startdatum</label>
+                  <input type="date" class="big-input" id="eventStartDate" required />
                 </div>
                 <div class="flex-half">
-                  <label for="eventStartTime" class="big-label"
-                    >Startzeit</label
-                  >
-                  <input
-                    type="time"
-                    class="big-input"
-                    id="eventStartTime"
-                    required
-                  />
+                  <label for="eventStartTime" class="big-label">Startzeit</label>
+                  <input type="time" class="big-input" id="eventStartTime" required />
                 </div>
               </div>
             </div>
@@ -749,21 +651,11 @@
               <div class="flex gap-4 flex-wrap">
                 <div class="flex-half">
                   <label for="eventEndDate" class="big-label">Enddatum</label>
-                  <input
-                    type="date"
-                    class="big-input"
-                    id="eventEndDate"
-                    required
-                  />
+                  <input type="date" class="big-input" id="eventEndDate" required />
                 </div>
                 <div class="flex-half">
                   <label for="eventEndTime" class="big-label">Endzeit</label>
-                  <input
-                    type="time"
-                    class="big-input"
-                    id="eventEndTime"
-                    required
-                  />
+                  <input type="time" class="big-input" id="eventEndTime" required />
                 </div>
               </div>
             </div>
@@ -771,7 +663,7 @@
             <div class="form-group large-form-group">
               <div class="simple-checkbox">
                 <input type="checkbox" id="eventAllDay" />
-                <label for="eventAllDay"> Ganztägiger Termin </label>
+                <label for="eventAllDay">Ganztägiger Termin</label>
               </div>
             </div>
 
@@ -785,45 +677,16 @@
             <div class="form-group large-form-group">
               <label class="big-label">Wer soll den Termin sehen?</label>
               <div class="custom-select-wrapper" id="orgLevelWrapper">
-                <div
-                  class="custom-select-display"
-                  onclick="toggleOrgLevelDropdown()"
-                >
+                <div class="custom-select-display" onclick="toggleOrgLevelDropdown()">
                   <span id="selectedOrgLevel">-- Bitte wählen --</span>
-                  <svg
-                    width="12"
-                    height="8"
-                    viewBox="0 0 12 8"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1 1.5L6 6.5L11 1.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="custom-dropdown" id="orgLevelDropdown">
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('company', 'Alle Mitarbeiter')"
-                  >
-                    Alle Mitarbeiter
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('department', 'Bestimmte Abteilung')"
-                  >
-                    Bestimmte Abteilung
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('team', 'Bestimmtes Team')"
-                  >
-                    Bestimmtes Team
-                  </div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('company', 'Alle Mitarbeiter')">Alle Mitarbeiter</div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('department', 'Bestimmte Abteilung')">Bestimmte Abteilung</div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('team', 'Bestimmtes Team')">Bestimmtes Team</div>
                 </div>
               </div>
               <input type="hidden" id="eventOrgLevel" required />
@@ -832,27 +695,10 @@
             <div class="form-group large-form-group">
               <label class="big-label">Welche Abteilung/Team?</label>
               <div class="custom-select-wrapper" id="orgIdWrapper">
-                <div
-                  class="custom-select-display disabled"
-                  id="orgIdDisplay"
-                  onclick="toggleOrgIdDropdown()"
-                >
-                  <span id="selectedOrgId"
-                    >-- Bitte erst oben auswählen --</span
-                  >
-                  <svg
-                    width="12"
-                    height="8"
-                    viewBox="0 0 12 8"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1 1.5L6 6.5L11 1.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
+                <div class="custom-select-display disabled" id="orgIdDisplay" onclick="toggleOrgIdDropdown()">
+                  <span id="selectedOrgId">-- Bitte erst oben auswählen --</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="custom-dropdown" id="orgIdDropdown">
@@ -866,46 +712,14 @@
             <div class="form-group large-form-group">
               <label for="eventColor" class="big-label">Farbe</label>
               <div class="color-picker">
-                <div
-                  class="color-option"
-                  data-color="#3498db"
-                  style="background-color: #3498db"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#2ecc71"
-                  style="background-color: #2ecc71"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#e67e22"
-                  style="background-color: #e67e22"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#9b59b6"
-                  style="background-color: #9b59b6"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#e74c3c"
-                  style="background-color: #e74c3c"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#f1c40f"
-                  style="background-color: #f1c40f"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#1abc9c"
-                  style="background-color: #1abc9c"
-                ></div>
-                <div
-                  class="color-option"
-                  data-color="#34495e"
-                  style="background-color: #34495e"
-                ></div>
+                <div class="color-option" data-color="#3498db" style="background-color: #3498db"></div>
+                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71"></div>
+                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22"></div>
+                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6"></div>
+                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c"></div>
+                <div class="color-option" data-color="#f1c40f" style="background-color: #f1c40f"></div>
+                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c"></div>
+                <div class="color-option" data-color="#34495e" style="background-color: #34495e"></div>
               </div>
               <input type="hidden" id="eventColor" value="#3498db" />
             </div>
@@ -913,69 +727,20 @@
             <div class="form-group large-form-group">
               <label class="big-label">Erinnerung</label>
               <div class="custom-select-wrapper" id="reminderWrapper">
-                <div
-                  class="custom-select-display"
-                  onclick="toggleReminderDropdown()"
-                >
+                <div class="custom-select-display" onclick="toggleReminderDropdown()">
                   <span id="selectedReminder">Keine Erinnerung</span>
-                  <svg
-                    width="12"
-                    height="8"
-                    viewBox="0 0 12 8"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1 1.5L6 6.5L11 1.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="custom-dropdown" id="reminderDropdown">
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('', 'Keine Erinnerung')"
-                  >
-                    Keine Erinnerung
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('5', '5 Minuten vorher')"
-                  >
-                    5 Minuten vorher
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('15', '15 Minuten vorher')"
-                  >
-                    15 Minuten vorher
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('30', '30 Minuten vorher')"
-                  >
-                    30 Minuten vorher
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('60', '1 Stunde vorher')"
-                  >
-                    1 Stunde vorher
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('120', '2 Stunden vorher')"
-                  >
-                    2 Stunden vorher
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectReminder('1440', '1 Tag vorher')"
-                  >
-                    1 Tag vorher
-                  </div>
+                  <div class="dropdown-option" onclick="selectReminder('', 'Keine Erinnerung')">Keine Erinnerung</div>
+                  <div class="dropdown-option" onclick="selectReminder('5', '5 Minuten vorher')">5 Minuten vorher</div>
+                  <div class="dropdown-option" onclick="selectReminder('15', '15 Minuten vorher')">15 Minuten vorher</div>
+                  <div class="dropdown-option" onclick="selectReminder('30', '30 Minuten vorher')">30 Minuten vorher</div>
+                  <div class="dropdown-option" onclick="selectReminder('60', '1 Stunde vorher')">1 Stunde vorher</div>
+                  <div class="dropdown-option" onclick="selectReminder('120', '2 Stunden vorher')">2 Stunden vorher</div>
+                  <div class="dropdown-option" onclick="selectReminder('1440', '1 Tag vorher')">1 Tag vorher</div>
                 </div>
               </div>
               <input type="hidden" id="eventReminderTime" value="" />
@@ -987,31 +752,16 @@
               <div class="attendees-container" id="attendeesContainer">
                 <!-- Wird dynamisch befüllt -->
               </div>
-              <button
-                type="button"
-                class="btn btn-outline-primary mt-2"
-                id="addAttendeeBtn"
-              >
-                <i class="fas fa-plus"></i> Teilnehmer hinzufügen
+              <button type="button" class="btn btn-outline-primary mt-2" id="addAttendeeBtn">
+                <i class="fas fa-plus"></i>
+                Teilnehmer hinzufügen
               </button>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button
-            type="button"
-            class="big-button secondary-button"
-            data-action="close"
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            class="big-button primary-button"
-            id="saveEventBtn"
-          >
-            Speichern
-          </button>
+          <button type="button" class="big-button secondary-button" data-action="close">Abbrechen</button>
+          <button type="button" class="big-button primary-button" id="saveEventBtn">Speichern</button>
         </div>
       </div>
     </div>
@@ -1021,18 +771,11 @@
       <div class="modal-container">
         <div class="modal-header">
           <h2 id="attendeesModalLabel">Teilnehmer hinzufügen</h2>
-          <button type="button" class="modal-close" data-action="close">
-            &times;
-          </button>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group mb-3">
-            <input
-              type="text"
-              class="form-input"
-              id="attendeeSearch"
-              placeholder="Mitarbeiter suchen..."
-            />
+            <input type="text" class="form-input" id="attendeeSearch" placeholder="Mitarbeiter suchen..." />
           </div>
           <div class="attendees-list" id="attendeesList">
             <!-- Wird dynamisch befüllt -->
@@ -1043,16 +786,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="addSelectedAttendeesBtn"
-          >
-            Hinzufügen
-          </button>
+          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-primary" id="addSelectedAttendeesBtn">Hinzufügen</button>
         </div>
       </div>
     </div>
@@ -1062,9 +797,7 @@
       <div class="modal-container modal-sm">
         <div class="modal-header">
           <h2 id="eventResponseModalLabel">Auf Einladung antworten</h2>
-          <button type="button" class="modal-close" data-action="close">
-            &times;
-          </button>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <p id="responseEventTitle" class="mb-4">Titel des Termins</p>
@@ -1073,11 +806,7 @@
               <i class="fas fa-check"></i>
               <span>Zusagen</span>
             </button>
-            <button
-              type="button"
-              class="response-btn"
-              data-response="tentative"
-            >
+            <button type="button" class="response-btn" data-response="tentative">
               <i class="fas fa-question"></i>
               <span>Vielleicht</span>
             </button>
@@ -1088,9 +817,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">
-            Schließen
-          </button>
+          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
         </div>
       </div>
     </div>
@@ -1100,22 +827,14 @@
       <div class="modal-container modal-sm">
         <div class="modal-header">
           <h2 id="confirmationModalLabel">Bestätigung</h2>
-          <button type="button" class="modal-close" data-action="close">
-            &times;
-          </button>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
-          <p id="confirmationMessage" class="mb-0">
-            Möchten Sie diesen Termin wirklich löschen?
-          </p>
+          <p id="confirmationMessage" class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">
-            Abbrechen
-          </button>
-          <button type="button" class="btn btn-danger" id="confirmActionBtn">
-            Löschen
-          </button>
+          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="confirmActionBtn">Löschen</button>
         </div>
       </div>
     </div>
@@ -1224,11 +943,9 @@
         document.querySelectorAll('.custom-dropdown').forEach((dropdown) => {
           dropdown.classList.remove('active');
         });
-        document
-          .querySelectorAll('.custom-select-display')
-          .forEach((display) => {
-            display.classList.remove('active');
-          });
+        document.querySelectorAll('.custom-select-display').forEach((display) => {
+          display.classList.remove('active');
+        });
         activeDropdown = null;
       }
 
@@ -1259,13 +976,11 @@
 
         if (value === 'company') {
           orgIdDisplay.classList.add('disabled');
-          document.getElementById('selectedOrgId').textContent =
-            'Gesamte Firma';
+          document.getElementById('selectedOrgId').textContent = 'Gesamte Firma';
           document.getElementById('eventOrgId').value = '1';
         } else {
           orgIdDisplay.classList.remove('disabled');
-          document.getElementById('selectedOrgId').textContent =
-            '-- Bitte wählen --';
+          document.getElementById('selectedOrgId').textContent = '-- Bitte wählen --';
           document.getElementById('eventOrgId').value = '';
           // Trigger the calendar.js updateOrgIdDropdown function
           if (typeof updateOrgIdDropdown === 'function') {

@@ -81,7 +81,7 @@
 }
 
 .filters select,
-.filters input[type='date'] {
+.filters input[type="date"] {
   padding: 10px 15px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -92,7 +92,7 @@
 }
 
 .filters select:focus,
-.filters input[type='date']:focus {
+.filters input[type="date"]:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
@@ -585,11 +585,11 @@
   color: white;
 }
 
-.form-group input[type='text'],
-.form-group input[type='date'],
-.form-group input[type='time'],
-.form-group input[type='number'],
-.form-group input[type='color'],
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group input[type="time"],
+.form-group input[type="number"],
+.form-group input[type="color"],
 .form-group textarea,
 .form-group select {
   width: 100%;
@@ -607,7 +607,7 @@
   min-height: 80px;
 }
 
-.form-group input[type='color'] {
+.form-group input[type="color"] {
   height: 45px;
   padding: 5px;
   cursor: pointer;
@@ -767,7 +767,7 @@
   }
 
   .filters select,
-  .filters input[type='date'] {
+  .filters input[type="date"] {
     min-width: 100%;
   }
 

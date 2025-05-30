@@ -1024,6 +1024,73 @@ export async function getEmployeeShifts(
   }
 }
 
+// Get shifts for date range
+async function getShiftsForDateRange(
+  tenantId: number,
+  startDate: string,
+  endDate: string
+): Promise<any[]> {
+  try {
+    const query = `
+      SELECT 
+        s.*,
+        u.username as assigned_user_name,
+        u.first_name,
+        u.last_name,
+        d.name as department_name,
+        t.name as team_name
+      FROM shifts s
+      LEFT JOIN shift_assignments sa ON s.id = sa.shift_id AND sa.status = 'confirmed'
+      LEFT JOIN users u ON sa.user_id = u.id
+      LEFT JOIN departments d ON s.department_id = d.id
+      LEFT JOIN teams t ON s.team_id = t.id
+      WHERE s.tenant_id = ? 
+        AND s.date BETWEEN ? AND ?
+        AND s.deleted_at IS NULL
+      ORDER BY s.date, s.start_time
+    `;
+
+    const [rows] = await executeQuery<any[]>(query, [tenantId, startDate, endDate]);
+    return rows;
+  } catch (error) {
+    console.error('Error in getShiftsForDateRange:', error);
+    throw error;
+  }
+}
+
+// Get week notes
+async function getWeekNotes(
+  tenantId: number,
+  weekStart: string,
+  weekEnd: string
+): Promise<Record<string, string>> {
+  try {
+    const query = `
+      SELECT 
+        date,
+        notes
+      FROM shift_notes
+      WHERE tenant_id = ? 
+        AND date BETWEEN ? AND ?
+      ORDER BY date
+    `;
+
+    const [rows] = await executeQuery<any[]>(query, [tenantId, weekStart, weekEnd]);
+    
+    // Convert to object keyed by date
+    const notesByDate: Record<string, string> = {};
+    rows.forEach((row: any) => {
+      notesByDate[row.date] = row.notes;
+    });
+    
+    return notesByDate;
+  } catch (error) {
+    console.error('Error in getWeekNotes:', error);
+    // Return empty object if table doesn't exist yet
+    return {};
+  }
+}
+
 // Export interfaces
 export type { ShiftPlanFilters, ShiftExchangeFilters };
 
@@ -1042,6 +1109,8 @@ export default {
   createShiftExchangeRequest,
   canAccessShiftPlan,
   getEmployeeShifts,
+  getShiftsForDateRange,
+  getWeekNotes,
   formatDateForMysql,
   formatDateOnlyForMysql,
 };

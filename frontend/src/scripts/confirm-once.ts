@@ -20,7 +20,7 @@ interface ConfirmTracking {
   const tracking: ConfirmTracking = {
     lastConfirmTime: 0,
     lastConfirmMessage: '',
-    lastConfirmResult: false
+    lastConfirmResult: false,
   };
 
   // Override confirm function
@@ -32,8 +32,7 @@ interface ConfirmTracking {
 
     // If the same confirmation dialog should be shown again within 3 seconds,
     // just return the previous result
-    if (confirmMessage === tracking.lastConfirmMessage && 
-        now - tracking.lastConfirmTime < 3000) {
+    if (confirmMessage === tracking.lastConfirmMessage && now - tracking.lastConfirmTime < 3000) {
       console.log(`[Confirm] Reusing previous result: ${tracking.lastConfirmResult}`);
       return tracking.lastConfirmResult;
     }

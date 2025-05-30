@@ -40,7 +40,7 @@ interface GetMessagesRequest extends BaseGetMessagesRequest {
 
 interface SendMessageRequest extends BaseSendMessageRequest {
   tenantDb?: Pool;
-  file?: Express.Multer.File;
+  file?: any; // Multer file - will be typed properly later
 }
 
 interface GetConversationParticipantsRequest extends AuthenticatedRequest {
@@ -391,7 +391,10 @@ class ChatController {
   }
 
   // Get unread message count
-  async getUnreadCount(_req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getUnreadCount(
+    _req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
     try {
       // For now, return 0 as placeholder
       // TODO: Implement actual unread count logic

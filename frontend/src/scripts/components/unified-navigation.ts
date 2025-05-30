@@ -93,13 +93,10 @@ class UnifiedNavigation {
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          sidebarUserName.textContent =
-            userData.username || user.username || this.currentUser?.username || 'User';
+          sidebarUserName.textContent = userData.username || user.username || this.currentUser?.username || 'User';
         }
 
-        const sidebarFullName = document.getElementById(
-          'sidebar-user-fullname'
-        );
+        const sidebarFullName = document.getElementById('sidebar-user-fullname');
         if (sidebarFullName) {
           const firstName = userData.first_name || userData.firstName || (user as User).firstName || '';
           const lastName = userData.last_name || userData.lastName || (user as User).lastName || '';
@@ -109,9 +106,7 @@ class UnifiedNavigation {
           }
         }
 
-        const sidebarBirthdate = document.getElementById(
-          'sidebar-user-birthdate'
-        );
+        const sidebarBirthdate = document.getElementById('sidebar-user-birthdate');
         if (sidebarBirthdate) {
           const birthDateStr = userData.birthdate || userData.birthDate || (user as User).birthDate;
           if (birthDateStr) {
@@ -452,9 +447,7 @@ class UnifiedNavigation {
 
   private createMenuItem(item: NavItem, isActive: boolean = false): string {
     const activeClass = isActive ? 'active' : '';
-    const clickHandler = item.section
-      ? `onclick="showSection('${item.section}')"`
-      : '';
+    const clickHandler = item.section ? `onclick="showSection('${item.section}')"` : '';
 
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
@@ -929,19 +922,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.unifiedNav = new UnifiedNavigation();
 
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
-  if (
-    window.unifiedNav &&
-    typeof window.unifiedNav.updateUnreadMessages === 'function'
-  ) {
+  if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
     window.unifiedNav.updateUnreadMessages();
     setInterval(() => window.unifiedNav.updateUnreadMessages(), 10000); // Alle 10 Sekunden
   }
 
   // Offene Umfragen beim Start und periodisch aktualisieren
-  if (
-    window.unifiedNav &&
-    typeof window.unifiedNav.updatePendingSurveys === 'function'
-  ) {
+  if (window.unifiedNav && typeof window.unifiedNav.updatePendingSurveys === 'function') {
     window.unifiedNav.updatePendingSurveys();
     setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
   }

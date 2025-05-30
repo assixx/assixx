@@ -1,0 +1,152 @@
+/**
+ * Middleware für die Überprüfung der Dokumentenzugriffsberechtigungen
+ */
+import { Request, Response, NextFunction } from 'express';
+import Document from '../models/document.js';
+import User from '../models/user.js';
+import { logger } from '../utils/logger.js';
+import { DocumentRequest } from '../types/request.types.js';
+
+export interface DocumentAccessOptions {
+  allowAdmin?: boolean;
+  allowDepartmentHeads?: boolean;
+  requireOwnership?: boolean;
+}
+
+/**
+ * Prüft, ob der Benutzer Zugriff auf ein Dokument hat
+ * @param options - Konfigurationsoptionen
+ * @param options.allowAdmin - Ob Admins Zugriff haben sollen
+ * @param options.allowDepartmentHeads - Ob Abteilungsleiter Zugriff auf Dokumente ihrer Abteilungsmitglieder haben dürfen
+ * @param options.requireOwnership - Ob der Benutzer der Besitzer des Dokuments sein muss
+ */
+export const checkDocumentAccess =
+  (
+    options: DocumentAccessOptions = {
+      allowAdmin: true,
+      allowDepartmentHeads: false,
+      requireOwnership: true,
+    }
+  ) =>
+  async (req: DocumentRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      const userRole = req.user?.role;
+      const { documentId } = req.params;
+
+      if (!userId || !userRole) {
+        return res.status(401).json({ error: 'Nicht authentifiziert' });
+      }
+
+      logger.info(
+        `Checking document access for user ${userId} (role: ${userRole}) to document ${documentId}`
+      );
+
+      // Prüfe, ob das Dokument existiert
+      const document = await Document.findById(parseInt(documentId, 10));
+      if (!document) {
+        logger.warn(`Document ${documentId} not found`);
+        return res.status(404).json({
+          error: 'Dokument nicht gefunden',
+        });
+      }
+
+      // Admin-Zugriff prüfen
+      if (options.allowAdmin && userRole === 'admin') {
+        logger.info(
+          `Admin access granted for user ${userId} to document ${documentId}`
+        );
+        req.document = document;
+        return next();
+      }
+
+      // Besitzer-Zugriff prüfen
+      if (document.uploadedFor === userId) {
+        logger.info(
+          `Owner access granted for user ${userId} to document ${documentId}`
+        );
+        req.document = document;
+        return next();
+      }
+
+      // Abteilungsleiter-Zugriff prüfen
+      if (options.allowDepartmentHeads && userRole === 'department_head') {
+        const user = await User.findById(userId);
+        const documentOwner = await User.findById(document.uploadedFor);
+
+        if (
+          user &&
+          documentOwner &&
+          user.department === documentOwner.department
+        ) {
+          logger.info(
+            `Department head access granted for user ${userId} to document ${documentId}`
+          );
+          req.document = document;
+          return next();
+        }
+      }
+
+      // Wenn requireOwnership false ist und keine anderen Bedingungen zutreffen
+      if (!options.requireOwnership) {
+        logger.info(
+          `General access granted for user ${userId} to document ${documentId} (ownership not required)`
+        );
+        req.document = document;
+        return next();
+      }
+
+      // Zugriff verweigert
+      logger.warn(
+        `Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`
+      );
+      return res.status(403).json({
+        error: 'Keine Berechtigung für dieses Dokument',
+      });
+    } catch (error) {
+      logger.error('Error in checkDocumentAccess middleware:', error);
+      return res.status(500).json({
+        error: 'Fehler bei der Überprüfung der Dokumentenberechtigung',
+      });
+    }
+  };
+
+/**
+ * Middleware für öffentliche Dokumente (kein Login erforderlich)
+ */
+export const checkPublicDocumentAccess = async (
+  req: Request & { document?: any },
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { documentId } = req.params;
+
+    const document = await Document.findById(parseInt(documentId, 10));
+    if (!document) {
+      return res.status(404).json({
+        error: 'Dokument nicht gefunden',
+      });
+    }
+
+    // Prüfe, ob das Dokument öffentlich ist
+    if (!document.isPublic) {
+      return res.status(403).json({
+        error: 'Dieses Dokument ist nicht öffentlich zugänglich',
+      });
+    }
+
+    req.document = document;
+    return next();
+  } catch (error) {
+    logger.error('Error in checkPublicDocumentAccess middleware:', error);
+    return res.status(500).json({
+      error: 'Fehler beim Abrufen des Dokuments',
+    });
+  }
+};
+
+export default {
+  checkDocumentAccess,
+  checkPublicDocumentAccess,
+};

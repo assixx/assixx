@@ -21,7 +21,7 @@ export class StorageService {
       if (!item) return null;
 
       const parsed: StorageItem<T> = JSON.parse(item);
-      
+
       // Check if item has expired
       if (parsed.expiry && Date.now() > parsed.expiry) {
         this.remove(key);
@@ -67,7 +67,7 @@ export class StorageService {
    */
   clear(): void {
     const keys = Object.keys(localStorage);
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (key.startsWith(this.prefix)) {
         localStorage.removeItem(key);
       }
@@ -86,8 +86,8 @@ export class StorageService {
    */
   keys(): string[] {
     return Object.keys(localStorage)
-      .filter(key => key.startsWith(this.prefix))
-      .map(key => key.replace(this.prefix, ''));
+      .filter((key) => key.startsWith(this.prefix))
+      .map((key) => key.replace(this.prefix, ''));
   }
 
   /**
@@ -96,8 +96,8 @@ export class StorageService {
   getSize(): number {
     let size = 0;
     const keys = this.keys();
-    
-    keys.forEach(key => {
+
+    keys.forEach((key) => {
       const item = localStorage.getItem(this.prefix + key);
       if (item) {
         size += item.length;
@@ -112,8 +112,8 @@ export class StorageService {
    */
   cleanExpired(): void {
     const keys = this.keys();
-    
-    keys.forEach(key => {
+
+    keys.forEach((key) => {
       try {
         const item = localStorage.getItem(this.prefix + key);
         if (item) {

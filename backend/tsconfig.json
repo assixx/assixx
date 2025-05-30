@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    // Language and Environment
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // Modules
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    // JavaScript Support
+    "allowJs": true,
+    "checkJs": false,
+
+    // Emit
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "removeComments": true,
+    "sourceMap": true,
+
+    // Type Checking
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    // Path Mapping
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@controllers/*": ["controllers/*"],
+      "@models/*": ["models/*"],
+      "@middleware/*": ["middleware/*"],
+      "@services/*": ["services/*"],
+      "@utils/*": ["utils/*"],
+      "@types/*": ["types/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}

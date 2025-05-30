@@ -25,9 +25,9 @@ async function loadHeaderUserInfo(): Promise<void> {
 
     // Load full profile
     const response = await fetch('/api/user/profile', {
-      headers: { 
+      headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
     });
 

@@ -61,9 +61,7 @@ window.Assixx = {
     // Load page-specific module
     switch (page) {
       case 'dashboard':
-        import('./pages/dashboard.js')
-          .then((m) => m.initDashboard && m.initDashboard())
-          .catch(() => {});
+        import('./pages/dashboard.js').then((m) => m.initDashboard && m.initDashboard()).catch(() => {});
         break;
       case 'profile':
         // import('./pages/profile.js').then(m => m.init());

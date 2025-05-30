@@ -6,10 +6,7 @@
     <title>Schichtplanung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet" />
     <style>
       /* Glassmorphismus Design-Standards */
 
@@ -573,12 +570,7 @@
     <!-- Header -->
     <header class="header">
       <a href="/admin-dashboard" class="logo-container">
-        <img
-          src="/assets/images/logo.png"
-          alt="Assixx Logo"
-          class="logo"
-          style="height: 40px; width: auto; filter: none"
-        />
+        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <span id="userName" class="text-secondary">Admin</span>
@@ -596,12 +588,7 @@
             <li class="sidebar-item">
               <a href="/admin-dashboard" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                   </svg>
                 </span>
@@ -611,12 +598,7 @@
             <li class="sidebar-item">
               <a href="/blackboard" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path
                       d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"
                     />
@@ -628,12 +610,7 @@
             <li class="sidebar-item">
               <a href="/calendar" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path
                       d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"
                     />
@@ -645,12 +622,7 @@
             <li class="sidebar-item active">
               <a href="/shifts" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12,6 12,12 16,14" />
                   </svg>
@@ -675,60 +647,38 @@
               <select class="info-select" id="departmentSelect">
                 <option value="">Abteilung wählen...</option>
               </select>
-              <div
-                class="info-value"
-                id="currentDepartment"
-                style="display: none"
-              >
-                Produktion
-              </div>
+              <div class="info-value" id="currentDepartment" style="display: none">Produktion</div>
             </div>
             <div class="info-item">
               <div class="info-label">Maschine</div>
               <select class="info-select" id="machineSelect">
                 <option value="">Maschine wählen...</option>
               </select>
-              <div class="info-value" id="currentMachine" style="display: none">
-                Anlage 01
-              </div>
+              <div class="info-value" id="currentMachine" style="display: none">Anlage 01</div>
             </div>
             <div class="info-item">
               <div class="info-label">Teamleiter</div>
               <select class="info-select" id="teamLeaderSelect">
                 <option value="">Teamleiter wählen...</option>
               </select>
-              <div
-                class="info-value"
-                id="currentTeamLeader"
-                style="display: none"
-              >
-                Max Mustermann
-              </div>
+              <div class="info-value" id="currentTeamLeader" style="display: none">Max Mustermann</div>
             </div>
             <div class="info-item">
               <div class="info-label">Bereich</div>
               <select class="info-select" id="areaSelect">
                 <option value="">Bereich wählen...</option>
               </select>
-              <div class="info-value" id="currentArea" style="display: none">
-                Halle A
-              </div>
+              <div class="info-value" id="currentArea" style="display: none">Halle A</div>
             </div>
           </div>
 
           <!-- Week Navigation -->
           <div class="week-navigation">
-            <button class="week-nav-btn" id="prevWeekBtn">
-              ‹ Vorherige Woche
-            </button>
+            <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
             <div class="week-info">
-              <span id="currentWeekInfo"
-                >KW 21 - 20.05.2025 bis 26.05.2025</span
-              >
+              <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
             </div>
-            <button class="week-nav-btn" id="nextWeekBtn">
-              Nächste Woche ›
-            </button>
+            <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
           </div>
 
           <!-- Main Planning Area -->
@@ -739,42 +689,42 @@
               <div class="schedule-header">
                 <div class="day-header">Schicht</div>
                 <div class="day-header">
-                  Montag<br /><span style="font-size: 12px; font-weight: 400"
-                    >20.05</span
-                  >
+                  Montag
+                  <br />
+                  <span style="font-size: 12px; font-weight: 400">20.05</span>
                 </div>
                 <div class="day-header">
-                  Dienstag<br /><span style="font-size: 12px; font-weight: 400"
-                    >21.05</span
-                  >
+                  Dienstag
+                  <br />
+                  <span style="font-size: 12px; font-weight: 400">21.05</span>
                 </div>
                 <div class="day-header">
-                  Mittwoch<br /><span style="font-size: 12px; font-weight: 400"
-                    >22.05</span
-                  >
+                  Mittwoch
+                  <br />
+                  <span style="font-size: 12px; font-weight: 400">22.05</span>
                 </div>
                 <div class="day-header">
-                  Donnerstag<br /><span
-                    style="font-size: 12px; font-weight: 400"
-                    >23.05</span
-                  >
+                  Donnerstag
+                  <br />
+                  <span style="font-size: 12px; font-weight: 400">23.05</span>
                 </div>
                 <div class="day-header">
-                  Freitag<br /><span style="font-size: 12px; font-weight: 400"
-                    >24.05</span
-                  >
+                  Freitag
+                  <br />
+                  <span style="font-size: 12px; font-weight: 400">24.05</span>
                 </div>
                 <div class="day-header">
-                  Samstag<br /><span style="font-size: 12px; font-weight: 400"
-                    >25.05</span
-                  >
+                  Samstag
+                  <br />
+                  <span style="font-size: 12px; font-weight: 400">25.05</span>
                 </div>
               </div>
 
               <!-- Early Shift Row -->
               <div class="shift-row">
                 <div class="shift-label shift-type-early">
-                  Frühschicht<br />
+                  Frühschicht
+                  <br />
                   <span style="font-size: 11px">06:00-14:00</span>
                 </div>
                 <div class="shift-cell" data-day="monday" data-shift="early">
@@ -812,7 +762,8 @@
               <!-- Late Shift Row -->
               <div class="shift-row">
                 <div class="shift-label shift-type-late">
-                  Spätschicht<br />
+                  Spätschicht
+                  <br />
                   <span style="font-size: 11px">14:00-22:00</span>
                 </div>
                 <div class="shift-cell" data-day="monday" data-shift="late">
@@ -850,7 +801,8 @@
               <!-- Night Shift Row -->
               <div class="shift-row">
                 <div class="shift-label shift-type-night">
-                  Nachtschicht<br />
+                  Nachtschicht
+                  <br />
                   <span style="font-size: 11px">22:00-06:00</span>
                 </div>
                 <div class="shift-cell" data-day="monday" data-shift="night">
@@ -887,34 +839,18 @@
 
               <!-- Info/Todo Area Row -->
               <div class="shift-row">
-                <div
-                  class="shift-label"
-                  style="background: #b3b8bc4a; border-left: 4px solid #ffc107"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z"
-                    />
+                <div class="shift-label" style="background: #b3b8bc4a; border-left: 4px solid #ffc107">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z" />
                   </svg>
-                  Info & Todo<br />
+                  Info & Todo
+                  <br />
                   <span style="font-size: 11px">Wochennotizen</span>
                 </div>
                 <div class="shift-info-area" style="grid-column: span 6">
                   <div class="shift-info-title">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path
-                        d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
-                      />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
                     </svg>
                     Notizen & Todos für diese Woche
                   </div>
@@ -941,9 +877,7 @@
                 >
                   <div class="employee-header">
                     <div class="employee-name-sidebar">Johann Müller</div>
-                    <div class="availability-status status-available">
-                      Verfügbar
-                    </div>
+                    <div class="availability-status status-available">Verfügbar</div>
                   </div>
                   <div class="employee-details">Erfahrung: 5 Jahre</div>
                 </div>
@@ -958,9 +892,7 @@
                 >
                   <div class="employee-header">
                     <div class="employee-name-sidebar">Anna Schmidt</div>
-                    <div class="availability-status status-limited">
-                      Begrenzt
-                    </div>
+                    <div class="availability-status status-limited">Begrenzt</div>
                   </div>
                   <div class="employee-details">Nur Frühschicht</div>
                 </div>
@@ -974,9 +906,7 @@
                 >
                   <div class="employee-header">
                     <div class="employee-name-sidebar">Peter Weber</div>
-                    <div class="availability-status status-unavailable">
-                      Urlaub
-                    </div>
+                    <div class="availability-status status-unavailable">Urlaub</div>
                   </div>
                   <div class="employee-details">Bis 26.05.2025</div>
                 </div>
@@ -990,9 +920,7 @@
                 >
                   <div class="employee-header">
                     <div class="employee-name-sidebar">Lisa Wagner</div>
-                    <div class="availability-status status-available">
-                      Verfügbar
-                    </div>
+                    <div class="availability-status status-available">Verfügbar</div>
                   </div>
                   <div class="employee-details">Erfahrung: 3 Jahre</div>
                 </div>
@@ -1006,9 +934,7 @@
                 >
                   <div class="employee-header">
                     <div class="employee-name-sidebar">Tom Fischer</div>
-                    <div class="availability-status status-unavailable">
-                      Krank
-                    </div>
+                    <div class="availability-status status-unavailable">Krank</div>
                   </div>
                   <div class="employee-details">Seit 20.05.2025</div>
                 </div>
@@ -1018,12 +944,8 @@
 
           <!-- Admin Actions -->
           <div class="admin-actions" id="adminActions">
-            <button class="admin-btn" id="saveScheduleBtn">
-              Schichtplan speichern
-            </button>
-            <button class="admin-btn cancel" id="resetScheduleBtn">
-              Zurücksetzen
-            </button>
+            <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
+            <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
           </div>
         </div>
       </main>

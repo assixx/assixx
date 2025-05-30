@@ -34,17 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initModals(): void {
   // Close-Buttons für Modals
-  document
-    .querySelectorAll<HTMLElement>('.modal-close, [data-action="close"]')
-    .forEach((button) => {
-      button.addEventListener('click', function () {
-        // Find closest modal-overlay
-        const modalOverlay = this.closest('.modal-overlay') as HTMLElement;
-        if (modalOverlay) {
-          closeModal(modalOverlay.id);
-        }
-      });
+  document.querySelectorAll<HTMLElement>('.modal-close, [data-action="close"]').forEach((button) => {
+    button.addEventListener('click', function () {
+      // Find closest modal-overlay
+      const modalOverlay = this.closest('.modal-overlay') as HTMLElement;
+      if (modalOverlay) {
+        closeModal(modalOverlay.id);
+      }
     });
+  });
 
   // Click outside modal to close
   document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
@@ -135,9 +133,7 @@ function setupUserAndLogout(): void {
         })
         .then((data: User) => {
           // Anzeigename setzen (Name oder Username)
-          const displayName = data.first_name
-            ? `${data.first_name} ${data.last_name || ''}`
-            : data.username;
+          const displayName = data.first_name ? `${data.first_name} ${data.last_name || ''}` : data.username;
           userInfo.textContent = displayName;
         })
         .catch((error) => {

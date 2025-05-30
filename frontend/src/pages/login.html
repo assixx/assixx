@@ -6,10 +6,7 @@
     <title>Assixx - Login</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
     <link rel="stylesheet" href="../styles/dashboard-theme.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <!-- Fragezeichen oben rechts - Glassmorphismus -->
@@ -17,11 +14,7 @@
     <div class="login-container">
       <!-- Logo Section -->
       <div class="login-header">
-        <img
-          src="../assets/images/logo.png"
-          alt="Assixx Logo"
-          class="login-logo"
-        />
+        <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo" />
       </div>
 
       <!-- Login Form -->
@@ -29,54 +22,31 @@
         <form id="loginForm">
           <div class="form-group">
             <label class="form-label">Benutzername</label>
-            <input
-              type="text"
-              id="username"
-              class="form-control"
-              required
-              autofocus
-            />
+            <input type="text" id="username" class="form-control" required autofocus />
           </div>
           <div class="form-group">
             <label class="form-label">Passwort</label>
-            <input
-              type="password"
-              id="password"
-              class="form-control"
-              required
-            />
+            <input type="password" id="password" class="form-control" required />
           </div>
-          <button type="submit" class="btn btn-primary btn-block">
-            Anmelden
-          </button>
+          <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
         </form>
 
         <div class="login-footer">
-          <a href="#" onclick="showPasswordReset()" class="text-secondary"
-            >Passwort vergessen?</a
-          >
-          <a
-            href="#"
-            onclick="requestAccess()"
-            class="text-secondary"
-            style="margin-left: 20px"
-            >Zugangsdaten beantragen</a
-          >
+          <a href="#" onclick="showPasswordReset()" class="text-secondary">Passwort vergessen?</a>
+          <a href="#" onclick="requestAccess()" class="text-secondary" style="margin-left: 20px">Zugangsdaten beantragen</a>
         </div>
       </div>
 
       <!-- Company Footer -->
       <div class="login-company">
-        <p class="text-secondary">
-          © 2025 Assixx - Powered by Simon Öztürks Computer Service
-        </p>
+        <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
       </div>
     </div>
 
     <script>
       function showHelp() {
         alert(
-          'Hilfe:\n\nFür neue Kunden: Klicken Sie auf "Zugangsdaten beantragen"\n\nFür bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort'
+          'Hilfe:\n\nFür neue Kunden: Klicken Sie auf "Zugangsdaten beantragen"\n\nFür bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
         );
       }
 
@@ -88,56 +58,54 @@
         window.location.href = '/';
       }
 
-      document
-        .getElementById('loginForm')
-        .addEventListener('submit', async (e) => {
-          e.preventDefault();
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-          const username = document.getElementById('username').value;
-          const password = document.getElementById('password').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
 
-          try {
-            const response = await fetch('http://localhost:3000/login', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ username, password }),
-            });
+        try {
+          const response = await fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+          });
 
-            const data = await response.json();
+          const data = await response.json();
 
-            if (response.ok) {
-              // Store token for JavaScript API calls
-              localStorage.setItem('token', data.token);
+          if (response.ok) {
+            // Store token for JavaScript API calls
+            localStorage.setItem('token', data.token);
 
-              // Also store user info
-              if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-              }
-
-              // Redirect based on role
-              switch (data.role) {
-                case 'root':
-                  window.location.href = './root-dashboard.html';
-                  break;
-                case 'admin':
-                  window.location.href = './admin-dashboard.html';
-                  break;
-                case 'employee':
-                  window.location.href = './employee-dashboard.html';
-                  break;
-                default:
-                  alert('Unknown role');
-              }
-            } else {
-              alert(data.message || 'Login failed');
+            // Also store user info
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
             }
-          } catch (error) {
-            console.error('Login error:', error);
-            alert('An error occurred during login');
+
+            // Redirect based on role
+            switch (data.role) {
+              case 'root':
+                window.location.href = './root-dashboard.html';
+                break;
+              case 'admin':
+                window.location.href = './admin-dashboard.html';
+                break;
+              case 'employee':
+                window.location.href = './employee-dashboard.html';
+                break;
+              default:
+                alert('Unknown role');
+            }
+          } else {
+            alert(data.message || 'Login failed');
           }
-        });
+        } catch (error) {
+          console.error('Login error:', error);
+          alert('An error occurred during login');
+        }
+      });
 
       function showPasswordReset() {
         alert('Passwort-Reset Funktion - Coming Soon!');
@@ -167,12 +135,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: radial-gradient(
-          circle at 50% 50%,
-          #1e1e1e 0%,
-          #121212 50%,
-          #0a0a0a 100%
-        );
+        background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
         opacity: 0.9;
         z-index: -1;
       }
@@ -387,11 +350,7 @@
 
       /* Button Glassmorphismus */
       .btn-primary {
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--primary-hover)
-        );
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
         color: white;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
@@ -407,12 +366,7 @@
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s ease;
       }
 

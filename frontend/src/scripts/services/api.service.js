@@ -115,7 +115,7 @@ export default class ApiService {
   // Document endpoints
   async getDocuments(params = {}) {
     const query = new URLSearchParams(params).toString();
-    return this.get(`/documents${query ? '?' + query : ''}`);
+    return this.get(`/documents${query ? `?${query}` : ''}`);
   }
 
   async uploadDocument(formData) {

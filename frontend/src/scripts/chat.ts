@@ -77,7 +77,7 @@ class ChatClient {
     this.ws = null;
     this.token = getAuthToken();
     this.currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    
+
     // Fallback für currentUserId wenn user object nicht komplett ist
     if (!this.currentUser.id && this.token && this.token !== 'test-mode') {
       try {
@@ -88,7 +88,7 @@ class ChatClient {
         console.error('Error parsing token:', e);
       }
     }
-    
+
     this.currentUserId = this.currentUser.id || null;
     this.currentConversationId = null;
     this.conversations = [];
@@ -105,38 +105,281 @@ class ChatClient {
     // Initialize emoji categories
     this.emojiCategories = {
       smileys: [
-        '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😇', '😉',
-        '😊', '🙂', '🙃', '☺️', '😋', '😌', '😍', '🥰', '😘', '😗',
-        '😙', '😚', '🥲', '🤪', '🤩', '🥳', '😎', '🥸', '🧐', '🤓',
-        '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖',
-        '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯',
-        '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔',
-        '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦',
-        '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴',
-        '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿',
-        '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖',
-        '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'
+        '😀',
+        '😃',
+        '😄',
+        '😁',
+        '😆',
+        '😅',
+        '😂',
+        '🤣',
+        '😇',
+        '😉',
+        '😊',
+        '🙂',
+        '🙃',
+        '☺️',
+        '😋',
+        '😌',
+        '😍',
+        '🥰',
+        '😘',
+        '😗',
+        '😙',
+        '😚',
+        '🥲',
+        '🤪',
+        '🤩',
+        '🥳',
+        '😎',
+        '🥸',
+        '🧐',
+        '🤓',
+        '😏',
+        '😒',
+        '😞',
+        '😔',
+        '😟',
+        '😕',
+        '🙁',
+        '☹️',
+        '😣',
+        '😖',
+        '😫',
+        '😩',
+        '🥺',
+        '😢',
+        '😭',
+        '😤',
+        '😠',
+        '😡',
+        '🤬',
+        '🤯',
+        '😳',
+        '🥵',
+        '🥶',
+        '😱',
+        '😨',
+        '😰',
+        '😥',
+        '😓',
+        '🤗',
+        '🤔',
+        '🤭',
+        '🤫',
+        '🤥',
+        '😶',
+        '😐',
+        '😑',
+        '😬',
+        '🙄',
+        '😯',
+        '😦',
+        '😧',
+        '😮',
+        '😲',
+        '🥱',
+        '😴',
+        '🤤',
+        '😪',
+        '😵',
+        '🤐',
+        '🥴',
+        '🤢',
+        '🤮',
+        '🤧',
+        '😷',
+        '🤒',
+        '🤕',
+        '🤑',
+        '🤠',
+        '😈',
+        '👿',
+        '👹',
+        '👺',
+        '🤡',
+        '💩',
+        '👻',
+        '💀',
+        '☠️',
+        '👽',
+        '👾',
+        '🤖',
+        '🎃',
+        '😺',
+        '😸',
+        '😹',
+        '😻',
+        '😼',
+        '😽',
+        '🙀',
+        '😿',
+        '😾',
       ],
       gestures: [
-        '👋', '🤚', '🖐️', '✋', '👌', '🤌', '🤏', '✌️', '🤞', '🤟',
-        '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎',
-        '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏',
-        '✍️', '💅', '🤳', '💪', '🦾', '🦵', '🦿', '🦶', '👂', '🦻',
-        '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄'
+        '👋',
+        '🤚',
+        '🖐️',
+        '✋',
+        '👌',
+        '🤌',
+        '🤏',
+        '✌️',
+        '🤞',
+        '🤟',
+        '🤘',
+        '🤙',
+        '👈',
+        '👉',
+        '👆',
+        '🖕',
+        '👇',
+        '☝️',
+        '👍',
+        '👎',
+        '👊',
+        '✊',
+        '🤛',
+        '🤜',
+        '👏',
+        '🙌',
+        '👐',
+        '🤲',
+        '🤝',
+        '🙏',
+        '✍️',
+        '💅',
+        '🤳',
+        '💪',
+        '🦾',
+        '🦵',
+        '🦿',
+        '🦶',
+        '👂',
+        '🦻',
+        '👃',
+        '🧠',
+        '🫀',
+        '🫁',
+        '🦷',
+        '🦴',
+        '👀',
+        '👁️',
+        '👅',
+        '👄',
       ],
       symbols: [
-        '✨', '💫', '💥', '🔥', '🌙', '☀️', '🌤️', '⛅', '🌥️', '🌦️',
-        '🌈', '☁️', '🌧️', '⛈️', '🌩️', '⚡', '💧', '🌊', '🎆', '🎇',
-        '🎐', '🎑', '🎖️', '🎗️', '🎟️', '🎫', '🏆', '🏅', '🥇', '🥈',
-        '🥉', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎵', '🎶',
-        '🎹', '🎻', '🥁', '🎷', '🎺', '🎸', '🎲', '♟️', '🎯', '🎴',
-        '🀄', '📣', '📪', '📫', '📬', '📭', '📮', '📯', '📰', '📦',
-        '📧', '📨', '📩', '📤', '📥', '📜', '📃', '📑', '📊', '📈',
-        '📉', '📄', '📅', '📆', '📇', '📁', '📂', '🗃️', '🗄️', '📋',
-        '🗒️', '🗓️', '🔐', '🔒', '🔓', '🔏', '🔑', '🗝️', '🔨', '⛏️',
-        '🔩', '🔪', '🔫', '💉', '💊', '🌡️', '🎒', '🧪', '🧫', '🧬',
-        '🧭', '🧮', '🧯', '🧰', '🧿', '🚬', '⚰️', '⚱️', '🏺️', '🗿'
-      ]
+        '✨',
+        '💫',
+        '💥',
+        '🔥',
+        '🌙',
+        '☀️',
+        '🌤️',
+        '⛅',
+        '🌥️',
+        '🌦️',
+        '🌈',
+        '☁️',
+        '🌧️',
+        '⛈️',
+        '🌩️',
+        '⚡',
+        '💧',
+        '🌊',
+        '🎆',
+        '🎇',
+        '🎐',
+        '🎑',
+        '🎖️',
+        '🎗️',
+        '🎟️',
+        '🎫',
+        '🏆',
+        '🏅',
+        '🥇',
+        '🥈',
+        '🥉',
+        '🎪',
+        '🎭',
+        '🎨',
+        '🎬',
+        '🎤',
+        '🎧',
+        '🎼',
+        '🎵',
+        '🎶',
+        '🎹',
+        '🎻',
+        '🥁',
+        '🎷',
+        '🎺',
+        '🎸',
+        '🎲',
+        '♟️',
+        '🎯',
+        '🎴',
+        '🀄',
+        '📣',
+        '📪',
+        '📫',
+        '📬',
+        '📭',
+        '📮',
+        '📯',
+        '📰',
+        '📦',
+        '📧',
+        '📨',
+        '📩',
+        '📤',
+        '📥',
+        '📜',
+        '📃',
+        '📑',
+        '📊',
+        '📈',
+        '📉',
+        '📄',
+        '📅',
+        '📆',
+        '📇',
+        '📁',
+        '📂',
+        '🗃️',
+        '🗄️',
+        '📋',
+        '🗒️',
+        '🗓️',
+        '🔐',
+        '🔒',
+        '🔓',
+        '🔏',
+        '🔑',
+        '🗝️',
+        '🔨',
+        '⛏️',
+        '🔩',
+        '🔪',
+        '🔫',
+        '💉',
+        '💊',
+        '🌡️',
+        '🎒',
+        '🧪',
+        '🧫',
+        '🧬',
+        '🧭',
+        '🧮',
+        '🧯',
+        '🧰',
+        '🧿',
+        '🚬',
+        '⚰️',
+        '⚱️',
+        '🏺️',
+        '🗿',
+      ],
     };
 
     this.init();
@@ -160,10 +403,10 @@ class ChatClient {
     try {
       // Load conversations
       await this.loadConversations();
-      
+
       // Load available users
       await this.loadAvailableUsers();
-      
+
       // Select first conversation if exists
       if (this.conversations.length > 0 && !this.currentConversationId) {
         this.selectConversation(this.conversations[0].id);
@@ -230,7 +473,7 @@ class ChatClient {
           JSON.stringify({
             type: 'auth',
             data: { token: this.token },
-          })
+          }),
         );
 
         // Process message queue
@@ -276,7 +519,7 @@ class ChatClient {
               JSON.stringify({
                 type: 'join_conversation',
                 data: { conversationId: conv.id },
-              })
+              }),
             );
           }
         });
@@ -325,30 +568,27 @@ class ChatClient {
     if (conversation) {
       conversation.last_message = message;
       conversation.updated_at = message.created_at;
-      
+
       // Increment unread count if not current conversation
       if (conversationId !== this.currentConversationId) {
         conversation.unread_count = (conversation.unread_count || 0) + 1;
       }
-      
+
       // Re-sort conversations
-      this.conversations.sort(
-        (a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
-      
+      this.conversations.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
       this.renderConversationList();
     }
 
     // Display message if in current conversation
     if (conversationId === this.currentConversationId) {
       this.displayMessage(message);
-      
+
       // Mark as read if from another user
       if (message.sender_id !== this.currentUserId) {
         this.markMessageAsRead(message.id);
       }
-      
+
       // Show notification if window is not focused
       if (!document.hasFocus() && message.sender_id !== this.currentUserId) {
         this.showDesktopNotification(message);
@@ -363,16 +603,14 @@ class ChatClient {
 
   handleTypingStart(data: { userId: number; conversationId: number }): void {
     if (data.conversationId !== this.currentConversationId) return;
-    
-    const conversation = this.conversations.find(
-      (c) => c.id === data.conversationId
-    );
-    
+
+    const conversation = this.conversations.find((c) => c.id === data.conversationId);
+
     if (conversation) {
       if (!conversation.typing_users) {
         conversation.typing_users = [];
       }
-      
+
       if (!conversation.typing_users.includes(data.userId)) {
         conversation.typing_users.push(data.userId);
         this.updateTypingIndicator();
@@ -382,15 +620,11 @@ class ChatClient {
 
   handleTypingStop(data: { userId: number; conversationId: number }): void {
     if (data.conversationId !== this.currentConversationId) return;
-    
-    const conversation = this.conversations.find(
-      (c) => c.id === data.conversationId
-    );
-    
+
+    const conversation = this.conversations.find((c) => c.id === data.conversationId);
+
     if (conversation && conversation.typing_users) {
-      conversation.typing_users = conversation.typing_users.filter(
-        (id) => id !== data.userId
-      );
+      conversation.typing_users = conversation.typing_users.filter((id) => id !== data.userId);
       this.updateTypingIndicator();
     }
   }
@@ -411,9 +645,7 @@ class ChatClient {
     });
 
     // Re-render if affects current conversation
-    const currentConv = this.conversations.find(
-      (c) => c.id === this.currentConversationId
-    );
+    const currentConv = this.conversations.find((c) => c.id === this.currentConversationId);
     if (currentConv?.participants.some((p) => p.id === data.userId)) {
       this.renderChatHeader();
     }
@@ -421,9 +653,7 @@ class ChatClient {
 
   handleMessageRead(data: { messageId: number; userId: number }): void {
     // Update read status in UI
-    const messageElement = document.querySelector(
-      `[data-message-id="${data.messageId}"]`
-    );
+    const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
     if (messageElement) {
       const readIndicator = messageElement.querySelector('.read-indicator');
       if (readIndicator) {
@@ -435,17 +665,12 @@ class ChatClient {
   attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('❌ Max reconnection attempts reached');
-      this.showNotification(
-        'Verbindung zum Server verloren. Bitte Seite neu laden.',
-        'error'
-      );
+      this.showNotification('Verbindung zum Server verloren. Bitte Seite neu laden.', 'error');
       return;
     }
 
     this.reconnectAttempts++;
-    console.log(
-      `🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
-    );
+    console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
     setTimeout(() => {
       this.connectWebSocket();
@@ -468,10 +693,8 @@ class ChatClient {
     document.querySelectorAll('.conversation-item').forEach((item) => {
       item.classList.remove('active');
     });
-    
-    const selectedItem = document.querySelector(
-      `[data-conversation-id="${conversationId}"]`
-    );
+
+    const selectedItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
     if (selectedItem) {
       selectedItem.classList.add('active');
     }
@@ -498,14 +721,11 @@ class ChatClient {
 
   async loadMessages(conversationId: number): Promise<void> {
     try {
-      const response = await fetch(
-        `/api/chat/conversations/${conversationId}/messages`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
 
       if (response.ok) {
         const messages: Message[] = await response.json();
@@ -551,9 +771,7 @@ class ChatClient {
     messageContent = this.parseEmojis(messageContent);
     messageContent = this.linkify(messageContent);
 
-    const attachmentsHtml = message.attachments
-      ? this.renderAttachments(message.attachments)
-      : '';
+    const attachmentsHtml = message.attachments ? this.renderAttachments(message.attachments) : '';
 
     messageDiv.innerHTML = `
       <div class="message-content">
@@ -636,7 +854,7 @@ class ChatClient {
             content: messageContent,
             attachments: this.pendingFiles.length > 0 ? await this.uploadFiles() : [],
           },
-        })
+        }),
       );
       this.pendingFiles = [];
     } else {
@@ -685,10 +903,7 @@ class ChatClient {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.size > maxSize) {
-        this.showNotification(
-          `Datei "${file.name}" ist zu groß (max. 10MB)`,
-          'warning'
-        );
+        this.showNotification(`Datei "${file.name}" ist zu groß (max. 10MB)`, 'warning');
       } else {
         validFiles.push(file);
       }
@@ -710,9 +925,9 @@ class ChatClient {
     this.pendingFiles.forEach((file, index) => {
       const preview = document.createElement('div');
       preview.className = 'file-preview-item';
-      
+
       const isImage = file.type.startsWith('image/');
-      
+
       preview.innerHTML = `
         <div class="file-icon">
           ${isImage ? `<img src="${URL.createObjectURL(file)}" alt="${this.escapeHtml(file.name)}" />` : '<i class="fas fa-file"></i>'}
@@ -785,11 +1000,11 @@ class ChatClient {
     const start = messageInput.selectionStart;
     const end = messageInput.selectionEnd;
     const text = messageInput.value;
-    
+
     messageInput.value = text.substring(0, start) + emoji + text.substring(end);
     messageInput.selectionStart = messageInput.selectionEnd = start + emoji.length;
     messageInput.focus();
-    
+
     // Hide emoji picker
     const emojiPicker = document.getElementById('emojiPicker');
     if (emojiPicker) {
@@ -819,7 +1034,7 @@ class ChatClient {
       const item = document.createElement('div');
       item.className = 'conversation-item';
       item.setAttribute('data-conversation-id', conversation.id.toString());
-      
+
       if (conversation.id === this.currentConversationId) {
         item.classList.add('active');
       }
@@ -828,13 +1043,9 @@ class ChatClient {
         ? conversation.name || 'Gruppenchat'
         : this.getConversationDisplayName(conversation);
 
-      const lastMessageText = conversation.last_message
-        ? conversation.last_message.content
-        : 'Keine Nachrichten';
+      const lastMessageText = conversation.last_message ? conversation.last_message.content : 'Keine Nachrichten';
 
-      const lastMessageTime = conversation.last_message
-        ? this.formatTime(conversation.last_message.created_at)
-        : '';
+      const lastMessageTime = conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
 
       const unreadBadge = conversation.unread_count
         ? `<span class="unread-count">${conversation.unread_count}</span>`
@@ -866,9 +1077,7 @@ class ChatClient {
     const chatHeader = document.getElementById('chatHeader');
     if (!chatHeader || !this.currentConversationId) return;
 
-    const conversation = this.conversations.find(
-      (c) => c.id === this.currentConversationId
-    );
+    const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
     if (!conversation) return;
 
     const displayName = conversation.is_group
@@ -912,20 +1121,15 @@ class ChatClient {
   }
 
   getConversationDisplayName(conversation: Conversation): string {
-    const otherParticipant = conversation.participants.find(
-      (p) => p.id !== this.currentUserId
-    );
+    const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
     return otherParticipant
-      ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() ||
-          otherParticipant.username
+      ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username
       : 'Unknown';
   }
 
   getParticipantStatus(conversation: Conversation): string {
-    const otherParticipant = conversation.participants.find(
-      (p) => p.id !== this.currentUserId
-    );
-    
+    const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
+
     if (!otherParticipant) return '';
 
     switch (otherParticipant.status) {
@@ -946,7 +1150,7 @@ class ChatClient {
     const userList = document.getElementById('userList');
     if (userList) {
       userList.innerHTML = '';
-      
+
       this.availableUsers.forEach((user) => {
         if (user.id === this.currentUserId) return;
 
@@ -980,7 +1184,7 @@ class ChatClient {
 
   async createConversation(): Promise<void> {
     const selectedUsers = Array.from(
-      document.querySelectorAll<HTMLInputElement>('#userList input[type="checkbox"]:checked')
+      document.querySelectorAll<HTMLInputElement>('#userList input[type="checkbox"]:checked'),
     ).map((input) => parseInt(input.value));
 
     if (selectedUsers.length === 0) {
@@ -1008,12 +1212,10 @@ class ChatClient {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         this.showNotification(
-          isGroup
-            ? 'Gruppenchat erfolgreich erstellt'
-            : 'Unterhaltung erfolgreich erstellt',
-          'success'
+          isGroup ? 'Gruppenchat erfolgreich erstellt' : 'Unterhaltung erfolgreich erstellt',
+          'success',
         );
         this.closeModal('newConversationModal');
 
@@ -1039,33 +1241,28 @@ class ChatClient {
     }
 
     try {
-      const response = await fetch(
-        `/api/chat/conversations/${this.currentConversationId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/chat/conversations/${this.currentConversationId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
 
       if (response.ok) {
         this.showNotification('Unterhaltung gelöscht', 'success');
-        
+
         // Remove from list
-        this.conversations = this.conversations.filter(
-          (c) => c.id !== this.currentConversationId
-        );
-        
+        this.conversations = this.conversations.filter((c) => c.id !== this.currentConversationId);
+
         this.currentConversationId = null;
         this.renderConversationList();
-        
+
         // Clear chat
         const messagesContainer = document.getElementById('messagesContainer');
         if (messagesContainer) {
           messagesContainer.innerHTML = '';
         }
-        
+
         // Show conversation list on mobile
         this.showConversationsList();
       } else {
@@ -1152,9 +1349,7 @@ class ChatClient {
           this.showEmojiCategory(categoryName);
 
           // Update active state
-          document
-            .querySelectorAll('.emoji-category')
-            .forEach((cat) => cat.classList.remove('active'));
+          document.querySelectorAll('.emoji-category').forEach((cat) => cat.classList.remove('active'));
           target.classList.add('active');
         }
       });
@@ -1207,7 +1402,7 @@ class ChatClient {
           JSON.stringify({
             type: 'ping',
             data: { timestamp: new Date().toISOString() },
-          })
+          }),
         );
       }
     }, 30000); // Every 30 seconds
@@ -1222,7 +1417,7 @@ class ChatClient {
         JSON.stringify({
           type: 'typing_start',
           data: { conversationId: this.currentConversationId },
-        })
+        }),
       );
     }
 
@@ -1230,14 +1425,14 @@ class ChatClient {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer);
     }
-    
+
     this.typingTimer = setTimeout(() => {
       if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(
           JSON.stringify({
             type: 'typing_stop',
             data: { conversationId: this.currentConversationId },
-          })
+          }),
         );
       }
     }, 2000);
@@ -1247,13 +1442,13 @@ class ChatClient {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer);
     }
-    
+
     if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
           type: 'typing_stop',
           data: { conversationId: this.currentConversationId },
-        })
+        }),
       );
     }
   }
@@ -1262,10 +1457,8 @@ class ChatClient {
     const typingIndicator = document.getElementById('typingIndicator');
     if (!typingIndicator) return;
 
-    const conversation = this.conversations.find(
-      (c) => c.id === this.currentConversationId
-    );
-    
+    const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
+
     if (!conversation || !conversation.typing_users || conversation.typing_users.length === 0) {
       typingIndicator.style.display = 'none';
       return;
@@ -1280,9 +1473,7 @@ class ChatClient {
 
     if (typingUsers.length > 0) {
       typingIndicator.style.display = 'block';
-      typingIndicator.textContent = `${typingUsers.join(', ')} ${
-        typingUsers.length === 1 ? 'tippt' : 'tippen'
-      }...`;
+      typingIndicator.textContent = `${typingUsers.join(', ')} ${typingUsers.length === 1 ? 'tippt' : 'tippen'}...`;
     } else {
       typingIndicator.style.display = 'none';
     }
@@ -1294,7 +1485,7 @@ class ChatClient {
         JSON.stringify({
           type: 'mark_read',
           data: { messageId },
-        })
+        }),
       );
     }
   }
@@ -1304,7 +1495,7 @@ class ChatClient {
     if (!textarea) return;
 
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
   }
 
   updateConnectionStatus(connected: boolean): void {
@@ -1354,7 +1545,43 @@ class ChatClient {
   }
 
   startTypingTimer(): void {
-    // Placeholder for typing timer initialization
+    let typingTimer: NodeJS.Timeout | null = null;
+    let isTyping = false;
+    
+    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
+    if (!messageInput) return;
+    
+    messageInput.addEventListener('input', () => {
+      if (!isTyping && this.currentConversationId) {
+        isTyping = true;
+        // Send typing started event
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+          this.socket.send(JSON.stringify({
+            type: 'typing',
+            data: { conversationId: this.currentConversationId }
+          }));
+        }
+      }
+      
+      // Clear existing timer
+      if (typingTimer) {
+        clearTimeout(typingTimer);
+      }
+      
+      // Set new timer to stop typing after 2 seconds
+      typingTimer = setTimeout(() => {
+        if (isTyping && this.currentConversationId) {
+          isTyping = false;
+          // Send typing stopped event
+          if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({
+              type: 'stop_typing',
+              data: { conversationId: this.currentConversationId }
+            }));
+          }
+        }
+      }, 2000);
+    });
   }
 
   toggleSearch(): void {
@@ -1409,7 +1636,7 @@ class ChatClient {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 }
 
@@ -1418,7 +1645,7 @@ let chatClient: ChatClient | null = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   chatClient = new ChatClient();
-  
+
   // Export to window for backwards compatibility
   if (typeof window !== 'undefined') {
     (window as any).chatClient = chatClient;

@@ -97,11 +97,7 @@
         left: 0;
         right: 0;
         height: 3px;
-        background: linear-gradient(
-          90deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
         opacity: 0;
         transition: opacity 0.3s ease;
       }
@@ -139,11 +135,7 @@
         content: '';
         width: 4px;
         height: 20px;
-        background: linear-gradient(
-          180deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
         border-radius: 2px;
       }
 
@@ -498,11 +490,7 @@
 
       /* Second-Level Button für Upload (mit Gradient) */
       .btn-primary {
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--primary-hover)
-        );
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
         color: white;
         position: relative;
         overflow: hidden;
@@ -518,12 +506,7 @@
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s ease;
       }
 
@@ -624,34 +607,23 @@
         }
       }
     </style>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
     <!-- Header -->
     <header class="header">
       <a href="/admin-dashboard" class="logo-container">
-        <img
-          src="/assets/images/logo.png"
-          alt="Assixx Logo"
-          class="logo"
-          style="height: 40px; width: auto; filter: none"
-        />
+        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -674,11 +646,7 @@
           <h1 class="page-title">Dokument hochladen</h1>
         </div>
 
-        <div
-          id="upload-success"
-          class="alert alert-success"
-          style="display: none"
-        >
+        <div id="upload-success" class="alert alert-success" style="display: none">
           <span class="icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -695,16 +663,12 @@
         <div id="upload-error" class="alert alert-danger" style="display: none">
           <span class="icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-              />
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
             </svg>
           </span>
           <div>
             <strong>Fehler!</strong>
-            <p id="error-message">
-              Beim Hochladen des Dokuments ist ein Fehler aufgetreten.
-            </p>
+            <p id="error-message">Beim Hochladen des Dokuments ist ein Fehler aufgetreten.</p>
           </div>
         </div>
 
@@ -717,223 +681,74 @@
               <div class="form-row">
                 <div class="form-col">
                   <div class="form-group">
-                    <label for="user-select" class="form-label"
-                      >Mitarbeiter auswählen</label
-                    >
+                    <label for="user-select" class="form-label">Mitarbeiter auswählen</label>
                     <div class="custom-dropdown">
-                      <div
-                        class="dropdown-display placeholder"
-                        id="userDisplay"
-                        onclick="toggleDropdown('user')"
-                      >
+                      <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
                         <span>Bitte Mitarbeiter auswählen</span>
-                        <svg
-                          width="12"
-                          height="8"
-                          viewBox="0 0 12 8"
-                          fill="none"
-                        >
-                          <path
-                            d="M1 1L6 6L11 1"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                          />
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                       </div>
                       <div class="dropdown-options" id="userDropdown">
                         <!-- Wird dynamisch befüllt -->
                       </div>
-                      <input
-                        type="hidden"
-                        name="userId"
-                        id="userValue"
-                        required
-                      />
+                      <input type="hidden" name="userId" id="userValue" required />
                     </div>
                   </div>
 
                   <div class="form-group">
-                    <label for="category-select" class="form-label"
-                      >Kategorie</label
-                    >
+                    <label for="category-select" class="form-label">Kategorie</label>
                     <div class="custom-dropdown">
-                      <div
-                        class="dropdown-display placeholder"
-                        id="categoryDisplay"
-                        onclick="toggleDropdown('category')"
-                      >
+                      <div class="dropdown-display placeholder" id="categoryDisplay" onclick="toggleDropdown('category')">
                         <span>Bitte Kategorie auswählen</span>
-                        <svg
-                          width="12"
-                          height="8"
-                          viewBox="0 0 12 8"
-                          fill="none"
-                        >
-                          <path
-                            d="M1 1L6 6L11 1"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                          />
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                       </div>
                       <div class="dropdown-options" id="categoryDropdown">
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')"
-                        >
+                        <div class="dropdown-option" onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')">
                           Gehaltsabrechnung
                         </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('category', 'contract', 'Vertrag')"
-                        >
-                          Vertrag
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')"
-                        >
+                        <div class="dropdown-option" onclick="selectOption('category', 'contract', 'Vertrag')">Vertrag</div>
+                        <div class="dropdown-option" onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')">
                           Zertifikat/Zeugnis
                         </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('category', 'other', 'Sonstiges')"
-                        >
-                          Sonstiges
-                        </div>
+                        <div class="dropdown-option" onclick="selectOption('category', 'other', 'Sonstiges')">Sonstiges</div>
                       </div>
-                      <input
-                        type="hidden"
-                        name="category"
-                        id="categoryValue"
-                        required
-                      />
+                      <input type="hidden" name="category" id="categoryValue" required />
                     </div>
                   </div>
                 </div>
 
                 <div class="form-col">
                   <div class="form-group">
-                    <label for="year-input" class="form-label"
-                      >Jahr (optional)</label
-                    >
-                    <input
-                      type="number"
-                      id="year-input"
-                      name="year"
-                      class="form-control"
-                      min="1900"
-                      max="2100"
-                      placeholder="z.B. 2025"
-                    />
+                    <label for="year-input" class="form-label">Jahr (optional)</label>
+                    <input type="number" id="year-input" name="year" class="form-control" min="1900" max="2100" placeholder="z.B. 2025" />
                   </div>
 
                   <div class="form-group">
-                    <label for="month-select" class="form-label"
-                      >Monat (optional)</label
-                    >
+                    <label for="month-select" class="form-label">Monat (optional)</label>
                     <div class="custom-dropdown">
-                      <div
-                        class="dropdown-display placeholder"
-                        id="monthDisplay"
-                        onclick="toggleDropdown('month')"
-                      >
+                      <div class="dropdown-display placeholder" id="monthDisplay" onclick="toggleDropdown('month')">
                         <span>Monat auswählen (optional)</span>
-                        <svg
-                          width="12"
-                          height="8"
-                          viewBox="0 0 12 8"
-                          fill="none"
-                        >
-                          <path
-                            d="M1 1L6 6L11 1"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                          />
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                       </div>
                       <div class="dropdown-options" id="monthDropdown">
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', '', 'Kein Monat')"
-                        >
-                          Kein Monat
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Januar', 'Januar')"
-                        >
-                          Januar
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Februar', 'Februar')"
-                        >
-                          Februar
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'März', 'März')"
-                        >
-                          März
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'April', 'April')"
-                        >
-                          April
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Mai', 'Mai')"
-                        >
-                          Mai
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Juni', 'Juni')"
-                        >
-                          Juni
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Juli', 'Juli')"
-                        >
-                          Juli
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'August', 'August')"
-                        >
-                          August
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'September', 'September')"
-                        >
-                          September
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Oktober', 'Oktober')"
-                        >
-                          Oktober
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'November', 'November')"
-                        >
-                          November
-                        </div>
-                        <div
-                          class="dropdown-option"
-                          onclick="selectOption('month', 'Dezember', 'Dezember')"
-                        >
-                          Dezember
-                        </div>
+                        <div class="dropdown-option" onclick="selectOption('month', '', 'Kein Monat')">Kein Monat</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Januar', 'Januar')">Januar</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Februar', 'Februar')">Februar</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'März', 'März')">März</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'April', 'April')">April</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Mai', 'Mai')">Mai</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Juni', 'Juni')">Juni</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Juli', 'Juli')">Juli</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'August', 'August')">August</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'September', 'September')">September</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Oktober', 'Oktober')">Oktober</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'November', 'November')">November</div>
+                        <div class="dropdown-option" onclick="selectOption('month', 'Dezember', 'Dezember')">Dezember</div>
                       </div>
                       <input type="hidden" name="month" id="monthValue" />
                     </div>
@@ -942,9 +757,7 @@
               </div>
 
               <div class="form-group">
-                <label for="description-input" class="form-label"
-                  >Beschreibung (optional)</label
-                >
+                <label for="description-input" class="form-label">Beschreibung (optional)</label>
                 <textarea
                   id="description-input"
                   name="description"
@@ -956,35 +769,18 @@
 
               <div class="file-drop-area" id="drop-area">
                 <span class="file-icon">
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
-                    />
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
                   </svg>
                 </span>
-                <div class="file-message">
-                  Datei hierher ziehen oder klicken, um auszuwählen
-                </div>
-                <p class="text-secondary">
-                  (Nur PDF-Dateien erlaubt, max. 5MB)
-                </p>
+                <div class="file-message">Datei hierher ziehen oder klicken, um auszuwählen</div>
+                <p class="text-secondary">(Nur PDF-Dateien erlaubt, max. 5MB)</p>
                 <div class="file-restrictions">
-                  <small>Erlaubte Dateitypen: PDF (.pdf)</small><br />
+                  <small>Erlaubte Dateitypen: PDF (.pdf)</small>
+                  <br />
                   <small>Maximale Dateigröße: 5 MB</small>
                 </div>
-                <input
-                  type="file"
-                  id="file-input"
-                  name="document"
-                  class="file-input"
-                  accept=".pdf"
-                  required
-                />
+                <input type="file" id="file-input" name="document" class="file-input" accept=".pdf" required />
               </div>
 
               <div class="file-info" id="file-info">
@@ -995,32 +791,14 @@
               <div class="pdf-preview-container" id="pdf-preview-container">
                 <div class="preview-controls">
                   <span class="preview-title">Dokument-Vorschau</span>
-                  <button
-                    type="button"
-                    class="preview-close"
-                    id="preview-close"
-                  >
-                    ×
-                  </button>
+                  <button type="button" class="preview-close" id="preview-close">×</button>
                 </div>
                 <iframe class="pdf-preview" id="pdf-preview"></iframe>
               </div>
 
-              <div
-                class="form-group"
-                style="text-align: center; margin-top: 30px"
-              >
-                <button
-                  type="submit"
-                  class="btn btn-primary"
-                  id="upload-button"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+              <div class="form-group" style="text-align: center; margin-top: 30px">
+                <button type="submit" class="btn btn-primary" id="upload-button">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path
                       d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z"
                     />
@@ -1060,12 +838,8 @@
 
       // Bestätigungsdialog anzeigen
       function showConfirmationDialog(formData, callback) {
-        const employeeDisplay = document
-          .getElementById('userDisplay')
-          .querySelector('span').textContent;
-        const categoryDisplay = document
-          .getElementById('categoryDisplay')
-          .querySelector('span').textContent;
+        const employeeDisplay = document.getElementById('userDisplay').querySelector('span').textContent;
+        const categoryDisplay = document.getElementById('categoryDisplay').querySelector('span').textContent;
         const fileInput = document.getElementById('file-input');
         const fileName = fileInput.files[0].name;
 
@@ -1076,9 +850,7 @@
           `Dateiname: ${fileName}\n` +
           (formData.get('year') ? `Jahr: ${formData.get('year')}\n` : '') +
           (formData.get('month') ? `Monat: ${formData.get('month')}\n` : '') +
-          (formData.get('description')
-            ? `\nBeschreibung: ${formData.get('description')}`
-            : '');
+          (formData.get('description') ? `\nBeschreibung: ${formData.get('description')}` : '');
 
         if (confirm(confirmMsg)) {
           callback();
@@ -1172,9 +944,7 @@
         ];
 
         // Navigationseinträge filtern und anzeigen
-        const filteredItems = navItems.filter((item) =>
-          item.roles.includes(role)
-        );
+        const filteredItems = navItems.filter((item) => item.roles.includes(role));
         navMenu.innerHTML = filteredItems
           .map(
             (item) => `
@@ -1184,7 +954,7 @@
                         <span>${item.text}</span>
                     </a>
                 </li>
-            `
+            `,
           )
           .join('');
       }
@@ -1248,31 +1018,16 @@
             const fileExt = file.name.split('.').pop().toLowerCase();
 
             // Detaillierte Fehlermeldung basierend auf dem Dateityp
-            if (
-              fileExt === 'jpg' ||
-              fileExt === 'jpeg' ||
-              fileExt === 'png' ||
-              fileExt === 'gif'
-            ) {
-              showError(
-                'Bilddateien sind nicht erlaubt. Bitte konvertieren Sie das Bild in ein PDF-Dokument.'
-              );
+            if (fileExt === 'jpg' || fileExt === 'jpeg' || fileExt === 'png' || fileExt === 'gif') {
+              showError('Bilddateien sind nicht erlaubt. Bitte konvertieren Sie das Bild in ein PDF-Dokument.');
             } else if (fileExt === 'doc' || fileExt === 'docx') {
-              showError(
-                'Word-Dokumente sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.'
-              );
+              showError('Word-Dokumente sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.');
             } else if (fileExt === 'xls' || fileExt === 'xlsx') {
-              showError(
-                'Excel-Dateien sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.'
-              );
+              showError('Excel-Dateien sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.');
             } else if (fileExt === 'txt') {
-              showError(
-                'Textdateien sind nicht erlaubt. Bitte konvertieren Sie die Datei in ein PDF-Dokument.'
-              );
+              showError('Textdateien sind nicht erlaubt. Bitte konvertieren Sie die Datei in ein PDF-Dokument.');
             } else {
-              showError(
-                `Dateityp "${fileExt}" wird nicht unterstützt. Nur PDF-Dateien sind erlaubt.`
-              );
+              showError(`Dateityp "${fileExt}" wird nicht unterstützt. Nur PDF-Dateien sind erlaubt.`);
             }
 
             // Dateiauswahl zurücksetzen
@@ -1287,9 +1042,7 @@
           // Überprüfen Sie die Dateigröße (max. 5 MB)
           const maxSize = 5 * 1024 * 1024; // 5 MB in Bytes
           if (file.size > maxSize) {
-            showError(
-              `Die Datei ist zu groß (${formatFileSize(file.size)}). Die maximale Dateigröße beträgt 5 MB.`
-            );
+            showError(`Die Datei ist zu groß (${formatFileSize(file.size)}). Die maximale Dateigröße beträgt 5 MB.`);
 
             // Dateiauswahl zurücksetzen
             const fileInput = document.getElementById('file-input');
@@ -1308,9 +1061,7 @@
           fileInfo.classList.add('active');
 
           // PDF-Vorschau erstellen
-          const pdfPreviewContainer = document.getElementById(
-            'pdf-preview-container'
-          );
+          const pdfPreviewContainer = document.getElementById('pdf-preview-container');
           const pdfPreview = document.getElementById('pdf-preview');
           const previewClose = document.getElementById('preview-close');
 
@@ -1343,9 +1094,7 @@
           const sizes = ['Bytes', 'KB', 'MB', 'GB'];
           const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-          return (
-            parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-          );
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
       }
 
@@ -1375,12 +1124,7 @@
               const option = document.createElement('div');
               option.className = 'dropdown-option';
               option.textContent = `${employee.first_name} ${employee.last_name}`;
-              option.onclick = () =>
-                selectOption(
-                  'user',
-                  employee.id,
-                  `${employee.first_name} ${employee.last_name}`
-                );
+              option.onclick = () => selectOption('user', employee.id, `${employee.first_name} ${employee.last_name}`);
               userDropdown.appendChild(option);
             });
           } else {
@@ -1408,9 +1152,7 @@
         const fileInput = document.getElementById('file-input');
 
         if (!userId || !category || !fileInput.files.length) {
-          showError(
-            'Bitte füllen Sie alle erforderlichen Felder aus und wählen Sie eine Datei aus.'
-          );
+          showError('Bitte füllen Sie alle erforderlichen Felder aus und wählen Sie eine Datei aus.');
           return;
         }
 
@@ -1448,9 +1190,7 @@
 
               // Datei-Info und Vorschau zurücksetzen
               const fileInfo = document.getElementById('file-info');
-              const pdfPreviewContainer = document.getElementById(
-                'pdf-preview-container'
-              );
+              const pdfPreviewContainer = document.getElementById('pdf-preview-container');
               const pdfPreview = document.getElementById('pdf-preview');
 
               if (fileInfo) {
@@ -1577,12 +1317,8 @@
         // Click-Outside-to-Close
         document.addEventListener('click', function (e) {
           if (!e.target.closest('.custom-dropdown')) {
-            document
-              .querySelectorAll('.dropdown-display')
-              .forEach((d) => d.classList.remove('active'));
-            document
-              .querySelectorAll('.dropdown-options')
-              .forEach((d) => d.classList.remove('active'));
+            document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+            document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
           }
         });
       }

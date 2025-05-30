@@ -145,28 +145,33 @@ router.post(
 );
 
 // Get all employees
-router.get('/employees', authenticateToken, authorizeRole('admin'), async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedAdminRequest;
-    const employees = await User.findByRole(
-      'employee',
-      false,
-      authReq.user.tenant_id
-    );
+router.get(
+  '/employees',
+  authenticateToken,
+  authorizeRole('admin'),
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedAdminRequest;
+      const employees = await User.findByRole(
+        'employee',
+        false,
+        authReq.user.tenant_id
+      );
 
-    console.log(`Retrieved ${employees.length} employees:`, employees);
-    logger.info(`Retrieved ${employees.length} employees`);
+      console.log(`Retrieved ${employees.length} employees:`, employees);
+      logger.info(`Retrieved ${employees.length} employees`);
 
-    res.json(employees);
-  } catch (error: any) {
-    console.error(`Error retrieving employees from DB:`, error);
-    logger.error(`Error retrieving employees: ${error.message}`);
-    res.status(500).json({
-      message: 'Fehler beim Abrufen der Mitarbeiter',
-      error: error.message,
-    });
+      res.json(employees);
+    } catch (error: any) {
+      console.error(`Error retrieving employees from DB:`, error);
+      logger.error(`Error retrieving employees: ${error.message}`);
+      res.status(500).json({
+        message: 'Fehler beim Abrufen der Mitarbeiter',
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 // Get single employee
 router.get(
@@ -374,19 +379,26 @@ router.get(
 // The original file has many more routes - they follow the same pattern
 
 // Get all documents for admin
-router.get('/documents', authenticateToken, authorizeRole('admin'), async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedAdminRequest;
-    const documents = await Document.findAll(authReq.user.tenant_id.toString());
-    res.json(documents);
-  } catch (error: any) {
-    logger.error(`Error retrieving documents: ${error.message}`);
-    res.status(500).json({
-      message: 'Fehler beim Abrufen der Dokumente',
-      error: error.message,
-    });
+router.get(
+  '/documents',
+  authenticateToken,
+  authorizeRole('admin'),
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedAdminRequest;
+      const documents = await Document.findAll(
+        authReq.user.tenant_id.toString()
+      );
+      res.json(documents);
+    } catch (error: any) {
+      logger.error(`Error retrieving documents: ${error.message}`);
+      res.status(500).json({
+        message: 'Fehler beim Abrufen der Dokumente',
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 export default router;
 

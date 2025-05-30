@@ -124,11 +124,7 @@
         left: 0;
         right: 0;
         height: 3px;
-        background: linear-gradient(
-          90deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
         opacity: 0;
         transition: opacity 0.3s ease;
       }
@@ -167,11 +163,7 @@
         content: '';
         width: 4px;
         height: 20px;
-        background: linear-gradient(
-          180deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
         border-radius: 2px;
       }
 
@@ -281,11 +273,7 @@
       }
 
       .btn-primary {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
       }
 
@@ -301,12 +289,7 @@
         left: -50%;
         width: 200%;
         height: 200%;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(255, 255, 255, 0.1) 50%,
-          transparent 70%
-        );
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
         transform: rotate(45deg) translate(-70%, -70%);
         transition: transform 0.6s;
       }
@@ -399,34 +382,23 @@
         animation: subtle-pulse 2s infinite;
       }
     </style>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
     <!-- Header -->
     <header class="header">
       <a href="/admin-dashboard" class="logo-container">
-        <img
-          src="/assets/images/logo.png"
-          alt="Assixx Logo"
-          class="logo"
-          style="height: 40px; width: auto; filter: none"
-        />
+        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -472,19 +444,16 @@
                 <h2 class="card-title">Mitarbeiter</h2>
               </div>
               <div class="compact-content">
-                <button
-                  class="btn btn-primary btn-block mb-3"
-                  id="new-employee-button"
-                  onclick="showEmployeeModal()"
-                >
+                <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
                   Neuer Mitarbeiter
                 </button>
                 <div class="compact-list" id="recent-employees">
                   <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
                 </div>
-                <a href="#" class="view-all-link" id="manage-employees-link"
-                  >Verwalten <span class="arrow">→</span></a
-                >
+                <a href="#" class="view-all-link" id="manage-employees-link">
+                  Verwalten
+                  <span class="arrow">→</span>
+                </a>
               </div>
             </div>
 
@@ -494,17 +463,14 @@
                 <h2 class="card-title">Dokumente</h2>
               </div>
               <div class="compact-content">
-                <a
-                  href="/document-upload"
-                  class="btn btn-primary btn-block mb-3"
-                  >Dokument hochladen</a
-                >
+                <a href="/document-upload" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
                 <div class="compact-list" id="recent-documents">
                   <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
                 </div>
-                <a href="#" class="view-all-link" id="manage-documents-link"
-                  >Verwalten <span class="arrow">→</span></a
-                >
+                <a href="#" class="view-all-link" id="manage-documents-link">
+                  Verwalten
+                  <span class="arrow">→</span>
+                </a>
               </div>
             </div>
 
@@ -514,18 +480,14 @@
                 <h2 class="card-title">Abteilungen</h2>
               </div>
               <div class="compact-content">
-                <button
-                  class="btn btn-primary btn-block mb-3"
-                  onclick="showDepartmentModal()"
-                >
-                  Neue Abteilung
-                </button>
+                <button class="btn btn-primary btn-block mb-3" onclick="showDepartmentModal()">Neue Abteilung</button>
                 <div class="compact-list" id="department-list">
                   <!-- Wird dynamisch gefüllt -->
                 </div>
-                <a href="#" class="view-all-link" id="manage-departments-link"
-                  >Verwalten <span class="arrow">→</span></a
-                >
+                <a href="#" class="view-all-link" id="manage-departments-link">
+                  Verwalten
+                  <span class="arrow">→</span>
+                </a>
               </div>
             </div>
 
@@ -535,18 +497,14 @@
                 <h2 class="card-title">Teams</h2>
               </div>
               <div class="compact-content">
-                <button
-                  class="btn btn-primary btn-block mb-3"
-                  onclick="showTeamModal()"
-                >
-                  Neues Team
-                </button>
+                <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
                 <div class="compact-list" id="team-list">
                   <!-- Wird dynamisch gefüllt -->
                 </div>
-                <a href="#" class="view-all-link" onclick="showAllTeams()"
-                  >Verwalten <span class="arrow">→</span></a
-                >
+                <a href="#" class="view-all-link" onclick="showAllTeams()">
+                  Verwalten
+                  <span class="arrow">→</span>
+                </a>
               </div>
             </div>
 
@@ -556,9 +514,7 @@
                 <h2 class="card-title">Kalender</h2>
               </div>
               <div class="compact-content">
-                <a href="/calendar" class="btn btn-primary btn-block mb-3"
-                  >Kalender öffnen</a
-                >
+                <a href="/calendar" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
                 <div class="compact-list" id="calendar-events-list">
                   <!-- Wird dynamisch gefüllt -->
                   <div class="list-item">
@@ -568,9 +524,10 @@
                     </div>
                   </div>
                 </div>
-                <a href="/calendar" class="view-all-link"
-                  >Alle anzeigen <span class="arrow">→</span></a
-                >
+                <a href="/calendar" class="view-all-link">
+                  Alle anzeigen
+                  <span class="arrow">→</span>
+                </a>
               </div>
             </div>
           </div>
@@ -604,11 +561,7 @@
         </section>
 
         <!-- Payslips Section -->
-        <section
-          id="payslips-section"
-          class="content-section"
-          style="display: none"
-        >
+        <section id="payslips-section" class="content-section" style="display: none">
           <h1>Gehaltsabrechnungen</h1>
           <div class="card mb-4">
             <div class="card-header">
@@ -617,45 +570,23 @@
             <form id="payslip-upload-form" enctype="multipart/form-data">
               <div class="form-group">
                 <label class="form-label">Mitarbeiter auswählen</label>
-                <select
-                  name="employeeId"
-                  id="payslip-employee-select"
-                  class="form-control"
-                  required
-                >
+                <select name="employeeId" id="payslip-employee-select" class="form-control" required>
                   <option value="">Bitte wählen...</option>
                 </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Monat</label>
-                <input
-                  type="month"
-                  name="month"
-                  class="form-control"
-                  required
-                />
+                <input type="month" name="month" class="form-control" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Datei auswählen (PDF)</label>
-                <input
-                  type="file"
-                  name="file"
-                  class="form-control"
-                  accept="application/pdf"
-                  required
-                />
+                <input type="file" name="file" class="form-control" accept="application/pdf" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Beschreibung</label>
-                <textarea
-                  name="description"
-                  class="form-control"
-                  rows="2"
-                ></textarea>
+                <textarea name="description" class="form-control" rows="2"></textarea>
               </div>
-              <button type="submit" class="btn btn-primary">
-                Gehaltsabrechnung hochladen
-              </button>
+              <button type="submit" class="btn btn-primary">Gehaltsabrechnung hochladen</button>
             </form>
           </div>
 
@@ -683,51 +614,22 @@
         </section>
 
         <!-- Employees Section -->
-        <section
-          id="employees-section"
-          class="content-section"
-          style="display: none"
-        >
+        <section id="employees-section" class="content-section" style="display: none">
           <h1>Mitarbeiterverwaltung</h1>
-          <button
-            class="btn btn-primary mb-3"
-            id="employees-section-new-button"
-            onclick="showEmployeeModal()"
-          >
-            Neuer Mitarbeiter
-          </button>
+          <button class="btn btn-primary mb-3" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Mitarbeiterübersicht</h2>
             </div>
             <div class="flex-between mb-3">
               <div class="filter-buttons">
-                <button id="show-all-employees" class="btn btn-sm btn-primary">
-                  Alle anzeigen
-                </button>
-                <button
-                  id="filter-employees-active"
-                  class="btn btn-sm btn-secondary"
-                >
-                  Aktive anzeigen
-                </button>
-                <button
-                  id="filter-employees-inactive"
-                  class="btn btn-sm btn-secondary"
-                >
-                  Inaktive anzeigen
-                </button>
+                <button id="show-all-employees" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                <button id="filter-employees-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                <button id="filter-employees-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
               </div>
               <div class="search-container">
-                <input
-                  type="text"
-                  id="employee-search"
-                  class="search-input"
-                  placeholder="Name, E-Mail oder Position..."
-                />
-                <button id="employee-search-btn" class="btn btn-secondary">
-                  Suchen
-                </button>
+                <input type="text" id="employee-search" class="search-input" placeholder="Name, E-Mail oder Position..." />
+                <button id="employee-search-btn" class="btn btn-secondary">Suchen</button>
               </div>
             </div>
 
@@ -753,45 +655,20 @@
         </section>
 
         <!-- Documents Section -->
-        <section
-          id="documents-section"
-          class="content-section"
-          style="display: none"
-        >
+        <section id="documents-section" class="content-section" style="display: none">
           <h1>Dokumentenverwaltung</h1>
           <div class="flex-between mb-3">
-            <a href="/document-upload" class="btn btn-primary"
-              >Dokument hochladen</a
-            >
+            <a href="/document-upload" class="btn btn-primary">Dokument hochladen</a>
             <div class="search-container">
-              <input
-                type="text"
-                id="document-search"
-                class="search-input"
-                placeholder="Dokumentname, Mitarbeiter oder Kategorie..."
-              />
-              <button id="document-search-btn" class="btn btn-secondary">
-                Suchen
-              </button>
+              <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
+              <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
             </div>
           </div>
 
           <div class="mb-3">
-            <button id="show-all-documents" class="btn btn-sm btn-secondary">
-              Alle anzeigen
-            </button>
-            <button
-              id="filter-documents-archived"
-              class="btn btn-sm btn-secondary"
-            >
-              Archivierte anzeigen
-            </button>
-            <button
-              id="filter-documents-active"
-              class="btn btn-sm btn-secondary"
-            >
-              Aktive anzeigen
-            </button>
+            <button id="show-all-documents" class="btn btn-sm btn-secondary">Alle anzeigen</button>
+            <button id="filter-documents-archived" class="btn btn-sm btn-secondary">Archivierte anzeigen</button>
+            <button id="filter-documents-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
           </div>
 
           <div class="card">
@@ -819,15 +696,9 @@
         </section>
 
         <!-- Departments Section -->
-        <section
-          id="departments-section"
-          class="content-section"
-          style="display: none"
-        >
+        <section id="departments-section" class="content-section" style="display: none">
           <h1>Abteilungsverwaltung</h1>
-          <button class="btn btn-primary mb-3" id="direct-department-button">
-            Neue Abteilung
-          </button>
+          <button class="btn btn-primary mb-3" id="direct-department-button">Neue Abteilung</button>
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Abteilungsübersicht</h2>
@@ -855,15 +726,9 @@
         </section>
 
         <!-- Teams Section -->
-        <section
-          id="teams-section"
-          class="content-section"
-          style="display: none"
-        >
+        <section id="teams-section" class="content-section" style="display: none">
           <h1>Teamverwaltung</h1>
-          <button class="btn btn-primary mb-3" onclick="showTeamModal()">
-            Neues Team
-          </button>
+          <button class="btn btn-primary mb-3" onclick="showTeamModal()">Neues Team</button>
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Teamübersicht</h2>
@@ -888,11 +753,7 @@
         </section>
 
         <!-- Settings Section -->
-        <section
-          id="settings-section"
-          class="content-section"
-          style="display: none"
-        >
+        <section id="settings-section" class="content-section" style="display: none">
           <h1>Einstellungen</h1>
           <div class="card">
             <div class="card-header">
@@ -910,9 +771,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neue Abteilung</h3>
-          <button class="modal-close" onclick="hideModal('department-modal')">
-            &times;
-          </button>
+          <button class="modal-close" onclick="hideModal('department-modal')">&times;</button>
         </div>
         <form id="department-form">
           <div class="form-group">
@@ -921,11 +780,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Beschreibung</label>
-            <textarea
-              name="description"
-              class="form-control"
-              rows="3"
-            ></textarea>
+            <textarea name="description" class="form-control" rows="3"></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Status</label>
@@ -941,9 +796,7 @@
               <option value="private">Privat</option>
             </select>
           </div>
-          <button type="submit" class="btn btn-primary">
-            Abteilung erstellen
-          </button>
+          <button type="submit" class="btn btn-primary">Abteilung erstellen</button>
         </form>
       </div>
     </div>
@@ -962,11 +815,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Beschreibung</label>
-            <textarea
-              name="description"
-              class="form-control"
-              rows="3"
-            ></textarea>
+            <textarea name="description" class="form-control" rows="3"></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Abteilung</label>
@@ -981,12 +830,7 @@
     </div>
 
     <!-- Employee Modal -->
-    <div
-      id="employee-modal"
-      class="modal"
-      style="display: none"
-      data-debug="employee-modal"
-    >
+    <div id="employee-modal" class="modal" style="display: none" data-debug="employee-modal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neuer Mitarbeiter</h3>
@@ -999,64 +843,27 @@
           </div>
           <div class="form-group">
             <label class="form-label">E-Mail</label>
-            <input
-              type="email"
-              name="email"
-              id="email"
-              class="form-control"
-              required
-            />
+            <input type="email" name="email" id="email" class="form-control" required />
           </div>
           <div class="form-group">
             <label class="form-label">E-Mail bestätigen</label>
-            <input
-              type="email"
-              name="email_confirm"
-              id="email_confirm"
-              class="form-control"
-              required
-            />
-            <small
-              id="email-error"
-              class="error-message"
-              style="color: red; display: none"
-              >Die E-Mail-Adressen stimmen nicht überein</small
-            >
+            <input type="email" name="email_confirm" id="email_confirm" class="form-control" required />
+            <small id="email-error" class="error-message" style="color: red; display: none">
+              Die E-Mail-Adressen stimmen nicht überein
+            </small>
           </div>
           <div class="form-group">
             <label class="form-label">Passwort</label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              class="form-control"
-              required
-            />
+            <input type="password" name="password" id="password" class="form-control" required />
           </div>
           <div class="form-group">
             <label class="form-label">Passwort bestätigen</label>
-            <input
-              type="password"
-              name="password_confirm"
-              id="password_confirm"
-              class="form-control"
-              required
-            />
-            <small
-              id="password-error"
-              class="error-message"
-              style="color: red; display: none"
-              >Die Passwörter stimmen nicht überein</small
-            >
+            <input type="password" name="password_confirm" id="password_confirm" class="form-control" required />
+            <small id="password-error" class="error-message" style="color: red; display: none">Die Passwörter stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Vorname</label>
-            <input
-              type="text"
-              name="first_name"
-              class="form-control"
-              required
-            />
+            <input type="text" name="first_name" class="form-control" required />
           </div>
           <div class="form-group">
             <label class="form-label">Nachname</label>
@@ -1064,14 +871,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Alter</label>
-            <input
-              type="number"
-              name="age"
-              class="form-control"
-              min="18"
-              max="100"
-              required
-            />
+            <input type="number" name="age" class="form-control" min="18" max="100" required />
           </div>
           <!-- Mitarbeiter-ID wird automatisch generiert -->
           <!-- IBAN-Feld wurde entfernt -->
@@ -1081,26 +881,14 @@
           </div>
           <div class="form-group">
             <label class="form-label">Abteilung</label>
-            <select
-              name="department_id"
-              class="form-control"
-              id="employee-department-select"
-            >
+            <select name="department_id" class="form-control" id="employee-department-select">
               <option value="">Keine Abteilung</option>
               <!-- Wird dynamisch gefüllt -->
             </select>
           </div>
           <div class="button-group">
-            <button type="submit" class="btn btn-primary">
-              Mitarbeiter erstellen
-            </button>
-            <button
-              type="button"
-              class="btn btn-secondary"
-              id="cancel-employee-button"
-            >
-              Abbrechen
-            </button>
+            <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
+            <button type="button" class="btn btn-secondary" id="cancel-employee-button">Abbrechen</button>
           </div>
         </form>
       </div>
@@ -1111,19 +899,12 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Dokument hochladen</h3>
-          <button class="modal-close" onclick="hideModal('document-modal')">
-            &times;
-          </button>
+          <button class="modal-close" onclick="hideModal('document-modal')">&times;</button>
         </div>
         <form id="document-upload-form" enctype="multipart/form-data">
           <div class="form-group">
             <label class="form-label">Mitarbeiter auswählen</label>
-            <select
-              name="employeeId"
-              id="upload-employee-select"
-              class="form-control"
-              required
-            >
+            <select name="employeeId" id="upload-employee-select" class="form-control" required>
               <option value="">Bitte wählen...</option>
             </select>
           </div>
@@ -1138,17 +919,9 @@
           </div>
           <div class="form-group">
             <label class="form-label">Datei auswählen</label>
-            <input
-              type="file"
-              name="document"
-              class="form-control"
-              accept="application/pdf"
-              required
-            />
+            <input type="file" name="document" class="form-control" accept="application/pdf" required />
           </div>
-          <button type="submit" class="btn btn-primary">
-            Dokument hochladen
-          </button>
+          <button type="submit" class="btn btn-primary">Dokument hochladen</button>
         </form>
       </div>
     </div>
@@ -1264,18 +1037,12 @@
       console.log('Adding direct event listeners');
       document.addEventListener('DOMContentLoaded', () => {
         // Event-Listener für das Schließen des Mitarbeiter-Modals
-        const closeEmployeeModalBtn = document.getElementById(
-          'close-employee-modal'
-        );
-        const cancelEmployeeBtn = document.getElementById(
-          'cancel-employee-button'
-        );
+        const closeEmployeeModalBtn = document.getElementById('close-employee-modal');
+        const cancelEmployeeBtn = document.getElementById('cancel-employee-button');
         const employeeModal = document.getElementById('employee-modal');
 
         if (closeEmployeeModalBtn && employeeModal) {
-          console.log(
-            'Close employee modal button found, adding event listener'
-          );
+          console.log('Close employee modal button found, adding event listener');
           closeEmployeeModalBtn.addEventListener('click', function () {
             console.log('Close button clicked, hiding employee modal');
             employeeModal.style.display = 'none';
@@ -1309,19 +1076,11 @@
 
         // Spezieller Listener für den Dokument-Upload-Button
         const docUploadBtn = document.querySelector('button[type="submit"]');
-        if (
-          docUploadBtn &&
-          docUploadBtn.textContent.includes('Gehaltsabrechnung hochladen')
-        ) {
-          console.log(
-            'Dokument Upload Button gefunden:',
-            docUploadBtn.textContent
-          );
+        if (docUploadBtn && docUploadBtn.textContent.includes('Gehaltsabrechnung hochladen')) {
+          console.log('Dokument Upload Button gefunden:', docUploadBtn.textContent);
           // Button ist bereits Teil eines Formulars, kein zusätzlicher Listener nötig
         } else {
-          console.log(
-            'Dokument Upload Button ist ein Submit-Button im Formular'
-          );
+          console.log('Dokument Upload Button ist ein Submit-Button im Formular');
         }
 
         // Direkter Link für Sidebar-Links
@@ -1335,13 +1094,10 @@
               e.preventDefault();
               e.stopPropagation();
               console.log('Showing departments section');
-              document
-                .querySelectorAll('.content-section')
-                .forEach((section) => {
-                  section.style.display = 'none';
-                });
-              document.getElementById('departments-section').style.display =
-                'block';
+              document.querySelectorAll('.content-section').forEach((section) => {
+                section.style.display = 'none';
+              });
+              document.getElementById('departments-section').style.display = 'block';
 
               // Update active state
               document.querySelectorAll('.sidebar-item').forEach((item) => {
@@ -1353,9 +1109,7 @@
         });
 
         // Direkter Listener für den Abteilungs-Button
-        const departmentBtn = document.getElementById(
-          'direct-department-button'
-        );
+        const departmentBtn = document.getElementById('direct-department-button');
         if (departmentBtn) {
           console.log('Department button found');
           departmentBtn.addEventListener('click', function () {
@@ -1374,9 +1128,7 @@
         }
 
         // Listener für "Abteilungen verwalten" Link
-        const manageDepartmentsLink = document.getElementById(
-          'manage-departments-link'
-        );
+        const manageDepartmentsLink = document.getElementById('manage-departments-link');
         if (manageDepartmentsLink) {
           console.log('Manage departments link found');
           manageDepartmentsLink.addEventListener('click', function (e) {
@@ -1386,8 +1138,7 @@
             document.querySelectorAll('.content-section').forEach((section) => {
               section.style.display = 'none';
             });
-            document.getElementById('departments-section').style.display =
-              'block';
+            document.getElementById('departments-section').style.display = 'block';
 
             // Update active state in sidebar
             document.querySelectorAll('.sidebar-item').forEach((item) => {
@@ -1455,7 +1206,7 @@
                                     <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${dept.id})">Löschen</button>
                                 </td>
                             </tr>
-                        `
+                        `,
                 )
                 .join('');
             } else {
@@ -1471,9 +1222,7 @@
 
       // Abteilung-Status wechseln
       async function toggleDepartmentStatus(departmentId, currentStatus) {
-        console.log(
-          `Toggling department ${departmentId} status from ${currentStatus}`
-        );
+        console.log(`Toggling department ${departmentId} status from ${currentStatus}`);
         const token = localStorage.getItem('token');
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
@@ -1488,9 +1237,7 @@
           });
 
           if (response.ok) {
-            alert(
-              `Abteilung wurde ${newStatus === 'active' ? 'aktiviert' : 'deaktiviert'}`
-            );
+            alert(`Abteilung wurde ${newStatus === 'active' ? 'aktiviert' : 'deaktiviert'}`);
             loadDepartmentsTable();
           } else {
             const error = await response.json();
@@ -1614,9 +1361,7 @@
       // Abteilung löschen
       async function deleteDepartment(departmentId) {
         console.log(`Deleting department ${departmentId}`);
-        if (
-          !confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')
-        ) {
+        if (!confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')) {
           return;
         }
 
@@ -1713,9 +1458,7 @@
             document.body.insertAdjacentHTML('beforeend', modalHTML);
 
             // Lade Abteilungen für das Select-Feld
-            const departmentSelect = document.getElementById(
-              'edit-employee-department-select'
-            );
+            const departmentSelect = document.getElementById('edit-employee-department-select');
             if (departmentSelect) {
               // Hilfsfunktion zum Laden der Abteilungen
               const loadDepts = async () => {
@@ -1734,7 +1477,7 @@
                                             <option value="${dept.id}" ${dept.id == employee.department_id ? 'selected' : ''}>
                                                 ${dept.name}
                                             </option>
-                                        `
+                                        `,
                         )
                         .join('');
                   }
@@ -1804,11 +1547,7 @@
       // Mitarbeiter löschen
       async function deleteEmployee(employeeId) {
         console.log(`Deleting employee ${employeeId}`);
-        if (
-          !confirm(
-            'Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten? Dies kann nicht rückgängig gemacht werden.'
-          )
-        ) {
+        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten? Dies kann nicht rückgängig gemacht werden.')) {
           return;
         }
 
@@ -1839,24 +1578,19 @@
 
       // Mitarbeiterstatus ändern
       async function toggleEmployeeStatus(employeeId, currentStatus) {
-        console.log(
-          `Toggling employee ${employeeId} status from ${currentStatus}`
-        );
+        console.log(`Toggling employee ${employeeId} status from ${currentStatus}`);
         const token = localStorage.getItem('token');
         const newStatus = currentStatus === 'inactive' ? 'active' : 'inactive';
 
         try {
-          const response = await fetch(
-            `/admin/toggle-employee-status/${employeeId}`,
-            {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ status: newStatus }),
-            }
-          );
+          const response = await fetch(`/admin/toggle-employee-status/${employeeId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status: newStatus }),
+          });
 
           if (response.ok) {
             alert(`Mitarbeiterstatus wurde zu "${newStatus}" geändert`);
@@ -1913,17 +1647,13 @@
       // Logo und Übersicht verarbeiten
       document.addEventListener('DOMContentLoaded', () => {
         // Logo-Klick behandeln
-        document
-          .querySelector('.logo-container')
-          .addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.reload();
-          });
+        document.querySelector('.logo-container').addEventListener('click', (e) => {
+          e.preventDefault();
+          window.location.reload();
+        });
 
         // Übersicht-Link in der Seitennavigation
-        const dashboardLink = document.querySelector(
-          '.sidebar-link[href="#dashboard"]'
-        );
+        const dashboardLink = document.querySelector('.sidebar-link[href="#dashboard"]');
         if (dashboardLink) {
           dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2016,12 +1746,7 @@
 
       // Modal schließen bei Klick außerhalb
       window.addEventListener('click', function (event) {
-        const modals = [
-          'employee-modal',
-          'document-modal',
-          'department-modal',
-          'team-modal',
-        ];
+        const modals = ['employee-modal', 'document-modal', 'department-modal', 'team-modal'];
         modals.forEach((modalId) => {
           const modal = document.getElementById(modalId);
           if (event.target == modal) {
@@ -2041,7 +1766,7 @@
       }
 
       function showAllDepartments() {
-        showSection('departments');
+        showSection('departments-section');
       }
 
       function showAllTeams() {
@@ -2056,9 +1781,7 @@
         });
 
         // Show the selected section
-        const selectedSection = document.getElementById(
-          sectionName + '-section'
-        );
+        const selectedSection = document.getElementById(sectionName + '-section');
         if (selectedSection) {
           selectedSection.style.display = 'block';
         }
@@ -2074,10 +1797,7 @@
           const hrefAttr = link.getAttribute('href');
 
           // Check if either the onclick contains the sectionName or the href matches the section
-          if (
-            (onclickAttr && onclickAttr.includes(sectionName)) ||
-            (hrefAttr && hrefAttr === '#' + sectionName)
-          ) {
+          if ((onclickAttr && onclickAttr.includes(sectionName)) || (hrefAttr && hrefAttr === '#' + sectionName)) {
             link.parentElement.classList.add('active');
           }
         });

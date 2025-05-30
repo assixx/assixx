@@ -84,29 +84,17 @@
       }
 
       .btn-primary {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
       }
 
       .btn-success {
-        background: linear-gradient(
-          135deg,
-          rgba(76, 175, 80, 0.2),
-          rgba(76, 175, 80, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
         border-color: rgba(76, 175, 80, 0.3);
       }
 
       .btn-danger {
-        background: linear-gradient(
-          135deg,
-          rgba(244, 67, 54, 0.2),
-          rgba(244, 67, 54, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.1));
         border-color: rgba(244, 67, 54, 0.3);
       }
 
@@ -122,12 +110,7 @@
         left: -50%;
         width: 200%;
         height: 200%;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(255, 255, 255, 0.1) 50%,
-          transparent 70%
-        );
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
         transform: rotate(45deg) translate(-70%, -70%);
         transition: transform 0.6s;
       }
@@ -184,10 +167,7 @@
         }
       }
     </style>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -198,19 +178,10 @@
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
-        <button
-          onclick="window.location.href='/admin-dashboard'"
-          class="btn btn-secondary"
-        >
-          Zurück zum Dashboard
-        </button>
+        <button onclick="window.location.href='/admin-dashboard'" class="btn btn-secondary">Zurück zum Dashboard</button>
       </div>
     </header>
 
@@ -223,11 +194,7 @@
           <h2>Tenant Auswahl</h2>
         </div>
         <div class="card-body">
-          <select
-            id="tenant-select"
-            class="form-control"
-            onchange="loadTenantFeatures()"
-          >
+          <select id="tenant-select" class="form-control" onchange="loadTenantFeatures()">
             <option value="">Bitte Tenant wählen...</option>
           </select>
         </div>
@@ -275,12 +242,7 @@
               </div>
               <div class="form-group">
                 <label>Gültig ab</label>
-                <input
-                  type="date"
-                  id="valid-from"
-                  class="form-control"
-                  required
-                />
+                <input type="date" id="valid-from" class="form-control" required />
               </div>
               <div class="form-group">
                 <label>Gültig bis (optional)</label>
@@ -288,36 +250,17 @@
               </div>
               <div class="form-group">
                 <label>Testphase (Tage)</label>
-                <input
-                  type="number"
-                  id="trial-days"
-                  class="form-control"
-                  min="0"
-                  value="0"
-                />
+                <input type="number" id="trial-days" class="form-control" min="0" value="0" />
               </div>
               <div class="form-group">
                 <label>Nutzungslimit (optional)</label>
-                <input
-                  type="number"
-                  id="usage-limit"
-                  class="form-control"
-                  min="0"
-                />
+                <input type="number" id="usage-limit" class="form-control" min="0" />
               </div>
               <div class="form-group">
                 <label>Sonderpreis (optional)</label>
-                <input
-                  type="number"
-                  id="custom-price"
-                  class="form-control"
-                  min="0"
-                  step="0.01"
-                />
+                <input type="number" id="custom-price" class="form-control" min="0" step="0.01" />
               </div>
-              <button type="submit" class="btn btn-primary">
-                Feature aktivieren
-              </button>
+              <button type="submit" class="btn btn-primary">Feature aktivieren</button>
             </form>
           </div>
         </div>
@@ -453,9 +396,7 @@
         const select = document.getElementById('feature-select');
         select.innerHTML = '<option value="">Bitte wählen...</option>';
 
-        const inactiveFeatures = features.filter(
-          (f) => !f.status || f.status === 'disabled' || f.status === 'expired'
-        );
+        const inactiveFeatures = features.filter((f) => !f.status || f.status === 'disabled' || f.status === 'expired');
 
         inactiveFeatures.forEach((feature) => {
           const option = document.createElement('option');
@@ -468,61 +409,54 @@
       // Feature aktivieren Form anzeigen
       function showActivateForm(featureCode) {
         document.getElementById('feature-select').value = featureCode;
-        document
-          .getElementById('activate-feature-form')
-          .scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('activate-feature-form').scrollIntoView({ behavior: 'smooth' });
       }
 
       // Feature aktivieren
-      document
-        .getElementById('activate-feature-form')
-        .addEventListener('submit', async (e) => {
-          e.preventDefault();
+      document.getElementById('activate-feature-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-          const featureCode = document.getElementById('feature-select').value;
-          if (!featureCode) {
-            alert('Bitte ein Feature auswählen');
-            return;
+        const featureCode = document.getElementById('feature-select').value;
+        if (!featureCode) {
+          alert('Bitte ein Feature auswählen');
+          return;
+        }
+
+        const options = {
+          validFrom: document.getElementById('valid-from').value,
+          validUntil: document.getElementById('valid-until').value || null,
+          trialDays: parseInt(document.getElementById('trial-days').value) || 0,
+          usageLimit: parseInt(document.getElementById('usage-limit').value) || null,
+          customPrice: parseFloat(document.getElementById('custom-price').value) || null,
+        };
+
+        try {
+          const response = await fetch('/features/activate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              tenantId: currentTenantId,
+              featureCode,
+              options,
+            }),
+          });
+
+          if (response.ok) {
+            alert('Feature erfolgreich aktiviert');
+            loadTenantFeatures();
+            document.getElementById('activate-feature-form').reset();
+          } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.error}`);
           }
-
-          const options = {
-            validFrom: document.getElementById('valid-from').value,
-            validUntil: document.getElementById('valid-until').value || null,
-            trialDays:
-              parseInt(document.getElementById('trial-days').value) || 0,
-            usageLimit:
-              parseInt(document.getElementById('usage-limit').value) || null,
-            customPrice:
-              parseFloat(document.getElementById('custom-price').value) || null,
-          };
-
-          try {
-            const response = await fetch('/features/activate', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                tenantId: currentTenantId,
-                featureCode,
-                options,
-              }),
-            });
-
-            if (response.ok) {
-              alert('Feature erfolgreich aktiviert');
-              loadTenantFeatures();
-              document.getElementById('activate-feature-form').reset();
-            } else {
-              const error = await response.json();
-              alert(`Fehler: ${error.error}`);
-            }
-          } catch (error) {
-            console.error('Error activating feature:', error);
-            alert('Fehler beim Aktivieren des Features');
-          }
-        });
+        } catch (error) {
+          console.error('Error activating feature:', error);
+          alert('Fehler beim Aktivieren des Features');
+        }
+      });
 
       // Feature deaktivieren
       async function deactivateFeature(featureCode) {
@@ -559,9 +493,7 @@
       // Initialisierung
       document.addEventListener('DOMContentLoaded', () => {
         // Heute als Standard für "Gültig ab"
-        document.getElementById('valid-from').value = new Date()
-          .toISOString()
-          .split('T')[0];
+        document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
 
         loadTenants();
       });

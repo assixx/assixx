@@ -6,34 +6,23 @@
     <title>Archivierte Mitarbeiter - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
     <!-- Header -->
     <header class="header">
       <a href="/admin-dashboard" class="logo-container">
-        <img
-          src="/assets/images/logo.png"
-          alt="Assixx Logo"
-          class="logo"
-          style="height: 40px; width: auto; filter: none"
-        />
+        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -48,12 +37,7 @@
             <li class="sidebar-item">
               <a href="/admin-dashboard" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
                   </svg>
                 </span>
@@ -63,12 +47,7 @@
             <li class="sidebar-item">
               <a href="/admin-dashboard#employees" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path
                       d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
                     />
@@ -80,12 +59,7 @@
             <li class="sidebar-item active">
               <a href="/archived-employees" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path
                       d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"
                     />
@@ -97,15 +71,8 @@
             <li class="sidebar-item">
               <a href="/admin-dashboard#documents" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
-                    />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
                   </svg>
                 </span>
                 <span>Dokumente</span>
@@ -114,15 +81,8 @@
             <li class="sidebar-item">
               <a href="/admin-dashboard#departments" class="sidebar-link">
                 <span class="icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"
-                    />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z" />
                   </svg>
                 </span>
                 <span>Abteilungen</span>
@@ -137,8 +97,8 @@
         <div class="page-header">
           <h1 class="page-title">Archivierte Mitarbeiter</h1>
           <p class="text-secondary">
-            Hier finden Sie alle archivierten Mitarbeiter, die nicht mehr aktiv
-            sind, aber deren Daten und Dokumente noch erhalten bleiben sollen.
+            Hier finden Sie alle archivierten Mitarbeiter, die nicht mehr aktiv sind, aber deren Daten und Dokumente noch erhalten bleiben
+            sollen.
           </p>
         </div>
 
@@ -168,10 +128,7 @@
             </table>
           </div>
 
-          <div
-            id="empty-archive-message"
-            style="display: none; padding: 20px; text-align: center"
-          >
+          <div id="empty-archive-message" style="display: none; padding: 20px; text-align: center">
             <div style="margin-bottom: 20px">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="#999">
                 <path
@@ -191,21 +148,14 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="confirm-modal-title">Bestätigung</h3>
-          <button class="modal-close" onclick="hideModal('confirm-modal')">
-            &times;
-          </button>
+          <button class="modal-close" onclick="hideModal('confirm-modal')">&times;</button>
         </div>
         <div id="confirm-modal-body" class="modal-body">
           <!-- Wird dynamisch gefüllt -->
         </div>
         <div class="modal-footer">
           <button id="confirm-modal-ok" class="btn btn-primary">Ja</button>
-          <button
-            onclick="hideModal('confirm-modal')"
-            class="btn btn-secondary"
-          >
-            Abbrechen
-          </button>
+          <button onclick="hideModal('confirm-modal')" class="btn btn-secondary">Abbrechen</button>
         </div>
       </div>
     </div>
@@ -327,12 +277,8 @@
             console.log(`Loaded ${employees.length} archived employees`);
 
             // Tabelle aktualisieren
-            const tableBody = document.getElementById(
-              'archived-employees-table'
-            );
-            const emptyMessage = document.getElementById(
-              'empty-archive-message'
-            );
+            const tableBody = document.getElementById('archived-employees-table');
+            const emptyMessage = document.getElementById('empty-archive-message');
 
             if (employees.length === 0) {
               // Leere Nachricht anzeigen
@@ -356,15 +302,12 @@
                                     <button class="btn btn-sm btn-danger" onclick="confirmDelete(${emp.id}, '${emp.first_name} ${emp.last_name}')">Endgültig löschen</button>
                                 </td>
                             </tr>
-                        `
+                        `,
                 )
                 .join('');
             }
           } else {
-            console.error(
-              'Error loading archived employees:',
-              response.statusText
-            );
+            console.error('Error loading archived employees:', response.statusText);
             alert('Fehler beim Laden der archivierten Mitarbeiter.');
           }
         } catch (error) {
@@ -376,17 +319,14 @@
       // Mitarbeiter wiederherstellen
       async function unarchiveEmployee(employeeId) {
         try {
-          const response = await fetch(
-            `/admin/unarchive-employee/${employeeId}`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({}),
-            }
-          );
+          const response = await fetch(`/admin/unarchive-employee/${employeeId}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
+          });
 
           if (response.ok) {
             alert('Mitarbeiter erfolgreich wiederhergestellt');
@@ -425,15 +365,12 @@
       // Mitarbeiter endgültig löschen
       async function deleteEmployeeForce(employeeId) {
         try {
-          const response = await fetch(
-            `/admin/delete-employee/${employeeId}/force`,
-            {
-              method: 'DELETE',
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+          const response = await fetch(`/admin/delete-employee/${employeeId}/force`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
           if (response.ok) {
             alert('Mitarbeiter wurde endgültig gelöscht');

@@ -353,11 +353,7 @@
       }
 
       .modal .btn-primary {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
       }
 
@@ -1029,15 +1025,12 @@
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -1053,9 +1046,7 @@
       <main class="main-content">
         <div class="page-header">
           <h1 class="page-title">KVP System</h1>
-          <p class="page-subtitle">
-            Kontinuierlicher Verbesserungsprozess - Gemeinsam besser werden
-          </p>
+          <p class="page-subtitle">Kontinuierlicher Verbesserungsprozess - Gemeinsam besser werden</p>
         </div>
 
         <!-- Main Grid -->
@@ -1067,12 +1058,12 @@
               <h2 class="card-title">Neuen Vorschlag einreichen</h2>
             </div>
             <p class="text-secondary">
-              Haben Sie eine Idee zur Verbesserung? Teilen Sie Ihren Vorschlag
-              mit Fotos und erhalten Sie Feedback!
+              Haben Sie eine Idee zur Verbesserung? Teilen Sie Ihren Vorschlag mit Fotos und erhalten Sie Feedback!
             </p>
             <div style="margin-top: var(--spacing-lg)">
               <button class="btn btn-primary" id="newSuggestionBtn">
-                <i class="fas fa-plus"></i> Vorschlag einreichen
+                <i class="fas fa-plus"></i>
+                Vorschlag einreichen
               </button>
             </div>
           </div>
@@ -1084,8 +1075,7 @@
               <h2 class="card-title">Vorschläge verwalten</h2>
             </div>
             <p class="text-secondary">
-              Als Administrator können Sie den Status von
-              Verbesserungsvorschlägen ändern und Kommentare hinzufügen.
+              Als Administrator können Sie den Status von Verbesserungsvorschlägen ändern und Kommentare hinzufügen.
             </p>
             <div style="margin-top: var(--spacing-lg)">
               <div class="stats-grid">
@@ -1094,9 +1084,7 @@
                   <span class="stat-label">Neue Vorschläge</span>
                 </div>
                 <div class="stat-item">
-                  <span class="stat-number" id="adminPendingSuggestions"
-                    >-</span
-                  >
+                  <span class="stat-number" id="adminPendingSuggestions">-</span>
                   <span class="stat-label">In Bearbeitung</span>
                 </div>
               </div>
@@ -1173,12 +1161,8 @@
                 <span class="stat-label">Auszeichnungen</span>
               </div>
             </div>
-            <p
-              style="margin-top: var(--spacing-md); font-size: 0.9rem"
-              class="text-secondary"
-            >
-              Sammeln Sie Punkte für eingereichte und umgesetzte
-              Verbesserungsvorschläge!
+            <p style="margin-top: var(--spacing-md); font-size: 0.9rem" class="text-secondary">
+              Sammeln Sie Punkte für eingereichte und umgesetzte Verbesserungsvorschläge!
             </p>
           </div>
         </div>
@@ -1197,22 +1181,14 @@
       >
         <div class="modal-header">
           <h3 class="modal-title">Neuen Verbesserungsvorschlag einreichen</h3>
-          <button class="modal-close" onclick="closeNewSuggestionModal()">
-            &times;
-          </button>
+          <button class="modal-close" onclick="closeNewSuggestionModal()">&times;</button>
         </div>
 
         <div class="modal-form-content">
           <form id="newSuggestionForm" enctype="multipart/form-data">
             <div class="form-group">
               <label class="form-label">Titel *</label>
-              <input
-                type="text"
-                class="form-input"
-                name="title"
-                placeholder="Kurzer, aussagekräftiger Titel"
-                required
-              />
+              <input type="text" class="form-input" name="title" placeholder="Kurzer, aussagekräftiger Titel" required />
             </div>
 
             <div class="form-group">
@@ -1236,151 +1212,60 @@
             <div class="form-group">
               <label class="form-label">Organisationsebene *</label>
               <div class="custom-dropdown">
-                <div
-                  class="dropdown-display"
-                  id="orgLevelDisplay"
-                  onclick="toggleDropdown('orgLevel')"
-                >
+                <div class="dropdown-display" id="orgLevelDisplay" onclick="toggleDropdown('orgLevel')">
                   <span>Bitte wählen</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path
-                      d="M1 1L6 6L11 1"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="dropdown-options" id="orgLevelDropdown">
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('', 'Bitte wählen')"
-                  >
-                    Bitte wählen
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('company', 'Gesamtes Unternehmen')"
-                  >
-                    Gesamtes Unternehmen
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('department', 'Abteilung')"
-                  >
-                    Abteilung
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectOrgLevel('team', 'Team')"
-                  >
-                    Team
-                  </div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('', 'Bitte wählen')">Bitte wählen</div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('company', 'Gesamtes Unternehmen')">Gesamtes Unternehmen</div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('department', 'Abteilung')">Abteilung</div>
+                  <div class="dropdown-option" onclick="selectOrgLevel('team', 'Team')">Team</div>
                 </div>
-                <input
-                  type="hidden"
-                  name="org_level"
-                  id="orgLevelValue"
-                  required
-                />
+                <input type="hidden" name="org_level" id="orgLevelValue" required />
               </div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Priorität</label>
               <div class="custom-dropdown">
-                <div
-                  class="dropdown-display"
-                  id="priorityDisplay"
-                  onclick="toggleDropdown('priority')"
-                >
+                <div class="dropdown-display" id="priorityDisplay" onclick="toggleDropdown('priority')">
                   <span>Normal</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path
-                      d="M1 1L6 6L11 1"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="dropdown-options" id="priorityDropdown">
-                  <div
-                    class="dropdown-option"
-                    onclick="selectPriority('low', 'Niedrig')"
-                  >
-                    Niedrig
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectPriority('normal', 'Normal')"
-                  >
-                    Normal
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectPriority('high', 'Hoch')"
-                  >
-                    Hoch
-                  </div>
-                  <div
-                    class="dropdown-option"
-                    onclick="selectPriority('urgent', 'Dringend')"
-                  >
-                    Dringend
-                  </div>
+                  <div class="dropdown-option" onclick="selectPriority('low', 'Niedrig')">Niedrig</div>
+                  <div class="dropdown-option" onclick="selectPriority('normal', 'Normal')">Normal</div>
+                  <div class="dropdown-option" onclick="selectPriority('high', 'Hoch')">Hoch</div>
+                  <div class="dropdown-option" onclick="selectPriority('urgent', 'Dringend')">Dringend</div>
                 </div>
-                <input
-                  type="hidden"
-                  name="priority"
-                  id="priorityValue"
-                  value="normal"
-                />
+                <input type="hidden" name="priority" id="priorityValue" value="normal" />
               </div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Erwarteter Nutzen</label>
-              <textarea
-                class="form-input"
-                name="expected_benefit"
-                placeholder="Welchen Nutzen erwarten Sie von der Umsetzung?"
-              ></textarea>
+              <textarea class="form-input" name="expected_benefit" placeholder="Welchen Nutzen erwarten Sie von der Umsetzung?"></textarea>
             </div>
 
             <div class="form-group">
               <label class="form-label">Geschätzte Kosten (€)</label>
-              <input
-                type="number"
-                class="form-input"
-                name="estimated_cost"
-                step="0.01"
-                placeholder="0.00"
-              />
+              <input type="number" class="form-input" name="estimated_cost" step="0.01" placeholder="0.00" />
             </div>
 
             <div class="form-group">
               <label class="form-label">Fotos/Dokumente</label>
               <div class="file-upload" id="fileUploadArea">
                 <div>📁 Klicken zum Dateien auswählen</div>
-                <div
-                  style="
-                    font-size: 0.8rem;
-                    margin-top: var(--spacing-xs);
-                    opacity: 0.8;
-                  "
-                >
+                <div style="font-size: 0.8rem; margin-top: var(--spacing-xs); opacity: 0.8">
                   Max. 5 Dateien, je 10MB (JPG, PNG, GIF, PDF)
                 </div>
               </div>
-              <input
-                type="file"
-                id="attachments"
-                name="attachments"
-                multiple
-                accept=".jpg,.jpeg,.png,.gif,.pdf"
-                style="display: none"
-              />
+              <input type="file" id="attachments" name="attachments" multiple accept=".jpg,.jpeg,.png,.gif,.pdf" style="display: none" />
               <div id="selectedFiles"></div>
             </div>
           </form>
@@ -1388,20 +1273,8 @@
 
         <div class="modal-form-actions">
           <div class="button-group">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              form="newSuggestionForm"
-            >
-              Vorschlag einreichen
-            </button>
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="closeNewSuggestionModal()"
-            >
-              Abbrechen
-            </button>
+            <button type="submit" class="btn btn-primary" form="newSuggestionForm">Vorschlag einreichen</button>
+            <button type="button" class="btn btn-secondary" onclick="closeNewSuggestionModal()">Abbrechen</button>
           </div>
         </div>
       </div>
@@ -1422,12 +1295,10 @@
         loadUserPoints();
 
         // Initialize logout button
-        document
-          .getElementById('logout-btn')
-          .addEventListener('click', function () {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-          });
+        document.getElementById('logout-btn').addEventListener('click', function () {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        });
 
         // Initialize KVP buttons based on user role
         initializeButtons();
@@ -1448,10 +1319,7 @@
             const userAvatar = document.getElementById('user-avatar');
 
             // Display first and last name
-            const displayName =
-              `${userData.first_name || ''} ${userData.last_name || ''}`.trim() ||
-              userData.username ||
-              'Benutzer';
+            const displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username || 'Benutzer';
             userName.textContent = displayName;
 
             // Update avatar if available
@@ -1484,8 +1352,7 @@
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           currentUser = payload;
-          document.getElementById('user-info').textContent =
-            payload.username || 'User';
+          document.getElementById('user-info').textContent = payload.username || 'User';
         } catch (e) {
           localStorage.removeItem('token');
           window.location.href = '/login';
@@ -1495,9 +1362,7 @@
       function initializeButtons() {
         // Show/hide cards based on user role
         const newSuggestionCard = document.getElementById('newSuggestionCard');
-        const adminManagementCard = document.getElementById(
-          'adminManagementCard'
-        );
+        const adminManagementCard = document.getElementById('adminManagementCard');
 
         if (currentUser && currentUser.role === 'employee') {
           // Employee: Show suggestion card, hide admin card
@@ -1505,13 +1370,8 @@
           adminManagementCard.style.display = 'none';
 
           // Initialize new suggestion button
-          document
-            .getElementById('newSuggestionBtn')
-            .addEventListener('click', openNewSuggestionModal);
-        } else if (
-          currentUser &&
-          (currentUser.role === 'admin' || currentUser.role === 'root')
-        ) {
+          document.getElementById('newSuggestionBtn').addEventListener('click', openNewSuggestionModal);
+        } else if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')) {
           // Admin: Hide suggestion card, show admin card
           newSuggestionCard.style.display = 'none';
           adminManagementCard.style.display = 'block';
@@ -1521,24 +1381,16 @@
         }
 
         // Initialize filter event listeners
-        document
-          .getElementById('statusFilter')
-          .addEventListener('change', loadSuggestions);
-        document
-          .getElementById('categoryFilter')
-          .addEventListener('change', loadSuggestions);
+        document.getElementById('statusFilter').addEventListener('change', loadSuggestions);
+        document.getElementById('categoryFilter').addEventListener('change', loadSuggestions);
 
         // Initialize file upload area
-        document
-          .getElementById('fileUploadArea')
-          .addEventListener('click', function () {
-            document.getElementById('attachments').click();
-          });
+        document.getElementById('fileUploadArea').addEventListener('click', function () {
+          document.getElementById('attachments').click();
+        });
 
         // Initialize cancel button
-        document
-          .getElementById('cancelBtn')
-          .addEventListener('click', closeNewSuggestionModal);
+        document.getElementById('cancelBtn').addEventListener('click', closeNewSuggestionModal);
       }
 
       async function loadAdminStats() {
@@ -1548,10 +1400,8 @@
 
           if (data.success) {
             const stats = data.data;
-            document.getElementById('adminNewSuggestions').textContent =
-              stats.new_suggestions || 0;
-            document.getElementById('adminPendingSuggestions').textContent =
-              (stats.in_review || 0) + (stats.in_progress || 0);
+            document.getElementById('adminNewSuggestions').textContent = stats.new_suggestions || 0;
+            document.getElementById('adminPendingSuggestions').textContent = (stats.in_review || 0) + (stats.in_progress || 0);
           }
         } catch (error) {
           console.error('Error loading admin stats:', error);
@@ -1607,7 +1457,7 @@
           <span>${cat.icon}</span>
           <span>${cat.name}</span>
         </div>
-      `
+      `,
           )
           .join('');
 
@@ -1623,12 +1473,7 @@
         const select = document.getElementById('categoryFilter');
         select.innerHTML =
           '<option value="">Alle Kategorien</option>' +
-          categories
-            .map(
-              (cat) =>
-                `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`
-            )
-            .join('');
+          categories.map((cat) => `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`).join('');
       }
 
       function selectCategory(categoryId) {
@@ -1638,9 +1483,7 @@
         });
 
         // Add selection to clicked pill
-        document
-          .querySelector(`[data-category-id="${categoryId}"]`)
-          .classList.add('selected');
+        document.querySelector(`[data-category-id="${categoryId}"]`).classList.add('selected');
 
         selectedCategoryId = categoryId;
         document.getElementById('selectedCategoryId').value = categoryId;
@@ -1649,8 +1492,7 @@
       async function loadSuggestions() {
         try {
           const statusFilter = document.getElementById('statusFilter').value;
-          const categoryFilter =
-            document.getElementById('categoryFilter').value;
+          const categoryFilter = document.getElementById('categoryFilter').value;
 
           let url = '/api/kvp/suggestions?';
           if (statusFilter) url += `status=${statusFilter}&`;
@@ -1666,8 +1508,7 @@
           }
         } catch (error) {
           console.error('Error loading suggestions:', error);
-          document.getElementById('suggestionsList').innerHTML =
-            '<div class="error-message">Fehler beim Laden der Vorschläge</div>';
+          document.getElementById('suggestionsList').innerHTML = '<div class="error-message">Fehler beim Laden der Vorschläge</div>';
         }
       }
 
@@ -1675,14 +1516,11 @@
         const container = document.getElementById('suggestionsList');
 
         if (suggestions.length === 0) {
-          container.innerHTML =
-            '<div class="empty-state">Keine Vorschläge gefunden</div>';
+          container.innerHTML = '<div class="empty-state">Keine Vorschläge gefunden</div>';
           return;
         }
 
-        const isAdmin =
-          currentUser &&
-          (currentUser.role === 'admin' || currentUser.role === 'root');
+        const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'root');
 
         container.innerHTML = suggestions
           .map(
@@ -1720,7 +1558,7 @@
             ${suggestion.avg_rating ? `<span>⭐ ${parseFloat(suggestion.avg_rating).toFixed(1)}</span>` : ''}
           </div>
         </div>
-      `
+      `,
           )
           .join('');
 
@@ -1754,16 +1592,13 @@
 
       async function changeStatus(suggestionId, newStatus) {
         try {
-          const response = await apiCall(
-            `/api/kvp/suggestions/${suggestionId}/status`,
-            {
-              method: 'PUT',
-              body: JSON.stringify({
-                status: newStatus,
-                reason: `Status geändert zu ${getStatusText(newStatus)}`,
-              }),
-            }
-          );
+          const response = await apiCall(`/api/kvp/suggestions/${suggestionId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              status: newStatus,
+              reason: `Status geändert zu ${getStatusText(newStatus)}`,
+            }),
+          });
 
           const data = await response.json();
 
@@ -1785,24 +1620,17 @@
       }
 
       async function loadDashboardStats() {
-        if (
-          currentUser &&
-          (currentUser.role === 'admin' || currentUser.role === 'root')
-        ) {
+        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')) {
           try {
             const response = await apiCall('/api/kvp/dashboard');
             const data = await response.json();
 
             if (data.success) {
               const stats = data.data;
-              document.getElementById('totalSuggestions').textContent =
-                stats.total_suggestions || 0;
-              document.getElementById('newSuggestions').textContent =
-                stats.new_suggestions || 0;
-              document.getElementById('implementedSuggestions').textContent =
-                stats.implemented || 0;
-              document.getElementById('inProgressSuggestions').textContent =
-                stats.in_progress || 0;
+              document.getElementById('totalSuggestions').textContent = stats.total_suggestions || 0;
+              document.getElementById('newSuggestions').textContent = stats.new_suggestions || 0;
+              document.getElementById('implementedSuggestions').textContent = stats.implemented || 0;
+              document.getElementById('inProgressSuggestions').textContent = stats.in_progress || 0;
             }
           } catch (error) {
             console.error('Error loading dashboard stats:', error);
@@ -1823,10 +1651,8 @@
 
           if (data.success) {
             const points = data.data;
-            document.getElementById('totalPoints').textContent =
-              points.total_points || 0;
-            document.getElementById('totalAwards').textContent =
-              points.total_awards || 0;
+            document.getElementById('totalPoints').textContent = points.total_points || 0;
+            document.getElementById('totalAwards').textContent = points.total_awards || 0;
           }
         } catch (error) {
           console.error('Error loading user points:', error);
@@ -1847,97 +1673,77 @@
         document.getElementById('selectedFiles').innerHTML = '';
 
         // Reset custom dropdowns
-        document
-          .getElementById('orgLevelDisplay')
-          .querySelector('span').textContent = 'Bitte wählen';
+        document.getElementById('orgLevelDisplay').querySelector('span').textContent = 'Bitte wählen';
         document.getElementById('orgLevelValue').value = '';
-        document
-          .getElementById('priorityDisplay')
-          .querySelector('span').textContent = 'Normal';
+        document.getElementById('priorityDisplay').querySelector('span').textContent = 'Normal';
         document.getElementById('priorityValue').value = 'normal';
 
         // Close all dropdowns
-        document
-          .querySelectorAll('.dropdown-display')
-          .forEach((d) => d.classList.remove('active'));
-        document
-          .querySelectorAll('.dropdown-options')
-          .forEach((d) => d.classList.remove('active'));
+        document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+        document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
       }
 
       // Handle file selection
-      document
-        .getElementById('attachments')
-        .addEventListener('change', function (e) {
-          const files = Array.from(e.target.files);
-          const container = document.getElementById('selectedFiles');
+      document.getElementById('attachments').addEventListener('change', function (e) {
+        const files = Array.from(e.target.files);
+        const container = document.getElementById('selectedFiles');
 
-          container.innerHTML = files
-            .map(
-              (file) => `
+        container.innerHTML = files
+          .map(
+            (file) => `
         <div class="selected-file">
           <span>📎</span>
           <span>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
         </div>
-      `
-            )
-            .join('');
-        });
+      `,
+          )
+          .join('');
+      });
 
       // Handle form submission
-      document
-        .getElementById('newSuggestionForm')
-        .addEventListener('submit', async function (e) {
-          e.preventDefault();
+      document.getElementById('newSuggestionForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-          const formData = new FormData(this);
-          formData.set('org_id', '1'); // Default org ID for now
+        const formData = new FormData(this);
+        formData.set('org_id', '1'); // Default org ID for now
 
-          if (selectedCategoryId) {
-            formData.set('category_id', selectedCategoryId);
+        if (selectedCategoryId) {
+          formData.set('category_id', selectedCategoryId);
+        }
+
+        try {
+          const submitButton = document.querySelector('button[form="newSuggestionForm"][type="submit"]');
+          if (submitButton) {
+            submitButton.textContent = 'Wird eingereicht...';
+            submitButton.disabled = true;
           }
 
-          try {
-            const submitButton = document.querySelector(
-              'button[form="newSuggestionForm"][type="submit"]'
-            );
-            if (submitButton) {
-              submitButton.textContent = 'Wird eingereicht...';
-              submitButton.disabled = true;
-            }
+          const response = await apiCall('/api/kvp/suggestions', {
+            method: 'POST',
+            body: formData,
+          });
 
-            const response = await apiCall('/api/kvp/suggestions', {
-              method: 'POST',
-              body: formData,
-            });
+          const data = await response.json();
 
-            const data = await response.json();
-
-            if (data.success) {
-              closeNewSuggestionModal();
-              showSuccessMessage(
-                'Verbesserungsvorschlag erfolgreich eingereicht!'
-              );
-              loadSuggestions();
-              loadDashboardStats();
-            } else {
-              throw new Error(data.message);
-            }
-          } catch (error) {
-            console.error('Error submitting suggestion:', error);
-            showErrorMessage(
-              'Fehler beim Einreichen des Vorschlags: ' + error.message
-            );
-          } finally {
-            const submitButton = document.querySelector(
-              'button[form="newSuggestionForm"][type="submit"]'
-            );
-            if (submitButton) {
-              submitButton.textContent = 'Vorschlag einreichen';
-              submitButton.disabled = false;
-            }
+          if (data.success) {
+            closeNewSuggestionModal();
+            showSuccessMessage('Verbesserungsvorschlag erfolgreich eingereicht!');
+            loadSuggestions();
+            loadDashboardStats();
+          } else {
+            throw new Error(data.message);
           }
-        });
+        } catch (error) {
+          console.error('Error submitting suggestion:', error);
+          showErrorMessage('Fehler beim Einreichen des Vorschlags: ' + error.message);
+        } finally {
+          const submitButton = document.querySelector('button[form="newSuggestionForm"][type="submit"]');
+          if (submitButton) {
+            submitButton.textContent = 'Vorschlag einreichen';
+            submitButton.disabled = false;
+          }
+        }
+      });
 
       async function viewSuggestion(id) {
         try {
@@ -1952,9 +1758,7 @@
           showSuggestionModal(suggestion);
         } catch (error) {
           console.error('Error loading suggestion:', error);
-          showErrorMessage(
-            'Fehler beim Laden der Vorschlag-Details: ' + error.message
-          );
+          showErrorMessage('Fehler beim Laden der Vorschlag-Details: ' + error.message);
         }
       }
 
@@ -2004,8 +1808,7 @@
                     : ''
                 }
                 ${
-                  currentUser &&
-                  (currentUser.role === 'admin' || currentUser.role === 'root')
+                  currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')
                     ? `
                   <button class="action-btn archive-btn" data-suggestion-id="${suggestion.id}">
                     📦 Archivieren
@@ -2073,7 +1876,7 @@
                           </button>
                         </div>
                       </div>
-                    `
+                    `,
                       )
                       .join('')}
                   </div>
@@ -2098,7 +1901,7 @@
                         </div>
                         <div class="comment-content">${comment.content}</div>
                       </div>
-                    `
+                    `,
                       )
                       .join('')}
                   </div>
@@ -2126,11 +1929,7 @@
         const deleteBtn = modal.querySelector('.delete-btn');
         if (deleteBtn) {
           deleteBtn.addEventListener('click', async () => {
-            if (
-              confirm(
-                'Sind Sie sicher, dass Sie diesen Vorschlag löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.'
-              )
-            ) {
+            if (confirm('Sind Sie sicher, dass Sie diesen Vorschlag löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
               const suggestionId = parseInt(deleteBtn.dataset.suggestionId);
               await deleteSuggestion(suggestionId);
               document.body.removeChild(modal);
@@ -2141,11 +1940,7 @@
         const archiveBtn = modal.querySelector('.archive-btn');
         if (archiveBtn) {
           archiveBtn.addEventListener('click', async () => {
-            if (
-              confirm(
-                'Sind Sie sicher, dass Sie diesen Vorschlag archivieren möchten?'
-              )
-            ) {
+            if (confirm('Sind Sie sicher, dass Sie diesen Vorschlag archivieren möchten?')) {
               const suggestionId = parseInt(archiveBtn.dataset.suggestionId);
               await archiveSuggestion(suggestionId);
               document.body.removeChild(modal);
@@ -2163,13 +1958,10 @@
         });
 
         // Load images asynchronously with authentication
-        modal
-          .querySelectorAll('.attachment-image-container')
-          .forEach((container) => {
-            const attachmentId =
-              container.closest('.attachment-item').dataset.attachmentId;
-            loadAttachmentImage(container, attachmentId);
-          });
+        modal.querySelectorAll('.attachment-image-container').forEach((container) => {
+          const attachmentId = container.closest('.attachment-item').dataset.attachmentId;
+          loadAttachmentImage(container, attachmentId);
+        });
 
         // Escape key to close
         const escapeHandler = (e) => {
@@ -2211,69 +2003,53 @@
       // Delete suggestion function (only for owners)
       async function deleteSuggestion(suggestionId) {
         try {
-          const response = await apiCall(
-            `/api/kvp/suggestions/${suggestionId}`,
-            {
-              method: 'DELETE',
-            }
-          );
+          const response = await apiCall(`/api/kvp/suggestions/${suggestionId}`, {
+            method: 'DELETE',
+          });
 
           const data = await response.json();
 
           if (!data.success) {
-            throw new Error(
-              data.message || 'Fehler beim Löschen des Vorschlags'
-            );
+            throw new Error(data.message || 'Fehler beim Löschen des Vorschlags');
           }
 
           showSuccessMessage('Vorschlag wurde erfolgreich gelöscht');
           await loadSuggestions(); // Reload the list
         } catch (error) {
           console.error('Error deleting suggestion:', error);
-          showErrorMessage(
-            'Fehler beim Löschen des Vorschlags: ' + error.message
-          );
+          showErrorMessage('Fehler beim Löschen des Vorschlags: ' + error.message);
         }
       }
 
       // Archive suggestion function (for admins)
       async function archiveSuggestion(suggestionId) {
         try {
-          const response = await apiCall(
-            `/api/kvp/suggestions/${suggestionId}/status`,
-            {
-              method: 'PUT',
-              body: JSON.stringify({
-                status: 'archived',
-                reason: 'Vorschlag archiviert',
-              }),
-            }
-          );
+          const response = await apiCall(`/api/kvp/suggestions/${suggestionId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              status: 'archived',
+              reason: 'Vorschlag archiviert',
+            }),
+          });
 
           const data = await response.json();
 
           if (!data.success) {
-            throw new Error(
-              data.message || 'Fehler beim Archivieren des Vorschlags'
-            );
+            throw new Error(data.message || 'Fehler beim Archivieren des Vorschlags');
           }
 
           showSuccessMessage('Vorschlag wurde erfolgreich archiviert');
           await loadSuggestions(); // Reload the list
         } catch (error) {
           console.error('Error archiving suggestion:', error);
-          showErrorMessage(
-            'Fehler beim Archivieren des Vorschlags: ' + error.message
-          );
+          showErrorMessage('Fehler beim Archivieren des Vorschlags: ' + error.message);
         }
       }
 
       // Load attachment image with authentication
       async function loadAttachmentImage(container, attachmentId) {
         try {
-          const response = await apiCall(
-            `/api/kvp/attachments/${attachmentId}/download`
-          );
+          const response = await apiCall(`/api/kvp/attachments/${attachmentId}/download`);
 
           if (!response.ok) {
             throw new Error('Fehler beim Laden des Bildes');
@@ -2297,26 +2073,21 @@
           container.appendChild(img);
         } catch (error) {
           console.error('Error loading image:', error);
-          container.innerHTML =
-            '<div class="attachment-error">❌ Bild konnte nicht geladen werden</div>';
+          container.innerHTML = '<div class="attachment-error">❌ Bild konnte nicht geladen werden</div>';
         }
       }
 
       // Download attachment function
       async function downloadAttachment(attachmentId) {
         try {
-          const response = await apiCall(
-            `/api/kvp/attachments/${attachmentId}/download`
-          );
+          const response = await apiCall(`/api/kvp/attachments/${attachmentId}/download`);
 
           if (!response.ok) {
             throw new Error('Fehler beim Download');
           }
 
           const blob = await response.blob();
-          const contentDisposition = response.headers.get(
-            'content-disposition'
-          );
+          const contentDisposition = response.headers.get('content-disposition');
           let filename = 'download';
 
           if (contentDisposition) {
@@ -2355,19 +2126,15 @@
 
         document.body.appendChild(modal);
 
-        modal
-          .querySelector('.image-modal-close')
-          .addEventListener('click', () => {
-            document.body.removeChild(modal);
-            URL.revokeObjectURL(imageUrl);
-          });
+        modal.querySelector('.image-modal-close').addEventListener('click', () => {
+          document.body.removeChild(modal);
+          URL.revokeObjectURL(imageUrl);
+        });
 
-        modal
-          .querySelector('.image-modal-backdrop')
-          .addEventListener('click', () => {
-            document.body.removeChild(modal);
-            URL.revokeObjectURL(imageUrl);
-          });
+        modal.querySelector('.image-modal-backdrop').addEventListener('click', () => {
+          document.body.removeChild(modal);
+          URL.revokeObjectURL(imageUrl);
+        });
       }
 
       function showSuccessMessage(message) {
@@ -2406,18 +2173,14 @@
       }
 
       function selectOrgLevel(value, text) {
-        document
-          .getElementById('orgLevelDisplay')
-          .querySelector('span').textContent = text;
+        document.getElementById('orgLevelDisplay').querySelector('span').textContent = text;
         document.getElementById('orgLevelValue').value = value;
         document.getElementById('orgLevelDisplay').classList.remove('active');
         document.getElementById('orgLevelDropdown').classList.remove('active');
       }
 
       function selectPriority(value, text) {
-        document
-          .getElementById('priorityDisplay')
-          .querySelector('span').textContent = text;
+        document.getElementById('priorityDisplay').querySelector('span').textContent = text;
         document.getElementById('priorityValue').value = value;
         document.getElementById('priorityDisplay').classList.remove('active');
         document.getElementById('priorityDropdown').classList.remove('active');
@@ -2426,12 +2189,8 @@
       // Close dropdowns when clicking outside
       document.addEventListener('click', function (e) {
         if (!e.target.closest('.custom-dropdown')) {
-          document
-            .querySelectorAll('.dropdown-display')
-            .forEach((d) => d.classList.remove('active'));
-          document
-            .querySelectorAll('.dropdown-options')
-            .forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
         }
       });
 

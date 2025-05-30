@@ -32,6 +32,12 @@ export default [
         require: 'readonly',
         global: 'readonly',
         Promise: 'readonly',
+        setInterval: 'readonly',
+        setTimeout: 'readonly',
+        clearInterval: 'readonly',
+        clearTimeout: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
       },
     },
     plugins: {
@@ -176,6 +182,20 @@ export default [
       'frontend/src/scripts/lib/**',
       'frontend/src/styles/lib/**',
       'backend/logs/**',
+      // Backend Scripts - bleiben CommonJS
+      'backend/scripts/**/*.js',
+      'backend/src/utils/scripts/**/*.js',
+      // Entry Points - bleiben als .js für Stabilität
+      'backend/src/app.js',
+      'backend/src/auth.js',
+      'backend/src/database.js',
+      'backend/src/server.js',
+      'backend/src/server-old.js',
+      'backend/src/register-ts.js',
+      // Database Migrations
+      'backend/src/database/migrations/**/*.js',
+      // Temporär - werden später migriert
+      'backend/src/websocket.js',
     ],
   },
 ];

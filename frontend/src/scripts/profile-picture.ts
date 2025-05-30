@@ -188,7 +188,7 @@ async function uploadProfilePicture(e: Event, elements: ProfilePictureElements):
 
     if (response.ok) {
       showSuccess('Profilbild erfolgreich aktualisiert!');
-      
+
       // Clear file input
       if (elements.fileInput) {
         elements.fileInput.value = '';
@@ -237,7 +237,7 @@ async function removeProfilePicture(elements: ProfilePictureElements): Promise<v
 
     if (response.ok) {
       showSuccess('Profilbild erfolgreich entfernt!');
-      
+
       // Reload profile to show initials
       loadProfilePicture(elements);
 

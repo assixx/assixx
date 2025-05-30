@@ -10,7 +10,7 @@ export function showSection(sectionName: string): void {
   console.log(`[ShowSection] Navigating to section: ${sectionName}`);
 
   // Hide all sections
-  const allSections = document.querySelectorAll<HTMLElement>('.dashboard-section');
+  const allSections = document.querySelectorAll<HTMLElement>('.content-section, .dashboard-section');
   allSections.forEach((section: HTMLElement) => {
     section.style.display = 'none';
     section.classList.remove('active');
@@ -46,15 +46,21 @@ export function showSection(sectionName: string): void {
 export function initSectionFromURL(): void {
   const urlParams = new URLSearchParams(window.location.search);
   const section = urlParams.get('section');
-  
+
   if (section) {
-    showSection(section);
+    // Use setTimeout to ensure all other scripts have initialized
+    setTimeout(() => {
+      showSection(section);
+    }, 100);
   }
 }
 
-// Initialize on DOM load
+// Initialize on DOM load with a delay to ensure all content is ready
 document.addEventListener('DOMContentLoaded', () => {
-  initSectionFromURL();
+  // Wait a bit to ensure all dynamic content is loaded
+  setTimeout(() => {
+    initSectionFromURL();
+  }, 200);
 });
 
 // Make showSection globally available

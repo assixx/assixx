@@ -86,16 +86,8 @@
         right: 0;
         bottom: 0;
         background:
-          radial-gradient(
-            circle at 20% 80%,
-            rgba(255, 255, 255, 0.1) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            circle at 80% 20%,
-            rgba(255, 255, 255, 0.15) 0%,
-            transparent 50%
-          );
+          radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
         opacity: 1;
       }
 
@@ -106,12 +98,7 @@
         right: -20%;
         width: 200px;
         height: 200px;
-        background: linear-gradient(
-          45deg,
-          transparent,
-          rgba(255, 255, 255, 0.1),
-          transparent
-        );
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
         transform: rotate(45deg);
         animation: shimmer 3s infinite;
       }
@@ -290,20 +277,12 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(
-          90deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       }
 
       .feature-icon {
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
         width: 60px;
         height: 60px;
         border-radius: var(--radius-md);
@@ -402,11 +381,7 @@
       }
 
       .stats-refresh {
-        background: linear-gradient(
-          135deg,
-          rgba(0, 142, 255, 0.2),
-          rgba(0, 142, 255, 0.1)
-        );
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         backdrop-filter: blur(10px);
         border: 1px solid rgba(0, 142, 255, 0.3);
         color: white;
@@ -430,12 +405,7 @@
         left: -50%;
         width: 200%;
         height: 200%;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(255, 255, 255, 0.1) 50%,
-          transparent 70%
-        );
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
         transform: rotate(45deg) translate(-70%, -70%);
         transition: transform 0.6s;
       }
@@ -628,11 +598,7 @@
       }
 
       .btn-secondary {
-        background: linear-gradient(
-          135deg,
-          rgba(255, 255, 255, 0.1),
-          rgba(255, 255, 255, 0.05)
-        );
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
         border-color: rgba(255, 255, 255, 0.2);
       }
 
@@ -648,12 +614,7 @@
         left: -50%;
         width: 200%;
         height: 200%;
-        background: linear-gradient(
-          45deg,
-          transparent 30%,
-          rgba(255, 255, 255, 0.1) 50%,
-          transparent 70%
-        );
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
         transform: rotate(45deg) translate(-70%, -70%);
         transition: transform 0.6s;
       }
@@ -662,10 +623,7 @@
         transform: rotate(45deg) translate(-30%, -30%);
       }
     </style>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -676,15 +634,12 @@
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -702,7 +657,8 @@
         <!-- Page Header -->
         <div class="page-header">
           <div class="breadcrumb">
-            <a href="/employee-dashboard">Dashboard</a> / Übersicht
+            <a href="/employee-dashboard">Dashboard</a>
+            / Übersicht
           </div>
         </div>
 
@@ -762,54 +718,34 @@
         <!-- Quick Access Features -->
         <div class="dashboard-grid">
           <!-- Documents Card -->
-          <div
-            class="feature-card"
-            onclick="window.location.href='/employee-documents'"
-          >
+          <div class="feature-card" onclick="window.location.href='/employee-documents'">
             <div class="feature-icon">📄</div>
             <h3 class="feature-title">Meine Dokumente</h3>
-            <p class="feature-description">
-              Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige
-              Dokumente
-            </p>
-            <span class="feature-badge" id="new-documents-badge"
-              >Neue verfügbar</span
-            >
+            <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
+            <span class="feature-badge" id="new-documents-badge">Neue verfügbar</span>
           </div>
 
           <!-- Calendar Card -->
           <div class="feature-card" onclick="window.location.href='/calendar'">
             <div class="feature-icon">📅</div>
             <h3 class="feature-title">Firmenkalender</h3>
-            <p class="feature-description">
-              Termine, Events und wichtige Firmentermine im Überblick
-            </p>
+            <p class="feature-description">Termine, Events und wichtige Firmentermine im Überblick</p>
             <span class="feature-badge">Immer aktuell</span>
           </div>
 
           <!-- Blackboard Card -->
-          <div
-            class="feature-card"
-            onclick="window.location.href='/blackboard'"
-          >
+          <div class="feature-card" onclick="window.location.href='/blackboard'">
             <div class="feature-icon">📋</div>
             <h3 class="feature-title">Schwarzes Brett</h3>
-            <p class="feature-description">
-              Aktuelle Ankündigungen und wichtige Informationen der
-              Geschäftsführung
-            </p>
-            <span class="feature-badge" id="unread-announcements-badge"
-              >Neue Meldungen</span
-            >
+            <p class="feature-description">Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung</p>
+            <span class="feature-badge" id="unread-announcements-badge">Neue Meldungen</span>
           </div>
 
           <!-- KVP Card -->
           <div class="feature-card" onclick="window.location.href='/kvp'">
             <div class="feature-icon">💡</div>
             <h3 class="feature-title">Verbesserungsvorschläge</h3>
-            <p class="feature-description">
-              Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe
-            </p>
+            <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
             <span class="feature-badge">Belohnung möglich</span>
           </div>
 
@@ -817,22 +753,15 @@
           <div class="feature-card" onclick="window.location.href='/shifts'">
             <div class="feature-icon">🕒</div>
             <h3 class="feature-title">Schichtplanung</h3>
-            <p class="feature-description">
-              Ihre Schichtpläne und Arbeitszeiten in der Übersicht
-            </p>
+            <p class="feature-description">Ihre Schichtpläne und Arbeitszeiten in der Übersicht</p>
             <span class="feature-badge">Wöchentlich</span>
           </div>
 
           <!-- Profile Card -->
-          <div
-            class="feature-card"
-            onclick="window.location.href='/employee-profile'"
-          >
+          <div class="feature-card" onclick="window.location.href='/employee-profile'">
             <div class="feature-icon">👤</div>
             <h3 class="feature-title">Mein Profil</h3>
-            <p class="feature-description">
-              Persönliche Daten verwalten und Einstellungen anpassen
-            </p>
+            <p class="feature-description">Persönliche Daten verwalten und Einstellungen anpassen</p>
             <span class="feature-badge">Personalisiert</span>
           </div>
         </div>
@@ -842,7 +771,8 @@
           <div class="stats-header">
             <h2 class="stats-title">Auf einen Blick</h2>
             <button class="stats-refresh" onclick="loadDashboardData()">
-              <i class="fas fa-sync-alt"></i> Aktualisieren
+              <i class="fas fa-sync-alt"></i>
+              Aktualisieren
             </button>
           </div>
           <div class="info-grid">
@@ -867,12 +797,11 @@
 
         <!-- Recent Activity -->
         <div class="activity-feed">
-          <h2 class="stats-title" style="margin-bottom: var(--spacing-lg)">
-            Letzte Aktivitäten
-          </h2>
+          <h2 class="stats-title" style="margin-bottom: var(--spacing-lg)">Letzte Aktivitäten</h2>
           <div id="activity-list">
             <div class="loading-state">
-              <i class="fas fa-spinner fa-spin"></i> Lade Aktivitäten...
+              <i class="fas fa-spinner fa-spin"></i>
+              Lade Aktivitäten...
             </div>
           </div>
         </div>
@@ -889,12 +818,10 @@
         loadDashboardData();
 
         // Initialize logout button
-        document
-          .getElementById('logout-btn')
-          .addEventListener('click', function () {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-          });
+        document.getElementById('logout-btn').addEventListener('click', function () {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        });
       });
 
       async function loadUserInfo() {
@@ -912,10 +839,7 @@
             const userAvatar = document.getElementById('user-avatar');
 
             // Display first and last name
-            const displayName =
-              `${userData.first_name || ''} ${userData.last_name || ''}`.trim() ||
-              userData.username ||
-              'Benutzer';
+            const displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username || 'Benutzer';
             userName.textContent = displayName;
 
             // Update avatar if available
@@ -949,13 +873,11 @@
           // User info is now handled by loadUserInfo()
 
           // Update welcome message
-          document.getElementById('employee-name').textContent =
-            `${payload.first_name || payload.username}`;
+          document.getElementById('employee-name').textContent = `${payload.first_name || payload.username}`;
 
           // Redirect if not employee
           if (payload.role !== 'employee') {
-            window.location.href =
-              payload.role === 'admin' ? '/admin-dashboard' : '/login';
+            window.location.href = payload.role === 'admin' ? '/admin-dashboard' : '/login';
           }
         } catch (e) {
           localStorage.removeItem('token');
@@ -1008,12 +930,9 @@
 
           if (data.success) {
             const user = data.data;
-            document.getElementById('employee-id').textContent =
-              user.employee_id || 'Nicht zugewiesen';
-            document.getElementById('employee-department').textContent =
-              user.department || 'Nicht zugewiesen';
-            document.getElementById('employee-position').textContent =
-              user.position || 'Mitarbeiter';
+            document.getElementById('employee-id').textContent = user.employee_id || 'Nicht zugewiesen';
+            document.getElementById('employee-department').textContent = user.department || 'Nicht zugewiesen';
+            document.getElementById('employee-position').textContent = user.position || 'Mitarbeiter';
           }
         } catch (error) {
           console.error('Error loading profile:', error);
@@ -1043,17 +962,13 @@
       async function loadDashboardStats() {
         try {
           // Simulated data - replace with actual API calls
-          document.getElementById('unread-announcements-count').textContent =
-            '2';
-          document.getElementById('next-appointment').textContent =
-            'Morgen 14:00';
+          document.getElementById('unread-announcements-count').textContent = '2';
+          document.getElementById('next-appointment').textContent = 'Morgen 14:00';
           document.getElementById('kvp-points').textContent = '125';
 
           // Update badges
           const unreadCount = 2;
-          const announcementsBadge = document.getElementById(
-            'unread-announcements-badge'
-          );
+          const announcementsBadge = document.getElementById('unread-announcements-badge');
           if (unreadCount > 0) {
             announcementsBadge.textContent = `${unreadCount} neue`;
             announcementsBadge.style.display = 'inline-block';
@@ -1108,13 +1023,12 @@
                             <div class="activity-time">${activity.time}</div>
                         </div>
                     </div>
-                `
+                `,
             )
             .join('');
         } catch (error) {
           console.error('Error loading activity:', error);
-          document.getElementById('activity-list').innerHTML =
-            '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
+          document.getElementById('activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
         }
       }
 

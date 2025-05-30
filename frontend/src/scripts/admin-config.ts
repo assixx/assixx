@@ -25,7 +25,7 @@ interface AdminLog {
 
 interface AdminFormElements {
   'admin-id': HTMLInputElement;
-  username: HTMLInputElement;  
+  username: HTMLInputElement;
   email: HTMLInputElement;
   password: HTMLInputElement;
   company: HTMLInputElement;
@@ -87,14 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Load logs
-      const days =
-        tabId === 'logs-3days'
-          ? 3
-          : tabId === 'logs-10days'
-            ? 10
-            : tabId === 'logs-30days'
-              ? 30
-              : 0; // 0 for "all"
+      const days = tabId === 'logs-3days' ? 3 : tabId === 'logs-10days' ? 10 : tabId === 'logs-30days' ? 30 : 0; // 0 for "all"
       loadAdminLogs(adminId, days);
     });
   });
@@ -259,9 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logsContainer.innerHTML = '<p>Lade Logs...</p>';
 
     try {
-      const url = days > 0
-        ? `/api/root/admin/${adminId}/logs?days=${days}`
-        : `/api/root/admin/${adminId}/logs`;
+      const url = days > 0 ? `/api/root/admin/${adminId}/logs?days=${days}` : `/api/root/admin/${adminId}/logs`;
 
       const response = await fetch(url, {
         headers: {
@@ -290,11 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const logsHtml = logs.map((log) => {
-      const createdAt = formatDateTime(log.created_at);
-      const actionClass = getActionClass(log.action);
+    const logsHtml = logs
+      .map((log) => {
+        const createdAt = formatDateTime(log.created_at);
+        const actionClass = getActionClass(log.action);
 
-      return `
+        return `
         <div class="log-entry ${actionClass}">
           <div class="log-header">
             <span class="log-date">${createdAt}</span>
@@ -304,7 +296,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ${log.ip_address ? `<div class="log-ip">IP: ${log.ip_address}</div>` : ''}
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     container.innerHTML = logsHtml;
   }
@@ -329,4 +322,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
-

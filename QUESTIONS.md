@@ -78,7 +78,7 @@
 **Antwort:**
 
 - [ ] SAP
-- [ ] Andere ERP-Systeme: ******\_******
+- [ ] Andere ERP-Systeme: **\*\***\_**\*\***
 - [ ] Zeiterfassungssysteme
 - [ ] Lohnbuchhaltung
 - [ x] Andere: Erst mal ohne Schnitstellen, wird sich mit der Zeit ergebn. aber Microsofot auf jeden all Outlook, Azure, Onedrive, Sharepoint!!!
@@ -124,7 +124,7 @@ Sicherheit, Kosten
 - [ ] Deutsch + Englisch
 - [x ] Deutsch + Englisch + Türkisch
 - [x ] Deutsch + Englisch + Polnisch
-- [ ] Andere: ******\_******
+- [ ] Andere: **\*\***\_**\*\***
 
 ## 5. 🚀 Deployment & Skalierung
 
@@ -151,7 +151,7 @@ Sicherheit, Kosten
 - [ ] Tägliche Backups
 - [ ] Stündliche Backups
 - [ x] Echtzeit-Replikation
-- [ ] Andere: ******\_******
+- [ ] Andere: **\*\***\_**\*\***
 
 ### Support-Level?
 
@@ -160,7 +160,7 @@ Sicherheit, Kosten
 - [ ] 24/7 Support
 - [x ] Business Hours (Mo-Fr 9-17 Uhr)
 - [ x] Community Support
-- [ ] Andere: ******\_******
+- [ ] Andere: **\*\***\_**\*\***
 
 ## 6. 🎨 Besondere Anforderungen
 

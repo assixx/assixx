@@ -3,13 +3,7 @@
  * Centralized API communication with TypeScript
  */
 
-import type { 
-  ApiResponse, 
-  User, 
-  LoginRequest, 
-  LoginResponse,
-  Document
-} from '../../types/api.types';
+import type { ApiResponse, User, LoginRequest, LoginResponse, Document } from '../../types/api.types';
 import type { PaginationParams, PaginatedResponse } from '../../types/utils.types';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -67,7 +61,7 @@ export class ApiService {
    */
   private buildUrl(endpoint: string, params?: Record<string, any>): string {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     if (!params || Object.keys(params).length === 0) {
       return url;
     }
@@ -85,15 +79,10 @@ export class ApiService {
   /**
    * Make API request
    */
-  async request<T = any>(
-    method: HttpMethod,
-    endpoint: string,
-    data?: any,
-    options?: RequestOptions
-  ): Promise<T> {
+  async request<T = any>(method: HttpMethod, endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {};
     const url = this.buildUrl(endpoint, params);
-    
+
     const requestOptions: RequestInit = {
       method,
       headers: this.getHeaders(fetchOptions.headers),
@@ -197,7 +186,7 @@ export class ApiService {
   async uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {
     const formData = new FormData();
     formData.append('profilePicture', file);
-    
+
     return this.post('/user/profile-picture', formData);
   }
 

@@ -35,10 +35,7 @@ interface CreateAdminForm extends HTMLFormElement {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Root dashboard script loaded');
   const token = getAuthToken();
-  console.log(
-    'Stored token:',
-    token ? 'Token vorhanden' : 'Kein Token gefunden'
-  );
+  console.log('Stored token:', token ? 'Token vorhanden' : 'Kein Token gefunden');
 
   if (!token) {
     console.error('No token found. Redirecting to login...');
@@ -56,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (createAdminForm) {
     createAdminForm.addEventListener('submit', createAdmin);
   }
-  
+
   if (logoutBtn) {
     logoutBtn.addEventListener('click', logout);
   }
@@ -73,9 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
   async function createAdmin(e: Event): Promise<void> {
     e.preventDefault();
     console.log('Creating admin...');
-    
+
     if (!createAdminForm) return;
-    
+
     const formData = new FormData(createAdminForm);
     const adminData = Object.fromEntries(formData.entries());
 
@@ -100,18 +97,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Fehler beim Erstellen des Admins:', error);
-      alert(
-        'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
-      );
+      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
 
   // Dashboard-Daten laden
   async function loadDashboardData(): Promise<void> {
     console.log('Loading dashboard data...');
-    
+
     if (!dashboardContent) return;
-    
+
     try {
       const response = await fetch('/api/root-dashboard-data', {
         headers: {
@@ -166,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const adminCount = document.getElementById('admin-count');
         const userCount = document.getElementById('user-count');
         const tenantCount = document.getElementById('tenant-count');
-        
+
         if (adminCount) adminCount.textContent = admins.length.toString();
         if (userCount) userCount.textContent = users.length.toString();
         if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
@@ -190,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const admins: AdminUser[] = await response.json();
         console.log('Loaded admins:', admins);
         displayAdmins(admins);
-        
+
         // Update admin count
         const adminCount = document.getElementById('admin-count');
         if (adminCount) {
@@ -207,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Admin-Liste anzeigen
   function displayAdmins(admins: AdminUser[]): void {
     if (!adminTableBody) return;
-    
+
     adminTableBody.innerHTML = '';
     admins.forEach((admin) => {
       const row = document.createElement('tr');
@@ -263,11 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!adminId || !adminUsername) return;
 
-    if (
-      !confirm(
-        `Sind Sie sicher, dass Sie den Admin "${adminUsername}" löschen möchten?`
-      )
-    ) {
+    if (!confirm(`Sind Sie sicher, dass Sie den Admin "${adminUsername}" löschen möchten?`)) {
       return;
     }
 
@@ -292,9 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Fehler beim Löschen des Admins:', error);
-      alert(
-        'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
-      );
+      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
 
@@ -338,8 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update username with full name if available
         if (user.first_name || user.last_name) {
-          const fullName =
-            `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
           userNameElement.textContent = fullName || user.username || 'Root';
         } else {
           userNameElement.textContent = user.username || 'Root';

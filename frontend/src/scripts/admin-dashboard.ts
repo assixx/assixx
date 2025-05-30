@@ -6,6 +6,7 @@
 import type { User, Document } from '../types/api.types';
 import { getAuthToken } from './auth';
 import { showSuccess, showError, showInfo } from './auth';
+import { showSection } from './show-section';
 
 interface DashboardStats {
   employeeCount: number;
@@ -76,6 +77,72 @@ interface CreateEmployeeForm extends HTMLFormElement {
 // Global token variable
 let token: string | null = null;
 
+// Define functions globally so they can be accessed from HTML onclick handlers
+let loadDepartmentsForEmployeeSelect: () => Promise<void>;
+let showNewEmployeeModal: () => void;
+
+// Load Departments for Employee Select (defined globally)
+loadDepartmentsForEmployeeSelect = async function(): Promise<void> {
+  try {
+    const authToken = token || getAuthToken();
+    const response = await fetch('/api/departments', {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load departments for select');
+    }
+
+    const departments = await response.json();
+    const departmentSelect = document.getElementById('employee-department-select') as HTMLSelectElement;
+    
+    if (!departmentSelect) return;
+    
+    // Clear existing options except the first (placeholder)
+    departmentSelect.innerHTML = '<option value="">Abteilung wählen</option>';
+    
+    departments.forEach((dept: Department) => {
+      const option = document.createElement('option');
+      option.value = dept.id.toString();
+      option.textContent = dept.name;
+      departmentSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error loading departments for select:', error);
+    showError('Fehler beim Laden der Abteilungen');
+  }
+};
+
+// Show New Employee Modal (defined globally)
+showNewEmployeeModal = function(): void {
+  const modal = document.getElementById('employee-modal') as HTMLElement;
+  if (modal) {
+    // Formular zurücksetzen, falls es bereits benutzt wurde
+    const form = document.getElementById('create-employee-form') as HTMLFormElement;
+    if (form) {
+      form.reset();
+
+      // Fehler-Anzeigen zurücksetzen
+      const emailError = document.getElementById('email-error') as HTMLElement;
+      const passwordError = document.getElementById('password-error') as HTMLElement;
+
+      if (emailError) emailError.style.display = 'none';
+      if (passwordError) passwordError.style.display = 'none';
+    }
+
+    // Modal anzeigen
+    modal.style.display = 'flex';
+
+    // Abteilungen für das Formular laden
+    loadDepartmentsForEmployeeSelect();
+  } else {
+    console.error('employee-modal element not found!');
+    alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   token = getAuthToken();
 
@@ -103,9 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Buttons für Mitarbeiter-Modal
   const newEmployeeBtn = document.getElementById('new-employee-button') as HTMLButtonElement;
-  const employeesSectionNewBtn = document.getElementById(
-    'employees-section-new-button'
-  ) as HTMLButtonElement;
+  const employeesSectionNewBtn = document.getElementById('employees-section-new-button') as HTMLButtonElement;
 
   // Event-Listener für Formulare
   if (createEmployeeForm) {
@@ -123,10 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // E-Mail-Validierung
     if (emailInput && emailConfirmInput && emailError) {
       const checkEmails = function () {
-        if (
-          emailConfirmInput.value &&
-          emailInput.value !== emailConfirmInput.value
-        ) {
+        if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
           emailError.style.display = 'block';
         } else {
           emailError.style.display = 'none';
@@ -140,10 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Passwort-Validierung
     if (passwordInput && passwordConfirmInput && passwordError) {
       const checkPasswords = function () {
-        if (
-          passwordConfirmInput.value &&
-          passwordInput.value !== passwordConfirmInput.value
-        ) {
+        if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
           passwordError.style.display = 'block';
         } else {
           passwordError.style.display = 'none';
@@ -154,11 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
       passwordConfirmInput.addEventListener('input', checkPasswords);
     }
   }
-  
+
   // TODO: uploadDocument function needs to be implemented
   // if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
-  if (departmentForm)
-    departmentForm.addEventListener('submit', createDepartment);
+  if (departmentForm) departmentForm.addEventListener('submit', createDepartment);
   if (teamForm) teamForm.addEventListener('submit', createTeam);
   if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
@@ -175,34 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Funktion zum Anzeigen des Mitarbeiter-Modals
-  function showNewEmployeeModal(): void {
-    const modal = document.getElementById('employee-modal') as HTMLElement;
-    if (modal) {
-      // Formular zurücksetzen, falls es bereits benutzt wurde
-      const form = document.getElementById('create-employee-form') as HTMLFormElement;
-      if (form) {
-        form.reset();
-
-        // Fehler-Anzeigen zurücksetzen
-        const emailError = document.getElementById('email-error') as HTMLElement;
-        const passwordError = document.getElementById('password-error') as HTMLElement;
-
-        if (emailError) emailError.style.display = 'none';
-        if (passwordError) passwordError.style.display = 'none';
-      }
-
-      // Modal anzeigen
-      modal.style.display = 'flex';
-
-      // Abteilungen für das Formular laden
-      loadDepartmentsForEmployeeSelect();
-    } else {
-      console.error('employee-modal element not found!');
-      alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
-    }
-  }
-
   // Initial loads - add slight delay to ensure DOM is ready
   setTimeout(() => {
     loadDashboardStats();
@@ -212,6 +242,31 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTeams();
     loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
   }, 100);
+  
+  // Setup manage links
+  const manageEmployeesLink = document.getElementById('manage-employees-link');
+  if (manageEmployeesLink) {
+    manageEmployeesLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSection('employees-section');
+    });
+  }
+  
+  const manageDocumentsLink = document.getElementById('manage-documents-link');
+  if (manageDocumentsLink) {
+    manageDocumentsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSection('documents-section');
+    });
+  }
+  
+  const manageDepartmentsLink = document.getElementById('manage-departments-link');
+  if (manageDepartmentsLink) {
+    manageDepartmentsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSection('departments-section');
+    });
+  }
 
   // Load Dashboard Statistics
   async function loadDashboardStats(): Promise<void> {
@@ -225,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Admin Dashboard Stats Endpoint verwenden
       const statsRes = await fetch('/api/admin/dashboard-stats', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (statsRes.ok) {
@@ -243,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (teamCount) teamCount.textContent = (stats.teamCount || 0).toString();
       } else {
         console.error('Failed to load dashboard stats', statsRes.statusText);
-        
+
         // Check if unauthorized
         if (statsRes.status === 401) {
           console.error('Token expired or invalid, redirecting to login');
@@ -341,9 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Create Employee
   async function createEmployee(e: Event): Promise<void> {
     e.preventDefault();
-    
+
     if (!createEmployeeForm) return;
-    
+
     const formData = new FormData(createEmployeeForm);
     const employeeData = Object.fromEntries(formData.entries()) as unknown as EmployeeFormData;
 
@@ -403,11 +458,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         showSuccess('Mitarbeiter erfolgreich erstellt!');
         createEmployeeForm.reset();
-        
+
         // Modal schließen
         const modal = document.getElementById('employee-modal') as HTMLElement;
         if (modal) modal.style.display = 'none';
-        
+
         // Listen neu laden
         loadRecentEmployees();
         loadDashboardStats();
@@ -439,9 +494,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
 
         if (userNameElement) {
-          const fullName = userData.first_name && userData.last_name
-            ? `${userData.first_name} ${userData.last_name}`
-            : userData.username;
+          const fullName =
+            userData.first_name && userData.last_name
+              ? `${userData.first_name} ${userData.last_name}`
+              : userData.username;
           userNameElement.textContent = fullName;
         }
 
@@ -468,40 +524,297 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Placeholder functions - to be implemented
   async function loadRecentEmployees(): Promise<void> {
-    // Implementation needed
+    try {
+      const token = getAuthToken();
+      const response = await fetch('/api/users?role=employee&limit=5', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load recent employees');
+      }
+
+      const data = await response.json();
+      const employees = Array.isArray(data) ? data : (data.users || data.employees || []);
+      
+      // Fill compact card
+      const employeeCard = document.getElementById('recent-employees');
+      if (employeeCard) {
+        employeeCard.innerHTML = '';
+        
+        if (!employees || employees.length === 0) {
+          employeeCard.innerHTML = '<p class="text-muted">Keine neuen Mitarbeiter</p>';
+        } else {
+          employees.slice(0, 5).forEach((emp: User) => {
+            const item = document.createElement('div');
+            item.className = 'compact-item';
+            item.innerHTML = `
+              <span class="compact-item-name">${emp.first_name} ${emp.last_name}</span>
+              <span class="compact-item-count">${emp.position || 'Mitarbeiter'}</span>
+            `;
+            employeeCard.appendChild(item);
+          });
+        }
+      }
+      
+      // Also fill detailed list if it exists
+      const employeeDetailList = document.getElementById('recent-employees-list');
+      if (employeeDetailList) {
+        employeeDetailList.innerHTML = '';
+        
+        if (!employees || employees.length === 0) {
+          employeeDetailList.innerHTML = '<li class="text-muted">Keine neuen Mitarbeiter</li>';
+        } else {
+          employees.slice(0, 10).forEach((emp: User) => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+              <strong>${emp.first_name} ${emp.last_name}</strong> - ${emp.position || 'Mitarbeiter'}
+              <span class="text-muted">(${emp.department_name || 'Keine Abteilung'})</span>
+            `;
+            employeeDetailList.appendChild(listItem);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading recent employees:', error);
+    }
   }
 
   async function loadRecentDocuments(): Promise<void> {
-    // Implementation needed
+    try {
+      const token = getAuthToken();
+      const response = await fetch('/api/documents?limit=5', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load recent documents');
+      }
+
+      const data = await response.json();
+      const documents = Array.isArray(data) ? data : (data.documents || data.data || []);
+      
+      // Fill compact card
+      const documentCard = document.getElementById('recent-documents');
+      if (documentCard) {
+        documentCard.innerHTML = '';
+        
+        if (!documents || documents.length === 0) {
+          documentCard.innerHTML = '<p class="text-muted">Keine neuen Dokumente</p>';
+        } else {
+          documents.slice(0, 5).forEach((doc: Document) => {
+            const item = document.createElement('div');
+            item.className = 'compact-item';
+            const uploadDate = new Date(doc.upload_date).toLocaleDateString('de-DE');
+            item.innerHTML = `
+              <span class="compact-item-name">${doc.file_name}</span>
+              <span class="compact-item-count">${uploadDate}</span>
+            `;
+            documentCard.appendChild(item);
+          });
+        }
+      }
+      
+      // Also fill detailed list if it exists
+      const documentDetailList = document.getElementById('recent-documents-list');
+      if (documentDetailList) {
+        documentDetailList.innerHTML = '';
+        
+        if (!documents || documents.length === 0) {
+          documentDetailList.innerHTML = '<li class="text-muted">Keine neuen Dokumente</li>';
+        } else {
+          documents.slice(0, 10).forEach((doc: Document) => {
+            const listItem = document.createElement('li');
+            const uploadDate = new Date(doc.upload_date).toLocaleDateString('de-DE');
+            listItem.innerHTML = `
+              <strong>${doc.file_name}</strong> - ${doc.category || 'Allgemein'}
+              <span class="text-muted">(${uploadDate})</span>
+            `;
+            documentDetailList.appendChild(listItem);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading recent documents:', error);
+    }
   }
 
   async function loadDepartments(): Promise<void> {
-    // Implementation needed
+    try {
+      const token = getAuthToken();
+      const response = await fetch('/api/departments', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load departments');
+      }
+
+      const departments = await response.json();
+      const departmentList = document.getElementById('department-list');
+      
+      if (!departmentList) return;
+      
+      departmentList.innerHTML = '';
+      
+      if (departments.length === 0) {
+        departmentList.innerHTML = '<p class="text-muted">Keine Abteilungen vorhanden</p>';
+        return;
+      }
+      
+      departments.slice(0, 5).forEach((dept: Department) => {
+        const item = document.createElement('div');
+        item.className = 'compact-item';
+        item.innerHTML = `
+          <span class="compact-item-name">${dept.name}</span>
+          <span class="compact-item-count">${dept.description || ''}</span>
+        `;
+        departmentList.appendChild(item);
+      });
+    } catch (error) {
+      console.error('Error loading departments:', error);
+    }
   }
 
   async function loadTeams(): Promise<void> {
-    // Implementation needed
+    try {
+      const token = getAuthToken();
+      const response = await fetch('/api/teams', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load teams');
+      }
+
+      const teams = await response.json();
+      const teamList = document.getElementById('team-list');
+      
+      if (!teamList) return;
+      
+      teamList.innerHTML = '';
+      
+      if (teams.length === 0) {
+        teamList.innerHTML = '<p class="text-muted">Keine Teams vorhanden</p>';
+        return;
+      }
+      
+      teams.slice(0, 5).forEach((team: Team) => {
+        const item = document.createElement('div');
+        item.className = 'compact-item';
+        item.innerHTML = `
+          <span class="compact-item-name">${team.name}</span>
+          <span class="compact-item-count">${team.department_name || ''}</span>
+        `;
+        teamList.appendChild(item);
+      });
+    } catch (error) {
+      console.error('Error loading teams:', error);
+    }
   }
 
-  async function loadDepartmentsForEmployeeSelect(): Promise<void> {
-    // Implementation needed
-  }
+  // Note: loadDepartmentsForEmployeeSelect is now defined globally above
 
   async function createDepartment(e: Event): Promise<void> {
     e.preventDefault();
-    // Implementation needed
+    
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    const departmentData = {
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+    };
+    
+    try {
+      const token = getAuthToken();
+      const response = await fetch('/api/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(departmentData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create department');
+      }
+
+      const newDepartment = await response.json();
+      showSuccess('Abteilung erfolgreich erstellt');
+      
+      // Reset form and close modal
+      form.reset();
+      const modal = document.getElementById('department-modal');
+      if (modal) modal.style.display = 'none';
+      
+      // Reload departments
+      await loadDepartments();
+      await loadDepartmentsForEmployeeSelect();
+    } catch (error) {
+      console.error('Error creating department:', error);
+      showError('Fehler beim Erstellen der Abteilung: ' + (error as Error).message);
+    }
   }
 
   async function createTeam(e: Event): Promise<void> {
     e.preventDefault();
-    // Implementation needed
+    
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    const teamData = {
+      name: formData.get('name') as string,
+      department_id: parseInt(formData.get('department_id') as string),
+      description: formData.get('description') as string,
+    };
+    
+    try {
+      const token = getAuthToken();
+      const response = await fetch('/api/teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(teamData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create team');
+      }
+
+      const newTeam = await response.json();
+      showSuccess('Team erfolgreich erstellt');
+      
+      // Reset form and close modal
+      form.reset();
+      const modal = document.getElementById('team-modal');
+      if (modal) modal.style.display = 'none';
+      
+      // Reload teams
+      await loadTeams();
+    } catch (error) {
+      console.error('Error creating team:', error);
+      showError('Fehler beim Erstellen des Teams: ' + (error as Error).message);
+    }
   }
 });
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).showNewEmployeeModal = () => {
-    const modal = document.getElementById('employee-modal') as HTMLElement;
-    if (modal) modal.style.display = 'flex';
-  };
+  (window as any).showNewEmployeeModal = showNewEmployeeModal;
+  (window as any).loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
+  (window as any).showSection = showSection;
 }

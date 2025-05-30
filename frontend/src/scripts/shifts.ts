@@ -137,18 +137,16 @@ function setupEventListeners(): void {
   }
 
   // Filter elements
-  document
-    .querySelectorAll<HTMLSelectElement | HTMLInputElement>('.filter-select, .filter-date')
-    .forEach((element) => {
-      element.addEventListener('change', function () {
-        const elementId = (this as HTMLElement).id;
-        if (elementId.includes('plan')) {
-          filterPlans();
-        } else if (elementId.includes('assignment')) {
-          filterAssignments();
-        }
-      });
+  document.querySelectorAll<HTMLSelectElement | HTMLInputElement>('.filter-select, .filter-date').forEach((element) => {
+    element.addEventListener('change', function () {
+      const elementId = (this as HTMLElement).id;
+      if (elementId.includes('plan')) {
+        filterPlans();
+      } else if (elementId.includes('assignment')) {
+        filterAssignments();
+      }
     });
+  });
 
   // Modal close buttons
   document.querySelectorAll<HTMLButtonElement>('.modal-close, .modal-cancel').forEach((btn) => {
@@ -242,10 +240,10 @@ async function loadUserInfo(): Promise<void> {
     if (response.ok) {
       currentUser = await response.json();
       isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'root';
-      
+
       // Update UI based on role
       updateUIForRole();
-      
+
       // Update user display
       const userNameElement = document.getElementById('userName') as HTMLElement;
       if (userNameElement && currentUser) {
@@ -363,10 +361,10 @@ async function loadDepartmentsAndTeams(): Promise<void> {
  */
 function populateDepartmentSelects(): void {
   const selects = document.querySelectorAll<HTMLSelectElement>('.department-select');
-  
+
   selects.forEach((select) => {
     select.innerHTML = '<option value="">Alle Abteilungen</option>';
-    
+
     userDepartments.forEach((dept) => {
       const option = document.createElement('option');
       option.value = dept.id.toString();
@@ -381,10 +379,10 @@ function populateDepartmentSelects(): void {
  */
 function populateTeamSelects(): void {
   const selects = document.querySelectorAll<HTMLSelectElement>('.team-select');
-  
+
   selects.forEach((select) => {
     select.innerHTML = '<option value="">Alle Teams</option>';
-    
+
     userTeams.forEach((team) => {
       const option = document.createElement('option');
       option.value = team.id.toString();
@@ -398,11 +396,7 @@ function populateTeamSelects(): void {
  * Load overview data
  */
 async function loadOverviewData(): Promise<void> {
-  await Promise.all([
-    loadShiftPlans(),
-    loadMyAssignments(),
-    loadExchangeRequests(),
-  ]);
+  await Promise.all([loadShiftPlans(), loadMyAssignments(), loadExchangeRequests()]);
 }
 
 /**
@@ -440,7 +434,9 @@ function displayShiftPlans(): void {
     return;
   }
 
-  container.innerHTML = shiftPlans.map((plan) => `
+  container.innerHTML = shiftPlans
+    .map(
+      (plan) => `
     <div class="shift-plan-card">
       <h3>${escapeHtml(plan.name)}</h3>
       <div class="plan-details">
@@ -453,14 +449,20 @@ function displayShiftPlans(): void {
         <button class="btn btn-primary" onclick="viewShiftPlan(${plan.id})">
           <i class="fas fa-eye"></i> Ansehen
         </button>
-        ${isAdmin ? `
+        ${
+          isAdmin
+            ? `
           <button class="btn btn-secondary" onclick="editShiftPlan(${plan.id})">
             <i class="fas fa-edit"></i> Bearbeiten
           </button>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
-  `).join('');
+  `,
+    )
+    .join('');
 }
 
 /**
@@ -500,7 +502,9 @@ function displayMyAssignments(assignments: ShiftAssignment[]): void {
     return;
   }
 
-  container.innerHTML = assignments.map((assignment) => `
+  container.innerHTML = assignments
+    .map(
+      (assignment) => `
     <div class="assignment-card">
       <div class="assignment-date">
         <i class="fas fa-calendar"></i> ${formatDate(assignment.date)}
@@ -511,13 +515,19 @@ function displayMyAssignments(assignments: ShiftAssignment[]): void {
       <div class="assignment-type">
         <span class="shift-type shift-${assignment.shift_type}">${getShiftTypeText(assignment.shift_type)}</span>
       </div>
-      ${assignment.status === 'assigned' ? `
+      ${
+        assignment.status === 'assigned'
+          ? `
         <button class="btn btn-sm btn-success" onclick="confirmAssignment(${assignment.id})">
           Bestätigen
         </button>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
-  `).join('');
+  `,
+    )
+    .join('');
 }
 
 /**
@@ -555,7 +565,9 @@ function displayExchangeRequests(requests: ExchangeRequest[]): void {
     return;
   }
 
-  container.innerHTML = requests.map((request) => `
+  container.innerHTML = requests
+    .map(
+      (request) => `
     <div class="request-card">
       <div class="request-info">
         <p>Anfrage von Mitarbeiter ${request.requester_id}</p>
@@ -564,7 +576,9 @@ function displayExchangeRequests(requests: ExchangeRequest[]): void {
       <div class="request-status">
         <span class="status status-${request.status}">${getRequestStatusText(request.status)}</span>
       </div>
-      ${request.status === 'pending' && request.target_id === currentUser?.id ? `
+      ${
+        request.status === 'pending' && request.target_id === currentUser?.id
+          ? `
         <div class="request-actions">
           <button class="btn btn-sm btn-success" onclick="approveRequest(${request.id})">
             Annehmen
@@ -573,9 +587,13 @@ function displayExchangeRequests(requests: ExchangeRequest[]): void {
             Ablehnen
           </button>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
-  `).join('');
+  `,
+    )
+    .join('');
 }
 
 /**
@@ -644,11 +662,11 @@ function updateUIForRole(): void {
   const employeeElements = document.querySelectorAll<HTMLElement>('.employee-only');
 
   if (isAdmin) {
-    adminElements.forEach((el) => el.style.display = 'block');
-    employeeElements.forEach((el) => el.style.display = 'none');
+    adminElements.forEach((el) => (el.style.display = 'block'));
+    employeeElements.forEach((el) => (el.style.display = 'none'));
   } else {
-    adminElements.forEach((el) => el.style.display = 'none');
-    employeeElements.forEach((el) => el.style.display = 'block');
+    adminElements.forEach((el) => (el.style.display = 'none'));
+    employeeElements.forEach((el) => (el.style.display = 'block'));
   }
 }
 
@@ -708,19 +726,243 @@ function logout(): void {
 
 // Placeholder functions for additional features
 async function loadPlanningData(): Promise<void> {
-  // Load planning specific data
+  try {
+    const token = getAuthToken();
+    const response = await fetch('/api/shifts/plans', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load planning data');
+    }
+
+    const plans = await response.json();
+    const plansList = document.getElementById('plans-list');
+    
+    if (!plansList) return;
+    
+    plansList.innerHTML = '';
+    
+    if (plans.length === 0) {
+      plansList.innerHTML = '<p class="no-data">Keine Schichtpläne vorhanden</p>';
+      return;
+    }
+    
+    plans.forEach((plan: any) => {
+      const item = document.createElement('div');
+      item.className = 'plan-item';
+      item.innerHTML = `
+        <div class="plan-header">
+          <h3>${plan.name}</h3>
+          <span class="plan-status ${plan.status}">${plan.status}</span>
+        </div>
+        <div class="plan-info">
+          <span>Zeitraum: ${new Date(plan.start_date).toLocaleDateString('de-DE')} - ${new Date(plan.end_date).toLocaleDateString('de-DE')}</span>
+          <span>Schichten: ${plan.shift_count || 0}</span>
+        </div>
+        <div class="plan-actions">
+          <button class="btn btn-sm btn-primary" onclick="viewShiftPlan(${plan.id})">Anzeigen</button>
+          <button class="btn btn-sm btn-secondary" onclick="editShiftPlan(${plan.id})">Bearbeiten</button>
+        </div>
+      `;
+      plansList.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Error loading planning data:', error);
+    showError('Fehler beim Laden der Schichtpläne');
+  }
 }
 
 async function loadAssignmentsData(): Promise<void> {
-  // Load assignments specific data
+  try {
+    const token = getAuthToken();
+    const response = await fetch('/api/shifts/assignments', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load assignments data');
+    }
+
+    const assignments = await response.json();
+    const assignmentsList = document.getElementById('assignments-list');
+    
+    if (!assignmentsList) return;
+    
+    assignmentsList.innerHTML = '';
+    
+    if (assignments.length === 0) {
+      assignmentsList.innerHTML = '<p class="no-data">Keine Schichtzuweisungen vorhanden</p>';
+      return;
+    }
+    
+    assignments.forEach((assignment: any) => {
+      const item = document.createElement('div');
+      item.className = 'assignment-item';
+      const shiftDate = new Date(assignment.shift_date).toLocaleDateString('de-DE');
+      item.innerHTML = `
+        <div class="assignment-header">
+          <h4>${assignment.employee_name}</h4>
+          <span class="assignment-date">${shiftDate}</span>
+        </div>
+        <div class="assignment-info">
+          <span class="shift-time">${assignment.start_time} - ${assignment.end_time}</span>
+          <span class="shift-type">${assignment.shift_type}</span>
+        </div>
+        <div class="assignment-status ${assignment.status}">
+          ${assignment.status === 'confirmed' ? 'Bestätigt' : 
+            assignment.status === 'pending' ? 'Ausstehend' : 'Abgelehnt'}
+        </div>
+      `;
+      assignmentsList.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Error loading assignments data:', error);
+    showError('Fehler beim Laden der Schichtzuweisungen');
+  }
 }
 
 async function loadRequestsData(): Promise<void> {
-  // Load requests specific data
+  try {
+    const token = getAuthToken();
+    const response = await fetch('/api/shifts/requests', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load requests data');
+    }
+
+    const requests = await response.json();
+    const requestsList = document.getElementById('requests-list');
+    
+    if (!requestsList) return;
+    
+    requestsList.innerHTML = '';
+    
+    if (requests.length === 0) {
+      requestsList.innerHTML = '<p class="no-data">Keine Schichtanfragen vorhanden</p>';
+      return;
+    }
+    
+    requests.forEach((request: any) => {
+      const item = document.createElement('div');
+      item.className = 'request-item';
+      const requestDate = new Date(request.created_at).toLocaleDateString('de-DE');
+      item.innerHTML = `
+        <div class="request-header">
+          <h4>${request.employee_name}</h4>
+          <span class="request-type ${request.type}">${
+            request.type === 'swap' ? 'Tausch' : 
+            request.type === 'cancel' ? 'Stornierung' : 'Änderung'
+          }</span>
+        </div>
+        <div class="request-info">
+          <p><strong>Schicht:</strong> ${new Date(request.shift_date).toLocaleDateString('de-DE')} | ${request.shift_time}</p>
+          <p><strong>Grund:</strong> ${request.reason}</p>
+        </div>
+        <div class="request-actions">
+          <button class="btn btn-sm btn-success" onclick="approveRequest(${request.id})">Genehmigen</button>
+          <button class="btn btn-sm btn-danger" onclick="rejectRequest(${request.id})">Ablehnen</button>
+        </div>
+        <div class="request-date">
+          Angefragt am: ${requestDate}
+        </div>
+      `;
+      requestsList.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Error loading requests data:', error);
+    showError('Fehler beim Laden der Schichtanfragen');
+  }
 }
 
 async function loadReportsData(): Promise<void> {
-  // Load reports specific data
+  try {
+    const token = getAuthToken();
+    const response = await fetch('/api/shifts/reports', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load reports data');
+    }
+
+    const reports = await response.json();
+    const reportsContainer = document.getElementById('reports-container');
+    
+    if (!reportsContainer) return;
+    
+    reportsContainer.innerHTML = '';
+    
+    // Summary statistics
+    const summarySection = document.createElement('div');
+    summarySection.className = 'reports-summary';
+    summarySection.innerHTML = `
+      <h3>Zusammenfassung</h3>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">${reports.totalShifts || 0}</div>
+          <div class="stat-label">Gesamte Schichten</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${reports.totalHours || 0}h</div>
+          <div class="stat-label">Arbeitsstunden</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${reports.coverageRate || 0}%</div>
+          <div class="stat-label">Abdeckungsrate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${reports.overtimeHours || 0}h</div>
+          <div class="stat-label">Überstunden</div>
+        </div>
+      </div>
+    `;
+    reportsContainer.appendChild(summarySection);
+    
+    // Recent reports list
+    if (reports.recentReports && reports.recentReports.length > 0) {
+      const reportsSection = document.createElement('div');
+      reportsSection.className = 'reports-list';
+      reportsSection.innerHTML = '<h3>Letzte Berichte</h3>';
+      
+      reports.recentReports.forEach((report: any) => {
+        const reportItem = document.createElement('div');
+        reportItem.className = 'report-item';
+        const reportDate = new Date(report.created_at).toLocaleDateString('de-DE');
+        reportItem.innerHTML = `
+          <div class="report-header">
+            <h4>${report.title}</h4>
+            <span class="report-date">${reportDate}</span>
+          </div>
+          <p class="report-period">Zeitraum: ${new Date(report.start_date).toLocaleDateString('de-DE')} - ${new Date(report.end_date).toLocaleDateString('de-DE')}</p>
+          <div class="report-actions">
+            <button class="btn btn-sm btn-primary" onclick="downloadReport(${report.id})">
+              <i class="fas fa-download"></i> Download
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="viewReport(${report.id})">
+              <i class="fas fa-eye"></i> Anzeigen
+            </button>
+          </div>
+        `;
+        reportsSection.appendChild(reportItem);
+      });
+      
+      reportsContainer.appendChild(reportsSection);
+    }
+  } catch (error) {
+    console.error('Error loading reports data:', error);
+    showError('Fehler beim Laden der Berichte');
+  }
 }
 
 /**

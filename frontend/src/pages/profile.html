@@ -16,11 +16,7 @@
       }
 
       .profile-header {
-        background: linear-gradient(
-          135deg,
-          rgba(33, 150, 243, 0.1),
-          rgba(33, 150, 243, 0.05)
-        );
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.05));
         backdrop-filter: blur(20px);
         border: 1px solid rgba(33, 150, 243, 0.2);
         border-radius: var(--radius-lg);
@@ -41,16 +37,8 @@
         right: 0;
         bottom: 0;
         background:
-          radial-gradient(
-            circle at 20% 80%,
-            rgba(255, 255, 255, 0.1) 0%,
-            transparent 50%
-          ),
-          radial-gradient(
-            circle at 80% 20%,
-            rgba(255, 255, 255, 0.15) 0%,
-            transparent 50%
-          );
+          radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
         opacity: 1;
       }
 
@@ -64,11 +52,7 @@
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -129,11 +113,7 @@
         font-weight: 700;
         color: var(--text-primary);
         margin: 0 0 var(--spacing-sm) 0;
-        background: linear-gradient(
-          45deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(45deg, var(--primary-color), var(--primary-light));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -277,11 +257,7 @@
       }
 
       .btn-primary {
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--primary-light)
-        );
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
         border: none;
         color: white;
         padding: var(--spacing-md) var(--spacing-xl);
@@ -447,15 +423,12 @@
       </a>
       <div class="header-actions">
         <div id="user-info">
-          <img
-            id="user-avatar"
-            src="/assets/images/default-avatar.svg"
-            alt="Avatar"
-          />
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i> Abmelden
+          <i class="fas fa-sign-out-alt"></i>
+          Abmelden
         </button>
       </div>
     </header>
@@ -475,24 +448,12 @@
             <div class="profile-avatar">
               <div class="avatar-container" id="avatar-container">
                 <div class="avatar-initials" id="avatar-initials">JD</div>
-                <img
-                  id="avatar-image"
-                  class="avatar-image"
-                  style="display: none"
-                />
-                <div
-                  class="avatar-upload-overlay"
-                  onclick="triggerFileUpload()"
-                >
+                <img id="avatar-image" class="avatar-image" style="display: none" />
+                <div class="avatar-upload-overlay" onclick="triggerFileUpload()">
                   <i class="fas fa-camera"></i>
                 </div>
               </div>
-              <input
-                type="file"
-                id="avatar-upload"
-                accept="image/*"
-                style="display: none"
-              />
+              <input type="file" id="avatar-upload" accept="image/*" style="display: none" />
             </div>
             <div class="profile-info">
               <h1 class="profile-name" id="profile-name">John Doe</h1>
@@ -537,12 +498,7 @@
                 <div class="form-grid">
                   <div class="form-group">
                     <label class="form-label">Benutzername</label>
-                    <input
-                      type="text"
-                      id="username"
-                      class="form-control"
-                      readonly
-                    />
+                    <input type="text" id="username" class="form-control" readonly />
                   </div>
                   <div class="form-group">
                     <label class="form-label">E-Mail</label>
@@ -558,13 +514,7 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label">Alter</label>
-                    <input
-                      type="number"
-                      id="age"
-                      class="form-control"
-                      min="16"
-                      max="99"
-                    />
+                    <input type="number" id="age" class="form-control" min="16" max="99" />
                   </div>
                   <div class="form-group">
                     <label class="form-label">Mitarbeiter-ID</label>
@@ -601,36 +551,18 @@
               <form id="password-form">
                 <div class="form-group">
                   <label class="form-label">Aktuelles Passwort</label>
-                  <input
-                    type="password"
-                    id="current_password"
-                    class="form-control"
-                    required
-                  />
+                  <input type="password" id="current_password" class="form-control" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Neues Passwort</label>
-                  <input
-                    type="password"
-                    id="new_password"
-                    class="form-control"
-                    required
-                  />
+                  <input type="password" id="new_password" class="form-control" required />
                   <div class="password-strength">
-                    <div
-                      class="password-strength-bar"
-                      id="password-strength-bar"
-                    ></div>
+                    <div class="password-strength-bar" id="password-strength-bar"></div>
                   </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Passwort bestätigen</label>
-                  <input
-                    type="password"
-                    id="confirm_password"
-                    class="form-control"
-                    required
-                  />
+                  <input type="password" id="confirm_password" class="form-control" required />
                 </div>
                 <button type="submit" class="btn-primary">
                   <i class="fas fa-lock"></i>
@@ -647,23 +579,15 @@
                 <i class="fas fa-shield-alt"></i>
                 Datenschutzeinstellungen
               </h2>
-              <p
-                style="
-                  color: var(--text-secondary);
-                  margin-bottom: var(--spacing-lg);
-                "
-              >
-                Verwalten Sie Ihre Datenschutz- und
-                Benachrichtigungseinstellungen.
+              <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg)">
+                Verwalten Sie Ihre Datenschutz- und Benachrichtigungseinstellungen.
               </p>
 
               <div class="privacy-setting">
                 <div>
                   <strong>E-Mail-Benachrichtigungen</strong>
                   <br />
-                  <small style="color: var(--text-secondary)"
-                    >Erhalten Sie E-Mails über wichtige Updates</small
-                  >
+                  <small style="color: var(--text-secondary)">Erhalten Sie E-Mails über wichtige Updates</small>
                 </div>
                 <div class="toggle-switch active" onclick="toggleSetting(this)">
                   <div class="toggle-slider"></div>
@@ -674,9 +598,7 @@
                 <div>
                   <strong>Profil für andere sichtbar</strong>
                   <br />
-                  <small style="color: var(--text-secondary)"
-                    >Andere Benutzer können Ihr Profil sehen</small
-                  >
+                  <small style="color: var(--text-secondary)">Andere Benutzer können Ihr Profil sehen</small>
                 </div>
                 <div class="toggle-switch active" onclick="toggleSetting(this)">
                   <div class="toggle-slider"></div>
@@ -687,30 +609,19 @@
                 <div>
                   <strong>Aktivitätsstatus anzeigen</strong>
                   <br />
-                  <small style="color: var(--text-secondary)"
-                    >Zeigen Sie anderen an, wann Sie zuletzt aktiv waren</small
-                  >
+                  <small style="color: var(--text-secondary)">Zeigen Sie anderen an, wann Sie zuletzt aktiv waren</small>
                 </div>
                 <div class="toggle-switch" onclick="toggleSetting(this)">
                   <div class="toggle-slider"></div>
                 </div>
               </div>
 
-              <div
-                style="
-                  margin-top: var(--spacing-xl);
-                  padding-top: var(--spacing-xl);
-                  border-top: 1px solid var(--border-color);
-                "
-              >
+              <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--border-color)">
                 <button class="btn-secondary">
                   <i class="fas fa-download"></i>
                   Meine Daten herunterladen
                 </button>
-                <button
-                  class="btn-secondary"
-                  style="margin-left: var(--spacing-md)"
-                >
+                <button class="btn-secondary" style="margin-left: var(--spacing-md)">
                   <i class="fas fa-trash"></i>
                   Account löschen
                 </button>
@@ -722,12 +633,7 @@
     </div>
 
     <!-- Hidden File Upload -->
-    <input
-      type="file"
-      id="hidden-file-upload"
-      accept="image/*"
-      style="display: none"
-    />
+    <input type="file" id="hidden-file-upload" accept="image/*" style="display: none" />
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -742,46 +648,34 @@
 
       function setupEventListeners() {
         // Profile form submission
-        document
-          .getElementById('profile-form')
-          .addEventListener('submit', function (e) {
-            e.preventDefault();
-            updateProfile();
-          });
+        document.getElementById('profile-form').addEventListener('submit', function (e) {
+          e.preventDefault();
+          updateProfile();
+        });
 
         // Password form submission
-        document
-          .getElementById('password-form')
-          .addEventListener('submit', function (e) {
-            e.preventDefault();
-            changePassword();
-          });
+        document.getElementById('password-form').addEventListener('submit', function (e) {
+          e.preventDefault();
+          changePassword();
+        });
 
         // Avatar upload
-        document
-          .getElementById('avatar-upload')
-          .addEventListener('change', function (e) {
-            if (e.target.files && e.target.files[0]) {
-              uploadAvatar(e.target.files[0]);
-            }
-          });
+        document.getElementById('avatar-upload').addEventListener('change', function (e) {
+          if (e.target.files && e.target.files[0]) {
+            uploadAvatar(e.target.files[0]);
+          }
+        });
 
         // Password strength checker
-        document
-          .getElementById('new_password')
-          .addEventListener('input', function (e) {
-            checkPasswordStrength(e.target.value);
-          });
+        document.getElementById('new_password').addEventListener('input', function (e) {
+          checkPasswordStrength(e.target.value);
+        });
       }
 
       function switchTab(tabName) {
         // Remove active from all tabs and contents
-        document
-          .querySelectorAll('.profile-tab')
-          .forEach((tab) => tab.classList.remove('active'));
-        document
-          .querySelectorAll('.profile-content')
-          .forEach((content) => content.classList.remove('active'));
+        document.querySelectorAll('.profile-tab').forEach((tab) => tab.classList.remove('active'));
+        document.querySelectorAll('.profile-content').forEach((content) => content.classList.remove('active'));
 
         // Add active to selected tab and content
         event.target.classList.add('active');
@@ -816,11 +710,8 @@
 
       function populateProfile(user) {
         // Update header
-        document.getElementById('profile-name').textContent =
-          `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
-          user.username;
-        document.getElementById('profile-role').textContent =
-          getRoleDisplayName(user.role);
+        document.getElementById('profile-name').textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+        document.getElementById('profile-role').textContent = getRoleDisplayName(user.role);
 
         // Update avatar
         updateAvatar(user);
@@ -847,11 +738,7 @@
           avatarImage.style.display = 'block';
           avatarInitials.style.display = 'none';
         } else {
-          const initials = getInitials(
-            user.first_name,
-            user.last_name,
-            user.username
-          );
+          const initials = getInitials(user.first_name, user.last_name, user.username);
           avatarInitials.textContent = initials;
           avatarImage.style.display = 'none';
           avatarInitials.style.display = 'flex';
@@ -885,19 +772,10 @@
 
           // Collect form data
           formData.append('email', document.getElementById('email').value);
-          formData.append(
-            'first_name',
-            document.getElementById('first_name').value
-          );
-          formData.append(
-            'last_name',
-            document.getElementById('last_name').value
-          );
+          formData.append('first_name', document.getElementById('first_name').value);
+          formData.append('last_name', document.getElementById('last_name').value);
           formData.append('age', document.getElementById('age').value);
-          formData.append(
-            'employee_id',
-            document.getElementById('employee_id').value
-          );
+          formData.append('employee_id', document.getElementById('employee_id').value);
           formData.append('iban', document.getElementById('iban').value);
           formData.append('company', document.getElementById('company').value);
           formData.append('notes', document.getElementById('notes').value);
@@ -915,10 +793,7 @@
             await loadUserProfile(); // Reload to show changes
           } else {
             const error = await response.json();
-            showAlert(
-              error.message || 'Fehler beim Aktualisieren des Profils',
-              'error'
-            );
+            showAlert(error.message || 'Fehler beim Aktualisieren des Profils', 'error');
           }
         } catch (error) {
           console.error('Error updating profile:', error);
@@ -927,11 +802,9 @@
       }
 
       async function changePassword() {
-        const currentPassword =
-          document.getElementById('current_password').value;
+        const currentPassword = document.getElementById('current_password').value;
         const newPassword = document.getElementById('new_password').value;
-        const confirmPassword =
-          document.getElementById('confirm_password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
 
         if (newPassword !== confirmPassword) {
           showAlert('Passwörter stimmen nicht überein', 'error');
@@ -962,10 +835,7 @@
             document.getElementById('password-form').reset();
           } else {
             const error = await response.json();
-            showAlert(
-              error.message || 'Fehler beim Ändern des Passworts',
-              'error'
-            );
+            showAlert(error.message || 'Fehler beim Ändern des Passworts', 'error');
           }
         } catch (error) {
           console.error('Error changing password:', error);
@@ -1006,10 +876,7 @@
             await loadUserProfile(); // Reload to show new picture
           } else {
             const error = await response.json();
-            showAlert(
-              error.message || 'Fehler beim Hochladen des Profilbilds',
-              'error'
-            );
+            showAlert(error.message || 'Fehler beim Hochladen des Profilbilds', 'error');
           }
         } catch (error) {
           console.error('Error uploading avatar:', error);

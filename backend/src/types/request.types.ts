@@ -81,13 +81,26 @@ export interface FullRequest<
   params: TParams;
 }
 
+// Document-specific request types
+export interface DocumentRequest extends AuthenticatedRequest {
+  document?: any; // Will be typed properly when Document model is fully migrated
+  params: {
+    documentId: string;
+  };
+}
+
 // Chat-specific request types
 export interface ChatUsersRequest extends AuthenticatedRequest {
-  // No additional properties needed
+  query: ParsedQs & {
+    search?: string;
+  };
 }
 
 export interface GetConversationsRequest extends AuthenticatedRequest {
-  // No additional properties needed
+  query: ParsedQs & {
+    limit?: string;
+    offset?: string;
+  };
 }
 
 export interface CreateConversationRequest extends AuthenticatedRequest {

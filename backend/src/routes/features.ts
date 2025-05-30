@@ -235,8 +235,9 @@ router.get(
 router.get(
   '/test/:featureCode',
   authenticateToken as any,
-  (req: any, res: any, next: any) =>
-    checkFeature(req.params.featureCode)(req, res, next),
+  async (req: any, res: any, next: any): Promise<void> => {
+    await checkFeature(req.params.featureCode)(req, res, next);
+  },
   (req: any, res: any): void => {
     res.json({
       message: `Zugriff auf Feature ${req.params.featureCode} gewährt`,

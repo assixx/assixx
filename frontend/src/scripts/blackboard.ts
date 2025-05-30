@@ -177,9 +177,7 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function () {
       // Remove active class from all pills
-      document
-        .querySelectorAll('.filter-pill')
-        .forEach((pill) => pill.classList.remove('active'));
+      document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
       // Add active class to clicked pill
       this.classList.add('active');
 
@@ -272,9 +270,7 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
     button.addEventListener('click', function () {
       // Remove active class from all color options
-      document
-        .querySelectorAll('.color-option')
-        .forEach((option) => option.classList.remove('active'));
+      document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
       // Add active class to clicked option
       this.classList.add('active');
     });
@@ -323,7 +319,7 @@ async function loadEntries(): Promise<void> {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -374,7 +370,7 @@ async function checkLoggedIn(): Promise<void> {
   if (!token) {
     throw new Error('No authentication token found');
   }
-  
+
   // Verify token is valid
   try {
     const response = await fetch('/api/user/profile', {
@@ -382,7 +378,7 @@ async function checkLoggedIn(): Promise<void> {
         Authorization: `Bearer ${token}`,
       },
     });
-    
+
     if (!response.ok) {
       throw new Error('Invalid token');
     }
@@ -487,14 +483,18 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     <div class="card-header">
       <h3>${escapeHtml(entry.title)}</h3>
       <div class="card-actions">
-        ${canEdit ? `
+        ${
+          canEdit
+            ? `
           <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.id})">
             <i class="fas fa-edit"></i>
           </button>
           <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.id})">
             <i class="fas fa-trash"></i>
           </button>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
     <div class="card-body">
@@ -537,11 +537,7 @@ function updatePagination(pagination: PaginationInfo): void {
 
   // Page numbers
   for (let i = 1; i <= pagination.totalPages; i++) {
-    if (
-      i === 1 ||
-      i === pagination.totalPages ||
-      (i >= currentPage - 2 && i <= currentPage + 2)
-    ) {
+    if (i === 1 || i === pagination.totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
       const pageBtn = document.createElement('button');
       pageBtn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
       pageBtn.textContent = i.toString();
@@ -666,7 +662,7 @@ async function saveEntry(): Promise<void> {
     priority_level: formData.get('priority_level') as string,
     org_level: formData.get('org_level') as string,
     org_id: formData.get('org_level') === 'all' ? null : parseInt(formData.get('org_id') as string),
-    color: color,
+    color,
   };
 
   try {
@@ -675,7 +671,7 @@ async function saveEntry(): Promise<void> {
     const method = entryId ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
-      method: method,
+      method,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -714,7 +710,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
 
     if (response.ok) {
       const entry: BlackboardEntry = await response.json();
-      
+
       // Fill form with entry data
       const form = document.getElementById('entryForm') as HTMLFormElement;
       if (!form) return;

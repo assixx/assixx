@@ -403,8 +403,7 @@
 
           // Rolle anzeigen (erster Buchstabe groß)
           if (navRole && userData.role) {
-            navRole.textContent =
-              userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
+            navRole.textContent = userData.role.charAt(0).toUpperCase() + userData.role.slice(1);
           }
 
           // Profilbild oder Initialen anzeigen
@@ -412,10 +411,7 @@
             if (userData.profile_picture) {
               navProfilePic.innerHTML = `<img src="/${userData.profile_picture}" alt="${userData.username}">`;
             } else {
-              const initials = getInitials(
-                userData.first_name,
-                userData.last_name
-              );
+              const initials = getInitials(userData.first_name, userData.last_name);
               navProfilePic.textContent = initials;
             }
           }

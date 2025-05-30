@@ -39,14 +39,11 @@ class BlackboardWidget {
       }
 
       // Fetch entries
-      const response = await fetch(
-        `/api/blackboard/dashboard?limit=${this.limit}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/blackboard/dashboard?limit=${this.limit}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Failed to load entries');
@@ -138,9 +135,7 @@ class BlackboardWidget {
 
       // Prepare unread indicator
       const unreadBadge =
-        entry.requires_confirmation && !entry.is_confirmed
-          ? '<span class="badge bg-danger ms-2">Ungelesen</span>'
-          : '';
+        entry.requires_confirmation && !entry.is_confirmed ? '<span class="badge bg-danger ms-2">Ungelesen</span>' : '';
 
       html += `
         <div class="blackboard-entry card mb-3 ${priorityClass}">
@@ -199,10 +194,7 @@ class BlackboardWidget {
       }
 
       // Prepare unread indicator
-      const unreadIndicator =
-        entry.requires_confirmation && !entry.is_confirmed
-          ? 'list-group-item-warning'
-          : '';
+      const unreadIndicator = entry.requires_confirmation && !entry.is_confirmed ? 'list-group-item-warning' : '';
 
       html += `
         <li class="list-group-item d-flex justify-content-between align-items-center ${priorityClass} ${unreadIndicator}">

@@ -93,15 +93,15 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
     const tenantId = getTenantId(req.user);
 
     const options = {
-      status: String(req.query.status) || 'active',
-      filter: String(req.query.filter) || 'all',
-      search: String(req.query.search) || '',
-      start_date: req.query.start_date as string | undefined,
-      end_date: req.query.end_date as string | undefined,
-      page: parseInt(String(req.query.page) || '1', 10),
-      limit: parseInt(String(req.query.limit) || '50', 10),
-      sortBy: String(req.query.sortBy) || 'start_time',
-      sortDir: String(req.query.sortDir) || 'ASC',
+      status: req.query.status ? String(req.query.status) : 'active',
+      filter: req.query.filter ? String(req.query.filter) : 'all',
+      search: req.query.search ? String(req.query.search) : '',
+      start_date: (req.query.start || req.query.start_date) as string | undefined,
+      end_date: (req.query.end || req.query.end_date) as string | undefined,
+      page: parseInt(req.query.page ? String(req.query.page) : '1', 10),
+      limit: parseInt(req.query.limit ? String(req.query.limit) : '50', 10),
+      sortBy: req.query.sortBy ? String(req.query.sortBy) : 'start_time',
+      sortDir: req.query.sortDir ? String(req.query.sortDir) : 'ASC',
     } as any;
 
     const result = await calendarModel.getAllEvents(
@@ -124,9 +124,25 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
 router.get('/dashboard', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const tenantId = getTenantId(req.user);
-    const days = parseInt(String(req.query.days) || '7', 10);
-    const limit = parseInt(String(req.query.limit) || '5', 10);
+    const tenantId = getTenantId(authReq.user);
+    
+    // Parse days parameter with better validation
+    let days = 7; // default
+    if (req.query.days) {
+      const parsedDays = parseInt(String(req.query.days), 10);
+      if (!isNaN(parsedDays) && parsedDays > 0) {
+        days = parsedDays;
+      }
+    }
+    
+    // Parse limit parameter with better validation
+    let limit = 5; // default
+    if (req.query.limit) {
+      const parsedLimit = parseInt(String(req.query.limit), 10);
+      if (!isNaN(parsedLimit) && parsedLimit > 0) {
+        limit = parsedLimit;
+      }
+    }
 
     const events = await calendarModel.getDashboardEvents(
       tenantId,

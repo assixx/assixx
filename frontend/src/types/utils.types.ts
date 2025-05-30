@@ -2,15 +2,13 @@
 
 // Make all properties optional recursively
 export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends (infer U)[]
-    ? DeepPartial<U>[]
-    : T[P] extends object
-    ? DeepPartial<T[P]>
-    : T[P];
+  [P in keyof T]?: T[P] extends (infer U)[] ? DeepPartial<U>[] : T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
 // Extract array element type
-export type ArrayElement<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
+export type ArrayElement<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[]
+  ? ElementType
+  : never;
 
 // Omit multiple properties
 export type OmitMultiple<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;

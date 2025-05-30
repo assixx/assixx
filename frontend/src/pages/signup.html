@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registrieren - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <style>
       /* Dashboard-Style Design - weniger bunt, mehr dunkel/weiß/blau */
@@ -30,12 +27,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: radial-gradient(
-          circle at 50% 50%,
-          #1e1e1e 0%,
-          #121212 50%,
-          #0a0a0a 100%
-        );
+        background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
         opacity: 0.9;
         z-index: -1;
       }
@@ -511,11 +503,7 @@
 
       .submit-button {
         padding: 10px 24px;
-        background: linear-gradient(
-          135deg,
-          var(--primary-color),
-          var(--primary-hover)
-        );
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
         color: white;
         border: none;
         border-radius: var(--radius-sm);
@@ -538,12 +526,7 @@
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s ease;
       }
 
@@ -702,11 +685,7 @@
       <!-- Header -->
       <div class="signup-header">
         <div class="header-left">
-          <img
-            src="/assets/images/logo.png"
-            alt="Assixx Logo"
-            class="signup-logo"
-          />
+          <img src="/assets/images/logo.png" alt="Assixx Logo" class="signup-logo" />
           <div class="header-text">
             <h1></h1>
             <!-- machen wir anders spöter -->
@@ -715,9 +694,18 @@
           </div>
         </div>
         <div class="pricing-info">
-          <div class="pricing-item">🏢 Root: <strong>€149/M</strong></div>
-          <div class="pricing-item">👔 Admin: <strong>€19/M</strong></div>
-          <div class="pricing-item">👷 Mitarbeiter: <strong>€5/M</strong></div>
+          <div class="pricing-item">
+            🏢 Root:
+            <strong>€149/M</strong>
+          </div>
+          <div class="pricing-item">
+            👔 Admin:
+            <strong>€19/M</strong>
+          </div>
+          <div class="pricing-item">
+            👷 Mitarbeiter:
+            <strong>€5/M</strong>
+          </div>
         </div>
       </div>
 
@@ -730,62 +718,29 @@
           <!-- Erste Zeile -->
           <div class="form-group">
             <label class="form-label">Firmenname *</label>
-            <input
-              type="text"
-              name="company_name"
-              class="form-control"
-              required
-              placeholder="Ihre Firma GmbH"
-            />
+            <input type="text" name="company_name" class="form-control" required placeholder="Ihre Firma GmbH" />
           </div>
           <div class="form-group">
             <label class="form-label">Subdomain *</label>
             <div class="input-group">
-              <input
-                type="text"
-                name="subdomain"
-                class="form-control"
-                required
-                pattern="[a-z0-9\-]+"
-                placeholder="ihre-firma"
-              />
+              <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9\-]+" placeholder="ihre-firma" />
               <span class="input-group-suffix">.assixx.com</span>
             </div>
-            <div id="subdomainError" class="error-message">
-              Nur Kleinbuchstaben und Bindestriche
-            </div>
+            <div id="subdomainError" class="error-message">Nur Kleinbuchstaben und Bindestriche</div>
           </div>
           <div class="form-group">
             <label class="form-label">E-Mail *</label>
-            <input
-              type="email"
-              name="email"
-              class="form-control"
-              required
-              placeholder="email@firma.de"
-            />
+            <input type="email" name="email" class="form-control" required placeholder="email@firma.de" />
           </div>
 
           <!-- Zweite Zeile -->
           <div class="form-group">
             <label class="form-label">Vorname *</label>
-            <input
-              type="text"
-              name="first_name"
-              class="form-control"
-              required
-              placeholder=""
-            />
+            <input type="text" name="first_name" class="form-control" required placeholder="" />
           </div>
           <div class="form-group">
             <label class="form-label">Nachname *</label>
-            <input
-              type="text"
-              name="last_name"
-              class="form-control"
-              required
-              placeholder=""
-            />
+            <input type="text" name="last_name" class="form-control" required placeholder="" />
           </div>
           <div class="form-group">
             <label class="form-label">Telefon</label>
@@ -794,169 +749,56 @@
                 <div class="country-display" onclick="toggleCountryDropdown()">
                   <span id="selectedFlag">🇩🇪</span>
                   <span id="selectedCode">+49</span>
-                  <svg
-                    width="10"
-                    height="6"
-                    viewBox="0 0 10 6"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1 1L5 5L9 1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
+                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="country-dropdown" id="countryDropdown">
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇩🇪', '+49')"
-                  >
-                    🇩🇪 +49
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇦🇹', '+43')"
-                  >
-                    🇦🇹 +43
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇨🇭', '+41')"
-                  >
-                    🇨🇭 +41
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇫🇷', '+33')"
-                  >
-                    🇫🇷 +33
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇮🇹', '+39')"
-                  >
-                    🇮🇹 +39
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇪🇸', '+34')"
-                  >
-                    🇪🇸 +34
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇳🇱', '+31')"
-                  >
-                    🇳🇱 +31
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇧🇪', '+32')"
-                  >
-                    🇧🇪 +32
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇱🇺', '+352')"
-                  >
-                    🇱🇺 +352
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇵🇱', '+48')"
-                  >
-                    🇵🇱 +48
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇨🇿', '+420')"
-                  >
-                    🇨🇿 +420
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇺🇸', '+1')"
-                  >
-                    🇺🇸 +1
-                  </div>
-                  <div
-                    class="country-option"
-                    onclick="selectCountry('🇬🇧', '+44')"
-                  >
-                    🇬🇧 +44
-                  </div>
+                  <div class="country-option" onclick="selectCountry('🇩🇪', '+49')">🇩🇪 +49</div>
+                  <div class="country-option" onclick="selectCountry('🇦🇹', '+43')">🇦🇹 +43</div>
+                  <div class="country-option" onclick="selectCountry('🇨🇭', '+41')">🇨🇭 +41</div>
+                  <div class="country-option" onclick="selectCountry('🇫🇷', '+33')">🇫🇷 +33</div>
+                  <div class="country-option" onclick="selectCountry('🇮🇹', '+39')">🇮🇹 +39</div>
+                  <div class="country-option" onclick="selectCountry('🇪🇸', '+34')">🇪🇸 +34</div>
+                  <div class="country-option" onclick="selectCountry('🇳🇱', '+31')">🇳🇱 +31</div>
+                  <div class="country-option" onclick="selectCountry('🇧🇪', '+32')">🇧🇪 +32</div>
+                  <div class="country-option" onclick="selectCountry('🇱🇺', '+352')">🇱🇺 +352</div>
+                  <div class="country-option" onclick="selectCountry('🇵🇱', '+48')">🇵🇱 +48</div>
+                  <div class="country-option" onclick="selectCountry('🇨🇿', '+420')">🇨🇿 +420</div>
+                  <div class="country-option" onclick="selectCountry('🇺🇸', '+1')">🇺🇸 +1</div>
+                  <div class="country-option" onclick="selectCountry('🇬🇧', '+44')">🇬🇧 +44</div>
                 </div>
               </div>
               <input type="hidden" id="countryCode" value="+49" />
-              <input
-                type="tel"
-                name="phone"
-                class="form-control phone-number"
-                placeholder="123 456789"
-              />
+              <input type="tel" name="phone" class="form-control phone-number" placeholder="123 456789" />
             </div>
           </div>
 
           <!-- Dritte Zeile -->
           <div class="form-group">
             <label class="form-label">Passwort *</label>
-            <input
-              type="password"
-              name="password"
-              class="form-control"
-              required
-              minlength="8"
-              placeholder="Min. 8 Zeichen"
-            />
+            <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min. 8 Zeichen" />
           </div>
           <div class="form-group">
             <label class="form-label">Passwort bestätigen *</label>
-            <input
-              type="password"
-              name="password_confirm"
-              class="form-control"
-              required
-              placeholder=""
-            />
-            <div id="passwordError" class="error-message">
-              Passwörter stimmen nicht überein
-            </div>
+            <input type="password" name="password_confirm" class="form-control" required placeholder="" />
+            <div id="passwordError" class="error-message">Passwörter stimmen nicht überein</div>
           </div>
           <div class="form-group">
             <label class="form-label">Plan</label>
             <div class="custom-plan-select">
               <div class="plan-display" onclick="togglePlanDropdown()">
                 <span id="selectedPlan">Enterprise</span>
-                <svg
-                  width="10"
-                  height="6"
-                  viewBox="0 0 10 6"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M1 1L5 5L9 1"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="plan-dropdown" id="planDropdown">
-                <div
-                  class="plan-option"
-                  onclick="selectPlan('enterprise', 'Enterprise')"
-                >
+                <div class="plan-option" onclick="selectPlan('enterprise', 'Enterprise')">
                   <span>Enterprise</span>
                   <span class="plan-price">€149/M</span>
                 </div>
-                <div
-                  class="plan-option"
-                  onclick="selectPlan('professional', 'Professional')"
-                >
+                <div class="plan-option" onclick="selectPlan('professional', 'Professional')">
                   <span>Professional</span>
                   <span class="plan-price">€99/M</span>
                 </div>
@@ -966,12 +808,7 @@
                 </div>
               </div>
             </div>
-            <input
-              type="hidden"
-              name="plan"
-              id="planValue"
-              value="enterprise"
-            />
+            <input type="hidden" name="plan" id="planValue" value="enterprise" />
           </div>
 
           <!-- Features in kompakter Zeile -->
@@ -979,30 +816,15 @@
             <label class="form-label">Features</label>
             <div class="features-row">
               <label class="feature-item">
-                <input
-                  type="checkbox"
-                  name="features"
-                  value="blackboard"
-                  checked
-                />
+                <input type="checkbox" name="features" value="blackboard" checked />
                 <span>Schwarzes Brett</span>
               </label>
               <label class="feature-item">
-                <input
-                  type="checkbox"
-                  name="features"
-                  value="calendar"
-                  checked
-                />
+                <input type="checkbox" name="features" value="calendar" checked />
                 <span>Kalender</span>
               </label>
               <label class="feature-item">
-                <input
-                  type="checkbox"
-                  name="features"
-                  value="shift_planning"
-                  checked
-                />
+                <input type="checkbox" name="features" value="shift_planning" checked />
                 <span>Schichtplanung</span>
               </label>
               <label class="feature-item">
@@ -1020,19 +842,16 @@
           <div class="bottom-section">
             <label class="terms-checkbox">
               <input type="checkbox" id="termsCheckbox" name="terms" required />
-              <span
-                >Ich akzeptiere die
-                <a href="/TERMS-OF-USE.md" target="_blank" class="terms-link"
-                  >Nutzungsbedingungen</a
-                ></span
-              >
+              <span>
+                Ich akzeptiere die
+                <a href="/TERMS-OF-USE.md" target="_blank" class="terms-link">Nutzungsbedingungen</a>
+              </span>
             </label>
             <div class="offer-banner">
-              🎁 <strong>14 Tage kostenlos testen</strong>
+              🎁
+              <strong>14 Tage kostenlos testen</strong>
             </div>
-            <button type="submit" class="submit-button" id="submitButton">
-              Jetzt registrieren →
-            </button>
+            <button type="submit" class="submit-button" id="submitButton">Jetzt registrieren →</button>
             <a href="/login" class="login-link">Bereits registriert?</a>
           </div>
         </div>
@@ -1156,10 +975,7 @@
           document.querySelector('.plan-display').classList.remove('active');
         }
 
-        if (
-          !countrySelect.contains(e.target) &&
-          !planSelect.contains(e.target)
-        ) {
+        if (!countrySelect.contains(e.target) && !planSelect.contains(e.target)) {
           document.removeEventListener('click', closeDropdownOutside);
         }
       }
@@ -1208,7 +1024,7 @@
             '2. Wählen Sie eine eindeutige Subdomain\n' +
             '3. Erstellen Sie ein sicheres Passwort\n' +
             '4. 14 Tage kostenlos testen!\n\n' +
-            'Bei Fragen: support@assixx.com'
+            'Bei Fragen: support@assixx.com',
         );
       }
 
@@ -1236,16 +1052,11 @@
 
       // Password confirmation with real-time validation
       const passwordInput = document.querySelector('input[name="password"]');
-      const passwordConfirmInput = document.querySelector(
-        'input[name="password_confirm"]'
-      );
+      const passwordConfirmInput = document.querySelector('input[name="password_confirm"]');
       const passwordError = document.getElementById('passwordError');
 
       passwordConfirmInput.addEventListener('input', () => {
-        if (
-          passwordConfirmInput.value &&
-          passwordInput.value !== passwordConfirmInput.value
-        ) {
+        if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
           passwordError.style.display = 'block';
           passwordConfirmInput.style.borderColor = '#ef4444';
         } else {
@@ -1255,90 +1066,80 @@
       });
 
       // Form submission
-      document
-        .getElementById('signupForm')
-        .addEventListener('submit', async (e) => {
-          e.preventDefault();
+      document.getElementById('signupForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-          // Validate passwords match
-          if (passwordInput.value !== passwordConfirmInput.value) {
-            passwordError.style.display = 'block';
-            passwordConfirmInput.focus();
-            return;
-          }
+        // Validate passwords match
+        if (passwordInput.value !== passwordConfirmInput.value) {
+          passwordError.style.display = 'block';
+          passwordConfirmInput.focus();
+          return;
+        }
 
-          const formData = new FormData(e.target);
-          const data = Object.fromEntries(formData.entries());
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
 
-          // Get country code
-          const phoneNumber = data.phone;
-          const fullPhone = phoneNumber
-            ? `${currentCountryCode} ${phoneNumber}`
-            : '';
+        // Get country code
+        const phoneNumber = data.phone;
+        const fullPhone = phoneNumber ? `${currentCountryCode} ${phoneNumber}` : '';
 
-          // Collect selected features
-          const selectedFeatures = Array.from(
-            document.querySelectorAll('input[name="features"]:checked')
-          ).map((cb) => cb.value);
+        // Collect selected features
+        const selectedFeatures = Array.from(document.querySelectorAll('input[name="features"]:checked')).map((cb) => cb.value);
 
-          // Add root user credentials
-          const signupData = {
-            company_name: data.company_name,
-            subdomain: data.subdomain,
-            email: data.email,
-            admin_email: data.email,
-            admin_password: data.password,
-            admin_first_name: data.first_name,
-            admin_last_name: data.last_name,
-            phone: fullPhone,
-            plan: currentPlan,
-            features: selectedFeatures,
-          };
+        // Add root user credentials
+        const signupData = {
+          company_name: data.company_name,
+          subdomain: data.subdomain,
+          email: data.email,
+          admin_email: data.email,
+          admin_password: data.password,
+          admin_first_name: data.first_name,
+          admin_last_name: data.last_name,
+          phone: fullPhone,
+          plan: currentPlan,
+          features: selectedFeatures,
+        };
 
-          try {
-            const submitButton = e.target.querySelector(
-              'button[type="submit"]'
-            );
-            const originalText = submitButton.innerHTML;
-            submitButton.disabled = true;
-            submitButton.innerHTML = '⏳ Wird erstellt...';
+        try {
+          const submitButton = e.target.querySelector('button[type="submit"]');
+          const originalText = submitButton.innerHTML;
+          submitButton.disabled = true;
+          submitButton.innerHTML = '⏳ Wird erstellt...';
 
-            const response = await fetch('/api/signup', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(signupData),
-            });
+          const response = await fetch('/api/signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(signupData),
+          });
 
-            const result = await response.json();
+          const result = await response.json();
 
-            if (response.ok) {
-              document.getElementById('successMessage').style.display = 'block';
-              document.getElementById('successMessage').innerHTML =
-                `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
+          if (response.ok) {
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('successMessage').innerHTML =
+              `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
 
-              // Clear form
-              e.target.reset();
+            // Clear form
+            e.target.reset();
 
-              // Redirect after 3 seconds
-              setTimeout(() => {
-                window.location.href = '/login';
-              }, 3000);
-            } else {
-              alert(result.message || 'Fehler bei der Registrierung');
-              submitButton.disabled = false;
-              submitButton.innerHTML = originalText;
-            }
-          } catch (error) {
-            console.error('Signup error:', error);
-            alert(
-              'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
-            );
+            // Redirect after 3 seconds
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 3000);
+          } else {
+            alert(result.message || 'Fehler bei der Registrierung');
             submitButton.disabled = false;
             submitButton.innerHTML = originalText;
           }
-        });
+        } catch (error) {
+          console.error('Signup error:', error);
+          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalText;
+        }
+      });
     </script>
   </body>
 </html>

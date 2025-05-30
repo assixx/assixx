@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // File selection event
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
   const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement;
-  
+
   if (fileInput && fileNameSpan) {
     fileInput.addEventListener('change', () => {
       if (fileInput.files && fileInput.files.length > 0) {
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadEmployees(): Promise<void> {
   console.log('Loading employees');
   const token = getAuthToken();
-  
+
   if (!token) {
     console.error('No authentication token');
     return;
@@ -75,14 +75,14 @@ async function loadEmployees(): Promise<void> {
       if (userSelect) {
         // Add employees to dropdown
         userSelect.innerHTML = '<option value="">-- Mitarbeiter auswählen --</option>';
-        
+
         employees.forEach((employee: User) => {
           const option = document.createElement('option');
           option.value = employee.id.toString();
           option.textContent = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
           userSelect.appendChild(option);
         });
-        
+
         console.log(`Loaded ${employees.length} employees for select`);
       } else {
         console.error('User select element not found');
@@ -155,22 +155,22 @@ async function uploadDocument(e: Event): Promise<void> {
 
     if (response.ok) {
       console.log('Upload successful:', result);
-      
+
       // Show success message
       if (successElem) {
         successElem.textContent = result.message || 'Dokument erfolgreich hochgeladen!';
         successElem.style.display = 'block';
       }
-      
+
       // Reset form
       form.reset();
-      
+
       // Reset file name display
       const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement;
       if (fileNameSpan) {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
       }
-      
+
       // Reload document list if exists
       if (typeof (window as any).loadDocuments === 'function') {
         (window as any).loadDocuments();

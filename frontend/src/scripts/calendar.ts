@@ -246,8 +246,8 @@ function initializeCalendar(): void {
 
       const rect = info.el.getBoundingClientRect();
       tooltip.style.position = 'absolute';
-      tooltip.style.left = rect.left + 'px';
-      tooltip.style.top = rect.bottom + 5 + 'px';
+      tooltip.style.left = `${rect.left}px`;
+      tooltip.style.top = `${rect.bottom + 5}px`;
       tooltip.style.zIndex = '9999';
 
       info.el._tooltip = tooltip;
@@ -271,9 +271,7 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function () {
       // Remove active class from all pills
-      document
-        .querySelectorAll('.filter-pill')
-        .forEach((pill) => pill.classList.remove('active'));
+      document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
       // Add active class to clicked pill
       this.classList.add('active');
 
@@ -343,9 +341,7 @@ function setupEventListeners(): void {
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
     button.addEventListener('click', function () {
       // Remove active class from all color options
-      document
-        .querySelectorAll('.color-option')
-        .forEach((option) => option.classList.remove('active'));
+      document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
       // Add active class to clicked option
       this.classList.add('active');
     });
@@ -674,12 +670,16 @@ async function viewEvent(eventId: number): Promise<void> {
           <i class="fas fa-calendar-check"></i>
           <span>${event.all_day ? formattedEndDate : `${formattedEndDate} ${formattedEndTime}`}</span>
         </div>
-        ${event.location ? `
+        ${
+          event.location
+            ? `
           <div class="detail-item">
             <i class="fas fa-map-marker-alt"></i>
             <span>${escapeHtml(event.location)}</span>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         <div class="detail-item">
           <i class="fas fa-layer-group"></i>
           <span>${levelText}</span>
@@ -699,7 +699,8 @@ async function viewEvent(eventId: number): Promise<void> {
       `;
 
       event.attendees.forEach((attendee) => {
-        const name = `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim() || attendee.username || 'Unknown';
+        const name =
+          `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim() || attendee.username || 'Unknown';
         const statusIcon = getAttendeeStatusIcon(attendee.response);
         modalContent += `
           <div class="attendee-item">
@@ -715,7 +716,7 @@ async function viewEvent(eventId: number): Promise<void> {
     }
 
     // Add user response buttons
-    if (event.attendees?.some(a => a.user_id === currentUserId)) {
+    if (event.attendees?.some((a) => a.user_id === currentUserId)) {
       modalContent += `
         <div class="response-buttons">
           <h4>Ihre Antwort</h4>
@@ -794,7 +795,7 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
     if (apiResponse.ok) {
       showSuccess('Ihre Antwort wurde gespeichert.');
       closeModal('eventDetailsModal');
-      
+
       // Refresh calendar and upcoming events
       calendar.refetchEvents();
       loadUpcomingEvents();
@@ -837,11 +838,11 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     if (startDate) {
       const startInput = document.getElementById('eventStartDate') as HTMLInputElement;
       const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement;
-      
+
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
       }
-      
+
       if (!allDay && startTimeInput) {
         startTimeInput.value = formatTimeForInput(startDate);
       }
@@ -850,11 +851,11 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     if (endDate) {
       const endInput = document.getElementById('eventEndDate') as HTMLInputElement;
       const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement;
-      
+
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
       }
-      
+
       if (!allDay && endTimeInput) {
         endTimeInput.value = formatTimeForInput(endDate);
       }
@@ -990,10 +991,11 @@ async function saveEvent(): Promise<void> {
     all_day: allDay,
     location: formData.get('location') as string,
     org_level: formData.get('org_level') as string,
-    org_id: formData.get('org_level') === 'personal' || formData.get('org_level') === 'company' 
-      ? null 
-      : parseInt(formData.get('org_id') as string),
-    color: color,
+    org_id:
+      formData.get('org_level') === 'personal' || formData.get('org_level') === 'company'
+        ? null
+        : parseInt(formData.get('org_id') as string),
+    color,
     reminder_time: formData.get('reminder_time') ? parseInt(formData.get('reminder_time') as string) : null,
     attendee_ids: selectedAttendees,
   };
@@ -1004,7 +1006,7 @@ async function saveEvent(): Promise<void> {
     const method = eventId ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
-      method: method,
+      method,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -1015,7 +1017,7 @@ async function saveEvent(): Promise<void> {
     if (response.ok) {
       showSuccess(eventId ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!');
       closeModal('eventFormModal');
-      
+
       // Refresh calendar
       calendar.refetchEvents();
       loadUpcomingEvents();
@@ -1045,7 +1047,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
     if (response.ok) {
       const event: CalendarEvent = await response.json();
-      
+
       // Fill form with event data
       const form = document.getElementById('eventForm') as HTMLFormElement;
       if (!form) return;
@@ -1100,7 +1102,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
       // Load attendees
       if (event.attendees) {
-        selectedAttendees = event.attendees.map(a => a.user_id);
+        selectedAttendees = event.attendees.map((a) => a.user_id);
         updateSelectedAttendees();
       }
     } else {
@@ -1136,7 +1138,7 @@ async function deleteEvent(eventId: number): Promise<void> {
     if (response.ok) {
       showSuccess('Termin erfolgreich gelöscht!');
       closeModal('eventDetailsModal');
-      
+
       // Refresh calendar
       calendar.refetchEvents();
       loadUpcomingEvents();
@@ -1199,7 +1201,7 @@ function addAttendee(userId: number, name: string): void {
   if (!selectedAttendees.includes(userId)) {
     selectedAttendees.push(userId);
     updateSelectedAttendees();
-    
+
     // Clear search
     const searchInput = document.getElementById('attendeeSearch') as HTMLInputElement;
     const searchResults = document.getElementById('attendeeSearchResults') as HTMLElement;
@@ -1212,7 +1214,7 @@ function addAttendee(userId: number, name: string): void {
  * Remove attendee
  */
 function removeAttendee(userId: number): void {
-  selectedAttendees = selectedAttendees.filter(id => id !== userId);
+  selectedAttendees = selectedAttendees.filter((id) => id !== userId);
   updateSelectedAttendees();
 }
 
@@ -1226,7 +1228,7 @@ function updateSelectedAttendees(): void {
   container.innerHTML = '';
 
   selectedAttendees.forEach((userId) => {
-    const employee = employees.find(emp => emp.id === userId);
+    const employee = employees.find((emp) => emp.id === userId);
     if (!employee) return;
 
     const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;

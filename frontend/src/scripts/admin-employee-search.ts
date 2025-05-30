@@ -69,8 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const departments: Department[] = await response.json();
 
         // Departmentfilter befüllen
-        departmentFilter.innerHTML =
-          '<option value="">Alle Abteilungen</option>';
+        departmentFilter.innerHTML = '<option value="">Alle Abteilungen</option>';
 
         departments.forEach((dept) => {
           const option = document.createElement('option');
@@ -154,8 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     employeeTableBody.innerHTML = '';
 
     if (employees.length === 0) {
-      employeeTableBody.innerHTML =
-        '<tr><td colspan="5" class="text-center">Keine Mitarbeiter gefunden</td></tr>';
+      employeeTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Keine Mitarbeiter gefunden</td></tr>';
       return;
     }
 
@@ -293,11 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!employeeId || !employeeName) return;
 
-    if (
-      !confirm(
-        `Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`
-      )
-    ) {
+    if (!confirm(`Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`)) {
       return;
     }
 
@@ -322,9 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Fehler beim Löschen des Mitarbeiters:', error);
-      alert(
-        'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
-      );
+      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
 
@@ -338,9 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modal oder separate Seite zum Bearbeiten des Mitarbeiters öffnen
     // Hier kann je nach UI-Design eine eigene Implementierung erfolgen
-    alert(
-      `Bearbeiten von Mitarbeiter "${employeeName}" (ID: ${employeeId}) wird implementiert...`
-    );
+    alert(`Bearbeiten von Mitarbeiter "${employeeName}" (ID: ${employeeId}) wird implementiert...`);
 
     // Beispielweise:
     // window.location.href = `/admin/edit-employee.html?id=${employeeId}`;

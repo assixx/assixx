@@ -275,7 +275,7 @@ function initializeBootstrapComponents(): void {
   // Initialize tooltips if Bootstrap is available
   if (typeof (window as any).bootstrap !== 'undefined') {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(tooltipTriggerEl => {
+    tooltipTriggerList.forEach((tooltipTriggerEl) => {
       new (window as any).bootstrap.Tooltip(tooltipTriggerEl);
     });
   }
@@ -356,7 +356,7 @@ function displayBlackboardItems(entries: any[]): void {
           <p class="mb-1 text-truncate">${escapeHtml(entry.content)}</p>
           <small class="text-muted">von ${entry.created_by_name || 'Unbekannt'}</small>
         </a>
-      `
+      `,
     )
     .join('');
 }

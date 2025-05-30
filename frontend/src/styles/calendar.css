@@ -19,8 +19,8 @@
 
 /* FullCalendar Icon Fix - Use Font Awesome icons */
 .fc-icon-chevron-left:before {
-  content: '\f053';
-  font-family: 'Font Awesome 6 Free';
+  content: "\f053";
+  font-family: "Font Awesome 6 Free";
   font-weight: 900;
   font-size: 1em;
   display: inline-block;
@@ -29,8 +29,8 @@
 }
 
 .fc-icon-chevron-right:before {
-  content: '\f054';
-  font-family: 'Font Awesome 6 Free';
+  content: "\f054";
+  font-family: "Font Awesome 6 Free";
   font-weight: 900;
   font-size: 1em;
   display: inline-block;
@@ -580,27 +580,27 @@
   box-shadow: var(--shadow-md);
 }
 
-.response-btn[data-response='accepted'] {
+.response-btn[data-response="accepted"] {
   color: var(--success-color);
 }
 
-.response-btn[data-response='accepted']:hover {
+.response-btn[data-response="accepted"]:hover {
   border-color: var(--success-color);
 }
 
-.response-btn[data-response='tentative'] {
+.response-btn[data-response="tentative"] {
   color: var(--warning-color);
 }
 
-.response-btn[data-response='tentative']:hover {
+.response-btn[data-response="tentative"]:hover {
   border-color: var(--warning-color);
 }
 
-.response-btn[data-response='declined'] {
+.response-btn[data-response="declined"] {
   color: var(--error-color);
 }
 
-.response-btn[data-response='declined']:hover {
+.response-btn[data-response="declined"]:hover {
   border-color: var(--error-color);
 }
 
@@ -706,7 +706,7 @@ select.big-input:disabled {
   margin: 10px 0;
 }
 
-.simple-checkbox input[type='checkbox'] {
+.simple-checkbox input[type="checkbox"] {
   margin-right: 10px;
   transform: scale(1.3);
 }

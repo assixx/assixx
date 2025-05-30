@@ -181,9 +181,7 @@ function processEmployeeDeletion(): void {
       .then((result: DeletionResponse) => {
         if (result.success) {
           // Erfolgsmeldung anzeigen
-          alert(
-            `Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich archiviert.`
-          );
+          alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich archiviert.`);
 
           // Dialog schließen und Mitarbeiterliste aktualisieren
           hideModal('delete-employee-modal');
@@ -198,9 +196,7 @@ function processEmployeeDeletion(): void {
             (window as any).loadDashboardStats();
           }
         } else {
-          alert(
-            `Fehler: ${result.message || 'Unbekannter Fehler beim Archivieren des Mitarbeiters'}`
-          );
+          alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Archivieren des Mitarbeiters'}`);
         }
       })
       .catch((error) => {
@@ -214,7 +210,7 @@ function processEmployeeDeletion(): void {
         `WARNUNG: ENDGÜLTIGES LÖSCHEN!\n\n` +
           `Sie sind dabei, den Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen ${documentCount} Dokumente endgültig zu löschen!\n\n` +
           `Diese Aktion kann NICHT rückgängig gemacht werden!\n\n` +
-          `Sind Sie absolut sicher, dass Sie fortfahren möchten?`
+          `Sind Sie absolut sicher, dass Sie fortfahren möchten?`,
       );
 
       if (!confirmDelete) {
@@ -231,9 +227,7 @@ function processEmployeeDeletion(): void {
         .then((response) => response.json())
         .then((result: DeletionResponse) => {
           if (result.success) {
-            alert(
-              `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`
-            );
+            alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
@@ -246,16 +240,11 @@ function processEmployeeDeletion(): void {
               (window as any).loadDashboardStats();
             }
           } else {
-            alert(
-              `Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`
-            );
+            alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
           }
         })
         .catch((error) => {
-          console.error(
-            'Fehler beim endgültigen Löschen des Mitarbeiters:',
-            error
-          );
+          console.error('Fehler beim endgültigen Löschen des Mitarbeiters:', error);
           alert(`Fehler: ${error.message}`);
         });
     } else {
@@ -269,9 +258,7 @@ function processEmployeeDeletion(): void {
         .then((response) => response.json())
         .then((result: DeletionResponse) => {
           if (result.success) {
-            alert(
-              `Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`
-            );
+            alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
@@ -284,9 +271,7 @@ function processEmployeeDeletion(): void {
               (window as any).loadDashboardStats();
             }
           } else {
-            alert(
-              `Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`
-            );
+            alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
           }
         })
         .catch((error) => {

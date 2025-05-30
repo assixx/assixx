@@ -156,9 +156,7 @@ class ShiftPlanningSystem {
       const user = await this.getStoredUserData();
       if (user) {
         this.userRole = user.role || 'employee';
-        this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(
-          this.userRole
-        );
+        this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
         this.currentUserId = user.id;
 
         const userNameElement = document.getElementById('userName');
@@ -169,9 +167,9 @@ class ShiftPlanningSystem {
         // Update info row with user's department/team info
         const currentDeptElement = document.getElementById('currentDepartment');
         if (currentDeptElement && user.department_id) {
-          currentDeptElement.textContent = 'Department ' + user.department_id;
+          currentDeptElement.textContent = `Department ${user.department_id}`;
         }
-        
+
         const currentTeamLeaderElement = document.getElementById('currentTeamLeader');
         if (currentTeamLeaderElement && user.position) {
           currentTeamLeaderElement.textContent = user.username || '';
@@ -205,12 +203,8 @@ class ShiftPlanningSystem {
 
   setupEventListeners(): void {
     // Week navigation
-    document
-      .getElementById('prevWeekBtn')
-      ?.addEventListener('click', () => this.navigateWeek(-1));
-    document
-      .getElementById('nextWeekBtn')
-      ?.addEventListener('click', () => this.navigateWeek(1));
+    document.getElementById('prevWeekBtn')?.addEventListener('click', () => this.navigateWeek(-1));
+    document.getElementById('nextWeekBtn')?.addEventListener('click', () => this.navigateWeek(1));
 
     // Employee selection (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
@@ -240,12 +234,8 @@ class ShiftPlanningSystem {
     this.setupNotesEvents();
 
     // Admin actions
-    document
-      .getElementById('saveScheduleBtn')
-      ?.addEventListener('click', () => this.saveSchedule());
-    document
-      .getElementById('resetScheduleBtn')
-      ?.addEventListener('click', () => this.resetSchedule());
+    document.getElementById('saveScheduleBtn')?.addEventListener('click', () => this.saveSchedule());
+    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => this.resetSchedule());
 
     // Logout functionality
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
@@ -261,7 +251,7 @@ class ShiftPlanningSystem {
     document.addEventListener('dragstart', (e) => {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest('.employee-item') as HTMLElement;
-      
+
       if (employeeItem) {
         // Check if employee is available for dragging
         if (employeeItem.getAttribute('draggable') === 'false') {
@@ -284,7 +274,7 @@ class ShiftPlanningSystem {
     document.addEventListener('dragend', (e) => {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest('.employee-item') as HTMLElement;
-      
+
       if (employeeItem) {
         this.isDragging = false;
         employeeItem.classList.remove('dragging');
@@ -295,7 +285,7 @@ class ShiftPlanningSystem {
     document.addEventListener('dragover', (e) => {
       const target = e.target as HTMLElement;
       const shiftCell = target.closest('.shift-cell') as HTMLElement;
-      
+
       if (shiftCell) {
         e.preventDefault();
         if (e.dataTransfer) {
@@ -309,7 +299,7 @@ class ShiftPlanningSystem {
     document.addEventListener('dragleave', (e) => {
       const target = e.target as HTMLElement;
       const shiftCell = target.closest('.shift-cell') as HTMLElement;
-      
+
       if (shiftCell) {
         shiftCell.classList.remove('drag-over');
       }
@@ -319,7 +309,7 @@ class ShiftPlanningSystem {
     document.addEventListener('drop', (e) => {
       const target = e.target as HTMLElement;
       const shiftCell = target.closest('.shift-cell') as HTMLElement;
-      
+
       if (shiftCell) {
         e.preventDefault();
         shiftCell.classList.remove('drag-over');
@@ -391,12 +381,7 @@ class ShiftPlanningSystem {
   }
 
   async loadContextData(): Promise<void> {
-    await Promise.all([
-      this.loadDepartments(),
-      this.loadMachines(),
-      this.loadTeamLeaders(),
-      this.loadAreas(),
-    ]);
+    await Promise.all([this.loadDepartments(), this.loadMachines(), this.loadTeamLeaders(), this.loadAreas()]);
   }
 
   async loadDepartments(): Promise<void> {
@@ -411,7 +396,7 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = await response.json();
         console.log('Departments API response:', data);
-        this.departments = Array.isArray(data) ? data : (data.departments || []);
+        this.departments = Array.isArray(data) ? data : data.departments || [];
       } else {
         throw new Error('Failed to load departments');
       }
@@ -474,17 +459,12 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = await response.json();
         // Filter for team leaders and admins
-        const users = Array.isArray(data) ? data : (data.users || []);
+        const users = Array.isArray(data) ? data : data.users || [];
         this.teamLeaders = users
-          .filter((user: User) =>
-            ['admin', 'root', 'manager', 'team_lead'].includes(user.role)
-          )
+          .filter((user: User) => ['admin', 'root', 'manager', 'team_lead'].includes(user.role))
           .map((user: User) => ({
             id: user.id,
-            name:
-              user.first_name && user.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : user.username,
+            name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username,
             username: user.username,
           }));
       } else {
@@ -550,25 +530,19 @@ class ShiftPlanningSystem {
       select.appendChild(option);
     });
 
-    console.log(
-      'Department select populated with',
-      this.departments.length,
-      'departments'
-    );
+    console.log('Department select populated with', this.departments.length, 'departments');
   }
 
   populateMachineSelect(): void {
     const select = document.getElementById('machineSelect') as HTMLSelectElement;
     if (!select) return;
-    
+
     select.innerHTML = '<option value="">Maschine wählen...</option>';
 
     // Filter machines by selected department if any
     let filteredMachines = this.machines;
     if (this.selectedContext.departmentId) {
-      filteredMachines = this.machines.filter(
-        (machine) => machine.department_id === this.selectedContext.departmentId
-      );
+      filteredMachines = this.machines.filter((machine) => machine.department_id === this.selectedContext.departmentId);
     }
 
     filteredMachines.forEach((machine) => {
@@ -582,7 +556,7 @@ class ShiftPlanningSystem {
   populateTeamLeaderSelect(): void {
     const select = document.getElementById('teamLeaderSelect') as HTMLSelectElement;
     if (!select) return;
-    
+
     select.innerHTML = '<option value="">Teamleiter wählen...</option>';
 
     this.teamLeaders.forEach((leader) => {
@@ -596,7 +570,7 @@ class ShiftPlanningSystem {
   populateAreaSelect(): void {
     const select = document.getElementById('areaSelect') as HTMLSelectElement;
     if (!select) return;
-    
+
     select.innerHTML = '<option value="">Bereich wählen...</option>';
 
     this.areas.forEach((area) => {
@@ -642,7 +616,7 @@ class ShiftPlanningSystem {
 
       if (response.ok) {
         const data = await response.json();
-        const users = Array.isArray(data) ? data : (data.users || []);
+        const users = Array.isArray(data) ? data : data.users || [];
         this.employees = users.filter((user: User) => user.role === 'employee');
         this.renderEmployeeList();
       } else {
@@ -804,9 +778,7 @@ class ShiftPlanningSystem {
     // Check if employee is already assigned to this shift
     if (this.weeklyShifts[date][shift].includes(employeeId)) {
       // Remove assignment
-      this.weeklyShifts[date][shift] = this.weeklyShifts[date][shift].filter(
-        (id) => id !== employeeId
-      );
+      this.weeklyShifts[date][shift] = this.weeklyShifts[date][shift].filter((id) => id !== employeeId);
     } else {
       // Add assignment
       this.weeklyShifts[date][shift].push(employeeId);
@@ -818,14 +790,11 @@ class ShiftPlanningSystem {
   }
 
   renderShiftAssignments(date: string, shift: string): void {
-    const shiftCell = document.querySelector(
-      `[data-date="${date}"][data-shift="${shift}"]`
-    ) as HTMLElement;
-    
+    const shiftCell = document.querySelector(`[data-date="${date}"][data-shift="${shift}"]`) as HTMLElement;
+
     if (!shiftCell) return;
 
-    const assignmentsContainer = shiftCell.querySelector('.shift-assignments') || 
-                                document.createElement('div');
+    const assignmentsContainer = shiftCell.querySelector('.shift-assignments') || document.createElement('div');
     assignmentsContainer.className = 'shift-assignments';
     assignmentsContainer.innerHTML = '';
 
@@ -836,7 +805,7 @@ class ShiftPlanningSystem {
       if (employee) {
         const tag = document.createElement('div');
         tag.className = 'employee-tag';
-        
+
         const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
         tag.innerHTML = `
           <span>${this.escapeHtml(name)}</span>
@@ -865,14 +834,11 @@ class ShiftPlanningSystem {
       const weekStart = this.getWeekStart(this.currentWeek);
       const weekEnd = this.getWeekEnd(this.currentWeek);
 
-      const response = await fetch(
-        `/api/shifts?start=${weekStart}&end=${weekEnd}`,
-        {
-          headers: {
-            Authorization: `Bearer ${getAuthToken()}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/shifts?start=${weekStart}&end=${weekEnd}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -909,7 +875,7 @@ class ShiftPlanningSystem {
   renderWeekView(): void {
     const weekStart = this.getWeekStart(this.currentWeek);
     const weekContainer = document.getElementById('weekView');
-    
+
     if (!weekContainer) return;
 
     // Update week display
@@ -991,7 +957,7 @@ class ShiftPlanningSystem {
 
   navigateWeek(direction: number): void {
     const newDate = new Date(this.currentWeek);
-    newDate.setDate(newDate.getDate() + (direction * 7));
+    newDate.setDate(newDate.getDate() + direction * 7);
     this.currentWeek = newDate;
     this.loadCurrentWeekData();
   }
@@ -1021,7 +987,10 @@ class ShiftPlanningSystem {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+    const options: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'short',
+    };
     const startStr = weekStart.toLocaleDateString('de-DE', options);
     const endStr = weekEnd.toLocaleDateString('de-DE', options);
 
@@ -1047,7 +1016,7 @@ class ShiftPlanningSystem {
           employeeIds.forEach((employeeId) => {
             assignments.push({
               employee_id: employeeId,
-              date: date,
+              date,
               shift_type: shiftType,
               department_id: this.selectedContext.departmentId,
               machine_id: this.selectedContext.machineId,
@@ -1067,7 +1036,7 @@ class ShiftPlanningSystem {
         body: JSON.stringify({
           week_start: weekStart,
           week_end: weekEnd,
-          assignments: assignments,
+          assignments,
           notes: this.weeklyNotes,
         }),
       });
@@ -1101,7 +1070,7 @@ class ShiftPlanningSystem {
   async loadWeeklyNotes(): Promise<void> {
     try {
       const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
-      
+
       const response = await fetch(`/api/shifts/notes?week=${weekStart}`, {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
@@ -1111,7 +1080,7 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = await response.json();
         this.weeklyNotes = data.notes || '';
-        
+
         const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
         if (notesTextarea) {
           notesTextarea.value = this.weeklyNotes;
@@ -1193,9 +1162,7 @@ class ShiftPlanningSystem {
     Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
       Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
         if (employeeIds.includes(this.currentUserId!)) {
-          const shiftCell = document.querySelector(
-            `[data-date="${date}"][data-shift="${shiftType}"]`
-          );
+          const shiftCell = document.querySelector(`[data-date="${date}"][data-shift="${shiftType}"]`);
           shiftCell?.classList.add('employee-shift');
         }
       });

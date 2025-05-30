@@ -351,6 +351,97 @@ router.get(
 );
 
 /**
+ * Get shifts for date range
+ * GET /api/shifts?start=...&end=...
+ */
+router.get('/', authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const { start, end } = req.query;
+    
+    if (!start || !end) {
+      res.status(400).json({
+        success: false,
+        message: 'Start- und Enddatum sind erforderlich',
+      });
+      return;
+    }
+
+    // Parse dates from query strings
+    const startDate = new Date(String(start));
+    const endDate = new Date(String(end));
+    
+    // Format dates for SQL query
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+    
+    // Get shifts for the date range
+    const shifts = await Shift.getShiftsForDateRange(
+      authReq.user.tenant_id || 1,
+      startStr,
+      endStr
+    );
+    
+    res.json({
+      success: true,
+      shifts: shifts,
+    });
+  } catch (error: any) {
+    console.error('Error fetching shifts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Laden der Schichten',
+    });
+  }
+});
+
+/**
+ * Get shift notes for a week
+ * GET /api/shifts/notes?week=...
+ */
+router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const { week } = req.query;
+    
+    if (!week) {
+      res.status(400).json({
+        success: false,
+        message: 'Woche ist erforderlich',
+      });
+      return;
+    }
+
+    // Parse week date
+    const weekDate = new Date(String(week));
+    const weekStart = weekDate.toISOString().split('T')[0];
+    
+    // Calculate week end (7 days later)
+    const weekEnd = new Date(weekDate);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    
+    // Get notes for the week
+    const notes = await Shift.getWeekNotes(
+      authReq.user.tenant_id || 1,
+      weekStart,
+      weekEndStr
+    );
+    
+    res.json({
+      success: true,
+      notes: notes,
+    });
+  } catch (error: any) {
+    console.error('Error fetching shift notes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Laden der Notizen',
+    });
+  }
+});
+
+/**
  * Create a new shift
  * POST /api/shifts
  */

@@ -183,7 +183,7 @@ export class NotificationService {
             >
               ${action.label}
             </button>
-          `
+          `,
             )
             .join('')}
         </div>
@@ -325,7 +325,7 @@ export default notificationService;
 if (typeof window !== 'undefined') {
   (window as any).NotificationService = NotificationService;
   (window as any).notificationService = notificationService;
-  
+
   // Also export shorthand functions
   (window as any).notify = {
     success: (title: string, message?: string) => notificationService.success(title, message),
