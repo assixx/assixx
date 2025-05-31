@@ -92,10 +92,97 @@
 | Mitarbeiter-Modal | ✅ | Modal öffnet sich |
 | Mitarbeiter erstellen | ❌ | API 404 - Endpoint fehlt |
 
+#### Test-Szenario 6: Schwarzes Brett
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Schwarzes Brett öffnen | ✅ | Seite lädt |
+| Neuer Eintrag Button | ❌ | openEntryForm is not defined |
+| API POST Blackboard | ❌ | 404 Not Found - Endpoint fehlt |
+| Design | ⚠️ | Nicht Glassmorphismus-konform |
+| Chat-Polling | ⚠️ | Läuft weiter im Hintergrund |
+
+#### Test-Szenario 7: Kalender
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Kalender öffnen | ✅ | Seite lädt, Design sieht ok aus |
+| Kalender-Ansicht | ✅ | Monatsansicht wird angezeigt |
+| Event erstellen | ❌ | "Error creating calendar event" |
+| Drag & Drop | ⏳ | Nicht getestet wegen Fehler |
+| Design-Anpassungen | ⚠️ | Müssen später gemacht werden |
+
+#### Test-Szenario 8: Chat-System
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Chat öffnen | ✅ | Seite lädt |
+| Nachricht senden | 🔄 | Blockiert - keine anderen User vorhanden |
+| WebSocket | ⏳ | Kann ohne zweiten User nicht getestet werden |
+| Abhängigkeit | ❌ | Benötigt funktionierende Mitarbeiter-Erstellung |
+
+#### Test-Szenario 9: KVP-System
+| Schritt | Status | Details |
+|---------|--------|---------|
+| KVP öffnen | ✅ | Seite lädt, sieht gut aus |
+| Statistiken | ✅ | Werden angezeigt (alle auf 0) |
+| Neuer Vorschlag | 🔄 | Nur als Mitarbeiter möglich |
+| getElementById Error | ❌ | Null-Error bei initializeButtons |
+| Design | ⚠️ | .stat-item muss angepasst werden |
+| Berechtigung | 💡 | Admins sollten auch KVP erstellen können |
+
+#### Test-Szenario 10: Schichtplanung
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Schichtplan öffnen | ✅ | Seite lädt, sieht gut aus |
+| Wochenansicht | ✅ | Wird korrekt angezeigt |
+| Schicht erstellen | 🔄 | Blockiert - keine Mitarbeiter vorhanden |
+| Abhängigkeit | ❌ | Benötigt funktionierende Mitarbeiter-Erstellung |
+
+#### Test-Szenario 11: Survey-System
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Survey-Seite öffnen | ✅ | Seite lädt, sieht gut aus |
+| Feature-Zugriff | ❌ | "Diese Funktion (surveys) ist für Ihren Tarif nicht verfügbar" |
+| Feature-Status | ⚠️ | Feature ist nicht aktiviert für den Tenant |
+| System-Status | ✅ | Survey-System ist fertig implementiert (29.01.2025) |
+
+#### Test-Szenario 12: Root Feature-Management
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Logout als Admin | ✅ | Funktioniert |
+| Login als Root | ✅ | admin@testfirma.de funktioniert |
+| Feature-Management öffnen | ✅ | Seite lädt |
+| Feature-Liste | ❌ | Sehr viele Features fehlen |
+| Survey aktivieren | ⏳ | Nicht möglich da Feature nicht in Liste |
+
+#### Test-Szenario 13: Dokumenten-Upload
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Upload-Seite öffnen | ✅ | Seite lädt |
+| TypeScript Fehler | ❌ | header-user-info.ts MIME-Type Error |
+| CSP Fehler | ❌ | blob: URLs werden blockiert |
+| Upload durchführen | ❌ | POST /documents/upload returns 404 |
+| API Route | ❌ | "Route not found" |
+| Gesamtzustand | ❌❌ | Komplett fehlerhaft, braucht viele Korrekturen |
+
+#### Test-Szenario 14: Mobile Responsiveness
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Mobile-Ansicht | ❌ | Keine Optimierung vorhanden |
+| Responsive Design | ❌ | Fehlt komplett |
+| Touch-Optimierung | ❌ | Nicht implementiert |
+| Hamburger-Menü | ❌ | Nicht vorhanden |
+| Priorität | 🔴 | Hoch für Beta-Test |
+
 ### ⏳ Noch zu testen:
 - Weitere Admin-Features
 - Tenant-Verwaltung als Root
-- Mobile Responsiveness
+- Performance Tests
+- Chat-System (nach Mitarbeiter-Fix)
+- KVP-Erstellung (nach Mitarbeiter-Fix)
+- Schichtplanung (nach Mitarbeiter-Fix)
+- Survey-System (nach Feature-Aktivierung)
+- Alle Features (nach Feature-Management Fix)
+- Dokumenten-System (nach Upload-Fix)
+- Mobile (nach Implementierung)
 
 ## Gefundene Fehler
 
