@@ -1,0 +1,54 @@
+# Node modules
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+*/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.nyc_output/
+
+# Uploads (werden als Volume gemountet)
+uploads/
+
+# Development files
+*.md
+!README.md
+!LICENSE
+
+# Frontend source (nur Backend im Container)
+frontend/
+
+# Scripts und Tools
+tools/
+infrastructure/
+
+# Temp files
+*.tmp
+*.temp
+.cache/

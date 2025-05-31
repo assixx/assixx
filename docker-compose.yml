@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: assixx-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-assixx}
+      MYSQL_USER: ${MYSQL_USER:-assixx_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database-setup.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/database:/docker-entrypoint-initdb.d/02-migrations:ro
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+
+  # Assixx Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: assixx-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER:-assixx_user}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      DB_NAME: ${MYSQL_DATABASE:-assixx}
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./backend/logs:/app/backend/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Redis für Sessions/Cache
+  redis:
+    image: redis:7-alpine
+    container_name: assixx-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - assixx-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Nginx als Reverse Proxy (für Production)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: assixx-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+  #     - ./frontend/dist:/usr/share/nginx/html:ro
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - assixx-network
+
+networks:
+  assixx-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local

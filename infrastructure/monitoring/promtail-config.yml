@@ -1,0 +1,63 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Assixx Backend Logs
+  - job_name: assixx-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: assixx
+          app: backend
+          __path__: /var/log/assixx/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\S+)\s+(?P<level>\S+)\s+(?P<message>.*)$'
+      - timestamp:
+          source: timestamp
+          format: RFC3339
+      - labels:
+          level:
+
+  # Docker Container Logs
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'logstream'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+
+  # System Logs (optional)
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: varlogs
+          __path__: /var/log/*log
+    pipeline_stages:
+      - match:
+          selector: '{job="varlogs"}'
+          stages:
+            - regex:
+                expression: '(?P<syslog_message>(?P<time>\\S+\\s+\\S+\\s+\\S+)\\s+(?P<host>\\S+)\\s+(?P<process>\\S+):\\s+(?P<message>.*))'
+            - timestamp:
+                source: time
+                format: 'Jan _2 15:04:05'
+            - labels:
+                host:
+                process:

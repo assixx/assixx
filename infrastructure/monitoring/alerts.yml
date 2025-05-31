@@ -1,0 +1,106 @@
+groups:
+  - name: assixx_system
+    interval: 30s
+    rules:
+      # Service Health
+      - alert: AssixxBackendDown
+        expr: up{job="assixx-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Assixx Backend is down"
+          description: "The Assixx backend service has been down for more than 2 minutes."
+
+      - alert: MySQLDown
+        expr: up{job="mysql"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "MySQL Database is down"
+          description: "Cannot connect to MySQL database for more than 2 minutes."
+
+      # Performance
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="assixx-backend"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile response time is above 1 second (current: {{ $value }}s)"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="assixx-backend",status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% (current: {{ $value | humanizePercentage }})"
+
+  - name: assixx_resources
+    interval: 30s
+    rules:
+      # CPU
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 10m
+        labels:
+          severity: warning
+          resource: cpu
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% for 10 minutes (current: {{ $value }}%)"
+
+      # Memory
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          resource: memory
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85% (current: {{ $value }}%)"
+
+      # Disk
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          resource: disk
+        annotations:
+          summary: "Low disk space"
+          description: "Less than 10% disk space remaining (current: {{ $value }}%)"
+
+  - name: assixx_business
+    interval: 60s
+    rules:
+      # Upload Issues
+      - alert: UploadFailures
+        expr: rate(assixx_upload_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          feature: uploads
+        annotations:
+          summary: "High upload failure rate"
+          description: "More than 10% of uploads are failing"
+
+      # WebSocket Issues
+      - alert: WebSocketConnectionDrop
+        expr: rate(assixx_websocket_disconnections_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          feature: websocket
+        annotations:
+          summary: "High WebSocket disconnection rate"
+          description: "More than 1 disconnection per second detected"

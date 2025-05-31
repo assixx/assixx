@@ -1,0 +1,96 @@
+global:
+  # E-Mail Konfiguration
+  smtp_from: 'alerts@assixx.com'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: 'alerts@assixx.com'
+  smtp_auth_password: 'YOUR_APP_PASSWORD'  # Aus Environment Variable
+  smtp_auth_identity: 'alerts@assixx.com'
+
+# Templates für Benachrichtigungen
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing-Baum
+route:
+  # Gruppierung
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s      # Warte 10s für weitere Alerts
+  group_interval: 10s  # Sende Updates alle 10s
+  repeat_interval: 12h # Wiederhole Alert nach 12h
+  
+  # Standard-Empfänger
+  receiver: 'default-receiver'
+  
+  # Spezielle Routen
+  routes:
+    # Kritische Alerts sofort
+    - match:
+        severity: critical
+      receiver: 'critical-receiver'
+      group_wait: 0s
+      repeat_interval: 1h
+    
+    # Entwicklungs-Alerts
+    - match:
+        environment: development
+      receiver: 'dev-null'  # Keine Alerts in Dev
+    
+    # Business-Alerts an Management
+    - match_re:
+        alertname: ^(Upload|Revenue|User).*
+      receiver: 'business-receiver'
+
+# Empfänger-Definitionen
+receivers:
+  # Standard-Empfänger
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'ops@assixx.com'
+        headers:
+          Subject: 'Assixx Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>🚨 {{ .GroupLabels.alertname }}</h2>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          {{ range .Alerts }}
+          <hr>
+          <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          <p><strong>Started:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          {{ end }}
+  
+  # Kritische Alerts
+  - name: 'critical-receiver'
+    email_configs:
+      - to: 'oncall@assixx.com, management@assixx.com'
+        headers:
+          Subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+    # Optional: SMS/Slack für kritische Alerts
+    # slack_configs:
+    #   - api_url: 'YOUR_SLACK_WEBHOOK'
+    #     channel: '#critical-alerts'
+    #     title: 'Critical Alert: {{ .GroupLabels.alertname }}'
+  
+  # Business Alerts
+  - name: 'business-receiver'
+    email_configs:
+      - to: 'management@assixx.com'
+        send_resolved: true
+  
+  # Dev Null (keine Aktion)
+  - name: 'dev-null'
+
+# Inhibition Rules (unterdrücke bestimmte Alerts)
+inhibit_rules:
+  # Wenn Service down ist, unterdrücke Performance-Alerts
+  - source_match:
+      severity: 'critical'
+      alertname: 'AssixxBackendDown'
+    target_match:
+      severity: 'warning'
+    equal: ['service']
+  
+  # Wenn DB down ist, unterdrücke Backend-Alerts
+  - source_match:
+      alertname: 'MySQLDown'
+    target_match:
+      service: 'backend'
