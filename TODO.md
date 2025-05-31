@@ -2,8 +2,14 @@
 
 > **Fokus:** Was brauchen wir für einen erfolgreichen Beta-Test mit 5-10 Industriefirmen?
 > **Strategie:** Backend-First (70% Backend, 30% Frontend)
+> **Aktueller Stand:** 31.05.2025 - Docker Setup als nächste Priorität
 
-## 🧪 PHASE 0: Funktionstests (ABSOLUTE PRIORITÄT!) ⚠️ IN ARBEIT
+## 🚀 FÜR NEUEN CHAT:
+1. Beginne mit **PHASE 1: Docker & Deployment**
+2. Nach Docker: **PHASE 2: Bug-Fixes** aus BUGS-GEFUNDEN.md
+3. Dann weiter mit **PHASE 4: DEAL-BREAKER Features**
+
+## 🧪 PHASE 0: Funktionstests ✅ ABGESCHLOSSEN
 
 **Status:** 31.05.2025 - **29 BUGS GEFUNDEN** (7 kritisch, 11 mittel, 11 klein)
 **Dokumentation:** Siehe [BUGS-GEFUNDEN.md](./BUGS-GEFUNDEN.md) und [FUNKTIONSTEST-ERGEBNISSE.md](./FUNKTIONSTEST-ERGEBNISSE.md)
@@ -48,7 +54,9 @@
   - [x] CSRF Protection ✅
   - [x] Rate Limiting ✅
 
-## 🐳 PHASE 1: Docker & Deployment (NACH Funktionstests!)
+## 🐳 PHASE 1: Docker & Deployment (NÄCHSTER SCHRITT!) 🔥
+
+> **PRIORITÄT**: Als nächstes im neuen Chat anfangen!
 
 ### Docker Setup für Beta-Deployment
 
@@ -59,7 +67,37 @@
 - [ ] Backup-Strategie implementieren
 - [ ] Monitoring & Logging Setup
 
-## ✅ PHASE 2: Security & Stabilität (ERLEDIGT!)
+## 🐛 PHASE 2: Bug-Fixes aus BUGS-GEFUNDEN.md (NACH Docker!)
+
+> **29 BUGS** müssen behoben werden (7 kritisch, 11 mittel, 11 klein)
+> **PRIORITÄT**: Nach Docker-Setup abarbeiten
+
+### Kritische Bugs (HÖCHSTE PRIORITÄT):
+- [ ] Multi-Tenant Isolation verletzt
+- [ ] Dokumenten-API fehlt komplett
+- [ ] Schwarzes Brett API fehlt
+- [ ] Survey Feature nicht aktiv
+- [ ] CSP blockiert blob URLs
+- [ ] showSection() Funktion fehlt
+- [ ] openEntryForm() Funktion fehlt
+
+### Mittlere Bugs:
+- [ ] Chat-System blockiert
+- [ ] Kalender Event-Erstellung fehlerhaft
+- [ ] KVP-System nur für Mitarbeiter
+- [ ] Schichtplanung blockiert
+- [ ] TypeScript MIME-Type Fehler
+- [ ] Session Management Invalid Date
+- [ ] getElementById Errors
+- [ ] Feature Management unvollständig
+- [ ] Navigation showSection fehlt
+- [ ] Responsive Design fehlt komplett
+- [ ] Calendar Drag & Drop defekt
+
+### Kleine Bugs:
+- Siehe [BUGS-GEFUNDEN.md](./BUGS-GEFUNDEN.md) für vollständige Liste
+
+## ✅ PHASE 3: Security & Stabilität (ERLEDIGT!)
 
 ### 1. Security & Stabilität
 
@@ -75,10 +113,10 @@
 - [ ] Automatisches Setup-Script verbessern
 - [x] .env.example mit allen Variablen dokumentieren ✅ Vollständig
 
-## 🚨 PHASE 3: DEAL-BREAKER Features (NACH Docker Setup!)
+## 🚨 PHASE 4: DEAL-BREAKER Features (NACH Bug-Fixes!)
 
 > **⚠️ KRITISCH**: Ohne diese Features ist das System für Industriefirmen NICHT nutzbar!
-> **HINWEIS**: Implementierung erst NACH erfolgreichem Abschluss von Phase 0 (Funktionstests) und Phase 1 (Docker Setup)
+> **HINWEIS**: Implementierung erst NACH erfolgreichem Abschluss von Docker Setup und Bug-Fixes
 
 ### 1. 🌴 Urlaubsantrag-System (MVP) - WOCHE 1
 
@@ -119,7 +157,7 @@
 - [ ] TPM Mobile-First Design
 - [ ] PWA Manifest & Service Worker
 
-## 📊 PHASE 4: Beta-Test Features
+## 📊 PHASE 5: Beta-Test Features
 
 ### 5. Survey-System (✅ FERTIG - 29.01.2025)
 
@@ -176,7 +214,7 @@
 - [ ] Feature-Request Sammlung
 - [ ] Analytics für User-Verhalten
 
-## 🔄 PHASE 5: Nach Beta-Test
+## 🔄 PHASE 6: Nach Beta-Test
 
 ### Backend-Priorität Features
 
@@ -233,6 +271,8 @@
 - [x] Signup Flow Optimierung - Features automatisch aktiviert (31.05.2025)
 - [x] Pricing Page mit Feature-Vergleichstabelle (31.05.2025)
 - [x] Premium Badge Design mit Glassmorphismus (31.05.2025)
+- [x] Storage Widget für Root User (31.05.2025)
+- [x] Storage Upgrade Page mit Plänen (31.05.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
 
@@ -253,17 +293,18 @@
    - NPS Score > 7
    - Konkrete Feature-Requests
 
-## 🎯 NEUE Entwicklungs-Reihenfolge (Beta-Fokus!)
+## 🎯 AKTUELLE Entwicklungs-Reihenfolge (Stand: 31.05.2025)
 
-1. **SOFORT (1-2 Wochen):** Umfassende Funktionstests aller existierenden Features
-2. **Woche 3:** Docker Setup für einfaches Deployment
-3. **Woche 4-5:** Urlaubssystem + Gehaltsabrechnung Upload
-4. **Woche 5-6:** TPM-System Basis-Implementation
-5. **Woche 6-7:** Mobile Optimization + PWA
-6. **Woche 7:** DSGVO Compliance + Beta-Test Tools
-7. **Woche 8:** Performance Tests + Final Testing
+1. **✅ ERLEDIGT:** Funktionstests aller Features (29 Bugs gefunden)
+2. **🔥 NÄCHSTER SCHRITT:** Docker Setup für einfaches Deployment
+3. **Woche 2-3:** Bug-Fixes aus BUGS-GEFUNDEN.md (29 Bugs)
+4. **Woche 4-5:** Urlaubssystem + Gehaltsabrechnung Upload
+5. **Woche 5-6:** TPM-System Basis-Implementation
+6. **Woche 6-7:** Mobile Optimization + PWA
+7. **Woche 7:** DSGVO Compliance + Beta-Test Tools
+8. **Woche 8:** Performance Tests + Final Testing
 
-**Beta-Start:** Nach Abschluss von Phase 3 (DEAL-BREAKER Features)
+**Beta-Start:** Nach Abschluss von Phase 4 (DEAL-BREAKER Features)
 **Beta-Dauer:** 4-6 Wochen
 **Ziel:** Stabile, getestete Plattform + TPM + Urlaub + Gehalt = Zufriedene Beta-Tester
 
