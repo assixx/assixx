@@ -3,7 +3,48 @@
 > **Fokus:** Was brauchen wir für einen erfolgreichen Beta-Test mit 5-10 Industriefirmen?
 > **Strategie:** Backend-First (70% Backend, 30% Frontend)
 
-## 🐳 PHASE 0: Docker & Deployment (NEU - HÖCHSTE PRIORITÄT!)
+## 🧪 PHASE 0: Funktionstests (ABSOLUTE PRIORITÄT!)
+
+### Umfassende Funktionstests aller Features
+
+- [ ] **Backend Tests**
+  - [ ] Auth System (Login, Logout, Session Management)
+  - [ ] Multi-Tenant Funktionalität
+  - [ ] Dokumenten-Management (Upload, Download, Kategorien)
+  - [ ] Schwarzes Brett (CRUD Operations)
+  - [ ] Chat-System (WebSocket, Nachrichten, Gruppen)
+  - [ ] Kalender (Events, Drag & Drop)
+  - [ ] KVP-System (Vorschläge, Status-Updates)
+  - [ ] Schichtplanung (Wochenansicht, Zuweisungen)
+  - [ ] Survey-System (Erstellung, Teilnahme, Auswertung)
+  - [ ] Feature Management (Aktivierung/Deaktivierung)
+  - [ ] API Response Validation
+  - [ ] Error Handling & Logging
+
+- [ ] **Frontend Tests**
+  - [ ] Login/Logout Flow
+  - [ ] Navigation (alle Rollen: Admin, Employee, Root)
+  - [ ] Dokumenten-Upload & Viewing
+  - [ ] Schwarzes Brett Interaktion
+  - [ ] Chat Funktionalität (Echtzeit-Updates)
+  - [ ] Kalender Drag & Drop
+  - [ ] KVP Formular & Übersicht
+  - [ ] Schichtplan Ansicht & Bearbeitung
+  - [ ] Survey Teilnahme & Ergebnisse
+  - [ ] Responsive Design (Desktop, Tablet, Mobile)
+  - [ ] Browser-Kompatibilität (Chrome, Firefox, Safari, Edge)
+  - [ ] Performance (Ladezeiten < 2 Sekunden)
+
+- [ ] **Integrationstests**
+  - [ ] Frontend-Backend Kommunikation
+  - [ ] WebSocket Stabilität
+  - [ ] File Upload/Download Pipeline
+  - [ ] Multi-Tenant Isolation
+  - [ ] Session Management
+  - [ ] CSRF Protection
+  - [ ] Rate Limiting
+
+## 🐳 PHASE 1: Docker & Deployment (NACH Funktionstests!)
 
 ### Docker Setup für Beta-Deployment
 
@@ -14,7 +55,7 @@
 - [ ] Backup-Strategie implementieren
 - [ ] Monitoring & Logging Setup
 
-## ✅ PHASE 1: Security & Stabilität (ERLEDIGT!)
+## ✅ PHASE 2: Security & Stabilität (ERLEDIGT!)
 
 ### 1. Security & Stabilität
 
@@ -30,9 +71,10 @@
 - [ ] Automatisches Setup-Script verbessern
 - [x] .env.example mit allen Variablen dokumentieren ✅ Vollständig
 
-## 🚨 PHASE 2: DEAL-BREAKER Features (Vor Beta-Test!)
+## 🚨 PHASE 3: DEAL-BREAKER Features (NACH Docker Setup!)
 
 > **⚠️ KRITISCH**: Ohne diese Features ist das System für Industriefirmen NICHT nutzbar!
+> **HINWEIS**: Implementierung erst NACH erfolgreichem Abschluss von Phase 0 (Funktionstests) und Phase 1 (Docker Setup)
 
 ### 1. 🌴 Urlaubsantrag-System (MVP) - WOCHE 1
 
@@ -73,7 +115,7 @@
 - [ ] TPM Mobile-First Design
 - [ ] PWA Manifest & Service Worker
 
-## 📊 PHASE 3: Beta-Test Features
+## 📊 PHASE 4: Beta-Test Features
 
 ### 5. Survey-System (✅ FERTIG - 29.01.2025)
 
@@ -130,7 +172,7 @@
 - [ ] Feature-Request Sammlung
 - [ ] Analytics für User-Verhalten
 
-## 🔄 PHASE 4: Nach Beta-Test
+## 🔄 PHASE 5: Nach Beta-Test
 
 ### Backend-Priorität Features
 
@@ -209,16 +251,17 @@
 
 ## 🎯 NEUE Entwicklungs-Reihenfolge (Beta-Fokus!)
 
-1. **SOFORT (1-2 Tage):** Docker Setup für einfaches Deployment
-2. **Woche 1:** Urlaubssystem + Gehaltsabrechnung Upload
-3. **Woche 2-3:** TPM-System Basis-Implementation
-4. **Woche 3-4:** Mobile Optimization + PWA
-5. **Woche 4:** DSGVO Compliance + Beta-Test Tools
-6. **Woche 5:** Performance Tests + Final Testing
+1. **SOFORT (1-2 Wochen):** Umfassende Funktionstests aller existierenden Features
+2. **Woche 3:** Docker Setup für einfaches Deployment
+3. **Woche 4-5:** Urlaubssystem + Gehaltsabrechnung Upload
+4. **Woche 5-6:** TPM-System Basis-Implementation
+5. **Woche 6-7:** Mobile Optimization + PWA
+6. **Woche 7:** DSGVO Compliance + Beta-Test Tools
+7. **Woche 8:** Performance Tests + Final Testing
 
-**Beta-Start:** Nach Abschluss von Phase 2 (DEAL-BREAKER Features)
+**Beta-Start:** Nach Abschluss von Phase 3 (DEAL-BREAKER Features)
 **Beta-Dauer:** 4-6 Wochen
-**Ziel:** TPM + Urlaub + Gehalt = Zufriedene Beta-Tester
+**Ziel:** Stabile, getestete Plattform + TPM + Urlaub + Gehalt = Zufriedene Beta-Tester
 
 ## ❓ Offene Fragen für Beta-Planung
 

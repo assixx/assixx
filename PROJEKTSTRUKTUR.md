@@ -235,6 +235,7 @@ uploads/
 | 📄 DESIGN-STANDARDS.md      | UI/UX Design Standards         |
 | 📄 DEVELOPMENT-GUIDE.md     | Entwicklungsrichtlinien        |
 | 📄 FEATURES.md              | Feature-Übersicht & Preise     |
+| 📄 FUNKTIONSTEST.md         | Umfassender Funktionstestplan  |
 | 📄 LICENSE                  | Lizenzinformationen            |
 | 📄 MIGRATION-CHECKLIST.md   | TypeScript Migration Checklist |
 | 📄 MIGRATION-EXAMPLE.md     | TypeScript Migration Beispiele |
