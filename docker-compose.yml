@@ -12,7 +12,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./database-setup.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro

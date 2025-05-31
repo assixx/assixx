@@ -16,6 +16,9 @@ RUN npm ci --only=production && \
 # Backend Source kopieren
 COPY backend/ ./backend/
 
+# Fix-Script kopieren
+COPY fix-esm-imports.js ./
+
 # TypeScript kompilieren
 RUN npm run build:ts
 
@@ -29,14 +32,14 @@ RUN addgroup -g 1001 -S nodejs && \
 # Arbeitsverzeichnis
 WORKDIR /app
 
-# Nur Production Dependencies
+# Alle Dependencies (inkl. tsx für runtime)
 COPY package*.json ./
-RUN npm ci --only=production --no-audit && \
+COPY tsconfig.json ./
+RUN npm ci --no-audit && \
     npm cache clean --force
 
-# Kompilierte Files vom Builder kopieren
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/backend/templates ./backend/templates
+# Source Code kopieren
+COPY --from=builder --chown=nodejs:nodejs /app/backend ./backend
 
 # Environment
 ENV NODE_ENV=production
@@ -51,5 +54,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"
 
-# Start Command
-CMD ["node", "dist/backend/src/server.js"]
+# Start Command with tsx for better ESM support
+CMD ["npx", "tsx", "backend/src/server.ts"]

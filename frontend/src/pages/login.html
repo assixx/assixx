@@ -43,6 +43,22 @@
     </div>
 
     <script>
+      // Error/Success Message Functions
+      function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.innerHTML = `
+          <div class="alert-content">
+            <strong>Fehler!</strong><br>
+            ${message.replace(/\n/g, '<br>')}
+          </div>
+        `;
+        document.querySelector('.login-card').insertBefore(errorDiv, document.querySelector('#loginForm'));
+        
+        // Remove after 10 seconds
+        setTimeout(() => errorDiv.remove(), 10000);
+      }
+
       function showHelp() {
         alert(
           'Hilfe:\n\nFür neue Kunden: Klicken Sie auf "Zugangsdaten beantragen"\n\nFür bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
@@ -98,7 +114,14 @@
                 alert('Unknown role');
             }
           } else {
-            alert(data.message || 'Login failed');
+            // Bessere Fehlermeldungen
+            if (response.status === 404 || response.status === 401) {
+              showError('Benutzer nicht gefunden oder falsches Passwort.\n\nFalls Sie noch keinen Account haben, registrieren Sie sich bitte unter "Zugangsdaten beantragen".');
+            } else if (response.status === 500) {
+              showError('Serverfehler!\n\nMögliche Ursache: Keine Datenbank-Verbindung oder keine Benutzer vorhanden.\n\nBitte registrieren Sie sich zuerst über /pages/signup.html');
+            } else {
+              showError(data.message || 'Login fehlgeschlagen');
+            }
           }
         } catch (error) {
           console.error('Login error:', error);
@@ -301,6 +324,37 @@
         box-shadow:
           0 6px 16px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      /* Alert Styles */
+      .alert {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        border-radius: var(--radius-md);
+        backdrop-filter: blur(20px);
+        animation: slideDown 0.3s ease-out;
+      }
+
+      .alert-error {
+        background: rgba(255, 59, 48, 0.1);
+        border: 1px solid rgba(255, 59, 48, 0.3);
+        color: #ff3b30;
+      }
+
+      .alert-content {
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       /* Form Controls - Glassmorphismus */

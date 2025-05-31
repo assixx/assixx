@@ -366,9 +366,51 @@ npm start
 
 ## 🗄️ Datenbankschema
 
+### 🆕 Neue Datenbank-Organisation (Stand: 06.01.2025)
+
+> **✅ WICHTIG**: Die Datenbank-Struktur wurde reorganisiert für bessere Wartbarkeit!
+
+#### 🎯 Zentrale Schema-Datei (wie gewünscht)
+
+```bash
+database/complete-schema.sql  # ⭐ Eine zentrale Datei mit allen aktuellen Tabellen
+```
+
+- **Größe**: ~69 KB, 2000+ Zeilen
+- **Inhalt**: Alle 55+ Tabellen, Views und Basis-Daten
+- **Automatisch generiert** aus modularen Dateien
+
+#### 📁 Modulare Struktur
+
+```bash
+database/
+├── schema/                    # Modulare Schema-Dateien
+│   ├── 00-core/              # Kern-Tabellen
+│   ├── 01-features/          # Feature-Management  
+│   ├── 02-modules/           # Einzelne Features
+│   └── 03-views/             # Datenbank-Views
+├── migrations/                # Änderungen für Updates
+├── build/                     # Build-Scripts
+│   └── build-schema.js       # Generiert complete-schema.sql
+└── complete-schema.sql        # ⭐ ZENTRALE DATEI
+```
+
+#### 🔧 Schema aktualisieren
+
+```bash
+# Nach Änderungen an Modulen
+cd database/build && node build-schema.js
+
+# Neue Installation (Docker)
+docker exec -i assixx-mysql mysql -u root -p assixx < database/complete-schema.sql
+
+# Neue Installation (Lokal)  
+mysql -u root -p assixx < database/complete-schema.sql
+```
+
 ### 📊 Schema-Übersicht
 
-Das Assixx-System verwendet **39 Haupttabellen** in 10 Kategorien:
+Das Assixx-System verwendet **55+ Haupttabellen** in 10 Kategorien:
 
 #### 1. **Tenant Management** (3 Tabellen)
 
