@@ -408,6 +408,25 @@ export class Document {
     }
   }
 
+  // Get total storage used by tenant (in bytes)
+  static async getTotalStorageUsed(tenantId: number): Promise<number> {
+    logger.info(`Calculating total storage used by tenant ${tenantId}`);
+    try {
+      const [rows] = await executeQuery<any[]>(
+        'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?',
+        [tenantId]
+      );
+      const totalSize = rows[0]?.total_size || 0;
+      logger.info(`Tenant ${tenantId} is using ${totalSize} bytes of storage`);
+      return totalSize;
+    } catch (error) {
+      logger.error(
+        `Error calculating storage for tenant ${tenantId}: ${(error as Error).message}`
+      );
+      return 0;
+    }
+  }
+
   // Find documents with flexible filters
   static async findWithFilters(filters: any): Promise<DbDocument[]> {
     logger.info('Finding documents with filters', filters);

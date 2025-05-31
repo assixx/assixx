@@ -419,6 +419,9 @@ class UnifiedNavigation {
   private createNavigationHTML(): string {
     const menuItems = this.getNavigationForRole(this.currentRole);
 
+    // Storage Widget nur für Root User
+    const storageWidget = this.currentRole === 'root' ? this.createStorageWidget() : '';
+
     return `
             <nav class="sidebar-nav">
                 <h3 class="sidebar-title">
@@ -441,6 +444,7 @@ class UnifiedNavigation {
                 <ul class="sidebar-menu">
                     ${menuItems.map((item, index) => this.createMenuItem(item, index === 0)).join('')}
                 </ul>
+                ${storageWidget}
             </nav>
         `;
   }
@@ -654,6 +658,90 @@ class UnifiedNavigation {
       console.error('Error updating pending surveys:', error);
     }
   }
+
+  // Storage Widget erstellen (nur für Root User)
+  private createStorageWidget(): string {
+    return `
+      <div class="storage-widget" id="storage-widget">
+        <div class="storage-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,11H5V9H19M19,7H5V5H19M5,15H11V13H5M3,21H21A2,2 0 0,1 19,19V3A2,2 0 0,1 21,1H3A2,2 0 0,1 5,3V19A2,2 0 0,1 3,21Z"/>
+          </svg>
+          <span>Speicherplatz</span>
+        </div>
+        <div class="storage-info">
+          <div class="storage-usage-text">
+            <span id="storage-used">0 GB</span> von <span id="storage-total">0 GB</span>
+          </div>
+          <div class="storage-progress">
+            <div class="storage-progress-bar" id="storage-progress-bar" style="width: 0%"></div>
+          </div>
+          <div class="storage-percentage" id="storage-percentage">0% belegt</div>
+        </div>
+        <button class="storage-upgrade-btn" onclick="window.location.href='/pages/storage-upgrade.html'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+          </svg>
+          Speicher erweitern
+        </button>
+      </div>
+    `;
+  }
+
+  // Storage-Informationen aktualisieren
+  public async updateStorageInfo(): Promise<void> {
+    if (this.currentRole !== 'root') return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+
+      const response = await fetch('/api/root/storage-info', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const { used, total, percentage } = data;
+
+        // Update UI
+        const usedElement = document.getElementById('storage-used');
+        const totalElement = document.getElementById('storage-total');
+        const progressBar = document.getElementById('storage-progress-bar') as HTMLElement;
+        const percentageElement = document.getElementById('storage-percentage');
+
+        if (usedElement) usedElement.textContent = this.formatBytes(used);
+        if (totalElement) totalElement.textContent = this.formatBytes(total);
+        if (progressBar) {
+          progressBar.style.width = `${percentage}%`;
+          
+          // Farbe basierend auf Nutzung
+          if (percentage >= 90) {
+            progressBar.style.backgroundColor = 'var(--error-color)';
+          } else if (percentage >= 70) {
+            progressBar.style.backgroundColor = 'var(--warning-color)';
+          } else {
+            progressBar.style.backgroundColor = 'var(--success-color)';
+          }
+        }
+        if (percentageElement) percentageElement.textContent = `${percentage}% belegt`;
+      }
+    } catch (error) {
+      console.error('Error updating storage info:', error);
+    }
+  }
+
+  // Bytes in lesbare Form konvertieren
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 GB';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
 }
 
 // CSS Styles für die Unified Navigation
@@ -693,17 +781,37 @@ const unifiedNavigationCSS = `
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(20px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
-        min-height: 100vh;
+        height: calc(100vh - 60px);
         position: fixed;
         left: 0;
         top: 60px;
         z-index: 100;
         transition: all 0.3s ease;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* Scrollbar Styling */
+    .sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
     }
 
     .sidebar-nav {
         padding: var(--spacing-md);
-        height: 100%;
+        min-height: 100%;
         display: flex;
         flex-direction: column;
     }
@@ -885,6 +993,141 @@ const unifiedNavigationCSS = `
         min-height: calc(100vh - 60px);
     }
 
+    /* Storage Widget - Glassmorphismus Style */
+    .storage-widget {
+        position: sticky;
+        bottom: 0;
+        margin: var(--spacing-md);
+        margin-top: auto;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-md);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .storage-widget:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 10px 40px rgba(33, 150, 243, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .storage-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .storage-info {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .storage-usage-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .storage-usage-text span {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .storage-progress {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: var(--spacing-xs);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .storage-progress-bar {
+        height: 100%;
+        background: var(--success-color);
+        border-radius: 4px;
+        transition: width 0.5s ease, background-color 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .storage-progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(
+            45deg,
+            transparent 25%,
+            rgba(255, 255, 255, 0.2) 25%,
+            rgba(255, 255, 255, 0.2) 50%,
+            transparent 50%,
+            transparent 75%,
+            rgba(255, 255, 255, 0.2) 75%,
+            rgba(255, 255, 255, 0.2)
+        );
+        background-size: 20px 20px;
+        animation: progress-stripes 1s linear infinite;
+    }
+
+    @keyframes progress-stripes {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 20px 20px;
+        }
+    }
+
+    .storage-percentage {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-align: right;
+    }
+
+    .storage-upgrade-btn {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-xs);
+        box-shadow: 
+            0 2px 8px rgba(33, 150, 243, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .storage-upgrade-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 6px 20px rgba(33, 150, 243, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .sidebar {
@@ -903,6 +1146,14 @@ const unifiedNavigationCSS = `
 
         .layout-container {
             flex-direction: column;
+        }
+
+        .storage-widget {
+            position: relative;
+            bottom: auto;
+            left: auto;
+            right: auto;
+            margin-top: var(--spacing-lg);
         }
     }
 `;
@@ -931,6 +1182,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.unifiedNav && typeof window.unifiedNav.updatePendingSurveys === 'function') {
     window.unifiedNav.updatePendingSurveys();
     setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
+  }
+
+  // Storage-Informationen für Root User beim Start und periodisch aktualisieren
+  if (window.unifiedNav && typeof window.unifiedNav.updateStorageInfo === 'function') {
+    window.unifiedNav.updateStorageInfo();
+    setInterval(() => window.unifiedNav.updateStorageInfo(), 60000); // Alle 60 Sekunden
   }
 });
 

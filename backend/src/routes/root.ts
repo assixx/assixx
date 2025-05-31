@@ -399,6 +399,64 @@ router.get(
   }
 );
 
+// NEUE ROUTE: Storage-Informationen für Root-User
+router.get(
+  '/storage-info',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res): Promise<void> => {
+    logger.info(`Root user ${req.user.username} requesting storage info`);
+
+    try {
+      // Import necessary models
+      const Tenant = (await import('../models/tenant')).default;
+      const Document = (await import('../models/document')).default;
+      
+      // Get tenant information
+      const tenant = await Tenant.findById(req.user.tenant_id);
+      
+      if (!tenant) {
+        logger.error(`Tenant ${req.user.tenant_id} not found`);
+        res.status(404).json({ message: 'Tenant nicht gefunden' });
+        return;
+      }
+
+      // Get storage limits based on tenant plan
+      const storageLimits: { [key: string]: number } = {
+        'basic': 5 * 1024 * 1024 * 1024,       // 5 GB
+        'professional': 25 * 1024 * 1024 * 1024, // 25 GB
+        'enterprise': 100 * 1024 * 1024 * 1024   // 100 GB
+      };
+
+      const totalStorage = storageLimits[tenant.current_plan || 'basic'] || storageLimits['basic'];
+      
+      // Get actual storage usage (sum of all document sizes)
+      const usedStorage = await Document.getTotalStorageUsed(req.user.tenant_id);
+      
+      // Calculate percentage
+      const percentage = Math.round((usedStorage / totalStorage) * 100);
+
+      const storageInfo = {
+        used: usedStorage,
+        total: totalStorage,
+        percentage: Math.min(percentage, 100), // Cap at 100%
+        plan: tenant.current_plan || 'basic'
+      };
+
+      logger.info(
+        `Storage info for tenant ${req.user.tenant_id}: ${usedStorage} / ${totalStorage} bytes (${percentage}%)`
+      );
+      res.json(storageInfo);
+    } catch (error: any) {
+      logger.error(`Error retrieving storage info:`, error);
+      res.status(500).json({
+        message: 'Fehler beim Abrufen der Speicherinformationen',
+        error: error.message,
+      });
+    }
+  }
+);
+
 // NEUE ROUTE: Tenant komplett löschen (Root-User löscht sich selbst und seinen Tenant)
 router.delete(
   '/delete-tenant',
