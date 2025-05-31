@@ -16,13 +16,13 @@ const __dirname = path.dirname(__filename);
 
 // Import app and WebSocket setup
 import app from './app';
-// import ChatWebSocketServer from './websocket';
+import { ChatWebSocketServer } from './websocket';
 
 // Create HTTP server
 const server: Server = http.createServer(app);
 
 // Setup WebSocket
-// const wsServer = new ChatWebSocketServer(server); // Unused - WebSocket server is created but not exported
+const wsServer = new ChatWebSocketServer(server);
 
 // Get port from environment
 const PORT: number = parseInt(process.env.PORT || '3000', 10);

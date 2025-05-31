@@ -166,6 +166,36 @@ app.use((req: Request, _res: Response, next: NextFunction): void => {
   next();
 });
 
+// Health check route - MUST BE BEFORE OTHER ROUTES
+app.get('/health', (req: Request, res: Response): void => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// API status route - MUST BE BEFORE OTHER API ROUTES
+app.get('/api/status', (req: Request, res: Response): void => {
+  res.status(200).json({
+    status: 'operational',
+    version: '0.0.2',
+    api: 'v1',
+    features: [
+      'authentication',
+      'multi-tenant',
+      'documents',
+      'blackboard',
+      'calendar',
+      'chat',
+      'kvp',
+      'shifts',
+      'surveys'
+    ]
+  });
+});
+
 // Import auth controller directly for legacy endpoint
 import authController from './controllers/auth.controller';
 
@@ -235,16 +265,23 @@ interface ExpressRouter {
 // 404 handler
 app.use((req: Request, res: Response): void => {
   console.log(`[DEBUG] 404 hit: ${req.method} ${req.originalUrl}`);
-  console.log(
-    '[DEBUG] Available routes:',
-    (app._router as ExpressRouter).stack
-      .filter((r) => r.route)
-      .map((r) => `${Object.keys(r.route!.methods).join(',')} ${r.route!.path}`)
-  );
   res.status(404).json({
     message: 'Route not found',
     path: req.originalUrl,
     method: req.method,
+  });
+});
+
+// Error handler
+app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
+  console.error('[ERROR]', err.stack || err.message || err);
+  
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: isDevelopment ? err.message : 'Something went wrong',
+    ...(isDevelopment && { stack: err.stack })
   });
 });
 

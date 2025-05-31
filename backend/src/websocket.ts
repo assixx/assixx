@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 import jwt from 'jsonwebtoken';
 import { URL } from 'url';
 import { Server } from 'http';
@@ -36,11 +36,11 @@ interface JoinConversationData {
 }
 
 export class ChatWebSocketServer {
-  private wss: WebSocket.Server;
+  private wss: WebSocketServer;
   private clients: Map<number, ExtendedWebSocket>;
 
   constructor(server: Server) {
-    this.wss = new WebSocket.Server({
+    this.wss = new WebSocketServer({
       server,
       path: '/chat-ws',
     });
