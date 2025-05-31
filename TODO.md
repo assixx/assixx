@@ -3,46 +3,50 @@
 > **Fokus:** Was brauchen wir für einen erfolgreichen Beta-Test mit 5-10 Industriefirmen?
 > **Strategie:** Backend-First (70% Backend, 30% Frontend)
 
-## 🧪 PHASE 0: Funktionstests (ABSOLUTE PRIORITÄT!)
+## 🧪 PHASE 0: Funktionstests (ABSOLUTE PRIORITÄT!) ⚠️ IN ARBEIT
+
+**Status:** 31.05.2025 - **29 BUGS GEFUNDEN** (7 kritisch, 11 mittel, 11 klein)
+**Dokumentation:** Siehe [BUGS-GEFUNDEN.md](./BUGS-GEFUNDEN.md) und [FUNKTIONSTEST-ERGEBNISSE.md](./FUNKTIONSTEST-ERGEBNISSE.md)
+**Aktionsplan:** Siehe [AKTIONSPLAN-BETA-FIXES.md](./AKTIONSPLAN-BETA-FIXES.md)
 
 ### Umfassende Funktionstests aller Features
 
-- [ ] **Backend Tests**
-  - [ ] Auth System (Login, Logout, Session Management)
-  - [ ] Multi-Tenant Funktionalität
-  - [ ] Dokumenten-Management (Upload, Download, Kategorien)
-  - [ ] Schwarzes Brett (CRUD Operations)
-  - [ ] Chat-System (WebSocket, Nachrichten, Gruppen)
-  - [ ] Kalender (Events, Drag & Drop)
-  - [ ] KVP-System (Vorschläge, Status-Updates)
-  - [ ] Schichtplanung (Wochenansicht, Zuweisungen)
-  - [ ] Survey-System (Erstellung, Teilnahme, Auswertung)
-  - [ ] Feature Management (Aktivierung/Deaktivierung)
-  - [ ] API Response Validation
-  - [ ] Error Handling & Logging
+- [x] **Backend Tests** ⚠️ TEILWEISE
+  - [x] Auth System (Login, Logout, Session Management) ✅
+  - [x] Multi-Tenant Funktionalität ❌ KRITISCH: Isolation verletzt!
+  - [x] Dokumenten-Management (Upload, Download, Kategorien) ❌ API fehlt
+  - [x] Schwarzes Brett (CRUD Operations) ❌ API fehlt
+  - [x] Chat-System (WebSocket, Nachrichten, Gruppen) ⚠️ Blockiert
+  - [x] Kalender (Events, Drag & Drop) ⚠️ Event-Erstellung fehlerhaft
+  - [x] KVP-System (Vorschläge, Status-Updates) ⚠️ Nur für Mitarbeiter
+  - [x] Schichtplanung (Wochenansicht, Zuweisungen) ⚠️ Blockiert
+  - [x] Survey-System (Erstellung, Teilnahme, Auswertung) ❌ Feature nicht aktiv
+  - [x] Feature Management (Aktivierung/Deaktivierung) ⚠️ Features fehlen
+  - [x] API Response Validation ✅
+  - [x] Error Handling & Logging ✅
 
-- [ ] **Frontend Tests**
-  - [ ] Login/Logout Flow
-  - [ ] Navigation (alle Rollen: Admin, Employee, Root)
-  - [ ] Dokumenten-Upload & Viewing
-  - [ ] Schwarzes Brett Interaktion
-  - [ ] Chat Funktionalität (Echtzeit-Updates)
-  - [ ] Kalender Drag & Drop
-  - [ ] KVP Formular & Übersicht
-  - [ ] Schichtplan Ansicht & Bearbeitung
-  - [ ] Survey Teilnahme & Ergebnisse
-  - [ ] Responsive Design (Desktop, Tablet, Mobile)
-  - [ ] Browser-Kompatibilität (Chrome, Firefox, Safari, Edge)
-  - [ ] Performance (Ladezeiten < 2 Sekunden)
+- [x] **Frontend Tests** ⚠️ TEILWEISE
+  - [x] Login/Logout Flow ✅
+  - [x] Navigation (alle Rollen: Admin, Employee, Root) ⚠️ showSection fehlt
+  - [x] Dokumenten-Upload & Viewing ❌ Komplett defekt
+  - [x] Schwarzes Brett Interaktion ❌ openEntryForm fehlt
+  - [x] Chat Funktionalität (Echtzeit-Updates) ⚠️ Blockiert
+  - [x] Kalender Drag & Drop ⚠️ Event-Erstellung fehlerhaft
+  - [x] KVP Formular & Übersicht ⚠️ getElementById Error
+  - [x] Schichtplan Ansicht & Bearbeitung ⚠️ Blockiert
+  - [x] Survey Teilnahme & Ergebnisse ❌ Feature nicht aktiv
+  - [x] Responsive Design (Desktop, Tablet, Mobile) ❌ Fehlt komplett
+  - [ ] Browser-Kompatibilität (Chrome, Firefox, Safari, Edge) ⏳
+  - [x] Performance (Ladezeiten < 2 Sekunden) ✅
 
-- [ ] **Integrationstests**
-  - [ ] Frontend-Backend Kommunikation
-  - [ ] WebSocket Stabilität
-  - [ ] File Upload/Download Pipeline
-  - [ ] Multi-Tenant Isolation
-  - [ ] Session Management
-  - [ ] CSRF Protection
-  - [ ] Rate Limiting
+- [x] **Integrationstests** ⚠️ TEILWEISE
+  - [x] Frontend-Backend Kommunikation ⚠️ TypeScript MIME Fehler
+  - [x] WebSocket Stabilität ✅
+  - [x] File Upload/Download Pipeline ❌ CSP blockiert blob URLs
+  - [x] Multi-Tenant Isolation ❌❌ KRITISCH: Verletzt!
+  - [x] Session Management ⚠️ Invalid Date Fehler
+  - [x] CSRF Protection ✅
+  - [x] Rate Limiting ✅
 
 ## 🐳 PHASE 1: Docker & Deployment (NACH Funktionstests!)
 

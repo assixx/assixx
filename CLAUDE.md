@@ -44,7 +44,25 @@ cat /home/scs/projects/Assixx/DESIGN-STANDARDS.md
 - 📐 UI-Komponenten Dokumentation
 - 🔽 Custom Dropdown Pattern
 
-### 4️⃣ WEITERE WICHTIGE DOKUMENTE
+### 4️⃣ BEFORE-STARTING-DEV (VIERTE PRIORITÄT!)
+
+```bash
+# PFLICHT vor jedem Entwicklungsstart:
+cat /home/scs/projects/Assixx/BEFORE-STARTING-DEV.md
+```
+
+**Warum?**
+
+- ✅ TypeScript Build & Checks
+- ✅ API & System Health Tests
+- ✅ Dependencies & Security Updates
+- ✅ Projekt-Status Review
+- ⏱️ Dauert nur 5-10 Minuten
+- 🚨 Verhindert Entwicklung auf fehlerhafter Basis
+
+**WICHTIG:** Diese Checkliste MUSS bei jedem Entwicklungsstart durchgeführt werden!
+
+### 5️⃣ WEITERE WICHTIGE DOKUMENTE
 
 - **Entwickler-Guidelines**: [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md)
 - **Architektur**: [ARCHITECTURE.md](./ARCHITECTURE.md)
