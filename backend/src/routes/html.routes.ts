@@ -5,9 +5,14 @@
 
 import express, { Router, Request, Response } from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { authenticateToken, authorizeRole } from '../middleware/auth';
 
 const router: Router = express.Router();
+
+// ES modules fix for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Extended Request interfaces - removed unused types
 

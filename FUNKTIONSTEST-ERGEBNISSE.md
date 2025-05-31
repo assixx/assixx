@@ -48,7 +48,54 @@
 
 ## Phase 2: Interaktive Benutzertests
 
-⏳ Ausstehend - Beginnt nach Abschluss von Phase 1
+### ✅ Bereits getestet:
+
+#### Test-Szenario 1: Neue Firma Registrierung
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Signup-Seite öffnen | ✅ | Beide URLs zeigen identische Seite |
+| Formular ausfüllen | ✅ | Alle Felder funktionieren |
+| Registrierung durchführen | ✅ | Erfolgreich - "Testfirma GmbH" erstellt |
+| Weiterleitung zum Login | ✅ | Automatische Weiterleitung funktioniert |
+
+#### Test-Szenario 2: Login & Dashboard
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Login mit neuen Credentials | ✅ | admin@testfirma.de funktioniert |
+| Dashboard-Zugriff | ✅ | Root Dashboard wird geladen |
+| API Calls | ✅ | Alle erfolgreich (200 OK) |
+| Statistiken | ✅ | 1 Firma, 1 Benutzer, 0 Admins |
+
+#### Test-Szenario 3: Admin-Verwaltung
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Admin-Formular ausfüllen | ✅ | Alle Felder ausgefüllt |
+| Admin erstellen | ✅ | Erfolgreich - POST 200 OK |
+| Admin in Liste | ✅ | Wird nach Erstellung angezeigt |
+| Formular-Verbesserungen | ⚠️ | Siehe BUGS-GEFUNDEN.md #8 |
+
+#### Test-Szenario 4: Feature-Management
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Features-Seite öffnen | ✅ | Alle Features werden angezeigt |
+| Feature-Status | ✅ | Aktivieren/Deaktivieren möglich |
+| Feature-Beschreibung | ❌ | Zeigt "[object Object]" statt Text |
+| UI-Struktur | ⚠️ | Fehlt Paket-Übersicht und Zusatz-Features |
+| Font-Warnung | ⚠️ | Glyph bbox Fehler in Konsole |
+
+#### Test-Szenario 5: Admin Dashboard Features
+| Schritt | Status | Details |
+|---------|--------|---------|
+| Login als Admin | ✅ | admin1 Login erfolgreich |
+| Dashboard-Statistiken | ❌ | Falsche Zahlen, zeigt 6 Dokumente |
+| Sicherheitsproblem | ❌❌ | Dokumente anderer Tenants sichtbar! |
+| Mitarbeiter-Modal | ✅ | Modal öffnet sich |
+| Mitarbeiter erstellen | ❌ | API 404 - Endpoint fehlt |
+
+### ⏳ Noch zu testen:
+- Weitere Admin-Features
+- Tenant-Verwaltung als Root
+- Mobile Responsiveness
 
 ## Gefundene Fehler
 
@@ -76,6 +123,9 @@
 | API Status | < 100ms | ~15ms | ✅ |
 | WebSocket Connect | < 500ms | ~100ms | ✅ |
 | Auth Endpoints | < 200ms | ~50ms | ✅ |
+| Signup Process | < 2s | ~1s | ✅ |
+| Login Process | < 1s | ~500ms | ✅ |
+| Dashboard Load | < 2s | ~1.5s | ✅ |
 
 ## Zusammenfassung Phase 1
 

@@ -226,6 +226,7 @@ uploads/
 | Datei                       | Beschreibung                   |
 | --------------------------- | ------------------------------ |
 | 📄 ARCHITECTURE.md          | Systemarchitektur & Tech Stack |
+| 📄 BUGS-GEFUNDEN.md         | Dokumentierte Bugs aus Tests   |
 | 📄 CLAUDE.md                | AI-Assistenten Anweisungen     |
 | 📄 CLAUDE.local.md          | Lokale AI-Anweisungen          |
 | 📄 CONTRIBUTOR-AGREEMENT.md | Beitragsvereinbarung           |
