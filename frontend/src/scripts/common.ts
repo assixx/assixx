@@ -3,7 +3,7 @@
  * Includes navigation, helpers, and shared functionality
  */
 
-import type { User } from '../types/api.types';
+import type { User, BlackboardEntry } from '../types/api.types';
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 
 // Navigation initialization
@@ -46,7 +46,7 @@ async function loadNavigation(): Promise<void> {
 
       if (userResponse.ok) {
         userData = await userResponse.json();
-        userRole = userData!.role;
+        userRole = userData?.role || 'employee';
       } else {
         navPlaceholder.innerHTML = createGuestNavigation();
         return;
@@ -272,11 +272,25 @@ function updateNotificationBadge(count: number): void {
  * Initialize Bootstrap components
  */
 function initializeBootstrapComponents(): void {
+  // Bootstrap type declaration
+  interface BootstrapTooltip {
+    new (element: Element): unknown;
+  }
+
+  interface WindowWithBootstrap extends Window {
+    bootstrap?: {
+      Tooltip: BootstrapTooltip;
+    };
+  }
+
   // Initialize tooltips if Bootstrap is available
-  if (typeof (window as any).bootstrap !== 'undefined') {
+  if (typeof (window as WindowWithBootstrap).bootstrap !== 'undefined') {
     const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.forEach((tooltipTriggerEl) => {
-      new (window as any).bootstrap.Tooltip(tooltipTriggerEl);
+      const bootstrap = (window as WindowWithBootstrap).bootstrap;
+      if (bootstrap?.Tooltip) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+      }
     });
   }
 }
@@ -336,7 +350,7 @@ export async function loadBlackboardPreview(): Promise<void> {
 /**
  * Display blackboard items
  */
-function displayBlackboardItems(entries: any[]): void {
+function displayBlackboardItems(entries: BlackboardEntry[]): void {
   const container = document.getElementById('blackboard-items');
   if (!container) return;
 
@@ -385,7 +399,7 @@ function checkTokenExpiry(): void {
     const currentTime = Date.now();
 
     if (currentTime >= expiryTime) {
-      console.log('Token expired, logging out...');
+      console.info('Token expired, logging out...');
       logout();
     }
   } catch (error) {
@@ -454,14 +468,28 @@ export function showSection(sectionId: string): void {
   }
 }
 
+// Extend window for common functions
+declare global {
+  interface Window {
+    loadNavigation: typeof loadNavigation;
+    createBlackboardWidget: typeof createBlackboardWidget;
+    loadBlackboardPreview: typeof loadBlackboardPreview;
+    formatDate: typeof formatDate;
+    formatDateTime: typeof formatDateTime;
+    escapeHtml: typeof escapeHtml;
+    showSection: typeof showSection;
+    logout: typeof logout;
+  }
+}
+
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).loadNavigation = loadNavigation;
-  (window as any).createBlackboardWidget = createBlackboardWidget;
-  (window as any).loadBlackboardPreview = loadBlackboardPreview;
-  (window as any).formatDate = formatDate;
-  (window as any).formatDateTime = formatDateTime;
-  (window as any).escapeHtml = escapeHtml;
-  (window as any).showSection = showSection;
-  (window as any).logout = logout;
+  window.loadNavigation = loadNavigation;
+  window.createBlackboardWidget = createBlackboardWidget;
+  window.loadBlackboardPreview = loadBlackboardPreview;
+  window.formatDate = formatDate;
+  window.formatDateTime = formatDateTime;
+  window.escapeHtml = escapeHtml;
+  window.showSection = showSection;
+  window.logout = logout;
 }

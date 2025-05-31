@@ -7,7 +7,7 @@
  * Show a specific section and hide all others
  */
 export function showSection(sectionName: string): void {
-  console.log(`[ShowSection] Navigating to section: ${sectionName}`);
+  console.info(`[ShowSection] Navigating to section: ${sectionName}`);
 
   // Hide all sections
   const allSections = document.querySelectorAll<HTMLElement>('.content-section, .dashboard-section');
@@ -36,7 +36,7 @@ export function showSection(sectionName: string): void {
     url.searchParams.set('section', sectionName);
     window.history.pushState({ section: sectionName }, '', url);
 
-    console.log(`[ShowSection] Section ${sectionName} displayed`);
+    console.info(`[ShowSection] Section ${sectionName} displayed`);
   } else {
     console.error(`[ShowSection] Section ${sectionName} not found`);
   }
@@ -63,8 +63,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 200);
 });
 
+// Extend window for show section functions
+declare global {
+  interface Window {
+    showSection: typeof showSection;
+    initSectionFromURL: typeof initSectionFromURL;
+  }
+}
+
 // Make showSection globally available
 if (typeof window !== 'undefined') {
-  (window as any).showSection = showSection;
-  (window as any).initSectionFromURL = initSectionFromURL;
+  window.showSection = showSection;
+  window.initSectionFromURL = initSectionFromURL;
 }

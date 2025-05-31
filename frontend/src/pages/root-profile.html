@@ -313,8 +313,12 @@
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       @keyframes modalSlideIn {
@@ -491,24 +495,31 @@
           </div>
 
           <!-- Danger Zone Card -->
-          <div class="profile-card" style="border-color: rgba(244, 67, 54, 0.3);">
-            <h2 class="card-title" style="color: #f44336;">Gefahrenzone</h2>
-            <div style="padding: 20px; background: rgba(244, 67, 54, 0.05); border-radius: var(--radius-sm); margin-bottom: 20px;">
-              <p style="color: #f44336; margin-bottom: 16px;">
+          <div class="profile-card" style="border-color: rgba(244, 67, 54, 0.3)">
+            <h2 class="card-title" style="color: #f44336">Gefahrenzone</h2>
+            <div style="padding: 20px; background: rgba(244, 67, 54, 0.05); border-radius: var(--radius-sm); margin-bottom: 20px">
+              <p style="color: #f44336; margin-bottom: 16px">
                 <i class="fas fa-exclamation-triangle"></i>
-                <strong>Achtung:</strong> Diese Aktion kann nicht rückgängig gemacht werden!
+                <strong>Achtung:</strong>
+                Diese Aktion kann nicht rückgängig gemacht werden!
               </p>
-              <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich gelöscht:
+              <p style="color: var(--text-secondary); margin-bottom: 20px">
+                Durch das Löschen Ihres Tenants werden
+                <strong>ALLE</strong>
+                Daten unwiderruflich gelöscht:
               </p>
-              <ul style="color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px;">
+              <ul style="color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px">
                 <li>Alle Administratoren und Mitarbeiter</li>
                 <li>Alle Dokumente und Dateien</li>
                 <li>Alle Nachrichten und Chats</li>
                 <li>Alle Einstellungen und Konfigurationen</li>
                 <li>Die gesamte Firmenstruktur</li>
               </ul>
-              <button class="btn btn-danger" onclick="showDeleteModal()" style="background: rgba(244, 67, 54, 0.2); border-color: #f44336; color: #f44336;">
+              <button
+                class="btn btn-danger"
+                onclick="showDeleteModal()"
+                style="background: rgba(244, 67, 54, 0.2); border-color: #f44336; color: #f44336"
+              >
                 <i class="fas fa-trash-alt"></i>
                 Tenant komplett löschen
               </button>
@@ -525,43 +536,46 @@
           <i class="fas fa-exclamation-triangle fa-2x"></i>
           <h3>Tenant unwiderruflich löschen</h3>
         </div>
-        
+
         <div class="modal-body">
           <div class="warning-box">
-            <p style="color: #f44336; font-weight: bold; margin-bottom: 12px;">
-              <i class="fas fa-skull-crossbones"></i> LETZTE WARNUNG!
+            <p style="color: #f44336; font-weight: bold; margin-bottom: 12px">
+              <i class="fas fa-skull-crossbones"></i>
+              LETZTE WARNUNG!
             </p>
-            <p style="color: var(--text-primary);">
-              Sie sind dabei, Ihren gesamten Tenant zu löschen. Diese Aktion:
-            </p>
-            <ul style="color: var(--text-primary); margin: 12px 0; padding-left: 20px;">
+            <p style="color: var(--text-primary)">Sie sind dabei, Ihren gesamten Tenant zu löschen. Diese Aktion:</p>
+            <ul style="color: var(--text-primary); margin: 12px 0; padding-left: 20px">
               <li>Löscht ALLE Benutzer (Admins und Mitarbeiter)</li>
               <li>Löscht ALLE Daten und Dokumente</li>
               <li>Löscht ALLE Einstellungen</li>
               <li>Kann NICHT rückgängig gemacht werden</li>
             </ul>
           </div>
-          
+
           <div class="confirmation-input">
-            <p style="color: var(--text-secondary); margin-bottom: 12px;">
-              Geben Sie zur Bestätigung <strong style="color: #f44336;">LÖSCHEN</strong> ein:
+            <p style="color: var(--text-secondary); margin-bottom: 12px">
+              Geben Sie zur Bestätigung
+              <strong style="color: #f44336">LÖSCHEN</strong>
+              ein:
             </p>
-            <input 
-              type="text" 
-              id="deleteConfirmation" 
-              class="form-control" 
+            <input
+              type="text"
+              id="deleteConfirmation"
+              class="form-control"
               placeholder="Geben Sie LÖSCHEN ein"
-              style="border-color: rgba(244, 67, 54, 0.3);"
+              style="border-color: rgba(244, 67, 54, 0.3)"
             />
           </div>
         </div>
-        
+
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="closeDeleteModal()">
-            <i class="fas fa-times"></i> Abbrechen
+            <i class="fas fa-times"></i>
+            Abbrechen
           </button>
           <button class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteTenant()" disabled>
-            <i class="fas fa-trash-alt"></i> Endgültig löschen
+            <i class="fas fa-trash-alt"></i>
+            Endgültig löschen
           </button>
         </div>
       </div>
@@ -823,17 +837,17 @@
           const response = await fetch('/api/root/delete-tenant', {
             method: 'DELETE',
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
           });
 
           if (response.ok) {
             showMessage('Tenant wird gelöscht...', 'success');
-            
+
             // Clear all local storage
             localStorage.clear();
-            
+
             // Redirect to login after 2 seconds
             setTimeout(() => {
               window.location.href = '/login';

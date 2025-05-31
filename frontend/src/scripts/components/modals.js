@@ -1,3 +1,3 @@
 export function initModals() {
-  console.log('Modals initialized');
+  console.info('Modals initialized');
 }

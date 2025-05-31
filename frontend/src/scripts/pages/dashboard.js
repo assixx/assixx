@@ -1,6 +1,6 @@
 // Dashboard page script
-console.log('Dashboard loaded');
+console.info('Dashboard loaded');
 
 export function initDashboard() {
-  console.log('Dashboard initialized');
+  console.info('Dashboard initialized');
 }

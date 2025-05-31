@@ -4,8 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
-import { getAuthToken } from './auth';
-import { showSuccess, showError, showInfo } from './auth';
+import { getAuthToken, showSuccess, showError } from './auth';
 import { showSection } from './show-section';
 
 interface DashboardStats {
@@ -78,11 +77,8 @@ interface CreateEmployeeForm extends HTMLFormElement {
 let token: string | null = null;
 
 // Define functions globally so they can be accessed from HTML onclick handlers
-let loadDepartmentsForEmployeeSelect: () => Promise<void>;
-let showNewEmployeeModal: () => void;
-
 // Load Departments for Employee Select (defined globally)
-loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
+const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
   try {
     const authToken = token || getAuthToken();
     const response = await fetch('/api/departments', {
@@ -116,7 +112,7 @@ loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
 };
 
 // Show New Employee Modal (defined globally)
-showNewEmployeeModal = function (): void {
+const showNewEmployeeModal = function (): void {
   const modal = document.getElementById('employee-modal') as HTMLElement;
   if (modal) {
     // Formular zurücksetzen, falls es bereits benutzt wurde
@@ -139,6 +135,7 @@ showNewEmployeeModal = function (): void {
     loadDepartmentsForEmployeeSelect();
   } else {
     console.error('employee-modal element not found!');
+    // eslint-disable-next-line no-alert
     alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
   }
 };
@@ -163,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event Listeners for forms
   const createEmployeeForm = document.getElementById('create-employee-form') as CreateEmployeeForm;
-  const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
+  // const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
   const departmentForm = document.getElementById('department-form') as HTMLFormElement;
   const teamForm = document.getElementById('team-form') as HTMLFormElement;
   const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
@@ -406,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailError = document.getElementById('email-error') as HTMLElement;
     if (employeeData.email !== employeeData.email_confirm) {
       if (emailError) emailError.style.display = 'block';
+      // eslint-disable-next-line no-alert
       alert('Die E-Mail-Adressen stimmen nicht überein');
       return;
     } else {
@@ -416,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordError = document.getElementById('password-error') as HTMLElement;
     if (employeeData.password !== employeeData.password_confirm) {
       if (passwordError) passwordError.style.display = 'block';
+      // eslint-disable-next-line no-alert
       alert('Die Passwörter stimmen nicht überein');
       return;
     } else {
@@ -424,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Validierung auf Client-Seite, um bessere Fehlermeldungen zu geben
     if (!employeeData.username || employeeData.username.length < 3) {
+      // eslint-disable-next-line no-alert
       alert('Der Benutzername muss mindestens 3 Zeichen lang sein.');
       return;
     }
@@ -515,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Logout function
   function logout(): void {
+    // eslint-disable-next-line no-alert
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
@@ -571,7 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const listItem = document.createElement('li');
             listItem.innerHTML = `
               <strong>${emp.first_name} ${emp.last_name}</strong> - ${emp.position || 'Mitarbeiter'}
-              <span class="text-muted">(${emp.department_name || 'Keine Abteilung'})</span>
+              <span class="text-muted">(${emp.department || 'Keine Abteilung'})</span>
             `;
             employeeDetailList.appendChild(listItem);
           });
@@ -609,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
           documents.slice(0, 5).forEach((doc: Document) => {
             const item = document.createElement('div');
             item.className = 'compact-item';
-            const uploadDate = new Date(doc.upload_date).toLocaleDateString('de-DE');
+            const uploadDate = new Date(doc.created_at).toLocaleDateString('de-DE');
             item.innerHTML = `
               <span class="compact-item-name">${doc.file_name}</span>
               <span class="compact-item-count">${uploadDate}</span>
@@ -629,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           documents.slice(0, 10).forEach((doc: Document) => {
             const listItem = document.createElement('li');
-            const uploadDate = new Date(doc.upload_date).toLocaleDateString('de-DE');
+            const uploadDate = new Date(doc.created_at).toLocaleDateString('de-DE');
             listItem.innerHTML = `
               <strong>${doc.file_name}</strong> - ${doc.category || 'Allgemein'}
               <span class="text-muted">(${uploadDate})</span>
@@ -750,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(error.message || 'Failed to create department');
       }
 
-      const newDepartment = await response.json();
+      await response.json();
       showSuccess('Abteilung erfolgreich erstellt');
 
       // Reset form and close modal
@@ -763,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadDepartmentsForEmployeeSelect();
     } catch (error) {
       console.error('Error creating department:', error);
-      showError('Fehler beim Erstellen der Abteilung: ' + (error as Error).message);
+      showError(`Fehler beim Erstellen der Abteilung: ${(error as Error).message}`);
     }
   }
 
@@ -795,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(error.message || 'Failed to create team');
       }
 
-      const newTeam = await response.json();
+      await response.json();
       showSuccess('Team erfolgreich erstellt');
 
       // Reset form and close modal
@@ -807,14 +808,23 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadTeams();
     } catch (error) {
       console.error('Error creating team:', error);
-      showError('Fehler beim Erstellen des Teams: ' + (error as Error).message);
+      showError(`Fehler beim Erstellen des Teams: ${(error as Error).message}`);
     }
   }
 });
 
+// Extend window for admin dashboard functions
+declare global {
+  interface Window {
+    showNewEmployeeModal: typeof showNewEmployeeModal;
+    loadDepartmentsForEmployeeSelect: typeof loadDepartmentsForEmployeeSelect;
+    showSection: typeof showSection;
+  }
+}
+
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).showNewEmployeeModal = showNewEmployeeModal;
-  (window as any).loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
-  (window as any).showSection = showSection;
+  window.showNewEmployeeModal = showNewEmployeeModal;
+  window.loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
+  window.showSection = showSection;
 }

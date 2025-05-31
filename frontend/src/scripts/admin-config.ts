@@ -23,14 +23,13 @@ interface AdminLog {
   created_at: string;
 }
 
-interface AdminFormElements {
+interface AdminFormElements extends HTMLFormControlsCollection {
   'admin-id': HTMLInputElement;
   username: HTMLInputElement;
   email: HTMLInputElement;
   password: HTMLInputElement;
   company: HTMLInputElement;
   notes: HTMLTextAreaElement;
-  [key: string]: any;
 }
 
 interface AdminUpdateForm extends HTMLFormElement {
@@ -180,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!token) return;
 
     // Prepare update data
-    const updateData: Partial<AdminUser> = {
+    const updateData: Partial<AdminUser> & { password?: string } = {
       username: formData.get('username') as string,
       email: formData.get('email') as string,
       company: formData.get('company') as string,
@@ -190,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Only include password if provided
     const password = formData.get('password') as string;
     if (password) {
-      (updateData as any).password = password;
+      updateData.password = password;
     }
 
     // Show loading state

@@ -22,7 +22,7 @@ import { ChatWebSocketServer } from './websocket';
 const server: Server = http.createServer(app);
 
 // Setup WebSocket
-const wsServer = new ChatWebSocketServer(server);
+new ChatWebSocketServer(server);
 
 // Get port from environment
 const PORT: number = parseInt(process.env.PORT || '3000', 10);

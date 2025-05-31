@@ -4,18 +4,115 @@
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken } from './auth';
-import { showSuccess, showError, showInfo } from './auth';
+import { getAuthToken, showSuccess, showError } from './auth';
 import { closeModal, openModal } from './dashboard-scripts';
+
+// FullCalendar types
+interface FullCalendarApi {
+  render(): void;
+  refetchEvents(): void;
+  getEventById(id: string): FullCalendarEvent | null;
+  getEvents(): FullCalendarEvent[];
+  addEvent(event: FullCalendarEventInput): FullCalendarEvent;
+  unselect(): void;
+  changeView(viewName: string): void;
+}
+
+interface FullCalendarEvent {
+  id: string;
+  title: string;
+  start: Date | string;
+  end?: Date | string;
+  allDay?: boolean;
+  extendedProps?: Record<string, unknown>;
+  remove(): void;
+}
+
+interface FullCalendarEventInput {
+  id?: string;
+  title: string;
+  start: Date | string;
+  end?: Date | string;
+  allDay?: boolean;
+  color?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  extendedProps?: Record<string, unknown>;
+}
+
+interface FullCalendarSelectInfo {
+  start: Date;
+  end: Date;
+  startStr: string;
+  endStr: string;
+  allDay: boolean;
+  view: {
+    type: string;
+  };
+}
+
+interface FullCalendarEventClickInfo {
+  event: FullCalendarEvent;
+  el: HTMLElement;
+  jsEvent: MouseEvent;
+  view: unknown;
+}
+
+interface FullCalendarEventMouseEnterInfo {
+  event: FullCalendarEvent;
+  el: HTMLElement;
+  jsEvent: MouseEvent;
+  view: unknown;
+}
+
+interface FullCalendarOptions {
+  plugins?: unknown[];
+  initialView: string;
+  locale?: string;
+  firstDay?: number;
+  slotMinTime?: string;
+  slotMaxTime?: string;
+  headerToolbar?: Record<string, string>;
+  buttonText?: Record<string, string>;
+  allDayText?: string;
+  events?:
+    | ((
+        fetchInfo: FullCalendarFetchInfo,
+        successCallback: (events: FullCalendarEventInput[]) => void,
+        failureCallback: (error: Error) => void,
+      ) => void)
+    | FullCalendarEventInput[];
+  editable?: boolean;
+  selectable?: boolean;
+  selectMirror?: boolean;
+  dayMaxEvents?: boolean;
+  weekends?: boolean;
+  height?: string | number;
+  nowIndicator?: boolean;
+  navLinks?: boolean;
+  select?: (info: FullCalendarSelectInfo) => void;
+  eventClick?: (info: FullCalendarEventClickInfo) => void;
+  eventMouseEnter?: (info: FullCalendarEventMouseEnterInfo) => void;
+  eventMouseLeave?: (info: FullCalendarEventMouseEnterInfo) => void;
+}
+
+interface FullCalendarFetchInfo {
+  start: Date;
+  end: Date;
+  startStr: string;
+  endStr: string;
+  timeZone: string;
+}
+
+interface FullCalendarConstructor {
+  Calendar: new (element: HTMLElement, options: FullCalendarOptions) => FullCalendarApi;
+}
 
 // Import FullCalendar types
 declare global {
   interface Window {
-    FullCalendar: any;
-    DashboardUI: {
-      closeModal: (id: string) => void;
-      openModal: (id: string) => void;
-    };
+    FullCalendar: FullCalendarConstructor;
   }
 }
 
@@ -75,7 +172,7 @@ interface UserData extends User {
 }
 
 // Global variables
-let calendar: any; // FullCalendar instance
+let calendar: FullCalendarApi; // FullCalendar instance
 let currentFilter: string = 'all';
 let currentSearch: string = '';
 let departments: Department[] = [];
@@ -83,9 +180,6 @@ let teams: Team[] = [];
 let employees: User[] = [];
 let isAdmin: boolean = false;
 let currentUserId: number | null = null;
-let currentUserRole: string | null = null;
-let currentDepartmentId: number | null = null;
-let currentTeamId: number | null = null;
 let selectedAttendees: number[] = [];
 let calendarView: string = 'dayGridMonth'; // Default view
 
@@ -110,44 +204,40 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCloseButtons();
 
   // Check if user is logged in
-  checkLoggedIn()
-    .then(() => {
-      // Load user data
-      fetchUserData()
-        .then((userData: UserData) => {
-          currentUserId = userData.id;
-          currentUserRole = userData.role;
-          currentDepartmentId = userData.departmentId || userData.department_id || null;
-          currentTeamId = userData.teamId || userData.team_id || null;
-          isAdmin = userData.role === 'admin' || userData.role === 'root';
+  try {
+    checkLoggedIn();
+    // Load user data
+    fetchUserData()
+      .then((userData: UserData) => {
+        currentUserId = userData.id;
+        isAdmin = userData.role === 'admin' || userData.role === 'root';
 
-          // Show/hide "New Event" button based on permissions
-          const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
-          if (newEventBtn) {
-            newEventBtn.style.display = isAdmin ? 'block' : 'none';
-          }
+        // Show/hide "New Event" button based on permissions
+        const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
+        if (newEventBtn) {
+          newEventBtn.style.display = isAdmin ? 'block' : 'none';
+        }
 
-          // Load departments and teams for form dropdowns
-          loadDepartmentsAndTeams();
+        // Load departments and teams for form dropdowns
+        loadDepartmentsAndTeams();
 
-          // Initialize calendar
-          initializeCalendar();
+        // Initialize calendar
+        initializeCalendar();
 
-          // Load upcoming events
-          loadUpcomingEvents();
-        })
-        .catch((error) => {
-          console.error('Error loading user data:', error);
-          window.location.href = '/pages/login.html';
-        });
+        // Load upcoming events
+        loadUpcomingEvents();
 
-      // Setup event listeners
-      setupEventListeners();
-    })
-    .catch((error) => {
-      console.error('Error checking login:', error);
-      window.location.href = '/pages/login.html';
-    });
+        // Setup event listeners
+        setupEventListeners();
+      })
+      .catch((error) => {
+        console.error('Error loading user data:', error);
+        window.location.href = '/pages/login.html';
+      });
+  } catch (error) {
+    console.error('Error checking login:', error);
+    window.location.href = '/pages/login.html';
+  }
 });
 
 /**
@@ -156,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupCloseButtons(): void {
   // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
   document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       // Finde das übergeordnete Modal
       const modal = this.closest('.modal-overlay') as HTMLElement;
       if (modal) {
@@ -221,7 +311,7 @@ function initializeCalendar(): void {
     dayMaxEvents: true,
     navLinks: true,
     selectable: isAdmin, // Only admins can select dates to create events
-    select(info: any) {
+    select(info: FullCalendarSelectInfo) {
       if (isAdmin) {
         // Bei Klick auf einzelnen Tag: allDay = false
         // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
@@ -230,17 +320,17 @@ function initializeCalendar(): void {
       }
     },
     events: loadCalendarEvents,
-    eventClick(info: any) {
-      viewEvent(info.event.id);
+    eventClick(info: FullCalendarEventClickInfo) {
+      viewEvent(parseInt(info.event.id, 10));
     },
-    eventMouseEnter(info: any) {
+    eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
       // Show tooltip on hover
       const tooltip = document.createElement('div');
       tooltip.className = 'event-tooltip';
       tooltip.innerHTML = `
         <strong>${info.event.title}</strong><br>
-        ${info.event.extendedProps.description || ''}
-        ${info.event.extendedProps.location ? `<br><i class="fas fa-map-marker-alt"></i> ${info.event.extendedProps.location}` : ''}
+        ${info.event.extendedProps?.description || ''}
+        ${info.event.extendedProps?.location ? `<br><i class="fas fa-map-marker-alt"></i> ${info.event.extendedProps.location}` : ''}
       `;
       document.body.appendChild(tooltip);
 
@@ -250,12 +340,13 @@ function initializeCalendar(): void {
       tooltip.style.top = `${rect.bottom + 5}px`;
       tooltip.style.zIndex = '9999';
 
-      info.el._tooltip = tooltip;
+      (info.el as HTMLElement & { _tooltip?: HTMLElement })._tooltip = tooltip;
     },
-    eventMouseLeave(info: any) {
-      if (info.el._tooltip) {
-        info.el._tooltip.remove();
-        delete info.el._tooltip;
+    eventMouseLeave(info: FullCalendarEventMouseEnterInfo) {
+      const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
+      if (el._tooltip) {
+        el._tooltip.remove();
+        delete el._tooltip;
       }
     },
   });
@@ -269,7 +360,7 @@ function initializeCalendar(): void {
 function setupEventListeners(): void {
   // Filter by level using pill buttons
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all pills
       document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
       // Add active class to clicked pill
@@ -282,7 +373,7 @@ function setupEventListeners(): void {
 
   // View buttons
   document.querySelectorAll<HTMLElement>('.view-btn').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       const view = this.dataset.view;
       if (view) {
         calendarView = view;
@@ -305,7 +396,7 @@ function setupEventListeners(): void {
       calendar.refetchEvents();
     });
 
-    searchInput.addEventListener('keypress', function (e: KeyboardEvent) {
+    searchInput.addEventListener('keypress', function (this: HTMLInputElement, e: KeyboardEvent) {
       if (e.key === 'Enter') {
         currentSearch = this.value.trim();
         calendar.refetchEvents();
@@ -332,14 +423,14 @@ function setupEventListeners(): void {
   // Organization level change
   const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLSelectElement;
   if (eventOrgLevel) {
-    eventOrgLevel.addEventListener('change', function () {
+    eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
     });
   }
 
   // Color selection
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all color options
       document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
       // Add active class to clicked option
@@ -350,7 +441,7 @@ function setupEventListeners(): void {
   // All day checkbox
   const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
   if (allDayCheckbox) {
-    allDayCheckbox.addEventListener('change', function () {
+    allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
@@ -364,7 +455,7 @@ function setupEventListeners(): void {
   // Attendee search
   const attendeeSearch = document.getElementById('attendeeSearch') as HTMLInputElement;
   if (attendeeSearch) {
-    attendeeSearch.addEventListener('input', function () {
+    attendeeSearch.addEventListener('input', function (this: HTMLInputElement) {
       searchAttendees(this.value);
     });
   }
@@ -373,7 +464,7 @@ function setupEventListeners(): void {
 /**
  * Load calendar events
  */
-async function loadCalendarEvents(fetchInfo: any): Promise<any[]> {
+async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
   try {
     // Get token from localStorage
     const token = getAuthToken();
@@ -436,7 +527,7 @@ async function loadCalendarEvents(fetchInfo: any): Promise<any[]> {
 /**
  * Format event for FullCalendar
  */
-function formatEventForCalendar(event: CalendarEvent): any {
+function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput {
   // Color based on organization level
   let color = event.color || '#3788d8'; // Default blue
 
@@ -458,7 +549,7 @@ function formatEventForCalendar(event: CalendarEvent): any {
   }
 
   return {
-    id: event.id,
+    id: event.id.toString(),
     title: event.title,
     start: event.start_time,
     end: event.end_time,
@@ -686,16 +777,7 @@ async function viewEvent(eventId: number): Promise<void> {
           <i class="fas fa-calendar-check"></i>
           <span>${event.all_day ? formattedEndDate : `${formattedEndDate} ${formattedEndTime}`}</span>
         </div>
-        ${
-          event.location
-            ? `
-          <div class="detail-item">
-            <i class="fas fa-map-marker-alt"></i>
-            <span>${escapeHtml(event.location)}</span>
-          </div>
-        `
-            : ''
-        }
+        ${event.location ? `<div class="detail-item"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(event.location)}</span></div>` : ''}
         <div class="detail-item">
           <i class="fas fa-layer-group"></i>
           <span>${levelText}</span>
@@ -1136,6 +1218,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
  * Delete event
  */
 async function deleteEvent(eventId: number): Promise<void> {
+  // eslint-disable-next-line no-alert
   if (!confirm('Möchten Sie diesen Termin wirklich löschen?')) {
     return;
   }
@@ -1171,7 +1254,7 @@ async function deleteEvent(eventId: number): Promise<void> {
 /**
  * Search attendees
  */
-async function searchAttendees(query: string): Promise<void> {
+function searchAttendees(query: string): void {
   const searchResults = document.getElementById('attendeeSearchResults') as HTMLElement;
   if (!searchResults) return;
 
@@ -1213,7 +1296,7 @@ async function searchAttendees(query: string): Promise<void> {
 /**
  * Add attendee
  */
-function addAttendee(userId: number, name: string): void {
+function addAttendee(userId: number, _name: string): void {
   if (!selectedAttendees.includes(userId)) {
     selectedAttendees.push(userId);
     updateSelectedAttendees();
@@ -1263,7 +1346,7 @@ function updateSelectedAttendees(): void {
 /**
  * Check if user is logged in
  */
-async function checkLoggedIn(): Promise<void> {
+function checkLoggedIn(): void {
   const token = getAuthToken();
   if (!token) {
     throw new Error('No authentication token found');
@@ -1351,15 +1434,30 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
+// Extend window for calendar functions
+declare global {
+  interface Window {
+    viewEvent: typeof viewEvent;
+    editEvent: (eventId: number) => void;
+    deleteEvent: typeof deleteEvent;
+    respondToEvent: typeof respondToEvent;
+    openEventForm: typeof openEventForm;
+    saveEvent: typeof saveEvent;
+    selectOrgId: typeof selectOrgId;
+    addAttendee: typeof addAttendee;
+    removeAttendee: typeof removeAttendee;
+  }
+}
+
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).viewEvent = viewEvent;
-  (window as any).editEvent = (eventId: number) => openEventForm(eventId);
-  (window as any).deleteEvent = deleteEvent;
-  (window as any).respondToEvent = respondToEvent;
-  (window as any).openEventForm = openEventForm;
-  (window as any).saveEvent = saveEvent;
-  (window as any).selectOrgId = selectOrgId;
-  (window as any).addAttendee = addAttendee;
-  (window as any).removeAttendee = removeAttendee;
+  window.viewEvent = viewEvent;
+  window.editEvent = (eventId: number) => openEventForm(eventId);
+  window.deleteEvent = deleteEvent;
+  window.respondToEvent = respondToEvent;
+  window.openEventForm = openEventForm;
+  window.saveEvent = saveEvent;
+  window.selectOrgId = selectOrgId;
+  window.addAttendee = addAttendee;
+  window.removeAttendee = removeAttendee;
 }

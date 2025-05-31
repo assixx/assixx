@@ -786,6 +786,40 @@ Assixx/
 
 ---
 
+## 🔐 MySQL Passwort zurücksetzen
+
+Wenn das MySQL root Passwort nicht mit der .env Konfiguration übereinstimmt:
+
+```bash
+# 1. MySQL stoppen
+sudo systemctl stop mysql
+
+# 2. MySQL im Safe Mode starten
+sudo mysqld_safe --skip-grant-tables &
+
+# 3. In MySQL einloggen ohne Passwort
+mysql -u root
+
+# 4. Passwort ändern (in MySQL)
+USE mysql;
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'StrongP@ssw0rd!123';
+FLUSH PRIVILEGES;
+EXIT;
+
+# 5. MySQL neu starten
+sudo killall -TERM mysqld
+sudo systemctl start mysql
+
+# 6. Testen
+mysql -u root -p'StrongP@ssw0rd!123' -e "SELECT VERSION();"
+```
+
+Alternativ mit SQL-Datei:
+```bash
+# Wenn reset-mysql-password.sql vorhanden ist:
+sudo mysql < reset-mysql-password.sql
+```
+
 ## 🔍 Problembehandlung
 
 ### ❌ Häufige Probleme

@@ -11,7 +11,7 @@ interface ConfirmTracking {
 }
 
 (function (): void {
-  console.log('[Confirm] Installing confirm-once patch');
+  console.info('[Confirm] Installing confirm-once patch');
 
   // Save reference to original confirm function
   const originalConfirm = window.confirm;
@@ -26,14 +26,14 @@ interface ConfirmTracking {
   // Override confirm function
   window.confirm = function (message?: string): boolean {
     const confirmMessage = message || '';
-    console.log(`[Confirm] Confirm dialog requested: ${confirmMessage}`);
+    console.info(`[Confirm] Confirm dialog requested: ${confirmMessage}`);
 
     const now = Date.now();
 
     // If the same confirmation dialog should be shown again within 3 seconds,
     // just return the previous result
     if (confirmMessage === tracking.lastConfirmMessage && now - tracking.lastConfirmTime < 3000) {
-      console.log(`[Confirm] Reusing previous result: ${tracking.lastConfirmResult}`);
+      console.info(`[Confirm] Reusing previous result: ${tracking.lastConfirmResult}`);
       return tracking.lastConfirmResult;
     }
 
@@ -42,9 +42,9 @@ interface ConfirmTracking {
     tracking.lastConfirmMessage = confirmMessage;
     tracking.lastConfirmResult = originalConfirm.call(window, confirmMessage);
 
-    console.log(`[Confirm] User selected: ${tracking.lastConfirmResult}`);
+    console.info(`[Confirm] User selected: ${tracking.lastConfirmResult}`);
     return tracking.lastConfirmResult;
   };
 
-  console.log('[Confirm] Confirm-once patch installed');
+  console.info('[Confirm] Confirm-once patch installed');
 })();

@@ -1,11 +1,11 @@
+/* eslint-disable indent */
 /**
  * Shift Planning TypeScript
  * Handles all client-side functionality for the shift planning system
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken } from './auth';
-import { showSuccess, showError, showInfo } from './auth';
+import { getAuthToken, showSuccess, showError } from './auth';
 
 interface ShiftPlan {
   id: number;
@@ -19,24 +19,7 @@ interface ShiftPlan {
   created_at: string;
   updated_at: string;
   assignments?: ShiftAssignment[];
-}
-
-interface ShiftTemplate {
-  id: number;
-  name: string;
-  description?: string;
-  department_id?: number;
-  shift_pattern: ShiftPattern[];
-  created_by: number;
-  created_at: string;
-}
-
-interface ShiftPattern {
-  day_of_week: number;
-  shift_type: 'early' | 'late' | 'night';
-  start_time: string;
-  end_time: string;
-  required_employees: number;
+  shift_count?: number;
 }
 
 interface ShiftAssignment {
@@ -44,12 +27,14 @@ interface ShiftAssignment {
   shift_plan_id: number;
   employee_id: number;
   date: string;
+  shift_date?: string; // Alternative property name
   shift_type: 'early' | 'late' | 'night';
   start_time: string;
   end_time: string;
-  status: 'assigned' | 'confirmed' | 'completed';
+  status: 'assigned' | 'confirmed' | 'completed' | 'pending';
   created_at: string;
   employee?: User;
+  employee_name?: string;
 }
 
 interface ExchangeRequest {
@@ -60,6 +45,22 @@ interface ExchangeRequest {
   reason?: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  employee_name?: string;
+  type?: 'exchange' | 'request' | 'swap' | 'cancel';
+  shift_date?: string;
+  shift_time?: string;
+}
+
+interface ShiftReport {
+  id: number;
+  shift_assignment_id: number;
+  employee_id: number;
+  title?: string;
+  start_date?: string;
+  end_date?: string;
+  content?: string;
+  created_at: string;
+  employee?: User;
 }
 
 interface Department {
@@ -81,9 +82,7 @@ interface DashboardStats {
 }
 
 // Global variables
-let currentTab: string = 'overview';
 let shiftPlans: ShiftPlan[] = [];
-let shiftTemplates: ShiftTemplate[] = [];
 let userDepartments: Department[] = [];
 let userTeams: Team[] = [];
 let currentUser: User | null = null;
@@ -107,8 +106,8 @@ function setupEventListeners(): void {
 
   // Tab buttons
   document.querySelectorAll<HTMLButtonElement>('.tab-button').forEach((btn) => {
-    btn.addEventListener('click', function () {
-      const tabName = (this as HTMLElement).dataset.tab;
+    btn.addEventListener('click', (e) => {
+      const tabName = (e.currentTarget as HTMLElement).dataset.tab;
       if (tabName) {
         showTab(tabName);
       }
@@ -138,7 +137,7 @@ function setupEventListeners(): void {
 
   // Filter elements
   document.querySelectorAll<HTMLSelectElement | HTMLInputElement>('.filter-select, .filter-date').forEach((element) => {
-    element.addEventListener('change', function () {
+    element.addEventListener('change', function (this: HTMLSelectElement | HTMLInputElement) {
       const elementId = (this as HTMLElement).id;
       if (elementId.includes('plan')) {
         filterPlans();
@@ -150,8 +149,8 @@ function setupEventListeners(): void {
 
   // Modal close buttons
   document.querySelectorAll<HTMLButtonElement>('.modal-close, .modal-cancel').forEach((btn) => {
-    btn.addEventListener('click', function () {
-      const modalId = (this as HTMLElement).dataset.modal;
+    btn.addEventListener('click', (e) => {
+      const modalId = (e.currentTarget as HTMLElement).dataset.modal;
       if (modalId) {
         closeModal(modalId);
       }
@@ -160,9 +159,9 @@ function setupEventListeners(): void {
 
   // Modal background click to close
   document.querySelectorAll<HTMLElement>('.modal').forEach((modal) => {
-    modal.addEventListener('click', function (e: MouseEvent) {
-      if (e.target === this) {
-        closeModal(this.id);
+    modal.addEventListener('click', (e: MouseEvent) => {
+      if (e.target === e.currentTarget) {
+        closeModal((e.currentTarget as HTMLElement).id);
       }
     });
   });
@@ -313,7 +312,7 @@ async function loadShiftTemplates(): Promise<void> {
     });
 
     if (response.ok) {
-      shiftTemplates = await response.json();
+      // Templates loaded successfully - implementation pending
     }
   } catch (error) {
     console.error('Error loading shift templates:', error);
@@ -600,8 +599,6 @@ function displayExchangeRequests(requests: ExchangeRequest[]): void {
  * Show tab
  */
 function showTab(tabName: string): void {
-  currentTab = tabName;
-
   // Update tab buttons
   document.querySelectorAll('.tab-button').forEach((btn) => {
     const buttonElement = btn as HTMLElement;
@@ -673,7 +670,7 @@ function updateUIForRole(): void {
 /**
  * Create shift plan
  */
-async function createShiftPlan(): Promise<void> {
+function createShiftPlan(): void {
   openModal('shiftPlanModal');
   // Implementation for creating shift plan
 }
@@ -681,7 +678,7 @@ async function createShiftPlan(): Promise<void> {
 /**
  * Create shift template
  */
-async function createShiftTemplate(): Promise<void> {
+function createShiftTemplate(): void {
   openModal('templateModal');
   // Implementation for creating shift template
 }
@@ -689,7 +686,7 @@ async function createShiftTemplate(): Promise<void> {
 /**
  * Create exchange request
  */
-async function createExchangeRequest(): Promise<void> {
+function createExchangeRequest(): void {
   openModal('exchangeModal');
   // Implementation for creating exchange request
 }
@@ -697,7 +694,7 @@ async function createExchangeRequest(): Promise<void> {
 /**
  * Set availability
  */
-async function setAvailability(): Promise<void> {
+function setAvailability(): void {
   openModal('availabilityModal');
   // Implementation for setting availability
 }
@@ -750,7 +747,7 @@ async function loadPlanningData(): Promise<void> {
       return;
     }
 
-    plans.forEach((plan: any) => {
+    (plans as ShiftPlan[]).forEach((plan) => {
       const item = document.createElement('div');
       item.className = 'plan-item';
       item.innerHTML = `
@@ -800,13 +797,13 @@ async function loadAssignmentsData(): Promise<void> {
       return;
     }
 
-    assignments.forEach((assignment: any) => {
+    (assignments as ShiftAssignment[]).forEach((assignment) => {
       const item = document.createElement('div');
       item.className = 'assignment-item';
-      const shiftDate = new Date(assignment.shift_date).toLocaleDateString('de-DE');
+      const shiftDate = new Date(assignment.shift_date || assignment.date).toLocaleDateString('de-DE');
       item.innerHTML = `
         <div class="assignment-header">
-          <h4>${assignment.employee_name}</h4>
+          <h4>${assignment.employee_name || (assignment.employee ? `${assignment.employee.first_name} ${assignment.employee.last_name}` : 'Unknown Employee')}</h4>
           <span class="assignment-date">${shiftDate}</span>
         </div>
         <div class="assignment-info">
@@ -856,19 +853,19 @@ async function loadRequestsData(): Promise<void> {
       return;
     }
 
-    requests.forEach((request: any) => {
+    (requests as ExchangeRequest[]).forEach((request) => {
       const item = document.createElement('div');
       item.className = 'request-item';
       const requestDate = new Date(request.created_at).toLocaleDateString('de-DE');
       item.innerHTML = `
         <div class="request-header">
-          <h4>${request.employee_name}</h4>
-          <span class="request-type ${request.type}">${
+          <h4>${request.employee_name || 'Unknown Employee'}</h4>
+          <span class="request-type ${request.type || 'exchange'}">${
             request.type === 'swap' ? 'Tausch' : request.type === 'cancel' ? 'Stornierung' : 'Änderung'
           }</span>
         </div>
         <div class="request-info">
-          <p><strong>Schicht:</strong> ${new Date(request.shift_date).toLocaleDateString('de-DE')} | ${request.shift_time}</p>
+          <p><strong>Schicht:</strong> ${request.shift_date ? new Date(request.shift_date).toLocaleDateString('de-DE') : 'N/A'} | ${request.shift_time || 'N/A'}</p>
           <p><strong>Grund:</strong> ${request.reason}</p>
         </div>
         <div class="request-actions">
@@ -939,16 +936,16 @@ async function loadReportsData(): Promise<void> {
       reportsSection.className = 'reports-list';
       reportsSection.innerHTML = '<h3>Letzte Berichte</h3>';
 
-      reports.recentReports.forEach((report: any) => {
+      reports.recentReports.forEach((report: ShiftReport) => {
         const reportItem = document.createElement('div');
         reportItem.className = 'report-item';
         const reportDate = new Date(report.created_at).toLocaleDateString('de-DE');
         reportItem.innerHTML = `
           <div class="report-header">
-            <h4>${report.title}</h4>
+            <h4>${report.title || 'Shift Report'}</h4>
             <span class="report-date">${reportDate}</span>
           </div>
-          <p class="report-period">Zeitraum: ${new Date(report.start_date).toLocaleDateString('de-DE')} - ${new Date(report.end_date).toLocaleDateString('de-DE')}</p>
+          <p class="report-period">Zeitraum: ${report.start_date ? new Date(report.start_date).toLocaleDateString('de-DE') : 'N/A'} - ${report.end_date ? new Date(report.end_date).toLocaleDateString('de-DE') : 'N/A'}</p>
           <div class="report-actions">
             <button class="btn btn-sm btn-primary" onclick="downloadReport(${report.id})">
               <i class="fas fa-download"></i> Download
@@ -972,17 +969,17 @@ async function loadReportsData(): Promise<void> {
 /**
  * View shift plan
  */
-async function viewShiftPlan(planId: number): Promise<void> {
+function viewShiftPlan(planId: number): void {
   // Implementation
-  console.log('View shift plan:', planId);
+  console.info('View shift plan:', planId);
 }
 
 /**
  * Edit shift plan
  */
-async function editShiftPlan(planId: number): Promise<void> {
+function editShiftPlan(planId: number): void {
   // Implementation
-  console.log('Edit shift plan:', planId);
+  console.info('Edit shift plan:', planId);
 }
 
 /**
@@ -1117,11 +1114,22 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
+// Extend window for shift functions
+declare global {
+  interface Window {
+    viewShiftPlan: typeof viewShiftPlan;
+    editShiftPlan: typeof editShiftPlan;
+    confirmAssignment: typeof confirmAssignment;
+    approveRequest: typeof approveRequest;
+    rejectRequest: typeof rejectRequest;
+  }
+}
+
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).viewShiftPlan = viewShiftPlan;
-  (window as any).editShiftPlan = editShiftPlan;
-  (window as any).confirmAssignment = confirmAssignment;
-  (window as any).approveRequest = approveRequest;
-  (window as any).rejectRequest = rejectRequest;
+  window.viewShiftPlan = viewShiftPlan;
+  window.editShiftPlan = editShiftPlan;
+  window.confirmAssignment = confirmAssignment;
+  window.approveRequest = approveRequest;
+  window.rejectRequest = rejectRequest;
 }

@@ -1,3 +1,3 @@
 export function initDropdowns() {
-  console.log('Dropdowns initialized');
+  console.info('Dropdowns initialized');
 }

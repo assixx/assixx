@@ -1,3 +1,4 @@
+/* eslint-disable no-mixed-operators */
 /**
  * Root Dashboard Script
  * Handles root user dashboard functionality and admin management
@@ -33,9 +34,9 @@ interface CreateAdminForm extends HTMLFormElement {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Root dashboard script loaded');
+  console.info('Root dashboard script loaded');
   const token = getAuthToken();
-  console.log('Stored token:', token ? 'Token vorhanden' : 'Kein Token gefunden');
+  console.info('Stored token:', token ? 'Token vorhanden' : 'Kein Token gefunden');
 
   if (!token) {
     console.error('No token found. Redirecting to login...');
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Admin erstellen
   async function createAdmin(e: Event): Promise<void> {
     e.preventDefault();
-    console.log('Creating admin...');
+    console.info('Creating admin...');
 
     if (!createAdminForm) return;
 
@@ -90,23 +91,26 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const _result = await response.json();
+        await response.json();
+        // eslint-disable-next-line no-alert
         alert('Admin erfolgreich erstellt');
         createAdminForm.reset();
         loadAdmins();
       } else {
         const error = await response.json();
+        // eslint-disable-next-line no-alert
         alert(`Fehler: ${error.message}`);
       }
     } catch (error) {
       console.error('Fehler beim Erstellen des Admins:', error);
+      // eslint-disable-next-line no-alert
       alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
 
   // Dashboard-Daten laden
   async function loadDashboardData(): Promise<void> {
-    console.log('Loading dashboard data...');
+    console.info('Loading dashboard data...');
 
     if (!dashboardContent) return;
 
@@ -119,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const data: DashboardData = await response.json();
-        console.log('Dashboard data:', data);
+        console.info('Dashboard data:', data);
         dashboardContent.innerHTML = `
     <div class="dashboard-stats">
         <div class="stat-box">
@@ -177,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Admin-Liste laden
   async function loadAdmins(): Promise<void> {
     try {
-      console.log('Loading admins...');
+      console.info('Loading admins...');
       const response = await fetch('/root/admins', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -186,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const admins: AdminUser[] = await response.json();
-        console.log('Loaded admins:', admins);
+        console.info('Loaded admins:', admins);
         displayAdmins(admins);
 
         // Update admin count
@@ -261,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!adminId || !adminUsername) return;
 
+    // eslint-disable-next-line no-alert
     if (!confirm(`Sind Sie sicher, dass Sie den Admin "${adminUsername}" löschen möchten?`)) {
       return;
     }
@@ -277,22 +282,26 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
+        // eslint-disable-next-line no-alert
         alert(`Admin "${adminUsername}" wurde erfolgreich gelöscht.`);
         // Admin-Liste neu laden
         loadAdmins();
       } else {
         const error = await response.json();
+        // eslint-disable-next-line no-alert
         alert(`Fehler: ${error.message}`);
       }
     } catch (error) {
       console.error('Fehler beim Löschen des Admins:', error);
+      // eslint-disable-next-line no-alert
       alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
 
   // Ausloggen
   function logout(): void {
-    console.log('Logging out...');
+    console.info('Logging out...');
+    // eslint-disable-next-line no-alert
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
       removeAuthToken();
       localStorage.removeItem('role');
@@ -325,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const userData: any = await response.json();
+        const userData = (await response.json()) as { data?: User; user?: User } & User;
         const user = userData.data || userData.user || userData;
 
         // Update username with full name if available

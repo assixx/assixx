@@ -1,4 +1,4 @@
-import { WebSocket, WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer, Data as WebSocketData } from 'ws';
 import jwt from 'jsonwebtoken';
 import { URL } from 'url';
 import { Server } from 'http';
@@ -109,7 +109,7 @@ export class ChatWebSocketServer {
 
   private async handleMessage(
     ws: ExtendedWebSocket,
-    data: WebSocket.Data
+    data: WebSocketData
   ): Promise<void> {
     try {
       const message: WebSocketMessage = JSON.parse(data.toString());

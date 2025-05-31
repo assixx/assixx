@@ -7,6 +7,14 @@
 import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
 
+// Declare global type for window
+declare global {
+  interface Window {
+    UnifiedNavigation: typeof UnifiedNavigation;
+    unifiedNav: UnifiedNavigation;
+  }
+}
+
 interface NavigationItems {
   admin: NavItem[];
   employee: NavItem[];
@@ -717,7 +725,7 @@ class UnifiedNavigation {
         if (totalElement) totalElement.textContent = this.formatBytes(total);
         if (progressBar) {
           progressBar.style.width = `${percentage}%`;
-          
+
           // Farbe basierend auf Nutzung
           if (percentage >= 90) {
             progressBar.style.backgroundColor = 'var(--error-color)';
@@ -740,7 +748,7 @@ class UnifiedNavigation {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   }
 }
 

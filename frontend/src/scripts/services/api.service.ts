@@ -59,7 +59,7 @@ export class ApiService {
   /**
    * Build URL with query parameters
    */
-  private buildUrl(endpoint: string, params?: Record<string, any>): string {
+  private buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
     const url = `${this.baseURL}${endpoint}`;
 
     if (!params || Object.keys(params).length === 0) {
@@ -79,7 +79,12 @@ export class ApiService {
   /**
    * Make API request
    */
-  async request<T = any>(method: HttpMethod, endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+  async request<T = unknown>(
+    method: HttpMethod,
+    endpoint: string,
+    data?: unknown,
+    options?: RequestOptions,
+  ): Promise<T> {
     const { params, ...fetchOptions } = options || {};
     const url = this.buildUrl(endpoint, params);
 
@@ -130,23 +135,23 @@ export class ApiService {
   }
 
   // Convenience methods
-  get<T = any>(endpoint: string, params?: Record<string, any>): Promise<T> {
+  get<T = unknown>(endpoint: string, params?: Record<string, string | number | boolean>): Promise<T> {
     return this.request<T>('GET', endpoint, null, { params });
   }
 
-  post<T = any>(endpoint: string, data?: any): Promise<T> {
+  post<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('POST', endpoint, data);
   }
 
-  put<T = any>(endpoint: string, data?: any): Promise<T> {
+  put<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('PUT', endpoint, data);
   }
 
-  patch<T = any>(endpoint: string, data?: any): Promise<T> {
+  patch<T = unknown>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>('PATCH', endpoint, data);
   }
 
-  delete<T = any>(endpoint: string): Promise<T> {
+  delete<T = unknown>(endpoint: string): Promise<T> {
     return this.request<T>('DELETE', endpoint);
   }
 
@@ -162,7 +167,7 @@ export class ApiService {
   async logout(): Promise<void> {
     try {
       await this.post('/auth/logout');
-    } catch (error) {
+    } catch {
       // Ignore logout errors
     } finally {
       this.setToken(null);
@@ -170,20 +175,20 @@ export class ApiService {
     }
   }
 
-  async checkAuth(): Promise<ApiResponse<{ authenticated: boolean }>> {
+  checkAuth(): Promise<ApiResponse<{ authenticated: boolean }>> {
     return this.get('/auth/check');
   }
 
   // User endpoints
-  async getProfile(): Promise<User> {
+  getProfile(): Promise<User> {
     return this.get<User>('/user/profile');
   }
 
-  async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
+  updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
     return this.patch('/user/profile', data);
   }
 
-  async uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {
+  uploadProfilePicture(file: File): Promise<ApiResponse<{ url: string }>> {
     const formData = new FormData();
     formData.append('profilePicture', file);
 
@@ -191,40 +196,42 @@ export class ApiService {
   }
 
   // Document endpoints
-  async getDocuments(params?: PaginationParams & { category?: string }): Promise<PaginatedResponse<Document>> {
-    return this.get('/documents', params);
+  getDocuments(params?: PaginationParams & { category?: string }): Promise<PaginatedResponse<Document>> {
+    const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
+    return this.get('/documents', queryParams);
   }
 
-  async getDocument(id: number): Promise<Document> {
+  getDocument(id: number): Promise<Document> {
     return this.get(`/documents/${id}`);
   }
 
-  async uploadDocument(formData: FormData): Promise<ApiResponse<Document>> {
+  uploadDocument(formData: FormData): Promise<ApiResponse<Document>> {
     return this.post('/documents', formData);
   }
 
-  async deleteDocument(id: number): Promise<ApiResponse> {
+  deleteDocument(id: number): Promise<ApiResponse> {
     return this.delete(`/documents/${id}`);
   }
 
   // Employee endpoints
-  async getEmployees(params?: PaginationParams): Promise<PaginatedResponse<User>> {
-    return this.get('/users', params);
+  getEmployees(params?: PaginationParams): Promise<PaginatedResponse<User>> {
+    const queryParams = params ? ({ ...params } as Record<string, string | number | boolean>) : undefined;
+    return this.get('/users', queryParams);
   }
 
-  async getEmployee(id: number): Promise<User> {
+  getEmployee(id: number): Promise<User> {
     return this.get(`/users/${id}`);
   }
 
-  async createEmployee(data: Partial<User>): Promise<ApiResponse<User>> {
+  createEmployee(data: Partial<User>): Promise<ApiResponse<User>> {
     return this.post('/users', data);
   }
 
-  async updateEmployee(id: number, data: Partial<User>): Promise<ApiResponse<User>> {
+  updateEmployee(id: number, data: Partial<User>): Promise<ApiResponse<User>> {
     return this.patch(`/users/${id}`, data);
   }
 
-  async deleteEmployee(id: number): Promise<ApiResponse> {
+  deleteEmployee(id: number): Promise<ApiResponse> {
     return this.delete(`/users/${id}`);
   }
 }
@@ -235,8 +242,16 @@ const apiService = new ApiService();
 // Export default instance
 export default apiService;
 
+// Extend window for API service
+declare global {
+  interface Window {
+    ApiService: typeof ApiService;
+    apiService: ApiService;
+  }
+}
+
 // Also export for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).ApiService = ApiService;
-  (window as any).apiService = apiService;
+  window.ApiService = ApiService;
+  window.apiService = apiService;
 }

@@ -27,7 +27,7 @@ export interface FormField<T = string> {
   required?: boolean;
 }
 
-export interface FormState<T extends Record<string, any>> {
+export interface FormState<T extends Record<string, unknown>> {
   fields: {
     [K in keyof T]: FormField<T[K]>;
   };
@@ -67,13 +67,13 @@ export interface FilterGroup {
 }
 
 // Table Types
-export interface TableColumn<T = any> {
+export interface TableColumn<T = unknown> {
   key: keyof T | string;
   label: string;
   sortable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';
-  render?: (value: any, row: T) => string;
+  render?: (value: unknown, row: T) => string;
 }
 
 // Navigation Types
@@ -132,14 +132,14 @@ export interface UploadFile {
 }
 
 // WebSocket Types
-export interface WSMessage<T = any> {
+export interface WSMessage<T = unknown> {
   type: string;
   payload: T;
   timestamp: number;
 }
 
 // Storage Types
-export interface StorageItem<T = any> {
+export interface StorageItem<T = unknown> {
   key: string;
   value: T;
   expiry?: number;

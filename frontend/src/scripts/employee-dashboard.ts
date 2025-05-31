@@ -4,9 +4,8 @@
  */
 
 import type { User, Document } from '../types/api.types';
-import { getAuthToken, removeAuthToken } from './auth';
+import { getAuthToken, removeAuthToken, showError } from './auth';
 import { formatDate, escapeHtml } from './common';
-import { showError, showInfo } from './auth';
 
 interface EmployeeInfo extends User {
   department?: string;
@@ -59,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Logout button
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
+      // eslint-disable-next-line no-alert
       if (confirm('Möchten Sie sich wirklich abmelden?')) {
         removeAuthToken();
         localStorage.removeItem('role');
@@ -243,7 +243,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Extend window for employee dashboard functions
+declare global {
+  interface Window {
+    downloadDocument: typeof downloadDocument;
+  }
+}
+
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).downloadDocument = downloadDocument;
+  window.downloadDocument = downloadDocument;
 }

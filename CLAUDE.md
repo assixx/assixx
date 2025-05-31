@@ -1,6 +1,22 @@
 # 📖 Assixx Project Instructions for Claude AI
 
+## ⛔ KRITISCH: PFLICHT-REIHENFOLGE BEACHTEN!
+> **WARNUNG:** Die folgenden 5 Schritte MÜSSEN in EXAKTER Reihenfolge ausgeführt werden!
+> **Bei Missachtung:** Entwicklungsumgebung kann instabil sein, TypeScript-Fehler, API-Probleme!
+
 ## 🚀 START HIER - PFLICHTLEKTÜRE VOR ARBEITSBEGINN
+
+## ⛔ STOP! PFLICHT-CHECKLISTE VOR ENTWICKLUNG
+
+**DIESE SCHRITTE MÜSSEN IN EXAKTER REIHENFOLGE AUSGEFÜHRT WERDEN:**
+
+- [ ] ✅ TODO.md gelesen
+- [ ] ✅ CLAUDE.md gelesen  
+- [ ] ✅ PROJEKTSTRUKTUR.md gelesen
+- [ ] ⚠️ **BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
+- [ ] ✅ Erst DANN: Weitere Dokumente
+
+**🚫 KEINE ENTWICKLUNG OHNE ABGESCHLOSSENE CHECKLISTE!**
 
 ### 1️⃣ TODO-LISTE (ERSTE PRIORITÄT!)
 
@@ -44,12 +60,19 @@ cat /home/scs/projects/Assixx/DESIGN-STANDARDS.md
 - 📐 UI-Komponenten Dokumentation
 - 🔽 Custom Dropdown Pattern
 
-### 4️⃣ BEFORE-STARTING-DEV (VIERTE PRIORITÄT!)
+### 4️⃣ BEFORE-STARTING-DEV (VIERTE PRIORITÄT!) ⛔ PFLICHT-AUSFÜHRUNG!
 
 ```bash
-# PFLICHT vor jedem Entwicklungsstart:
+# ⚠️ NICHT NUR LESEN - ALLE CHECKS MÜSSEN AUSGEFÜHRT WERDEN!
 cat /home/scs/projects/Assixx/BEFORE-STARTING-DEV.md
+# DANN: Alle Befehle aus der Datei ausführen!
 ```
+
+**⛔ STOP! Ohne diese Checks:**
+- TypeScript Builds können fehlschlagen
+- APIs könnten nicht erreichbar sein  
+- Sicherheitslücken bleiben unentdeckt
+- Entwicklung auf fehlerhafter Basis!
 
 **Warum?**
 
@@ -138,6 +161,13 @@ function validateSubdomain(value) {
 
 #### Wenn Simon sagt "weiter machen mit Assixx Projekt":
 
+0. **🤖 AUTOMATISCH:** TodoWrite mit Pflicht-Checkliste erstellen!
+   - TODO.md lesen
+   - CLAUDE.md lesen  
+   - PROJEKTSTRUKTUR.md lesen
+   - BEFORE-STARTING-DEV.md AUSFÜHREN (alle Checks!)
+   - Erst nach allen Checks: Mit Entwicklung beginnen
+
 1. **📚 PFLICHTLEKTÜRE** (IMMER in dieser Reihenfolge):
 
    ```bash
@@ -145,9 +175,10 @@ function validateSubdomain(value) {
    cat TODO.md           # 1. Aktuelle Aufgaben (ERSTE PRIORITÄT!)
    cat CLAUDE.md         # 2. Diese Anweisungen
    cat PROJEKTSTRUKTUR.md # 3. Projekt-Struktur prüfen/aktualisieren
-   cat README.md         # 4. Projekt-Übersicht
-   cat ROADMAP.md        # 5. Zukünftige Features
-   cat DATABASE-SETUP-README.md  # 6. DB-Struktur (optional)
+   cat BEFORE-STARTING-DEV.md # 4. PFLICHT-AUSFÜHRUNG der Checks!
+   cat README.md         # 5. Projekt-Übersicht
+   cat ROADMAP.md        # 6. Zukünftige Features
+   cat DATABASE-SETUP-README.md  # 7. DB-Struktur (optional)
    ```
 
 2. **📊 ZUSAMMENFASSUNG ERSTELLEN**:

@@ -60,7 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export function for manual calls
 export { loadHeaderUserInfo };
 
+// Extend window for header user info function
+declare global {
+  interface Window {
+    loadHeaderUserInfo: typeof loadHeaderUserInfo;
+  }
+}
+
 // Export to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).loadHeaderUserInfo = loadHeaderUserInfo;
+  window.loadHeaderUserInfo = loadHeaderUserInfo;
 }

@@ -291,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!employeeId || !employeeName) return;
 
+    // eslint-disable-next-line no-alert
     if (!confirm(`Sind Sie sicher, dass Sie den Mitarbeiter "${employeeName}" löschen möchten?`)) {
       return;
     }
@@ -307,15 +308,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
+        // eslint-disable-next-line no-alert
         alert(`Mitarbeiter "${employeeName}" wurde erfolgreich gelöscht.`);
         // Mitarbeiterliste neu laden
         loadEmployees();
       } else {
         const error = await response.json();
+        // eslint-disable-next-line no-alert
         alert(`Fehler: ${error.message}`);
       }
     } catch (error) {
       console.error('Fehler beim Löschen des Mitarbeiters:', error);
+      // eslint-disable-next-line no-alert
       alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
@@ -330,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modal oder separate Seite zum Bearbeiten des Mitarbeiters öffnen
     // Hier kann je nach UI-Design eine eigene Implementierung erfolgen
+    // eslint-disable-next-line no-alert
     alert(`Bearbeiten von Mitarbeiter "${employeeName}" (ID: ${employeeId}) wird implementiert...`);
 
     // Beispielweise:
@@ -339,7 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export function to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).uploadDocumentFor = (employeeId: string) => {
+  interface WindowWithUpload extends Window {
+    uploadDocumentFor: (employeeId: string) => void;
+  }
+  const windowWithUpload = window as unknown as WindowWithUpload;
+  windowWithUpload.uploadDocumentFor = (employeeId: string) => {
     // Redirect to upload page with pre-selected employee
     window.location.href = `/pages/document-upload.html?userId=${employeeId}`;
   };

@@ -5,7 +5,13 @@
 
 import type { User } from '../types/api.types';
 import { getAuthToken } from './auth';
-import { showSuccess, showError } from './auth';
+// import { showSuccess, showError } from './auth';
+
+declare global {
+  interface Window {
+    chatClient?: ChatClient;
+  }
+}
 
 interface ChatUser extends User {
   status?: 'online' | 'offline' | 'away';
@@ -48,7 +54,7 @@ interface Conversation {
 
 interface WebSocketMessage {
   type: string;
-  data: any;
+  data: unknown;
 }
 
 interface EmojiCategories {
@@ -68,7 +74,6 @@ class ChatClient {
   private readonly maxReconnectAttempts: number;
   private reconnectDelay: number;
   private pendingFiles: File[];
-  private searchQuery: string;
   private messageQueue: Message[];
   private typingTimer: NodeJS.Timeout | null;
   private emojiCategories: EmojiCategories;
@@ -98,7 +103,6 @@ class ChatClient {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
     this.pendingFiles = [];
-    this.searchQuery = '';
     this.messageQueue = [];
     this.typingTimer = null;
 
@@ -463,18 +467,20 @@ class ChatClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('✅ WebSocket connected');
+        console.info('✅ WebSocket connected');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.updateConnectionStatus(true);
 
         // Authenticate
-        this.ws!.send(
-          JSON.stringify({
-            type: 'auth',
-            data: { token: this.token },
-          }),
-        );
+        if (this.ws) {
+          this.ws.send(
+            JSON.stringify({
+              type: 'auth',
+              data: { token: this.token },
+            }),
+          );
+        }
 
         // Process message queue
         this.processMessageQueue();
@@ -496,7 +502,7 @@ class ChatClient {
       };
 
       this.ws.onclose = () => {
-        console.log('🔌 WebSocket disconnected');
+        console.info('🔌 WebSocket disconnected');
         this.isConnected = false;
         this.updateConnectionStatus(false);
         this.attemptReconnect();
@@ -511,7 +517,7 @@ class ChatClient {
   handleWebSocketMessage(message: WebSocketMessage): void {
     switch (message.type) {
       case 'auth_success':
-        console.log('✅ Authentication successful');
+        console.info('✅ Authentication successful');
         // Join conversations
         this.conversations.forEach((conv) => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -532,23 +538,23 @@ class ChatClient {
         break;
 
       case 'new_message':
-        this.handleNewMessage(message.data);
+        this.handleNewMessage(message.data as { message: Message; conversationId: number });
         break;
 
       case 'typing_start':
-        this.handleTypingStart(message.data);
+        this.handleTypingStart(message.data as { userId: number; conversationId: number });
         break;
 
       case 'typing_stop':
-        this.handleTypingStop(message.data);
+        this.handleTypingStop(message.data as { userId: number; conversationId: number });
         break;
 
       case 'user_status':
-        this.handleUserStatus(message.data);
+        this.handleUserStatus(message.data as { userId: number; status: string });
         break;
 
       case 'message_read':
-        this.handleMessageRead(message.data);
+        this.handleMessageRead(message.data as { messageId: number; userId: number });
         break;
 
       case 'pong':
@@ -556,7 +562,7 @@ class ChatClient {
         break;
 
       default:
-        console.log('📨 Unknown message type:', message.type);
+        console.info('📨 Unknown message type:', message.type);
     }
   }
 
@@ -670,7 +676,7 @@ class ChatClient {
     }
 
     this.reconnectAttempts++;
-    console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    console.info(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
     setTimeout(() => {
       this.connectWebSocket();
@@ -837,7 +843,7 @@ class ChatClient {
     const tempMessage: Message = {
       id: Date.now(),
       conversation_id: this.currentConversationId,
-      sender_id: this.currentUserId!,
+      sender_id: this.currentUserId || 0,
       content: messageContent,
       created_at: new Date().toISOString(),
       is_read: false,
@@ -874,7 +880,9 @@ class ChatClient {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('conversationId', this.currentConversationId!.toString());
+        if (this.currentConversationId) {
+          formData.append('conversationId', this.currentConversationId.toString());
+        }
 
         const response = await fetch('/api/chat/attachments', {
           method: 'POST',
@@ -896,7 +904,7 @@ class ChatClient {
     return attachmentIds;
   }
 
-  async handleFileUpload(files: FileList): Promise<void> {
+  handleFileUpload(files: FileList): void {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const validFiles: File[] = [];
 
@@ -1236,6 +1244,7 @@ class ChatClient {
   async deleteCurrentConversation(): Promise<void> {
     if (!this.currentConversationId) return;
 
+    // eslint-disable-next-line no-alert
     if (!confirm('Möchten Sie diese Unterhaltung wirklich löschen?')) {
       return;
     }
@@ -1320,11 +1329,11 @@ class ChatClient {
     }
 
     if (fileInput) {
-      fileInput.addEventListener('change', async (event) => {
+      fileInput.addEventListener('change', (event) => {
         const target = event.target as HTMLInputElement;
         const files = target.files;
         if (files && files.length > 0) {
-          await this.handleFileUpload(files);
+          this.handleFileUpload(files);
           fileInput.value = '';
         }
       });
@@ -1509,7 +1518,7 @@ class ChatClient {
   playNotificationSound(): void {
     const audio = new Audio('/sounds/notification.mp3');
     audio.play().catch((error) => {
-      console.log('Could not play notification sound:', error);
+      console.info('Could not play notification sound:', error);
     });
   }
 
@@ -1555,8 +1564,8 @@ class ChatClient {
       if (!isTyping && this.currentConversationId) {
         isTyping = true;
         // Send typing started event
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-          this.socket.send(
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(
             JSON.stringify({
               type: 'typing',
               data: { conversationId: this.currentConversationId },
@@ -1575,8 +1584,8 @@ class ChatClient {
         if (isTyping && this.currentConversationId) {
           isTyping = false;
           // Send typing stopped event
-          if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(
               JSON.stringify({
                 type: 'stop_typing',
                 data: { conversationId: this.currentConversationId },
@@ -1590,7 +1599,7 @@ class ChatClient {
 
   toggleSearch(): void {
     // Implement search functionality
-    console.log('Search functionality not yet implemented');
+    console.info('Search functionality not yet implemented');
   }
 
   // Utility methods
@@ -1652,6 +1661,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Export to window for backwards compatibility
   if (typeof window !== 'undefined') {
-    (window as any).chatClient = chatClient;
+    window.chatClient = chatClient;
   }
 });

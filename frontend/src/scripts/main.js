@@ -35,7 +35,7 @@ window.Assixx = {
 
   // Methods
   init() {
-    console.log('Initializing Assixx Application...');
+    console.info('Initializing Assixx Application...');
 
     // Initialize core modules
     initAuth();
@@ -51,7 +51,7 @@ window.Assixx = {
     // Page specific initialization
     this.initPageSpecific();
 
-    console.log('Assixx Application initialized successfully');
+    console.info('Assixx Application initialized successfully');
   },
 
   initPageSpecific() {

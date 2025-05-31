@@ -28,6 +28,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
   // Token abrufen
   const token = getAuthToken();
   if (!token) {
+    // eslint-disable-next-line no-alert
     alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
     return;
   }
@@ -140,6 +141,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
     })
     .catch((error) => {
       console.error('Fehler bei der Anzeige des Lösch-Dialogs:', error);
+      // eslint-disable-next-line no-alert
       alert(`Fehler: ${error.message}`);
     });
 }
@@ -162,6 +164,7 @@ function processEmployeeDeletion(): void {
   // Token abrufen
   const token = getAuthToken();
   if (!token) {
+    // eslint-disable-next-line no-alert
     alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
     return;
   }
@@ -181,31 +184,40 @@ function processEmployeeDeletion(): void {
       .then((result: DeletionResponse) => {
         if (result.success) {
           // Erfolgsmeldung anzeigen
+          // eslint-disable-next-line no-alert
           alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich archiviert.`);
 
           // Dialog schließen und Mitarbeiterliste aktualisieren
           hideModal('delete-employee-modal');
 
           // Mitarbeiterliste aktualisieren
-          if (typeof (window as any).loadEmployeesTable === 'function') {
-            (window as any).loadEmployeesTable('reload');
+          interface WindowWithTables extends Window {
+            loadEmployeesTable?: (action: string) => void;
+            loadDashboardStats?: () => void;
+          }
+          const windowWithTables = window as unknown as WindowWithTables;
+          if (typeof windowWithTables.loadEmployeesTable === 'function') {
+            windowWithTables.loadEmployeesTable('reload');
           }
 
           // Dashboard-Statistiken aktualisieren
-          if (typeof (window as any).loadDashboardStats === 'function') {
-            (window as any).loadDashboardStats();
+          if (typeof windowWithTables.loadDashboardStats === 'function') {
+            windowWithTables.loadDashboardStats();
           }
         } else {
+          // eslint-disable-next-line no-alert
           alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Archivieren des Mitarbeiters'}`);
         }
       })
       .catch((error) => {
         console.error('Fehler beim Archivieren des Mitarbeiters:', error);
+        // eslint-disable-next-line no-alert
         alert(`Fehler: ${error.message}`);
       });
   } else if (selectedOption === 'delete') {
     // Zusätzliche Bestätigung einholen, wenn Dokumente vorhanden sind
     if (documentCount > 0) {
+      // eslint-disable-next-line no-alert
       const confirmDelete = confirm(
         `WARNUNG: ENDGÜLTIGES LÖSCHEN!\n\n` +
           `Sie sind dabei, den Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen ${documentCount} Dokumente endgültig zu löschen!\n\n` +
@@ -227,24 +239,32 @@ function processEmployeeDeletion(): void {
         .then((response) => response.json())
         .then((result: DeletionResponse) => {
           if (result.success) {
+            // eslint-disable-next-line no-alert
             alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
-            if (typeof (window as any).loadEmployeesTable === 'function') {
-              (window as any).loadEmployeesTable('reload');
+            interface WindowWithTables2 extends Window {
+              loadEmployeesTable?: (action: string) => void;
+              loadDashboardStats?: () => void;
+            }
+            const windowWithTables2 = window as unknown as WindowWithTables2;
+            if (typeof windowWithTables2.loadEmployeesTable === 'function') {
+              windowWithTables2.loadEmployeesTable('reload');
             }
 
             // Dashboard-Statistiken aktualisieren
-            if (typeof (window as any).loadDashboardStats === 'function') {
-              (window as any).loadDashboardStats();
+            if (typeof windowWithTables2.loadDashboardStats === 'function') {
+              windowWithTables2.loadDashboardStats();
             }
           } else {
+            // eslint-disable-next-line no-alert
             alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
           }
         })
         .catch((error) => {
           console.error('Fehler beim endgültigen Löschen des Mitarbeiters:', error);
+          // eslint-disable-next-line no-alert
           alert(`Fehler: ${error.message}`);
         });
     } else {
@@ -258,24 +278,32 @@ function processEmployeeDeletion(): void {
         .then((response) => response.json())
         .then((result: DeletionResponse) => {
           if (result.success) {
+            // eslint-disable-next-line no-alert
             alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
-            if (typeof (window as any).loadEmployeesTable === 'function') {
-              (window as any).loadEmployeesTable('reload');
+            interface WindowWithTables2 extends Window {
+              loadEmployeesTable?: (action: string) => void;
+              loadDashboardStats?: () => void;
+            }
+            const windowWithTables2 = window as unknown as WindowWithTables2;
+            if (typeof windowWithTables2.loadEmployeesTable === 'function') {
+              windowWithTables2.loadEmployeesTable('reload');
             }
 
             // Dashboard-Statistiken aktualisieren
-            if (typeof (window as any).loadDashboardStats === 'function') {
-              (window as any).loadDashboardStats();
+            if (typeof windowWithTables2.loadDashboardStats === 'function') {
+              windowWithTables2.loadDashboardStats();
             }
           } else {
+            // eslint-disable-next-line no-alert
             alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
           }
         })
         .catch((error) => {
           console.error('Fehler beim Löschen des Mitarbeiters:', error);
+          // eslint-disable-next-line no-alert
           alert(`Fehler: ${error.message}`);
         });
     }
@@ -301,10 +329,17 @@ function deleteEmployee(employeeId: number): void {
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).showDeleteEmployeeDialog = showDeleteEmployeeDialog;
-  (window as any).processEmployeeDeletion = processEmployeeDeletion;
-  (window as any).deleteEmployee = deleteEmployee;
-  (window as any).hideModal = hideModal;
+  interface WindowWithDeletionFunctions extends Window {
+    showDeleteEmployeeDialog: typeof showDeleteEmployeeDialog;
+    processEmployeeDeletion: typeof processEmployeeDeletion;
+    deleteEmployee: typeof deleteEmployee;
+    hideModal: typeof hideModal;
+  }
+  const windowWithDeletion = window as unknown as WindowWithDeletionFunctions;
+  windowWithDeletion.showDeleteEmployeeDialog = showDeleteEmployeeDialog;
+  windowWithDeletion.processEmployeeDeletion = processEmployeeDeletion;
+  windowWithDeletion.deleteEmployee = deleteEmployee;
+  windowWithDeletion.hideModal = hideModal;
 }
 
 // Export for module usage

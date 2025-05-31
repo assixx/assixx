@@ -166,18 +166,23 @@ app.use((req: Request, _res: Response, next: NextFunction): void => {
   next();
 });
 
+// Root redirect - redirect / to /pages/index.html
+app.get('/', (_req: Request, res: Response): void => {
+  res.redirect('/pages/index.html');
+});
+
 // Health check route - MUST BE BEFORE OTHER ROUTES
-app.get('/health', (req: Request, res: Response): void => {
+app.get('/health', (_req: Request, res: Response): void => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
 // API status route - MUST BE BEFORE OTHER API ROUTES
-app.get('/api/status', (req: Request, res: Response): void => {
+app.get('/api/status', (_req: Request, res: Response): void => {
   res.status(200).json({
     status: 'operational',
     version: '0.0.2',
@@ -191,8 +196,8 @@ app.get('/api/status', (req: Request, res: Response): void => {
       'chat',
       'kvp',
       'shifts',
-      'surveys'
-    ]
+      'surveys',
+    ],
   });
 });
 
@@ -252,15 +257,7 @@ app.use(
   }
 );
 
-// Express Router with stack property interface
-interface ExpressRouter {
-  stack: Array<{
-    route?: {
-      path: string;
-      methods: { [key: string]: boolean };
-    };
-  }>;
-}
+// Express Router with stack property interface (removed - not used)
 
 // 404 handler
 app.use((req: Request, res: Response): void => {
@@ -273,9 +270,9 @@ app.use((req: Request, res: Response): void => {
 });
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   console.error('[ERROR]', err.stack || err.message || err);
-  
+
   const isDevelopment = process.env.NODE_ENV === 'development';
   
   res.status(500).json({

@@ -1,11 +1,11 @@
+/* eslint-disable indent */
 /**
  * Blackboard System
  * Client-side TypeScript for the blackboard feature
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken } from './auth';
-import { showSuccess, showError, showInfo } from './auth';
+import { getAuthToken, showSuccess, showError } from './auth';
 import { closeModal } from './dashboard-scripts';
 
 interface BlackboardEntry {
@@ -62,12 +62,8 @@ let currentSearch: string = '';
 let currentSort: string = 'created_at|DESC';
 let departments: Department[] = [];
 let teams: Team[] = [];
-let totalPages: number = 1;
 let isAdmin: boolean = false;
 let currentUserId: number | null = null;
-let currentUserRole: string | null = null;
-let currentDepartmentId: number | null = null;
-let currentTeamId: number | null = null;
 
 // Initialize when document is ready
 // Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
@@ -87,9 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchUserData()
         .then((userData: UserData) => {
           currentUserId = userData.id;
-          currentUserRole = userData.role;
-          currentDepartmentId = userData.departmentId || userData.department_id || null;
-          currentTeamId = userData.teamId || userData.team_id || null;
           isAdmin = userData.role === 'admin' || userData.role === 'root';
 
           // Show/hide "New Entry" button based on permissions
@@ -139,12 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupCloseButtons(): void {
   // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
   document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       // Finde das übergeordnete Modal
       const modal = this.closest('.modal-overlay') as HTMLElement;
       if (modal) {
-        if (typeof (window as any).DashboardUI?.closeModal === 'function') {
-          (window as any).DashboardUI.closeModal(modal.id);
+        if (typeof window.DashboardUI?.closeModal === 'function') {
+          window.DashboardUI.closeModal(modal.id);
         } else {
           closeModal(modal.id);
         }
@@ -159,8 +152,8 @@ function setupCloseButtons(): void {
     modal.addEventListener('click', (event: MouseEvent) => {
       // Nur schließen, wenn der Klick auf den Modal-Hintergrund erfolgt (nicht auf den Inhalt)
       if (event.target === modal) {
-        if (typeof (window as any).DashboardUI?.closeModal === 'function') {
-          (window as any).DashboardUI.closeModal(modal.id);
+        if (typeof window.DashboardUI?.closeModal === 'function') {
+          window.DashboardUI.closeModal(modal.id);
         } else {
           closeModal(modal.id);
         }
@@ -175,7 +168,7 @@ function setupCloseButtons(): void {
 function setupEventListeners(): void {
   // Filter by level using pill buttons
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all pills
       document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
       // Add active class to clicked pill
@@ -194,7 +187,7 @@ function setupEventListeners(): void {
   // Sort entries
   const sortFilter = document.getElementById('sortFilter') as HTMLSelectElement;
   if (sortFilter) {
-    sortFilter.addEventListener('change', function () {
+    sortFilter.addEventListener('change', function (this: HTMLSelectElement) {
       currentSort = this.value;
 
       // Nur laden, wenn es aktiviert wurde
@@ -221,7 +214,7 @@ function setupEventListeners(): void {
       }
     });
 
-    searchInput.addEventListener('keypress', function (e: KeyboardEvent) {
+    searchInput.addEventListener('keypress', function (this: HTMLInputElement, e: KeyboardEvent) {
       if (e.key === 'Enter') {
         currentSearch = this.value.trim();
         currentPage = 1;
@@ -259,7 +252,7 @@ function setupEventListeners(): void {
   // Organization level change
   const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement;
   if (entryOrgLevel) {
-    entryOrgLevel.addEventListener('change', function () {
+    entryOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
     });
   } else {
@@ -268,7 +261,7 @@ function setupEventListeners(): void {
 
   // Color selection
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (this: HTMLElement) {
       // Remove active class from all color options
       document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
       // Add active class to clicked option
@@ -334,7 +327,6 @@ async function loadEntries(): Promise<void> {
     const data: BlackboardResponse = await response.json();
 
     // Update pagination
-    totalPages = data.pagination.totalPages;
     updatePagination(data.pagination);
 
     // Display entries
@@ -372,18 +364,14 @@ async function checkLoggedIn(): Promise<void> {
   }
 
   // Verify token is valid
-  try {
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const response = await fetch('/api/user/profile', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    if (!response.ok) {
-      throw new Error('Invalid token');
-    }
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error('Invalid token');
   }
 }
 
@@ -486,13 +474,13 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         ${
           canEdit
             ? `
-          <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.id})">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.id})">
-            <i class="fas fa-trash"></i>
-          </button>
-        `
+            <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.id})">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          `
             : ''
         }
       </div>
@@ -596,8 +584,8 @@ function openEntryForm(entryId?: number): void {
   }
 
   // Show modal
-  if (typeof (window as any).DashboardUI?.openModal === 'function') {
-    (window as any).DashboardUI.openModal('entryFormModal');
+  if (typeof window.DashboardUI?.openModal === 'function') {
+    window.DashboardUI.openModal('entryFormModal');
   } else {
     modal.style.display = 'flex';
   }
@@ -748,6 +736,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
  * Delete entry
  */
 async function deleteEntry(entryId: number): Promise<void> {
+  // eslint-disable-next-line no-alert
   if (!confirm('Möchten Sie diesen Eintrag wirklich löschen?')) {
     return;
   }
@@ -819,9 +808,18 @@ function formatDate(dateString: string): string {
   });
 }
 
+// Extend window for blackboard functions
+declare global {
+  interface Window {
+    editEntry: typeof openEntryForm;
+    deleteEntry: typeof deleteEntry;
+    changePage: typeof changePage;
+  }
+}
+
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).editEntry = openEntryForm;
-  (window as any).deleteEntry = deleteEntry;
-  (window as any).changePage = changePage;
+  window.editEntry = openEntryForm;
+  window.deleteEntry = deleteEntry;
+  window.changePage = changePage;
 }

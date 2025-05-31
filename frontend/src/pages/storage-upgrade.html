@@ -194,7 +194,9 @@
         height: 100%;
         background: var(--success-color);
         border-radius: 10px;
-        transition: width 0.5s ease, background-color 0.3s ease;
+        transition:
+          width 0.5s ease,
+          background-color 0.3s ease;
         position: relative;
         overflow: hidden;
       }
@@ -296,20 +298,24 @@
             <div class="usage-header">
               <h3 class="usage-title">Aktueller Speicherverbrauch</h3>
               <div class="usage-text">
-                <span id="used-storage">0 GB</span> von <span id="total-storage">0 GB</span> belegt
+                <span id="used-storage">0 GB</span>
+                von
+                <span id="total-storage">0 GB</span>
+                belegt
               </div>
             </div>
             <div class="usage-progress">
               <div class="usage-progress-bar" id="storage-progress" style="width: 0%"></div>
             </div>
-            <div style="text-align: center; color: var(--text-secondary);">
-              <span id="storage-percentage">0%</span> Ihres Speichers wird genutzt
+            <div style="text-align: center; color: var(--text-secondary)">
+              <span id="storage-percentage">0%</span>
+              Ihres Speichers wird genutzt
             </div>
           </div>
 
           <!-- Storage Plans -->
           <h2 class="text-center mb-4">Wählen Sie Ihre neue Speichergröße</h2>
-          
+
           <div class="storage-plans-grid">
             <!-- Basic Plan -->
             <div class="storage-plan-card" id="plan-basic">
@@ -367,12 +373,12 @@
           </div>
 
           <!-- Custom Storage -->
-          <div class="card" style="margin-top: var(--spacing-xl);">
+          <div class="card" style="margin-top: var(--spacing-xl)">
             <div class="card-header">
               <h3 class="card-title">Individueller Speicherplatz</h3>
             </div>
-            <div style="padding: var(--spacing-xl); text-align: center;">
-              <p style="margin-bottom: var(--spacing-lg);">
+            <div style="padding: var(--spacing-xl); text-align: center">
+              <p style="margin-bottom: var(--spacing-lg)">
                 Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für ein individuelles Angebot.
               </p>
               <button class="btn btn-primary" onclick="contactSales()">
@@ -385,19 +391,20 @@
           <!-- FAQ Section -->
           <div class="faq-section">
             <h2 class="text-center mb-4">Häufig gestellte Fragen</h2>
-            
+
             <div class="faq-item">
               <div class="faq-question">Was passiert, wenn ich meinen Speicherplatz überschreite?</div>
               <div class="faq-answer">
-                Sie erhalten rechtzeitig eine Benachrichtigung, wenn Sie 90% Ihres Speichers erreichen. 
-                Bei Überschreitung können keine neuen Dateien hochgeladen werden, bis Sie entweder Speicher freigeben oder upgraden.
+                Sie erhalten rechtzeitig eine Benachrichtigung, wenn Sie 90% Ihres Speichers erreichen. Bei Überschreitung können keine
+                neuen Dateien hochgeladen werden, bis Sie entweder Speicher freigeben oder upgraden.
               </div>
             </div>
 
             <div class="faq-item">
               <div class="faq-question">Kann ich meinen Speicherplan jederzeit ändern?</div>
               <div class="faq-answer">
-                Ja, Sie können jederzeit auf einen größeren Speicherplan upgraden. Downgrades sind zum Ende des Abrechnungszeitraums möglich.
+                Ja, Sie können jederzeit auf einen größeren Speicherplan upgraden. Downgrades sind zum Ende des Abrechnungszeitraums
+                möglich.
               </div>
             </div>
 
@@ -425,9 +432,9 @@
 
           const response = await fetch('/api/root/storage-info', {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
           });
 
           if (response.ok) {
@@ -443,16 +450,16 @@
       // Update storage display
       function updateStorageDisplay(data) {
         const { used, total, percentage } = data;
-        
+
         // Update text
         document.getElementById('used-storage').textContent = formatBytes(used);
         document.getElementById('total-storage').textContent = formatBytes(total);
         document.getElementById('storage-percentage').textContent = `${percentage}%`;
-        
+
         // Update progress bar
         const progressBar = document.getElementById('storage-progress');
         progressBar.style.width = `${percentage}%`;
-        
+
         // Update color based on usage
         if (percentage >= 90) {
           progressBar.style.backgroundColor = 'var(--error-color)';
@@ -475,10 +482,10 @@
       // Highlight current plan
       function highlightCurrentPlan(plan) {
         // Remove current class from all
-        document.querySelectorAll('.storage-plan-card').forEach(card => {
+        document.querySelectorAll('.storage-plan-card').forEach((card) => {
           card.classList.remove('current');
         });
-        
+
         // Add current class to active plan
         const currentPlanCard = document.getElementById(`plan-${plan}`);
         if (currentPlanCard) {
@@ -494,7 +501,7 @@
       }
 
       // Upgrade storage
-      window.upgradeStorage = function(plan) {
+      window.upgradeStorage = function (plan) {
         if (confirm(`Möchten Sie wirklich auf den ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan upgraden?`)) {
           // TODO: Implement upgrade API call
           alert('Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktieren Sie unseren Support.');
@@ -502,7 +509,7 @@
       };
 
       // Contact sales
-      window.contactSales = function() {
+      window.contactSales = function () {
         window.location.href = 'mailto:sales@assixx.com?subject=Individueller Speicherplatz Anfrage';
       };
 

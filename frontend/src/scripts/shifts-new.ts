@@ -1,11 +1,11 @@
+/* eslint-disable no-mixed-operators */
 /**
  * New Shift Planning System - TypeScript Implementation
  * Interactive weekly shift planning with drag & drop functionality
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken, removeAuthToken } from './auth';
-import { showSuccess, showError, showInfo } from './auth';
+import { getAuthToken, removeAuthToken, showSuccess, showError, showInfo } from './auth';
 
 interface Employee extends User {
   department_id?: number;
@@ -24,17 +24,6 @@ interface ShiftAssignment {
   team_leader_id?: number;
   area_id?: number;
   notes?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ShiftPlan {
-  id: number;
-  week_start: string;
-  week_end: string;
-  status: 'draft' | 'published' | 'archived';
-  notes?: string;
-  created_by: number;
   created_at: string;
   updated_at: string;
 }
@@ -80,7 +69,6 @@ interface WeeklyShifts {
 class ShiftPlanningSystem {
   private currentWeek: Date;
   private selectedEmployee: Employee | null;
-  private currentShiftPlan: ShiftPlan | null;
   private employees: Employee[];
   private weeklyShifts: WeeklyShifts;
   private isAdmin: boolean;
@@ -100,7 +88,6 @@ class ShiftPlanningSystem {
   constructor() {
     this.currentWeek = new Date();
     this.selectedEmployee = null;
-    this.currentShiftPlan = null;
     this.employees = [];
     this.weeklyShifts = {};
     this.isAdmin = false;
@@ -126,7 +113,7 @@ class ShiftPlanningSystem {
   }
 
   async init(): Promise<void> {
-    console.log('Initializing Shift Planning System...');
+    console.info('Initializing Shift Planning System...');
 
     // Check user authentication and role
     await this.checkUserRole();
@@ -148,7 +135,7 @@ class ShiftPlanningSystem {
     // Highlight employee's own shifts
     this.highlightEmployeeShifts();
 
-    console.log('Shift Planning System initialized');
+    console.info('Shift Planning System initialized');
   }
 
   async checkUserRole(): Promise<void> {
@@ -395,7 +382,7 @@ class ShiftPlanningSystem {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Departments API response:', data);
+        console.info('Departments API response:', data);
         this.departments = Array.isArray(data) ? data : data.departments || [];
       } else {
         throw new Error('Failed to load departments');
@@ -521,16 +508,16 @@ class ShiftPlanningSystem {
 
     select.innerHTML = '<option value="">Abteilung wählen...</option>';
 
-    console.log('Populating departments:', this.departments);
+    console.info('Populating departments:', this.departments);
     this.departments.forEach((dept) => {
-      console.log('Adding department:', dept);
+      console.info('Adding department:', dept);
       const option = document.createElement('option');
       option.value = dept.id.toString();
       option.textContent = dept.name;
       select.appendChild(option);
     });
 
-    console.log('Department select populated with', this.departments.length, 'departments');
+    console.info('Department select populated with', this.departments.length, 'departments');
   }
 
   populateMachineSelect(): void {
@@ -843,7 +830,6 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = await response.json();
         this.processShiftData(data.shifts || []);
-        this.currentShiftPlan = data.shiftPlan || null;
         this.renderWeekView();
       } else {
         throw new Error('Failed to load shift data');
@@ -949,7 +935,7 @@ class ShiftPlanningSystem {
 
     // Render all assignments
     Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
-      Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
+      Object.entries(shifts).forEach(([shiftType, _employeeIds]) => {
         this.renderShiftAssignments(date, shiftType);
       });
     });
@@ -1009,19 +995,31 @@ class ShiftPlanningSystem {
       const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
 
       // Prepare shift assignments
-      const assignments: any[] = [];
+      const assignments: Array<{
+        employee_id: number;
+        shift_date: string;
+        shift_type: string;
+        week_start: string;
+        week_end: string;
+        department_id?: number;
+        machine_id?: number;
+        team_leader_id?: number;
+        area_id?: number;
+      }> = [];
 
       Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
         Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
           employeeIds.forEach((employeeId) => {
             assignments.push({
               employee_id: employeeId,
-              date,
+              shift_date: date,
               shift_type: shiftType,
-              department_id: this.selectedContext.departmentId,
-              machine_id: this.selectedContext.machineId,
-              team_leader_id: this.selectedContext.teamLeaderId,
-              area_id: this.selectedContext.areaId,
+              week_start: weekStart,
+              week_end: weekEnd,
+              department_id: this.selectedContext.departmentId || undefined,
+              machine_id: this.selectedContext.machineId || undefined,
+              team_leader_id: this.selectedContext.teamLeaderId || undefined,
+              area_id: this.selectedContext.areaId || undefined,
             });
           });
         });
@@ -1054,9 +1052,10 @@ class ShiftPlanningSystem {
     }
   }
 
-  async resetSchedule(): Promise<void> {
+  resetSchedule(): void {
     if (!this.isAdmin) return;
 
+    // eslint-disable-next-line no-alert
     if (!confirm('Möchten Sie den aktuellen Schichtplan wirklich zurücksetzen?')) {
       return;
     }
@@ -1161,7 +1160,7 @@ class ShiftPlanningSystem {
     // Highlight current employee's shifts
     Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
       Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
-        if (employeeIds.includes(this.currentUserId!)) {
+        if (this.currentUserId !== null && employeeIds.includes(this.currentUserId)) {
           const shiftCell = document.querySelector(`[data-date="${date}"][data-shift="${shiftType}"]`);
           shiftCell?.classList.add('employee-shift');
         }
@@ -1182,13 +1181,16 @@ class ShiftPlanningSystem {
 }
 
 // Initialize the system when the page loads
-let shiftPlanningSystem: ShiftPlanningSystem;
+// let shiftPlanningSystem: ShiftPlanningSystem;
 
 document.addEventListener('DOMContentLoaded', () => {
-  shiftPlanningSystem = new ShiftPlanningSystem();
+  new ShiftPlanningSystem();
 });
 
 // Export to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).ShiftPlanningSystem = ShiftPlanningSystem;
+  interface WindowWithShiftPlanning extends Window {
+    ShiftPlanningSystem: typeof ShiftPlanningSystem;
+  }
+  (window as unknown as WindowWithShiftPlanning).ShiftPlanningSystem = ShiftPlanningSystem;
 }

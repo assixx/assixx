@@ -165,9 +165,9 @@ export class NotificationService {
     if (notification.actions && notification.actions.length > 0) {
       actionsHtml = `
         <div class="notification-actions" style="margin-top: 12px;">
-          ${notification.actions
-            .map(
-              (action) => `
+          ${/* eslint-disable indent, prettier/prettier */
+            notification.actions
+              .map((action) => `
             <button 
               class="notification-action-btn" 
               data-action="${action.label}"
@@ -183,9 +183,9 @@ export class NotificationService {
             >
               ${action.label}
             </button>
-          `,
-            )
-            .join('')}
+          `)
+              .join('')
+          /* eslint-enable indent, prettier/prettier */}
         </div>
       `;
     }
@@ -323,11 +323,11 @@ export default notificationService;
 
 // Export for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).NotificationService = NotificationService;
-  (window as any).notificationService = notificationService;
+  (window as unknown as Record<string, unknown>).NotificationService = NotificationService;
+  (window as unknown as Record<string, unknown>).notificationService = notificationService;
 
   // Also export shorthand functions
-  (window as any).notify = {
+  (window as unknown as Record<string, unknown>).notify = {
     success: (title: string, message?: string) => notificationService.success(title, message),
     error: (title: string, message?: string) => notificationService.error(title, message),
     warning: (title: string, message?: string) => notificationService.warning(title, message),

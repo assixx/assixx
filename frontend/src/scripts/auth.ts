@@ -4,6 +4,23 @@
 
 import type { User, JWTPayload } from '../types/api.types';
 
+// Extend window for auth functions
+declare global {
+  interface Window {
+    getAuthToken: typeof getAuthToken;
+    setAuthToken: typeof setAuthToken;
+    removeAuthToken: typeof removeAuthToken;
+    isAuthenticated: typeof isAuthenticated;
+    fetchWithAuth: typeof fetchWithAuth;
+    loadUserInfo: typeof loadUserInfo;
+    logout: typeof logout;
+    showSuccess: typeof showSuccess;
+    showError: typeof showError;
+    showInfo: typeof showInfo;
+    parseJwt: typeof parseJwt;
+  }
+}
+
 // Get authentication token from localStorage (compatible with existing system)
 export function getAuthToken(): string | null {
   return localStorage.getItem('token') || localStorage.getItem('authToken');
@@ -79,12 +96,12 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 // Load user information
 export async function loadUserInfo(): Promise<User> {
   try {
-    console.log('loadUserInfo: Attempting to fetch user profile...');
+    console.info('loadUserInfo: Attempting to fetch user profile...');
     const response = await fetchWithAuth('/api/user/profile');
-    console.log('loadUserInfo: Response status:', response.status);
+    console.info('loadUserInfo: Response status:', response.status);
 
     const data = await response.json();
-    console.log('loadUserInfo: Response data:', data);
+    console.info('loadUserInfo: Response data:', data);
 
     if (response.ok) {
       // The API returns the user object directly, not wrapped in data.user
@@ -146,37 +163,40 @@ export function logout(): void {
 // Show success message
 export function showSuccess(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
+  // eslint-disable-next-line no-alert
   alert(`✅ ${message}`);
 }
 
 // Show error message
 export function showError(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
+  // eslint-disable-next-line no-alert
   alert(`❌ ${message}`);
 }
 
 // Show info message
 export function showInfo(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
+  // eslint-disable-next-line no-alert
   alert(`ℹ️ ${message}`);
 }
 
 // Initialize authentication on page load
 document.addEventListener('DOMContentLoaded', () => {
   const token = getAuthToken();
-  console.log('Auth check - Token found:', !!token);
-  console.log('Auth check - Current path:', window.location.pathname);
+  console.info('Auth check - Token found:', !!token);
+  console.info('Auth check - Current path:', window.location.pathname);
 
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.log('No authentication token found, redirecting to login');
+    console.info('No authentication token found, redirecting to login');
     window.location.href = '/pages/login.html';
     return;
   }
 
   // Load user info if on authenticated page
   if (isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.log('Loading user info...');
+    console.info('Loading user info...');
     loadUserInfo().catch((error) => {
       console.error('Failed to load user info:', error);
       // Don't redirect immediately, let the user see the error
@@ -186,15 +206,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).getAuthToken = getAuthToken;
-  (window as any).setAuthToken = setAuthToken;
-  (window as any).removeAuthToken = removeAuthToken;
-  (window as any).isAuthenticated = isAuthenticated;
-  (window as any).fetchWithAuth = fetchWithAuth;
-  (window as any).loadUserInfo = loadUserInfo;
-  (window as any).logout = logout;
-  (window as any).showSuccess = showSuccess;
-  (window as any).showError = showError;
-  (window as any).showInfo = showInfo;
-  (window as any).parseJwt = parseJwt;
+  // These are already declared in global.d.ts
+  window.getAuthToken = getAuthToken;
+  window.setAuthToken = setAuthToken;
+  window.removeAuthToken = removeAuthToken;
+  window.isAuthenticated = isAuthenticated;
+  window.fetchWithAuth = fetchWithAuth;
+  window.loadUserInfo = loadUserInfo;
+  window.logout = logout;
+  window.showSuccess = showSuccess;
+  window.showError = showError;
+  window.showInfo = showInfo;
+  window.parseJwt = parseJwt;
 }

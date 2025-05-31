@@ -1,9 +1,12 @@
 // Global Type Declarations for Frontend
 
+import type { User, JWTPayload } from './api.types';
+import type { UnifiedNavigation } from '../scripts/components/unified-navigation';
+
 // Extend Window interface
 interface Window {
-  unifiedNav?: any;
-  UnifiedNavigation?: any;
+  unifiedNav?: UnifiedNavigation;
+  UnifiedNavigation?: typeof UnifiedNavigation;
   showSuccess?: (message: string) => void;
   showError?: (message: string) => void;
   showInfo?: (message: string) => void;
@@ -16,13 +19,13 @@ declare function setAuthToken(token: string): void;
 declare function removeAuthToken(): void;
 declare function isAuthenticated(): boolean;
 declare function fetchWithAuth(url: string, options?: RequestInit): Promise<Response>;
-declare function loadUserInfo(): Promise<any>;
+declare function loadUserInfo(): Promise<User>;
 declare function logout(): void;
 declare function showSuccess(message: string): void;
 declare function showError(message: string): void;
 declare function showInfo(message: string): void;
 declare function showSection(sectionId: string): void;
-declare function parseJwt(token: string): any;
+declare function parseJwt(token: string): JWTPayload;
 
 // Module declarations for libraries without types
 declare module 'marked' {

@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 /**
  * Blackboard Widget Component
  * Displays recent blackboard entries on dashboards
@@ -151,8 +152,8 @@ class BlackboardWidget {
               ${
                 entry.requires_confirmation && !entry.is_confirmed
                   ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${entry.id}">
-                   Bestätigen
-                 </button>`
+                     Bestätigen
+                   </button>`
                   : ''
               }
             </div>
@@ -207,8 +208,8 @@ class BlackboardWidget {
           ${
             entry.requires_confirmation && !entry.is_confirmed
               ? `<button class="btn btn-sm btn-outline-success confirm-entry-btn" data-id="${entry.id}">
-               <i class="fas fa-check"></i>
-             </button>`
+                 <i class="fas fa-check"></i>
+               </button>`
               : ''
           }
         </li>
@@ -254,6 +255,7 @@ class BlackboardWidget {
       this.loadEntries();
     } catch (error) {
       console.error('Error confirming entry:', error);
+      // eslint-disable-next-line no-alert
       alert('Fehler bei der Lesebestätigung.');
     }
   }

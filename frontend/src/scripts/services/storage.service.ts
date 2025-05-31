@@ -1,3 +1,4 @@
+/* eslint-disable no-mixed-operators */
 /**
  * Storage Service for Assixx
  * Handles localStorage with type safety and expiration
@@ -15,7 +16,7 @@ export class StorageService {
   /**
    * Get item from storage
    */
-  get<T = any>(key: string): T | null {
+  get<T = unknown>(key: string): T | null {
     try {
       const item = localStorage.getItem(this.prefix + key);
       if (!item) return null;
@@ -38,7 +39,7 @@ export class StorageService {
   /**
    * Set item in storage with optional expiration
    */
-  set<T = any>(key: string, value: T, expiryMinutes?: number): void {
+  set<T = unknown>(key: string, value: T, expiryMinutes?: number): void {
     try {
       const item: StorageItem<T> = {
         key: this.prefix + key,
@@ -122,7 +123,7 @@ export class StorageService {
             this.remove(key);
           }
         }
-      } catch (error) {
+      } catch {
         // Invalid item, remove it
         this.remove(key);
       }
@@ -136,8 +137,16 @@ const storageService = new StorageService();
 // Export default instance
 export default storageService;
 
+// Extend window for storage service
+declare global {
+  interface Window {
+    StorageService: typeof StorageService;
+    storageService: StorageService;
+  }
+}
+
 // Export for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).StorageService = StorageService;
-  (window as any).storageService = storageService;
+  window.StorageService = StorageService;
+  window.storageService = storageService;
 }

@@ -20,7 +20,7 @@ interface UploadForm extends HTMLFormElement {
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Upload document script loaded');
+  console.info('Upload document script loaded');
 
   // Load employees for dropdown
   loadEmployees();
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Register form events
   const uploadForm = document.getElementById('upload-form') as UploadForm;
   if (uploadForm) {
-    console.log('Upload form found');
+    console.info('Upload form found');
     uploadForm.addEventListener('submit', uploadDocument);
   } else {
     console.error('Upload form not found');
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
  * Load employees for dropdown
  */
 async function loadEmployees(): Promise<void> {
-  console.log('Loading employees');
+  console.info('Loading employees');
   const token = getAuthToken();
 
   if (!token) {
@@ -83,7 +83,7 @@ async function loadEmployees(): Promise<void> {
           userSelect.appendChild(option);
         });
 
-        console.log(`Loaded ${employees.length} employees for select`);
+        console.info(`Loaded ${employees.length} employees for select`);
       } else {
         console.error('User select element not found');
       }
@@ -100,13 +100,14 @@ async function loadEmployees(): Promise<void> {
  */
 async function uploadDocument(e: Event): Promise<void> {
   e.preventDefault();
-  console.log('Uploading document');
+  console.info('Uploading document');
 
   const form = e.target as UploadForm;
   const formData = new FormData(form);
   const token = getAuthToken();
 
   if (!token) {
+    // eslint-disable-next-line no-alert
     alert('Bitte melden Sie sich erneut an');
     return;
   }
@@ -116,11 +117,13 @@ async function uploadDocument(e: Event): Promise<void> {
   const file = formData.get('document') as File;
 
   if (!userId) {
+    // eslint-disable-next-line no-alert
     alert('Bitte wählen Sie einen Mitarbeiter aus');
     return;
   }
 
   if (!file || file.size === 0) {
+    // eslint-disable-next-line no-alert
     alert('Bitte wählen Sie eine Datei aus');
     return;
   }
@@ -142,7 +145,7 @@ async function uploadDocument(e: Event): Promise<void> {
   }
 
   try {
-    console.log('Sending upload request');
+    console.info('Sending upload request');
     const response = await fetch('/api/documents', {
       method: 'POST',
       headers: {
@@ -154,7 +157,7 @@ async function uploadDocument(e: Event): Promise<void> {
     const result = await response.json();
 
     if (response.ok) {
-      console.log('Upload successful:', result);
+      console.info('Upload successful:', result);
 
       // Show success message
       if (successElem) {
@@ -172,8 +175,12 @@ async function uploadDocument(e: Event): Promise<void> {
       }
 
       // Reload document list if exists
-      if (typeof (window as any).loadDocuments === 'function') {
-        (window as any).loadDocuments();
+      interface WindowWithLoadDocuments extends Window {
+        loadDocuments?: () => void;
+      }
+      const windowWithDocs = window as unknown as WindowWithLoadDocuments;
+      if (typeof windowWithDocs.loadDocuments === 'function') {
+        windowWithDocs.loadDocuments();
       }
     } else {
       console.error('Upload failed:', result);
@@ -199,6 +206,10 @@ async function uploadDocument(e: Event): Promise<void> {
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as any).loadEmployees = loadEmployees;
-  (window as any).uploadDocument = uploadDocument;
+  interface WindowWithUploadFunctions extends Window {
+    loadEmployees: typeof loadEmployees;
+    uploadDocument: typeof uploadDocument;
+  }
+  (window as unknown as WindowWithUploadFunctions).loadEmployees = loadEmployees;
+  (window as unknown as WindowWithUploadFunctions).uploadDocument = uploadDocument;
 }

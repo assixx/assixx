@@ -1,5 +1,5 @@
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -92,7 +92,7 @@ export interface TenantFeature {
   feature_code: string;
   is_available: boolean;
   price_override?: number;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   activated_at?: string;
   deactivated_at?: string;
 }
@@ -120,6 +120,7 @@ export interface BlackboardEntry {
   id: number;
   tenant_id: number;
   created_by: number;
+  created_by_name?: string;
   title: string;
   content: string;
   category: string;

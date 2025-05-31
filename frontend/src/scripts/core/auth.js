@@ -3,7 +3,7 @@
  */
 
 export function initAuth() {
-  console.log('Auth module initialized');
+  // Auth module initialized
 
   // Check if user is authenticated
   const token = localStorage.getItem('token');

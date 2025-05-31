@@ -4,7 +4,7 @@
 
 import type { User } from '../types/api.types';
 import { getAuthToken, removeAuthToken } from './auth';
-import { formatDate as formatDateUtil } from './common';
+// import { formatDate as formatDateUtil } from './common';
 
 interface TabClickDetail {
   value?: string;
@@ -35,9 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function initModals(): void {
   // Close-Buttons für Modals
   document.querySelectorAll<HTMLElement>('.modal-close, [data-action="close"]').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', (e) => {
       // Find closest modal-overlay
-      const modalOverlay = this.closest('.modal-overlay') as HTMLElement;
+      const target = e.currentTarget as HTMLElement;
+      const modalOverlay = target.closest('.modal-overlay') as HTMLElement;
       if (modalOverlay) {
         closeModal(modalOverlay.id);
       }
@@ -46,9 +47,9 @@ function initModals(): void {
 
   // Click outside modal to close
   document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
-    modal.addEventListener('click', function (e: MouseEvent) {
-      if (e.target === this) {
-        closeModal(this.id);
+    modal.addEventListener('click', (e: MouseEvent) => {
+      if (e.target === modal) {
+        closeModal(modal.id);
       }
     });
   });
@@ -85,9 +86,10 @@ function closeModal(modalId: string): void {
  */
 function initTabs(): void {
   document.querySelectorAll<HTMLElement>('.tab-btn').forEach((button) => {
-    button.addEventListener('click', function () {
+    button.addEventListener('click', (e) => {
       // Deactivate all tabs
-      const parent = this.closest('.tab-navigation');
+      const target = e.currentTarget as HTMLElement;
+      const parent = target.closest('.tab-navigation');
       if (!parent) return;
 
       parent.querySelectorAll<HTMLElement>('.tab-btn').forEach((btn) => {
@@ -95,13 +97,13 @@ function initTabs(): void {
       });
 
       // Activate clicked tab
-      this.classList.add('active');
+      target.classList.add('active');
 
       // Trigger the tab click event for custom handlers
       const event = new CustomEvent<TabClickDetail>('tabClick', {
         detail: {
-          value: this.dataset.value,
-          id: this.id,
+          value: target.dataset.value,
+          id: target.id,
         },
       });
       document.dispatchEvent(event);
@@ -200,13 +202,19 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
 }
 
 // Expose global utilities
+declare global {
+  interface Window {
+    DashboardUI: DashboardUI;
+  }
+}
+
 if (typeof window !== 'undefined') {
-  (window as any).DashboardUI = {
+  window.DashboardUI = {
     openModal,
     closeModal,
     showToast,
     formatDate,
-  } as DashboardUI;
+  };
 }
 
 // Export functions for module usage
