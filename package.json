@@ -11,7 +11,7 @@
     "dev:backend:ts": "nodemon --exec \"tsx\" backend/src/server.ts",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "npm run build:ts && npm run build:frontend",
-    "build:ts": "tsc && node fix-esm-imports.js",
+    "build:ts": "tsc && node scripts/fix-esm-imports.js",
     "build:frontend": "cd frontend && npm run build",
     "watch:ts": "tsc --watch",
     "install:all": "npm install && cd frontend && npm install",
