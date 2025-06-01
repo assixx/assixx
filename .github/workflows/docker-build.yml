@@ -53,6 +53,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -71,8 +72,8 @@ jobs:
 
       - name: Run Docker Compose tests
         run: |
-          cp .env.docker.example .env
-          docker-compose up -d
+          cp docker/.env.docker.example docker/.env.docker
+          cd docker && docker-compose up -d
           sleep 30
           docker-compose ps
           curl -f http://localhost:3000/health || exit 1
