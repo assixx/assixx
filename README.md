@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/Version-2025.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development%20v0.0.2-yellow.svg)](https://github.com/SCS-Technik/Assixx)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./docs/LICENSE)
 
 > **Digitalisierung von Papier zu Cloud - Speziell für produzierende Unternehmen**
 
@@ -34,36 +34,36 @@ docker-compose -f docker-compose.dev.yml up -d
 # Auf http://localhost:3000 zugreifen
 ```
 
-Siehe **[DOCKER-SETUP.md](./DOCKER-SETUP.md)** für detaillierte Anweisungen und **[DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md)** für Docker-Einsteiger.
+Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisungen und **[DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md)** für Docker-Einsteiger.
 
 ### Platform-spezifische Setup-Guides:
 
-- **[Windows (WSL)](./SETUP-WINDOWS-WSL.md)** - Kompletter Setup-Guide für Windows mit WSL
-- **[Ubuntu/Linux](./SETUP-UBUNTU-LINUX.md)** - Setup-Guide für Ubuntu und Debian-basierte Systeme
-- **[macOS](./SETUP-MACOS.md)** - Setup-Guide für macOS mit Homebrew
+- **[Windows (WSL)](./docs/SETUP-WINDOWS-WSL.md)** - Kompletter Setup-Guide für Windows mit WSL
+- **[Ubuntu/Linux](./docs/SETUP-UBUNTU-LINUX.md)** - Setup-Guide für Ubuntu und Debian-basierte Systeme
+- **[macOS](./docs/SETUP-MACOS.md)** - Setup-Guide für macOS mit Homebrew
 
-Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillierte Datenbank-Konfiguration.
+Siehe auch [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) für detaillierte Datenbank-Konfiguration.
 
 ## 📚 Dokumentation
 
 | Dokument                                                  | Beschreibung                         |
 | --------------------------------------------------------- | ------------------------------------ |
-| 📁 [PROJEKTSTRUKTUR.md](./PROJEKTSTRUKTUR.md)             | Vollständige Verzeichnisstruktur     |
-| 📋 [FEATURES.md](./FEATURES.md)                           | Komplette Feature-Übersicht & Preise |
-| 🏗️ [ARCHITECTURE.md](./ARCHITECTURE.md)                   | Technische Architektur & Stack       |
-| 🐳 [DOCKER-SETUP.md](./DOCKER-SETUP.md)                   | Docker Development Environment       |
-| 🐳 [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) | Docker Anleitung für Einsteiger   |
-| 🐳 [DOCKER-SETUP-SUMMARY.md](./DOCKER-SETUP-SUMMARY.md)   | Docker Setup Zusammenfassung         |
-| 💾 [BACKUP-GUIDE.md](./BACKUP-GUIDE.md)                   | Backup-Strategie & Anleitung         |
-| 🪟 [SETUP-WINDOWS-WSL.md](./SETUP-WINDOWS-WSL.md)         | Windows (WSL) Setup Guide            |
-| 🐧 [SETUP-UBUNTU-LINUX.md](./SETUP-UBUNTU-LINUX.md)       | Ubuntu/Linux Setup Guide             |
-| 🍎 [SETUP-MACOS.md](./SETUP-MACOS.md)                     | macOS Setup Guide                    |
-| 💾 [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) | Detaillierte Datenbank-Installation  |
+| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)             | Vollständige Verzeichnisstruktur     |
+| 📋 [FEATURES.md](./docs/FEATURES.md)                           | Komplette Feature-Übersicht & Preise |
+| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                   | Technische Architektur & Stack       |
+| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                   | Docker Development Environment       |
+| 🐳 [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) | Docker Anleitung für Einsteiger   |
+| 🐳 [DOCKER-SETUP-SUMMARY.md](./docs/DOCKER-SETUP-SUMMARY.md)   | Docker Setup Zusammenfassung         |
+| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                   | Backup-Strategie & Anleitung         |
+| 🪟 [SETUP-WINDOWS-WSL.md](./docs/SETUP-WINDOWS-WSL.md)         | Windows (WSL) Setup Guide            |
+| 🐧 [SETUP-UBUNTU-LINUX.md](./docs/SETUP-UBUNTU-LINUX.md)       | Ubuntu/Linux Setup Guide             |
+| 🍎 [SETUP-MACOS.md](./docs/SETUP-MACOS.md)                     | macOS Setup Guide                    |
+| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) | Detaillierte Datenbank-Installation  |
 | 📝 [TODO.md](./TODO.md)                                   | Aktuelle Aufgaben & Roadmap          |
-| 🔧 [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md)         | Entwickler-Richtlinien               |
-| 🚢 [DEPLOYMENT.md](./DEPLOYMENT.md)                       | Production Deployment                |
-| 🎨 [DESIGN-STANDARDS.md](./DESIGN-STANDARDS.md)           | UI/UX Design Standards               |
-| 🗺️ [ROADMAP.md](./ROADMAP.md)                             | Entwicklungsfahrplan                 |
+| 🔧 [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)         | Entwickler-Richtlinien               |
+| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                       | Production Deployment                |
+| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)           | UI/UX Design Standards               |
+| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                             | Entwicklungsfahrplan                 |
 
 ## 🎯 Kernfeatures
 
@@ -82,9 +82,9 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 
 ### 🚨 Deal-Breaker Features (in Entwicklung):
 
-- **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut QUESTIONS.md)
-- **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut QUESTIONS.md)
-- **Urlaubsantrag** - Digitaler Workflow (KRITISCH laut QUESTIONS.md)
+- **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut docs/QUESTIONS.md)
+- **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut docs/QUESTIONS.md)
+- **Urlaubsantrag** - Digitaler Workflow (KRITISCH laut docs/QUESTIONS.md)
 
 ### 🔮 Geplant:
 
@@ -92,7 +92,7 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 - **Mobile App** (iOS/Android)
 - **Mehrsprachigkeit** (DE, EN, TR, PL)
 
-Siehe [FEATURES.md](./FEATURES.md) für Details und Preise.
+Siehe [FEATURES.md](./docs/FEATURES.md) für Details und Preise.
 
 ## 🛠️ Tech Stack
 
@@ -101,9 +101,23 @@ Siehe [FEATURES.md](./FEATURES.md) für Details und Preise.
 - **Datenbank**: MySQL mit Multi-Tenant Architektur
 - **Echtzeit**: WebSocket für Chat & Notifications
 
-Siehe [ARCHITECTURE.md](./ARCHITECTURE.md) für technische Details.
+Siehe [ARCHITECTURE.md](./docs/ARCHITECTURE.md) für technische Details.
 
 ## 🐳 Docker Quick Start
+
+```bash
+# Repository klonen
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx
+
+# Docker starten
+./docker-start.sh
+
+# Auf http://localhost:3000 zugreifen
+
+# Docker stoppen
+./docker-stop.sh
+```
 
 Die Docker-Entwicklungsumgebung bietet:
 
@@ -124,9 +138,9 @@ docker-compose -f docker-compose.dev.yml down
 ```
 
 Details siehe:
-- [DOCKER-SETUP.md](./DOCKER-SETUP.md) - Vollständige Anleitung
-- [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) - Für Docker-Einsteiger
-- [BACKUP-GUIDE.md](./BACKUP-GUIDE.md) - Backup-Strategie
+- [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) - Vollständige Anleitung
+- [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) - Für Docker-Einsteiger
+- [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md) - Backup-Strategie
 
 ## 👥 Team & Kontakt
 
@@ -136,8 +150,8 @@ Details siehe:
 
 ## 📄 Lizenz
 
-Proprietäre Software - Alle Rechte vorbehalten. Siehe [LICENSE](./LICENSE) für Details.
+Proprietäre Software - Alle Rechte vorbehalten. Siehe [LICENSE](./docs/LICENSE) für Details.
 
 ---
 
-**🔗 Quick Links**: [Demo](http://localhost:3000) | [API Docs](./server/API-TEST-README.md) | [Support](./TROUBLESHOOTING.md)
+**🔗 Quick Links**: [Demo](http://localhost:3000) | [API Docs](./docs/API-TEST-README.md) | [Support](./docs/TROUBLESHOOTING.md)

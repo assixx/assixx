@@ -13,8 +13,8 @@
 
 - [ ] ✅ TODO.md gelesen
 - [ ] ✅ CLAUDE.md gelesen
-- [ ] ✅ PROJEKTSTRUKTUR.md gelesen
-- [ ] ⚠️ **BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
+- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen
+- [ ] ⚠️ **docs/BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
 - [ ] ✅ Erst DANN: Weitere Dokumente
 
 **🚫 KEINE ENTWICKLUNG OHNE ABGESCHLOSSENE CHECKLISTE!**
@@ -37,7 +37,7 @@ cat /home/scs/projects/Assixx/TODO.md
 
 ```bash
 # Projektstruktur überprüfen und bei Bedarf aktualisieren:
-cat /home/scs/projects/Assixx/PROJEKTSTRUKTUR.md
+cat /home/scs/projects/Assixx/docs/PROJEKTSTRUKTUR.md
 ```
 
 **Warum?**
@@ -51,7 +51,7 @@ cat /home/scs/projects/Assixx/PROJEKTSTRUKTUR.md
 
 ```bash
 # Design-Standards für konsistentes UI/UX:
-cat /home/scs/projects/Assixx/DESIGN-STANDARDS.md
+cat /home/scs/projects/Assixx/docs/DESIGN-STANDARDS.md
 ```
 
 **Enthält:**
@@ -65,7 +65,7 @@ cat /home/scs/projects/Assixx/DESIGN-STANDARDS.md
 
 ```bash
 # ⚠️ NICHT NUR LESEN - ALLE CHECKS MÜSSEN AUSGEFÜHRT WERDEN!
-cat /home/scs/projects/Assixx/BEFORE-STARTING-DEV.md
+cat /home/scs/projects/Assixx/docs/BEFORE-STARTING-DEV.md
 # DANN: Alle Befehle aus der Datei ausführen!
 ```
 
@@ -89,14 +89,14 @@ cat /home/scs/projects/Assixx/BEFORE-STARTING-DEV.md
 
 ### 5️⃣ WEITERE WICHTIGE DOKUMENTE
 
-- **Entwickler-Guidelines**: [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md)
-- **Architektur**: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **Features**: [FEATURES.md](./FEATURES.md)
-- **Datenbank**: [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md)
+- **Entwickler-Guidelines**: [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)
+- **Architektur**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- **Features**: [FEATURES.md](./docs/FEATURES.md)
+- **Datenbank**: [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)
 - **Setup Guides**:
-  - 🪟 [Windows (WSL)](./SETUP-WINDOWS-WSL.md)
-  - 🐧 [Ubuntu/Linux](./SETUP-UBUNTU-LINUX.md)
-  - 🍎 [macOS](./SETUP-MACOS.md)
+  - 🪟 [Windows (WSL)](./docs/SETUP-WINDOWS-WSL.md)
+  - 🐧 [Ubuntu/Linux](./docs/SETUP-UBUNTU-LINUX.md)
+  - 🍎 [macOS](./docs/SETUP-MACOS.md)
 
 ---
 
@@ -167,8 +167,8 @@ function validateSubdomain(value) {
 
    - TODO.md lesen
    - CLAUDE.md lesen
-   - PROJEKTSTRUKTUR.md lesen
-   - BEFORE-STARTING-DEV.md AUSFÜHREN (alle Checks!)
+   - docs/PROJEKTSTRUKTUR.md lesen
+   - docs/BEFORE-STARTING-DEV.md AUSFÜHREN (alle Checks!)
    - Erst nach allen Checks: Mit Entwicklung beginnen
 
 1. **📚 PFLICHTLEKTÜRE** (IMMER in dieser Reihenfolge):
@@ -177,11 +177,11 @@ function validateSubdomain(value) {
    # WICHTIG: Diese Reihenfolge IMMER einhalten!
    cat TODO.md           # 1. Aktuelle Aufgaben (ERSTE PRIORITÄT!)
    cat CLAUDE.md         # 2. Diese Anweisungen
-   cat PROJEKTSTRUKTUR.md # 3. Projekt-Struktur prüfen/aktualisieren
-   cat BEFORE-STARTING-DEV.md # 4. PFLICHT-AUSFÜHRUNG der Checks!
+   cat docs/PROJEKTSTRUKTUR.md # 3. Projekt-Struktur prüfen/aktualisieren
+   cat docs/BEFORE-STARTING-DEV.md # 4. PFLICHT-AUSFÜHRUNG der Checks!
    cat README.md         # 5. Projekt-Übersicht
-   cat ROADMAP.md        # 6. Zukünftige Features
-   cat DATABASE-SETUP-README.md  # 7. DB-Struktur (optional)
+   cat docs/ROADMAP.md   # 6. Zukünftige Features
+   cat docs/DATABASE-SETUP-README.md  # 7. DB-Struktur (optional)
    ```
 
 2. **📊 ZUSAMMENFASSUNG ERSTELLEN**:
@@ -204,10 +204,10 @@ function validateSubdomain(value) {
    - **NACH Fertigstellung**: "Haben Sie die Änderungen getestet?"
 
 5. **📝 DOKUMENTATIONS-PFLICHT**:
-   - Bei DB-Änderungen → DATABASE-SETUP-README.md aktualisieren
-   - Bei neuen Features → FEATURES.md ergänzen
-   - Bei UI-Änderungen → DESIGN-STANDARDS.md prüfen
-   - Bei Struktur-Änderungen → PROJEKTSTRUKTUR.md aktualisieren
+   - Bei DB-Änderungen → docs/DATABASE-SETUP-README.md aktualisieren
+   - Bei neuen Features → docs/FEATURES.md ergänzen
+   - Bei UI-Änderungen → docs/DESIGN-STANDARDS.md prüfen
+   - Bei Struktur-Änderungen → docs/PROJEKTSTRUKTUR.md aktualisieren
 
 ### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (01.06.2025)
 
@@ -238,8 +238,8 @@ function validateSubdomain(value) {
 | Kategorie      | Information                           |
 | -------------- | ------------------------------------- |
 | **Projekt**    | Multi-Tenant SaaS für Industriefirmen |
-| **Tech Stack** | [ARCHITECTURE.md](./ARCHITECTURE.md)  |
-| **Features**   | [FEATURES.md](./FEATURES.md)          |
+| **Tech Stack** | [ARCHITECTURE.md](./docs/ARCHITECTURE.md)  |
+| **Features**   | [FEATURES.md](./docs/FEATURES.md)          |
 | **GitHub**     | https://github.com/SCS-Technik/Assixx |
 | **Lokale Dev** | http://localhost:3000                 |
 
@@ -265,9 +265,9 @@ function validateSubdomain(value) {
 
 ## 🔗 WEITERE STANDARDS & DOKUMENTATION
 
-- **💬 Chat System**: Siehe [DESIGN-STANDARDS.md](./DESIGN-STANDARDS.md#-chat-system-design-standards)
-- **🎨 UI/UX Design**: Siehe [DESIGN-STANDARDS.md](./DESIGN-STANDARDS.md)
-- **📊 Datenbank**: Siehe [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md)
+- **💬 Chat System**: Siehe [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md#-chat-system-design-standards)
+- **🎨 UI/UX Design**: Siehe [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)
+- **📊 Datenbank**: Siehe [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)
 
 ---
 
@@ -292,4 +292,4 @@ function validateSubdomain(value) {
 - Existierende Dateien bevorzugen
 - Nur das tun, was angefragt wurde
 - Temporäre Dateien aufräumen
-- DATABASE-SETUP-README.md bei DB-Änderungen aktualisieren
+- docs/DATABASE-SETUP-README.md bei DB-Änderungen aktualisieren

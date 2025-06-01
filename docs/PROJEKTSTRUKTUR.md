@@ -1,56 +1,102 @@
 # 📁 Assixx Projektstruktur
 
-> **Letzte Aktualisierung:** 01.06.2025  
-> **Status:** 🔄 TypeScript Migration im Gange, 🐳 Docker & Backup System hinzugefügt
+> **Letzte Aktualisierung:** 02.06.2025 - Restrukturierung für bessere Organisation  
+> **Status:** ✅ Projekt-Struktur bereinigt und reorganisiert
 
-## 🗂️ Hauptverzeichnisstruktur
+## 🏗️ Überblick
+
+Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
+- ✅ Root-Verzeichnis aufgeräumt
+- ✅ Dokumentation in `docs/` verschoben
+- ✅ Scripts in `scripts/` organisiert
+- ✅ Docker-Dateien in `docker/` zusammengefasst
+- ✅ Nur essenzielle Dateien im Root belassen
+
+## 📂 Hauptverzeichnisse
 
 ```
-Assixx/
-├── 📂 backend/              # Backend-Server (Node.js/Express)
-├── 📂 backups/              # Datenbank-Backups (git-ignoriert)
-│   ├── 📂 daily/           # Tägliche Backups
-│   ├── 📂 weekly/          # Wöchentliche Backups
-│   ├── 📂 monthly/         # Monatliche Backups
-│   └── 📂 quick/           # Schnelle Backups
-├── 📂 database/             # Datenbank-Schema & Migrationen
-│   ├── 📂 migrations/      # SQL-Migrationsdateien
-│   ├── 📂 schema/          # Strukturiertes Schema
-│   │   ├── 📂 00-core/    # Kern-Tabellen
-│   │   ├── 📂 01-features/ # Feature-Tabellen
-│   │   ├── 📂 02-modules/ # Modul-Tabellen
-│   │   └── 📂 03-views/   # Datenbank-Views
-│   ├── 📄 complete-schema.sql    # Generiertes Komplett-Schema
-│   ├── 📄 docker-init.sql        # Docker Init-Script
-│   └── 📄 docker-init-simple.sql # Vereinfachtes Docker Init
-├── 📂 frontend/             # Frontend (Vanilla JS + Vite)
-├── 📂 infrastructure/       # Deployment & DevOps
-├── 📂 tools/               # Entwicklungswerkzeuge
-├── 📂 uploads/             # User-Uploads (git-ignoriert)
-├── 📄 .env                 # Umgebungsvariablen (git-ignoriert)
-├── 📄 .env.docker          # Docker-spezifische Env-Vars
-├── 📄 .gitignore          # Git-Ignore Konfiguration
-├── 📄 apply-sql-updates.sh # SQL-Updates anwenden
-├── 📄 backup-database.sh   # Datenbank-Backup Script
-├── 📄 cookies.txt          # Cookie-Sammlung (git-ignoriert)
-├── 📄 database-setup.sql   # Haupt-Datenbankschema
-├── 📄 docker-compose.dev.yml    # Docker Dev-Konfiguration
-├── 📄 docker-compose.monitoring.yml # Docker Monitoring
-├── 📄 docker-compose.yml   # Docker Prod-Konfiguration
-├── 📄 Dockerfile          # Production Docker Image
-├── 📄 Dockerfile.dev      # Development Docker Image
-├── 📄 eslint.config.js     # ESLint Konfiguration
-├── 📄 fix-esm-imports.js   # ESM Import Fix Script
-├── 📄 jest.config.js       # Jest Test-Konfiguration
-├── 📄 nodemon.json         # Nodemon Konfiguration
-├── 📄 package.json         # Root NPM Konfiguration
-├── 📄 quick-backup.sh      # Schnell-Backup Script
-├── 📄 regenerate-schema.sh # Schema neu generieren
-├── 📄 restore-database.sh  # Datenbank wiederherstellen
-├── 📄 setup-backup-cron.sh # Backup-Cron einrichten
-├── 📄 setup-docker-db.sh   # Docker DB Setup
-├── 📄 tsconfig.json        # Root TypeScript Konfiguration
-└── 📄 [Dokumentation]      # Alle .md Dateien (siehe unten)
+/home/scs/projects/Assixx/
+├── backend/              # TypeScript Backend (Express.js)
+├── frontend/             # Frontend (Vite + TypeScript)
+├── database/             # Datenbank-Schema und Migrationen
+├── docs/                 # Gesamte Projektdokumentation
+├── scripts/              # Shell-Scripts und Utilities
+├── docker/               # Docker-Konfigurationen
+├── infrastructure/       # DevOps und Monitoring
+├── tools/                # Setup-Tools
+└── backups/              # Datenbank-Backups
+```
+
+## 🌳 Detaillierte Struktur
+
+### 📁 Root-Verzeichnis (Aufgeräumt!)
+```
+/home/scs/projects/Assixx/
+├── README.md             # Projekt-Hauptdokumentation
+├── TODO.md               # Aktuelle Aufgabenliste
+├── CLAUDE.md             # Claude AI Anweisungen
+├── CLAUDE.local.md       # Lokale Notizen (nicht im Git)
+├── BUGS-GEFUNDEN.md      # Bug-Tracking
+├── LICENSE               # MIT Lizenz
+├── COPYRIGHT             # Copyright-Informationen
+├── package.json          # Root-Abhängigkeiten
+├── package-lock.json
+├── tsconfig.json         # TypeScript Root-Konfiguration
+├── eslint.config.js      # ESLint-Konfiguration
+├── nodemon.json          # Nodemon-Konfiguration
+└── database-setup.sql    # Legacy DB-Setup (deprecated)
+```
+
+### 📁 docs/ (NEU - Alle Dokumentationen)
+```
+docs/
+├── AKTIONSPLAN-BETA-FIXES.md    # Beta-Deployment Plan
+├── ARCHITECTURE.md               # System-Architektur
+├── BACKUP-GUIDE.md              # Backup-Anleitung
+├── BEFORE-STARTING-DEV.md       # Dev-Checkliste
+├── CONTRIBUTOR-AGREEMENT.md     # Contributor Agreement
+├── DATABASE-SETUP-README.md     # Datenbank-Dokumentation
+├── DEPLOYMENT.md                # Deployment-Guide
+├── DESIGN-STANDARDS.md          # UI/UX Standards
+├── DEVELOPMENT-GUIDE.md         # Entwickler-Guide
+├── DOCKER-BEGINNERS-GUIDE.md    # Docker Einführung
+├── DOCKER-SETUP-SUMMARY.md      # Docker Setup Zusammenfassung
+├── DOCKER-SETUP.md              # Docker Konfiguration
+├── FEATURES.md                  # Feature-Dokumentation
+├── FUNKTIONSTEST-ERGEBNISSE.md  # Test-Ergebnisse
+├── FUNKTIONSTEST.md             # Test-Anleitung
+├── GIT-BRANCH-STRATEGY.md       # Git-Workflow
+├── PROJEKTSTRUKTUR.md           # Diese Datei
+├── QUESTIONS.md                 # FAQ
+├── ROADMAP.md                   # Projekt-Roadmap
+├── SETUP-MACOS.md               # macOS Setup
+├── SETUP-QUICKSTART.md          # Schnellstart
+├── SETUP-UBUNTU-LINUX.md        # Ubuntu Setup
+├── SETUP-WINDOWS-WSL.md         # Windows/WSL Setup
+└── TERMS-OF-USE.md              # Nutzungsbedingungen
+```
+
+### 📁 scripts/ (NEU - Alle Shell-Scripts)
+```
+scripts/
+├── apply-sql-updates.sh      # SQL-Updates anwenden
+├── backup-database.sh        # Datenbank-Backup
+├── fix-esm-imports.js        # ESM Import Fixes
+├── quick-backup.sh           # Schnelles Backup
+├── regenerate-schema.sh      # Schema regenerieren
+├── restore-database.sh       # Datenbank wiederherstellen
+├── setup-backup-cron.sh      # Backup-Cron einrichten
+└── setup-docker-db.sh        # Docker DB Setup
+```
+
+### 📁 docker/ (NEU - Docker-Konfigurationen)
+```
+docker/
+├── Dockerfile                    # Production Dockerfile
+├── Dockerfile.dev               # Development Dockerfile
+├── docker-compose.yml           # Production Compose
+├── docker-compose.dev.yml       # Development Compose
+└── docker-compose.monitoring.yml # Monitoring Stack
 ```
 
 ## 📂 Backend-Struktur (`/backend`)
@@ -384,96 +430,43 @@ uploads/
 └── 📂 profile_pictures/   # Alt (migration pending)
 ```
 
-## 📄 Root-Dokumentation
+## 📋 Wichtige Dateien
 
-| Datei                           | Beschreibung                    |
-| ------------------------------- | ------------------------------- |
-| 📄 AKTIONSPLAN-BETA-FIXES.md    | Beta-Phase Aktionsplan          |
-| 📄 ARCHITECTURE.md              | Systemarchitektur & Tech Stack  |
-| 📄 BACKUP-GUIDE.md              | Backup-System Dokumentation     |
-| 📄 BEFORE-STARTING-DEV.md       | Entwicklungs-Checkliste         |
-| 📄 BUGS-GEFUNDEN.md             | Dokumentierte Bugs aus Tests    |
-| 📄 CLAUDE.md                    | AI-Assistenten Anweisungen      |
-| 📄 CLAUDE.local.md              | Lokale AI-Anweisungen           |
-| 📄 CONTRIBUTOR-AGREEMENT.md     | Beitragsvereinbarung            |
-| 📄 COPYRIGHT                    | Copyright-Informationen         |
-| 📄 DATABASE-SETUP-README.md     | Datenbank-Setup Guide           |
-| 📄 DEPLOYMENT.md                | Production Deployment Guide     |
-| 📄 DESIGN-STANDARDS.md          | UI/UX Design Standards          |
-| 📄 DEVELOPMENT-GUIDE.md         | Entwicklungsrichtlinien         |
-| 📄 DOCKER-BEGINNERS-GUIDE.md    | Docker Anfänger-Leitfaden       |
-| 📄 DOCKER-SETUP.md              | Docker Setup & Konfiguration    |
-| 📄 DOCKER-SETUP-SUMMARY.md      | Docker Setup Zusammenfassung    |
-| 📄 FEATURES.md                  | Feature-Übersicht & Preise      |
-| 📄 FUNKTIONSTEST.md             | Umfassender Funktionstestplan   |
-| 📄 FUNKTIONSTEST-ERGEBNISSE.md  | Testergebnisse Dokumentation    |
-| 📄 GIT-BRANCH-STRATEGY.md       | Git Branch-Strategie            |
-| 📄 LICENSE                      | Lizenzinformationen             |
-| 📄 MIGRATION-CHECKLIST.md       | TypeScript Migration Checklist  |
-| 📄 MIGRATION-EXAMPLE.md         | TypeScript Migration Beispiele  |
-| 📄 MIGRATION-LOG.md             | Migrationsprotokoll             |
-| 📄 MIGRATION-PLAN.md            | Migrationsplan (abgeschlossen)  |
-| 📄 MIGRATION-SUMMARY.md         | TypeScript Migration Zusammenf. |
-| 📄 MIGRATION-TYPESCRIPT-PLAN.md | TypeScript Migrationsplan       |
-| 📄 PROJEKTSTRUKTUR.md           | Diese Datei                     |
-| 📄 QUESTIONS.md                 | Häufige Fragen & Antworten      |
-| 📄 README.md                    | Projekt-Übersicht               |
-| 📄 ROADMAP.md                   | Entwicklungsfahrplan            |
-| 📄 SETUP-MACOS.md               | macOS Setup Guide               |
-| 📄 SETUP-QUICKSTART.md          | Schnellstart Guide (veraltet)   |
-| 📄 SETUP-UBUNTU-LINUX.md        | Ubuntu/Linux Setup Guide        |
-| 📄 SETUP-WINDOWS-WSL.md         | Windows WSL Setup Guide         |
-| 📄 TERMS-OF-USE.md              | Nutzungsbedingungen             |
-| 📄 TODO.md                      | Aktuelle Aufgabenliste          |
+### Backend
+- `backend/src/server.ts` - Server Entry Point
+- `backend/src/app.ts` - Express App Setup
+- `backend/src/database.ts` - DB Connection Management
 
-## 🔄 Migration Status
+### Frontend
+- `frontend/src/index.html` - SPA Entry Point
+- `frontend/src/scripts/auth.ts` - Authentifizierung
+- `frontend/src/styles/style.css` - Haupt-Stylesheet
 
-### ✅ Abgeschlossene Migrationen:
+### Konfiguration
+- `.env` - Umgebungsvariablen (nicht im Git!)
+- `docker/.env.docker` - Docker Environment
 
-- `server/` → `backend/` (28.01.2025)
-- Static File Paths aktualisiert
-- MVC-Architektur implementiert
-- Frontend Build System eingerichtet
+## 📝 Hinweise zur Struktur
 
-### 🔄 Laufende Migrationen:
+### ✅ Vorteile der neuen Struktur:
+1. **Sauberes Root-Verzeichnis** - Nur essenzielle Dateien
+2. **Organisierte Dokumentation** - Alles in `docs/`
+3. **Zentrale Scripts** - Alle Scripts in `scripts/`
+4. **Docker-Organisation** - Alle Docker-Files zusammen
+5. **Bessere Übersichtlichkeit** - Logische Gruppierung
 
-- **TypeScript Migration** (30.05.2025 - in Arbeit)
-  - Backend-Quellcode von `.js` zu `.ts` konvertiert
-  - Scripts-Ordner bleibt vorläufig bei `.js`
-  - Typdefinitionen werden schrittweise hinzugefügt
+### 🚧 Migration-Status:
+- ✅ Dokumentation nach `docs/` verschoben
+- ✅ Scripts nach `scripts/` verschoben
+- ✅ Docker-Files nach `docker/` verschoben
+- ✅ Root-Verzeichnis aufgeräumt
 
-### 🚧 Ausstehende Bereinigungen:
-
-- Upload-Verzeichnisse konsolidieren (duplicate folders)
-- Frontend-Komponenten modularisieren
-- Test-Coverage erweitern
-- TypeScript Konfiguration vervollständigen
-
-## 📋 Wichtige Hinweise
-
-1. **Git-ignorierte Verzeichnisse:**
-
-   - `node_modules/` - NPM Pakete
-   - `uploads/` - User-generierte Inhalte
-   - `logs/` - Anwendungslogs
-   - `dist/` - Build-Outputs
-   - `.env` - Umgebungsvariablen
-
-2. **Naming Conventions:**
-
-   - Backend-Dateien: `kebab-case.ts`
-   - Frontend-Dateien: `kebab-case.js`
-   - Komponenten: `PascalCase.js`
-   - CSS: `kebab-case.css`
-   - Routen: `plural-nouns.ts`
-
-3. **Verzeichniszwecke:**
-   - `controllers/` - Request/Response Handling
-   - `services/` - Business Logic
-   - `models/` - Datenstrukturen
-   - `middleware/` - Request Processing
-   - `utils/` - Wiederverwendbare Funktionen
+### 📌 Nächste Schritte:
+1. Git-Repository mit neuer Struktur committen
+2. CI/CD Pipelines anpassen
+3. Deployment-Scripts aktualisieren
+4. Team über neue Struktur informieren
 
 ---
 
-**Zuletzt bereinigt:** 01.06.2025 - Hinzufügung von Docker Setup und Backup-System Struktur
+*Diese Datei wird bei Strukturänderungen aktualisiert.*
