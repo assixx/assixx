@@ -9,7 +9,9 @@
 ### WOCHE 1: Kritische Bugs & Security (5-7 Tage)
 
 #### Tag 1-2: Security & Stabilität
+
 1. **🔴 KRITISCH: Multi-Tenant Isolation fixen**
+
    - [ ] `/api/admin/documents` - Tenant-Filter hinzufügen
    - [ ] Alle API-Endpoints auf tenant_id Filter prüfen
    - [ ] Security-Audit aller Endpoints
@@ -24,7 +26,9 @@
    - **Geschätzt:** 4-6 Stunden
 
 #### Tag 3-4: Core APIs implementieren
+
 3. **🔴 Mitarbeiter-Erstellung API**
+
    - [ ] POST `/api/admin/employees` Route implementieren
    - [ ] Validierung & Error Handling
    - [ ] Integration mit Auth-System
@@ -38,6 +42,7 @@
    - **Geschätzt:** 8-10 Stunden
 
 #### Tag 5-7: Frontend-Fixes
+
 5. **🟡 JavaScript-Fehler beheben**
    - [ ] `showSection` Funktion implementieren/importieren
    - [ ] `openEntryForm` für Schwarzes Brett
@@ -48,6 +53,7 @@
 ### WOCHE 2: Features & Mobile (5-7 Tage)
 
 #### Tag 8-10: Feature-System
+
 6. **🟡 Feature-Management vervollständigen**
    - [ ] Alle Features in DB registrieren
    - [ ] Feature-Aktivierung für neue Tenants
@@ -56,6 +62,7 @@
    - **Geschätzt:** 6-8 Stunden
 
 #### Tag 11-14: Mobile Optimierung
+
 7. **📱 Mobile-First Implementation**
    - [ ] Responsive Grid-System
    - [ ] Hamburger-Menü für Mobile
@@ -72,6 +79,7 @@
 ### WOCHE 3: Testing & Polish (3-5 Tage)
 
 #### Tag 15-16: Integration Testing
+
 8. **🧪 Vollständige Tests nach Fixes**
    - [ ] Alle 29 Bugs erneut testen
    - [ ] Chat mit mehreren Usern
@@ -82,7 +90,9 @@
    - **Geschätzt:** 8 Stunden
 
 #### Tag 17-18: Performance & UX
+
 9. **⚡ Performance-Optimierung**
+
    - [ ] Chat-Polling auf 30 Sekunden
    - [ ] Frontend-Bundle-Size reduzieren
    - [ ] Lazy Loading für Routen
@@ -99,17 +109,20 @@
 ## 📊 Priorisierung nach Impact
 
 ### Must-Have für Beta (Woche 1)
+
 - ✅ Multi-Tenant Security
 - ✅ Mitarbeiter erstellen können
 - ✅ Stabile Build-Pipeline
 - ✅ Core Features funktionsfähig
 
 ### Should-Have für Beta (Woche 2)
+
 - ✅ Mobile-Ansicht (Basis)
 - ✅ Feature-Management
 - ✅ Alle APIs funktionsfähig
 
 ### Nice-to-Have (Nach Beta)
+
 - Design-Perfektion
 - Erweiterte Mobile Features
 - Performance-Feintuning
@@ -117,6 +130,7 @@
 ## 🛠️ Technische Details
 
 ### 1. Multi-Tenant Fix (backend/src/services/document.service.ts)
+
 ```typescript
 // Beispiel für tenant_id Filter
 const documents = await db.query(
@@ -125,7 +139,8 @@ const documents = await db.query(
 );
 ```
 
-### 2. Build-Fix (frontend/src/pages/*.html)
+### 2. Build-Fix (frontend/src/pages/\*.html)
+
 ```html
 <!-- Alt (falsch): -->
 <script type="module" src="/scripts/admin-dashboard.ts"></script>
@@ -135,12 +150,19 @@ const documents = await db.query(
 ```
 
 ### 3. Mobile CSS (frontend/src/styles/base/responsive.css)
+
 ```css
 /* Mobile-First Approach */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.active { transform: translateX(0); }
-  .main-content { margin-left: 0; }
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0;
+  }
 }
 ```
 
@@ -155,6 +177,7 @@ const documents = await db.query(
 ## 🚦 Go/No-Go Entscheidung
 
 **Beta-Start wenn:**
+
 - [ ] Alle kritischen Bugs behoben
 - [ ] Mitarbeiter-Verwaltung funktioniert
 - [ ] Mobile-Ansicht nutzbar

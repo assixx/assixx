@@ -118,9 +118,14 @@ class AuthController {
         role: result.user!.role,
         user: result.user,
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Login error:', error);
-      res.status(500).json({ message: 'Server error during login' });
+      console.error('[DEBUG] Login error details:', error.message, error.stack);
+      res.status(500).json({
+        message: 'Server error during login',
+        error:
+          process.env.NODE_ENV === 'development' ? error.message : undefined,
+      });
     }
   }
 

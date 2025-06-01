@@ -33,9 +33,8 @@ export interface AuthenticatedRequest extends Request {
 
 // Use Express.Multer.File from express.d.ts
 // Using global Express namespace
-export interface FileUploadRequest extends AuthenticatedRequest {
-  // file and files are already defined in Express.Request
-}
+// FileUploadRequest is removed - use AuthenticatedRequest directly
+// since file and files are already defined in Express.Request
 
 // Paginated request
 export interface PaginatedRequest extends AuthenticatedRequest {

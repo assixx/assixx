@@ -9,6 +9,7 @@ import { getAuthToken, removeAuthToken } from './auth';
 
 interface AdminUser extends User {
   company?: string;
+  position?: string;
   notes?: string;
 }
 
@@ -25,8 +26,11 @@ interface DashboardData {
 interface CreateAdminFormElements extends HTMLFormControlsCollection {
   username: HTMLInputElement;
   email: HTMLInputElement;
+  email_confirm: HTMLInputElement;
   password: HTMLInputElement;
-  company?: HTMLInputElement;
+  password_confirm: HTMLInputElement;
+  position: HTMLInputElement;
+  notes?: HTMLTextAreaElement;
 }
 
 interface CreateAdminForm extends HTMLFormElement {
@@ -49,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Elemente aus dem DOM holen
   const createAdminForm = document.getElementById('create-admin-form') as CreateAdminForm;
-  const adminTableBody = document.getElementById('admin-table-body') as HTMLTableSectionElement;
   const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
   const dashboardContent = document.getElementById('dashboard-data') as HTMLElement;
 
@@ -77,8 +80,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!createAdminForm) return;
 
-    const formData = new FormData(createAdminForm);
-    const adminData = Object.fromEntries(formData.entries());
+    const elements = createAdminForm.elements;
+    
+    // Validate email match
+    if (elements.email.value !== elements.email_confirm.value) {
+      // eslint-disable-next-line no-alert
+      alert('Die E-Mail-Adressen stimmen nicht überein!');
+      elements.email_confirm.focus();
+      return;
+    }
+    
+    // Validate password match
+    if (elements.password.value !== elements.password_confirm.value) {
+      // eslint-disable-next-line no-alert
+      alert('Die Passwörter stimmen nicht überein!');
+      elements.password_confirm.focus();
+      return;
+    }
+
+    const adminData = {
+      username: elements.username.value,
+      email: elements.email.value,
+      password: elements.password.value,
+      position: elements.position.value,
+      notes: elements.notes?.value || ''
+    };
 
     try {
       const response = await fetch('/root/create-admin', {
@@ -124,28 +150,28 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         const data: DashboardData = await response.json();
         console.info('Dashboard data:', data);
-        dashboardContent.innerHTML = `
-    <div class="dashboard-stats">
-        <div class="stat-box">
-            <h3>Nutzerinformationen</h3>
-            <p><strong>Benutzername:</strong> ${data.user.username}</p>
-            <p><strong>Rolle:</strong> ${data.user.role}</p>
-            <p><strong>Benutzer-ID:</strong> ${data.user.id}</p>
-        </div>
-        <div class="stat-box">
-            <h3>Sitzungsinformationen</h3>
-            <p><strong>Angemeldet seit:</strong> ${new Date(data.user.iat * 1000).toLocaleString()}</p>
-            <p><strong>Sitzung gültig bis:</strong> ${new Date(data.user.exp * 1000).toLocaleString()}</p>
-            <p><strong>Verbleibende Zeit:</strong> ${Math.floor((data.user.exp - Date.now() / 1000) / 60)} Minuten</p>
-        </div>
-    </div>
-`;
+        dashboardContent.innerHTML = ``;
       } else {
         console.error('Error loading dashboard:', response.status);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
+  }
+
+  // Helper function to display position names
+  function getPositionDisplay(position: string): string {
+    const positionMap: Record<string, string> = {
+      bereichsleiter: 'Bereichsleiter',
+      personalleiter: 'Personalleiter',
+      geschaeftsfuehrer: 'Geschäftsführer',
+      werksleiter: 'Werksleiter',
+      produktionsleiter: 'Produktionsleiter',
+      qualitaetsleiter: 'Qualitätsleiter',
+      'it-leiter': 'IT-Leiter',
+      vertriebsleiter: 'Vertriebsleiter'
+    };
+    return positionMap[position] || position;
   }
 
   // Dashboard-Statistiken laden
@@ -206,97 +232,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Admin-Liste anzeigen
+  // Admin-Liste anzeigen (kept for loadAdmins count functionality)
   function displayAdmins(admins: AdminUser[]): void {
-    if (!adminTableBody) return;
-
-    adminTableBody.innerHTML = '';
-    admins.forEach((admin) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-            <td>${admin.username}</td>
-            <td>${admin.email}</td>
-            <td>${admin.company || '-'}</td>
-            <td>
-                <button 
-                    class="config-btn btn btn-success btn-sm" 
-                    data-id="${admin.id}" 
-                    data-username="${admin.username}">
-                    Konfigurieren
-                </button>
-                <button 
-                    class="delete-btn btn btn-danger btn-sm" 
-                    data-id="${admin.id}" 
-                    data-username="${admin.username}">
-                    Löschen
-                </button>
-            </td>
-        `;
-      adminTableBody.appendChild(row);
-    });
-
-    // Event-Listener für Lösch-Buttons hinzufügen
-    document.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach((button) => {
-      button.addEventListener('click', deleteAdmin);
-    });
-
-    // Event-Listener für Konfigurations-Buttons hinzufügen
-    document.querySelectorAll<HTMLButtonElement>('.config-btn').forEach((button) => {
-      button.addEventListener('click', configureAdmin);
-    });
+    // Function kept empty as we removed the admin table
+    // But keeping it to not break loadAdmins() which updates the count
   }
 
-  // Funktion zum Navigieren zur Admin-Konfigurationsseite
-  function configureAdmin(e: Event): void {
-    const button = e.target as HTMLButtonElement;
-    const adminId = button.getAttribute('data-id');
-    const adminUsername = button.getAttribute('data-username');
-
-    if (!adminId || !adminUsername) return;
-
-    // Zur Konfigurationsseite navigieren und die Admin-ID übergeben
-    window.location.href = `/admin-config?id=${adminId}&username=${encodeURIComponent(adminUsername)}`;
-  }
-
-  async function deleteAdmin(e: Event): Promise<void> {
-    const button = e.target as HTMLButtonElement;
-    const adminId = button.getAttribute('data-id');
-    const adminUsername = button.getAttribute('data-username');
-
-    if (!adminId || !adminUsername) return;
-
-    // eslint-disable-next-line no-alert
-    if (!confirm(`Sind Sie sicher, dass Sie den Admin "${adminUsername}" löschen möchten?`)) {
-      return;
-    }
-
-    const currentToken = getAuthToken();
-    if (!currentToken) return;
-
-    try {
-      const response = await fetch(`/root/delete-admin/${adminId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${currentToken}`,
-        },
-      });
-
-      if (response.ok) {
-        // eslint-disable-next-line no-alert
-        alert(`Admin "${adminUsername}" wurde erfolgreich gelöscht.`);
-        // Admin-Liste neu laden
-        loadAdmins();
-      } else {
-        const error = await response.json();
-        // eslint-disable-next-line no-alert
-        alert(`Fehler: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('Fehler beim Löschen des Admins:', error);
-      // eslint-disable-next-line no-alert
-      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-    }
-  }
 
   // Ausloggen
   function logout(): void {

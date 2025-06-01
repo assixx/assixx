@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS tenant_admins (
     id INT PRIMARY KEY AUTO_INCREMENT,
     tenant_id INT NOT NULL,
     user_id INT NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     assigned_by INT,
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,

@@ -83,7 +83,7 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     }
 
     // Remove sensitive information
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
 
     res.json({
       ...userWithoutPassword,
@@ -126,7 +126,7 @@ router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
         res.status(404).json({ message: 'User not found after update' });
         return;
       }
-      const { password, ...userWithoutPassword } = updatedUser;
+      const { password: _password, ...userWithoutPassword } = updatedUser;
 
       res.json({
         message: 'Profile updated successfully',

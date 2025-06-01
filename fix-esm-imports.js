@@ -4,15 +4,15 @@ import { join } from 'path';
 
 async function fixImports(dir) {
   const files = await readdir(dir, { withFileTypes: true });
-  
+
   for (const file of files) {
     const path = join(dir, file.name);
-    
+
     if (file.isDirectory()) {
       await fixImports(path);
     } else if (file.name.endsWith('.js')) {
       let content = await readFile(path, 'utf8');
-      
+
       // Fix relative imports without .js extension
       content = content.replace(
         /from ['"](\.[^'"]+)(?<!\.js)(?<!\.json)['"]/g,
@@ -28,7 +28,7 @@ async function fixImports(dir) {
           return `from '${importPath}.js'`;
         }
       );
-      
+
       await writeFile(path, content);
     }
   }

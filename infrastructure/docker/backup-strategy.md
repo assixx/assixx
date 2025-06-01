@@ -3,11 +3,13 @@
 ## 📊 Was wird gesichert?
 
 1. **MySQL Datenbank** (Kritisch)
+
    - Alle Tenant-Daten
    - Benutzerkonten
    - Systemkonfiguration
 
 2. **Upload-Verzeichnis** (Wichtig)
+
    - Dokumente
    - Profilbilder
    - Chat-Anhänge
@@ -200,12 +202,14 @@ fi
 ## 🔒 Sicherheit
 
 1. **Verschlüsselung**
+
    ```bash
    # Backup verschlüsseln
    gpg --encrypt --recipient admin@example.com backup.tar.gz
    ```
 
 2. **Berechtigungen**
+
    ```bash
    chmod 600 /backup/assixx/*
    chown root:root /backup/assixx/*

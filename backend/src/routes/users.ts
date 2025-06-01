@@ -86,7 +86,7 @@ router.get(
       }
 
       // Remove password from response
-      const { password, ...userProfile } = user;
+      const { password: _password, ...userProfile } = user;
 
       logger.info(`User ${authReq.user.id} retrieved their profile`);
       res.json(userProfile);

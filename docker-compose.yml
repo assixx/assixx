@@ -6,33 +6,33 @@ services:
     image: mysql:8.0
     container_name: assixx-mysql
     restart: unless-stopped
+    command: --sql-mode=""
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-assixx}
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
     ports:
-      - "3307:3306"
+      - '3307:3306'
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database-setup.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./backend/database:/docker-entrypoint-initdb.d/02-migrations:ro
+      - ./database/docker-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
       timeout: 10s
       retries: 5
 
-  # Assixx Backend
+  # Assixx Backend (Development Mode with Live Reload)
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: assixx-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
+      NODE_ENV: ${NODE_ENV:-development}
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: ${MYSQL_USER:-assixx_user}
@@ -47,20 +47,35 @@ services:
       SMTP_FROM: ${SMTP_FROM}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - ./uploads:/app/uploads
       - ./backend/logs:/app/backend/logs
+      # Live-Reload Volumes für Entwicklung
+      - ./backend:/app/backend:delegated
+      - ./frontend:/app/frontend:delegated
+      - ./package.json:/app/package.json:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - ./.env:/app/.env:ro
+      - /app/node_modules
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
+    # Development command mit nodemon
+    command: ['npm', 'run', 'dev']
 
   # Optional: Redis für Sessions/Cache
   redis:
@@ -73,7 +88,7 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5

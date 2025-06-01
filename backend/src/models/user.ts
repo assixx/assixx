@@ -3,11 +3,14 @@ import * as bcrypt from 'bcrypt';
 import { logger } from '../utils/logger';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
+console.log('[DEBUG] UserModel loading, pool type:', typeof pool);
+
 // Helper function to handle both real pool and mock database
 async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
   params?: any[]
 ): Promise<[T, any]> {
+  console.log('[DEBUG] executeQuery called, pool exists:', !!pool);
   // Use any to bypass TypeScript union type issues
   const result = await (pool as any).query(sql, params);
   // MySQL2 returns [rows, fields] or result could be T directly from mock
@@ -43,7 +46,9 @@ interface DbUser extends RowDataPacket {
   profile_picture?: string;
   status: string;
   is_archived: boolean;
+  is_active?: boolean;
   tenant_id?: number;
+  last_login?: Date;
   created_at?: Date;
   updated_at?: Date;
   // Additional fields from joins
@@ -73,6 +78,7 @@ interface UserCreateData {
   profile_picture?: string;
   status?: string;
   is_archived?: boolean;
+  is_active?: boolean;
   tenant_id?: number;
 }
 
@@ -132,6 +138,7 @@ export class User {
       profile_picture,
       status = 'active',
       is_archived = false,
+      is_active = true,
     } = userData;
 
     // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
@@ -145,9 +152,9 @@ export class User {
         first_name, last_name, age, employee_id, iban,
         department_id, position, phone, address, birthday,
         hire_date, emergency_contact, profile_picture,
-        status, is_archived, tenant_id
+        status, is_archived, is_active, tenant_id
       ) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     try {
@@ -173,6 +180,7 @@ export class User {
         profile_picture,
         status,
         is_archived,
+        is_active,
         userData.tenant_id,
       ]);
 
@@ -185,13 +193,17 @@ export class User {
   }
 
   static async findByUsername(username: string): Promise<DbUser | undefined> {
+    console.log('[DEBUG] findByUsername called for:', username);
     try {
+      console.log('[DEBUG] About to execute query with pool:', typeof pool);
       const [rows] = await executeQuery<DbUser[]>(
         'SELECT * FROM users WHERE username = ?',
         [username]
       );
+      console.log('[DEBUG] Query completed, rows found:', rows.length);
       return rows[0];
     } catch (error) {
+      console.error('[DEBUG] findByUsername error:', error);
       logger.error(
         `Error finding user by username: ${(error as Error).message}`
       );
@@ -212,6 +224,18 @@ export class User {
         [id]
       );
 
+      if (rows[0]) {
+        // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+        rows[0].is_active =
+          (rows[0].is_active as any) === 1 ||
+          (rows[0].is_active as any) === '1' ||
+          rows[0].is_active === true;
+        rows[0].is_archived =
+          (rows[0].is_archived as any) === 1 ||
+          (rows[0].is_archived as any) === '1' ||
+          rows[0].is_archived === true;
+      }
+
       return rows[0];
     } catch (error) {
       logger.error(`Error finding user by ID: ${(error as Error).message}`);
@@ -229,6 +253,7 @@ export class User {
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.created_at, u.department_id, 
         u.position, u.phone, u.profile_picture, u.status, u.is_archived,
+        u.is_active, u.last_login,
         d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
@@ -244,7 +269,21 @@ export class User {
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, params);
-      return rows;
+
+      // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+      const normalizedRows = rows.map((row) => ({
+        ...row,
+        is_active:
+          (row.is_active as any) === 1 ||
+          (row.is_active as any) === '1' ||
+          row.is_active === true,
+        is_archived:
+          (row.is_archived as any) === 1 ||
+          (row.is_archived as any) === '1' ||
+          row.is_archived === true,
+      }));
+
+      return normalizedRows;
     } catch (error) {
       logger.error(`Error finding users by role: ${(error as Error).message}`);
       throw error;
@@ -291,8 +330,20 @@ export class User {
       // Für jedes übergebene Feld Query vorbereiten
       Object.entries(userData).forEach(([key, value]) => {
         if (value !== undefined) {
-          fields.push(`${key} = ?`);
-          values.push(value);
+          // Special handling for boolean fields
+          if (key === 'is_active') {
+            logger.info(
+              `Special handling for is_active field - received value: ${value}, type: ${typeof value}`
+            );
+            fields.push(`${key} = ?`);
+            // Ensure boolean is converted properly for MySQL
+            values.push(value === true ? 1 : 0);
+            logger.info(`is_active will be set to: ${value === true ? 1 : 0}`);
+          } else {
+            fields.push(`${key} = ?`);
+            values.push(value);
+            logger.info(`Updating field ${key} to value: ${value}`);
+          }
         }
       });
 
@@ -305,6 +356,9 @@ export class User {
       values.push(id);
 
       const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+
+      logger.info(`Executing update query: ${query}`);
+      logger.info(`With values: ${JSON.stringify(values)}`);
 
       const [result] = await executeQuery<ResultSetHeader>(query, values);
       return result.affectedRows > 0;
@@ -323,6 +377,7 @@ export class User {
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.employee_id, u.created_at,
         u.department_id, u.position, u.phone, u.status, u.is_archived,
+        u.is_active, u.last_login,
         d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
@@ -402,7 +457,21 @@ export class User {
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, values);
-      return rows;
+
+      // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+      const normalizedRows = rows.map((row) => ({
+        ...row,
+        is_active:
+          (row.is_active as any) === 1 ||
+          (row.is_active as any) === '1' ||
+          row.is_active === true,
+        is_archived:
+          (row.is_archived as any) === 1 ||
+          (row.is_archived as any) === '1' ||
+          row.is_archived === true,
+      }));
+
+      return normalizedRows;
     } catch (error) {
       logger.error(`Error searching users: ${(error as Error).message}`);
       throw error;

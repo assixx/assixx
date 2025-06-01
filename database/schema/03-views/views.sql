@@ -23,11 +23,11 @@ SELECT
     COUNT(DISTINCT doc.id) AS document_count,
     COUNT(DISTINCT msg.id) AS message_count
 FROM users u
-LEFT JOIN departments d ON u.department_id = d.id
-LEFT JOIN user_teams ut ON u.id = ut.user_id
-LEFT JOIN teams t ON ut.team_id = t.id
-LEFT JOIN documents doc ON u.id = doc.user_id
-LEFT JOIN messages msg ON u.id = msg.sender_id
+LEFT JOIN departments d ON u.department_id = d.id AND d.tenant_id = u.tenant_id
+LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
+LEFT JOIN documents doc ON u.id = doc.user_id AND doc.tenant_id = u.tenant_id
+LEFT JOIN messages msg ON u.id = msg.sender_id AND msg.tenant_id = u.tenant_id
 WHERE u.role = 'employee'
 GROUP BY u.id;
 
@@ -35,10 +35,10 @@ GROUP BY u.id;
 CREATE OR REPLACE VIEW tenant_statistics AS
 SELECT 
     t.id AS tenant_id,
-    t.name AS tenant_name,
+    t.company_name AS tenant_name,
     t.subdomain,
     t.status,
-    t.plan_type,
+    t.current_plan AS plan_type,
     COUNT(DISTINCT u.id) AS total_users,
     COUNT(DISTINCT CASE WHEN u.role = 'admin' THEN u.id END) AS admin_count,
     COUNT(DISTINCT CASE WHEN u.role = 'employee' THEN u.id END) AS employee_count,
@@ -46,7 +46,7 @@ SELECT
     COUNT(DISTINCT tm.id) AS team_count,
     COUNT(DISTINCT tf.id) AS active_features,
     t.created_at,
-    t.subscription_end_date
+    t.trial_ends_at AS subscription_end_date
 FROM tenants t
 LEFT JOIN users u ON t.id = u.tenant_id AND u.status = 'active'
 LEFT JOIN departments d ON t.id = d.tenant_id

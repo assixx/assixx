@@ -92,18 +92,26 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
     }
 
     const departments = await response.json();
-    const departmentSelect = document.getElementById('employee-department-select') as HTMLSelectElement;
+    const dropdownOptions = document.getElementById('employee-department-dropdown');
 
-    if (!departmentSelect) return;
+    if (!dropdownOptions) return;
 
-    // Clear existing options except the first (placeholder)
-    departmentSelect.innerHTML = '<option value="">Abteilung wählen</option>';
+    // Clear existing options and add placeholder
+    dropdownOptions.innerHTML = `
+      <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
+        Keine Abteilung
+      </div>
+    `;
 
     departments.forEach((dept: Department) => {
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
-      option.textContent = dept.name;
-      departmentSelect.appendChild(option);
+      const optionDiv = document.createElement('div');
+      optionDiv.className = 'dropdown-option';
+      optionDiv.setAttribute('data-value', dept.id.toString());
+      optionDiv.textContent = dept.name;
+      optionDiv.onclick = () => {
+        (window as any).selectDropdownOption('employee-department', dept.id.toString(), dept.name);
+      };
+      dropdownOptions.appendChild(optionDiv);
     });
   } catch (error) {
     console.error('Error loading departments for select:', error);

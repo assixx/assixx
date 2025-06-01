@@ -1,6 +1,7 @@
 # 📖 Assixx Project Instructions for Claude AI
 
 ## ⛔ KRITISCH: PFLICHT-REIHENFOLGE BEACHTEN!
+
 > **WARNUNG:** Die folgenden 5 Schritte MÜSSEN in EXAKTER Reihenfolge ausgeführt werden!
 > **Bei Missachtung:** Entwicklungsumgebung kann instabil sein, TypeScript-Fehler, API-Probleme!
 
@@ -11,7 +12,7 @@
 **DIESE SCHRITTE MÜSSEN IN EXAKTER REIHENFOLGE AUSGEFÜHRT WERDEN:**
 
 - [ ] ✅ TODO.md gelesen
-- [ ] ✅ CLAUDE.md gelesen  
+- [ ] ✅ CLAUDE.md gelesen
 - [ ] ✅ PROJEKTSTRUKTUR.md gelesen
 - [ ] ⚠️ **BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
 - [ ] ✅ Erst DANN: Weitere Dokumente
@@ -69,8 +70,9 @@ cat /home/scs/projects/Assixx/BEFORE-STARTING-DEV.md
 ```
 
 **⛔ STOP! Ohne diese Checks:**
+
 - TypeScript Builds können fehlschlagen
-- APIs könnten nicht erreichbar sein  
+- APIs könnten nicht erreichbar sein
 - Sicherheitslücken bleiben unentdeckt
 - Entwicklung auf fehlerhafter Basis!
 
@@ -162,8 +164,9 @@ function validateSubdomain(value) {
 #### Wenn Simon sagt "weiter machen mit Assixx Projekt":
 
 0. **🤖 AUTOMATISCH:** TodoWrite mit Pflicht-Checkliste erstellen!
+
    - TODO.md lesen
-   - CLAUDE.md lesen  
+   - CLAUDE.md lesen
    - PROJEKTSTRUKTUR.md lesen
    - BEFORE-STARTING-DEV.md AUSFÜHREN (alle Checks!)
    - Erst nach allen Checks: Mit Entwicklung beginnen
@@ -230,7 +233,7 @@ function validateSubdomain(value) {
 
 1. **🐳 Docker Setup** (1-2 Tage) - Für einfaches Beta-Deployment
 2. **🌴 Urlaubsantrag-System** (Woche 1) - DEAL-BREAKER Feature
-3. **💰 Gehaltsabrechnung Upload** (Woche 1-2) - DEAL-BREAKER Feature  
+3. **💰 Gehaltsabrechnung Upload** (Woche 1-2) - DEAL-BREAKER Feature
 4. **🔧 TPM-System** (Woche 2-3) - DEAL-BREAKER Feature
 5. **📱 Mobile/PWA** (Parallel) - Kritisch für Industriearbeiter
 

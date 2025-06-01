@@ -165,9 +165,11 @@ export class NotificationService {
     if (notification.actions && notification.actions.length > 0) {
       actionsHtml = `
         <div class="notification-actions" style="margin-top: 12px;">
-          ${/* eslint-disable indent, prettier/prettier */
+          ${
+            /* eslint-disable indent, prettier/prettier */
             notification.actions
-              .map((action) => `
+              .map(
+                (action) => `
             <button 
               class="notification-action-btn" 
               data-action="${action.label}"
@@ -183,9 +185,11 @@ export class NotificationService {
             >
               ${action.label}
             </button>
-          `)
+          `,
+              )
               .join('')
-          /* eslint-enable indent, prettier/prettier */}
+            /* eslint-enable indent, prettier/prettier */
+          }
         </div>
       `;
     }

@@ -8,12 +8,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- Back to Homepage Button -->
+    <a href="/" class="back-button">
+      <span class="icon">←</span>
+      <span>Zurück zur Hauptseite</span>
+    </a>
+    
     <!-- Fragezeichen oben rechts - Glassmorphismus -->
     <div class="help-button" onclick="showHelp()">?</div>
     <div class="login-container">
       <!-- Logo Section -->
       <div class="login-header">
-        <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo" />
+        <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo" onclick="window.location.reload()" style="cursor: pointer;" />
       </div>
 
       <!-- Login Form -->
@@ -80,7 +86,7 @@
         const password = document.getElementById('password').value;
 
         try {
-          const response = await fetch('http://localhost:3000/login', {
+          const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -88,11 +94,20 @@
             body: JSON.stringify({ username, password }),
           });
 
+          // Handle rate limiting error
+          if (response.status === 429) {
+            showError('Zu viele Anmeldeversuche!\n\nBitte warten Sie einige Minuten und versuchen Sie es erneut.');
+            return;
+          }
+
           const data = await response.json();
 
           if (response.ok) {
             // Store token for JavaScript API calls
             localStorage.setItem('token', data.token);
+            
+            // Store role separately for easy access
+            localStorage.setItem('userRole', data.role);
 
             // Also store user info
             if (data.user) {
@@ -114,14 +129,8 @@
                 alert('Unknown role');
             }
           } else {
-            // Bessere Fehlermeldungen
-            if (response.status === 404 || response.status === 401) {
-              showError('Benutzer nicht gefunden oder falsches Passwort.\n\nFalls Sie noch keinen Account haben, registrieren Sie sich bitte unter "Zugangsdaten beantragen".');
-            } else if (response.status === 500) {
-              showError('Serverfehler!\n\nMögliche Ursache: Keine Datenbank-Verbindung oder keine Benutzer vorhanden.\n\nBitte registrieren Sie sich zuerst über /pages/signup.html');
-            } else {
-              showError(data.message || 'Login fehlgeschlagen');
-            }
+            // Show specific error message from backend
+            showError(data.message || 'Login fehlgeschlagen');
           }
         } catch (error) {
           console.error('Login error:', error);
@@ -144,6 +153,55 @@
 
     <style>
       @import url('/styles/dashboard-theme.css');
+      
+      /* Back Button - Glassmorphismus Style */
+      .back-button {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow:
+          0 4px 16px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--text-primary);
+        transform: translateX(-5px);
+        box-shadow:
+          0 6px 24px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      
+      .back-button:active {
+        transform: translateX(-3px) scale(0.98);
+      }
+      
+      .back-button .icon {
+        font-size: 18px;
+        transition: transform 0.3s ease;
+      }
+      
+      .back-button:hover .icon {
+        transform: translateX(-3px);
+      }
+      
       /* Login page specific styles */
       body {
         background: #000000;

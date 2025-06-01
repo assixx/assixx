@@ -36,12 +36,14 @@ database/
 ## 🔧 Verwendung
 
 ### Entwicklung (Modular)
+
 ```bash
 # Einzelnes Modul testen
 mysql -u root -p assixx < database/schema/02-modules/surveys.sql
 ```
 
 ### Deployment (Komplett)
+
 ```bash
 # Schema builden
 cd database/build && node build-schema.js
@@ -74,7 +76,7 @@ Dies erstellt `complete-schema.sql` mit dem aktuellen Stand aller Tabellen.
 
 ### Build-Output
 
-- **Datei**: `database/complete-schema.sql` 
+- **Datei**: `database/complete-schema.sql`
 - **Inhalt**: Alle Tabellen, Views und Daten in korrekter Reihenfolge
 - **Größe**: ~69 KB, ~2000 Zeilen
 - **Verwendung**: Für neue Installationen oder komplette Reinitialisierungen

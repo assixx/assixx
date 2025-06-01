@@ -881,10 +881,21 @@
           </div>
           <div class="form-group">
             <label class="form-label">Abteilung</label>
-            <select name="department_id" class="form-control" id="employee-department-select">
-              <option value="">Keine Abteilung</option>
-              <!-- Wird dynamisch gefüllt -->
-            </select>
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="employee-department-display" onclick="toggleDropdown('employee-department')">
+                <span>Keine Abteilung</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="dropdown-options" id="employee-department-dropdown" style="display: none">
+                <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
+                  Keine Abteilung
+                </div>
+                <!-- Wird dynamisch gefüllt -->
+              </div>
+              <input type="hidden" name="department_id" id="employee-department-select" />
+            </div>
           </div>
           <div class="button-group">
             <button type="submit" class="btn btn-primary">Mitarbeiter erstellen</button>
@@ -996,6 +1007,77 @@
 
       .modal form {
         padding: var(--spacing-lg);
+      }
+    </style>
+    
+    <!-- Custom Dropdown Styles -->
+    <style>
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.98);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1001;
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
       }
     </style>
 
@@ -1159,6 +1241,44 @@
           console.error('Manage departments link NOT found');
         }
       });
+    </script>
+    <script>
+      // Custom Dropdown Funktionen
+      function toggleDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId + '-dropdown');
+        const display = document.getElementById(dropdownId + '-display');
+        
+        if (dropdown && display) {
+          dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+          display.classList.toggle('active');
+          
+          // Optional: Close when clicking outside
+          if (dropdown.style.display === 'block') {
+            setTimeout(() => {
+              document.addEventListener('click', function closeDropdown(e) {
+                if (!e.target.closest('.custom-dropdown')) {
+                  dropdown.style.display = 'none';
+                  display.classList.remove('active');
+                  document.removeEventListener('click', closeDropdown);
+                }
+              });
+            }, 100);
+          }
+        }
+      }
+      
+      function selectDropdownOption(dropdownId, value, text) {
+        const hiddenInput = document.getElementById(dropdownId + '-select');
+        const display = document.getElementById(dropdownId + '-display');
+        const dropdown = document.getElementById(dropdownId + '-dropdown');
+        
+        if (hiddenInput && display && dropdown) {
+          hiddenInput.value = value;
+          display.querySelector('span').textContent = text;
+          dropdown.style.display = 'none';
+          display.classList.remove('active');
+        }
+      }
     </script>
     <script>
       // Funktionstabelle direkt definieren

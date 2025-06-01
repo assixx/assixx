@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  # Override für Entwicklung mit Live-Reload
+  backend:
+    build:
+      context: .
+      target: builder # Nutze nur Build-Stage
+    command: ['npm', 'run', 'dev']
+    volumes:
+      - ./backend:/app/backend
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./.env:/app/.env
+      - /app/node_modules # Prevent overwriting node_modules
+    environment:
+      - NODE_ENV=development

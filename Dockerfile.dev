@@ -1,0 +1,20 @@
+# Development Dockerfile für Live-Reload
+FROM node:20-alpine
+
+# Install tsx globally for TypeScript execution
+RUN npm install -g tsx nodemon
+
+# Arbeitsverzeichnis
+WORKDIR /app
+
+# Package files kopieren und installieren
+COPY package*.json ./
+RUN npm ci
+
+# Der Rest wird über Volumes gemountet
+
+# Port
+EXPOSE 3000
+
+# Development command
+CMD ["npm", "run", "dev"]

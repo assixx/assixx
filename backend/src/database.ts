@@ -278,39 +278,61 @@ if (USE_MOCK_DB) {
   pool = mockDb;
 } else {
   // Echte Datenbankverbindung
-  try {
-    const config: PoolOptions = {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      multipleStatements: false, // Sicherheitsverbesserung
-      charset: 'utf8mb4',
-      typeCast(field: any, next: () => any) {
-        // Spezielle Behandlung für BLOB/BINARY Felder, um sie als Buffer zurückzugeben
-        if (field.type === 'BLOB' || field.type === 'BINARY') {
-          return field.buffer();
-        }
-        // Ensure TEXT fields are returned as strings
-        if (
-          field.type === 'VAR_STRING' ||
-          field.type === 'STRING' ||
-          field.type === 'LONG_STRING' ||
-          field.type === 'TINY' ||
-          field.type === 'SHORT' ||
-          field.type === 'LONG' ||
-          field.type === 'LONGLONG'
-        ) {
-          return field.string();
-        }
-        return next();
-      },
-    };
+  console.log('[DEBUG] Database config:', {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306,
+  });
 
+  // Initialize pool immediately with config
+  const config: PoolOptions = {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'assixx',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    multipleStatements: false, // Sicherheitsverbesserung
+    charset: 'utf8mb4',
+    connectTimeout: 60000, // 60 seconds
+    typeCast(field: any, next: () => any) {
+      // Spezielle Behandlung für BLOB/BINARY Felder, um sie als Buffer zurückzugeben
+      if (field.type === 'BLOB' || field.type === 'BINARY') {
+        return field.buffer();
+      }
+      // Ensure TEXT fields are returned as strings
+      if (
+        field.type === 'VAR_STRING' ||
+        field.type === 'STRING' ||
+        field.type === 'LONG_STRING' ||
+        field.type === 'TINY' ||
+        field.type === 'SHORT' ||
+        field.type === 'LONG' ||
+        field.type === 'LONGLONG'
+      ) {
+        return field.string();
+      }
+      return next();
+    },
+  };
+
+  try {
     pool = mysql.createPool(config);
+    console.log('[DEBUG] Database pool created successfully');
+
+    // Test the connection immediately
+    pool
+      .getConnection()
+      .then((conn) => {
+        console.log('[DEBUG] Database connection test successful');
+        conn.release();
+      })
+      .catch((err) => {
+        console.error('[DEBUG] Database connection test failed:', err.message);
+      });
   } catch (error) {
     console.error('Fehler beim Verbinden mit der Datenbank:', error);
     // Create a dummy pool that throws errors

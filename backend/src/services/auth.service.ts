@@ -28,21 +28,32 @@ class AuthService {
   ): Promise<AuthResult> {
     try {
       // Use existing auth function
-      const user = await authUser(username, password);
+      const result = await authUser(username, password);
 
-      if (!user) {
+      if (!result.user) {
+        // Provide specific error messages based on error type
+        let message = 'Invalid username or password';
+        if (result.error === 'USER_INACTIVE') {
+          message =
+            'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
+        } else if (result.error === 'USER_NOT_FOUND') {
+          message = 'Benutzer nicht gefunden';
+        } else if (result.error === 'INVALID_PASSWORD') {
+          message = 'Falsches Passwort';
+        }
+
         return {
           success: false,
           user: null,
-          message: 'Invalid username or password',
+          message,
         };
       }
 
       // Generate JWT token - pass the whole user object
-      const token = generateToken(user);
+      const token = generateToken(result.user);
 
       // Convert database user to app user format and remove sensitive data
-      const userWithoutPassword = { ...user };
+      const userWithoutPassword = { ...result.user };
       delete (userWithoutPassword as any).password;
 
       return {
@@ -188,7 +199,10 @@ class AuthService {
       role: dbUser.role,
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id,
-      is_active: dbUser.status === 'active',
+      is_active:
+        dbUser.is_active === true ||
+        (dbUser.is_active as any) === 1 ||
+        (dbUser.is_active as any) === '1',
       is_archived: dbUser.is_archived || false,
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone || null,

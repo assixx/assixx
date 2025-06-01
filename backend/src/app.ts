@@ -69,6 +69,42 @@ app.use(
   })
 );
 
+// Development mode: Handle TypeScript files with regex
+app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
+  const filename = req.params[0];
+
+  // Map TypeScript filenames to their compiled counterparts
+  const mappings: { [key: string]: string } = {
+    'unified-navigation': 'unified-navigation-WK4P3xYJ.js',
+    'root-dashboard': 'root-dashboard-Dd5fNxRe.js',
+    'header-user-info': 'header-user-info-DIJZF5-V.js',
+    'admin-dashboard': 'admin-dashboard-Ba8leqBE.js',
+    'admin-config': 'admin-config-GvweoBT9.js',
+    auth: 'auth-PrTXY5uP.js',
+    blackboard: 'blackboard-Da9DEVDT.js',
+    calendar: 'calendar-79pOn4qQ.js',
+    chat: 'chat-BNToM1Lh.js',
+    'dashboard-scripts': 'dashboard-scripts-mfyoCHE-.js',
+    shifts: 'shifts-DSdc87QX.js',
+    'storage-upgrade': 'storage-upgrade-AeatrjF1.js',
+    'components/unified-navigation': 'unified-navigation-WK4P3xYJ.js',
+  };
+
+  const compiledFile = mappings[filename];
+  if (compiledFile) {
+    console.log(`[DEBUG] Redirecting ${req.path} to /js/${compiledFile}`);
+    res.redirect(`/js/${compiledFile}`);
+  } else {
+    console.error(`[DEBUG] No mapping found for ${filename}`);
+    res
+      .status(404)
+      .type('application/javascript')
+      .send(
+        `console.error('TypeScript file ${req.path} not found. Mapping missing for ${filename}');`
+      );
+  }
+});
+
 // Fallback to src directory for assets (images, etc.)
 app.use(
   express.static(srcPath, {
@@ -201,6 +237,12 @@ app.get('/api/status', (_req: Request, res: Response): void => {
   });
 });
 
+// Test POST endpoint
+app.post('/api/test', (req: Request, res: Response): void => {
+  console.log('[DEBUG] /api/test POST received');
+  res.json({ message: 'POST test successful', body: req.body });
+});
+
 // Import auth controller directly for legacy endpoint
 import authController from './controllers/auth.controller';
 
@@ -270,16 +312,18 @@ app.use((req: Request, res: Response): void => {
 });
 
 // Error handler
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
-  console.error('[ERROR]', err.stack || err.message || err);
+app.use(
+  (err: Error, _req: Request, res: Response, _next: NextFunction): void => {
+    console.error('[ERROR]', err.stack || err.message || err);
 
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: isDevelopment ? err.message : 'Something went wrong',
-    ...(isDevelopment && { stack: err.stack })
-  });
-});
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: isDevelopment ? err.message : 'Something went wrong',
+      ...(isDevelopment && { stack: err.stack }),
+    });
+  }
+);
 
 export default app;

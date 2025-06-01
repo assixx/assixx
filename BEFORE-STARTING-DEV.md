@@ -100,6 +100,7 @@ cd ..
 ## 🔴 Bei Fehlern:
 
 ### TypeScript Build Fehler
+
 ```bash
 # Cache löschen und neu builden
 rm -rf node_modules/.cache
@@ -107,6 +108,7 @@ npm run build:ts
 ```
 
 ### MySQL Connection Fehler
+
 ```bash
 # MySQL Service starten
 sudo systemctl start mysql
@@ -115,6 +117,7 @@ sudo service mysql start
 ```
 
 ### Port 3000 bereits belegt
+
 ```bash
 # Prozess auf Port 3000 finden und beenden
 lsof -i :3000
@@ -124,6 +127,7 @@ kill -9 <PID>
 ## 📊 Erwartete Ausgaben
 
 ### ✅ Health Check sollte zeigen:
+
 ```json
 {
   "status": "ok",
@@ -134,6 +138,7 @@ kill -9 <PID>
 ```
 
 ### ✅ API Status sollte zeigen:
+
 ```json
 {
   "status": "ok",

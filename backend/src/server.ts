@@ -34,6 +34,9 @@ server.listen(PORT, (): void => {
 
   // Log environment
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(
+    '🚀 Live-Reload is working! Changed at: ' + new Date().toISOString()
+  );
 
   // Create required directories
   createRequiredDirectories();

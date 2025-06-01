@@ -84,7 +84,7 @@ router.get(
         return;
       }
 
-      const { password, ...userWithoutPassword } = user;
+      const { password: _password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error: any) {
       console.error('Error fetching user profile:', error);
@@ -102,7 +102,7 @@ router.get(
       // const authReq = req as any;
       const employees = await User.findAll({ role: 'employee' });
       res.json(employees);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -125,7 +125,7 @@ router.get(
       };
 
       res.json(response);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -138,7 +138,7 @@ router.get(
     try {
       const documents = await Document.findAll();
       res.json(documents);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -151,7 +151,7 @@ router.get(
     try {
       const departments = await Department.findAll();
       res.json(departments || []);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -165,7 +165,7 @@ router.get(
     try {
       const teams = await Team.findAll();
       res.json(teams || []);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -180,7 +180,7 @@ router.get(
       // const authReq = req as any;
       const employees = await User.findAll();
       res.json(employees);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -313,7 +313,7 @@ router.get(
       const authReq = req as any;
       const documents = await Document.findByUser(authReq.user.id);
       res.json(documents || []);
-    } catch (error: any) {
+    } catch {
       res.status(500).json({ message: 'Server error' });
     }
   }

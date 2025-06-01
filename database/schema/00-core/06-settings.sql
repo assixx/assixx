@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS email_templates (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
-    UNIQUE KEY unique_template (COALESCE(tenant_id, 0), template_key),
+    UNIQUE KEY unique_template (tenant_id, template_key),
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_template_key (template_key),
     INDEX idx_is_active (is_active)

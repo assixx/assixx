@@ -3,7 +3,7 @@ global:
   smtp_from: 'alerts@assixx.com'
   smtp_smarthost: 'smtp.gmail.com:587'
   smtp_auth_username: 'alerts@assixx.com'
-  smtp_auth_password: 'YOUR_APP_PASSWORD'  # Aus Environment Variable
+  smtp_auth_password: 'YOUR_APP_PASSWORD' # Aus Environment Variable
   smtp_auth_identity: 'alerts@assixx.com'
 
 # Templates für Benachrichtigungen
@@ -14,13 +14,13 @@ templates:
 route:
   # Gruppierung
   group_by: ['alertname', 'cluster', 'service']
-  group_wait: 10s      # Warte 10s für weitere Alerts
-  group_interval: 10s  # Sende Updates alle 10s
+  group_wait: 10s # Warte 10s für weitere Alerts
+  group_interval: 10s # Sende Updates alle 10s
   repeat_interval: 12h # Wiederhole Alert nach 12h
-  
+
   # Standard-Empfänger
   receiver: 'default-receiver'
-  
+
   # Spezielle Routen
   routes:
     # Kritische Alerts sofort
@@ -29,12 +29,12 @@ route:
       receiver: 'critical-receiver'
       group_wait: 0s
       repeat_interval: 1h
-    
+
     # Entwicklungs-Alerts
     - match:
         environment: development
-      receiver: 'dev-null'  # Keine Alerts in Dev
-    
+      receiver: 'dev-null' # Keine Alerts in Dev
+
     # Business-Alerts an Management
     - match_re:
         alertname: ^(Upload|Revenue|User).*
@@ -57,7 +57,7 @@ receivers:
           <p><strong>Description:</strong> {{ .Annotations.description }}</p>
           <p><strong>Started:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
           {{ end }}
-  
+
   # Kritische Alerts
   - name: 'critical-receiver'
     email_configs:
@@ -69,13 +69,13 @@ receivers:
     #   - api_url: 'YOUR_SLACK_WEBHOOK'
     #     channel: '#critical-alerts'
     #     title: 'Critical Alert: {{ .GroupLabels.alertname }}'
-  
+
   # Business Alerts
   - name: 'business-receiver'
     email_configs:
       - to: 'management@assixx.com'
         send_resolved: true
-  
+
   # Dev Null (keine Aktion)
   - name: 'dev-null'
 
@@ -88,7 +88,7 @@ inhibit_rules:
     target_match:
       severity: 'warning'
     equal: ['service']
-  
+
   # Wenn DB down ist, unterdrücke Backend-Alerts
   - source_match:
       alertname: 'MySQLDown'

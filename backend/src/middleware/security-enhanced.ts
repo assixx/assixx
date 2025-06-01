@@ -87,10 +87,10 @@ export const validateCSRFToken = (
     '/api/auth/login',
     '/api/auth/register',
     '/login',
-    '/signup'
+    '/signup',
   ];
-  
-  if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+
+  if (publicEndpoints.some((endpoint) => req.path.startsWith(endpoint))) {
     return next();
   }
 
@@ -219,11 +219,17 @@ const createTenantRateLimiter = (
 
 // API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(15 * 60 * 1000, 1000); // 1000 requests per 15 minutes
-export const authLimiter = createTenantRateLimiter(15 * 60 * 1000, 5); // 5 auth attempts per 15 minutes
+export const authLimiter = createTenantRateLimiter(
+  15 * 60 * 1000,
+  process.env.NODE_ENV === 'development' ? 100 : 5
+); // 100 auth attempts in dev, 5 in prod
 export const uploadLimiter = createTenantRateLimiter(15 * 60 * 1000, 10); // 10 uploads per 15 minutes
 
 // Specific API endpoint rate limiters
-export const strictAuthLimiter = createTenantRateLimiter(5 * 60 * 1000, 3); // 3 login attempts per 5 minutes (stricter)
+export const strictAuthLimiter = createTenantRateLimiter(
+  5 * 60 * 1000,
+  process.env.NODE_ENV === 'development' ? 50 : 3
+); // 50 login attempts in dev, 3 in prod
 export const apiLimiter = createTenantRateLimiter(60 * 1000, 100); // 100 API requests per minute
 export const searchLimiter = createTenantRateLimiter(60 * 1000, 30); // 30 search requests per minute
 export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 5); // 5 bulk operations per hour
@@ -288,8 +294,8 @@ export const progressiveApiLimiter = createProgressiveRateLimiter(
 ); // 200 requests per minute
 export const progressiveAuthLimiter = createProgressiveRateLimiter(
   15 * 60 * 1000,
-  10
-); // 10 auth attempts per 15 minutes
+  process.env.NODE_ENV === 'development' ? 100 : 10
+); // 100 auth attempts in dev, 10 in prod
 
 // Tenant Context Validation
 export const validateTenantContext = (

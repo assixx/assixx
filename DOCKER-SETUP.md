@@ -29,6 +29,7 @@ nano .env
 ```
 
 **WICHTIG zu ändern:**
+
 - `JWT_SECRET` - Zufälliger String (min. 32 Zeichen)
 - `SESSION_SECRET` - Zufälliger String (min. 32 Zeichen)
 - `SMTP_*` - Ihre E-Mail Einstellungen
@@ -53,10 +54,12 @@ docker-compose logs -f
 ### E-Mail Setup (Gmail Beispiel)
 
 1. Gmail App-Passwort erstellen:
+
    - Gehe zu: https://myaccount.google.com/apppasswords
    - Erstelle ein App-Passwort für "Mail"
 
 2. In `.env` eintragen:
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -183,12 +186,14 @@ sudo lsof -i :3000
 Für Zugriff vom Smartphone/Tablet im lokalen Netzwerk:
 
 1. Server-IP herausfinden:
+
 ```bash
 hostname -I
 # z.B. 192.168.1.100
 ```
 
 2. Im Browser öffnen:
+
 ```
 http://192.168.1.100:3000
 ```

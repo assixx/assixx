@@ -7,6 +7,7 @@
 ## 📋 Übersicht
 
 Der Funktionstest besteht aus zwei Phasen:
+
 1. **Phase 1:** Automatische Tests (Backend & API)
 2. **Phase 2:** Interaktive Benutzertests (Frontend & UX)
 
@@ -30,6 +31,7 @@ npm run test:db-connection
 ### 1.2 API Endpoint Tests
 
 #### Authentication
+
 ```bash
 # Login Test
 curl -X POST http://localhost:3000/api/auth/login \
@@ -46,6 +48,7 @@ curl -X POST http://localhost:3000/api/auth/logout \
 ```
 
 #### Multi-Tenant Tests
+
 ```bash
 # Tenant Liste
 curl http://localhost:3000/api/tenants \
@@ -91,9 +94,10 @@ curl -X POST http://localhost:3000/api/profile/picture \
 **Ziel:** Komplettes Setup einer neuen Firma
 
 1. **Registrierung**
+
    - [ ] Öffne http://localhost:3000/signup
    - [ ] Fülle aus: Firmenname: "Testfirma GmbH"
-   - [ ] Subdomain: "testfirma" 
+   - [ ] Subdomain: "testfirma"
    - [ ] Email: "admin@testfirma.de"
    - [ ] Passwort: Sicheres Passwort wählen
    - [ ] Telefon: "+49 123 456789"
@@ -101,6 +105,7 @@ curl -X POST http://localhost:3000/api/profile/picture \
    - [ ] ✅ Automatischer Login sollte erfolgen
 
 2. **Erste Schritte**
+
    - [ ] Dashboard sollte erscheinen
    - [ ] Willkommensnachricht sichtbar?
    - [ ] Navigation funktioniert?
@@ -121,11 +126,13 @@ curl -X POST http://localhost:3000/api/profile/picture \
 **Ziel:** Tägliche Verwaltungsaufgaben
 
 1. **Login als Admin**
+
    - [ ] Logout vom Root Account
    - [ ] Login mit Admin-Zugangsdaten
    - [ ] ✅ Richtiges Dashboard?
 
 2. **Schwarzes Brett**
+
    - [ ] Neue Mitteilung erstellen
    - [ ] Titel: "Wichtige Betriebsinfo"
    - [ ] Inhalt mit Formatierung (Fett, Liste)
@@ -135,6 +142,7 @@ curl -X POST http://localhost:3000/api/profile/picture \
    - [ ] Als Mitarbeiter: Mitteilung sichtbar?
 
 3. **Dokumente hochladen**
+
    - [ ] Gehe zu "Dokumente"
    - [ ] Lade 3 verschiedene Dokumente hoch:
      - PDF Arbeitsanweisung
@@ -146,6 +154,7 @@ curl -X POST http://localhost:3000/api/profile/picture \
    - [ ] ✅ Vorschau funktioniert?
 
 4. **Kalender Event**
+
    - [ ] Öffne Kalender
    - [ ] Erstelle Event: "Teammeeting"
    - [ ] Datum: Nächste Woche
@@ -173,11 +182,13 @@ curl -X POST http://localhost:3000/api/profile/picture \
 **Ziel:** Tägliche Nutzung aus Mitarbeitersicht
 
 1. **Login als Mitarbeiter**
+
    - [ ] Login mit Mitarbeiter-Account
    - [ ] ✅ Eingeschränktes Dashboard?
    - [ ] ✅ Nur erlaubte Menüpunkte sichtbar?
 
 2. **Profil vervollständigen**
+
    - [ ] Gehe zu "Mein Profil"
    - [ ] Profilbild hochladen
    - [ ] Kontaktdaten ergänzen
@@ -185,6 +196,7 @@ curl -X POST http://localhost:3000/api/profile/picture \
    - [ ] ✅ Profilbild überall sichtbar?
 
 3. **Chat nutzen**
+
    - [ ] Öffne Chat
    - [ ] Schreibe Nachricht an Kollegen
    - [ ] Erstelle Gruppenchat "Schichtteam"
@@ -195,6 +207,7 @@ curl -X POST http://localhost:3000/api/profile/picture \
    - [ ] ✅ Benachrichtigungen kommen an?
 
 4. **KVP-Vorschlag**
+
    - [ ] Gehe zu "KVP"
    - [ ] Neuer Vorschlag: "Prozessverbesserung"
    - [ ] Detaillierte Beschreibung
@@ -204,6 +217,7 @@ curl -X POST http://localhost:3000/api/profile/picture \
    - [ ] ✅ Status-Updates möglich?
 
 5. **Schichtplan ansehen**
+
    - [ ] Öffne Schichtplanung
    - [ ] ✅ Eigene Schichten sichtbar?
    - [ ] ✅ Wochenansicht korrekt?
@@ -224,11 +238,13 @@ curl -X POST http://localhost:3000/api/profile/picture \
 **Ziel:** Integration zwischen Features testen
 
 1. **Dokument → Chat**
+
    - [ ] Lade Dokument hoch
    - [ ] Teile Link im Chat
    - [ ] ✅ Kollege kann Dokument öffnen?
 
 2. **Kalender → Schwarzes Brett**
+
    - [ ] Erstelle Event im Kalender
    - [ ] Erstelle Ankündigung auf Schwarzem Brett
    - [ ] ✅ Verweise funktionieren?
@@ -241,17 +257,20 @@ curl -X POST http://localhost:3000/api/profile/picture \
 ### 🎯 Test-Szenario 5: Stress & Edge Cases
 
 1. **Gleichzeitige Nutzung**
+
    - [ ] 2 Browser-Fenster öffnen
    - [ ] Verschiedene Benutzer einloggen
    - [ ] Gleichzeitig chatten
    - [ ] ✅ Nachrichten kommen in Echtzeit?
 
 2. **Große Dateien**
+
    - [ ] Versuche 50MB Datei hochzuladen
    - [ ] ✅ Fehlermeldung oder Upload?
    - [ ] ✅ Fortschrittsanzeige?
 
 3. **Lange Texte**
+
    - [ ] Sehr lange Chat-Nachricht
    - [ ] Sehr langer KVP-Vorschlag
    - [ ] ✅ Layout bricht nicht?
@@ -269,39 +288,41 @@ curl -X POST http://localhost:3000/api/profile/picture \
 
 ### Fehler-Dokumentation
 
-| Feature | Fehler | Schweregrad | Status |
-|---------|--------|-------------|---------|
-| Beispiel | Login schlägt fehl | Kritisch | Offen |
+| Feature  | Fehler             | Schweregrad | Status |
+| -------- | ------------------ | ----------- | ------ |
+| Beispiel | Login schlägt fehl | Kritisch    | Offen  |
 
 ### Performance-Messung
 
-| Aktion | Erwartete Zeit | Gemessene Zeit | Status |
-|--------|----------------|----------------|---------|
-| Login | < 1s | ? | - |
-| Dokumenten-Upload (5MB) | < 3s | ? | - |
-| Seitenwechsel | < 0.5s | ? | - |
-| Chat-Nachricht | < 0.1s | ? | - |
+| Aktion                  | Erwartete Zeit | Gemessene Zeit | Status |
+| ----------------------- | -------------- | -------------- | ------ |
+| Login                   | < 1s           | ?              | -      |
+| Dokumenten-Upload (5MB) | < 3s           | ?              | -      |
+| Seitenwechsel           | < 0.5s         | ?              | -      |
+| Chat-Nachricht          | < 0.1s         | ?              | -      |
 
 ### Browser-Kompatibilität
 
 | Browser | Version | Desktop | Mobile | Probleme |
-|---------|---------|---------|---------|----------|
-| Chrome | 120+ | ✅ | ✅ | - |
-| Firefox | 120+ | ✅ | ✅ | - |
-| Safari | 17+ | ✅ | ✅ | - |
-| Edge | 120+ | ✅ | ✅ | - |
+| ------- | ------- | ------- | ------ | -------- |
+| Chrome  | 120+    | ✅      | ✅     | -        |
+| Firefox | 120+    | ✅      | ✅     | -        |
+| Safari  | 17+     | ✅      | ✅     | -        |
+| Edge    | 120+    | ✅      | ✅     | -        |
 
 ---
 
 ## 🔄 Nach dem Test
 
 1. **Fehler priorisieren**
+
    - Kritisch: Blockiert Nutzung
    - Hoch: Wichtige Funktion beeinträchtigt
    - Mittel: Ärgerlich aber umgehbar
    - Niedrig: Kosmetisch
 
 2. **Dokumentation aktualisieren**
+
    - [ ] Gefundene Fehler in TODO.md
    - [ ] Performance-Probleme notieren
    - [ ] UX-Verbesserungen vorschlagen
@@ -315,18 +336,21 @@ curl -X POST http://localhost:3000/api/profile/picture \
 ## ✅ Test-Checkliste
 
 ### Vor dem Test
+
 - [ ] Datenbank-Backup erstellen
 - [ ] Test-Tenant anlegen
 - [ ] Browser-Cache leeren
 - [ ] Console auf Fehler überwachen
 
 ### Während des Tests
+
 - [ ] Screenshots bei Fehlern
 - [ ] Console-Fehler dokumentieren
 - [ ] Ladezeiten notieren
 - [ ] Unerwartetes Verhalten dokumentieren
 
 ### Nach dem Test
+
 - [ ] Test-Daten bereinigen
 - [ ] Fehler-Report erstellen
 - [ ] Prioritäten festlegen
@@ -334,11 +358,14 @@ curl -X POST http://localhost:3000/api/profile/picture \
 
 ---
 
-**Test durchgeführt von:** _________________  
-**Datum:** _________________  
+**Test durchgeführt von:** ********\_********  
+**Datum:** ********\_********  
 **Gesamtergebnis:** ⬜ Bestanden / ⬜ Fehlgeschlagen
 
 **Notizen:**
-_________________________________________________
-_________________________________________________
-_________________________________________________
+
+---
+
+---
+
+---

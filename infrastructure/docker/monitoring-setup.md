@@ -3,6 +3,7 @@
 ## 🎯 Übersicht
 
 Monitoring-Stack für Assixx mit:
+
 - **Prometheus**: Metriken-Sammlung
 - **Grafana**: Visualisierung
 - **Loki**: Log-Aggregation
@@ -131,35 +132,35 @@ export const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
-  registers: [register]
+  registers: [register],
 });
 
 export const httpRequestTotal = new Counter({
   name: 'http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
-  registers: [register]
+  registers: [register],
 });
 
 // Business Metrics
 export const activeUsers = new Gauge({
   name: 'assixx_active_users',
   help: 'Number of active users',
-  registers: [register]
+  registers: [register],
 });
 
 export const documentsUploaded = new Counter({
   name: 'assixx_documents_uploaded_total',
   help: 'Total documents uploaded',
   labelNames: ['tenant', 'type'],
-  registers: [register]
+  registers: [register],
 });
 
 // WebSocket Metrics
 export const wsConnections = new Gauge({
   name: 'assixx_websocket_connections',
   help: 'Current WebSocket connections',
-  registers: [register]
+  registers: [register],
 });
 ```
 
@@ -225,8 +226,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 80% (current value: {{ $value }}%)"
+          summary: 'High CPU usage detected'
+          description: 'CPU usage is above 80% (current value: {{ $value }}%)'
 
       # High Memory Usage
       - alert: HighMemoryUsage
@@ -235,8 +236,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High memory usage detected"
-          description: "Memory usage is above 85% (current value: {{ $value }}%)"
+          summary: 'High memory usage detected'
+          description: 'Memory usage is above 85% (current value: {{ $value }}%)'
 
       # Service Down
       - alert: ServiceDown
@@ -245,8 +246,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Assixx Backend is down"
-          description: "The Assixx backend service has been down for more than 1 minute"
+          summary: 'Assixx Backend is down'
+          description: 'The Assixx backend service has been down for more than 1 minute'
 
       # High Response Time
       - alert: HighResponseTime
@@ -255,8 +256,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High response time"
-          description: "95th percentile response time is above 1 second"
+          summary: 'High response time'
+          description: '95th percentile response time is above 1 second'
 
       # Database Connection Issues
       - alert: DatabaseConnectionError
@@ -265,8 +266,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "MySQL database is down"
-          description: "Cannot connect to MySQL database"
+          summary: 'MySQL database is down'
+          description: 'Cannot connect to MySQL database'
 
       # Disk Space Low
       - alert: DiskSpaceLow
@@ -275,8 +276,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Low disk space"
-          description: "Disk space is below 10% (current: {{ $value }}%)"
+          summary: 'Low disk space'
+          description: 'Disk space is below 10% (current: {{ $value }}%)'
 ```
 
 ## 📱 Benachrichtigungen
@@ -348,7 +349,7 @@ const usersByTenant = new Gauge({
   name: 'assixx_users_by_tenant',
   help: 'Number of users per tenant',
   labelNames: ['tenant'],
-  registers: [register]
+  registers: [register],
 });
 
 // Feature-Nutzung
@@ -356,7 +357,7 @@ const featureUsage = new Counter({
   name: 'assixx_feature_usage_total',
   help: 'Feature usage counter',
   labelNames: ['feature', 'tenant'],
-  registers: [register]
+  registers: [register],
 });
 
 // Upload-Größen
@@ -365,7 +366,7 @@ const uploadSize = new Histogram({
   help: 'Size of uploaded files',
   labelNames: ['type'],
   buckets: [1000, 10000, 100000, 1000000, 10000000],
-  registers: [register]
+  registers: [register],
 });
 ```
 
@@ -389,15 +390,17 @@ docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 ## 📈 Performance-Tipps
 
 1. **Retention konfigurieren**
+
    ```yaml
    # Prometheus: 30 Tage
    --storage.tsdb.retention.time=30d
-   
+
    # Loki: 7 Tage
    retention_period: 168h
    ```
 
 2. **Sampling für High-Volume Metrics**
+
    ```typescript
    // Nur 10% der Requests tracken
    if (Math.random() < 0.1) {

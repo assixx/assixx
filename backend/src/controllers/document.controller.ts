@@ -8,10 +8,7 @@ import documentService from '../services/document.service';
 import { logger } from '../utils/logger';
 import { parsePagination } from '../utils/helpers';
 import { HTTP_STATUS } from '../utils/constants';
-import {
-  AuthenticatedRequest as BaseAuthRequest,
-  FileUploadRequest,
-} from '../types/request.types';
+import { AuthenticatedRequest as BaseAuthRequest } from '../types/request.types';
 
 // Extended Request interface for document operations
 interface AuthenticatedRequest extends BaseAuthRequest {
@@ -45,7 +42,7 @@ interface DocumentByIdRequest extends AuthenticatedRequest {
   };
 }
 
-interface DocumentUploadRequest extends FileUploadRequest {
+interface DocumentUploadRequest extends AuthenticatedRequest {
   body: {
     category?: string;
     description?: string;

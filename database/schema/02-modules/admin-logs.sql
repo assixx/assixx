@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 -- Security Logs (Login-Versuche etc.)
 CREATE TABLE IF NOT EXISTS security_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT,
     user_id INT,
     action ENUM('login_success', 'login_failed', 'logout', 'password_reset', 'account_locked', 'suspicious_activity') NOT NULL,
     ip_address VARCHAR(45),
@@ -42,9 +43,11 @@ CREATE TABLE IF NOT EXISTS security_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     
     -- Indexes
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user_id (user_id),
     INDEX idx_action (action),
     INDEX idx_ip_address (ip_address),

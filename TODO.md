@@ -1,13 +1,123 @@
 # Assixx Beta-Test TODO-Liste
 
-> **Fokus:** Was brauchen wir für einen erfolgreichen Beta-Test mit 5-10 Industriefirmen?
-> **Strategie:** Backend-First (70% Backend, 30% Frontend)
-> **Aktueller Stand:** 31.05.2025 - Docker Setup als nächste Priorität
+> **Neue Strategie:** Erst Stabilität, dann Features!
+> **Ziel Version 0.1.0:** Stabile Entwicklungsversion mit allen funktionierenden Features
+> **Ziel Version 1.0.0:** Beta-Test Version mit Deal-Breaker Features
+> **Aktueller Stand:** 01.06.2025 - Systematisches Debugging & Testing Phase
 
 ## 🚀 FÜR NEUEN CHAT:
-1. Beginne mit **PHASE 1: Docker & Deployment**
-2. Nach Docker: **PHASE 2: Bug-Fixes** aus BUGS-GEFUNDEN.md
-3. Dann weiter mit **PHASE 4: DEAL-BREAKER Features**
+
+1. **AKTUELLE PHASE:** Simon's systematisches Testing & Debugging
+2. Jede Seite, jede Funktion wird einzeln getestet
+3. Fokus: UI, Benutzerfreundlichkeit, Einfachheit, Design, Logik
+4. Erst nach Version 0.1.0: Deal-Breaker Features
+
+## 🎯 AKTUELLE PHASE: Systematisches Testing & Debugging für Version 0.1.0
+
+> **Verantwortlich:** Simon
+> **Ziel:** Alle bestehenden Features zu 100% funktionsfähig und benutzerfreundlich machen
+> **Methode:** Seite für Seite, Funktion für Funktion durchgehen
+
+### Testing-Checkliste für jede Seite/Funktion:
+
+#### 1. **UI/UX Testing**
+- [ ] Design konsistent mit Glassmorphismus Standards?
+- [ ] Alle Buttons/Links funktionieren?
+- [ ] Hover-Effekte vorhanden?
+- [ ] Responsive auf verschiedenen Bildschirmgrößen?
+- [ ] Ladezeiten akzeptabel?
+
+#### 2. **Funktionalität**
+- [ ] Alle Features funktionieren wie erwartet?
+- [ ] Fehlerbehandlung vorhanden?
+- [ ] Validierungen funktionieren?
+- [ ] Daten werden korrekt gespeichert/geladen?
+
+#### 3. **Benutzerfreundlichkeit**
+- [ ] Intuitive Navigation?
+- [ ] Klare Beschriftungen?
+- [ ] Hilfetexte wo nötig?
+- [ ] Feedback bei Aktionen?
+- [ ] Ladeanimationen vorhanden?
+
+#### 4. **Sicherheit & Multi-Tenant**
+- [ ] Nur eigene Daten sichtbar?
+- [ ] Berechtigungen korrekt?
+- [ ] Session-Management stabil?
+
+### Zu testende Bereiche (Priorität):
+
+1. **Authentication & Navigation**
+   - [ ] Login/Logout Flow
+   - [ ] Navigation für alle Rollen
+   - [ ] Session-Timeout
+   - [ ] Password Reset
+
+2. **Admin Dashboard**
+   - [ ] Statistiken korrekt
+   - [ ] Mitarbeiter-Verwaltung
+   - [ ] Dokumenten-Übersicht
+   - [ ] Quick Actions
+
+3. **Employee Dashboard**
+   - [ ] Persönliche Übersicht
+   - [ ] Dokumenten-Zugriff
+   - [ ] Benachrichtigungen
+
+4. **Dokumenten-Management**
+   - [ ] Upload funktioniert
+   - [ ] Download funktioniert
+   - [ ] Kategorisierung
+   - [ ] Suche/Filter
+
+5. **Schwarzes Brett**
+   - [ ] Einträge erstellen
+   - [ ] Bearbeiten/Löschen
+   - [ ] Kategorien
+   - [ ] Anhänge
+
+6. **Chat-System**
+   - [ ] Nachrichten senden
+   - [ ] Echtzeit-Updates
+   - [ ] Gruppen-Chats
+   - [ ] Datei-Sharing
+
+7. **Kalender**
+   - [ ] Events erstellen
+   - [ ] Drag & Drop
+   - [ ] Verschiedene Ansichten
+   - [ ] Erinnerungen
+
+8. **Schichtplanung**
+   - [ ] Schichten zuweisen
+   - [ ] Wochenansicht
+   - [ ] Konflikte erkennen
+   - [ ] Export-Funktion
+
+9. **KVP-System**
+   - [ ] Vorschläge einreichen
+   - [ ] Status-Updates
+   - [ ] Bewertungen
+   - [ ] Statistiken
+
+10. **Survey-System**
+    - [ ] Umfragen erstellen
+    - [ ] Teilnahme
+    - [ ] Auswertungen
+    - [ ] Export
+
+11. **Feature Management**
+    - [ ] Features aktivieren/deaktivieren
+    - [ ] Preisübersicht
+    - [ ] Upgrade-Prozess
+
+12. **Profile & Settings**
+    - [ ] Profil bearbeiten
+    - [ ] Passwort ändern
+    - [ ] Benachrichtigungen
+    - [ ] Sprache/Theme
+
+### Fortschritt: 0/12 Bereiche getestet
 
 ## 🧪 PHASE 0: Funktionstests ✅ ABGESCHLOSSEN
 
@@ -18,6 +128,7 @@
 ### Umfassende Funktionstests aller Features
 
 - [x] **Backend Tests** ⚠️ TEILWEISE
+
   - [x] Auth System (Login, Logout, Session Management) ✅
   - [x] Multi-Tenant Funktionalität ❌ KRITISCH: Isolation verletzt!
   - [x] Dokumenten-Management (Upload, Download, Kategorien) ❌ API fehlt
@@ -32,6 +143,7 @@
   - [x] Error Handling & Logging ✅
 
 - [x] **Frontend Tests** ⚠️ TEILWEISE
+
   - [x] Login/Logout Flow ✅
   - [x] Navigation (alle Rollen: Admin, Employee, Root) ⚠️ showSection fehlt
   - [x] Dokumenten-Upload & Viewing ❌ Komplett defekt
@@ -54,9 +166,10 @@
   - [x] CSRF Protection ✅
   - [x] Rate Limiting ✅
 
-## 🐳 PHASE 1: Docker & Deployment (IN ARBEIT!) 🔥
+## 🐳 PHASE 1: Docker & Deployment ✅ ABGESCHLOSSEN (01.06.2025)
 
-> **Status**: 31.05.2025 - In Entwicklung auf Branch `feature/docker-setup`
+> **Status**: ✅ ERFOLGREICH IMPLEMENTIERT!
+> **Branch**: `feature/docker-setup` - Bereit für Merge zu Master
 
 ### Docker Setup für Beta-Deployment
 
@@ -67,39 +180,68 @@
 - [x] Backup-Strategie implementieren (backup-strategy.md) ✅
 - [x] Monitoring & Logging Setup (monitoring-setup.md) ✅
 - [x] docker-compose.monitoring.yml für Prometheus/Grafana ✅
-- [ ] Docker Images testen und optimieren
-- [ ] GitHub Container Registry Setup
-- [ ] Automatisierte Builds mit GitHub Actions
+- [x] Docker Images testen und optimieren ✅ (Live-Reload funktioniert!)
+- [x] Zentrale Datenbank-Datei (complete-schema.sql) ✅
+- [x] Tenant-Isolation Sicherheitslücken behoben ✅
+- [x] TypeScript/JavaScript Build-Pipeline ✅
+- [ ] GitHub Container Registry Setup (später)
+- [ ] Automatisierte Builds mit GitHub Actions (später)
 
-## 🐛 PHASE 2: Bug-Fixes aus BUGS-GEFUNDEN.md (NACH Docker!)
+## 🔍 PHASE 1.5: System-Checkup vor Bug-Fixes (NEU - 01.06.2025)
 
-> **29 BUGS** müssen behoben werden (7 kritisch, 11 mittel, 11 klein)
-> **PRIORITÄT**: Nach Docker-Setup abarbeiten
+> **WICHTIG:** Bevor wir mit den 29 Bug-Fixes beginnen, führen wir einen systematischen Checkup durch
+> **Ziel:** Aktuellen Stand dokumentieren und sicherstellen, dass Docker-Setup stabil läuft
+
+### Checkup-Checkliste:
+
+- [ ] **Docker Deployment verifizieren**
+  - [ ] Container laufen stabil (docker ps)
+  - [ ] Live-Reload funktioniert
+  - [ ] Logs sind sauber (keine kritischen Fehler)
+  - [ ] Datenbank-Verbindung stabil
+
+- [ ] **Aktuelle Funktionalitäten testen**
+  - [ ] Login/Logout (alle Rollen)
+  - [ ] Navigation funktioniert
+  - [ ] Heute implementiert: Admin aktiv/inaktiv Toggle ✅
+  - [ ] Feature-Management prüfen
+
+- [ ] **Datenbank-Status**
+  - [ ] Schema aktuell (complete-schema.sql)
+  - [ ] Tenant-Isolation verifizieren
+  - [ ] Migrations erfolgreich
+
+- [ ] **Security-Features**
+  - [ ] CSRF-Protection aktiv
+  - [ ] Rate-Limiting funktioniert
+  - [ ] Session-Management stabil
+
+- [ ] **Performance-Check**
+  - [ ] Ladezeiten < 2 Sekunden
+  - [ ] Keine Memory Leaks
+  - [ ] CPU-Auslastung normal
+
+- [ ] **Checkup-Ergebnisse dokumentieren**
+  - [ ] Was funktioniert gut?
+  - [ ] Was sind die Hauptprobleme?
+  - [ ] Prioritäten für Bug-Fixes festlegen
+
+## 🐛 PHASE 2: Bug-Fixes aus BUGS-GEFUNDEN.md ✅ ERLEDIGT (01.06.2025)
+
+> **Status:** ✅ KRITISCHER BUG BEHOBEN!
+> **Hinweis:** Wir konzentrieren uns nur auf kritische Bugs. Alle anderen Bugs wurden aus BUGS-GEFUNDEN.md entfernt.
 
 ### Kritische Bugs (HÖCHSTE PRIORITÄT):
-- [ ] Multi-Tenant Isolation verletzt
-- [ ] Dokumenten-API fehlt komplett
-- [ ] Schwarzes Brett API fehlt
-- [ ] Survey Feature nicht aktiv
-- [ ] CSP blockiert blob URLs
-- [ ] showSection() Funktion fehlt
-- [ ] openEntryForm() Funktion fehlt
 
-### Mittlere Bugs:
-- [ ] Chat-System blockiert
-- [ ] Kalender Event-Erstellung fehlerhaft
-- [ ] KVP-System nur für Mitarbeiter
-- [ ] Schichtplanung blockiert
-- [ ] TypeScript MIME-Type Fehler
-- [ ] Session Management Invalid Date
-- [ ] getElementById Errors
-- [ ] Feature Management unvollständig
-- [ ] Navigation showSection fehlt
-- [ ] Responsive Design fehlt komplett
-- [ ] Calendar Drag & Drop defekt
-
-### Kleine Bugs:
-- Siehe [BUGS-GEFUNDEN.md](./BUGS-GEFUNDEN.md) für vollständige Liste
+- [x] Multi-Tenant Isolation verletzt ✅ BEHOBEN (01.06.2025)
+  - Dashboard-Stats Endpoint verwendet jetzt tenant_id Filter
+  - Alle Counts (Employees, Documents, Departments, Teams) sind jetzt tenant-isoliert
+  - Sicherheitsproblem vollständig behoben!
+  
+### Entscheidung: Fokus auf systematisches Testing
+- Weitere kritische Bugs wurden aus BUGS-GEFUNDEN.md entfernt
+- Alle Bugs werden während Simon's systematischem Testing behoben
+- Priorität liegt auf Stabilisierung aller bestehenden Features
 
 ## ✅ PHASE 3: Security & Stabilität (ERLEDIGT!)
 
@@ -117,10 +259,11 @@
 - [ ] Automatisches Setup-Script verbessern
 - [x] .env.example mit allen Variablen dokumentieren ✅ Vollständig
 
-## 🚨 PHASE 4: DEAL-BREAKER Features (NACH Bug-Fixes!)
+## 🚨 PHASE 4: DEAL-BREAKER Features (NACH Version 0.1.0!)
 
 > **⚠️ KRITISCH**: Ohne diese Features ist das System für Industriefirmen NICHT nutzbar!
-> **HINWEIS**: Implementierung erst NACH erfolgreichem Abschluss von Docker Setup und Bug-Fixes
+> **HINWEIS**: Implementierung erst NACH Version 0.1.0 (stabile Basis mit allen funktionierenden Features)
+> **Start:** Voraussichtlich in 2-3 Wochen
 
 ### 1. 🌴 Urlaubsantrag-System (MVP) - WOCHE 1
 
@@ -277,6 +420,12 @@
 - [x] Premium Badge Design mit Glassmorphismus (31.05.2025)
 - [x] Storage Widget für Root User (31.05.2025)
 - [x] Storage Upgrade Page mit Plänen (31.05.2025)
+- [x] Docker Setup mit Live-Reload Development (01.06.2025)
+- [x] Zentrale Datenbank-Dokumentation (complete-schema.sql) (01.06.2025)
+- [x] Tenant-Isolation Security Fixes (01.06.2025)
+- [x] TypeScript Build-Pipeline für Frontend (01.06.2025)
+- [x] Multi-Tenant Isolation Bug behoben (01.06.2025)
+- [x] Automatisches Backup-System implementiert (01.06.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
 
@@ -297,20 +446,36 @@
    - NPS Score > 7
    - Konkrete Feature-Requests
 
-## 🎯 AKTUELLE Entwicklungs-Reihenfolge (Stand: 31.05.2025)
+## 🎯 AKTUELLE Entwicklungs-Reihenfolge (Stand: 01.06.2025)
 
+### Version 0.1.0 - Stabile Entwicklungsversion
 1. **✅ ERLEDIGT:** Funktionstests aller Features (29 Bugs gefunden)
-2. **🔥 NÄCHSTER SCHRITT:** Docker Setup für einfaches Deployment
-3. **Woche 2-3:** Bug-Fixes aus BUGS-GEFUNDEN.md (29 Bugs)
-4. **Woche 4-5:** Urlaubssystem + Gehaltsabrechnung Upload
-5. **Woche 5-6:** TPM-System Basis-Implementation
-6. **Woche 6-7:** Mobile Optimization + PWA
-7. **Woche 7:** DSGVO Compliance + Beta-Test Tools
-8. **Woche 8:** Performance Tests + Final Testing
+2. **✅ ERLEDIGT:** Docker Setup für einfaches Deployment (01.06.2025)
+3. **✅ ERLEDIGT:** Kritischster Bug behoben - Multi-Tenant Isolation (01.06.2025)
+4. **🔥 AKTUELL:** Simon's systematisches Testing & Debugging
+   - Jede Seite einzeln testen
+   - UI/UX optimieren
+   - Benutzerfreundlichkeit sicherstellen
+   - Alle Funktionen stabilisieren
+5. **Nach Version 0.1.0:** Code-Cleanup & Dokumentation
 
-**Beta-Start:** Nach Abschluss von Phase 4 (DEAL-BREAKER Features)
-**Beta-Dauer:** 4-6 Wochen
-**Ziel:** Stabile, getestete Plattform + TPM + Urlaub + Gehalt = Zufriedene Beta-Tester
+### Version 1.0.0 - Beta-Test Version
+6. **PHASE 4 - DEAL-BREAKER Features** (erst nach 0.1.0!)
+   - Urlaubsantrag-System (MVP)
+   - Gehaltsabrechnung Upload
+   - TPM-System (Total Productive Maintenance)
+   - Mobile Responsiveness
+7. **DSGVO Compliance + Beta-Test Tools**
+8. **Performance Tests + Final Testing**
+9. **Beta-Test Start**
+
+**Neue Timeline:**
+- **Version 0.1.0:** 2-3 Wochen (Stabilisierung)
+- **Version 1.0.0:** 4-5 Wochen (Features + Beta-Vorbereitung)
+- **Beta-Start:** Nach Version 1.0.0
+- **Beta-Dauer:** 4-6 Wochen
+
+**Fokus:** Qualität vor Quantität - Lieber weniger Features die perfekt funktionieren!
 
 ## ❓ Offene Fragen für Beta-Planung
 

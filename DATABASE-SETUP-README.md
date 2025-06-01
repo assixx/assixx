@@ -386,7 +386,7 @@ database/complete-schema.sql  # ⭐ Eine zentrale Datei mit allen aktuellen Tabe
 database/
 ├── schema/                    # Modulare Schema-Dateien
 │   ├── 00-core/              # Kern-Tabellen
-│   ├── 01-features/          # Feature-Management  
+│   ├── 01-features/          # Feature-Management
 │   ├── 02-modules/           # Einzelne Features
 │   └── 03-views/             # Datenbank-Views
 ├── migrations/                # Änderungen für Updates
@@ -404,7 +404,7 @@ cd database/build && node build-schema.js
 # Neue Installation (Docker)
 docker exec -i assixx-mysql mysql -u root -p assixx < database/complete-schema.sql
 
-# Neue Installation (Lokal)  
+# Neue Installation (Lokal)
 mysql -u root -p assixx < database/complete-schema.sql
 ```
 
@@ -857,6 +857,7 @@ mysql -u root -p'StrongP@ssw0rd!123' -e "SELECT VERSION();"
 ```
 
 Alternativ mit SQL-Datei:
+
 ```bash
 # Wenn reset-mysql-password.sql vorhanden ist:
 sudo mysql < reset-mysql-password.sql

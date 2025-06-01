@@ -61,7 +61,9 @@ export class Tenant {
   static async create(
     tenantData: TenantCreateData
   ): Promise<TenantCreateResult> {
+    logger.info('[DEBUG] Starting tenant creation...');
     const connection = (await (pool as any).getConnection()) as PoolConnection;
+    logger.info('[DEBUG] Got database connection');
 
     try {
       await connection.beginTransaction();
@@ -165,15 +167,13 @@ export class Tenant {
 
     // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
     // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
-    const [features] = await (conn as any).query(
-      `SELECT id FROM features`
-    );
+    const [features] = await (conn as any).query(`SELECT id FROM features`);
 
     // Aktiviere alle Features für 14 Tage Trial
     for (const feature of features) {
       await (conn as any).query(
-        `INSERT INTO tenant_features (tenant_id, feature_id, status, valid_until, trial_days) 
-         VALUES (?, ?, 'trial', DATE_ADD(NOW(), INTERVAL 14 DAY), 14)`,
+        `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at) 
+         VALUES (?, ?, TRUE, DATE_ADD(NOW(), INTERVAL 14 DAY))`,
         [tenantId, feature.id]
       );
     }
@@ -245,6 +245,14 @@ export class Tenant {
     return tenants[0] || null;
   }
 
+  // Alle Tenants abrufen
+  static async findAll(): Promise<DatabaseTenant[]> {
+    const [tenants] = await executeQuery<DbTenant[]>(
+      'SELECT * FROM tenants WHERE status != "cancelled" ORDER BY name'
+    );
+    return tenants;
+  }
+
   // Trial-Status prüfen
   static async checkTrialStatus(
     tenantId: number
@@ -303,7 +311,7 @@ export class Tenant {
   ): Promise<void> {
     // Deaktiviere alle aktuellen Features
     await executeQuery(
-      'UPDATE tenant_features SET status = "disabled" WHERE tenant_id = ?',
+      'UPDATE tenant_features SET is_active = FALSE WHERE tenant_id = ?',
       [tenantId]
     );
 
@@ -319,9 +327,9 @@ export class Tenant {
     // Aktiviere neue Features
     for (const feature of planFeatures) {
       await executeQuery(
-        `INSERT INTO tenant_features (tenant_id, feature_id, status) 
-         VALUES (?, ?, 'active')
-         ON DUPLICATE KEY UPDATE status = 'active', valid_until = NULL`,
+        `INSERT INTO tenant_features (tenant_id, feature_id, is_active) 
+         VALUES (?, ?, TRUE)
+         ON DUPLICATE KEY UPDATE is_active = TRUE, expires_at = NULL`,
         [tenantId, feature.feature_id]
       );
     }
@@ -341,27 +349,25 @@ export class Tenant {
         'SELECT id FROM users WHERE tenant_id = ?',
         [tenantId]
       );
-      const userIds = users.map(u => u.id);
+      const userIds = users.map((u) => u.id);
 
       // 2. Delete in correct order to respect foreign key constraints
-      
+
       // Delete chat-related data
       await connection.query(
         'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))',
         [userIds.length > 0 ? userIds : [0]]
       );
-      await connection.query(
-        'DELETE FROM messages WHERE sender_id IN (?)',
-        [userIds.length > 0 ? userIds : [0]]
-      );
+      await connection.query('DELETE FROM messages WHERE sender_id IN (?)', [
+        userIds.length > 0 ? userIds : [0],
+      ]);
       await connection.query(
         'DELETE FROM conversation_participants WHERE user_id IN (?)',
         [userIds.length > 0 ? userIds : [0]]
       );
-      await connection.query(
-        'DELETE FROM conversations WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM conversations WHERE tenant_id = ?', [
+        tenantId,
+      ]);
 
       // Delete survey-related data
       await connection.query(
@@ -392,10 +398,9 @@ export class Tenant {
         'DELETE FROM survey_templates WHERE tenant_id = ?',
         [tenantId]
       );
-      await connection.query(
-        'DELETE FROM surveys WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM surveys WHERE tenant_id = ?', [
+        tenantId,
+      ]);
 
       // Delete KVP-related data
       await connection.query(
@@ -420,20 +425,18 @@ export class Tenant {
         'DELETE FROM shift_notes WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
         [tenantId]
       );
-      await connection.query(
-        'DELETE FROM shifts WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM shifts WHERE tenant_id = ?', [
+        tenantId,
+      ]);
       await connection.query(
         'DELETE FROM shift_templates WHERE tenant_id = ?',
         [tenantId]
       );
       // Delete shift_types if table exists
       try {
-        await connection.query(
-          'DELETE FROM shift_types WHERE tenant_id = ?',
-          [tenantId]
-        );
+        await connection.query('DELETE FROM shift_types WHERE tenant_id = ?', [
+          tenantId,
+        ]);
       } catch (error: any) {
         if (error.code !== 'ER_NO_SUCH_TABLE') {
           throw error;
@@ -453,16 +456,14 @@ export class Tenant {
       );
 
       // Delete documents
-      await connection.query(
-        'DELETE FROM documents WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM documents WHERE tenant_id = ?', [
+        tenantId,
+      ]);
 
       // Delete admin logs
-      await connection.query(
-        'DELETE FROM admin_logs WHERE user_id IN (?)',
-        [userIds.length > 0 ? userIds : [0]]
-      );
+      await connection.query('DELETE FROM admin_logs WHERE user_id IN (?)', [
+        userIds.length > 0 ? userIds : [0],
+      ]);
 
       // Delete feature assignments
       await connection.query(
@@ -471,36 +472,31 @@ export class Tenant {
       );
 
       // Delete department/team relationships
-      await connection.query(
-        'DELETE FROM user_teams WHERE user_id IN (?)',
-        [userIds.length > 0 ? userIds : [0]]
-      );
+      await connection.query('DELETE FROM user_teams WHERE user_id IN (?)', [
+        userIds.length > 0 ? userIds : [0],
+      ]);
       await connection.query(
         'DELETE FROM user_departments WHERE user_id IN (?)',
         [userIds.length > 0 ? userIds : [0]]
       );
 
       // Delete teams and departments
-      await connection.query(
-        'DELETE FROM teams WHERE tenant_id = ?',
-        [tenantId]
-      );
-      await connection.query(
-        'DELETE FROM departments WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM teams WHERE tenant_id = ?', [
+        tenantId,
+      ]);
+      await connection.query('DELETE FROM departments WHERE tenant_id = ?', [
+        tenantId,
+      ]);
 
       // Delete tenant admin associations
-      await connection.query(
-        'DELETE FROM tenant_admins WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM tenant_admins WHERE tenant_id = ?', [
+        tenantId,
+      ]);
 
       // Delete all users
-      await connection.query(
-        'DELETE FROM users WHERE tenant_id = ?',
-        [tenantId]
-      );
+      await connection.query('DELETE FROM users WHERE tenant_id = ?', [
+        tenantId,
+      ]);
 
       // Finally, delete the tenant itself
       const [result] = await connection.query<ResultSetHeader>(
@@ -515,12 +511,16 @@ export class Tenant {
         await this.cleanupTenantFiles(tenantId, userIds);
       } catch (fileError) {
         // Log error but don't fail the deletion
-        logger.error(`Error cleaning up files for tenant ${tenantId}:`, fileError);
+        logger.error(
+          `Error cleaning up files for tenant ${tenantId}:`,
+          fileError
+        );
       }
 
-      logger.warn(`Successfully deleted tenant ${tenantId} and all associated data`);
+      logger.warn(
+        `Successfully deleted tenant ${tenantId} and all associated data`
+      );
       return result.affectedRows > 0;
-
     } catch (error) {
       await connection.rollback();
       logger.error(`Error deleting tenant ${tenantId}:`, error);
@@ -531,12 +531,19 @@ export class Tenant {
   }
 
   // Clean up uploaded files for a tenant
-  private static async cleanupTenantFiles(tenantId: number, userIds: number[]): Promise<void> {
+  private static async cleanupTenantFiles(
+    tenantId: number,
+    userIds: number[]
+  ): Promise<void> {
     const uploadsDir = path.join(__dirname, '../../../../uploads');
-    
+
     try {
       // Clean up document files
-      const documentsDir = path.join(uploadsDir, 'documents', tenantId.toString());
+      const documentsDir = path.join(
+        uploadsDir,
+        'documents',
+        tenantId.toString()
+      );
       await this.removeDirectory(documentsDir);
 
       // Clean up profile pictures for all users

@@ -49,15 +49,16 @@ export const validateCreateEmployee: ValidationMiddleware[] = [
     .trim()
     .escape()
     .withMessage('Nachname darf nicht leer sein'),
+  // Optionale Felder
   body('age')
+    .optional({ nullable: true })
     .isInt({ min: 18, max: 100 })
     .withMessage('Alter muss zwischen 18 und 100 liegen'),
   body('employee_id')
-    .notEmpty()
+    .optional({ nullable: true })
+    .isString()
     .trim()
-    .escape()
-    .withMessage('Mitarbeiter-ID darf nicht leer sein'),
-  // Optionale Felder
+    .escape(),
   body('department_id')
     .optional({ nullable: true })
     .isNumeric()

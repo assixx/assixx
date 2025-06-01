@@ -587,7 +587,7 @@ export class KVPModel {
         try {
           // file_path is already absolute, use it directly
           await fs.unlink(attachment.file_path);
-        } catch (fileError) {
+        } catch {
           // Silently ignore file deletion errors
         }
       }

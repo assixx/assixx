@@ -11,6 +11,7 @@ import { logger } from '../utils/logger';
 // Import models (now ES modules)
 import User from '../models/user';
 import AdminLog from '../models/adminLog';
+import Tenant from '../models/tenant';
 
 const router: Router = express.Router();
 
@@ -83,7 +84,46 @@ interface DatabaseError extends Error {
   code?: string;
 }
 
-// Admin-Benutzer erstellen
+// Admin-Benutzer erstellen - POST /admins endpoint
+router.post(
+  '/admins',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res): Promise<void> => {
+    logger.info(
+      `Attempt to create admin user by root user: ${req.user.username}`
+    );
+    try {
+      const adminData = {
+        ...req.body,
+        role: 'admin',
+        tenant_id: req.user.tenant_id,
+        is_active: true, // Ensure new admins are active by default
+      };
+      const adminId = await User.create(adminData);
+      logger.info(`Admin user created successfully with ID: ${adminId}`);
+      res
+        .status(201)
+        .json({ message: 'Admin-Benutzer erfolgreich erstellt', adminId });
+    } catch (error: any) {
+      logger.error('Fehler beim Erstellen des Admin-Benutzers:', error);
+      const dbError = error as DatabaseError;
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        res.status(409).json({
+          message:
+            'Ein Benutzer mit diesem Benutzernamen oder dieser E-Mail existiert bereits.',
+        });
+        return;
+      }
+      res.status(500).json({
+        message: 'Fehler beim Erstellen des Admin-Benutzers',
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Legacy endpoint for backward compatibility
 router.post(
   '/create-admin',
   authenticateToken,
@@ -97,6 +137,7 @@ router.post(
         ...req.body,
         role: 'admin',
         tenant_id: req.user.tenant_id,
+        is_active: true, // Ensure new admins are active by default
       };
       const adminId = await User.create(adminData);
       logger.info(`Admin user created successfully with ID: ${adminId}`);
@@ -131,9 +172,22 @@ router.get(
       `Fetching admin users list for root user: ${req.user.username}`
     );
     try {
-      const admins = await User.findByRole('admin', false, req.user.tenant_id);
-      logger.info(`Retrieved ${admins.length} admin users`);
-      res.json(admins);
+      // Admins mit erweiterten Informationen abrufen
+      const admins = await User.findByRole('admin', true); // includeDeleted=true um alle zu sehen
+
+      // Tenant-Informationen hinzufügen
+      const adminsWithTenants = await Promise.all(
+        admins.map(async (admin: any) => {
+          if (admin.tenant_id) {
+            const tenant = await Tenant.findById(admin.tenant_id);
+            admin.tenant_name = tenant ? tenant.name : null;
+          }
+          return admin;
+        })
+      );
+
+      logger.info(`Retrieved ${adminsWithTenants.length} admin users`);
+      res.json(adminsWithTenants);
     } catch (error: any) {
       logger.error('Fehler beim Abrufen der Admin-Benutzer:', error);
       res.status(500).json({
@@ -144,9 +198,54 @@ router.get(
   }
 );
 
+// Admin-Benutzer aktualisieren
+router.put(
+  '/admins/:id',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res): Promise<void> => {
+    const adminId = req.params.id;
+    const updateData = req.body;
+
+    logger.info(
+      `Updating admin (ID: ${adminId}) by root user: ${req.user.username}`
+    );
+    logger.info(`Update data received:`, updateData);
+
+    try {
+      // Prüfen ob Admin existiert
+      const admin = await User.findById(parseInt(adminId, 10));
+      if (!admin || admin.role !== 'admin') {
+        res.status(404).json({ message: 'Admin nicht gefunden' });
+        return;
+      }
+
+      // Passwort hashen falls vorhanden
+      if (updateData.password) {
+        updateData.password = await bcrypt.hash(updateData.password, 10);
+      }
+
+      // Update durchführen
+      const success = await User.update(parseInt(adminId, 10), updateData);
+
+      if (success) {
+        res.json({ message: 'Admin erfolgreich aktualisiert' });
+      } else {
+        res.status(500).json({ message: 'Fehler beim Aktualisieren' });
+      }
+    } catch (error: any) {
+      logger.error('Fehler beim Aktualisieren des Admins:', error);
+      res.status(500).json({
+        message: 'Fehler beim Aktualisieren',
+        error: error.message,
+      });
+    }
+  }
+);
+
 // Admin-Benutzer löschen
 router.delete(
-  '/delete-admin/:id',
+  '/admins/:id',
   authenticateToken,
   authorizeRole('root'),
   async (req, res): Promise<void> => {
@@ -228,7 +327,7 @@ router.get(
       }
 
       // Passwort-Hash aus den Antwortdaten entfernen
-      const { password, ...adminData } = admin;
+      const { password: _password, ...adminData } = admin;
 
       // Letzten Login-Zeitpunkt hinzufügen, falls vorhanden
       const lastLogin = await AdminLog.getLastLogin(parseInt(adminId, 10));
@@ -355,6 +454,27 @@ router.get(
   }
 );
 
+// Alle Tenants abrufen
+router.get(
+  '/tenants',
+  authenticateToken,
+  authorizeRole('root'),
+  async (req, res): Promise<void> => {
+    logger.info(`Root user ${req.user.username} requesting tenants list`);
+
+    try {
+      const tenants = await Tenant.findAll();
+      res.json(tenants);
+    } catch (error: any) {
+      logger.error('Fehler beim Abrufen der Tenants:', error);
+      res.status(500).json({
+        message: 'Fehler beim Abrufen der Tenants',
+        error: error.message,
+      });
+    }
+  }
+);
+
 // Dashboard-Daten für Root-User
 router.get(
   '/dashboard-data',
@@ -411,10 +531,10 @@ router.get(
       // Import necessary models
       const Tenant = (await import('../models/tenant')).default;
       const Document = (await import('../models/document')).default;
-      
+
       // Get tenant information
       const tenant = await Tenant.findById(req.user.tenant_id);
-      
+
       if (!tenant) {
         logger.error(`Tenant ${req.user.tenant_id} not found`);
         res.status(404).json({ message: 'Tenant nicht gefunden' });
@@ -423,16 +543,19 @@ router.get(
 
       // Get storage limits based on tenant plan
       const storageLimits: { [key: string]: number } = {
-        'basic': 5 * 1024 * 1024 * 1024,       // 5 GB
-        'professional': 25 * 1024 * 1024 * 1024, // 25 GB
-        'enterprise': 100 * 1024 * 1024 * 1024   // 100 GB
+        basic: 5 * 1024 * 1024 * 1024, // 5 GB
+        professional: 25 * 1024 * 1024 * 1024, // 25 GB
+        enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
       };
 
-      const totalStorage = storageLimits[tenant.current_plan || 'basic'] || storageLimits['basic'];
-      
+      const totalStorage =
+        storageLimits[tenant.current_plan || 'basic'] || storageLimits['basic'];
+
       // Get actual storage usage (sum of all document sizes)
-      const usedStorage = await Document.getTotalStorageUsed(req.user.tenant_id);
-      
+      const usedStorage = await Document.getTotalStorageUsed(
+        req.user.tenant_id
+      );
+
       // Calculate percentage
       const percentage = Math.round((usedStorage / totalStorage) * 100);
 
@@ -440,7 +563,7 @@ router.get(
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100), // Cap at 100%
-        plan: tenant.current_plan || 'basic'
+        plan: tenant.current_plan || 'basic',
       };
 
       logger.info(
@@ -464,15 +587,17 @@ router.delete(
   authorizeRole('root'),
   async (req, res): Promise<void> => {
     const rootUser = req.user;
-    logger.warn(`Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`);
+    logger.warn(
+      `Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`
+    );
 
     try {
       // Import Tenant model
       const Tenant = (await import('../models/tenant')).default;
-      
+
       // Bestätigung dass es der Root-User des Tenants ist
       const tenant = await Tenant.findById(rootUser.tenant_id);
-      
+
       if (!tenant) {
         logger.error(`Tenant ${rootUser.tenant_id} not found`);
         res.status(404).json({ message: 'Tenant nicht gefunden' });
@@ -490,28 +615,34 @@ router.delete(
           resource_id: rootUser.tenant_id,
           tenant_name: tenant.company_name,
           subdomain: tenant.subdomain,
-          initiated_by: rootUser.username
-        })
+          initiated_by: rootUser.username,
+        }),
       });
 
       // Delete the entire tenant (cascades to all related data)
       const success = await Tenant.delete(rootUser.tenant_id);
 
       if (success) {
-        logger.warn(`Tenant ${rootUser.tenant_id} and all associated data deleted successfully`);
-        res.json({ 
+        logger.warn(
+          `Tenant ${rootUser.tenant_id} and all associated data deleted successfully`
+        );
+        res.json({
           success: true,
-          message: 'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht' 
+          message:
+            'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht',
         });
       } else {
         logger.error(`Failed to delete tenant ${rootUser.tenant_id}`);
-        res.status(500).json({ 
+        res.status(500).json({
           success: false,
-          message: 'Fehler beim Löschen des Tenants' 
+          message: 'Fehler beim Löschen des Tenants',
         });
       }
     } catch (error: any) {
-      logger.error(`Critical error deleting tenant ${rootUser.tenant_id}:`, error);
+      logger.error(
+        `Critical error deleting tenant ${rootUser.tenant_id}:`,
+        error
+      );
       res.status(500).json({
         success: false,
         message: 'Kritischer Fehler beim Löschen des Tenants',

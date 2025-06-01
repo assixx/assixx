@@ -10,8 +10,8 @@ groups:
           severity: critical
           service: backend
         annotations:
-          summary: "Assixx Backend is down"
-          description: "The Assixx backend service has been down for more than 2 minutes."
+          summary: 'Assixx Backend is down'
+          description: 'The Assixx backend service has been down for more than 2 minutes.'
 
       - alert: MySQLDown
         expr: up{job="mysql"} == 0
@@ -20,8 +20,8 @@ groups:
           severity: critical
           service: database
         annotations:
-          summary: "MySQL Database is down"
-          description: "Cannot connect to MySQL database for more than 2 minutes."
+          summary: 'MySQL Database is down'
+          description: 'Cannot connect to MySQL database for more than 2 minutes.'
 
       # Performance
       - alert: HighResponseTime
@@ -31,8 +31,8 @@ groups:
           severity: warning
           service: backend
         annotations:
-          summary: "High API response time"
-          description: "95th percentile response time is above 1 second (current: {{ $value }}s)"
+          summary: 'High API response time'
+          description: '95th percentile response time is above 1 second (current: {{ $value }}s)'
 
       - alert: HighErrorRate
         expr: rate(http_requests_total{job="assixx-backend",status=~"5.."}[5m]) > 0.05
@@ -41,8 +41,8 @@ groups:
           severity: warning
           service: backend
         annotations:
-          summary: "High error rate detected"
-          description: "Error rate is above 5% (current: {{ $value | humanizePercentage }})"
+          summary: 'High error rate detected'
+          description: 'Error rate is above 5% (current: {{ $value | humanizePercentage }})'
 
   - name: assixx_resources
     interval: 30s
@@ -55,8 +55,8 @@ groups:
           severity: warning
           resource: cpu
         annotations:
-          summary: "High CPU usage"
-          description: "CPU usage is above 80% for 10 minutes (current: {{ $value }}%)"
+          summary: 'High CPU usage'
+          description: 'CPU usage is above 80% for 10 minutes (current: {{ $value }}%)'
 
       # Memory
       - alert: HighMemoryUsage
@@ -66,8 +66,8 @@ groups:
           severity: warning
           resource: memory
         annotations:
-          summary: "High memory usage"
-          description: "Memory usage is above 85% (current: {{ $value }}%)"
+          summary: 'High memory usage'
+          description: 'Memory usage is above 85% (current: {{ $value }}%)'
 
       # Disk
       - alert: LowDiskSpace
@@ -77,8 +77,8 @@ groups:
           severity: critical
           resource: disk
         annotations:
-          summary: "Low disk space"
-          description: "Less than 10% disk space remaining (current: {{ $value }}%)"
+          summary: 'Low disk space'
+          description: 'Less than 10% disk space remaining (current: {{ $value }}%)'
 
   - name: assixx_business
     interval: 60s
@@ -91,8 +91,8 @@ groups:
           severity: warning
           feature: uploads
         annotations:
-          summary: "High upload failure rate"
-          description: "More than 10% of uploads are failing"
+          summary: 'High upload failure rate'
+          description: 'More than 10% of uploads are failing'
 
       # WebSocket Issues
       - alert: WebSocketConnectionDrop
@@ -102,5 +102,5 @@ groups:
           severity: warning
           feature: websocket
         annotations:
-          summary: "High WebSocket disconnection rate"
-          description: "More than 1 disconnection per second detected"
+          summary: 'High WebSocket disconnection rate'
+          description: 'More than 1 disconnection per second detected'

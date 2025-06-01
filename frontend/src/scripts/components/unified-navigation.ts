@@ -307,15 +307,7 @@ class UnifiedNavigation {
           id: 'admins',
           icon: this.getSVGIcon('admin'),
           label: 'Administratoren',
-          url: '#admins',
-          section: 'admins',
-        },
-        {
-          id: 'tenants',
-          icon: this.getSVGIcon('building'),
-          label: 'Firmen',
-          url: '#tenants',
-          section: 'tenants',
+          url: '/pages/manage-admins.html',
         },
         {
           id: 'features',
@@ -1183,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
     window.unifiedNav.updateUnreadMessages();
-    setInterval(() => window.unifiedNav.updateUnreadMessages(), 10000); // Alle 10 Sekunden
+    setInterval(() => window.unifiedNav.updateUnreadMessages(), 30000); // Alle 30 Sekunden
   }
 
   // Offene Umfragen beim Start und periodisch aktualisieren
@@ -1199,10 +1191,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Export for modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = UnifiedNavigation;
-}
-
 // Export to window for legacy support
 window.UnifiedNavigation = UnifiedNavigation;
+
+// Export for ES modules
+export default UnifiedNavigation;

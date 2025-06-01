@@ -65,17 +65,20 @@ CREATE TABLE IF NOT EXISTS teams (
 -- Benutzer-Team-Zuordnungen
 CREATE TABLE IF NOT EXISTS user_teams (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     user_id INT NOT NULL,
     team_id INT NOT NULL,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     role ENUM('member', 'lead') DEFAULT 'member',
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
     UNIQUE KEY unique_user_team (user_id, team_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user_id (user_id),
     INDEX idx_team_id (team_id)
 );

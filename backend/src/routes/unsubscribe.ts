@@ -88,7 +88,7 @@ router.get('/', async (req, res): Promise<void> => {
 
     // Bestimmte oder alle Benachrichtigungen deaktivieren
     const notificationType = decoded.type || 'all';
-    
+
     // TODO: Implement notification settings when notification_settings column is added to users table
     /*
     let notificationSettings: NotificationSettings = user.notification_settings

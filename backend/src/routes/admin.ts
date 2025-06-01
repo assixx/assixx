@@ -17,6 +17,7 @@ import { logger } from '../utils/logger';
 // Import models (now ES modules)
 import User from '../models/user';
 import Document from '../models/document';
+import Department from '../models/department';
 
 const router: Router = express.Router();
 
@@ -100,7 +101,7 @@ const upload = multer({
 
 // Create employee
 router.post(
-  '/create-employee',
+  '/employees',
   authenticateToken,
   authorizeRole('admin'),
   ...validateCreateEmployee,
@@ -340,18 +341,35 @@ router.get(
   authorizeRole('admin'),
   async (req, res): Promise<void> => {
     try {
-      const employeeCount = await User.count({ role: 'employee' });
+      const employeeCount = await User.count({ 
+        role: 'employee',
+        tenant_id: (req as AuthenticatedAdminRequest).user.tenant_id 
+      });
       let departmentCount = 0;
       let teamCount = 0;
       let documentCount = 0;
 
-      // Department count is not available, leaving as 0
+      // Department count
+      try {
+        if (typeof Department.countByTenant === 'function') {
+          departmentCount = await Department.countByTenant((req as AuthenticatedAdminRequest).user.tenant_id);
+        }
+      } catch (e: any) {
+        logger.warn(`Could not count departments: ${e.message}`);
+      }
 
-      // Team count is not available, leaving as 0
+      // Team count (using Department model)
+      try {
+        if (typeof Department.countTeamsByTenant === 'function') {
+          teamCount = await Department.countTeamsByTenant((req as AuthenticatedAdminRequest).user.tenant_id);
+        }
+      } catch (e: any) {
+        logger.warn(`Could not count teams: ${e.message}`);
+      }
 
       try {
-        if (typeof Document.count === 'function') {
-          documentCount = await Document.count();
+        if (typeof Document.countByTenant === 'function') {
+          documentCount = await Document.countByTenant((req as AuthenticatedAdminRequest).user.tenant_id);
         }
       } catch (e: any) {
         logger.warn(`Could not count documents: ${e.message}`);

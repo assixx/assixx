@@ -1,20 +1,17 @@
--- =====================================================
 -- Assixx Complete Database Schema
--- Generated: 2025-05-31T22:37:27.409Z
--- =====================================================
--- Diese Datei wurde automatisch generiert.
--- Änderungen bitte in den Modul-Dateien vornehmen!
--- =====================================================
+-- Generated: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+-- 
+-- This file contains the complete database schema including all tables,
+-- views, procedures, and migrations.
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Create database if not exists
+CREATE DATABASE IF NOT EXISTS assixx CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE assixx;
 
 
--- =====================================================
--- 00-CORE
--- =====================================================
-
--- -----------------------------------------------------
--- Source: 00-core/01-database.sql
--- -----------------------------------------------------
-
+-- Core Tables
 -- =====================================================
 -- 01-database.sql - Datenbank-Erstellung
 -- =====================================================
@@ -32,13 +29,7 @@ USE assixx;
 
 -- Charset sicherstellen
 SET NAMES utf8mb4;
-SET CHARACTER SET utf8mb4;
-
--- -----------------------------------------------------
--- Source: 00-core/02-tenants.sql
--- -----------------------------------------------------
-
--- =====================================================
+SET CHARACTER SET utf8mb4;-- =====================================================
 -- 02-tenants.sql - Tenant Management System
 -- =====================================================
 -- Multi-Tenant Architektur für SaaS-Platform
@@ -75,6 +66,7 @@ CREATE TABLE IF NOT EXISTS tenant_admins (
     id INT PRIMARY KEY AUTO_INCREMENT,
     tenant_id INT NOT NULL,
     user_id INT NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     assigned_by INT,
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
@@ -116,13 +108,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_code (code),
     INDEX idx_is_active (is_active)
-);
-
--- -----------------------------------------------------
--- Source: 00-core/03-users.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- 03-users.sql - User Management System
 -- =====================================================
 -- Benutzer-Verwaltung für alle Rollen (root, admin, employee)
@@ -203,13 +189,7 @@ FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL;
 
 ALTER TABLE tenants 
 ADD CONSTRAINT fk_tenants_created_by 
-FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
-
--- -----------------------------------------------------
--- Source: 00-core/04-departments.sql
--- -----------------------------------------------------
-
--- =====================================================
+FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;-- =====================================================
 -- 04-departments.sql - Abteilungen und Teams
 -- =====================================================
 -- Organisationsstruktur mit Abteilungen und Teams
@@ -276,17 +256,20 @@ CREATE TABLE IF NOT EXISTS teams (
 -- Benutzer-Team-Zuordnungen
 CREATE TABLE IF NOT EXISTS user_teams (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     user_id INT NOT NULL,
     team_id INT NOT NULL,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     role ENUM('member', 'lead') DEFAULT 'member',
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
     UNIQUE KEY unique_user_team (user_id, team_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user_id (user_id),
     INDEX idx_team_id (team_id)
 );
@@ -294,13 +277,7 @@ CREATE TABLE IF NOT EXISTS user_teams (
 -- Nachträgliche Foreign Keys für users Tabelle
 ALTER TABLE users 
 ADD CONSTRAINT fk_users_department 
-FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;
-
--- -----------------------------------------------------
--- Source: 00-core/05-subscriptions.sql
--- -----------------------------------------------------
-
--- =====================================================
+FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;-- =====================================================
 -- 05-subscriptions.sql - Abonnement-Verwaltung
 -- =====================================================
 -- Verwaltung von Tarifen und Abonnements
@@ -415,13 +392,7 @@ CREATE TABLE IF NOT EXISTS usage_quotas (
     UNIQUE KEY unique_quota (tenant_id, resource_type),
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_resource_type (resource_type)
-);
-
--- -----------------------------------------------------
--- Source: 00-core/06-settings.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- 06-settings.sql - Einstellungen
 -- =====================================================
 -- System-, Tenant- und Benutzer-Einstellungen
@@ -503,7 +474,7 @@ CREATE TABLE IF NOT EXISTS email_templates (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
-    UNIQUE KEY unique_template (COALESCE(tenant_id, 0), template_key),
+    UNIQUE KEY unique_template (tenant_id, template_key),
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_template_key (template_key),
     INDEX idx_is_active (is_active)
@@ -548,16 +519,7 @@ ON DUPLICATE KEY UPDATE
     category = VALUES(category),
     description = VALUES(description),
     is_public = VALUES(is_public);
-
-
--- =====================================================
--- 01-FEATURES
--- =====================================================
-
--- -----------------------------------------------------
--- Source: 01-features/01-features.sql
--- -----------------------------------------------------
-
+-- Feature Tables
 -- =====================================================
 -- 01-features.sql - Feature Management System
 -- =====================================================
@@ -616,13 +578,7 @@ ON DUPLICATE KEY UPDATE
     category = VALUES(category),
     base_price = VALUES(base_price),
     icon = VALUES(icon),
-    sort_order = VALUES(sort_order);
-
--- -----------------------------------------------------
--- Source: 01-features/02-tenant-features.sql
--- -----------------------------------------------------
-
--- =====================================================
+    sort_order = VALUES(sort_order);-- =====================================================
 -- 02-tenant-features.sql - Feature-Aktivierungen
 -- =====================================================
 -- Verknüpft Tenants mit ihren aktivierten Features
@@ -693,16 +649,7 @@ CREATE TABLE IF NOT EXISTS feature_usage_logs (
     INDEX idx_user_id (user_id),
     INDEX idx_created_at (created_at)
 );
-
-
--- =====================================================
--- 02-MODULES
--- =====================================================
-
--- -----------------------------------------------------
--- Source: 02-modules/admin-logs.sql
--- -----------------------------------------------------
-
+-- Module Tables
 -- =====================================================
 -- admin-logs.sql - Administrative Logs
 -- =====================================================
@@ -739,6 +686,7 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 -- Security Logs (Login-Versuche etc.)
 CREATE TABLE IF NOT EXISTS security_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT,
     user_id INT,
     action ENUM('login_success', 'login_failed', 'logout', 'password_reset', 'account_locked', 'suspicious_activity') NOT NULL,
     ip_address VARCHAR(45),
@@ -747,9 +695,11 @@ CREATE TABLE IF NOT EXISTS security_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     
     -- Indexes
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user_id (user_id),
     INDEX idx_action (action),
     INDEX idx_ip_address (ip_address),
@@ -796,13 +746,7 @@ CREATE TABLE IF NOT EXISTS system_logs (
     INDEX idx_level (level),
     INDEX idx_category (category),
     INDEX idx_created_at (created_at)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/blackboard.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- blackboard.sql - Digitales Schwarzes Brett
 -- =====================================================
 -- System für Ankündigungen und wichtige Mitteilungen
@@ -885,13 +829,7 @@ CREATE TABLE IF NOT EXISTS blackboard_confirmations (
     UNIQUE KEY unique_confirmation (entry_id, user_id),
     INDEX idx_entry_id (entry_id),
     INDEX idx_user_id (user_id)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/calendar.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- calendar.sql - Kalender-System
 -- =====================================================
 -- Verwaltung von Terminen, Events und Erinnerungen
@@ -975,6 +913,7 @@ CREATE TABLE IF NOT EXISTS calendar_categories (
 -- Event-Erinnerungen
 CREATE TABLE IF NOT EXISTS calendar_reminders (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     event_id INT NOT NULL,
     user_id INT NOT NULL,
     minutes_before INT NOT NULL,
@@ -983,10 +922,12 @@ CREATE TABLE IF NOT EXISTS calendar_reminders (
     sent_at TIMESTAMP NULL,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     
     -- Indexes
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_event_id (event_id),
     INDEX idx_user_id (user_id),
     INDEX idx_is_sent (is_sent)
@@ -995,65 +936,30 @@ CREATE TABLE IF NOT EXISTS calendar_reminders (
 -- Geteilte Kalender
 CREATE TABLE IF NOT EXISTS calendar_shares (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     calendar_owner_id INT NOT NULL,
     shared_with_id INT NOT NULL,
     permission_level ENUM('view', 'edit') DEFAULT 'view',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (calendar_owner_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (shared_with_id) REFERENCES users(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
     UNIQUE KEY unique_share (calendar_owner_id, shared_with_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_calendar_owner_id (calendar_owner_id),
     INDEX idx_shared_with_id (shared_with_id)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/chat.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- chat.sql - Chat-System
 -- =====================================================
 -- Interne Kommunikation mit Einzel- und Gruppenchats
 -- Mit Lesebestätigungen, Anhängen und Benachrichtigungen
 -- =====================================================
 
--- Chat-Nachrichten
-CREATE TABLE IF NOT EXISTS messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    sender_id INT NOT NULL,
-    receiver_id INT,
-    group_id INT,
-    content TEXT NOT NULL,
-    type ENUM('text', 'file', 'image', 'system') DEFAULT 'text',
-    file_url VARCHAR(500),
-    is_edited BOOLEAN DEFAULT FALSE,
-    edited_at TIMESTAMP NULL,
-    is_deleted BOOLEAN DEFAULT FALSE,
-    deleted_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES message_groups(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_sender_id (sender_id),
-    INDEX idx_receiver_id (receiver_id),
-    INDEX idx_group_id (group_id),
-    INDEX idx_created_at (created_at),
-    INDEX idx_is_deleted (is_deleted),
-    
-    -- Constraints
-    CHECK ((receiver_id IS NOT NULL AND group_id IS NULL) OR 
-           (receiver_id IS NULL AND group_id IS NOT NULL))
-);
-
--- Chat-Gruppen
+-- Chat-Gruppen (muss vor messages erstellt werden)
 CREATE TABLE IF NOT EXISTS message_groups (
     id INT PRIMARY KEY AUTO_INCREMENT,
     tenant_id INT NOT NULL,
@@ -1077,9 +983,45 @@ CREATE TABLE IF NOT EXISTS message_groups (
     INDEX idx_is_active (is_active)
 );
 
+-- Chat-Nachrichten
+CREATE TABLE IF NOT EXISTS messages (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    receiver_id INT,
+    group_id INT,
+    content TEXT NOT NULL,
+    type ENUM('text', 'file', 'image', 'system') DEFAULT 'text',
+    file_url VARCHAR(500),
+    is_edited BOOLEAN DEFAULT FALSE,
+    edited_at TIMESTAMP NULL,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES message_groups(id) ON DELETE CASCADE,
+    
+    -- Indexes
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_sender_id (sender_id),
+    INDEX idx_receiver_id (receiver_id),
+    INDEX idx_group_id (group_id),
+    INDEX idx_created_at (created_at),
+    INDEX idx_is_deleted (is_deleted),
+    
+    -- Constraints
+    CHECK ((receiver_id IS NOT NULL AND group_id IS NULL) OR 
+           (receiver_id IS NULL AND group_id IS NOT NULL))
+);
+
 -- Gruppenmitglieder
 CREATE TABLE IF NOT EXISTS message_group_members (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     group_id INT NOT NULL,
     user_id INT NOT NULL,
     role ENUM('member', 'admin') DEFAULT 'member',
@@ -1088,11 +1030,13 @@ CREATE TABLE IF NOT EXISTS message_group_members (
     notification_enabled BOOLEAN DEFAULT TRUE,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES message_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
     UNIQUE KEY unique_group_member (group_id, user_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_group_id (group_id),
     INDEX idx_user_id (user_id),
     INDEX idx_role (role)
@@ -1101,16 +1045,19 @@ CREATE TABLE IF NOT EXISTS message_group_members (
 -- Lesebestätigungen für Nachrichten
 CREATE TABLE IF NOT EXISTS message_read_receipts (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     message_id INT NOT NULL,
     user_id INT NOT NULL,
     read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     
     -- Indexes & Constraints
     UNIQUE KEY unique_read_receipt (message_id, user_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_message_id (message_id),
     INDEX idx_user_id (user_id)
 );
@@ -1118,6 +1065,7 @@ CREATE TABLE IF NOT EXISTS message_read_receipts (
 -- Nachrichten-Anhänge
 CREATE TABLE IF NOT EXISTS message_attachments (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     message_id INT NOT NULL,
     filename VARCHAR(255) NOT NULL,
     file_url VARCHAR(500) NOT NULL,
@@ -1126,15 +1074,18 @@ CREATE TABLE IF NOT EXISTS message_attachments (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
     
     -- Indexes
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_message_id (message_id)
 );
 
 -- Online-Status und Typing-Indicators
 CREATE TABLE IF NOT EXISTS user_chat_status (
     user_id INT PRIMARY KEY,
+    tenant_id INT NOT NULL,
     is_online BOOLEAN DEFAULT FALSE,
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_typing BOOLEAN DEFAULT FALSE,
@@ -1142,8 +1093,10 @@ CREATE TABLE IF NOT EXISTS user_chat_status (
     
     -- Foreign Keys
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     
     -- Indexes
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_is_online (is_online),
     INDEX idx_last_seen (last_seen)
 );
@@ -1151,6 +1104,7 @@ CREATE TABLE IF NOT EXISTS user_chat_status (
 -- Chat-Benachrichtigungen
 CREATE TABLE IF NOT EXISTS chat_notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    tenant_id INT NOT NULL,
     user_id INT NOT NULL,
     message_id INT NOT NULL,
     type ENUM('message', 'mention', 'group_invite') DEFAULT 'message',
@@ -1158,21 +1112,17 @@ CREATE TABLE IF NOT EXISTS chat_notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     -- Foreign Keys
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
     
     -- Indexes
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user_id (user_id),
     INDEX idx_message_id (message_id),
     INDEX idx_is_read (is_read),
     INDEX idx_created_at (created_at)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/documents.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- documents.sql - Dokumenten-Management System
 -- =====================================================
 -- Verwaltung von Mitarbeiter-Dokumenten
@@ -1209,13 +1159,7 @@ CREATE TABLE IF NOT EXISTS documents (
     INDEX idx_category (category),
     INDEX idx_uploaded_at (uploaded_at),
     INDEX idx_is_archived (is_archived)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/kvp.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- kvp.sql - Kontinuierlicher Verbesserungsprozess
 -- =====================================================
 -- Verwaltung von Verbesserungsvorschlägen
@@ -1389,13 +1333,7 @@ CREATE TABLE IF NOT EXISTS kvp_statistics (
     UNIQUE KEY unique_user_stats (tenant_id, user_id),
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_user_id (user_id)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/shifts.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- shifts.sql - Schichtplanungs-System
 -- =====================================================
 -- Verwaltung von Schichtplänen, Vorlagen und Tausch
@@ -1610,13 +1548,7 @@ CREATE TABLE IF NOT EXISTS absences (
     INDEX idx_dates (start_date, end_date),
     INDEX idx_type (type),
     INDEX idx_status (status)
-);
-
--- -----------------------------------------------------
--- Source: 02-modules/surveys.sql
--- -----------------------------------------------------
-
--- =====================================================
+);-- =====================================================
 -- surveys.sql - Umfrage-System
 -- =====================================================
 -- Erstellen und Auswerten von Mitarbeiterumfragen
@@ -1799,16 +1731,7 @@ CREATE TABLE IF NOT EXISTS survey_reminders (
     INDEX idx_reminder_date (reminder_date),
     INDEX idx_is_sent (is_sent)
 );
-
-
--- =====================================================
--- 03-VIEWS
--- =====================================================
-
--- -----------------------------------------------------
--- Source: 03-views/views.sql
--- -----------------------------------------------------
-
+-- Views
 -- =====================================================
 -- views.sql - Datenbank-Views
 -- =====================================================
@@ -1834,11 +1757,11 @@ SELECT
     COUNT(DISTINCT doc.id) AS document_count,
     COUNT(DISTINCT msg.id) AS message_count
 FROM users u
-LEFT JOIN departments d ON u.department_id = d.id
-LEFT JOIN user_teams ut ON u.id = ut.user_id
-LEFT JOIN teams t ON ut.team_id = t.id
-LEFT JOIN documents doc ON u.id = doc.user_id
-LEFT JOIN messages msg ON u.id = msg.sender_id
+LEFT JOIN departments d ON u.department_id = d.id AND d.tenant_id = u.tenant_id
+LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
+LEFT JOIN documents doc ON u.id = doc.user_id AND doc.tenant_id = u.tenant_id
+LEFT JOIN messages msg ON u.id = msg.sender_id AND msg.tenant_id = u.tenant_id
 WHERE u.role = 'employee'
 GROUP BY u.id;
 
@@ -1846,10 +1769,10 @@ GROUP BY u.id;
 CREATE OR REPLACE VIEW tenant_statistics AS
 SELECT 
     t.id AS tenant_id,
-    t.name AS tenant_name,
+    t.company_name AS tenant_name,
     t.subdomain,
     t.status,
-    t.plan_type,
+    t.current_plan AS plan_type,
     COUNT(DISTINCT u.id) AS total_users,
     COUNT(DISTINCT CASE WHEN u.role = 'admin' THEN u.id END) AS admin_count,
     COUNT(DISTINCT CASE WHEN u.role = 'employee' THEN u.id END) AS employee_count,
@@ -1857,7 +1780,7 @@ SELECT
     COUNT(DISTINCT tm.id) AS team_count,
     COUNT(DISTINCT tf.id) AS active_features,
     t.created_at,
-    t.subscription_end_date
+    t.trial_ends_at AS subscription_end_date
 FROM tenants t
 LEFT JOIN users u ON t.id = u.tenant_id AND u.status = 'active'
 LEFT JOIN departments d ON t.id = d.tenant_id
@@ -2007,4 +1930,23 @@ WHERE u.role = 'employee'
 AND u.status = 'active'
 AND doc.id IS NULL
 GROUP BY u.id;
+-- Test-Daten für Entwicklung
+-- Default Root User
+INSERT INTO tenants (id, company_name, subdomain, email, status) VALUES 
+(1, 'Root Tenant', 'root', 'root@assixx.local', 'active')
+ON DUPLICATE KEY UPDATE company_name=company_name;
 
+-- Default Users (Passwörter sind 'password123' gehashed)
+INSERT INTO users (tenant_id, username, email, password, role, first_name, last_name) VALUES
+(1, 'root', 'root@assixx.local', '$2b$10$mAE5VPU.OhaPQ8x4HDuH0.9AqvhN1kXnKMu7Q6Xh1rU4Gt5yRq8Am', 'root', 'Root', 'User'),
+(1, 'admin', 'admin@assixx.local', '$2b$10$mAE5VPU.OhaPQ8x4HDuH0.9AqvhN1kXnKMu7Q6Xh1rU4Gt5yRq8Am', 'admin', 'Admin', 'User'),
+(1, 'employee', 'employee@assixx.local', '$2b$10$mAE5VPU.OhaPQ8x4HDuH0.9AqvhN1kXnKMu7Q6Xh1rU4Gt5yRq8Am', 'employee', 'Test', 'Employee')
+ON DUPLICATE KEY UPDATE email=email;
+
+-- Basic features for root tenant
+INSERT INTO tenant_features (tenant_id, feature_id, is_active) 
+SELECT 1, id, TRUE FROM features 
+WHERE code IN ('basic_employees', 'document_upload', 'payslip_management')
+ON DUPLICATE KEY UPDATE is_active=TRUE;
+
+SET FOREIGN_KEY_CHECKS = 1;

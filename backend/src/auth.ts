@@ -28,7 +28,10 @@ function dbUserToDatabaseUser(dbUser: any): DatabaseUser {
     role: dbUser.role,
     tenant_id: dbUser.tenant_id,
     department_id: dbUser.department_id,
-    is_active: dbUser.status === 'active',
+    is_active:
+      dbUser.is_active === true ||
+      (dbUser.is_active as any) === 1 ||
+      (dbUser.is_active as any) === '1',
     is_archived: dbUser.is_archived || false,
     profile_picture: dbUser.profile_picture,
     phone_number: dbUser.phone || null,
@@ -43,28 +46,55 @@ function dbUserToDatabaseUser(dbUser: any): DatabaseUser {
 /**
  * Benutzerauthentifizierung mit Benutzername/E-Mail und Passwort
  */
+export interface AuthUserResult {
+  user: DatabaseUser | null;
+  error?: 'USER_NOT_FOUND' | 'INVALID_PASSWORD' | 'USER_INACTIVE';
+}
+
 export async function authenticateUser(
   usernameOrEmail: string,
   password: string
-): Promise<DatabaseUser | null> {
+): Promise<AuthUserResult> {
+  console.log('[DEBUG] authenticateUser called with:', usernameOrEmail);
   try {
     // Try to find user by username first
+    console.log('[DEBUG] Looking up user by username...');
     let user = await UserModel.findByUsername(usernameOrEmail);
 
     // If not found by username, try by email
     if (!user) {
+      console.log('[DEBUG] Not found by username, trying email...');
       user = await UserModel.findByEmail(usernameOrEmail);
     }
 
     if (!user) {
-      return null;
+      console.log('[DEBUG] User not found');
+      return { user: null, error: 'USER_NOT_FOUND' };
     }
 
+    console.log(
+      '[DEBUG] User found:',
+      user.username,
+      'tenant_id:',
+      user.tenant_id,
+      'is_active:',
+      user.is_active
+    );
     const isValid = await bcrypt.compare(password, user.password);
+    console.log('[DEBUG] Password comparison result:', isValid);
     if (isValid) {
-      return dbUserToDatabaseUser(user);
+      // Check if user is active
+      if (
+        user.is_active === false ||
+        (user.is_active as any) === 0 ||
+        (user.is_active as any) === '0'
+      ) {
+        console.log('[DEBUG] User is inactive, denying access');
+        return { user: null, error: 'USER_INACTIVE' };
+      }
+      return { user: dbUserToDatabaseUser(user) };
     } else {
-      return null;
+      return { user: null, error: 'INVALID_PASSWORD' };
     }
   } catch (error) {
     console.error(

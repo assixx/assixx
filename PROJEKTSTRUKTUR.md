@@ -223,36 +223,36 @@ uploads/
 
 ## 📄 Root-Dokumentation
 
-| Datei                       | Beschreibung                   |
-| --------------------------- | ------------------------------ |
-| 📄 ARCHITECTURE.md          | Systemarchitektur & Tech Stack |
-| 📄 BUGS-GEFUNDEN.md         | Dokumentierte Bugs aus Tests   |
-| 📄 CLAUDE.md                | AI-Assistenten Anweisungen     |
-| 📄 CLAUDE.local.md          | Lokale AI-Anweisungen          |
-| 📄 CONTRIBUTOR-AGREEMENT.md | Beitragsvereinbarung           |
-| 📄 COPYRIGHT                | Copyright-Informationen        |
-| 📄 DATABASE-SETUP-README.md | Datenbank-Setup Guide          |
-| 📄 DEPLOYMENT.md            | Production Deployment Guide    |
-| 📄 DESIGN-STANDARDS.md      | UI/UX Design Standards         |
-| 📄 DEVELOPMENT-GUIDE.md     | Entwicklungsrichtlinien        |
-| 📄 FEATURES.md              | Feature-Übersicht & Preise     |
-| 📄 FUNKTIONSTEST.md         | Umfassender Funktionstestplan  |
-| 📄 LICENSE                  | Lizenzinformationen            |
-| 📄 MIGRATION-CHECKLIST.md   | TypeScript Migration Checklist |
-| 📄 MIGRATION-EXAMPLE.md     | TypeScript Migration Beispiele |
-| 📄 MIGRATION-LOG.md         | Migrationsprotokoll            |
-| 📄 MIGRATION-PLAN.md        | Migrationsplan (abgeschlossen) |
-| 📄 MIGRATION-SUMMARY.md     | TypeScript Migration Zusammenf.|
-| 📄 MIGRATION-TYPESCRIPT-PLAN.md | TypeScript Migrationsplan  |
-| 📄 PROJEKTSTRUKTUR.md       | Diese Datei                    |
-| 📄 README.md                | Projekt-Übersicht              |
-| 📄 ROADMAP.md               | Entwicklungsfahrplan           |
-| 📄 SETUP-MACOS.md           | macOS Setup Guide              |
-| 📄 SETUP-QUICKSTART.md      | Schnellstart Guide (veraltet)  |
-| 📄 SETUP-UBUNTU-LINUX.md    | Ubuntu/Linux Setup Guide       |
-| 📄 SETUP-WINDOWS-WSL.md     | Windows WSL Setup Guide        |
-| 📄 TERMS-OF-USE.md          | Nutzungsbedingungen            |
-| 📄 TODO.md                  | Aktuelle Aufgabenliste         |
+| Datei                           | Beschreibung                    |
+| ------------------------------- | ------------------------------- |
+| 📄 ARCHITECTURE.md              | Systemarchitektur & Tech Stack  |
+| 📄 BUGS-GEFUNDEN.md             | Dokumentierte Bugs aus Tests    |
+| 📄 CLAUDE.md                    | AI-Assistenten Anweisungen      |
+| 📄 CLAUDE.local.md              | Lokale AI-Anweisungen           |
+| 📄 CONTRIBUTOR-AGREEMENT.md     | Beitragsvereinbarung            |
+| 📄 COPYRIGHT                    | Copyright-Informationen         |
+| 📄 DATABASE-SETUP-README.md     | Datenbank-Setup Guide           |
+| 📄 DEPLOYMENT.md                | Production Deployment Guide     |
+| 📄 DESIGN-STANDARDS.md          | UI/UX Design Standards          |
+| 📄 DEVELOPMENT-GUIDE.md         | Entwicklungsrichtlinien         |
+| 📄 FEATURES.md                  | Feature-Übersicht & Preise      |
+| 📄 FUNKTIONSTEST.md             | Umfassender Funktionstestplan   |
+| 📄 LICENSE                      | Lizenzinformationen             |
+| 📄 MIGRATION-CHECKLIST.md       | TypeScript Migration Checklist  |
+| 📄 MIGRATION-EXAMPLE.md         | TypeScript Migration Beispiele  |
+| 📄 MIGRATION-LOG.md             | Migrationsprotokoll             |
+| 📄 MIGRATION-PLAN.md            | Migrationsplan (abgeschlossen)  |
+| 📄 MIGRATION-SUMMARY.md         | TypeScript Migration Zusammenf. |
+| 📄 MIGRATION-TYPESCRIPT-PLAN.md | TypeScript Migrationsplan       |
+| 📄 PROJEKTSTRUKTUR.md           | Diese Datei                     |
+| 📄 README.md                    | Projekt-Übersicht               |
+| 📄 ROADMAP.md                   | Entwicklungsfahrplan            |
+| 📄 SETUP-MACOS.md               | macOS Setup Guide               |
+| 📄 SETUP-QUICKSTART.md          | Schnellstart Guide (veraltet)   |
+| 📄 SETUP-UBUNTU-LINUX.md        | Ubuntu/Linux Setup Guide        |
+| 📄 SETUP-WINDOWS-WSL.md         | Windows WSL Setup Guide         |
+| 📄 TERMS-OF-USE.md              | Nutzungsbedingungen             |
+| 📄 TODO.md                      | Aktuelle Aufgabenliste          |
 
 ## 🔄 Migration Status
 

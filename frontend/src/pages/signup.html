@@ -6,10 +6,17 @@
     <title>Registrieren - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
     <style>
       @import url('/styles/dashboard-theme.css');
 
       /* Dashboard-Style Design - weniger bunt, mehr dunkel/weiß/blau */
+      
+      /* Emoji Font Support */
+      .country-option, #selectedFlag {
+        font-family: 'Ubuntu', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+      }
+      
       body {
         min-height: 100vh;
         display: flex;
@@ -636,6 +643,12 @@
     </style>
   </head>
   <body>
+    <!-- Back to Homepage Button -->
+    <a href="/" class="back-button">
+      <span class="icon">←</span>
+      <span>Zurück zur Hauptseite</span>
+    </a>
+    
     <!-- Help Button -->
     <div class="help-button" onclick="showHelp()">?</div>
 
@@ -643,26 +656,12 @@
       <!-- Header -->
       <div class="signup-header">
         <div class="header-left">
-          <img src="/assets/images/logo.png" alt="Assixx Logo" class="signup-logo" />
+          <img src="/assets/images/logo.png" alt="Assixx Logo" class="signup-logo" onclick="window.location.reload()" style="cursor: pointer;" />
           <div class="header-text">
             <h1></h1>
             <!-- machen wir anders spöter -->
             <p></p>
             <!-- machen wir anders spöter -->
-          </div>
-        </div>
-        <div class="pricing-info">
-          <div class="pricing-item">
-            🏢 Root:
-            <strong>€149/M</strong>
-          </div>
-          <div class="pricing-item">
-            👔 Admin:
-            <strong>€19/M</strong>
-          </div>
-          <div class="pricing-item">
-            👷 Mitarbeiter:
-            <strong>€5/M</strong>
           </div>
         </div>
       </div>
@@ -868,11 +867,60 @@
           0 8px 32px rgba(0, 0, 0, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
+      
+      /* Back Button - Glassmorphismus Style wie in design-standards.html */
+      .back-button {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow:
+          0 4px 16px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      
+      .back-button:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--text-primary);
+        transform: translateX(-5px);
+        box-shadow:
+          0 6px 24px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      
+      .back-button:active {
+        transform: translateX(-3px) scale(0.98);
+      }
+      
+      .back-button .icon {
+        font-size: 18px;
+        transition: transform 0.3s ease;
+      }
+      
+      .back-button:hover .icon {
+        transform: translateX(-3px);
+      }
     </style>
 
     <script>
       // Custom Dropdown Functions
       let currentCountryCode = '+49';
+      let currentCountryFlag = '🇩🇪';
       let currentPlan = 'enterprise';
 
       // Country Dropdown
@@ -916,6 +964,7 @@
         document.getElementById('selectedCode').textContent = code;
         document.getElementById('countryCode').value = code;
         currentCountryCode = code;
+        currentCountryFlag = flag;
 
         document.getElementById('countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');

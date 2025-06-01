@@ -3,6 +3,7 @@
 ## 🎯 Was ist Docker?
 
 Docker ist wie eine "Verpackung" für deine Anwendung:
+
 - **Container** = Eine Box mit allem was deine App braucht
 - **Image** = Die Bauanleitung für die Box
 - **docker-compose** = Startet mehrere Boxen zusammen (Backend, Datenbank, etc.)
@@ -177,6 +178,7 @@ docker volume prune       # Ungenutzte Volumes löschen
 ## ⚡ Pro-Tipps
 
 1. **Alias erstellen** für häufige Befehle:
+
 ```bash
 # In ~/.bashrc hinzufügen:
 alias dc='docker-compose'
@@ -186,6 +188,7 @@ alias dclogs='docker-compose logs -f'
 ```
 
 2. **Docker Desktop Settings**:
+
    - Resources → Advanced → Memory: Mindestens 4GB
    - Resources → Advanced → CPUs: Mindestens 2
 
@@ -202,6 +205,7 @@ alias dclogs='docker-compose logs -f'
 ---
 
 **Tipp**: Keine Angst vor Docker! Die meiste Zeit brauchst du nur:
+
 - `docker-compose up -d` (starten)
 - `docker-compose logs -f` (Logs anschauen)
 - `docker-compose restart backend` (nach Änderungen)

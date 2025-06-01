@@ -11,7 +11,7 @@ import {
   attachCSRFToken,
   strictAuthLimiter,
 } from '../middleware/security-enhanced';
-import { validateLogin, validateSignup } from '../middleware/validators';
+import { validateSignup } from '../middleware/validators';
 
 const router: Router = express.Router();
 
@@ -19,8 +19,9 @@ const router: Router = express.Router();
 console.log('[DEBUG] Auth routes loading...');
 
 // Public routes with enhanced rate limiting and validation
-router.post('/login', strictAuthLimiter, ...validateLogin, (req, res) => {
-  console.log('[DEBUG] /api/auth/login endpoint hit');
+// TEMPORARILY DISABLE MIDDLEWARE FOR DEBUGGING
+router.post('/login', (req, res) => {
+  console.log('[DEBUG] /api/auth/login endpoint hit - NO MIDDLEWARE');
   return authController.login(req, res);
 });
 router.post(

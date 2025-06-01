@@ -50,7 +50,18 @@ interface SubdomainAvailabilityResponse {
 
 // Öffentliche Signup-Route
 router.post('/signup', async (req, res): Promise<void> => {
+  console.log('[SIGNUP DEBUG] Request received!');
   try {
+    logger.info(
+      '[DEBUG] Signup request received at ' + new Date().toISOString(),
+      { body: req.body }
+    );
+
+    // Debug DB connection
+    const pool = (await import('../database')).default;
+    logger.info('[DEBUG] Pool type:', typeof pool);
+    logger.info('[DEBUG] Pool config:', (pool as any).config?.connectionConfig);
+
     const {
       company_name,
       subdomain,
