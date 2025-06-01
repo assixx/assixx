@@ -16,8 +16,9 @@ RUN npm ci --only=production && \
 # Backend Source kopieren
 COPY backend/ ./backend/
 
-# Fix-Script kopieren
-COPY scripts/fix-esm-imports.js ./
+# Fix-Script kopieren (in scripts Ordner)
+RUN mkdir -p scripts
+COPY scripts/fix-esm-imports.js ./scripts/
 
 # TypeScript kompilieren
 RUN npm run build:ts
