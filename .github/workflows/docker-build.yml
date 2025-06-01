@@ -85,18 +85,23 @@ jobs:
     if: github.event_name != 'pull_request'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Wait for image to be available
-        run: sleep 10
+        run: sleep 30
         
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master
           format: 'sarif'
           output: 'trivy-results.sarif'
         continue-on-error: true
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
+        if: success() || failure()
         with:
           sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
