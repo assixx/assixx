@@ -1,7 +1,7 @@
 # 🏭 Assixx - Multi-Tenant SaaS Platform für Industrieunternehmen
 
 [![Version](https://img.shields.io/badge/Version-2025.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
-[![Status](https://img.shields.io/badge/Status-Beta%20Ready-yellow.svg)](https://github.com/SCS-Technik/Assixx)
+[![Status](https://img.shields.io/badge/Status-Development%20v0.0.2-yellow.svg)](https://github.com/SCS-Technik/Assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
 > **Digitalisierung von Papier zu Cloud - Speziell für produzierende Unternehmen**
@@ -19,6 +19,23 @@ Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehm
 
 ## ⚡ Schnellstart
 
+### 🐳 Docker Setup (Empfohlen):
+
+Für die schnellste und einfachste Einrichtung der Entwicklungsumgebung:
+
+```bash
+# Repository klonen
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx
+
+# Docker-Umgebung starten
+docker-compose -f docker-compose.dev.yml up -d
+
+# Auf http://localhost:3000 zugreifen
+```
+
+Siehe **[DOCKER-SETUP.md](./DOCKER-SETUP.md)** für detaillierte Anweisungen und **[DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md)** für Docker-Einsteiger.
+
 ### Platform-spezifische Setup-Guides:
 
 - **[Windows (WSL)](./SETUP-WINDOWS-WSL.md)** - Kompletter Setup-Guide für Windows mit WSL
@@ -34,6 +51,10 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 | 📁 [PROJEKTSTRUKTUR.md](./PROJEKTSTRUKTUR.md)             | Vollständige Verzeichnisstruktur     |
 | 📋 [FEATURES.md](./FEATURES.md)                           | Komplette Feature-Übersicht & Preise |
 | 🏗️ [ARCHITECTURE.md](./ARCHITECTURE.md)                   | Technische Architektur & Stack       |
+| 🐳 [DOCKER-SETUP.md](./DOCKER-SETUP.md)                   | Docker Development Environment       |
+| 🐳 [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) | Docker Anleitung für Einsteiger   |
+| 🐳 [DOCKER-SETUP-SUMMARY.md](./DOCKER-SETUP-SUMMARY.md)   | Docker Setup Zusammenfassung         |
+| 💾 [BACKUP-GUIDE.md](./BACKUP-GUIDE.md)                   | Backup-Strategie & Anleitung         |
 | 🪟 [SETUP-WINDOWS-WSL.md](./SETUP-WINDOWS-WSL.md)         | Windows (WSL) Setup Guide            |
 | 🐧 [SETUP-UBUNTU-LINUX.md](./SETUP-UBUNTU-LINUX.md)       | Ubuntu/Linux Setup Guide             |
 | 🍎 [SETUP-MACOS.md](./SETUP-MACOS.md)                     | macOS Setup Guide                    |
@@ -49,6 +70,9 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 ### ✅ Bereits verfügbar:
 
 - **Benutzerverwaltung** (Multi-Tenant, Rollen)
+- **Multi-Tenant Security** (Verbesserte Tenant-Isolation)
+- **Docker Development Environment** (Komplette Entwicklungsumgebung)
+- **Automatisches Backup-System** (Tägliche Backups, 30 Tage Aufbewahrung)
 - **Dokumenten-System** (Upload, Kategorien, Zugriffsrechte)
 - **Schwarzes Brett** (Digitale Mitteilungen)
 - **Kalender** (Events, Drag & Drop)
@@ -60,8 +84,7 @@ Siehe auch [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) für detaillie
 
 - **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut QUESTIONS.md)
 - **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut QUESTIONS.md)
-- **Chat-System** - Bereits implementiert (KRITISCH laut QUESTIONS.md)
-- **Urlaubsantrag** - Digitaler Workflow
+- **Urlaubsantrag** - Digitaler Workflow (KRITISCH laut QUESTIONS.md)
 
 ### 🔮 Geplant:
 
@@ -79,6 +102,31 @@ Siehe [FEATURES.md](./FEATURES.md) für Details und Preise.
 - **Echtzeit**: WebSocket für Chat & Notifications
 
 Siehe [ARCHITECTURE.md](./ARCHITECTURE.md) für technische Details.
+
+## 🐳 Docker Quick Start
+
+Die Docker-Entwicklungsumgebung bietet:
+
+- ✅ **Automatisches Setup** - Datenbank, Backend und Frontend in einem Befehl
+- ✅ **Hot-Reload** - Änderungen werden sofort sichtbar
+- ✅ **Isolierte Umgebung** - Keine Konflikte mit lokalen Installationen
+- ✅ **Production-Ready** - Gleiche Umgebung wie in Production
+
+```bash
+# Entwicklungsumgebung starten
+docker-compose -f docker-compose.dev.yml up -d
+
+# Logs anzeigen
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Umgebung stoppen
+docker-compose -f docker-compose.dev.yml down
+```
+
+Details siehe:
+- [DOCKER-SETUP.md](./DOCKER-SETUP.md) - Vollständige Anleitung
+- [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) - Für Docker-Einsteiger
+- [BACKUP-GUIDE.md](./BACKUP-GUIDE.md) - Backup-Strategie
 
 ## 👥 Team & Kontakt
 

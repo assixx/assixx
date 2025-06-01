@@ -1,13 +1,157 @@
 # Assixx Development Guide
 
-> **Letzte Aktualisierung:** 26.05.2025  
-> **Version:** 1.0.0
+> **Letzte Aktualisierung:** 06.02.2025  
+> **Version:** 2.0.0
 
 ## 🚨 WICHTIG: Vor dem Start
 
 1. **TODO-Liste lesen**: `cat /home/scs/projects/Assixx/TODO.md`
 2. **CLAUDE.md prüfen**: Enthält spezielle Anweisungen für AI-Assistenten
 3. **Git Status**: Immer prüfen vor Änderungen
+4. **Docker installiert?**: Docker Desktop oder Docker Engine benötigt
+
+## 🐳 Docker Development Workflow (EMPFOHLEN)
+
+Docker ist die empfohlene Entwicklungsmethode für Assixx, da es eine konsistente Umgebung für alle Entwickler bietet.
+
+### 🚀 Development starten mit Docker
+
+```bash
+# 1. Vollständige Entwicklungsumgebung starten
+docker-compose up
+
+# 2. Im Hintergrund ausführen
+docker-compose up -d
+
+# 3. Nur bestimmte Services starten
+docker-compose up backend frontend
+
+# 4. Mit Live-Logs
+docker-compose up --follow
+```
+
+### 🔄 Live-Reload Funktionen
+
+- **Backend**: Nodemon überwacht automatisch alle TypeScript-Änderungen
+- **Frontend**: Vite HMR (Hot Module Replacement) für sofortige Updates
+- **Datenbank**: Persistent Volume, Änderungen bleiben erhalten
+
+### 🧪 Tests in Docker ausführen
+
+```bash
+# Unit Tests im Backend Container
+docker-compose exec backend npm test
+
+# Integration Tests
+docker-compose exec backend npm run test:integration
+
+# Frontend Tests
+docker-compose exec frontend npm test
+
+# Alle Tests auf einmal
+docker-compose run --rm backend npm run test:all
+```
+
+### 📊 Logs und Debugging
+
+```bash
+# Alle Logs anzeigen
+docker-compose logs
+
+# Logs eines bestimmten Services
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs mysql
+
+# Live-Logs folgen
+docker-compose logs -f backend
+
+# Letzte 100 Zeilen
+docker-compose logs --tail=100 backend
+
+# In Container einloggen für Debugging
+docker-compose exec backend bash
+docker-compose exec mysql mysql -u root -p
+```
+
+### 🛠️ Docker-spezifische Debugging Tipps
+
+1. **Container neu bauen nach Dependency-Änderungen**:
+   ```bash
+   docker-compose build --no-cache backend
+   docker-compose up
+   ```
+
+2. **Volumes prüfen**:
+   ```bash
+   docker volume ls
+   docker volume inspect assixx_mysql_data
+   ```
+
+3. **Netzwerk-Debugging**:
+   ```bash
+   # Container IPs anzeigen
+   docker network inspect assixx_default
+   
+   # Verbindung zwischen Containern testen
+   docker-compose exec backend ping mysql
+   ```
+
+4. **Performance-Probleme**:
+   ```bash
+   # Resource-Nutzung anzeigen
+   docker stats
+   
+   # Container-Prozesse
+   docker-compose top
+   ```
+
+5. **Logs in Datei speichern**:
+   ```bash
+   docker-compose logs > debug.log
+   ```
+
+### 🔧 Häufige Docker-Befehle
+
+```bash
+# Alles stoppen und aufräumen
+docker-compose down
+
+# Mit Volumes löschen (VORSICHT: Löscht Datenbank!)
+docker-compose down -v
+
+# Einzelnen Container neustarten
+docker-compose restart backend
+
+# Status prüfen
+docker-compose ps
+
+# Environment-Variablen prüfen
+docker-compose exec backend env
+
+# Datenbank-Backup erstellen
+docker-compose exec mysql mysqldump -u root -p assixx > backup.sql
+```
+
+## 🖥️ Alternative: Lokale Entwicklung (Fallback)
+
+Falls Docker nicht verfügbar ist, kann auch lokal entwickelt werden:
+
+```bash
+# Backend starten
+cd backend
+npm run dev  # Mit nodemon und TypeScript
+
+# Frontend in neuem Terminal
+cd frontend
+npm run dev  # Vite Dev Server
+```
+
+**Hinweis**: Die lokale Entwicklung erfordert:
+- Node.js 18+
+- MySQL 8.0+
+- Korrekte .env Konfiguration
+- Alle npm dependencies installiert
 
 ## 📝 Code-Kommentierung Standards
 
@@ -189,7 +333,24 @@ res.status(400).json({
 
 ## 🧪 Testing
 
-### Lokales Testen
+### Testen mit Docker (EMPFOHLEN)
+
+```bash
+# Gesamte Entwicklungsumgebung starten
+docker-compose up
+
+# API Health Check
+curl http://localhost:3000/api/health
+
+# Frontend im Browser
+# http://localhost:3000 (Production Build)
+# http://localhost:5173 (Vite Dev Server)
+
+# Tests ausführen
+docker-compose exec backend npm test
+```
+
+### Alternative: Lokales Testen
 
 ```bash
 # Backend starten
@@ -231,21 +392,56 @@ npm run dev
 
 ## 🚀 Deployment
 
-### Entwicklung
+### Entwicklung mit Docker (EMPFOHLEN)
+
+```bash
+# Development Environment starten
+docker-compose up
+
+# Oder im Hintergrund
+docker-compose up -d
+
+# Logs prüfen
+docker-compose logs -f
+```
+
+### Alternative: Lokale Entwicklung
 
 ```bash
 cd backend
-npm run dev  # Mit nodemon
+npm run dev  # Mit nodemon und TypeScript
+
+# Frontend in separatem Terminal
+cd frontend
+npm run dev
 ```
 
-### Production
+### Production mit Docker
+
+```bash
+# Production Build erstellen
+docker-compose -f docker-compose.yml build
+
+# Production starten
+docker-compose -f docker-compose.yml up -d
+
+# Mit Monitoring Stack
+docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+```
+
+### Alternative: Production ohne Docker
 
 ```bash
 cd backend
-npm start    # Ohne nodemon
+npm run build  # TypeScript kompilieren
+npm start      # Production Server
+
+cd frontend
+npm run build  # Production Build
+# Static files werden von Express ausgeliefert
 ```
 
-Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) für Cloud-Deployment.
+Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) für Cloud-Deployment und [DOCKER-SETUP.md](./DOCKER-SETUP.md) für detaillierte Docker-Konfiguration.
 
 ## 📐 Code-Standards
 
@@ -282,6 +478,27 @@ function getUser(id) {
 
 ## 🐛 Debugging
 
+### Docker Container Debugging
+
+```bash
+# Live-Logs eines Services
+docker-compose logs -f backend
+
+# In Container Shell öffnen
+docker-compose exec backend bash
+
+# Node.js Debugger in Docker
+# 1. In docker-compose.yml: command: ["node", "--inspect=0.0.0.0:9229", "dist/server.js"]
+# 2. Port mapping: ports: ["9229:9229"]
+# 3. Chrome: chrome://inspect
+
+# MySQL Queries debuggen
+docker-compose exec mysql mysql -u root -p -e "SHOW PROCESSLIST;"
+
+# Environment prüfen
+docker-compose exec backend printenv
+```
+
 ### Console Logs
 
 ```javascript
@@ -295,6 +512,17 @@ logger.info('User action', { userId, action });
 logger.error('System error', { error, context });
 ```
 
+### Logs in Docker finden
+
+```bash
+# Backend Logs
+docker-compose exec backend tail -f logs/app.log
+docker-compose exec backend tail -f logs/error.log
+
+# Alle Logs exportieren
+docker-compose logs > full-debug.log 2>&1
+```
+
 ### Chrome DevTools
 
 - Network Tab: API-Calls prüfen
@@ -302,8 +530,33 @@ logger.error('System error', { error, context });
 - Application: LocalStorage/Cookies
 - Sources: Breakpoints setzen
 
+### Docker-spezifische Probleme lösen
+
+1. **"Cannot connect to MySQL"**:
+   ```bash
+   # Warten bis MySQL bereit ist
+   docker-compose exec backend nc -zv mysql 3306
+   ```
+
+2. **"EADDRINUSE: Port already in use"**:
+   ```bash
+   # Prozess auf Port finden
+   lsof -i :3000
+   # Oder Docker bereinigen
+   docker-compose down
+   docker system prune
+   ```
+
+3. **"Module not found"**:
+   ```bash
+   # Container neu bauen
+   docker-compose build --no-cache backend
+   ```
+
 ## 📚 Weiterführende Dokumentation
 
+- [DOCKER-SETUP.md](./DOCKER-SETUP.md) - Docker Konfiguration und Setup
+- [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) - Docker Einsteiger-Guide
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System-Architektur
 - [API-TEST-README.md](./backend/API-TEST-README.md) - API-Dokumentation
 - [SECURITY-IMPROVEMENTS.md](./backend/SECURITY-IMPROVEMENTS.md) - Sicherheit

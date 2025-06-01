@@ -209,6 +209,30 @@ function validateSubdomain(value) {
    - Bei UI-Änderungen → DESIGN-STANDARDS.md prüfen
    - Bei Struktur-Änderungen → PROJEKTSTRUKTUR.md aktualisieren
 
+### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (01.06.2025)
+
+#### Version 0.1.0 - Stabilität vor Features!
+- **Fokus:** Systematisches Testing & Debugging
+- **Verantwortlich:** Simon testet jede Seite einzeln
+- **Ziel:** Alle bestehenden Features zu 100% funktionsfähig machen
+- **Zeitrahmen:** 2-3 Wochen
+
+#### Version 1.0.0 - Beta-Features
+- **Erst NACH Version 0.1.0**
+- **Deal-Breaker Features:** Urlaub, Gehalt, TPM
+- **Zeitrahmen:** 4-5 Wochen
+
+#### Docker ist Standard!
+- **Entwicklung:** docker-compose up
+- **Keine lokale Installation mehr nötig**
+- **Backup-System läuft automatisch**
+
+### 📌 WICHTIGE UPDATES (01.06.2025)
+- ✅ Docker Setup komplett
+- ✅ Multi-Tenant Isolation behoben
+- ✅ Automatisches Backup-System aktiv
+- 🔥 AKTUELL: Systematisches Testing für v0.1.0
+
 ### 📊 PROJEKT-ÜBERSICHT
 
 | Kategorie      | Information                           |

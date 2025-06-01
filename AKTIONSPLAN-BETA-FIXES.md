@@ -1,131 +1,136 @@
 # 🚀 Aktionsplan für Beta-Test Vorbereitung
 
-> **Stand:** 31.05.2025  
+> **Stand:** 01.06.2025  
 > **Bugs gefunden:** 29 (7 kritisch, 11 mittel, 11 klein)  
-> **Ziel:** System bereit für Beta-Test mit 5-10 Industriefirmen
+> **Neue Strategie:** Fokus auf Version 0.1.0 - Stabilität vor Features  
+> **Ziel:** Stabiles System für ersten Beta-Test
 
-## 📅 Zeitplan: 2-3 Wochen bis Beta-Ready
+## 📅 Zeitplan: 
+- **Version 0.1.0:** 2-3 Wochen (Stabilisierung)
+- **Version 1.0.0:** 4-5 Wochen (Features)
 
-### WOCHE 1: Kritische Bugs & Security (5-7 Tage)
+### PHASE 1: Version 0.1.0 - Stabilisierung (2-3 Wochen)
 
-#### Tag 1-2: Security & Stabilität
+#### Erledigte Aufgaben ✅
 
-1. **🔴 KRITISCH: Multi-Tenant Isolation fixen**
+1. **✅ BEHOBEN: Multi-Tenant Isolation**
+   - Alle API-Endpoints mit tenant_id Filter versehen
+   - Security-Audit durchgeführt
+   - Tests für Multi-Tenant Isolation implementiert
+   - **Status:** Vollständig behoben
 
-   - [ ] `/api/admin/documents` - Tenant-Filter hinzufügen
-   - [ ] Alle API-Endpoints auf tenant_id Filter prüfen
-   - [ ] Security-Audit aller Endpoints
-   - [ ] Tests für Multi-Tenant Isolation
-   - **Geschätzt:** 8-12 Stunden
+2. **✅ ERLEDIGT: Docker Setup**
+   - Docker-Compose für Entwicklung und Produktion
+   - Automatisierte DB-Initialisierung
+   - Health Checks implementiert
+   - **Status:** Einsatzbereit
 
-2. **🔴 TypeScript Build-Prozess reparieren**
+3. **✅ IMPLEMENTIERT: Backup System**
+   - Automatische tägliche Backups
+   - Backup-Strategie dokumentiert
+   - Restore-Prozess getestet
+   - **Status:** Funktionsfähig
+
+#### Noch zu beheben: Kritische Bugs
+
+1. **🔴 TypeScript Build-Prozess reparieren**
    - [ ] Frontend Build-Prozess prüfen (`npm run build`)
    - [ ] HTML-Imports von .ts auf kompilierte .js ändern
    - [ ] Vite-Konfiguration optimieren
-   - [ ] CI/CD für automatische Builds
    - **Geschätzt:** 4-6 Stunden
 
-#### Tag 3-4: Core APIs implementieren
-
-3. **🔴 Mitarbeiter-Erstellung API**
-
+2. **🔴 Mitarbeiter-Erstellung API**
    - [ ] POST `/api/admin/employees` Route implementieren
    - [ ] Validierung & Error Handling
    - [ ] Integration mit Auth-System
    - [ ] Frontend-Integration testen
    - **Geschätzt:** 6-8 Stunden
 
-4. **🔴 Fehlende API-Endpoints**
+3. **🔴 Fehlende API-Endpoints**
    - [ ] Schwarzes Brett API (`/api/blackboard`)
    - [ ] Dokumenten-Upload API (`/documents/upload`)
    - [ ] Multi-Tenant Endpoints (`/api/tenants`, `/api/features/status`)
    - **Geschätzt:** 8-10 Stunden
 
-#### Tag 5-7: Frontend-Fixes
-
-5. **🟡 JavaScript-Fehler beheben**
+4. **🟡 JavaScript-Fehler beheben**
    - [ ] `showSection` Funktion implementieren/importieren
    - [ ] `openEntryForm` für Schwarzes Brett
    - [ ] getElementById Null-Checks
    - [ ] Session-Datum Parsing fixen
    - **Geschätzt:** 4-6 Stunden
 
-### WOCHE 2: Features & Mobile (5-7 Tage)
+#### Systematisches Testing & Bug-Fixing
 
-#### Tag 8-10: Feature-System
+5. **🧪 Funktionstest durchführen**
+   - [ ] FUNKTIONSTEST.md systematisch durcharbeiten
+   - [ ] Jeden gefundenen Bug dokumentieren in BUGS-GEFUNDEN.md
+   - [ ] Bugs nach Priorität beheben
+   - [ ] Nach jedem Fix erneut testen
+   - **Geschätzt:** 2-3 Tage kontinuierlich
 
-6. **🟡 Feature-Management vervollständigen**
+6. **🟡 Feature-Management stabilisieren**
    - [ ] Alle Features in DB registrieren
    - [ ] Feature-Aktivierung für neue Tenants
    - [ ] Survey-Feature standardmäßig aktivieren
    - [ ] Admin-Berechtigungen für KVP
    - **Geschätzt:** 6-8 Stunden
 
-#### Tag 11-14: Mobile Optimierung
+### PHASE 2: Nach Version 0.1.0 - Feature-Entwicklung (Version 1.0.0)
 
-7. **📱 Mobile-First Implementation**
-   - [ ] Responsive Grid-System
-   - [ ] Hamburger-Menü für Mobile
-   - [ ] Touch-optimierte Buttons (min. 44px)
-   - [ ] Viewport Meta-Tags
-   - [ ] Critical Features mobile-ready:
-     - Login/Logout
-     - Dashboard
-     - Schichtplan
-     - Chat
-     - KVP
-   - **Geschätzt:** 10-15 Stunden
+#### Deal-Breaker Features (Verschoben auf Phase 2)
 
-### WOCHE 3: Testing & Polish (3-5 Tage)
+1. **🌴 Urlaubsantrag-System** 
+   - Komplettes Feature mit Genehmigungsworkflow
+   - Mobile-optimiert für Mitarbeiter
+   - **Zeitrahmen:** Woche 1 nach v0.1.0
 
-#### Tag 15-16: Integration Testing
+2. **💰 Gehaltsabrechnung Upload**
+   - Sichere Dokumentenverwaltung
+   - Mitarbeiter-spezifische Zugriffsrechte
+   - **Zeitrahmen:** Woche 1-2 nach v0.1.0
 
-8. **🧪 Vollständige Tests nach Fixes**
-   - [ ] Alle 29 Bugs erneut testen
-   - [ ] Chat mit mehreren Usern
-   - [ ] KVP-Erstellung
-   - [ ] Schichtplan mit Mitarbeitern
-   - [ ] Survey-System
-   - [ ] Dokumenten-Upload/Download
-   - **Geschätzt:** 8 Stunden
+3. **🔧 TPM-System (Total Productive Maintenance)**
+   - Wartungsplanung und -verfolgung
+   - Maschinenverwaltung
+   - **Zeitrahmen:** Woche 2-3 nach v0.1.0
 
-#### Tag 17-18: Performance & UX
+4. **📱 Mobile/PWA Optimierung**
+   - Progressive Web App Features
+   - Offline-Funktionalität
+   - Push-Benachrichtigungen
+   - **Zeitrahmen:** Parallel zu anderen Features
 
-9. **⚡ Performance-Optimierung**
+#### Nice-to-Have Features
 
-   - [ ] Chat-Polling auf 30 Sekunden
-   - [ ] Frontend-Bundle-Size reduzieren
-   - [ ] Lazy Loading für Routen
-   - [ ] CDN für Assets
-   - **Geschätzt:** 6 Stunden
-
-10. **🎨 Design-Konsistenz**
-    - [ ] Glassmorphismus überall anwenden
-    - [ ] Navigation vereinheitlichen
-    - [ ] Error-States designen
-    - [ ] Loading-States hinzufügen
-    - **Geschätzt:** 8 Stunden
-
-## 📊 Priorisierung nach Impact
-
-### Must-Have für Beta (Woche 1)
-
-- ✅ Multi-Tenant Security
-- ✅ Mitarbeiter erstellen können
-- ✅ Stabile Build-Pipeline
-- ✅ Core Features funktionsfähig
-
-### Should-Have für Beta (Woche 2)
-
-- ✅ Mobile-Ansicht (Basis)
-- ✅ Feature-Management
-- ✅ Alle APIs funktionsfähig
-
-### Nice-to-Have (Nach Beta)
-
+- Performance-Feintuning
+- Erweiterte Reporting-Features
 - Design-Perfektion
 - Erweiterte Mobile Features
-- Performance-Feintuning
+
+## 📊 Priorisierung für Version 0.1.0
+
+### Must-Have für v0.1.0 (Stabilität)
+
+- ✅ Multi-Tenant Security ✅ BEHOBEN
+- ✅ Docker Setup ✅ ERLEDIGT
+- ✅ Backup System ✅ IMPLEMENTIERT
+- ⏳ Mitarbeiter erstellen können
+- ⏳ Stabile Build-Pipeline
+- ⏳ Core Features funktionsfähig
+- ⏳ Alle kritischen Bugs behoben
+
+### Should-Have für v0.1.0
+
+- ⏳ Feature-Management stabilisiert
+- ⏳ Alle APIs funktionsfähig
+- ⏳ Basis-Tests durchgeführt
+
+### Verschoben auf v1.0.0
+
+- Deal-Breaker Features (Urlaub, Gehalt, TPM)
+- Mobile/PWA Vollausbau
+- Performance-Optimierung
+- Design-Perfektion
 
 ## 🛠️ Technische Details
 
@@ -166,33 +171,34 @@ const documents = await db.query(
 }
 ```
 
-## 📈 Erfolgskriterien
+## 📈 Erfolgskriterien für Version 0.1.0
 
-1. **Keine kritischen Bugs** (0 von 7)
-2. **Core Features funktionieren** (100%)
-3. **Mobile nutzbar** (Basis-Features)
-4. **Performance** (< 2s Ladezeit)
-5. **Multi-Tenant sicher** (isoliert)
+1. **Keine kritischen Bugs** (aktuell 3 von 7 behoben)
+2. **Core Features stabil** (Login, Dashboard, Mitarbeiter)
+3. **Alle Tests bestanden** (FUNKTIONSTEST.md)
+4. **Build-Prozess funktioniert** (Frontend & Backend)
+5. **Multi-Tenant sicher** ✅ BEREITS BEHOBEN
 
-## 🚦 Go/No-Go Entscheidung
+## 🚦 Go/No-Go Entscheidung für v0.1.0
 
-**Beta-Start wenn:**
+**Version 0.1.0 Release wenn:**
 
 - [ ] Alle kritischen Bugs behoben
 - [ ] Mitarbeiter-Verwaltung funktioniert
-- [ ] Mobile-Ansicht nutzbar
-- [ ] Security-Audit bestanden
-- [ ] 24h Stabilitätstest ohne Crashes
+- [ ] TypeScript Build stabil
+- [ ] Systematische Tests durchgeführt
+- [ ] 48h Stabilitätstest ohne Crashes
 
 ## 📞 Nächste Schritte
 
-1. **Sofort beginnen mit:** Multi-Tenant Security Fix
-2. **Team-Meeting:** Aufgaben verteilen
-3. **Daily Standup:** Fortschritt tracken
-4. **Testing-Runden:** Nach jedem Fix
+1. **Sofort beginnen mit:** TypeScript Build-Fix
+2. **Dann:** Mitarbeiter-API implementieren
+3. **Parallel:** Systematische Tests mit FUNKTIONSTEST.md
+4. **Kontinuierlich:** Bugs dokumentieren und beheben
 
 ---
 
-**Geschätzte Gesamtzeit:** 15-20 Arbeitstage  
-**Empfohlenes Team:** 2-3 Entwickler  
-**Beta-Start möglich:** Mitte Juni 2025
+**Version 0.1.0 Timeline:** 2-3 Wochen (Stabilisierung)  
+**Version 1.0.0 Timeline:** 4-5 Wochen (inkl. Features)  
+**Empfohlenes Vorgehen:** Stabilität vor Features  
+**Beta-Start möglich:** Nach v0.1.0 Release

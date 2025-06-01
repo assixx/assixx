@@ -1,11 +1,11 @@
 # Assixx System-Architektur
 
-> **Letzte Aktualisierung:** 28.05.2025  
-> **Version:** 2.0.0 - MVC-Architektur implementiert
+> **Letzte Aktualisierung:** 06.01.2025  
+> **Version:** 2.1.0 - Docker-Architektur hinzugefügt
 
 ## 🏗️ System-Übersicht
 
-Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickelt mit modernen Web-Technologien und Fokus auf Skalierbarkeit, Sicherheit und Benutzerfreundlichkeit.
+Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickelt mit modernen Web-Technologien und Fokus auf Skalierbarkeit, Sicherheit und Benutzerfreundlichkeit. Die Anwendung ist vollständig containerisiert und kann sowohl für Entwicklung als auch Produktion mit Docker bereitgestellt werden.
 
 ## 🔧 Technology Stack
 
@@ -63,6 +63,79 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickel
   - Role-Based Access Control (RBAC)
   - Tenant-Isolation
   - API-Rate-Limiting
+
+## 🐳 Docker Architecture
+
+### Container-Setup
+
+Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklungs- und Produktionsumgebungen:
+
+#### Container-Übersicht
+
+1. **MySQL Container** (`assixx-db`)
+   - MySQL 8.0 Server
+   - Persistente Volumes für Datenspeicherung
+   - Automatisches Schema-Setup beim ersten Start
+   - Health-Checks für Verfügbarkeit
+
+2. **Backend Container** (`assixx-backend`)
+   - Node.js 18 Alpine Linux
+   - Express.js TypeScript Anwendung
+   - Abhängig vom MySQL Container
+   - Auto-Restart bei Fehlern
+
+3. **Frontend Container** (`assixx-frontend`)
+   - Nginx Alpine Linux
+   - Statische Asset-Bereitstellung
+   - Reverse Proxy für API-Requests
+   - Optimierte Caching-Headers
+
+#### Entwicklung vs. Produktion
+
+**Entwicklungsumgebung** (`docker-compose.dev.yml`):
+- Volume-Mounts für Hot-Reload
+- Nodemon für automatische Backend-Neustarts
+- Vite Dev-Server für Frontend
+- Erweiterte Logging-Ausgaben
+- Ports: 3000 (Frontend), 3001 (Backend), 3306 (MySQL)
+
+**Produktionsumgebung** (`docker-compose.yml`):
+- Optimierte Multi-Stage Builds
+- Minimale Alpine Images
+- Production-optimierte Konfigurationen
+- Gesundheitsprüfungen für alle Services
+- Automatische Restart-Policies
+
+#### Volume-Management
+
+```yaml
+volumes:
+  mysql_data:          # Persistente MySQL-Daten
+  mysql_config:        # MySQL-Konfiguration
+  uploads:             # Benutzer-Uploads
+  logs:                # Anwendungs-Logs
+```
+
+#### Netzwerk-Konfiguration
+
+```yaml
+networks:
+  assixx-network:
+    driver: bridge
+    # Isoliertes Netzwerk für Container-Kommunikation
+    # Frontend → Backend: http://backend:3001
+    # Backend → MySQL: mysql://assixx-db:3306
+```
+
+### Monitoring Stack (Optional)
+
+Für Produktionsumgebungen steht ein vollständiger Monitoring-Stack zur Verfügung (`docker-compose.monitoring.yml`):
+
+- **Prometheus**: Metriken-Sammlung und -Speicherung
+- **Grafana**: Visualisierung und Dashboards
+- **Loki**: Log-Aggregation und -Analyse
+- **Promtail**: Log-Sammlung von Containern
+- **Alertmanager**: Alert-Verwaltung und -Routing
 
 ## 📐 Architektur-Diagramm
 
@@ -185,10 +258,10 @@ Details siehe [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md)
 Assixx/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js         # Server-Starter
-│   │   ├── app.js           # Express App Konfiguration
-│   │   ├── database.js      # DB-Verbindungsmanagement
-│   │   ├── websocket.js     # Socket.io Setup
+│   │   ├── server.ts         # Server-Starter (TypeScript)
+│   │   ├── app.ts           # Express App Konfiguration
+│   │   ├── database.ts      # DB-Verbindungsmanagement
+│   │   ├── websocket.ts     # Socket.io Setup
 │   │   ├── controllers/     # MVC Controllers
 │   │   ├── services/        # Business Logic Layer
 │   │   ├── models/          # Datenmodelle
@@ -205,9 +278,21 @@ Assixx/
 │   │   ├── assets/          # Bilder, Fonts
 │   │   └── components/      # UI-Komponenten
 │   └── dist/                # Build-Output
+├── database/
+│   ├── schema/              # Strukturierte SQL-Schemas
+│   ├── migrations/          # Datenbank-Migrationen
+│   └── docker-init.sql      # Docker DB-Initialisierung
+├── infrastructure/
+│   ├── docker/              # Docker-Dokumentation
+│   ├── monitoring/          # Monitoring-Konfigurationen
+│   └── nginx/               # Nginx-Konfigurationen
 ├── uploads/                 # User-Uploads
-├── infrastructure/          # DevOps Configs
-└── tools/                   # Entwickler-Tools
+├── tools/                   # Entwickler-Tools
+├── docker-compose.yml       # Production Docker Setup
+├── docker-compose.dev.yml   # Development Docker Setup
+├── docker-compose.monitoring.yml  # Monitoring Stack
+├── Dockerfile               # Production Container
+└── Dockerfile.dev           # Development Container
 ```
 
 Details siehe [PROJEKTSTRUKTUR.md](./PROJEKTSTRUKTUR.md)
@@ -240,13 +325,48 @@ socket.emit('conversation_updated', conversationData);
 
 ## 🚦 Deployment-Architektur
 
-### Entwicklung
+### Docker-basiertes Deployment (Primäre Methode)
 
-- Lokale MySQL-Instanz
-- Node.js Development Server
-- Hot-Reload für Frontend
+Docker ist die empfohlene Deployment-Methode für Assixx, sowohl für Entwicklung als auch Produktion:
 
-### Production (Empfohlen)
+#### Entwicklung
+
+```bash
+# Entwicklungsumgebung starten
+docker-compose -f docker-compose.dev.yml up
+
+# Mit Monitoring-Stack
+docker-compose -f docker-compose.dev.yml -f docker-compose.monitoring.yml up
+```
+
+- Volume-Mounts für Live-Code-Änderungen
+- Automatisches Neuladen bei Änderungen
+- Vollständige Entwicklungsumgebung in Minuten
+
+#### Production
+
+```bash
+# Produktionsumgebung starten
+docker-compose up -d
+
+# Mit Monitoring
+docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+```
+
+- Optimierte Container-Images
+- Automatische Gesundheitsprüfungen
+- Restart-Policies für Hochverfügbarkeit
+- Integrierte Backup-Strategien
+
+### Cloud-Deployment Optionen
+
+- **Docker Swarm**: Für kleine bis mittlere Deployments
+- **Kubernetes**: Für Enterprise-Skalierung
+- **AWS ECS/Fargate**: Serverless Container-Hosting
+- **Google Cloud Run**: Automatische Skalierung
+- **Azure Container Instances**: Einfaches Container-Hosting
+
+### Traditionelles Deployment (Alternative)
 
 - Cloud SQL (GCP) oder RDS (AWS)
 - App Engine oder EC2/Compute Engine
@@ -254,7 +374,7 @@ socket.emit('conversation_updated', conversationData);
 - SSL/TLS Termination
 - CDN für Assets
 
-Details siehe [DEPLOYMENT.md](./DEPLOYMENT.md)
+Details siehe [DEPLOYMENT.md](./DEPLOYMENT.md) und [DOCKER-SETUP.md](./DOCKER-SETUP.md)
 
 ## 📊 Monitoring & Logging
 
@@ -263,13 +383,28 @@ Details siehe [DEPLOYMENT.md](./DEPLOYMENT.md)
 - Console-basiertes Logging
 - Error-Tracking
 - Basic Performance-Metriken
+- **Docker Monitoring Stack** (Optional):
+  - **Prometheus**: Sammelt Metriken von allen Containern
+  - **Grafana**: Vorkonfigurierte Dashboards für System- und Anwendungsmetriken
+  - **Loki**: Zentralisierte Log-Sammlung und -Suche
+  - **Promtail**: Automatische Log-Erfassung von Docker-Containern
+  - **Alertmanager**: Konfigurierbare Alerts für kritische Ereignisse
+
+### Monitoring-Stack Features
+
+- **System-Metriken**: CPU, Memory, Disk, Network
+- **Container-Metriken**: Ressourcennutzung pro Container
+- **Anwendungs-Metriken**: Response-Zeiten, Request-Raten, Fehlerquoten
+- **Log-Aggregation**: Zentrale Sammlung aller Container-Logs
+- **Alert-Rules**: Vordefinierte Regeln für häufige Probleme
 
 ### Geplant
 
-- Structured Logging (Winston)
-- APM Integration (New Relic/Datadog)
+- Structured Logging (Winston) Integration
+- Custom Application Metrics
 - Real User Monitoring
 - Database Query Analytics
+- Distributed Tracing (Jaeger/Zipkin)
 
 ## 🔮 Zukünftige Architektur-Erweiterungen
 

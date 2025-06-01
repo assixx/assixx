@@ -2,7 +2,7 @@
 
 > **Letzte Aktualisierung:** 26.05.2025  
 > **Version:** 1.0.0  
-> **Status:** Production Ready (7 von 10 Hauptfeatures live)
+> **Status:** Production Ready (8 von 11 Hauptfeatures live)
 
 ## 📋 Inhaltsverzeichnis
 
@@ -77,9 +77,17 @@
 - Ungelesene Nachrichten Badge
 - Tenant-isolierte Kommunikation
 
+#### 8. **Automatisches Backup-System**
+
+- Tägliche automatische Backups
+- 30 Tage Aufbewahrung
+- Einfache Wiederherstellung
+- Manuelle Quick-Backups
+- Backup-Rotation (täglich/wöchentlich/monatlich)
+
 ### 🚧 In Entwicklung
 
-#### 8. **Umfrage-Tool** (80% fertig)
+#### 9. **Umfrage-Tool** (80% fertig)
 
 - Admin kann Umfragen erstellen
 - Multiple-Choice und Freitext
@@ -98,6 +106,7 @@
 | KVP-System           | ❌         | ✅           | ✅             | Live            |
 | Schichtplanung       | ❌         | ✅           | ✅             | Live            |
 | Chat-System          | ✅ Basic   | ✅ Erweitert | ✅ Vollversion | Live            |
+| Backup-System        | ✅         | ✅           | ✅             | Live            |
 | Umfrage-Tool         | ❌         | ✅           | ✅             | In Entwicklung  |
 | Urlaubsverwaltung    | ❌         | ✅           | ✅             | Geplant Q2/2025 |
 | Mobile App           | ❌         | ❌           | ✅             | Geplant Q2/2025 |

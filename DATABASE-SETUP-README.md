@@ -8,6 +8,7 @@ _Komplette Anleitung für neue Entwickler_
 ## 📋 Inhaltsverzeichnis
 
 - [🎯 Überblick](#-überblick)
+- [🐳 Docker Setup (EMPFOHLEN)](#-docker-setup-empfohlen)
 - [⚡ Schnellstart](#-schnellstart)
   - [WSL Ubuntu Automatisch](#wsl-ubuntu-automatisch)
   - [Windows Automatisch](#windows-automatisch)
@@ -62,6 +63,51 @@ Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Detail
 - Express 5 Migration abgeschlossen
 - Chat-System Datenbankschema erstellt
 - **TypeScript Migration** im Backend abgeschlossen (30.05.2025)
+
+---
+
+## 🐳 Docker Setup (EMPFOHLEN)
+
+**Mit Docker wird die Datenbank automatisch eingerichtet - keine manuelle Installation notwendig!**
+
+### Vorteile von Docker
+
+- ✅ **Automatisches Setup** - Datenbank wird beim Start erstellt
+- ✅ **Keine manuelle Installation** - MySQL läuft im Container
+- ✅ **Persistente Daten** - Datenbank bleibt in Docker Volumes erhalten
+- ✅ **Einfache Verwaltung** - Start/Stop mit einem Befehl
+- ✅ **Konsistente Umgebung** - Gleiche Version auf allen Systemen
+
+### Docker-Befehle
+
+```bash
+# Docker-Container starten (erstellt automatisch die Datenbank)
+docker-compose up -d
+
+# MySQL im Docker-Container zugreifen
+docker exec -it assixx-mysql mysql -u root -p
+# Passwort: root_password_here (aus docker-compose.yml)
+
+# Datenbank-Schema anzeigen
+docker exec -it assixx-mysql mysql -u root -p assixx -e "SHOW TABLES;"
+
+# Logs anzeigen
+docker-compose logs mysql
+```
+
+### Schema-Details
+
+Das komplette Datenbankschema wird automatisch aus folgender Datei geladen:
+- **[database/complete-schema.sql](../database/complete-schema.sql)** - Zentrale Schema-Datei mit allen Tabellen
+
+### Docker-Volumes
+
+Die Datenbank wird persistent in Docker Volumes gespeichert:
+- **mysql_data** - Enthält alle Datenbankdaten
+- Überlebt Container-Neustarts
+- Kann mit `docker volume inspect mysql_data` inspiziert werden
+
+> **📌 HINWEIS:** Die nachfolgenden Abschnitte zur manuellen Installation sind nur notwendig, wenn Sie NICHT mit Docker arbeiten!
 
 ---
 

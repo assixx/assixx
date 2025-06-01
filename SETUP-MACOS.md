@@ -1,6 +1,8 @@
 # 🍎 Assixx Setup Guide für macOS
 
-Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung des Assixx-Projekts auf macOS.
+> **🚀 SCHNELLSTART MIT DOCKER**: Für eine schnelle Einrichtung empfehlen wir die [Docker-Installation](#docker-setup-schnellstart). Die manuelle Installation ist für fortgeschrittene Benutzer oder spezielle Anforderungen gedacht.
+
+Dieser Guide führt dich Schritt für Schritt durch die Einrichtung des Assixx-Projekts auf macOS.
 
 ## 📋 Voraussetzungen
 
@@ -8,25 +10,113 @@ Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung de
 - Administratorrechte
 - Mindestens 8 GB RAM
 - 10 GB freier Speicherplatz
-- Apple Command Line Tools
+
+## 🔍 Überblick der Installationsmethoden
+
+### 1. 🐳 Docker (Empfohlen - 15 Minuten)
+- ✅ Schnellste Einrichtung
+- ✅ Keine Systemkonfiguration nötig
+- ✅ Isolierte Umgebung
+- ✅ Einfache Updates
+- ✅ Ideal für: Alle Benutzer
+
+### 2. 🛠 Manuelle Installation (1-2 Stunden)
+- ⚙️ Vollständige Kontrolle
+- ⚙️ Native Performance
+- ⚙️ Direkter Systemzugriff
+- ⚠️ Komplexere Einrichtung
+- 💻 Ideal für: Entwickler mit Erfahrung
 
 ## 📚 Inhaltsverzeichnis
 
-1. [System vorbereiten](#1-system-vorbereiten)
-2. [Homebrew Installation](#2-homebrew-installation)
-3. [VS Code Installation](#3-vs-code-installation)
-4. [Git und GitHub Setup](#4-git-und-github-setup)
-5. [Node.js Installation](#5-nodejs-installation)
-6. [MySQL Installation](#6-mysql-installation)
-7. [Projekt Setup](#7-projekt-setup)
-8. [Datenbank Setup](#8-datenbank-setup)
-9. [Projekt starten](#9-projekt-starten)
-10. [LaunchAgent Setup (Optional)](#10-launchagent-setup-optional)
-11. [Fehlerbehebung](#11-fehlerbehebung)
+1. [Docker Setup (Schnellstart)](#docker-setup-schnellstart)
+2. [Manuelle Installation](#manuelle-installation)
+   - [System vorbereiten](#1-system-vorbereiten-manuell)
+   - [Homebrew Installation](#2-homebrew-installation-manuell)
+   - [VS Code Installation](#3-vs-code-installation-manuell)
+   - [Git und GitHub Setup](#4-git-und-github-setup-manuell)
+   - [Node.js Installation](#5-nodejs-installation-manuell)
+   - [MySQL Installation](#6-mysql-installation-manuell)
+   - [Projekt Setup](#7-projekt-setup-manuell)
+   - [Datenbank Setup](#8-datenbank-setup-manuell)
+   - [Projekt starten](#9-projekt-starten-manuell)
+   - [LaunchAgent Setup (Optional)](#10-launchagent-setup-optional-manuell)
+   - [Fehlerbehebung](#11-fehlerbehebung-manuell)
 
 ---
 
-## 1. System vorbereiten
+## 🐳 Docker Setup (Schnellstart)
+
+> **Zeit benötigt**: Etwa 15 Minuten
+
+### Schritt 1: Docker Desktop installieren
+
+1. **Docker Desktop herunterladen**:
+   - Gehe zu [Docker Desktop für Mac](https://www.docker.com/products/docker-desktop/)
+   - Wähle die richtige Version:
+     - **Apple Silicon** (M1/M2/M3): "Mac with Apple Chip"
+     - **Intel**: "Mac with Intel Chip"
+   - Lade die .dmg Datei herunter
+
+2. **Installation**:
+   - Öffne die heruntergeladene .dmg Datei
+   - Ziehe Docker.app in den Applications Ordner
+   - Starte Docker aus dem Applications Ordner
+   - Folge dem Einrichtungsassistenten
+
+3. **Docker verifizieren**:
+   ```bash
+   # Terminal öffnen (Cmd + Space, "Terminal" eingeben)
+   docker --version
+   docker-compose --version
+   ```
+
+### Schritt 2: Projekt klonen
+
+```bash
+# Entwicklungsordner erstellen
+mkdir -p ~/Development/projects
+cd ~/Development/projects
+
+# Repository klonen
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx
+```
+
+### Schritt 3: Docker Container starten
+
+```bash
+# Environment-Datei erstellen
+cp .env.docker .env
+
+# Container starten
+docker-compose up -d
+
+# Logs anzeigen (optional)
+docker-compose logs -f
+```
+
+### Schritt 4: Anwendung öffnen
+
+1. Warte etwa 30 Sekunden bis alle Services gestartet sind
+2. Öffne deinen Browser
+3. Gehe zu http://localhost:3000
+4. Fertig! 🎉
+
+### Schritt 5: Admin-Zugang
+
+- **Email**: admin@assixx.local
+- **Passwort**: Admin123!
+
+> **Weitere Informationen**: Siehe [DOCKER-SETUP.md](./DOCKER-SETUP.md) für detaillierte Docker-Konfigurationen und Befehle.
+
+---
+
+## 🛠 Manuelle Installation
+
+> **Hinweis**: Die folgenden Abschnitte sind für die manuelle Installation gedacht. Wenn du Docker verwendest, kannst du diese überspringen.
+
+## 1. System vorbereiten (Manuell)
 
 ### Schritt 1.1: Terminal öffnen
 
@@ -48,7 +138,7 @@ xcode-select -p
 # Sollte ausgeben: /Library/Developer/CommandLineTools
 ```
 
-## 2. Homebrew Installation
+## 2. Homebrew Installation (Manuell)
 
 ### Schritt 2.1: Homebrew installieren
 
@@ -85,7 +175,7 @@ brew update
 brew upgrade
 ```
 
-## 3. VS Code Installation
+## 3. VS Code Installation (Manuell)
 
 ### Schritt 3.1: VS Code mit Homebrew installieren
 
@@ -114,7 +204,7 @@ sudo ln -s "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code
 3. Tippe "Shell Command: Install 'code' command in PATH"
 4. Enter drücken
 
-## 4. Git und GitHub Setup
+## 4. Git und GitHub Setup (Manuell)
 
 ### Schritt 4.1: Git installieren
 
@@ -198,7 +288,7 @@ ssh -T git@github.com
 # Erfolg: "Hi username! You've successfully authenticated..."
 ```
 
-## 5. Node.js Installation
+## 5. Node.js Installation (Manuell)
 
 ### Schritt 5.1: Node.js mit nvm installieren
 
@@ -224,7 +314,7 @@ node --version  # sollte v20.x.x zeigen
 npm --version   # sollte 10.x.x zeigen
 ```
 
-## 6. MySQL Installation
+## 6. MySQL Installation (Manuell)
 
 ### Schritt 6.1: MySQL mit Homebrew installieren
 
@@ -294,7 +384,7 @@ brew install --cask tableplus
 brew install --cask sequel-pro
 ```
 
-## 7. Projekt Setup
+## 7. Projekt Setup (Manuell)
 
 ### Schritt 7.1: Entwicklungsordner erstellen
 
@@ -341,7 +431,7 @@ npm install
 cd ..
 ```
 
-## 8. Datenbank Setup
+## 8. Datenbank Setup (Manuell)
 
 ### Schritt 8.1: Datenbankschema importieren
 
@@ -400,7 +490,7 @@ node -e "console.log('SESSION_SECRET=' + require('crypto').randomBytes(64).toStr
 # Ausgaben in .env kopieren
 ```
 
-## 9. Projekt starten
+## 9. Projekt starten (Manuell)
 
 ### Schritt 9.1: Development Server starten
 
@@ -432,7 +522,7 @@ node create-employee.js
 # - Passwort: sicheres Passwort
 ```
 
-## 10. LaunchAgent Setup (Optional)
+## 10. LaunchAgent Setup (Optional) (Manuell)
 
 Für automatischen Start:
 
@@ -492,7 +582,7 @@ launchctl load ~/Library/LaunchAgents/com.assixx.server.plist
 launchctl list | grep assixx
 ```
 
-## 11. Fehlerbehebung
+## 11. Fehlerbehebung (Manuell)
 
 ### Problem: brew command not found
 

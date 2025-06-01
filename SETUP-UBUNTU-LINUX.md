@@ -1,5 +1,7 @@
 # 🐧 Assixx Setup Guide für Ubuntu/Linux
 
+> **🚀 Schnellstart gesucht?** Für die schnellste Installation (5-10 Minuten) nutze [Docker Setup](#docker-setup-empfohlen)!
+
 Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung des Assixx-Projekts auf Ubuntu oder anderen Debian-basierten Linux-Distributionen.
 
 ## 📋 Voraussetzungen
@@ -9,18 +11,36 @@ Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung de
 - Mindestens 4 GB RAM
 - 10 GB freier Speicherplatz
 
+## 🎯 Setup-Optionen
+
+### Option 1: Docker Setup (Empfohlen) ⭐
+- **Zeit:** 5-10 Minuten
+- **Schwierigkeit:** Einfach
+- **Ideal für:** Schnellen Start, Entwicklung, Testing
+- **Vorteile:** Keine manuelle Konfiguration, isolierte Umgebung
+
+### Option 2: Manuelle Installation
+- **Zeit:** 30-45 Minuten
+- **Schwierigkeit:** Mittel
+- **Ideal für:** Produktionsumgebungen, volle Kontrolle
+- **Vorteile:** Optimale Performance, individuelle Anpassungen
+
 ## 📚 Inhaltsverzeichnis
 
+### Docker Setup (Empfohlen):
 1. [System vorbereiten](#1-system-vorbereiten)
-2. [VS Code Installation](#2-vs-code-installation)
-3. [Git und GitHub Setup](#3-git-und-github-setup)
-4. [Node.js Installation](#4-nodejs-installation)
-5. [MySQL Installation](#5-mysql-installation)
-6. [Projekt Setup](#6-projekt-setup)
-7. [Datenbank Setup](#7-datenbank-setup)
-8. [Projekt starten](#8-projekt-starten)
-9. [Systemd Service (Optional)](#9-systemd-service-optional)
-10. [Fehlerbehebung](#10-fehlerbehebung)
+2. [Docker Setup](#docker-setup-empfohlen)
+
+### Manuelle Installation:
+3. [VS Code Installation](#2-vs-code-installation)
+4. [Git und GitHub Setup](#3-git-und-github-setup)
+5. [Node.js Installation](#4-nodejs-installation)
+6. [MySQL Installation](#5-mysql-installation)
+7. [Projekt Setup](#6-projekt-setup)
+8. [Datenbank Setup](#7-datenbank-setup)
+9. [Projekt starten](#8-projekt-starten)
+10. [Systemd Service (Optional)](#9-systemd-service-optional)
+11. [Fehlerbehebung](#10-fehlerbehebung)
 
 ---
 
@@ -43,6 +63,95 @@ sudo apt upgrade -y
 # Wichtige Build-Tools installieren
 sudo apt install build-essential curl wget gnupg2 software-properties-common -y
 ```
+
+---
+
+## 🐳 Docker Setup (Empfohlen)
+
+> **⚡ Schnellste Option!** Mit Docker ist Assixx in 5-10 Minuten startklar.
+
+### Schritt 2.1: Docker installieren
+
+```bash
+# Docker GPG Schlüssel hinzufügen
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# Docker Repository hinzufügen
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Docker installieren
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
+
+# Benutzer zur docker Gruppe hinzufügen (kein sudo mehr nötig)
+sudo usermod -aG docker $USER
+
+# WICHTIG: Neu einloggen oder folgendes ausführen
+newgrp docker
+
+# Installation testen
+docker --version
+docker compose version
+```
+
+### Schritt 2.2: Repository klonen
+
+```bash
+# Projektordner erstellen
+mkdir -p ~/projects
+cd ~/projects
+
+# Repository klonen
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx
+```
+
+### Schritt 2.3: Docker Container starten
+
+```bash
+# Development-Container starten
+docker compose -f docker-compose.dev.yml up -d
+
+# Logs anzeigen (optional)
+docker compose -f docker-compose.dev.yml logs -f
+
+# Container-Status prüfen
+docker ps
+```
+
+### Schritt 2.4: Auf Assixx zugreifen
+
+1. Öffne deinen Browser
+2. Navigiere zu http://localhost:3000
+3. Login mit Standard-Credentials (siehe `.env.docker`)
+
+### Schritt 2.5: Fertig! 🎉
+
+Deine Assixx-Entwicklungsumgebung läuft! Für weitere Details:
+- Siehe [DOCKER-SETUP.md](./DOCKER-SETUP.md) für erweiterte Docker-Konfiguration
+- Siehe [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) für Docker-Grundlagen
+
+### Docker-Befehle Übersicht
+
+```bash
+# Container stoppen
+docker compose -f docker-compose.dev.yml down
+
+# Container neu starten
+docker compose -f docker-compose.dev.yml restart
+
+# Logs anzeigen
+docker compose -f docker-compose.dev.yml logs -f [service-name]
+
+# In Container-Shell einloggen
+docker compose -f docker-compose.dev.yml exec app bash
+```
+
+---
+
+## 📦 Manuelle Installation (Erweiterte Benutzer)
+
+> **⚠️ Hinweis:** Die folgenden Schritte sind nur für die manuelle Installation notwendig. Wenn du Docker verwendest, kannst du direkt zum [Abschnitt Fehlerbehebung](#10-fehlerbehebung) springen.
 
 ## 2. VS Code Installation
 
@@ -512,14 +621,46 @@ git config --global alias.cm commit
 
 Dein Assixx-Entwicklungsumgebung ist bereit!
 
+### 🐳 Bei Docker-Installation:
+
+- Schnellzugriff: http://localhost:3000
+- PhpMyAdmin: http://localhost:8080
+- Container-Management: `docker compose -f docker-compose.dev.yml [command]`
+
+### 🔧 Bei manueller Installation:
+
+- Server läuft auf: http://localhost:3000
+- Starten mit: `npm run dev`
+- Stoppen mit: `Ctrl+C`
+
 ### Nächste Schritte:
 
 - Lies [ARCHITECTURE.md](./ARCHITECTURE.md) für Projektstruktur
 - Studiere [DEVELOPMENT-GUIDE.md](./DEVELOPMENT-GUIDE.md) für Best Practices
 - Schaue dir [TODO.md](./TODO.md) für offene Aufgaben an
+- Bei Docker: Siehe [DOCKER-SETUP.md](./DOCKER-SETUP.md) für Details
 
 ### Täglicher Workflow:
 
+#### Mit Docker:
+```bash
+# Terminal öffnen
+cd ~/projects/Assixx
+
+# Neueste Änderungen holen
+git pull
+
+# Branch erstellen für neue Feature
+git checkout -b feature/meine-neue-funktion
+
+# Docker-Container starten
+docker compose -f docker-compose.dev.yml up -d
+
+# VS Code öffnen
+code .
+```
+
+#### Mit manueller Installation:
 ```bash
 # Terminal öffnen
 cd ~/projects/Assixx

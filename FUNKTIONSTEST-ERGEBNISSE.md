@@ -4,6 +4,18 @@
 **Tester:** Claude AI (Phase 1) / Simon (Phase 2)  
 **Version:** v0.0.2 (TypeScript)
 
+## 📌 Hinweis zur neuen Teststrategie (01.06.2025)
+
+> **WICHTIG:** Diese Testergebnisse sind vom 31.05.2025. 
+> 
+> Für Version 0.1.0 wird Simon systematisch alle Features einzeln testen:
+> - Jede Seite wird manuell getestet
+> - Fokus auf UI/UX und Benutzerfreundlichkeit
+> - Bugs werden während des Testings behoben
+> - Neue Testergebnisse werden in separatem Dokument erfasst
+> 
+> **Status:** Multi-Tenant Isolation Bug wurde bereits behoben ✅
+
 ## Phase 1: Automatische Tests
 
 ### 1.1 Backend Health Checks ✅
