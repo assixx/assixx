@@ -3,15 +3,15 @@
  * Handles department-related business logic
  */
 
-import Department from '../models/department';
-import { Pool } from 'mysql2/promise';
+import Department from "../models/department";
+import { Pool } from "mysql2/promise";
 
 // Import types from Department model
 import type {
   DbDepartment as DepartmentData,
   DepartmentCreateData,
   DepartmentUpdateData,
-} from '../models/department';
+} from "../models/department";
 
 // Service-specific interfaces
 interface DepartmentFilters {
@@ -29,14 +29,14 @@ class DepartmentService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: DepartmentFilters = {}
+    _filters: DepartmentFilters = {},
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
       // TODO: Add pagination support to Department model
       return await Department.findAll();
     } catch (error) {
-      console.error('Error in DepartmentService.getAll:', error);
+      console.error("Error in DepartmentService.getAll:", error);
       throw error;
     }
   }
@@ -48,7 +48,7 @@ class DepartmentService {
     try {
       return await Department.findById(id);
     } catch (error) {
-      console.error('Error in DepartmentService.getById:', error);
+      console.error("Error in DepartmentService.getById:", error);
       throw error;
     }
   }
@@ -58,17 +58,17 @@ class DepartmentService {
    */
   async create(
     _tenantDb: Pool,
-    data: DepartmentCreateData
+    data: DepartmentCreateData,
   ): Promise<DepartmentData> {
     try {
       const id = await Department.create(data);
       const created = await Department.findById(id);
       if (!created) {
-        throw new Error('Failed to retrieve created department');
+        throw new Error("Failed to retrieve created department");
       }
       return created;
     } catch (error) {
-      console.error('Error in DepartmentService.create:', error);
+      console.error("Error in DepartmentService.create:", error);
       throw error;
     }
   }
@@ -79,7 +79,7 @@ class DepartmentService {
   async update(
     _tenantDb: Pool,
     id: number,
-    data: DepartmentUpdateData
+    data: DepartmentUpdateData,
   ): Promise<DepartmentData | null> {
     try {
       const success = await Department.update(id, data);
@@ -88,7 +88,7 @@ class DepartmentService {
       }
       return null;
     } catch (error) {
-      console.error('Error in DepartmentService.update:', error);
+      console.error("Error in DepartmentService.update:", error);
       throw error;
     }
   }
@@ -100,7 +100,7 @@ class DepartmentService {
     try {
       return await Department.delete(id);
     } catch (error) {
-      console.error('Error in DepartmentService.delete:', error);
+      console.error("Error in DepartmentService.delete:", error);
       throw error;
     }
   }

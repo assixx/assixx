@@ -47,10 +47,16 @@ assixx-mysql        "docker-entrypoint.s…"   mysql               Up 2 minutes 
 docker exec assixx-backend npm run build:ts
 
 # Type-Checking im Container
-docker exec assixx-backend npm run typecheck
+docker exec assixx-backend npm run type-check
 
 # ESLint im Container
 docker exec assixx-backend npm run lint:ts
+
+# Auto-Fix mit ESLint (EMPFOHLEN nach Errors)
+docker exec assixx-backend npm run lint:fix
+
+# Code mit Prettier formatieren
+docker exec assixx-backend npm run format
 ```
 
 #### 💻 Lokale Version:
@@ -62,13 +68,16 @@ cd /home/scs/projects/Assixx
 npm run build:ts
 
 # TypeScript Type-Checking ohne Kompilierung
-npm run typecheck
+npm run type-check
 
 # ESLint auf alle .ts Dateien ausführen
 npm run lint:ts
 
+# Auto-Fix mit ESLint (EMPFOHLEN nach Errors)
+npm run lint:fix
+
 # Code-Formatierung mit Prettier
-npm run format:ts
+npm run format
 ```
 
 ### 2️⃣ API & System Health Checks (1-2 Min)
@@ -269,13 +278,52 @@ docker-compose down
 }
 ```
 
+## 🔧 Code-Formatierung & Auto-Fixes (NEU!)
+
+### 🐳 Docker Auto-Fix Befehle:
+
+```bash
+# ESLint Auto-Fix für alle Dateien (EMPFOHLEN)
+docker exec assixx-backend npm run lint:fix
+
+# Nur TypeScript Dateien mit ESLint fixen
+docker exec assixx-backend npx eslint backend/src/**/*.ts --fix
+
+# Prettier für alle Dateien formatieren
+docker exec assixx-backend npm run format
+
+# Prettier nur prüfen (ohne Änderungen)
+docker exec assixx-backend npm run format:check
+```
+
+### 💻 Lokale Auto-Fix Befehle:
+
+```bash
+# ESLint Auto-Fix für alle Dateien
+npm run lint:fix
+
+# Nur TypeScript Dateien fixen
+npx eslint backend/src/**/*.ts --fix
+
+# Prettier formatieren
+npm run format
+
+# Prettier Check
+npm run format:check
+```
+
+### ✅ Empfohlene Reihenfolge:
+1. Erst `npm run format` für Code-Formatierung
+2. Dann `npm run lint:fix` für ESLint-Regeln
+3. Abschließend `npm run type-check` für TypeScript-Prüfung
+
 ## ⚡ Quick Start (Alle Checks in einem Befehl)
 
 ### 🐳 Docker Quick Start:
 ```bash
 # Docker Status und alle wichtigen Checks
 docker-compose ps && \
-docker exec assixx-backend npm run typecheck && \
+docker exec assixx-backend npm run type-check && \
 docker exec assixx-backend npm run lint:ts && \
 curl -s http://localhost:3000/health | jq '.' && \
 docker logs assixx-backend --tail=10 && \
@@ -287,7 +335,7 @@ git status
 # One-Liner für alle Checks
 cd /home/scs/projects/Assixx && \
 npm run build:ts && \
-npm run typecheck && \
+npm run type-check && \
 npm run lint:ts && \
 curl -s http://localhost:3000/health && \
 npm outdated && \
@@ -309,6 +357,9 @@ git status
 
 ---
 
-**Zuletzt aktualisiert:** 06.02.2025  
-**Wichtige Änderung:** Docker ist jetzt die primäre Entwicklungsmethode!  
+**Zuletzt aktualisiert:** 02.06.2025  
+**Wichtige Änderungen:** 
+- Docker ist jetzt die primäre Entwicklungsmethode!
+- NEU: Code-Formatierung & Auto-Fix Befehle hinzugefügt
+- ESLint v9 Konfiguration wird jetzt unterstützt
 **Zweck:** Sicherstellen dass Entwicklungsumgebung stabil ist bevor neue Features entwickelt werden

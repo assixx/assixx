@@ -3,9 +3,9 @@
  * Handles user-related business logic
  */
 
-import * as bcrypt from 'bcrypt';
-import User from '../models/user';
-import { logger } from '../utils/logger';
+import * as bcrypt from "bcrypt";
+import User from "../models/user";
+import { logger } from "../utils/logger";
 
 // Type alias for User model return type
 type DbUser = any;
@@ -86,7 +86,7 @@ class UserService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting user by ID:', error);
+      logger.error("Error getting user by ID:", error);
       throw error;
     }
   }
@@ -110,7 +110,7 @@ class UserService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting user by username:', error);
+      logger.error("Error getting user by username:", error);
       throw error;
     }
   }
@@ -148,7 +148,7 @@ class UserService {
         totalPages,
       };
     } catch (error) {
-      logger.error('Error getting users:', error);
+      logger.error("Error getting users:", error);
       throw error;
     }
   }
@@ -158,7 +158,7 @@ class UserService {
    */
   async updateUser(
     userId: number,
-    updateData: UpdateUserData
+    updateData: UpdateUserData,
   ): Promise<UserData | null> {
     try {
       // Create a clean update object without forbidden fields
@@ -172,7 +172,7 @@ class UserService {
       await User.update(userId, cleanUpdateData);
       return await this.getUserById(userId);
     } catch (error) {
-      logger.error('Error updating user:', error);
+      logger.error("Error updating user:", error);
       throw error;
     }
   }
@@ -187,7 +187,7 @@ class UserService {
       await User.update(userId, { password: hashedPassword });
       return true;
     } catch (error) {
-      logger.error('Error updating password:', error);
+      logger.error("Error updating password:", error);
       throw error;
     }
   }
@@ -200,7 +200,7 @@ class UserService {
       await User.delete(userId);
       return true;
     } catch (error) {
-      logger.error('Error deleting user:', error);
+      logger.error("Error deleting user:", error);
       throw error;
     }
   }
@@ -210,13 +210,13 @@ class UserService {
    */
   async archiveUser(
     userId: number,
-    archived: boolean = true
+    archived: boolean = true,
   ): Promise<boolean> {
     try {
       await User.update(userId, { archived } as any);
       return true;
     } catch (error) {
-      logger.error('Error archiving user:', error);
+      logger.error("Error archiving user:", error);
       throw error;
     }
   }

@@ -26,7 +26,7 @@
     "type-check": "tsc --noEmit",
     "type-coverage": "npx type-coverage",
     "check": "tsc --noEmit",
-    "lint:ts": "eslint backend/src --ext .ts",
+    "lint:ts": "eslint backend/src/**/*.ts",
     "test:all": "npm run check && npm run lint:ts && npm run format:check"
   },
   "keywords": [

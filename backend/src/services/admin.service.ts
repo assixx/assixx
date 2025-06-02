@@ -3,14 +3,14 @@
  * Handles admin log business logic
  */
 
-import AdminLog from '../models/adminLog';
-import { Pool } from 'mysql2/promise';
+import AdminLog from "../models/adminLog";
+import { Pool } from "mysql2/promise";
 
 // Import types from AdminLog model
 import type {
   DbAdminLog,
   AdminLogCreateData as ModelAdminLogCreateData,
-} from '../models/adminLog';
+} from "../models/adminLog";
 
 // Service-specific interfaces
 interface AdminLogData extends DbAdminLog {
@@ -53,7 +53,7 @@ class AdminLogService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: AdminLogFilters = {}
+    filters: AdminLogFilters = {},
   ): Promise<AdminLogData[]> {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
@@ -66,7 +66,7 @@ class AdminLogService {
       }
       return [];
     } catch (error) {
-      console.error('Error in AdminLogService.getAll:', error);
+      console.error("Error in AdminLogService.getAll:", error);
       throw error;
     }
   }
@@ -84,14 +84,14 @@ class AdminLogService {
    */
   async create(
     _tenantDb: Pool,
-    data: AdminLogCreateData
+    data: AdminLogCreateData,
   ): Promise<AdminLogData> {
     try {
       const modelData: ModelAdminLogCreateData = {
         user_id: data.user_id,
         action: data.action,
         ip_address: data.ip_address,
-        status: 'success',
+        status: "success",
         details: data.details,
       };
       const id = await AdminLog.create(modelData);
@@ -111,7 +111,7 @@ class AdminLogService {
         created_at: new Date(),
       } as AdminLogData;
     } catch (error) {
-      console.error('Error in AdminLogService.create:', error);
+      console.error("Error in AdminLogService.create:", error);
       throw error;
     }
   }
@@ -122,7 +122,7 @@ class AdminLogService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: AdminLogUpdateData
+    _data: AdminLogUpdateData,
   ): Promise<AdminLogData | null> {
     // TODO: Implement update method in AdminLog model
     return null;

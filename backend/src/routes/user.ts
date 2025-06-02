@@ -2,14 +2,14 @@
  * User Profile API Routes
  */
 
-import express, { Router, Request } from 'express';
-import path from 'path';
-import fs from 'fs';
-import { authenticateToken } from '../middleware/auth';
+import express, { Router, Request } from "express";
+import path from "path";
+import fs from "fs";
+import { authenticateToken } from "../middleware/auth";
 
 // Import models and database (now ES modules)
-import User from '../models/user';
-import db from '../database';
+import User from "../models/user";
+import db from "../database";
 
 const router: Router = express.Router();
 
@@ -31,13 +31,13 @@ interface AuthenticatedRequest extends Request {
  * @desc Get user profile
  * @access Private
  */
-router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
+router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const user = await User.findById(authReq.user.id);
 
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: "User not found" });
       return;
     }
 
@@ -46,8 +46,8 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     if (user.department_id) {
       // Verwende db statt req.tenantDb
       const [departments] = await (db as any).execute(
-        'SELECT * FROM departments WHERE id = ?',
-        [user.department_id]
+        "SELECT * FROM departments WHERE id = ?",
+        [user.department_id],
       );
 
       if (departments && departments.length > 0) {
@@ -60,8 +60,8 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     if (user.team_id) {
       // Verwende db statt req.tenantDb
       const [teams] = await (db as any).execute(
-        'SELECT * FROM teams WHERE id = ?',
-        [user.team_id]
+        "SELECT * FROM teams WHERE id = ?",
+        [user.team_id],
       );
 
       if (teams && teams.length > 0) {
@@ -73,8 +73,8 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     let tenantInfo = null;
     if (user.tenant_id) {
       const [tenants] = await (db as any).execute(
-        'SELECT * FROM tenants WHERE id = ?',
-        [user.tenant_id]
+        "SELECT * FROM tenants WHERE id = ?",
+        [user.tenant_id],
       );
 
       if (tenants && tenants.length > 0) {
@@ -95,8 +95,8 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
       subdomain: tenantInfo ? tenantInfo.subdomain : null,
     });
   } catch (error: any) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -105,39 +105,39 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
  * @desc Update user profile
  * @access Private
  */
-router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
+router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
   try {
     // const authReq = req as AuthenticatedRequest;
     const { id } = req.user;
     const updates = { ...req.body };
 
     // Don't allow updating critical fields
-    if ('id' in updates) delete updates.id;
-    if ('username' in updates) delete updates.username;
-    if ('role' in updates) delete updates.role;
-    if ('password' in updates) delete updates.password;
-    if ('created_at' in updates) delete updates.created_at;
+    if ("id" in updates) delete updates.id;
+    if ("username" in updates) delete updates.username;
+    if ("role" in updates) delete updates.role;
+    if ("password" in updates) delete updates.password;
+    if ("created_at" in updates) delete updates.created_at;
 
     const result = await User.update(id, updates);
 
     if (result) {
       const updatedUser = await User.findById(id);
       if (!updatedUser) {
-        res.status(404).json({ message: 'User not found after update' });
+        res.status(404).json({ message: "User not found after update" });
         return;
       }
       const { password: _password, ...userWithoutPassword } = updatedUser;
 
       res.json({
-        message: 'Profile updated successfully',
+        message: "Profile updated successfully",
         user: userWithoutPassword,
       });
     } else {
-      res.status(400).json({ message: 'Failed to update profile' });
+      res.status(400).json({ message: "Failed to update profile" });
     }
   } catch (error: any) {
-    console.error('Error updating user profile:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error updating user profile:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -147,7 +147,7 @@ router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
  * @access Private
  */
 router.get(
-  '/profile-picture',
+  "/profile-picture",
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -155,29 +155,29 @@ router.get(
       const user = await User.findById(authReq.user.id);
 
       if (!user || !user.profile_picture) {
-        res.status(404).json({ message: 'Profile picture not found' });
+        res.status(404).json({ message: "Profile picture not found" });
         return;
       }
 
       // Send the profile picture file
       const filePath = path.join(
         __dirname,
-        '..',
-        'uploads',
-        'profile_pictures',
-        user.profile_picture
+        "..",
+        "uploads",
+        "profile_pictures",
+        user.profile_picture,
       );
 
       if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
       } else {
-        res.status(404).json({ message: 'Profile picture file not found' });
+        res.status(404).json({ message: "Profile picture file not found" });
       }
     } catch (error: any) {
-      console.error('Error fetching profile picture:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error("Error fetching profile picture:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-  }
+  },
 );
 
 export default router;

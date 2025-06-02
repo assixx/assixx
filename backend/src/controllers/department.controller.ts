@@ -3,13 +3,13 @@
  * Handles department-related operations
  */
 
-import { Request, Response } from 'express';
-import { Pool } from 'mysql2/promise';
-import departmentService from '../services/department.service';
+import { Request, Response } from "express";
+import { Pool } from "mysql2/promise";
+import departmentService from "../services/department.service";
 import type {
   DepartmentCreateData,
   DepartmentUpdateData,
-} from '../models/department';
+} from "../models/department";
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -66,7 +66,7 @@ interface DepartmentQueryRequest extends TenantRequest {
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: 'ASC' | 'DESC';
+    sortDir?: "ASC" | "DESC";
   };
 }
 
@@ -78,7 +78,7 @@ class DepartmentController {
   async getAll(req: DepartmentQueryRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
@@ -91,7 +91,7 @@ class DepartmentController {
         manager_id: req.query.manager_id
           ? parseInt(req.query.manager_id)
           : undefined,
-        active: req.query.active ? req.query.active === 'true' : undefined,
+        active: req.query.active ? req.query.active === "true" : undefined,
         page: req.query.page ? parseInt(req.query.page) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit) : undefined,
         sortBy: req.query.sortBy,
@@ -101,10 +101,10 @@ class DepartmentController {
       const result = await departmentService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error) {
-      console.error('Error in DepartmentController.getAll:', error);
+      console.error("Error in DepartmentController.getAll:", error);
       res.status(500).json({
-        error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Fehler beim Abrufen der Daten",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -116,27 +116,27 @@ class DepartmentController {
   async getById(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: "Invalid ID" });
         return;
       }
 
       const result = await departmentService.getById(req.tenantDb, id);
       if (!result) {
-        res.status(404).json({ error: 'Nicht gefunden' });
+        res.status(404).json({ error: "Nicht gefunden" });
         return;
       }
       res.json(result);
     } catch (error) {
-      console.error('Error in DepartmentController.getById:', error);
+      console.error("Error in DepartmentController.getById:", error);
       res.status(500).json({
-        error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Fehler beim Abrufen der Daten",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -148,7 +148,7 @@ class DepartmentController {
   async create(req: DepartmentCreateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
@@ -163,14 +163,14 @@ class DepartmentController {
       };
       const result = await departmentService.create(
         req.tenantDb,
-        departmentData
+        departmentData,
       );
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error in DepartmentController.create:', error);
+      console.error("Error in DepartmentController.create:", error);
       res.status(500).json({
-        error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Fehler beim Erstellen",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -182,13 +182,13 @@ class DepartmentController {
   async update(req: DepartmentUpdateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: "Invalid ID" });
         return;
       }
 
@@ -204,14 +204,14 @@ class DepartmentController {
       const result = await departmentService.update(
         req.tenantDb,
         id,
-        updateData
+        updateData,
       );
       res.json(result);
     } catch (error) {
-      console.error('Error in DepartmentController.update:', error);
+      console.error("Error in DepartmentController.update:", error);
       res.status(500).json({
-        error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Fehler beim Aktualisieren",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -223,23 +223,23 @@ class DepartmentController {
   async delete(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: "Tenant database not available" });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID' });
+        res.status(400).json({ error: "Invalid ID" });
         return;
       }
 
       await departmentService.delete(req.tenantDb, id);
       res.status(204).send();
     } catch (error) {
-      console.error('Error in DepartmentController.delete:', error);
+      console.error("Error in DepartmentController.delete:", error);
       res.status(500).json({
-        error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Fehler beim Löschen",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }

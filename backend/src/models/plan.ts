@@ -1,6 +1,6 @@
-import pool from '../database';
-import { logger } from '../utils/logger';
-import { RowDataPacket } from 'mysql2';
+import pool from "../database";
+import { logger } from "../utils/logger";
+import { RowDataPacket } from "mysql2";
 
 export interface DbPlan extends RowDataPacket {
   id: number;
@@ -31,21 +31,21 @@ export interface DbTenantPlan extends RowDataPacket {
   plan_id: number;
   plan_code: string;
   plan_name: string;
-  status: 'active' | 'trial' | 'cancelled' | 'expired';
+  status: "active" | "trial" | "cancelled" | "expired";
   started_at: Date;
   expires_at?: Date;
   custom_price?: number;
-  billing_cycle: 'monthly' | 'yearly';
+  billing_cycle: "monthly" | "yearly";
 }
 
 export interface DbTenantAddon extends RowDataPacket {
   id: number;
   tenant_id: number;
-  addon_type: 'employees' | 'admins' | 'storage_gb';
+  addon_type: "employees" | "admins" | "storage_gb";
   quantity: number;
   unit_price: number;
   total_price: number;
-  status: 'active' | 'cancelled';
+  status: "active" | "cancelled";
 }
 
 export interface PlanChangeRequest {
@@ -83,7 +83,7 @@ export class Plan {
   // Get plan by code
   static async findByCode(code: string): Promise<DbPlan | null> {
     try {
-      const query = 'SELECT * FROM plans WHERE code = ? AND is_active = true';
+      const query = "SELECT * FROM plans WHERE code = ? AND is_active = true";
       const result = await (pool as any).execute(query, [code]);
       const plans = result[0] as DbPlan[];
       return plans.length > 0 ? plans[0] : null;
@@ -157,39 +157,41 @@ export class Plan {
         `UPDATE tenant_plans 
          SET status = 'cancelled', cancelled_at = NOW() 
          WHERE tenant_id = ? AND status IN ('active', 'trial')`,
-        [request.tenantId]
+        [request.tenantId],
       );
 
       // Create new plan subscription
       await (pool as any).execute(
         `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
          VALUES (?, ?, 'active', ?)`,
-        [request.tenantId, newPlan.id, effectiveDate]
+        [request.tenantId, newPlan.id, effectiveDate],
       );
 
       // Update tenant's current_plan_id
       await (pool as any).execute(
-        'UPDATE tenants SET current_plan_id = ? WHERE id = ?',
-        [newPlan.id, request.tenantId]
+        "UPDATE tenants SET current_plan_id = ? WHERE id = ?",
+        [newPlan.id, request.tenantId],
       );
 
       // Deactivate features not included in new plan
       const planFeatures = await this.getPlanFeatures(newPlan.id);
       const includedFeatureIds = planFeatures
-        .filter(f => f.is_included)
-        .map(f => f.feature_id);
+        .filter((f) => f.is_included)
+        .map((f) => f.feature_id);
 
       if (includedFeatureIds.length > 0) {
         await (pool as any).execute(
           `UPDATE tenant_features 
            SET is_active = FALSE 
            WHERE tenant_id = ? 
-           AND feature_id NOT IN (${includedFeatureIds.map(() => '?').join(',')})`,
-          [request.tenantId, ...includedFeatureIds]
+           AND feature_id NOT IN (${includedFeatureIds.map(() => "?").join(",")})`,
+          [request.tenantId, ...includedFeatureIds],
         );
       }
 
-      logger.info(`Tenant ${request.tenantId} changed plan to ${request.newPlanCode}`);
+      logger.info(
+        `Tenant ${request.tenantId} changed plan to ${request.newPlanCode}`,
+      );
       return true;
     } catch (error) {
       logger.error(`Error changing tenant plan: ${(error as Error).message}`);
@@ -215,31 +217,33 @@ export class Plan {
   }
 
   // Update tenant's addons
-  static async updateTenantAddons(request: AddonUpdateRequest): Promise<boolean> {
+  static async updateTenantAddons(
+    request: AddonUpdateRequest,
+  ): Promise<boolean> {
     try {
       const updates = [];
-      
+
       if (request.addons.employees !== undefined) {
         updates.push({
-          type: 'employees',
+          type: "employees",
           quantity: request.addons.employees,
-          unitPrice: 5.00
+          unitPrice: 5.0,
         });
       }
 
       if (request.addons.admins !== undefined) {
         updates.push({
-          type: 'admins',
+          type: "admins",
           quantity: request.addons.admins,
-          unitPrice: 10.00
+          unitPrice: 10.0,
         });
       }
 
       if (request.addons.storage_gb !== undefined) {
         updates.push({
-          type: 'storage_gb',
+          type: "storage_gb",
           quantity: request.addons.storage_gb,
-          unitPrice: 0.10
+          unitPrice: 0.1,
         });
       }
 
@@ -251,7 +255,7 @@ export class Plan {
            quantity = VALUES(quantity),
            unit_price = VALUES(unit_price),
            updated_at = NOW()`,
-          [request.tenantId, update.type, update.quantity, update.unitPrice]
+          [request.tenantId, update.type, update.quantity, update.unitPrice],
         );
       }
 
@@ -285,17 +289,19 @@ export class Plan {
       const result = await (pool as any).execute(query, [tenantId]);
       const queryResult = result[0] as any[];
       const data = queryResult[0];
-      
+
       const planCost = data?.plan_cost || 0;
       const addonCost = data?.addon_cost || 0;
 
       return {
         planCost: parseFloat(planCost),
         addonCost: parseFloat(addonCost),
-        totalCost: parseFloat(planCost) + parseFloat(addonCost)
+        totalCost: parseFloat(planCost) + parseFloat(addonCost),
       };
     } catch (error) {
-      logger.error(`Error calculating tenant cost: ${(error as Error).message}`);
+      logger.error(
+        `Error calculating tenant cost: ${(error as Error).message}`,
+      );
       throw error;
     }
   }

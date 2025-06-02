@@ -4,7 +4,7 @@ export interface TenantInfo {
   id: number;
   subdomain: string;
   name: string;
-  status: 'active' | 'trial' | 'suspended' | 'cancelled';
+  status: "active" | "trial" | "suspended" | "cancelled";
   plan: string | null;
   trialStatus?: {
     isExpired: boolean;

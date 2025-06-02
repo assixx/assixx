@@ -54,6 +54,7 @@ services:
       - ../frontend:/app/frontend:delegated
       - ../package.json:/app/package.json:ro
       - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../eslint.config.js:/app/eslint.config.js:ro
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:

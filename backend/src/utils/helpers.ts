@@ -3,8 +3,8 @@
  * Common utility functions used across the application
  */
 
-import crypto from 'crypto';
-import { PAGINATION } from './constants';
+import crypto from "crypto";
+import { PAGINATION } from "./constants";
 
 // Interfaces
 interface QueryParams {
@@ -34,7 +34,7 @@ interface PaginationResponse {
  * @returns Random string
  */
 export function generateRandomString(length: number = 32): string {
-  return crypto.randomBytes(length).toString('hex');
+  return crypto.randomBytes(length).toString("hex");
 }
 
 /**
@@ -46,7 +46,7 @@ export function parsePagination(query: QueryParams): PaginationResult {
   const page = parseInt(String(query.page)) || PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(
     parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
-    PAGINATION.MAX_LIMIT
+    PAGINATION.MAX_LIMIT,
   );
   const offset = (page - 1) * limit;
 
@@ -63,7 +63,7 @@ export function parsePagination(query: QueryParams): PaginationResult {
 export function formatPaginationResponse(
   total: number,
   page: number,
-  limit: number
+  limit: number,
 ): PaginationResponse {
   const totalPages = Math.ceil(total / limit);
 
@@ -83,11 +83,11 @@ export function formatPaginationResponse(
  * @returns Sanitized input
  */
 export function sanitizeInput(input: any): any {
-  if (typeof input !== 'string') return input;
+  if (typeof input !== "string") return input;
 
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .replace(/[<>]/g, "") // Remove potential HTML tags
     .slice(0, 1000); // Limit length
 }
 
@@ -100,9 +100,9 @@ export function generateSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/[\s_-]+/g, '-') // Replace spaces with -
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing -
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/[\s_-]+/g, "-") // Replace spaces with -
+    .replace(/^-+|-+$/g, ""); // Remove leading/trailing -
 }
 
 /**
@@ -111,13 +111,13 @@ export function generateSlug(text: string): string {
  * @returns Formatted date string
  */
 export function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return '';
+  if (!date) return "";
 
   const d = new Date(date);
-  return d.toLocaleDateString('de-DE', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+  return d.toLocaleDateString("de-DE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
 }
 
@@ -127,15 +127,15 @@ export function formatDate(date: Date | string | null | undefined): string {
  * @returns Formatted datetime string
  */
 export function formatDateTime(date: Date | string | null | undefined): string {
-  if (!date) return '';
+  if (!date) return "";
 
   const d = new Date(date);
-  return d.toLocaleDateString('de-DE', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+  return d.toLocaleDateString("de-DE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
