@@ -1286,6 +1286,55 @@ document.addEventListener('click', function (e) {
 
 ---
 
+## ⚠️ Wichtige CSS-Konflikte vermeiden
+
+### Problem: Globale CSS-Selektoren
+Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemeinen CSS-Selektoren zu verwenden, da diese die Standard-Styles überschreiben können.
+
+#### ❌ FALSCH - Zu globale Selektoren:
+```css
+/* NIEMALS so allgemein definieren! */
+.btn {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+}
+
+/* Überschreibt ALLE Buttons im System! */
+#user-info::before {
+  background: linear-gradient(...);
+}
+```
+
+#### ✅ RICHTIG - Spezifische Selektoren:
+```css
+/* Immer mit spezifischem Kontext */
+.feature-actions .btn {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Oder eigene spezifische Klassen */
+.feature-btn {
+  background: rgba(255, 255, 255, 0.02);
+}
+```
+
+### Pflicht-Includes für konsistente Header:
+Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
+```html
+<!-- Font Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<!-- User Info Styles (entfernt unerwünschte Pseudo-Elemente) -->
+<link rel="stylesheet" href="/styles/user-info-update.css" />
+```
+
+### Debugging-Tipps:
+1. **Vergleiche mit funktionierenden Seiten** (z.B. root-dashboard.html)
+2. **Prüfe alle CSS-Includes** - fehlende Dateien sind oft die Ursache
+3. **Inspiziere spezifische Selektoren** - zu globale Styles überschreiben oft Standards
+4. **Validiere HTML** - doppelte `class` Attribute werden ignoriert
+
+---
+
 ## 🎯 Checkliste für neue Komponenten
 
 - [ ] Glassmorphismus-Effekt angewendet?
@@ -1298,6 +1347,9 @@ document.addEventListener('click', function (e) {
 - [ ] Modal folgt dem Standard?
 - [ ] Performance optimiert?
 - [ ] Konsistent mit anderen Komponenten?
+- [ ] **Keine globalen CSS-Selektoren verwendet?**
+- [ ] **Alle notwendigen CSS-Dateien eingebunden?**
+- [ ] **HTML-Validität geprüft (keine doppelten Attribute)?**
 
 ---
 
