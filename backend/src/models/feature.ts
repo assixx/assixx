@@ -269,14 +269,12 @@ export class Feature {
       const query = `
         SELECT 
           f.*,
-          tf.status,
-          tf.valid_from,
-          tf.valid_until,
-          tf.custom_price,
-          tf.usage_limit,
-          tf.current_usage,
+          tf.is_active,
+          tf.activated_at,
+          tf.expires_at,
+          tf.custom_config,
           CASE 
-            WHEN tf.status = 'active' AND (tf.valid_until IS NULL OR tf.valid_until >= CURDATE()) THEN 1
+            WHEN tf.is_active = TRUE AND (tf.expires_at IS NULL OR tf.expires_at >= NOW()) THEN 1
             ELSE 0
           END as is_available
         FROM features f
