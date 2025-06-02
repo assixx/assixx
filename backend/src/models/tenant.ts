@@ -134,7 +134,31 @@ export class Tenant {
         [tenantId, userId]
       );
 
-      // 5. Aktiviere Trial-Features
+      // 5. Weise Basic-Plan zu
+      // Hole Basic Plan ID
+      const [plans] = await connection.query<RowDataPacket[]>(
+        'SELECT id FROM plans WHERE code = ? AND is_active = true',
+        ['basic']
+      );
+      
+      if (plans.length > 0) {
+        const basicPlanId = plans[0].id;
+        
+        // Erstelle tenant_plans Eintrag
+        await connection.query(
+          `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
+           VALUES (?, ?, 'trial', NOW())`,
+          [tenantId, basicPlanId]
+        );
+        
+        // Update tenant mit current_plan_id
+        await connection.query(
+          'UPDATE tenants SET current_plan_id = ? WHERE id = ?',
+          [basicPlanId, tenantId]
+        );
+      }
+
+      // 6. Aktiviere Trial-Features
       await this.activateTrialFeatures(tenantId, connection);
 
       await connection.commit();

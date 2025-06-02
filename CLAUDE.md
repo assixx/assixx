@@ -93,6 +93,7 @@ cat /home/scs/projects/Assixx/docs/BEFORE-STARTING-DEV.md
 - **Architektur**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - **Features**: [FEATURES.md](./docs/FEATURES.md)
 - **Datenbank**: [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)
+- **🆕 Migration Guide**: [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
 - **Setup Guides**:
   - 🪟 [Windows (WSL)](./docs/SETUP-WINDOWS-WSL.md)
   - 🐧 [Ubuntu/Linux](./docs/SETUP-UBUNTU-LINUX.md)
@@ -205,6 +206,7 @@ function validateSubdomain(value) {
 
 5. **📝 DOKUMENTATIONS-PFLICHT**:
    - Bei DB-Änderungen → docs/DATABASE-SETUP-README.md aktualisieren
+   - **🆕 Bei DB-Migrationen → ZUERST docs/DATABASE-MIGRATION-GUIDE.md lesen!**
    - Bei neuen Features → docs/FEATURES.md ergänzen
    - Bei UI-Änderungen → docs/DESIGN-STANDARDS.md prüfen
    - Bei Struktur-Änderungen → docs/PROJEKTSTRUKTUR.md aktualisieren

@@ -28,6 +28,7 @@ import rootRoutes from './root';
 import employeeRoutes from './employee';
 import machineRoutes from './machines';
 import areaRoutes from './areas';
+import planRoutes from './plans';
 
 // API Version prefix
 const API_PREFIX = '/api';
@@ -47,6 +48,7 @@ router.use(`${API_PREFIX}/kvp`, kvpRoutes);
 router.use(`${API_PREFIX}/shifts`, shiftRoutes);
 router.use(`${API_PREFIX}/surveys`, surveyRoutes);
 router.use(`${API_PREFIX}/features`, featureRoutes);
+router.use(`${API_PREFIX}/plans`, planRoutes);
 router.use(`${API_PREFIX}/departments`, departmentRoutes);
 router.use(`${API_PREFIX}/teams`, teamRoutes);
 router.use(`${API_PREFIX}/admin`, adminRoutes);

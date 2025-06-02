@@ -3,7 +3,18 @@
 > **Neue Strategie:** Erst Stabilität, dann Features!
 > **Ziel Version 0.1.0:** Stabile Entwicklungsversion mit allen funktionierenden Features
 > **Ziel Version 1.0.0:** Beta-Test Version mit Deal-Breaker Features
-> **Aktueller Stand:** 01.06.2025 - Systematisches Debugging & Testing Phase
+> **Aktueller Stand:** 02.06.2025 - Systematisches Debugging & Testing Phase
+
+## 🆕 KÜRZLICH ABGESCHLOSSEN (02.06.2025):
+
+✅ **Plan & Feature Management System**
+- Komplett neues Backend für Subscription Plans (Basic/Professional/Enterprise)
+- root-features.html komplett überarbeitet mit Plan-Auswahl
+- Add-ons System für zusätzliche Mitarbeiter/Admins/Speicher
+- Datenbank-Migration erfolgreich (trotz Schwierigkeiten)
+
+📚 **Neue Dokumentation erstellt:**
+- [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md) - Lernpunkte aus Migration Issues
 
 ## 🚀 FÜR NEUEN CHAT:
 

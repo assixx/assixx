@@ -303,18 +303,7 @@ if (USE_MOCK_DB) {
       if (field.type === 'BLOB' || field.type === 'BINARY') {
         return field.buffer();
       }
-      // Ensure TEXT fields are returned as strings
-      if (
-        field.type === 'VAR_STRING' ||
-        field.type === 'STRING' ||
-        field.type === 'LONG_STRING' ||
-        field.type === 'TINY' ||
-        field.type === 'SHORT' ||
-        field.type === 'LONG' ||
-        field.type === 'LONGLONG'
-      ) {
-        return field.string();
-      }
+      // Use default handling for all other types
       return next();
     },
   };
@@ -352,5 +341,7 @@ if (USE_MOCK_DB) {
 
 // Export the pool
 export default pool;
+
+// Named export for executeQuery function - removed due to conflict
 
 // CommonJS compatibility

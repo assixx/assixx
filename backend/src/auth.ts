@@ -192,6 +192,8 @@ export function authenticateToken(
     };
 
     req.user = authenticatedUser;
+    // Set tenantId directly on req for backwards compatibility
+    (req as any).tenantId = authenticatedUser.tenantId;
     next();
   });
 }
