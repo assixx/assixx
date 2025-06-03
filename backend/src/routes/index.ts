@@ -15,6 +15,7 @@ import signupRoutes from "./signup";
 
 // Import remaining routes (now ES modules)
 import userRoutes from "./users";
+import userProfileRoutes from "./user";
 import documentRoutes from "./documents";
 import calendarRoutes from "./calendar";
 import chatRoutes from "./chat";
@@ -40,6 +41,7 @@ router.use("/api", signupRoutes); // Signup routes at /api/signup
 
 // Protected routes with prefix
 router.use(`${API_PREFIX}/users`, userRoutes);
+router.use(`${API_PREFIX}/user`, userProfileRoutes);
 router.use(`${API_PREFIX}/documents`, documentRoutes);
 router.use(`${API_PREFIX}/blackboard`, blackboardRoutes);
 router.use(`${API_PREFIX}/calendar`, calendarRoutes);

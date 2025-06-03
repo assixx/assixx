@@ -40,6 +40,8 @@ interface UserProfileResponse {
   lastName?: string;
   birthDate?: string;
   profilePicture?: string;
+  company_name?: string;
+  subdomain?: string;
 }
 
 interface UnreadCountResponse {
@@ -98,6 +100,17 @@ class UnifiedNavigation {
         const userData: UserProfileResponse = await response.json();
         const user = userData.user || userData;
 
+        // Update company info (new)
+        const companyElement = document.getElementById('sidebar-company-name');
+        if (companyElement && userData.company_name) {
+          companyElement.textContent = userData.company_name;
+        }
+
+        const domainElement = document.getElementById('sidebar-domain');
+        if (domainElement && userData.subdomain) {
+          domainElement.textContent = `${userData.subdomain}.assixx.de`;
+        }
+
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
@@ -114,14 +127,7 @@ class UnifiedNavigation {
           }
         }
 
-        const sidebarBirthdate = document.getElementById('sidebar-user-birthdate');
-        if (sidebarBirthdate) {
-          const birthDateStr = userData.birthdate || userData.birthDate || (user as User).birthDate;
-          if (birthDateStr) {
-            const birthdate = new Date(birthDateStr);
-            sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
-          }
-        }
+        // Birthdate removed as requested
 
         // Update avatar if we have profile picture
         const sidebarAvatar = document.getElementById('sidebar-user-avatar') as HTMLImageElement;
@@ -435,10 +441,13 @@ class UnifiedNavigation {
                 <div class="user-info-card" id="sidebar-user-info-card">
                     <img id="sidebar-user-avatar" class="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
                     <div class="user-details">
+                        <div class="company-info">
+                            <div class="company-name" id="sidebar-company-name">Firmennamen lädt...</div>
+                            <div class="company-domain" id="sidebar-domain">Domain lädt...</div>
+                        </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
-                        <div class="user-role-badge">${this.getRoleDisplay()}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
-                        <div class="user-birthdate" id="sidebar-user-birthdate"></div>
+                        <div class="user-role-badge">${this.getRoleDisplay()}</div>
                     </div>
                 </div>
                 <ul class="sidebar-menu">
@@ -836,62 +845,127 @@ const unifiedNavigationCSS = `
 
     .user-info-card {
         display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
+        
+        gap: 12px;
         padding: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px) saturate(180%);
+        -webkit-backdrop-filter: blur(10px) saturate(180%);
+        border-radius: var(--radius-lg);
+
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 24px rgb(0, 0, 0), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
-    /* Avatar Styles für Sidebar - IMG Element wie im Header */
+    /* Shimmer effect removed for consistency with storage-widget */
+
+    .user-info-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-2px);
+        border-color: rgba(251, 191, 36, 0.5);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 0 40px rgba(251, 191, 36, 0.2);
+    }
+
+    /* Avatar Styles - Ohne Border */
     #sidebar-user-avatar,
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
         display: block !important;
-        width: 36px !important;
-        height: 36px !important;
-        border-radius: 50% !important;
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 12px !important;
         object-fit: cover !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border: none !important;
         flex-shrink: 0 !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .user-info-card:hover .user-avatar {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .user-details {
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .company-info {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    .company-name {
+        font-weight: 600;
+        color: rgba(251, 191, 36, 0.9);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .company-domain {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-name {
-        font-weight: 600;
+        font-weight: 500;
         color: var(--text-primary);
-        font-size: 0.95rem;
-        margin-bottom: 2px;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
+    }
+
+    .user-full-name {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.6);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-role-badge {
-        display: inline-block;
-        font-size: 0.75rem;
-        color: var(--text-primary);
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(251, 191, 36, 0.9);
+        background: rgba(251, 191, 36, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
         font-weight: 700;
-        margin-bottom: 4px;
+        border: 1px solid rgba(251, 191, 36, 0.2);
+        width: fit-content;
+        margin-top: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .user-info-card:hover .user-role-badge {
+        background: rgba(251, 191, 36, 0.15);
+        border-color: rgba(251, 191, 36, 0.3);
     }
     
-    .user-full-name {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-    }
-    
-    .user-birthdate {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        opacity: 0.8;
-    }
 
     .sidebar-menu {
         list-style: none;

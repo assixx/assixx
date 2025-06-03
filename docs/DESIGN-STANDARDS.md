@@ -223,6 +223,49 @@ body::after {
     inset 0 1px 2px rgba(0, 0, 0, 0.2);
   outline: none;
 }
+
+/* Autofill Styles für verschiedene Browser */
+/* WICHTIG: Browser-Autofill überschreibt normalerweise unsere Glassmorphismus-Farben! */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+.form-control:-webkit-autofill:active,
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  /* Box-Shadow Trick um Browser-Background zu überschreiben */
+  -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.04) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(33, 150, 243, 0.3) !important;
+  /* Verhindert sofortiges Zurücksetzen der Farbe */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Firefox */
+.form-control:autofill,
+.form-input:autofill {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(33, 150, 243, 0.3) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Firefox specific - :-moz-autofill pseudo-class */
+.form-control:-moz-autofill,
+.form-input:-moz-autofill {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(33, 150, 243, 0.3) !important;
+}
+
+/* Edge Legacy */
+.form-control:-ms-input-placeholder,
+.form-input:-ms-input-placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
 ```
 
 ### 3. Custom Dropdowns (PFLICHT!)
