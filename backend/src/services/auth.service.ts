@@ -105,6 +105,15 @@ class AuthService {
         };
       }
 
+      // Check if tenant ID is provided
+      if (!userData.tenantId) {
+        return {
+          success: false,
+          user: null,
+          message: "Tenant ID is required",
+        };
+      }
+
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -120,7 +129,7 @@ class AuthService {
       });
 
       // Get created user (without password)
-      const user = await UserModel.findById(userId);
+      const user = await UserModel.findById(userId, userData.tenantId);
       if (!user) {
         throw new Error("Failed to retrieve created user");
       }

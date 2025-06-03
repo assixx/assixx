@@ -23,7 +23,7 @@ router.get(
       const authReq = req as any;
       const employeeId = authReq.user.id;
       logger.info(`Employee ${employeeId} requesting their information`);
-      const employee = await User.findById(employeeId);
+      const employee = await User.findById(employeeId, authReq.user.tenant_id);
       if (!employee) {
         logger.warn(`Employee with ID ${employeeId} not found`);
         res.status(404).json({ message: "Mitarbeiter nicht gefunden" });

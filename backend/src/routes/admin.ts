@@ -188,7 +188,7 @@ router.get(
     logger.info(`Admin ${adminId} requesting employee ${employeeId}`);
 
     try {
-      const employee = await User.findById(employeeId);
+      const employee = await User.findById(employeeId, authReq.user.tenant_id);
 
       if (!employee) {
         res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
@@ -222,7 +222,7 @@ router.put(
     logger.info(`Admin ${adminId} attempting to update employee ${employeeId}`);
 
     try {
-      const employee = await User.findById(employeeId);
+      const employee = await User.findById(employeeId, authReq.user.tenant_id);
 
       if (!employee) {
         res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
@@ -287,7 +287,7 @@ router.post(
         return;
       }
 
-      const employee = await User.findById(employeeId);
+      const employee = await User.findById(employeeId, authReq.user.tenant_id);
       if (!employee) {
         await fs.unlink(req.file.path);
         res.status(404).json({ message: "Mitarbeiter nicht gefunden" });

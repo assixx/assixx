@@ -46,12 +46,9 @@ interface DbTenantFeature extends RowDataPacket {
 }
 
 interface FeatureActivationOptions {
-  validFrom?: Date;
-  validUntil?: Date | null;
-  customPrice?: number | null;
-  trialDays?: number;
-  usageLimit?: number | null;
   activatedBy?: number | null;
+  expiresAt?: Date | string | null;
+  config?: any;
 }
 
 interface FeatureUsageStat extends RowDataPacket {
@@ -152,45 +149,30 @@ export class Feature {
       }
 
       const {
-        validFrom = new Date(),
-        validUntil = null,
-        customPrice = null,
-        trialDays = 0,
-        usageLimit = null,
         activatedBy = null,
+        expiresAt = null,
+        config = null,
       } = options;
-
-      const status = trialDays > 0 ? "trial" : "active";
-      const trialEndDate =
-        trialDays > 0
-          ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
-          : null;
 
       const query = `
         INSERT INTO tenant_features 
-        (tenant_id, feature_id, status, valid_from, valid_until, custom_price, trial_days, usage_limit, activated_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (tenant_id, feature_id, is_active, activated_by, expires_at, custom_config)
+        VALUES (?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
-        status = VALUES(status),
-        valid_from = VALUES(valid_from),
-        valid_until = VALUES(valid_until),
-        custom_price = VALUES(custom_price),
-        trial_days = VALUES(trial_days),
-        usage_limit = VALUES(usage_limit),
+        is_active = VALUES(is_active),
         activated_by = VALUES(activated_by),
+        expires_at = VALUES(expires_at),
+        custom_config = VALUES(custom_config),
         updated_at = CURRENT_TIMESTAMP
       `;
 
       await executeQuery(query, [
         tenantId,
         feature.id,
-        status,
-        validFrom,
-        trialEndDate || validUntil,
-        customPrice,
-        trialDays,
-        usageLimit,
+        true, // is_active
         activatedBy,
+        expiresAt,
+        config ? JSON.stringify(config) : null,
       ]);
 
       logger.info(`Feature ${featureCode} activated for tenant ${tenantId}`);
@@ -216,7 +198,7 @@ export class Feature {
 
       const query = `
         UPDATE tenant_features 
-        SET status = 'disabled', updated_at = CURRENT_TIMESTAMP
+        SET is_active = false, updated_at = CURRENT_TIMESTAMP
         WHERE tenant_id = ? AND feature_id = ?
       `;
 

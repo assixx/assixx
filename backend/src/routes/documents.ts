@@ -128,7 +128,7 @@ router.post(
         );
 
         if (isEmailFeatureEnabled) {
-          const user = await User.findById(parseInt(userId, 10));
+          const user = await User.findById(parseInt(userId, 10), authReq.user.tenant_id);
           if (user && user.email) {
             await emailService.sendNewDocumentNotification(user, {
               file_name: originalname,

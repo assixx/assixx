@@ -359,6 +359,23 @@ export class Tenant {
     }
   }
 
+  // Helper function to execute delete queries and ignore missing table errors
+  private static async safeDelete(
+    connection: PoolConnection,
+    query: string,
+    params: any[],
+  ): Promise<void> {
+    try {
+      await connection.query(query, params);
+    } catch (error: any) {
+      if (error.code === "ER_NO_SUCH_TABLE") {
+        logger.debug(`Table not found, skipping: ${error.message}`);
+      } else {
+        throw error;
+      }
+    }
+  }
+
   // Tenant komplett löschen - ACHTUNG: Löscht ALLE Daten unwiderruflich!
   static async delete(tenantId: number): Promise<boolean> {
     const connection = (await (pool as any).getConnection()) as PoolConnection;
@@ -378,149 +395,186 @@ export class Tenant {
       // 2. Delete in correct order to respect foreign key constraints
 
       // Delete chat-related data
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))",
         [userIds.length > 0 ? userIds : [0]],
       );
-      await connection.query("DELETE FROM messages WHERE sender_id IN (?)", [
-        userIds.length > 0 ? userIds : [0],
-      ]);
-      await connection.query(
+      await this.safeDelete(
+        connection,
+        "DELETE FROM messages WHERE sender_id IN (?)",
+        [userIds.length > 0 ? userIds : [0]],
+      );
+      await this.safeDelete(
+        connection,
         "DELETE FROM conversation_participants WHERE user_id IN (?)",
         [userIds.length > 0 ? userIds : [0]],
       );
-      await connection.query("DELETE FROM conversations WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await this.safeDelete(
+        connection,
+        "DELETE FROM conversations WHERE tenant_id = ?",
+        [tenantId],
+      );
 
       // Delete survey-related data
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_assignments WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_reminders WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM survey_templates WHERE tenant_id = ?",
         [tenantId],
       );
-      await connection.query("DELETE FROM surveys WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await this.safeDelete(
+        connection,
+        "DELETE FROM surveys WHERE tenant_id = ?",
+        [tenantId],
+      );
 
       // Delete KVP-related data
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM kvp_suggestions WHERE tenant_id = ?",
         [tenantId],
       );
 
       // Delete shift-related data
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM shift_trades WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM shift_assignments WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM shift_notes WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)",
         [tenantId],
       );
-      await connection.query("DELETE FROM shifts WHERE tenant_id = ?", [
-        tenantId,
-      ]);
-      await connection.query(
+      await this.safeDelete(
+        connection,
+        "DELETE FROM shifts WHERE tenant_id = ?",
+        [tenantId],
+      );
+      await this.safeDelete(
+        connection,
         "DELETE FROM shift_templates WHERE tenant_id = ?",
         [tenantId],
       );
-      // Delete shift_types if table exists
-      try {
-        await connection.query("DELETE FROM shift_types WHERE tenant_id = ?", [
-          tenantId,
-        ]);
-      } catch (error: any) {
-        if (error.code !== "ER_NO_SUCH_TABLE") {
-          throw error;
-        }
-      }
+      // Delete shift_types
+      await this.safeDelete(
+        connection,
+        "DELETE FROM shift_types WHERE tenant_id = ?",
+        [tenantId],
+      );
 
       // Delete calendar events
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM calendar_events WHERE tenant_id = ?",
         [tenantId],
       );
 
       // Delete blackboard entries
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM blackboard_entries WHERE tenant_id = ?",
         [tenantId],
       );
 
       // Delete documents
-      await connection.query("DELETE FROM documents WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await this.safeDelete(
+        connection,
+        "DELETE FROM documents WHERE tenant_id = ?",
+        [tenantId],
+      );
 
-      // Delete admin logs
-      await connection.query("DELETE FROM admin_logs WHERE user_id IN (?)", [
-        userIds.length > 0 ? userIds : [0],
-      ]);
+      // Delete admin logs (using admin_id column)
+      await this.safeDelete(
+        connection,
+        "DELETE FROM admin_logs WHERE admin_id IN (?)",
+        [userIds.length > 0 ? userIds : [0]],
+      );
 
       // Delete feature assignments
-      await connection.query(
+      await this.safeDelete(
+        connection,
         "DELETE FROM tenant_features WHERE tenant_id = ?",
         [tenantId],
       );
 
       // Delete department/team relationships
-      await connection.query("DELETE FROM user_teams WHERE user_id IN (?)", [
-        userIds.length > 0 ? userIds : [0],
-      ]);
-      await connection.query(
+      await this.safeDelete(
+        connection,
+        "DELETE FROM user_teams WHERE user_id IN (?)",
+        [userIds.length > 0 ? userIds : [0]],
+      );
+      await this.safeDelete(
+        connection,
         "DELETE FROM user_departments WHERE user_id IN (?)",
         [userIds.length > 0 ? userIds : [0]],
       );
 
       // Delete teams and departments
-      await connection.query("DELETE FROM teams WHERE tenant_id = ?", [
-        tenantId,
-      ]);
-      await connection.query("DELETE FROM departments WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await this.safeDelete(
+        connection,
+        "DELETE FROM teams WHERE tenant_id = ?",
+        [tenantId],
+      );
+      await this.safeDelete(
+        connection,
+        "DELETE FROM departments WHERE tenant_id = ?",
+        [tenantId],
+      );
 
       // Delete tenant admin associations
-      await connection.query("DELETE FROM tenant_admins WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await this.safeDelete(
+        connection,
+        "DELETE FROM tenant_admins WHERE tenant_id = ?",
+        [tenantId],
+      );
 
       // Delete all users
-      await connection.query("DELETE FROM users WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await this.safeDelete(
+        connection,
+        "DELETE FROM users WHERE tenant_id = ?",
+        [tenantId],
+      );
 
       // Finally, delete the tenant itself
       const [result] = await connection.query<ResultSetHeader>(

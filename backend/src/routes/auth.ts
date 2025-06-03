@@ -29,7 +29,7 @@ interface AuthenticatedRequest extends Request {
 router.get("/user", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const user = await User.findById(authReq.user.id);
+    const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
     if (!user) {
       res.status(404).json({ message: "User not found" });

@@ -32,7 +32,7 @@ class UserService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: EmployeeFilters = {},
+    filters: EmployeeFilters,
   ): Promise<EmployeeData[]> {
     try {
       // Use the search method which supports filtering
@@ -46,9 +46,9 @@ class UserService {
   /**
    * Holt einen User Eintrag per ID
    */
-  async getById(_tenantDb: Pool, id: number): Promise<EmployeeData | null> {
+  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<EmployeeData | null> {
     try {
-      const user = await User.findById(id);
+      const user = await User.findById(id, tenantId);
       return user || null;
     } catch (error) {
       console.error("Error in UserService.getById:", error);
@@ -64,8 +64,11 @@ class UserService {
     data: EmployeeCreateData,
   ): Promise<EmployeeData> {
     try {
+      if (!data.tenant_id) {
+        throw new Error("Tenant ID is required for user creation");
+      }
       const id = await User.create(data);
-      const created = await User.findById(id);
+      const created = await User.findById(id, data.tenant_id);
       if (!created) {
         throw new Error("Failed to retrieve created user");
       }
@@ -82,12 +85,13 @@ class UserService {
   async update(
     _tenantDb: Pool,
     id: number,
+    tenantId: number,
     data: EmployeeUpdateData,
   ): Promise<EmployeeData | null> {
     try {
       const success = await User.update(id, data);
       if (success) {
-        const updated = await User.findById(id);
+        const updated = await User.findById(id, tenantId);
         return updated || null;
       }
       return null;

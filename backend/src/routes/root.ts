@@ -12,6 +12,7 @@ import { logger } from "../utils/logger";
 import User from "../models/user";
 import AdminLog from "../models/adminLog";
 import Tenant from "../models/tenant";
+import pool from "../database";
 
 const router: Router = express.Router();
 
@@ -101,6 +102,19 @@ router.post(
         is_active: true, // Ensure new admins are active by default
       };
       const adminId = await User.create(adminData);
+      
+      // Add admin to tenant_admins table
+      try {
+        await (pool as any).query(
+          "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
+          [req.user.tenant_id, adminId]
+        );
+        logger.info(`Admin ${adminId} added to tenant_admins table`);
+      } catch (taError: any) {
+        logger.warn(`Could not add admin to tenant_admins: ${taError.message}`);
+        // Continue anyway - the admin was created successfully
+      }
+      
       logger.info(`Admin user created successfully with ID: ${adminId}`);
       res
         .status(201)
@@ -140,6 +154,19 @@ router.post(
         is_active: true, // Ensure new admins are active by default
       };
       const adminId = await User.create(adminData);
+      
+      // Add admin to tenant_admins table
+      try {
+        await (pool as any).query(
+          "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
+          [req.user.tenant_id, adminId]
+        );
+        logger.info(`Admin ${adminId} added to tenant_admins table`);
+      } catch (taError: any) {
+        logger.warn(`Could not add admin to tenant_admins: ${taError.message}`);
+        // Continue anyway - the admin was created successfully
+      }
+      
       logger.info(`Admin user created successfully with ID: ${adminId}`);
       res
         .status(201)
@@ -172,8 +199,8 @@ router.get(
       `Fetching admin users list for root user: ${req.user.username}`,
     );
     try {
-      // Admins mit erweiterten Informationen abrufen
-      const admins = await User.findByRole("admin", true); // includeDeleted=true um alle zu sehen
+      // Admins mit erweiterten Informationen abrufen - NUR vom eigenen Tenant!
+      const admins = await User.findByRole("admin", true, req.user.tenant_id);
 
       // Tenant-Informationen hinzufügen
       const adminsWithTenants = await Promise.all(
@@ -214,7 +241,7 @@ router.put(
 
     try {
       // Prüfen ob Admin existiert
-      const admin = await User.findById(parseInt(adminId, 10));
+      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
       if (!admin || admin.role !== "admin") {
         res.status(404).json({ message: "Admin nicht gefunden" });
         return;
@@ -258,7 +285,7 @@ router.delete(
 
     try {
       // Zuerst prüfen, ob der zu löschende Benutzer wirklich ein Admin ist
-      const adminToDelete = await User.findById(parseInt(adminId, 10));
+      const adminToDelete = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
 
       if (!adminToDelete) {
         logger.warn(`Admin user with ID ${adminId} not found`);
@@ -310,7 +337,7 @@ router.get(
     );
 
     try {
-      const admin = await User.findById(parseInt(adminId, 10));
+      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -332,7 +359,7 @@ router.get(
       // Letzten Login-Zeitpunkt hinzufügen, falls vorhanden
       const lastLogin = await AdminLog.getLastLogin(parseInt(adminId, 10));
       if (lastLogin) {
-        adminData.last_login = lastLogin.timestamp;
+        adminData.last_login = lastLogin.created_at;
       }
 
       logger.info(`Details for admin ${adminId} retrieved successfully`);
@@ -359,7 +386,7 @@ router.put(
     logger.info(`Root user ${rootUser} attempting to update admin ${adminId}`);
 
     try {
-      const admin = await User.findById(parseInt(adminId, 10));
+      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -423,7 +450,7 @@ router.get(
     );
 
     try {
-      const admin = await User.findById(parseInt(adminId, 10));
+      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -528,8 +555,7 @@ router.get(
     logger.info(`Root user ${req.user.username} requesting storage info`);
 
     try {
-      // Import necessary models
-      const Tenant = (await import("../models/tenant")).default;
+      // Import necessary model
       const Document = (await import("../models/document")).default;
 
       // Get tenant information
@@ -592,9 +618,6 @@ router.delete(
     );
 
     try {
-      // Import Tenant model
-      const Tenant = (await import("../models/tenant")).default;
-
       // Bestätigung dass es der Root-User des Tenants ist
       const tenant = await Tenant.findById(rootUser.tenant_id);
 
@@ -607,16 +630,17 @@ router.delete(
       // Log this critical action
       await AdminLog.create({
         user_id: rootUser.id,
+        tenant_id: rootUser.tenant_id,
         action: "TENANT_DELETE_INITIATED",
         ip_address: req.ip,
-        status: "success",
-        details: JSON.stringify({
-          resource_type: "tenant",
-          resource_id: rootUser.tenant_id,
+        entity_type: "tenant",
+        entity_id: rootUser.tenant_id,
+        new_values: {
           tenant_name: tenant.company_name,
           subdomain: tenant.subdomain,
           initiated_by: rootUser.username,
-        }),
+        },
+        user_agent: req.get('user-agent'),
       });
 
       // Delete the entire tenant (cascades to all related data)

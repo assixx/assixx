@@ -14,6 +14,13 @@ import type {
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
+  tenantId?: number | null;
+  user?: {
+    id: number;
+    tenant_id: number;
+    role: string;
+    [key: string]: any;
+  };
 }
 
 // Interface for create/update request bodies
@@ -82,6 +89,13 @@ class DepartmentController {
         return;
       }
 
+      // Get tenant ID from request
+      const tenantId = req.tenantId || req.user?.tenant_id;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
       // Parse query parameters to appropriate types
       const filters = {
         search: req.query.search,
@@ -98,7 +112,7 @@ class DepartmentController {
         sortDir: req.query.sortDir,
       };
 
-      const result = await departmentService.getAll(req.tenantDb, filters);
+      const result = await departmentService.getAll(req.tenantDb, tenantId, filters);
       res.json(result);
     } catch (error) {
       console.error("Error in DepartmentController.getAll:", error);
@@ -126,7 +140,14 @@ class DepartmentController {
         return;
       }
 
-      const result = await departmentService.getById(req.tenantDb, id);
+      // Get tenant ID from request
+      const tenantId = req.tenantId || req.user?.tenant_id;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
+      const result = await departmentService.getById(req.tenantDb, id, tenantId);
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
@@ -201,9 +222,17 @@ class DepartmentController {
         status: req.body.status,
         visibility: req.body.visibility,
       };
+      // Get tenant ID from request
+      const tenantId = req.tenantId || req.user?.tenant_id;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
       const result = await departmentService.update(
         req.tenantDb,
         id,
+        tenantId,
         updateData,
       );
       res.json(result);

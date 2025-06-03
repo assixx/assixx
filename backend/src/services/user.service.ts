@@ -67,9 +67,9 @@ class UserService {
   /**
    * Get user by ID
    */
-  async getUserById(userId: number): Promise<UserData | null> {
+  async getUserById(userId: number, tenantId: number): Promise<UserData | null> {
     try {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId, tenantId);
 
       if (user) {
         // Remove sensitive data
@@ -123,11 +123,15 @@ class UserService {
       const { page = 1, limit = 10, role, tenantId } = options;
       // const offset = (page - 1) * limit; // Not used by User.findAll
 
+      if (!tenantId) {
+        throw new Error("Tenant ID is required");
+      }
+
       const users = (await User.findAll({
         limit,
         // offset, // offset is not part of UserFilter
         role,
-        tenantId,
+        tenant_id: tenantId,
       })) as DbUser[];
 
       // Map to response format
@@ -158,6 +162,7 @@ class UserService {
    */
   async updateUser(
     userId: number,
+    tenantId: number,
     updateData: UpdateUserData,
   ): Promise<UserData | null> {
     try {
@@ -170,7 +175,7 @@ class UserService {
       delete cleanUpdateData.role;
 
       await User.update(userId, cleanUpdateData);
-      return await this.getUserById(userId);
+      return await this.getUserById(userId, tenantId);
     } catch (error) {
       logger.error("Error updating user:", error);
       throw error;

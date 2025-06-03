@@ -112,7 +112,7 @@ router.post("/", async (req, res): Promise<void> => {
 
     // If a department is specified, check if it exists
     if (department_id) {
-      const department = await Department.findById(department_id);
+      const department = await Department.findById(department_id, authReq.user.tenant_id);
       if (!department) {
         res
           .status(400)
@@ -123,7 +123,7 @@ router.post("/", async (req, res): Promise<void> => {
 
     // If a team leader is specified, check if they exist
     if (leader_id) {
-      const leader = await User.findById(leader_id);
+      const leader = await User.findById(leader_id, authReq.user.tenant_id);
       if (!leader) {
         res
           .status(400)
@@ -212,7 +212,7 @@ router.put("/:id", async (req, res): Promise<void> => {
 
     // If a department is specified, check if it exists
     if (department_id) {
-      const department = await Department.findById(department_id);
+      const department = await Department.findById(department_id, authReq.user.tenant_id);
       if (!department) {
         res
           .status(400)
@@ -223,7 +223,7 @@ router.put("/:id", async (req, res): Promise<void> => {
 
     // If a team leader is specified, check if they exist
     if (leader_id) {
-      const leader = await User.findById(leader_id);
+      const leader = await User.findById(leader_id, authReq.user.tenant_id);
       if (!leader) {
         res
           .status(400)
@@ -330,7 +330,7 @@ router.post("/:id/members", async (req, res): Promise<void> => {
     }
 
     // Check if user exists
-    const user = await User.findById(userId);
+    const user = await User.findById(userId, authReq.user.tenant_id);
 
     if (!user) {
       res.status(404).json({ message: "Benutzer nicht gefunden" });
@@ -377,7 +377,7 @@ router.delete("/:id/members/:userId", async (req, res): Promise<void> => {
     }
 
     // Check if user exists
-    const user = await User.findById(userId);
+    const user = await User.findById(userId, authReq.user.tenant_id);
 
     if (!user) {
       res.status(404).json({ message: "Benutzer nicht gefunden" });

@@ -58,7 +58,7 @@ router.post("/", async (req, res): Promise<void> => {
 
     // If a manager is specified, check if they exist
     if (manager_id) {
-      const manager = await User.findById(manager_id);
+      const manager = await User.findById(manager_id, authReq.user.tenant_id);
       if (!manager) {
         res
           .status(400)
@@ -69,7 +69,7 @@ router.post("/", async (req, res): Promise<void> => {
 
     // If a parent department is specified, check if it exists
     if (parent_id) {
-      const parentDept = await Department.findById(parent_id);
+      const parentDept = await Department.findById(parent_id, authReq.user.tenant_id);
       if (!parentDept) {
         res.status(400).json({
           message: "Die angegebene übergeordnete Abteilung existiert nicht",
@@ -120,7 +120,8 @@ router.get("/", async (req, res): Promise<void> => {
 // Get single department
 router.get("/:id", async (req, res): Promise<void> => {
   try {
-    const department = await Department.findById(parseInt(req.params.id, 10));
+    const authReq = req as AuthenticatedRequest;
+    const department = await Department.findById(parseInt(req.params.id, 10), authReq.user.tenant_id);
 
     if (!department) {
       res.status(404).json({ message: "Abteilung nicht gefunden" });
@@ -147,7 +148,7 @@ router.put("/:id", async (req, res): Promise<void> => {
     const departmentId = parseInt(req.params.id, 10);
 
     // Check if department exists
-    const department = await Department.findById(departmentId);
+    const department = await Department.findById(departmentId, authReq.user.tenant_id);
 
     if (!department) {
       res.status(404).json({ message: "Abteilung nicht gefunden" });
@@ -161,7 +162,7 @@ router.put("/:id", async (req, res): Promise<void> => {
 
     // If a manager is specified, check if they exist
     if (manager_id) {
-      const manager = await User.findById(manager_id);
+      const manager = await User.findById(manager_id, authReq.user.tenant_id);
       if (!manager) {
         res
           .status(400)
@@ -181,7 +182,7 @@ router.put("/:id", async (req, res): Promise<void> => {
         return;
       }
 
-      const parentDept = await Department.findById(parent_id);
+      const parentDept = await Department.findById(parent_id, authReq.user.tenant_id);
       if (!parentDept) {
         res.status(400).json({
           message: "Die angegebene übergeordnete Abteilung existiert nicht",
@@ -221,7 +222,7 @@ router.delete("/:id", async (req, res): Promise<void> => {
     const departmentId = parseInt(req.params.id, 10);
 
     // Check if department exists
-    const department = await Department.findById(departmentId);
+    const department = await Department.findById(departmentId, authReq.user.tenant_id);
 
     if (!department) {
       res.status(404).json({ message: "Abteilung nicht gefunden" });
@@ -265,10 +266,11 @@ router.delete("/:id", async (req, res): Promise<void> => {
 // Get department members
 router.get("/:id/members", async (req, res): Promise<void> => {
   try {
+    const authReq = req as AuthenticatedRequest;
     const departmentId = parseInt(req.params.id, 10);
 
     // Check if department exists
-    const department = await Department.findById(departmentId);
+    const department = await Department.findById(departmentId, authReq.user.tenant_id);
 
     if (!department) {
       res.status(404).json({ message: "Abteilung nicht gefunden" });

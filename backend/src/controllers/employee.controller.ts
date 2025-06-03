@@ -12,6 +12,13 @@ import type { UserCreateData } from "../models/user";
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
+  tenantId?: number | null;
+  user?: {
+    id: number;
+    tenantId: number;
+    role: string;
+    [key: string]: any;
+  };
 }
 
 // Interface for create/update request bodies
@@ -100,7 +107,14 @@ class EmployeeController {
       }
 
       // Parse query parameters to appropriate types
+      const tenantId = req.tenantId || req.user?.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
       const filters = {
+        tenant_id: tenantId,
         search: req.query.search,
         role: req.query.role,
         department_id: req.query.department_id
@@ -144,7 +158,14 @@ class EmployeeController {
         return;
       }
 
-      const result = await employeeService.getById(req.tenantDb, id);
+      // Get tenant ID from request
+      const tenantId = req.tenantId || req.user?.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
+      const result = await employeeService.getById(req.tenantDb, id, tenantId);
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;
@@ -170,6 +191,13 @@ class EmployeeController {
         return;
       }
 
+      // Get tenant ID from request
+      const tenantId = req.tenantId || req.user?.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
       const employeeData: UserCreateData = {
         username: req.body.username,
         email: req.body.email,
@@ -177,7 +205,7 @@ class EmployeeController {
         first_name: req.body.first_name || "",
         last_name: req.body.last_name || "",
         role: req.body.role || "user",
-        tenant_id: req.user.tenantId,
+        tenant_id: tenantId,
         department_id: req.body.department_id || undefined,
         profile_picture: req.body.profile_picture || undefined,
         position: req.body.position,
@@ -238,7 +266,15 @@ class EmployeeController {
           delete updateData[key as keyof typeof updateData];
         }
       });
-      const result = await employeeService.update(req.tenantDb, id, updateData);
+
+      // Get tenant ID from request
+      const tenantId = req.tenantId || req.user?.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: "Tenant ID not found" });
+        return;
+      }
+
+      const result = await employeeService.update(req.tenantDb, id, tenantId, updateData);
       res.json(result);
     } catch (error) {
       console.error("Error in EmployeeController.update:", error);

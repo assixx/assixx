@@ -32,10 +32,15 @@ export const checkDocumentAccess =
     try {
       const userId = req.user?.id;
       const userRole = req.user?.role;
+      const tenantId = req.user?.tenantId || req.tenantId;
       const { documentId } = req.params;
 
       if (!userId || !userRole) {
         return res.status(401).json({ error: "Nicht authentifiziert" });
+      }
+
+      if (!tenantId) {
+        return res.status(400).json({ error: "Tenant nicht gefunden" });
       }
 
       logger.info(
@@ -71,8 +76,8 @@ export const checkDocumentAccess =
 
       // Abteilungsleiter-Zugriff prüfen
       if (options.allowDepartmentHeads && userRole === "department_head") {
-        const user = await User.findById(userId);
-        const documentOwner = await User.findById(document.uploadedFor);
+        const user = await User.findById(userId, tenantId);
+        const documentOwner = await User.findById(document.uploadedFor, tenantId);
 
         if (
           user &&

@@ -127,10 +127,10 @@ export class Department {
   }
 
   static async findAll(
-    tenant_id: number | null = null,
+    tenant_id: number,  // PFLICHT!
   ): Promise<DbDepartment[]> {
     logger.info(
-      `Fetching all departments${tenant_id ? ` for tenant ${tenant_id}` : ""}`,
+      `Fetching all departments for tenant ${tenant_id}`,
     );
 
     try {
@@ -142,13 +142,13 @@ export class Department {
           (SELECT COUNT(*) FROM teams WHERE department_id = d.id) as team_count
         FROM departments d
         LEFT JOIN users u ON d.manager_id = u.id
-        ${tenant_id ? "WHERE d.tenant_id = ?" : ""}
+        WHERE d.tenant_id = ?
         ORDER BY d.name
       `;
 
       const [rows] = await executeQuery<DbDepartment[]>(
         query,
-        tenant_id ? [tenant_id] : [],
+        [tenant_id],
       );
       logger.info(`Retrieved ${rows.length} departments with extended info`);
       return rows;
@@ -158,24 +158,22 @@ export class Department {
       );
 
       // Fallback to simple query
-      const simpleQuery = tenant_id
-        ? "SELECT * FROM departments WHERE tenant_id = ? ORDER BY name"
-        : "SELECT * FROM departments ORDER BY name";
+      const simpleQuery = "SELECT * FROM departments WHERE tenant_id = ? ORDER BY name";
       const [rows] = await executeQuery<DbDepartment[]>(
         simpleQuery,
-        tenant_id ? [tenant_id] : [],
+        [tenant_id],
       );
       logger.info(`Retrieved ${rows.length} departments with simple query`);
       return rows;
     }
   }
 
-  static async findById(id: number): Promise<DbDepartment | null> {
-    logger.info(`Fetching department with ID ${id}`);
-    const query = "SELECT * FROM departments WHERE id = ?";
+  static async findById(id: number, tenant_id: number): Promise<DbDepartment | null> {
+    logger.info(`Fetching department with ID ${id} for tenant ${tenant_id}`);
+    const query = "SELECT * FROM departments WHERE id = ? AND tenant_id = ?";
 
     try {
-      const [rows] = await executeQuery<DbDepartment[]>(query, [id]);
+      const [rows] = await executeQuery<DbDepartment[]>(query, [id, tenant_id]);
       if (rows.length === 0) {
         logger.warn(`Department with ID ${id} not found`);
         return null;

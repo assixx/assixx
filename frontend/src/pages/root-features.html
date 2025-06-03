@@ -557,17 +557,16 @@
 
       /* Summary Bar - angepasst für Standard-Layout */
       .summary-bar {
-        position: fixed;
-        bottom: 0;
-        left: 250px; /* Sidebar Breite */
-        right: 0;
-        background: rgba(0, 0, 0, 0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid hsla(0,0%,100%,.1);
+        bottom: 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,.3);
+        left: 280px;
         padding: 12px 24px;
+        position: fixed;
+        right: 0;
         z-index: 900;
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
       }
       
       /* Mobile responsiv */

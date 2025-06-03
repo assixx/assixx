@@ -34,7 +34,7 @@ interface AuthenticatedRequest extends Request {
 router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const user = await User.findById(authReq.user.id);
+    const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -107,8 +107,8 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
  */
 router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
   try {
-    // const authReq = req as AuthenticatedRequest;
-    const { id } = req.user;
+    const authReq = req as AuthenticatedRequest;
+    const { id } = authReq.user;
     const updates = { ...req.body };
 
     // Don't allow updating critical fields
@@ -121,7 +121,7 @@ router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
     const result = await User.update(id, updates);
 
     if (result) {
-      const updatedUser = await User.findById(id);
+      const updatedUser = await User.findById(id, authReq.user.tenant_id);
       if (!updatedUser) {
         res.status(404).json({ message: "User not found after update" });
         return;
@@ -152,7 +152,7 @@ router.get(
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const user = await User.findById(authReq.user.id);
+      const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
       if (!user || !user.profile_picture) {
         res.status(404).json({ message: "Profile picture not found" });

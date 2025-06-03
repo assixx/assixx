@@ -79,7 +79,7 @@ router.get(
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const user = await User.findById(authReq.user.id);
+      const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
       if (!user) {
         res.status(404).json({ message: "Benutzer nicht gefunden" });
         return;
@@ -242,7 +242,7 @@ router.delete(
       const userId = authReq.user.id;
 
       // Get current user to find existing profile picture
-      const user = await User.findById(userId);
+      const user = await User.findById(userId, authReq.user.tenant_id);
       if (!user) {
         res.status(404).json({ message: "Benutzer nicht gefunden" });
         return;
@@ -316,6 +316,7 @@ router.put(
       // Verify current password and update to new password
       const success = await User.changePassword(
         userId,
+        authReq.user.tenant_id,
         currentPassword,
         newPassword,
       );

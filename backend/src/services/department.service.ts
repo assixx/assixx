@@ -29,12 +29,13 @@ class DepartmentService {
    */
   async getAll(
     _tenantDb: Pool,
+    tenantId: number,
     _filters: DepartmentFilters = {},
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
       // TODO: Add pagination support to Department model
-      return await Department.findAll();
+      return await Department.findAll(tenantId);
     } catch (error) {
       console.error("Error in DepartmentService.getAll:", error);
       throw error;
@@ -44,9 +45,9 @@ class DepartmentService {
   /**
    * Holt einen Department Eintrag per ID
    */
-  async getById(_tenantDb: Pool, id: number): Promise<DepartmentData | null> {
+  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<DepartmentData | null> {
     try {
-      return await Department.findById(id);
+      return await Department.findById(id, tenantId);
     } catch (error) {
       console.error("Error in DepartmentService.getById:", error);
       throw error;
@@ -62,7 +63,7 @@ class DepartmentService {
   ): Promise<DepartmentData> {
     try {
       const id = await Department.create(data);
-      const created = await Department.findById(id);
+      const created = await Department.findById(id, data.tenant_id);
       if (!created) {
         throw new Error("Failed to retrieve created department");
       }
@@ -79,12 +80,13 @@ class DepartmentService {
   async update(
     _tenantDb: Pool,
     id: number,
+    tenantId: number,
     data: DepartmentUpdateData,
   ): Promise<DepartmentData | null> {
     try {
       const success = await Department.update(id, data);
       if (success) {
-        return await Department.findById(id);
+        return await Department.findById(id, tenantId);
       }
       return null;
     } catch (error) {

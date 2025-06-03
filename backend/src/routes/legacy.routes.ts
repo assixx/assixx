@@ -77,7 +77,7 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const user = await User.findById(authReq.user.id);
+      const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
       if (!user) {
         res.status(404).json({ message: "User not found" });
@@ -97,10 +97,10 @@ router.get(
 router.get(
   "/test/db/employees",
   [authenticateToken] as any[],
-  async (_req: any, res: any) => {
+  async (req: any, res: any) => {
     try {
-      // const authReq = req as any;
-      const employees = await User.findAll({ role: "employee" });
+      const authReq = req as any;
+      const employees = await User.findAll({ role: "employee", tenant_id: authReq.user.tenant_id });
       res.json(employees);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -111,11 +111,11 @@ router.get(
 router.get(
   "/test/db/counts",
   [authenticateToken] as any[],
-  async (_req: any, res: any) => {
+  async (req: any, res: any) => {
     try {
-      // const authReq = req as any;
-      const employees = await User.count({ role: "employee" });
-      const documents = await Document.count();
+      const authReq = req as any;
+      const employees = await User.count({ role: "employee", tenant_id: authReq.user.tenant_id });
+      const documents = await Document.countByTenant(authReq.user.tenant_id);
 
       const response: CountsResponse = {
         employees: employees || 0,
@@ -134,9 +134,10 @@ router.get(
 router.get(
   "/test/db/documents",
   [authenticateToken] as any[],
-  async (_req: any, res: any) => {
+  async (req: any, res: any) => {
     try {
-      const documents = await Document.findAll();
+      const authReq = req as any;
+      const documents = await Document.findWithFilters({ tenantId: authReq.user.tenant_id });
       res.json(documents);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -147,9 +148,10 @@ router.get(
 router.get(
   "/test/db/departments",
   [authenticateToken] as any[],
-  async (_req: any, res: any) => {
+  async (req: any, res: any) => {
     try {
-      const departments = await Department.findAll();
+      const authReq = req as any;
+      const departments = await Department.findAll(authReq.user.tenant_id);
       res.json(departments || []);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -161,9 +163,10 @@ router.get(
 router.get(
   "/teams",
   [authenticateToken] as any[],
-  async (_req: any, res: any) => {
+  async (req: any, res: any) => {
     try {
-      const teams = await Team.findAll();
+      const authReq = req as any;
+      const teams = await Team.findAll(authReq.user.tenant_id);
       res.json(teams || []);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -175,10 +178,10 @@ router.get(
 router.get(
   "/admin/employees",
   [authenticateToken] as any[],
-  async (_req: any, res: any) => {
+  async (req: any, res: any) => {
     try {
-      // const authReq = req as any;
-      const employees = await User.findAll();
+      const authReq = req as any;
+      const employees = await User.findAll({ tenant_id: authReq.user.tenant_id });
       res.json(employees);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -198,7 +201,7 @@ router.get(
         return;
       }
 
-      const admins = await User.findAll({ role: "admin" });
+      const admins = await User.findAll({ role: "admin", tenant_id: authReq.user.tenant_id });
       res.json(admins || []);
     } catch (error: any) {
       console.error("Error fetching admins:", error);
@@ -311,7 +314,7 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const documents = await Document.findByUser(authReq.user.id);
+      const documents = await Document.findByUserId(authReq.user.id);
       res.json(documents || []);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -363,8 +366,6 @@ router.get(
   [authenticateToken] as any[],
   async (_req: any, res: any) => {
     try {
-      // const authReq = req as any;
-
       // For now, return empty array since teams table structure needs to be defined
       // This will prevent JSON parse errors
       res.json([]);

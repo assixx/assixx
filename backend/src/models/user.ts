@@ -83,9 +83,8 @@ interface UserCreateData {
 }
 
 interface UserFilter {
+  tenant_id: number;  // PFLICHT!
   role?: string;
-  tenantId?: number;
-  tenant_id?: number;
   is_archived?: boolean;
   department_id?: number;
   status?: string;
@@ -211,7 +210,7 @@ export class User {
     }
   }
 
-  static async findById(id: number): Promise<DbUser | undefined> {
+  static async findById(id: number, tenant_id: number): Promise<DbUser | undefined> {
     try {
       const [rows] = await executeQuery<DbUser[]>(
         `
@@ -219,9 +218,9 @@ export class User {
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         LEFT JOIN tenants t ON u.tenant_id = t.id
-        WHERE u.id = ?
+        WHERE u.id = ? AND u.tenant_id = ?
       `,
-        [id],
+        [id, tenant_id],
       );
 
       if (rows[0]) {
@@ -246,7 +245,7 @@ export class User {
   static async findByRole(
     role: string,
     includeArchived = false,
-    tenant_id: number | null = null,
+    tenant_id: number,  // PFLICHT - nicht mehr optional!
   ): Promise<DbUser[]> {
     try {
       let query = `
@@ -257,12 +256,10 @@ export class User {
         d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
-        WHERE u.role = ?
-        ${tenant_id ? "AND u.tenant_id = ?" : ""}
+        WHERE u.role = ? AND u.tenant_id = ?
       `;
 
-      const params: any[] = [role];
-      if (tenant_id) params.push(tenant_id);
+      const params: any[] = [role, tenant_id];
 
       if (!includeArchived) {
         query += ` AND u.is_archived = false`;
@@ -371,7 +368,7 @@ export class User {
   }
 
   // Neue Methode: Benutzer suchen mit Filtern
-  static async search(filters: UserFilter = {}): Promise<DbUser[]> {
+  static async search(filters: UserFilter): Promise<DbUser[]> {
     try {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
@@ -381,10 +378,10 @@ export class User {
         d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
-        WHERE 1=1
+        WHERE u.tenant_id = ?
       `;
 
-      const values: any[] = [];
+      const values: any[] = [filters.tenant_id];
 
       // Filter für archivierte Benutzer
       if (filters.is_archived !== undefined) {
@@ -499,10 +496,10 @@ export class User {
   }
 
   // Neue Methode: Anzahl der Benutzer zählen (für Pagination)
-  static async countWithFilters(filters: UserFilter = {}): Promise<number> {
+  static async countWithFilters(filters: UserFilter): Promise<number> {
     try {
-      let query = `SELECT COUNT(*) as total FROM users u WHERE 1=1`;
-      const values: any[] = [];
+      let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = ?`;
+      const values: any[] = [filters.tenant_id];
 
       // Filter für archivierte Benutzer
       if (filters.is_archived !== undefined) {
@@ -691,6 +688,7 @@ export class User {
   // Passwort ändern
   static async changePassword(
     userId: number,
+    tenantId: number,
     currentPassword: string,
     newPassword: string,
   ): Promise<{
@@ -699,7 +697,7 @@ export class User {
   }> {
     try {
       // Aktuellen Benutzer abrufen
-      const user = await this.findById(userId);
+      const user = await this.findById(userId, tenantId);
       if (!user) {
         return { success: false, message: "Benutzer nicht gefunden" };
       }
@@ -740,13 +738,14 @@ export class User {
   // Profil-Update erweitern für allgemeine Felder
   static async updateOwnProfile(
     userId: number,
+    tenantId: number,
     userData: Partial<UserCreateData>,
   ): Promise<{
     success: boolean;
     message: string;
   }> {
     try {
-      const user = await this.findById(userId);
+      const user = await this.findById(userId, tenantId);
 
       if (!user) {
         return { success: false, message: "Benutzer nicht gefunden" };
@@ -813,19 +812,14 @@ export class User {
   }
 
   // Find all users with optional filters
-  static async findAll(filters: UserFilter = {}): Promise<DbUser[]> {
+  static async findAll(filters: UserFilter): Promise<DbUser[]> {
     try {
-      let query = "SELECT * FROM users WHERE 1=1";
-      const params: any[] = [];
+      let query = "SELECT * FROM users WHERE tenant_id = ?";
+      const params: any[] = [filters.tenant_id];
 
       if (filters.role) {
         query += " AND role = ?";
         params.push(filters.role);
-      }
-
-      if (filters.tenantId || filters.tenant_id) {
-        query += " AND tenant_id = ?";
-        params.push(filters.tenantId || filters.tenant_id);
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, params);
@@ -853,19 +847,14 @@ export class User {
   }
 
   // Count users with optional filters
-  static async count(filters: UserFilter = {}): Promise<number> {
+  static async count(filters: UserFilter): Promise<number> {
     try {
-      let query = "SELECT COUNT(*) as count FROM users WHERE 1=1";
-      const params: any[] = [];
+      let query = "SELECT COUNT(*) as count FROM users WHERE tenant_id = ?";
+      const params: any[] = [filters.tenant_id];
 
       if (filters.role) {
         query += " AND role = ?";
         params.push(filters.role);
-      }
-
-      if (filters.tenantId || filters.tenant_id) {
-        query += " AND tenant_id = ?";
-        params.push(filters.tenantId || filters.tenant_id);
       }
 
       const [rows] = await executeQuery<any[]>(query, params);
