@@ -5,9 +5,24 @@
 > **Ziel Version 1.0.0:** Beta-Test Version mit Deal-Breaker Features
 > **Aktueller Stand:** 02.06.2025 - Systematisches Debugging & Testing Phase
 
-## 🆕 KÜRZLICH ABGESCHLOSSEN (02.06.2025):
+## 🆕 KÜRZLICH ABGESCHLOSSEN (04.06.2025):
 
-✅ **Plan & Feature Management System**
+✅ **Blackboard/Schwarzes Brett Feature - Phase 1 & 2**
+- Dashboard-Integration: Widget zeigt 5 neueste Einträge
+- Zentrale Blackboard-Seite mit realistischem Pinnwand-Design
+- Verschiedene Content-Typen (Sticky Notes, Notizzettel, Info-Boxen)
+- 4 verschiedene Pushpin-Styles mit Hover-Animationen
+- Zufällige Rotation für natürlichen Look
+- Berechtigungssystem (nur Admins können posten)
+- Sidebar-Navigation: "Schwarzes Brett" mit animiertem Pushpin
+
+✅ **Sidebar Navigation Improvements**
+- "Navigation" umbenannt zu "Schwarzes Brett" mit Pushpin-Icon
+- Collapsible Sidebar mit localStorage-Persistenz
+- Icon-only Modus bei eingeklappter Sidebar
+- Animierter roter Pushpin mit Hover-Effekt
+
+✅ **Plan & Feature Management System** (02.06.2025)
 - Komplett neues Backend für Subscription Plans (Basic/Professional/Enterprise)
 - root-features.html komplett überarbeitet mit Plan-Auswahl
 - Add-ons System für zusätzliche Mitarbeiter/Admins/Speicher
@@ -81,11 +96,14 @@
    - [ ] Kategorisierung
    - [ ] Suche/Filter
 
-5. **Schwarzes Brett**
-   - [ ] Einträge erstellen
-   - [ ] Bearbeiten/Löschen
-   - [ ] Kategorien
-   - [ ] Anhänge
+5. **Schwarzes Brett** ✅ TEILWEISE
+   - [x] Einträge erstellen ✅
+   - [x] Bearbeiten/Löschen ✅
+   - [x] Pinnwand-Design mit verschiedenen Content-Typen ✅
+   - [x] Prioritäts-System ✅
+   - [ ] Anhänge (PDFs, Bilder)
+   - [ ] Tags-System vollständig implementieren
+   - [ ] Bestätigungs-System für wichtige Mitteilungen
 
 6. **Chat-System**
    - [ ] Nachrichten senden
@@ -437,6 +455,9 @@
 - [x] TypeScript Build-Pipeline für Frontend (01.06.2025)
 - [x] Multi-Tenant Isolation Bug behoben (01.06.2025)
 - [x] Automatisches Backup-System implementiert (01.06.2025)
+- [x] Blackboard/Schwarzes Brett - Dashboard Widget (04.06.2025)
+- [x] Blackboard/Schwarzes Brett - Pinnwand-Design implementiert (04.06.2025)
+- [x] Sidebar Navigation als "Schwarzes Brett" mit Pushpin (04.06.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
 

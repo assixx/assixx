@@ -426,6 +426,137 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
       }
+      
+      /* Blackboard Preview Styles */
+      .blackboard-preview {
+        min-height: 200px;
+      }
+      
+      .blackboard-preview .list-item {
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        margin-bottom: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .blackboard-preview .list-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+      }
+      
+      .blackboard-preview .list-item::before {
+        content: '📌';
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        font-size: 14px;
+        opacity: 0.8;
+      }
+      
+      .blackboard-preview .list-item-content {
+        margin-left: 24px;
+      }
+      
+      .blackboard-preview .list-item-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .blackboard-preview .list-item-meta {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .blackboard-preview .priority-badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+      }
+      
+      .blackboard-preview .priority-urgent {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+      
+      .blackboard-preview .priority-high {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+      }
+      
+      .blackboard-preview .priority-normal {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.3);
+      }
+      
+      .blackboard-preview .priority-low {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+      
+      /* Skeleton Loading */
+      .loading-placeholder {
+        padding: 8px 0;
+      }
+      
+      .skeleton {
+        background: linear-gradient(90deg, 
+          rgba(255, 255, 255, 0.05) 25%, 
+          rgba(255, 255, 255, 0.1) 50%, 
+          rgba(255, 255, 255, 0.05) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+      
+      .skeleton-text {
+        height: 48px;
+        width: 100%;
+      }
+      
+      @keyframes skeleton-loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+      
+      /* Empty State */
+      .blackboard-empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+      }
+      
+      .blackboard-empty-state i {
+        font-size: 48px;
+        opacity: 0.3;
+        margin-bottom: 16px;
+      }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -433,7 +564,7 @@
   <body>
     <!-- Header -->
     <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
+      <a href="/pages/admin-dashboard.html" class="logo-container">
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
@@ -570,6 +701,26 @@
                   </div>
                 </div>
                 <a href="/calendar" class="view-all-link">
+                  Alle anzeigen
+                  <span class="arrow">→</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Blackboard Card -->
+            <div class="card compact-card">
+              <div class="card-header">
+                <h2 class="card-title">Schwarzes Brett</h2>
+              </div>
+              <div class="compact-content">
+                <div class="blackboard-preview" id="blackboard-preview">
+                  <div class="loading-placeholder">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                  </div>
+                </div>
+                <a href="/pages/blackboard.html" class="view-all-link">
                   Alle anzeigen
                   <span class="arrow">→</span>
                 </a>
@@ -796,6 +947,7 @@
             </div>
           </div>
         </section>
+
 
         <!-- Settings Section -->
         <section id="settings-section" class="content-section" style="display: none">

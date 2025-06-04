@@ -192,12 +192,6 @@ class UnifiedNavigation {
           section: 'documents',
         },
         {
-          id: 'blackboard',
-          icon: this.getSVGIcon('blackboard'),
-          label: 'Blackboard',
-          url: '/pages/blackboard.html',
-        },
-        {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
@@ -270,12 +264,6 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('document'),
           label: 'Meine Dokumente',
           url: '/pages/employee-documents.html',
-        },
-        {
-          id: 'blackboard',
-          icon: this.getSVGIcon('blackboard'),
-          label: 'Blackboard',
-          url: '/pages/blackboard.html',
         },
         {
           id: 'calendar',
@@ -446,14 +434,20 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <h3 class="sidebar-title">
-                    <span class="title-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,8L8,12L12,16L16,12L12,8Z"/>
-                        </svg>
+                <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
+                    <span class="title-icon pinned-icon">
+                        <span class="pin-head"></span>
+                        <span class="pin-needle"></span>
                     </span>
-                    Navigation
-                </h3>
+                    <span class="title-content">
+                        <span class="title-text">Schwarzes Brett</span>
+                    </span>
+                </button>
+                <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
+                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
+                    </svg>
+                </button>
                 <div class="user-info-card" id="sidebar-user-info-card">
                     <img id="sidebar-user-avatar" class="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
                     <div class="user-details">
@@ -554,8 +548,98 @@ class UnifiedNavigation {
       }
     });
 
+    // Sidebar Toggle
+    this.attachSidebarToggle();
+
     // Update active state on page load
     this.updateActiveNavigation();
+  }
+
+  private attachSidebarToggle(): void {
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!toggleBtn || !sidebar) return;
+
+    // Check localStorage for saved state
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+      sidebar.classList.add('collapsed');
+      mainContent?.classList.add('sidebar-collapsed');
+      this.updateToggleIcon(true);
+    }
+
+    // Toggle click handler
+    toggleBtn.addEventListener('click', () => {
+      const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
+      const newState = !isCurrentlyCollapsed;
+      
+      sidebar.classList.toggle('collapsed');
+      mainContent?.classList.toggle('sidebar-collapsed');
+      
+      // Save state
+      localStorage.setItem('sidebarCollapsed', newState.toString());
+      
+      // Update icon
+      this.updateToggleIcon(newState);
+    });
+
+    // Hover effect for toggle button
+    toggleBtn.addEventListener('mouseenter', () => {
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      const iconPath = toggleBtn.querySelector('.toggle-icon-path');
+      if (iconPath) {
+        if (isCollapsed) {
+          // Show arrow right when collapsed
+          iconPath.setAttribute('d', 'M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z');
+        } else {
+          // Show sidebar left when expanded
+          iconPath.setAttribute('d', 'M14,7L9,12L14,17V7Z');
+        }
+      }
+    });
+
+    toggleBtn.addEventListener('mouseleave', () => {
+      const iconPath = toggleBtn.querySelector('.toggle-icon-path');
+      if (iconPath) {
+        // Reset to hamburger menu
+        iconPath.setAttribute('d', 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z');
+      }
+    });
+
+    // Add tooltips for collapsed sidebar items
+    this.addCollapsedTooltips();
+  }
+
+  private updateToggleIcon(isCollapsed: boolean): void {
+    const iconPath = document.querySelector('.toggle-icon-path');
+    if (iconPath) {
+      // Keep hamburger menu as default
+      iconPath.setAttribute('d', 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z');
+    }
+  }
+
+  private addCollapsedTooltips(): void {
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+
+    const navItems = sidebar.querySelectorAll('.sidebar-link');
+    navItems.forEach(item => {
+      const label = item.querySelector('.label')?.textContent;
+      if (label) {
+        item.setAttribute('title', '');
+        
+        // Show tooltip only when sidebar is collapsed
+        item.addEventListener('mouseenter', () => {
+          if (sidebar.classList.contains('collapsed')) {
+            item.setAttribute('title', label);
+          } else {
+            item.setAttribute('title', '');
+          }
+        });
+      }
+    });
   }
 
   private handleLogout(): void {
@@ -641,6 +725,15 @@ class UnifiedNavigation {
     this.loadUserInfo();
     this.injectNavigationHTML();
     this.attachEventListeners();
+    
+    // Restore sidebar state after refresh
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      sidebar?.classList.add('collapsed');
+      mainContent?.classList.add('sidebar-collapsed');
+    }
   }
 
   // Public method to set active navigation
@@ -841,7 +934,6 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        z-index: 100;
         transition: all 0.3s ease;
         overflow-y: auto;
         overflow-x: hidden;
@@ -870,24 +962,320 @@ const unifiedNavigationCSS = `
         min-height: 100%;
         display: flex;
         flex-direction: column;
+        overflow: visible;
+        position: relative;
     }
 
     .sidebar-title {
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm);
-        font-size: 1rem;
+        justify-content: center;
+        font-size: 0.875rem;
         font-weight: 600;
         color: var(--text-primary);
-        margin: 0 0 var(--spacing-lg) 0;
+        margin: 21px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
-        background: rgba(33, 150, 243, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(20px) saturate(180%);
         border-radius: var(--radius-md);
-        border: 1px solid rgba(33, 150, 243, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        width: 98%;
+        margin-left: 1%;
+        margin-right: 1%;
+        text-align: center;
+        position: relative;
+        box-shadow: 
+            0 4px 16px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        overflow: visible;
     }
 
-    .title-icon {
-        font-size: 1rem;
+    .sidebar-title:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 
+            -10px -9px 20px rgba(255, 235, 59, 0.45), 
+            5px 0px 10px rgb(76, 175, 90), 
+            -6px 1px 10px rgb(33, 150, 243), 
+            0px 9px 15px rgb(255, 61, 0), 
+            0 2px 20px rgba(0, 0, 0, 0), 
+            inset 0 1px 0 rgba(255, 255, 255, 0);
+    }
+
+    .sidebar-title:hover .pin-head {
+        opacity: 0;
+    }
+
+    .sidebar-title:hover .pin-needle {
+        opacity: 1;
+        top: -18px;
+    }
+
+    .sidebar-title:active {
+        transform: translateY(0);
+    }
+
+    /* Pinned icon styles */
+    .pinned-icon {
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    /* Pin head (only the head visible - like pushed in) */
+    .pin-head {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #c40202;
+        display: block;
+        position: relative;
+        box-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.3),
+            inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+        transition: all 0.2s ease;
+    }
+
+    .pin-head::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Pin needle (appears on hover - full pushpin) */
+    .pin-needle {
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    /* Pin needle head */
+    .pin-needle::before {
+        content: '';
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #c40202;
+        box-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.3),
+            inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+            inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Pin needle shaft */
+    .pin-needle::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 20px;
+        background: linear-gradient(to bottom, 
+            #999 0%, 
+            #777 50%, 
+            #555 100%);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .title-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .title-text {
+        transition: opacity 0.3s ease, width 0.3s ease;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 36px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: var(--spacing-lg);
+        color: white;
+    }
+
+    .sidebar-toggle:hover {
+        transform: scale(1.1);
+    }
+
+    .sidebar-toggle:hover .toggle-icon {
+        opacity: 0.8;
+    }
+
+    .toggle-icon {
+        transition: transform 0.3s ease;
+    }
+
+    /* Collapsed Sidebar Styles */
+    .sidebar.collapsed {
+        width: 70px;
+    }
+
+    .sidebar.collapsed .sidebar-title {
+        padding: var(--spacing-sm);
+        justify-content: center;
+        margin: 21px 4px var(--spacing-sm) 4px;
+        width: calc(100% - 8px);
+        font-size: 0;
+    }
+
+    .sidebar.collapsed .title-text {
+        opacity: 0;
+        width: 0;
+        display: none;
+    }
+
+    .sidebar.collapsed .title-content {
+        gap: 0;
+        justify-content: center;
+    }
+
+    .sidebar.collapsed .sidebar-toggle {
+        width: calc(100% - 16px);
+        margin: 0 8px var(--spacing-lg) 8px;
+    }
+
+    .sidebar.collapsed .pinned-icon {
+        top: -7px;
+    }
+
+    .sidebar.collapsed .pin-head {
+        width: 14px;
+        height: 14px;
+    }
+
+    .sidebar.collapsed .pin-head::after {
+        width: 4px;
+        height: 4px;
+        top: 2px;
+        left: 2px;
+    }
+
+    .sidebar.collapsed .user-info-card {
+        padding: var(--spacing-md);
+        flex-direction: column;
+        align-items: center;
+        min-height: auto;
+    }
+
+    .sidebar.collapsed .user-details {
+        display: none;
+    }
+
+    .sidebar.collapsed .sidebar-link {
+        padding: var(--spacing-sm);
+        justify-content: center;
+    }
+
+    .sidebar.collapsed .sidebar-link .label {
+        display: none;
+    }
+
+    .sidebar.collapsed .submenu-arrow {
+        display: none;
+    }
+
+    .sidebar.collapsed .submenu {
+        display: none !important;
+    }
+
+    .sidebar.collapsed .storage-widget {
+        display: none;
+    }
+
+    /* Main content adjustment for collapsed sidebar */
+    .main-content.sidebar-collapsed {
+        margin-left: 70px;
+    }
+
+
+    /* Tooltip styles for collapsed items */
+    .sidebar.collapsed .sidebar-link,
+    .sidebar.collapsed .sidebar-title {
+        position: relative;
+    }
+
+    .sidebar.collapsed .sidebar-link:hover::after,
+    .sidebar.collapsed .sidebar-title:hover::after {
+        content: attr(title);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 10px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        border-radius: 6px;
+        font-size: 14px;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        animation: tooltipFadeIn 0.3s ease forwards;
+    }
+
+    @keyframes tooltipFadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Badge adjustments for collapsed sidebar */
+    .sidebar.collapsed .nav-badge {
+        position: absolute !important;
+        top: 4px !important;
+        right: 4px !important;
+        left: auto !important;
+        font-size: 0.6rem !important;
+        padding: 1px 4px !important;
+        min-width: 14px !important;
+    }
+
+    /* Smooth transitions */
+    .sidebar,
+    .main-content,
+    .sidebar-link,
+    .sidebar-link .label,
+    .title-text,
+    .user-details,
+    .storage-widget {
+        transition: all 0.3s ease;
+    }
+
+    /* Icon centering in collapsed state */
+    .sidebar.collapsed .sidebar-link .icon {
+        margin: 0;
     }
 
     .user-info-card {
@@ -966,6 +1354,11 @@ const unifiedNavigationCSS = `
         flex-shrink: 0 !important;
         transition: all 0.3s ease;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Avatar padding when sidebar is collapsed */
+    .sidebar.collapsed .user-avatar {
+        padding: 3px;
     }
 
     .user-info-card:hover .user-avatar {

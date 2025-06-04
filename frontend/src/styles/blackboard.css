@@ -1,14 +1,328 @@
 /**
- * Blackboard System Styles - Angepasst an das Assixx-Dashboard-Design
+ * Blackboard System Styles - Pinnwand Design
  */
 
-/* Main content padding */
+/* Main content padding - für Pinnwand-Layout */
 .main-content {
   padding: var(--spacing-lg);
   width: 100%;
   overflow-y: auto;
   height: calc(100vh - 56px);
+  position: relative;
 }
+
+/* Pinnwand Container */
+.blackboard-container {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  background: 
+    /* Cork texture */
+    linear-gradient(45deg, #b08d57 25%, transparent 25%),
+    linear-gradient(-45deg, #b08d57 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #b08d57 75%),
+    linear-gradient(-45deg, transparent 75%, #b08d57 75%);
+  background-size: 30px 30px;
+  background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
+  background-color: #c9a876;
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 40px;
+  position: relative;
+  overflow: visible;
+}
+
+/* Cork texture overlay for more realism */
+.blackboard-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+/* Pinboard Items Grid */
+.pinboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+  position: relative;
+}
+
+/* Base Pinboard Item */
+.pinboard-item {
+  position: relative;
+  transition: transform 0.2s ease, z-index 0s;
+  z-index: 1;
+}
+
+.pinboard-item:hover {
+  transform: translateY(-5px) scale(1.02);
+  z-index: 10;
+}
+
+/* Sticky Note Style */
+.pinboard-sticky {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 20px;
+  min-height: 200px;
+  position: relative;
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.2),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+  transform: rotate(var(--rotation, -2deg));
+}
+
+/* Different sticky note colors */
+.pinboard-sticky.color-yellow {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.pinboard-sticky.color-pink {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+}
+
+.pinboard-sticky.color-blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.pinboard-sticky.color-green {
+  background: linear-gradient(135deg, #d9f99d 0%, #bef264 100%);
+}
+
+.pinboard-sticky.color-orange {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+}
+
+/* Larger Note Style (A5/A4) */
+.pinboard-note {
+  background: linear-gradient(to bottom, #fff 0%, #f9fafb 100%);
+  padding: 30px;
+  min-height: 300px;
+  position: relative;
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  transform: rotate(var(--rotation, 1deg));
+}
+
+/* Paper lines for notes */
+.pinboard-note::after {
+  content: '';
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #e5e7eb 27px,
+    #e5e7eb 28px
+  );
+  pointer-events: none;
+}
+
+/* Info Box Style */
+.pinboard-info {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 2px solid #0284c7;
+  padding: 20px;
+  min-height: 150px;
+  position: relative;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform: rotate(var(--rotation, -1deg));
+}
+
+/* Document/PDF Preview */
+.pinboard-document {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  padding: 0;
+  position: relative;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  transform: rotate(var(--rotation, 2deg));
+  overflow: hidden;
+}
+
+.pinboard-document .document-header {
+  background: #f3f4f6;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pinboard-document .document-preview {
+  padding: 20px;
+  min-height: 200px;
+  background: 
+    repeating-linear-gradient(
+      transparent,
+      transparent 20px,
+      #f9fafb 20px,
+      #f9fafb 21px
+    );
+}
+
+/* Image Style */
+.pinboard-image {
+  background: #fff;
+  padding: 10px;
+  position: relative;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transform: rotate(var(--rotation, -3deg));
+}
+
+.pinboard-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Pushpin Styles */
+.pushpin {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s ease;
+}
+
+.pinboard-item:hover .pushpin {
+  transform: translateX(-50%) translateY(-3px);
+}
+
+/* Red Pushpin */
+.pushpin-red {
+  width: 30px;
+  height: 30px;
+}
+
+.pushpin-red::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(45deg);
+  top: 0;
+  left: 5px;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.pushpin-red::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, #868e96 0%, #495057 100%);
+  top: 15px;
+  left: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Blue Pushpin */
+.pushpin-blue {
+  width: 30px;
+  height: 30px;
+}
+
+.pushpin-blue::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at 30% 30%, #74c0fc, #1c7ed6);
+  border-radius: 50%;
+  top: 0;
+  left: 5px;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+/* Yellow Pushpin */
+.pushpin-yellow {
+  width: 25px;
+  height: 25px;
+}
+
+.pushpin-yellow::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 30% 30%, #ffd43b, #fab005);
+  border-radius: 50%;
+  top: 0;
+  left: 4px;
+  box-shadow: 
+    inset -1px -1px 3px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 3px rgba(255, 255, 255, 0.5);
+}
+
+/* Metal Thumbtack */
+.pushpin-metal {
+  width: 30px;
+  height: 30px;
+}
+
+.pushpin-metal::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: 
+    radial-gradient(circle at 30% 30%, #e9ecef, #868e96);
+  border-radius: 50%;
+  top: 0;
+  left: 6px;
+  box-shadow: 
+    inset -2px -2px 3px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.pushpin-metal::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #343a40;
+  border-radius: 50%;
+  top: 5px;
+  left: 11px;
+}
+
+/* Random rotation classes */
+.rotate-1 { --rotation: 1deg; }
+.rotate-2 { --rotation: 2deg; }
+.rotate-3 { --rotation: 3deg; }
+.rotate-n1 { --rotation: -1deg; }
+.rotate-n2 { --rotation: -2deg; }
+.rotate-n3 { --rotation: -3deg; }
 
 /* Overlay für Modals */
 .modal-overlay {

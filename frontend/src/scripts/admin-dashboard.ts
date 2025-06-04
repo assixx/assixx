@@ -246,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDepartments();
     loadTeams();
     loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
+    loadBlackboardPreview(); // Laden der Blackboard-Einträge
   }, 100);
 
   // Setup manage links
@@ -396,6 +397,97 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Error loading teams:', error);
     }
+  }
+  
+  // Load Blackboard Preview - zeigt die neuesten 5 Einträge
+  async function loadBlackboardPreview(): Promise<void> {
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        console.error('No auth token found for blackboard preview');
+        return;
+      }
+
+      const response = await fetch('/api/blackboard/entries?limit=5&sortBy=created_at&sortOrder=DESC', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const previewContainer = document.getElementById('blackboard-preview');
+      if (!previewContainer) return;
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Unauthorized access to blackboard');
+        }
+        throw new Error('Failed to load blackboard entries');
+      }
+
+      const data = await response.json();
+      const entries = data.entries || [];
+
+      // Clear loading placeholder
+      previewContainer.innerHTML = '';
+
+      if (entries.length === 0) {
+        // Empty state
+        previewContainer.innerHTML = `
+          <div class="blackboard-empty-state">
+            <i class="fas fa-clipboard"></i>
+            <p>Keine Einträge vorhanden</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Render entries
+      const entriesHtml = entries.map((entry: any) => {
+        const priorityClass = `priority-${entry.priority || 'normal'}`;
+        const priorityLabel = getPriorityLabel(entry.priority);
+        const createdDate = new Date(entry.created_at).toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+
+        return `
+          <div class="list-item" onclick="window.location.href='/pages/blackboard.html'">
+            <div class="list-item-content">
+              <div class="list-item-title">${entry.title}</div>
+              <div class="list-item-meta">
+                <span class="priority-badge ${priorityClass}">${priorityLabel}</span>
+                <span>${createdDate}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      previewContainer.innerHTML = entriesHtml;
+
+    } catch (error) {
+      console.error('Error loading blackboard preview:', error);
+      
+      const previewContainer = document.getElementById('blackboard-preview');
+      if (previewContainer) {
+        previewContainer.innerHTML = `
+          <div class="blackboard-empty-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Fehler beim Laden</p>
+          </div>
+        `;
+      }
+    }
+  }
+
+  // Hilfsfunktion für Priority Labels
+  function getPriorityLabel(priority: string): string {
+    const labels: Record<string, string> = {
+      urgent: 'Dringend',
+      high: 'Hoch',
+      normal: 'Normal',
+      low: 'Niedrig'
+    };
+    return labels[priority] || 'Normal';
   }
 
   // Create Employee

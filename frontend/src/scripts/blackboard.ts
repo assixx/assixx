@@ -456,51 +456,97 @@ function displayEntries(entries: BlackboardEntry[]): void {
 }
 
 /**
- * Create entry card element
+ * Create entry card element with pinboard style
  */
 function createEntryCard(entry: BlackboardEntry): HTMLElement {
-  const card = document.createElement('div');
-  card.className = `blackboard-card priority-${entry.priority_level}`;
-  card.style.backgroundColor = entry.color || '#f8f9fa';
-
-  const priorityBadge = getPriorityBadge(entry.priority_level);
-  const orgLevelBadge = getOrgLevelBadge(entry.org_level);
+  const container = document.createElement('div');
+  container.className = 'pinboard-item';
+  
+  // Randomly assign rotation class
+  const rotations = ['rotate-1', 'rotate-2', 'rotate-3', 'rotate-n1', 'rotate-n2', 'rotate-n3'];
+  const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
+  
+  // Randomly select pushpin style
+  const pushpinStyles = ['pushpin-red', 'pushpin-blue', 'pushpin-yellow', 'pushpin-metal'];
+  const randomPushpin = pushpinStyles[Math.floor(Math.random() * pushpinStyles.length)];
+  
+  // Determine card type based on priority or content
+  let cardClass = 'pinboard-sticky';
+  let cardColor = entry.color || 'yellow';
+  
+  // High priority items get info box style
+  if (entry.priority_level === 'high' || entry.priority_level === 'critical') {
+    cardClass = 'pinboard-info';
+  }
+  // Longer content gets note style
+  else if (entry.content.length > 200) {
+    cardClass = 'pinboard-note';
+  }
+  
   const canEdit = isAdmin || entry.created_by === currentUserId;
-
-  card.innerHTML = `
-    <div class="card-header">
-      <h3>${escapeHtml(entry.title)}</h3>
-      <div class="card-actions">
-        ${
-          canEdit
-            ? `
-            <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.id})">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.id})">
-              <i class="fas fa-trash"></i>
-            </button>
-          `
-            : ''
-        }
+  const priorityIcon = getPriorityIcon(entry.priority_level);
+  
+  container.innerHTML = `
+    <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
+      <div class="pushpin ${randomPushpin}"></div>
+      
+      <h4 style="margin: 0 0 10px 0; font-weight: 600; color: #1a1a1a;">
+        ${priorityIcon} ${escapeHtml(entry.title)}
+      </h4>
+      
+      <div style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+        ${escapeHtml(entry.content).substring(0, 150).replace(/\n/g, '<br>')}${entry.content.length > 150 ? '...' : ''}
       </div>
-    </div>
-    <div class="card-body">
-      <p>${escapeHtml(entry.content).replace(/\n/g, '<br>')}</p>
-      <div class="card-meta">
-        ${priorityBadge}
-        ${orgLevelBadge}
-        <span class="created-by">
-          <i class="fas fa-user"></i> ${escapeHtml(entry.created_by_name || 'Unknown')}
+      
+      <div style="font-size: 12px; color: #666; display: flex; justify-content: space-between; align-items: center;">
+        <span>
+          <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.created_by_name || 'Unknown')}
         </span>
-        <span class="created-at">
-          <i class="fas fa-clock"></i> ${formatDate(entry.created_at)}
+        <span>
+          ${formatDate(entry.created_at)}
         </span>
       </div>
+      
+      ${canEdit ? `
+        <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.2s;">
+          <button class="btn btn-sm btn-link p-1" onclick="event.stopPropagation(); editEntry(${entry.id})" title="Bearbeiten">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-link p-1 text-danger" onclick="event.stopPropagation(); deleteEntry(${entry.id})" title="Löschen">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      ` : ''}
     </div>
   `;
+  
+  // Show actions on hover
+  if (canEdit) {
+    const card = container.querySelector(`.${cardClass}`) as HTMLElement;
+    card.addEventListener('mouseenter', () => {
+      const actions = card.querySelector('.entry-actions') as HTMLElement;
+      if (actions) actions.style.opacity = '1';
+    });
+    card.addEventListener('mouseleave', () => {
+      const actions = card.querySelector('.entry-actions') as HTMLElement;
+      if (actions) actions.style.opacity = '0';
+    });
+  }
+  
+  return container;
+}
 
-  return card;
+/**
+ * Get priority icon
+ */
+function getPriorityIcon(priority: string): string {
+  const icons: Record<string, string> = {
+    low: '<i class="fas fa-circle" style="color: #4caf50; font-size: 10px;"></i>',
+    medium: '<i class="fas fa-circle" style="color: #2196f3; font-size: 10px;"></i>',
+    high: '<i class="fas fa-exclamation-circle" style="color: #ff9800; font-size: 12px;"></i>',
+    critical: '<i class="fas fa-exclamation-triangle" style="color: #f44336; font-size: 12px;"></i>'
+  };
+  return icons[priority] || icons.medium;
 }
 
 /**
@@ -808,12 +854,90 @@ function formatDate(dateString: string): string {
   });
 }
 
+/**
+ * View entry details
+ */
+async function viewEntry(entryId: number): Promise<void> {
+  const token = getAuthToken();
+  if (!token) return;
+
+  try {
+    const response = await fetch(`/api/blackboard/${entryId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      const entry = await response.json();
+      
+      // Show entry detail modal
+      const detailContent = document.getElementById('entryDetailContent') as HTMLElement;
+      if (detailContent) {
+        const priorityIcon = getPriorityIcon(entry.priority_level);
+        const canEdit = isAdmin || entry.created_by === currentUserId;
+        
+        detailContent.innerHTML = `
+          <div class="entry-detail-header">
+            <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
+            <div class="entry-detail-meta">
+              <span><i class="fas fa-user"></i> ${escapeHtml(entry.created_by_name || 'Unknown')}</span>
+              <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
+            </div>
+          </div>
+          <div class="entry-detail-content">
+            ${escapeHtml(entry.content).replace(/\n/g, '<br>')}
+          </div>
+          ${entry.tags && entry.tags.length > 0 ? `
+            <div class="entry-tags">
+              ${entry.tags.map(tag => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
+            </div>
+          ` : ''}
+        `;
+        
+        // Update footer buttons
+        const footer = document.getElementById('entryDetailFooter') as HTMLElement;
+        if (footer && canEdit) {
+          footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+            <button type="button" class="btn btn-primary" onclick="editEntry(${entryId})">
+              <i class="fas fa-edit"></i> Bearbeiten
+            </button>
+            <button type="button" class="btn btn-danger" onclick="deleteEntry(${entryId})">
+              <i class="fas fa-trash"></i> Löschen
+            </button>
+          `;
+          // Re-attach close button listener
+          setupCloseButtons();
+        }
+      }
+      
+      // Show modal
+      if (typeof window.DashboardUI?.openModal === 'function') {
+        window.DashboardUI.openModal('entryDetailModal');
+      } else {
+        const modal = document.getElementById('entryDetailModal');
+        if (modal) {
+          modal.classList.add('active');
+          modal.style.opacity = '1';
+          modal.style.visibility = 'visible';
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error viewing entry:', error);
+    showError('Fehler beim Laden des Eintrags');
+  }
+}
+
 // Extend window for blackboard functions
 declare global {
   interface Window {
     editEntry: typeof openEntryForm;
     deleteEntry: typeof deleteEntry;
     changePage: typeof changePage;
+    viewEntry: typeof viewEntry;
+    openEntryForm: typeof openEntryForm;
   }
 }
 
@@ -822,4 +946,6 @@ if (typeof window !== 'undefined') {
   window.editEntry = openEntryForm;
   window.deleteEntry = deleteEntry;
   window.changePage = changePage;
+  window.viewEntry = viewEntry;
+  window.openEntryForm = openEntryForm;
 }
