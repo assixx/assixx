@@ -44,7 +44,23 @@ router.get(
         return;
       }
 
-      const users = await User.findAllByTenant(authReq.user.tenant_id);
+      // Get query parameters
+      const { role, limit } = req.query;
+      
+      let users = await User.findAllByTenant(authReq.user.tenant_id);
+      
+      // Filter by role if specified
+      if (role && typeof role === 'string') {
+        users = users.filter(user => user.role === role);
+      }
+      
+      // Apply limit if specified
+      if (limit && typeof limit === 'string') {
+        const limitNum = parseInt(limit, 10);
+        if (!isNaN(limitNum) && limitNum > 0) {
+          users = users.slice(0, limitNum);
+        }
+      }
 
       // Remove sensitive data
       const sanitizedUsers = users.map((user) => ({
@@ -59,6 +75,8 @@ router.get(
         phone: user.phone,
         created_at: user.created_at,
         is_active: user.is_active,
+        position: user.position,
+        department: user.department_name
       }));
 
       res.json(sanitizedUsers);
@@ -66,6 +84,139 @@ router.get(
       logger.error("Error fetching users:", error);
       res.status(500).json({
         message: "Error fetching users",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// Get specific user by ID (admin only)
+router.get(
+  "/:id",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      
+      // Check if user is admin or root
+      if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+      }
+
+      const userId = parseInt(req.params.id);
+      const user = await User.findById(userId, authReq.user.tenant_id);
+      
+      if (!user) {
+        res.status(404).json({ message: "Benutzer nicht gefunden" });
+        return;
+      }
+
+      // Remove password from response
+      const { password: _password, ...userProfile } = user;
+      res.json(userProfile);
+    } catch (error: any) {
+      logger.error(`Error fetching user ${req.params.id}: ${error.message}`);
+      res.status(500).json({
+        message: "Fehler beim Abrufen des Benutzers",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// Update user by ID (admin only)
+router.put(
+  "/:id",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      
+      // Check if user is admin or root
+      if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+      }
+
+      const userId = parseInt(req.params.id);
+      const updateData = req.body;
+
+      // Remove fields that shouldn't be updated directly
+      delete updateData.id;
+      delete updateData.tenant_id;
+      delete updateData.created_at;
+      delete updateData.updated_at;
+
+      // Verify user belongs to tenant before updating
+      const existingUser = await User.findById(userId, authReq.user.tenant_id);
+      if (!existingUser) {
+        res.status(404).json({ message: "Benutzer nicht gefunden" });
+        return;
+      }
+
+      // Update user
+      const success = await User.update(userId, updateData);
+      
+      if (!success) {
+        res.status(500).json({ message: "Aktualisierung fehlgeschlagen" });
+        return;
+      }
+
+      logger.info(`User ${userId} updated by ${authReq.user.id}`);
+      res.json({ message: "Benutzer erfolgreich aktualisiert" });
+    } catch (error: any) {
+      logger.error(`Error updating user ${req.params.id}: ${error.message}`);
+      res.status(500).json({
+        message: "Fehler beim Aktualisieren des Benutzers",
+        error: error.message,
+      });
+    }
+  },
+);
+
+// Delete user by ID (admin only)
+router.delete(
+  "/:id",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      
+      // Check if user is admin or root
+      if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+      }
+
+      const userId = parseInt(req.params.id);
+      
+      // Prevent self-deletion
+      if (userId === authReq.user.id) {
+        res.status(400).json({ message: "Sie können sich nicht selbst löschen" });
+        return;
+      }
+
+      // Verify user belongs to tenant before deleting
+      const existingUser = await User.findById(userId, authReq.user.tenant_id);
+      if (!existingUser) {
+        res.status(404).json({ message: "Benutzer nicht gefunden" });
+        return;
+      }
+
+      const success = await User.delete(userId);
+      
+      if (!success) {
+        res.status(500).json({ message: "Löschen fehlgeschlagen" });
+        return;
+      }
+
+      logger.info(`User ${userId} deleted by ${authReq.user.id}`);
+      res.json({ message: "Benutzer erfolgreich gelöscht" });
+    } catch (error: any) {
+      logger.error(`Error deleting user ${req.params.id}: ${error.message}`);
+      res.status(500).json({
+        message: "Fehler beim Löschen des Benutzers",
         error: error.message,
       });
     }

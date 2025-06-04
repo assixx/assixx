@@ -128,6 +128,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        padding:20px;
       }
 
       .profile-picture-placeholder {
@@ -297,19 +298,20 @@
         box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
       }
 
-      /* Modal Styles - Glassmorphismus */
+      /* Modal Styles - Glassmorphismus nach Design Standards */
       .modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(5px);
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 9999;
+        z-index: 1000;
         animation: fadeIn 0.3s ease-out;
       }
 
@@ -318,17 +320,19 @@
       }
 
       .modal-content {
-        background: rgba(18, 18, 18, 0.95);
+        background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-lg);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
         box-shadow:
-          0 24px 48px rgba(0, 0, 0, 0.8),
+          0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         max-width: 500px;
         width: 90%;
-        padding: 32px;
-        animation: modalSlideIn 0.3s ease-out;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: fadeInUp 0.3s ease-out;
       }
 
       @keyframes fadeIn {
@@ -340,10 +344,10 @@
         }
       }
 
-      @keyframes modalSlideIn {
+      @keyframes fadeInUp {
         from {
           opacity: 0;
-          transform: translateY(-50px);
+          transform: translateY(30px);
         }
         to {
           opacity: 1;
@@ -355,35 +359,44 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 24px;
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         color: #f44336;
       }
 
       .modal-header h3 {
         margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      .modal-header i {
         font-size: 24px;
       }
 
       .modal-body {
-        margin-bottom: 32px;
+        padding: var(--spacing-lg);
       }
 
       .warning-box {
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
         border-radius: var(--radius-sm);
-        padding: 16px;
-        margin-bottom: 20px;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        backdrop-filter: blur(10px);
       }
 
       .confirmation-input {
-        margin-top: 20px;
+        margin-top: var(--spacing-lg);
       }
 
       .modal-footer {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         justify-content: flex-end;
+        padding: var(--spacing-lg);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       /* Responsive */
@@ -399,7 +412,7 @@
 
         .modal-content {
           margin: 20px;
-          padding: 24px;
+          padding: 0;
         }
       }
     </style>
@@ -408,8 +421,8 @@
   <body>
     <!-- Header -->
     <header class="header">
-      <a href="/root-dashboard" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
+      <a href="/pages/root-dashboard.html" class="logo-container">
+        <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <div id="user-info">
@@ -636,8 +649,7 @@
         window.location.href = '/login';
       }
 
-      // Display user info
-      document.getElementById('user-info').textContent = userInfo?.username || 'Root User';
+      // User info wird durch header-user-info.ts geladen
 
       // Load current profile data
       async function loadProfile() {
@@ -658,8 +670,9 @@
             document.getElementById('last_name').value = user.last_name || '';
 
             // Load profile picture if exists
-            if (user.profile_picture_url) {
-              displayProfilePicture(user.profile_picture_url);
+            if (user.profile_picture) {
+              displayProfilePicture(user.profile_picture);
+              // Header wird automatisch durch header-user-info.ts aktualisiert
             }
           } else {
             showMessage('Fehler beim Laden des Profils', 'error');

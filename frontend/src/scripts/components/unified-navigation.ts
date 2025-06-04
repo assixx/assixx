@@ -845,31 +845,65 @@ const unifiedNavigationCSS = `
 
     .user-info-card {
         display: flex;
-        
+        align-items: center;
         gap: 12px;
-        padding: var(--spacing-md);
+        padding: var(--spacing-lg) var(--spacing-xl);
         background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(10px) saturate(180%);
-        -webkit-backdrop-filter: blur(10px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
-
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 24px rgb(0, 0, 0), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        min-height: 100px;
+        animation: fadeInUp 0.6s ease-out;
     }
 
-    /* Shimmer effect removed for consistency with storage-widget */
+    /* Welcome hero style gradient backgrounds */
+    .user-info-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+            radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.07) 0%, transparent 50%);
+        opacity: 1;
+        z-index: 0;
+    }
+
+    .user-info-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 200px;
+        height: 200px;
+        
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .user-info-card > * {
+        position: relative;
+        z-index: 1;
+    }
 
     .user-info-card:hover {
-        background: rgba(255, 255, 255, 0.04);
-        transform: translateY(-2px);
-        border-color: rgba(251, 191, 36, 0.5);
+        background: rgba(255, 255, 255, 0.03);
+        transform: translateY(-5px);
+        border-color: rgba(33, 150, 243, 0.3);
         box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.5),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 40px rgba(251, 191, 36, 0.2);
+            0 12px 40px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15),
+            0 0 40px rgba(33, 150, 243, 0.1);
     }
 
     /* Avatar Styles - Ohne Border */
@@ -909,13 +943,14 @@ const unifiedNavigationCSS = `
 
     .company-name {
         font-weight: 600;
-        color: rgba(251, 191, 36, 0.9);
+        color: var(--primary-light);
         font-size: 14px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        text-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
     }
 
     .company-domain {

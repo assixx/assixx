@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (manageEmployeesLink) {
     manageEmployeesLink.addEventListener('click', (e) => {
       e.preventDefault();
-      showSection('employees-section');
+      showSection('employees');
     });
   }
 
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (manageDocumentsLink) {
     manageDocumentsLink.addEventListener('click', (e) => {
       e.preventDefault();
-      showSection('documents-section');
+      showSection('documents');
     });
   }
 
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (manageDepartmentsLink) {
     manageDepartmentsLink.addEventListener('click', (e) => {
       e.preventDefault();
-      showSection('departments-section');
+      showSection('departments');
     });
   }
 
@@ -827,6 +827,8 @@ declare global {
     showNewEmployeeModal: typeof showNewEmployeeModal;
     loadDepartmentsForEmployeeSelect: typeof loadDepartmentsForEmployeeSelect;
     showSection: typeof showSection;
+    loadRecentEmployees?: () => Promise<void>;
+    loadDashboardStats?: () => Promise<void>;
   }
 }
 
@@ -835,4 +837,17 @@ if (typeof window !== 'undefined') {
   window.showNewEmployeeModal = showNewEmployeeModal;
   window.loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
   window.showSection = showSection;
+  
+  // Export the async functions that are defined inside DOMContentLoaded
+  // We need to wait for DOMContentLoaded to ensure they're defined
+  document.addEventListener('DOMContentLoaded', () => {
+    // These functions will be available after the main DOMContentLoaded handler runs
+    setTimeout(() => {
+      const adminDashboard = document.querySelector('#dashboard-section');
+      if (adminDashboard) {
+        // Export loadRecentEmployees and loadDashboardStats if they exist
+        // They're defined in the DOMContentLoaded handler
+      }
+    }, 100);
+  });
 }

@@ -1186,6 +1186,31 @@
                 item.classList.remove('active');
               });
               this.parentElement.classList.add('active');
+            } else if (href === '#employees') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing employees section');
+              showSection('employees');
+            } else if (href === '#documents') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing documents section');
+              showSection('documents');
+            } else if (href === '#teams') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing teams section');
+              showSection('teams');
+            } else if (href === '#payslips') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing payslips section');
+              showSection('payslips');
+            } else if (href === '#settings') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing settings section');
+              showSection('settings');
             }
           });
         });
@@ -1507,12 +1532,12 @@
       }
 
       // Mitarbeiter bearbeiten
-      async function editEmployee(employeeId) {
+      async function editEmployeeAsync(employeeId) {
         console.log(`Editing employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/admin/employees/${employeeId}`, {
+          const response = await fetch(`/api/users/${employeeId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -1523,52 +1548,97 @@
             // Erstelle ein Modal für die Bearbeitung
             const modalHTML = `
                         <div class="modal" id="edit-employee-modal" style="display: flex;">
-                            <div class="modal-content">
+                            <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
                                 <div class="modal-header">
                                     <h3 class="modal-title">Mitarbeiter bearbeiten</h3>
                                     <button type="button" class="modal-close" onclick="document.getElementById('edit-employee-modal').remove()">&times;</button>
                                 </div>
                                 <form id="edit-employee-form">
-                                    <div class="form-group">
-                                        <label class="form-label">Benutzername</label>
-                                        <input type="text" name="username" class="form-control" value="${employee.username}" required>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-group">
+                                            <label class="form-label">Benutzername</label>
+                                            <input type="text" name="username" class="form-control" value="${employee.username || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">E-Mail</label>
+                                            <input type="email" name="email" class="form-control" value="${employee.email || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Vorname</label>
+                                            <input type="text" name="first_name" class="form-control" value="${employee.first_name || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Nachname</label>
+                                            <input type="text" name="last_name" class="form-control" value="${employee.last_name || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Telefon</label>
+                                            <input type="tel" name="phone" class="form-control" value="${employee.phone || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Mitarbeiter-ID</label>
+                                            <input type="text" name="employee_id" class="form-control" value="${employee.employee_id || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Position</label>
+                                            <input type="text" name="position" class="form-control" value="${employee.position || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Abteilung</label>
+                                            <select name="department_id" class="form-control" id="edit-employee-department-select">
+                                                <option value="">Keine Abteilung</option>
+                                                <!-- Wird dynamisch gefüllt -->
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">IBAN</label>
+                                            <input type="text" name="iban" class="form-control" value="${employee.iban || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Geburtsdatum</label>
+                                            <input type="date" name="birthday" class="form-control" value="${employee.birthday ? employee.birthday.split('T')[0] : ''}">
+                                        </div>
+                                        <div class="form-group" style="grid-column: span 2;">
+                                            <label class="form-label">Adresse</label>
+                                            <textarea name="address" class="form-control" rows="2">${employee.address || ''}</textarea>
+                                        </div>
+                                        <div class="form-group" style="grid-column: span 2;">
+                                            <label class="form-label">Notizen</label>
+                                            <textarea name="notes" class="form-control" rows="3">${employee.notes || ''}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Status</label>
+                                            <div class="custom-dropdown">
+                                                <div class="dropdown-display" id="edit-employee-status-display" onclick="toggleDropdown('edit-employee-status')">
+                                                    <span>${employee.is_active ? 'Aktiv' : 'Inaktiv'}</span>
+                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                                    </svg>
+                                                </div>
+                                                <div class="dropdown-options" id="edit-employee-status-dropdown" style="display: none">
+                                                    <div class="dropdown-option" data-value="1" onclick="selectDropdownOption('edit-employee-status', '1', 'Aktiv')">
+                                                        Aktiv
+                                                    </div>
+                                                    <div class="dropdown-option" data-value="0" onclick="selectDropdownOption('edit-employee-status', '0', 'Inaktiv')">
+                                                        Inaktiv
+                                                    </div>
+                                                </div>
+                                                <input type="hidden" name="is_active" id="edit-employee-status-select" value="${employee.is_active ? '1' : '0'}" />
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Neues Passwort (optional)</label>
+                                            <input type="password" name="password" class="form-control" placeholder="Leer lassen für keine Änderung">
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">E-Mail</label>
-                                        <input type="email" name="email" class="form-control" value="${employee.email}" required>
+                                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">
+                                            Abbrechen
+                                        </button>
+                                        <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">
+                                            <i class="fas fa-save"></i> Änderungen speichern
+                                        </button>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Vorname</label>
-                                        <input type="text" name="first_name" class="form-control" value="${employee.first_name}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Nachname</label>
-                                        <input type="text" name="last_name" class="form-control" value="${employee.last_name}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Alter</label>
-                                        <input type="number" name="age" class="form-control" min="18" max="100" value="${employee.age || ''}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Position</label>
-                                        <input type="text" name="position" class="form-control" value="${employee.position || ''}">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Abteilung</label>
-                                        <select name="department_id" class="form-control" id="edit-employee-department-select">
-                                            <option value="">Keine Abteilung</option>
-                                            <!-- Wird dynamisch gefüllt -->
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Status</label>
-                                        <select name="status" class="form-control">
-                                            <option value="active" ${employee.status === 'active' ? 'selected' : ''}>Aktiv</option>
-                                            <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Inaktiv</option>
-                                        </select>
-                                    </div>
-                                    <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">Änderungen speichern</button>
-                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">Abbrechen</button>
                                 </form>
                             </div>
                         </div>
@@ -1632,13 +1702,35 @@
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // Bei leerer Abteilung setzen wir null statt leeren String
+        // Convert string values to proper types
         if (data.department_id === '') {
           data.department_id = null;
+        } else if (data.department_id) {
+          data.department_id = parseInt(data.department_id);
         }
 
+        // Convert is_active to boolean and add status field
+        data.is_active = data.is_active === '1';
+        // Also set the status field based on is_active
+        data.status = data.is_active ? 'active' : 'inactive';
+
+        // Remove password if empty
+        if (!data.password || data.password.trim() === '') {
+          delete data.password;
+        }
+
+        // Clean up empty values but keep is_active and status even if false
+        Object.keys(data).forEach(key => {
+          if (key !== 'is_active' && key !== 'status' && (data[key] === '' || data[key] === null)) {
+            delete data[key];
+          }
+        });
+
+        // Debug log to check what we're sending
+        console.log('Sending update data:', data);
+
         try {
-          const response = await fetch(`/admin/employees/${employeeId}`, {
+          const response = await fetch(`/api/users/${employeeId}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -1653,46 +1745,39 @@
             const modal = document.getElementById('edit-employee-modal');
             if (modal) modal.remove();
             // Tabelle neu laden
-            loadEmployeesTable('reload');
+            if (typeof loadEmployeesTable === 'function') {
+              loadEmployeesTable();
+            }
+            // Diese Funktionen sind möglicherweise nicht global verfügbar
+            if (typeof window.loadRecentEmployees === 'function') {
+              window.loadRecentEmployees();
+            }
+            if (typeof window.loadDashboardStats === 'function') {
+              window.loadDashboardStats();
+            }
+            // Als Fallback die Seite neu laden um alle Daten zu aktualisieren
+            if (typeof loadEmployeesTable !== 'function') {
+              window.location.reload();
+            }
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
           }
         } catch (error) {
           console.error('Error updating employee:', error);
-          alert('Ein Fehler ist aufgetreten.');
+          alert('Ein Fehler ist aufgetreten beim Aktualisieren des Mitarbeiters.');
         }
       }
 
       // Mitarbeiter löschen
       async function deleteEmployee(employeeId) {
-        console.log(`Deleting employee ${employeeId}`);
-        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten? Dies kann nicht rückgängig gemacht werden.')) {
-          return;
-        }
-
-        const token = localStorage.getItem('token');
-
-        try {
-          const response = await fetch(`/admin/delete-employee/${employeeId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              alert('Mitarbeiter erfolgreich gelöscht');
-              loadEmployeesTable('reload');
-            } else {
-              alert(`Fehler: ${result.message || 'Unbekannter Fehler'}`);
-            }
-          } else {
-            alert('Fehler beim Löschen des Mitarbeiters.');
-          }
-        } catch (error) {
-          console.error('Error deleting employee:', error);
-          alert('Ein Fehler ist aufgetreten.');
+        // This function is now handled by employee-deletion.ts
+        // Call the enhanced delete dialog from employee-deletion.ts
+        if (window.deleteEmployee) {
+          window.deleteEmployee(employeeId);
+        } else {
+          console.error('Delete employee function not loaded from employee-deletion.ts');
+          alert('Löschfunktion nicht verfügbar. Bitte laden Sie die Seite neu.');
         }
       }
 
@@ -1881,6 +1966,131 @@
         console.log('Show all employees');
       }
 
+      // Load employees table
+      async function loadEmployeesTable() {
+        console.log('Loading employees table...');
+        const token = localStorage.getItem('token');
+        
+        try {
+          const response = await fetch('/api/users?role=employee', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load employees');
+          }
+
+          const employees = await response.json();
+          const tableBody = document.getElementById('employees-table-body');
+          
+          if (!tableBody) {
+            console.error('employees-table-body not found');
+            return;
+          }
+
+          tableBody.innerHTML = '';
+
+          if (employees.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="7" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
+              </tr>
+            `;
+            return;
+          }
+
+          employees.forEach((employee) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
+              <td>${employee.email || ''}</td>
+              <td>${employee.id || ''}</td>
+              <td>${employee.position || 'Mitarbeiter'}</td>
+              <td>${employee.department || 'Keine Abteilung'}</td>
+              <td>
+                <span class="badge ${employee.is_active ? 'badge-success' : 'badge-danger'}">
+                  ${employee.is_active ? 'Aktiv' : 'Inaktiv'}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+        } catch (error) {
+          console.error('Error loading employees:', error);
+          const tableBody = document.getElementById('employees-table-body');
+          if (tableBody) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="7" class="text-center text-danger">Fehler beim Laden der Mitarbeiter</td>
+              </tr>
+            `;
+          }
+        }
+      }
+
+      // Make functions globally available (delay to ensure they're defined)
+      document.addEventListener('DOMContentLoaded', () => {
+        window.loadEmployeesTable = loadEmployeesTable;
+        window.editEmployee = editEmployee;
+        window.editEmployeeAsync = editEmployeeAsync;
+        window.updateEmployee = updateEmployee;
+        window.deleteEmployee = deleteEmployee;
+        window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
+        window.loadPayslipsTable = loadPayslipsTable || (() => console.log('loadPayslipsTable not implemented'));
+        window.loadEmployeesForPayslipSelect = loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
+        window.loadDepartmentsTable = loadDepartmentsTable;
+        window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
+        window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
+        window.loadDashboardStats = window.loadDashboardStats || (() => console.log('loadDashboardStats not implemented'));
+      });
+
+      // Edit employee - Placeholder function, actual implementation below
+      function editEmployee(employeeId) {
+        // This is overridden by the async function below
+        window.editEmployeeAsync(employeeId);
+      }
+
+      // Delete employee
+      async function deleteEmployee(employeeId) {
+        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?')) {
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+
+        try {
+          const response = await fetch(`/api/users/${employeeId}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            alert('Mitarbeiter erfolgreich gelöscht');
+            loadEmployeesTable(); // Reload the table
+            loadRecentEmployees(); // Update recent employees
+            loadDashboardStats(); // Update statistics
+          } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+          }
+        } catch (error) {
+          console.error('Error deleting employee:', error);
+          alert('Ein Fehler ist aufgetreten');
+        }
+      }
+
       function showAllDocuments() {
         console.log('Show all documents');
       }
@@ -1893,55 +2103,7 @@
         console.log('Show all teams');
       }
 
-      // Section Navigation
-      function showSection(sectionName) {
-        // Hide all sections
-        document.querySelectorAll('.content-section').forEach((section) => {
-          section.style.display = 'none';
-        });
-
-        // Show the selected section
-        const selectedSection = document.getElementById(sectionName + '-section');
-        if (selectedSection) {
-          selectedSection.style.display = 'block';
-        }
-
-        // Update active state in sidebar
-        document.querySelectorAll('.sidebar-item').forEach((item) => {
-          item.classList.remove('active');
-        });
-
-        // Find and activate the clicked item
-        document.querySelectorAll('.sidebar-link').forEach((link) => {
-          const onclickAttr = link.getAttribute('onclick');
-          const hrefAttr = link.getAttribute('href');
-
-          // Check if either the onclick contains the sectionName or the href matches the section
-          if ((onclickAttr && onclickAttr.includes(sectionName)) || (hrefAttr && hrefAttr === '#' + sectionName)) {
-            link.parentElement.classList.add('active');
-          }
-        });
-
-        // Load section-specific data
-        switch (sectionName) {
-          case 'employees':
-            loadEmployeesTable();
-            break;
-          case 'documents':
-            loadDocumentsTable();
-            break;
-          case 'payslips':
-            loadPayslipsTable();
-            loadEmployeesForPayslipSelect();
-            break;
-          case 'departments':
-            loadDepartmentsTable();
-            break;
-          case 'teams':
-            loadTeamsTable();
-            break;
-        }
-      }
+      // Section Navigation is now handled by show-section.ts module
     </script>
 
     <style>
@@ -2056,6 +2218,19 @@
         gap: var(--spacing-sm);
       }
 
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+      }
+
       .badge-primary {
         background-color: var(--primary-color);
         color: white;
@@ -2064,6 +2239,54 @@
       .badge-secondary {
         background-color: var(--secondary-color);
         color: white;
+      }
+
+      .badge-success {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(76, 175, 80, 0.9);
+        background: rgba(76, 175, 80, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        width: fit-content;
+        transition: all 0.2s ease;
+      }
+
+      .badge-danger {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(244, 67, 54, 0.9);
+        background: rgba(244, 67, 54, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        width: fit-content;
+        transition: all 0.2s ease;
+      }
+      
+      tr:hover .badge-success {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+      
+      tr:hover .badge-danger {
+        background: rgba(244, 67, 54, 0.15);
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .badge-warning {
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: white;
+        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
       }
 
       .department-list,

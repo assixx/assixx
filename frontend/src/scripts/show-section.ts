@@ -17,7 +17,13 @@ export function showSection(sectionName: string): void {
   });
 
   // Show requested section
-  const targetSection = document.getElementById(sectionName);
+  // Check if sectionName already contains '-section'
+  let sectionId = sectionName;
+  if (!sectionName.endsWith('-section')) {
+    sectionId = sectionName + '-section';
+  }
+  
+  const targetSection = document.getElementById(sectionId);
   if (targetSection) {
     targetSection.style.display = 'block';
     targetSection.classList.add('active');
@@ -26,19 +32,59 @@ export function showSection(sectionName: string): void {
     const navItems = document.querySelectorAll<HTMLElement>('.nav-item');
     navItems.forEach((item: HTMLElement) => {
       item.classList.remove('active');
-      if (item.getAttribute('data-section') === sectionName) {
+      // Compare with original sectionName (without -section)
+      const itemSection = item.getAttribute('data-section');
+      if (itemSection === sectionName || itemSection === sectionId) {
         item.classList.add('active');
       }
     });
 
     // Update URL without page reload
     const url = new URL(window.location.href);
-    url.searchParams.set('section', sectionName);
-    window.history.pushState({ section: sectionName }, '', url);
+    url.searchParams.set('section', sectionId);
+    window.history.pushState({ section: sectionId }, '', url);
 
-    console.info(`[ShowSection] Section ${sectionName} displayed`);
+    console.info(`[ShowSection] Section ${sectionId} displayed`);
+    
+    // Load section-specific data (with small delay to ensure functions are loaded)
+    setTimeout(() => {
+      const sectionBaseName = sectionName.replace('-section', '');
+      switch (sectionBaseName) {
+        case 'employees':
+          if (typeof (window as any).loadEmployeesTable === 'function') {
+            console.info('[ShowSection] Calling loadEmployeesTable');
+            (window as any).loadEmployeesTable();
+          } else {
+            console.warn('[ShowSection] loadEmployeesTable function not found');
+          }
+          break;
+        case 'documents':
+          if (typeof (window as any).loadDocumentsTable === 'function') {
+            (window as any).loadDocumentsTable();
+          }
+          break;
+        case 'payslips':
+          if (typeof (window as any).loadPayslipsTable === 'function') {
+            (window as any).loadPayslipsTable();
+          }
+          if (typeof (window as any).loadEmployeesForPayslipSelect === 'function') {
+            (window as any).loadEmployeesForPayslipSelect();
+          }
+          break;
+        case 'departments':
+          if (typeof (window as any).loadDepartmentsTable === 'function') {
+            (window as any).loadDepartmentsTable();
+          }
+          break;
+        case 'teams':
+          if (typeof (window as any).loadTeamsTable === 'function') {
+            (window as any).loadTeamsTable();
+          }
+          break;
+      }
+    }, 100);
   } else {
-    console.error(`[ShowSection] Section ${sectionName} not found`);
+    console.error(`[ShowSection] Section ${sectionId} not found`);
   }
 }
 
