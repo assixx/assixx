@@ -77,7 +77,10 @@ export const checkDocumentAccess =
       // Abteilungsleiter-Zugriff prüfen
       if (options.allowDepartmentHeads && userRole === "department_head") {
         const user = await User.findById(userId, tenantId);
-        const documentOwner = await User.findById(document.uploadedFor, tenantId);
+        const documentOwner = await User.findById(
+          document.uploadedFor,
+          tenantId,
+        );
 
         if (
           user &&

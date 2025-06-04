@@ -160,6 +160,29 @@ class UnifiedNavigation {
           label: 'Mitarbeiter',
           url: '#employees',
           section: 'employees',
+          children: [
+            {
+              id: 'employees-list',
+              label: 'Mitarbeiterliste',
+              url: '#employees',
+              section: 'employees',
+            },
+          ],
+        },
+        {
+          id: 'departments',
+          icon: this.getSVGIcon('building'),
+          label: 'Abteilungen',
+          url: '#departments',
+          section: 'departments',
+          children: [
+            {
+              id: 'departments-all',
+              label: 'Alle Abteilungen',
+              url: '#departments',
+              section: 'departments',
+            },
+          ],
         },
         {
           id: 'documents',
@@ -211,13 +234,6 @@ class UnifiedNavigation {
           label: 'Gehaltsabrechnungen',
           url: '#payslips',
           section: 'payslips',
-        },
-        {
-          id: 'departments',
-          icon: this.getSVGIcon('building'),
-          label: 'Abteilungen',
-          url: '#departments',
-          section: 'departments',
         },
         {
           id: 'teams',
@@ -460,7 +476,8 @@ class UnifiedNavigation {
 
   private createMenuItem(item: NavItem, isActive: boolean = false): string {
     const activeClass = isActive ? 'active' : '';
-    const clickHandler = item.section ? `onclick="showSection('${item.section}')"` : '';
+    const hasChildren = item.children && item.children.length > 0;
+    const clickHandler = item.section && !hasChildren ? `onclick="showSection('${item.section}')"` : '';
 
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
@@ -468,6 +485,36 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'pending-surveys') {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    }
+
+    // If has children, create a dropdown
+    if (hasChildren) {
+      const submenuItems = item.children!.map(child => `
+        <li class="submenu-item">
+          <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
+            <span class="submenu-label">${child.label}</span>
+          </a>
+        </li>
+      `).join('');
+
+      return `
+        <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+            <span class="icon">${item.icon}</span>
+            <span class="label">${item.label}</span>
+            <span class="nav-indicator"></span>
+            <span class="submenu-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            </span>
+            ${badgeHtml}
+          </a>
+          <ul class="submenu" id="submenu-${item.id}" style="display: none;">
+            ${submenuItems}
+          </ul>
+        </li>
+      `;
     }
 
     return `
@@ -1087,6 +1134,60 @@ const unifiedNavigationCSS = `
         }
     }
 
+    /* Submenu Styles */
+    .sidebar-item.has-submenu .sidebar-link {
+        position: relative;
+    }
+
+    .submenu-arrow {
+        margin-left: auto;
+        transition: transform 0.3s ease;
+        opacity: 0.6;
+    }
+
+    .sidebar-item.has-submenu.open .submenu-arrow {
+        transform: rotate(180deg);
+    }
+
+    .submenu {
+        margin-left: 32px;
+        margin-top: 4px;
+        margin-bottom: 8px;
+        list-style: none;
+        padding: 0;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .submenu-item {
+        margin-bottom: 2px;
+    }
+
+    .submenu-link {
+        display: block;
+        padding: 8px 16px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .submenu-link:hover {
+        background: rgba(33, 150, 243, 0.08);
+        color: var(--primary-color);
+        border-color: rgba(33, 150, 243, 0.15);
+        transform: translateX(4px);
+    }
+
+    .submenu-link.active {
+        background: rgba(33, 150, 243, 0.12);
+        color: var(--primary-color);
+        border-color: rgba(33, 150, 243, 0.2);
+        font-weight: 500;
+    }
+
     /* Layout adjustments */
     .layout-container {
         display: flex;
@@ -1276,6 +1377,29 @@ if (!document.querySelector('#unified-navigation-styles')) {
 }
 
 // Export to window for backwards compatibility
+
+// Global function for submenu toggle
+(window as any).toggleSubmenu = function(event: Event, itemId: string) {
+  event.preventDefault();
+  const submenu = document.getElementById(`submenu-${itemId}`);
+  const parentItem = submenu?.closest('.sidebar-item');
+  
+  if (submenu && parentItem) {
+    const isOpen = submenu.style.display !== 'none';
+    
+    // Close all other submenus
+    document.querySelectorAll('.submenu').forEach(menu => {
+      (menu as HTMLElement).style.display = 'none';
+      menu.closest('.sidebar-item')?.classList.remove('open');
+    });
+    
+    // Toggle current submenu
+    if (!isOpen) {
+      submenu.style.display = 'block';
+      parentItem.classList.add('open');
+    }
+  }
+};
 
 // Navigation automatisch initialisieren
 document.addEventListener('DOMContentLoaded', () => {

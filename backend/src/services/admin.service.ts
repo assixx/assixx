@@ -13,7 +13,7 @@ import type {
 } from "../models/adminLog";
 
 // Service-specific interfaces
-interface AdminLogData extends Omit<DbAdminLog, 'tenant_id'> {
+interface AdminLogData extends Omit<DbAdminLog, "tenant_id"> {
   tenant_id: number;
   user_name?: string;
   user_role?: string;
@@ -29,7 +29,8 @@ interface AdminLogFilters {
   offset?: number;
 }
 
-interface AdminLogCreateData extends Omit<ModelAdminLogCreateData, 'tenant_id'> {
+interface AdminLogCreateData
+  extends Omit<ModelAdminLogCreateData, "tenant_id"> {
   tenant_id: number;
 }
 

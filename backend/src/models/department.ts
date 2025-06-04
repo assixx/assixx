@@ -127,11 +127,9 @@ export class Department {
   }
 
   static async findAll(
-    tenant_id: number,  // PFLICHT!
+    tenant_id: number, // PFLICHT!
   ): Promise<DbDepartment[]> {
-    logger.info(
-      `Fetching all departments for tenant ${tenant_id}`,
-    );
+    logger.info(`Fetching all departments for tenant ${tenant_id}`);
 
     try {
       // First try with extended query
@@ -146,11 +144,9 @@ export class Department {
         ORDER BY d.name
       `;
 
-      const [rows] = await executeQuery<DbDepartment[]>(
-        query,
-        [tenant_id],
-      );
+      const [rows] = await executeQuery<DbDepartment[]>(query, [tenant_id]);
       logger.info(`Retrieved ${rows.length} departments with extended info`);
+      
       return rows;
     } catch (error) {
       logger.warn(
@@ -158,17 +154,21 @@ export class Department {
       );
 
       // Fallback to simple query
-      const simpleQuery = "SELECT * FROM departments WHERE tenant_id = ? ORDER BY name";
-      const [rows] = await executeQuery<DbDepartment[]>(
-        simpleQuery,
-        [tenant_id],
-      );
+      const simpleQuery =
+        "SELECT * FROM departments WHERE tenant_id = ? ORDER BY name";
+      const [rows] = await executeQuery<DbDepartment[]>(simpleQuery, [
+        tenant_id,
+      ]);
       logger.info(`Retrieved ${rows.length} departments with simple query`);
+      
       return rows;
     }
   }
 
-  static async findById(id: number, tenant_id: number): Promise<DbDepartment | null> {
+  static async findById(
+    id: number,
+    tenant_id: number,
+  ): Promise<DbDepartment | null> {
     logger.info(`Fetching department with ID ${id} for tenant ${tenant_id}`);
     const query = "SELECT * FROM departments WHERE id = ? AND tenant_id = ?";
 
@@ -179,6 +179,7 @@ export class Department {
         return null;
       }
       logger.info(`Department ${id} retrieved successfully`);
+      
       return rows[0];
     } catch (error) {
       logger.error(

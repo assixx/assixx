@@ -299,7 +299,16 @@ if (USE_MOCK_DB) {
     charset: "utf8mb4",
     connectTimeout: 60000, // 60 seconds
     typeCast(field: any, next: () => any) {
-      // Spezielle Behandlung für BLOB/BINARY Felder, um sie als Buffer zurückzugeben
+      // Convert TEXT fields to strings
+      if (field.type === "TINY_TEXT" || 
+          field.type === "TEXT" || 
+          field.type === "MEDIUM_TEXT" || 
+          field.type === "LONG_TEXT" ||
+          field.type === "VAR_STRING" ||
+          field.type === "STRING") {
+        return field.string();
+      }
+      // Keep BLOB/BINARY fields as Buffers
       if (field.type === "BLOB" || field.type === "BINARY") {
         return field.buffer();
       }

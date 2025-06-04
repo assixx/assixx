@@ -677,12 +677,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      departments.slice(0, 5).forEach((dept: Department) => {
+      departments.slice(0, 5).forEach((dept: any) => {
+        // Convert Buffer to String if needed
+        let description = '';
+        if (dept.description) {
+          if (dept.description.type === 'Buffer' && dept.description.data) {
+            description = String.fromCharCode(...dept.description.data);
+          } else if (typeof dept.description === 'string') {
+            description = dept.description;
+          }
+        }
+        
         const item = document.createElement('div');
         item.className = 'compact-item';
         item.innerHTML = `
           <span class="compact-item-name">${dept.name}</span>
-          <span class="compact-item-count">${dept.description || ''}</span>
+          <span class="compact-item-count">${description}</span>
         `;
         departmentList.appendChild(item);
       });
@@ -741,6 +751,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
+      status: formData.get('status') as string || 'active',
+      visibility: formData.get('visibility') as string || 'public',
     };
 
     try {

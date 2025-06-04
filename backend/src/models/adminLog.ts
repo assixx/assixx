@@ -43,7 +43,17 @@ interface AdminLogCreateData {
 
 export class AdminLog {
   static async create(logData: AdminLogCreateData): Promise<number> {
-    const { user_id, action, ip_address, tenant_id, entity_type, entity_id, old_values, new_values, user_agent } = logData;
+    const {
+      user_id,
+      action,
+      ip_address,
+      tenant_id,
+      entity_type,
+      entity_id,
+      old_values,
+      new_values,
+      user_agent,
+    } = logData;
 
     const query = `INSERT INTO admin_logs (tenant_id, admin_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;

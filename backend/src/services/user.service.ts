@@ -67,7 +67,10 @@ class UserService {
   /**
    * Get user by ID
    */
-  async getUserById(userId: number, tenantId: number): Promise<UserData | null> {
+  async getUserById(
+    userId: number,
+    tenantId: number,
+  ): Promise<UserData | null> {
     try {
       const user = await User.findById(userId, tenantId);
 

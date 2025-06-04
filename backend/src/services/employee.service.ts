@@ -46,7 +46,11 @@ class UserService {
   /**
    * Holt einen User Eintrag per ID
    */
-  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<EmployeeData | null> {
+  async getById(
+    _tenantDb: Pool,
+    id: number,
+    tenantId: number,
+  ): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id, tenantId);
       return user || null;

@@ -112,7 +112,10 @@ router.post("/", async (req, res): Promise<void> => {
 
     // If a department is specified, check if it exists
     if (department_id) {
-      const department = await Department.findById(department_id, authReq.user.tenant_id);
+      const department = await Department.findById(
+        department_id,
+        authReq.user.tenant_id,
+      );
       if (!department) {
         res
           .status(400)
@@ -212,7 +215,10 @@ router.put("/:id", async (req, res): Promise<void> => {
 
     // If a department is specified, check if it exists
     if (department_id) {
-      const department = await Department.findById(department_id, authReq.user.tenant_id);
+      const department = await Department.findById(
+        department_id,
+        authReq.user.tenant_id,
+      );
       if (!department) {
         res
           .status(400)

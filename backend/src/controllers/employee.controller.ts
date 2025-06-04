@@ -274,7 +274,12 @@ class EmployeeController {
         return;
       }
 
-      const result = await employeeService.update(req.tenantDb, id, tenantId, updateData);
+      const result = await employeeService.update(
+        req.tenantDb,
+        id,
+        tenantId,
+        updateData,
+      );
       res.json(result);
     } catch (error) {
       console.error("Error in EmployeeController.update:", error);

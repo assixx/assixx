@@ -112,7 +112,11 @@ class DepartmentController {
         sortDir: req.query.sortDir,
       };
 
-      const result = await departmentService.getAll(req.tenantDb, tenantId, filters);
+      const result = await departmentService.getAll(
+        req.tenantDb,
+        tenantId,
+        filters,
+      );
       res.json(result);
     } catch (error) {
       console.error("Error in DepartmentController.getAll:", error);
@@ -147,7 +151,11 @@ class DepartmentController {
         return;
       }
 
-      const result = await departmentService.getById(req.tenantDb, id, tenantId);
+      const result = await departmentService.getById(
+        req.tenantDb,
+        id,
+        tenantId,
+      );
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
         return;

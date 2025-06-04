@@ -102,19 +102,19 @@ router.post(
         is_active: true, // Ensure new admins are active by default
       };
       const adminId = await User.create(adminData);
-      
+
       // Add admin to tenant_admins table
       try {
         await (pool as any).query(
           "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
-          [req.user.tenant_id, adminId]
+          [req.user.tenant_id, adminId],
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
       } catch (taError: any) {
         logger.warn(`Could not add admin to tenant_admins: ${taError.message}`);
         // Continue anyway - the admin was created successfully
       }
-      
+
       logger.info(`Admin user created successfully with ID: ${adminId}`);
       res
         .status(201)
@@ -154,19 +154,19 @@ router.post(
         is_active: true, // Ensure new admins are active by default
       };
       const adminId = await User.create(adminData);
-      
+
       // Add admin to tenant_admins table
       try {
         await (pool as any).query(
           "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
-          [req.user.tenant_id, adminId]
+          [req.user.tenant_id, adminId],
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
       } catch (taError: any) {
         logger.warn(`Could not add admin to tenant_admins: ${taError.message}`);
         // Continue anyway - the admin was created successfully
       }
-      
+
       logger.info(`Admin user created successfully with ID: ${adminId}`);
       res
         .status(201)
@@ -241,7 +241,10 @@ router.put(
 
     try {
       // Prüfen ob Admin existiert
-      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
+      const admin = await User.findById(
+        parseInt(adminId, 10),
+        req.user.tenant_id,
+      );
       if (!admin || admin.role !== "admin") {
         res.status(404).json({ message: "Admin nicht gefunden" });
         return;
@@ -285,7 +288,10 @@ router.delete(
 
     try {
       // Zuerst prüfen, ob der zu löschende Benutzer wirklich ein Admin ist
-      const adminToDelete = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
+      const adminToDelete = await User.findById(
+        parseInt(adminId, 10),
+        req.user.tenant_id,
+      );
 
       if (!adminToDelete) {
         logger.warn(`Admin user with ID ${adminId} not found`);
@@ -337,7 +343,10 @@ router.get(
     );
 
     try {
-      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
+      const admin = await User.findById(
+        parseInt(adminId, 10),
+        req.user.tenant_id,
+      );
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -386,7 +395,10 @@ router.put(
     logger.info(`Root user ${rootUser} attempting to update admin ${adminId}`);
 
     try {
-      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
+      const admin = await User.findById(
+        parseInt(adminId, 10),
+        req.user.tenant_id,
+      );
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -450,7 +462,10 @@ router.get(
     );
 
     try {
-      const admin = await User.findById(parseInt(adminId, 10), req.user.tenant_id);
+      const admin = await User.findById(
+        parseInt(adminId, 10),
+        req.user.tenant_id,
+      );
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
@@ -640,7 +655,7 @@ router.delete(
           subdomain: tenant.subdomain,
           initiated_by: rootUser.username,
         },
-        user_agent: req.get('user-agent'),
+        user_agent: req.get("user-agent"),
       });
 
       // Delete the entire tenant (cascades to all related data)

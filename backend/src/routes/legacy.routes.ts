@@ -100,7 +100,10 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const employees = await User.findAll({ role: "employee", tenant_id: authReq.user.tenant_id });
+      const employees = await User.findAll({
+        role: "employee",
+        tenant_id: authReq.user.tenant_id,
+      });
       res.json(employees);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -114,7 +117,10 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const employees = await User.count({ role: "employee", tenant_id: authReq.user.tenant_id });
+      const employees = await User.count({
+        role: "employee",
+        tenant_id: authReq.user.tenant_id,
+      });
       const documents = await Document.countByTenant(authReq.user.tenant_id);
 
       const response: CountsResponse = {
@@ -137,7 +143,9 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const documents = await Document.findWithFilters({ tenantId: authReq.user.tenant_id });
+      const documents = await Document.findWithFilters({
+        tenantId: authReq.user.tenant_id,
+      });
       res.json(documents);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -181,7 +189,9 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const employees = await User.findAll({ tenant_id: authReq.user.tenant_id });
+      const employees = await User.findAll({
+        tenant_id: authReq.user.tenant_id,
+      });
       res.json(employees);
     } catch {
       res.status(500).json({ message: "Server error" });
@@ -201,7 +211,10 @@ router.get(
         return;
       }
 
-      const admins = await User.findAll({ role: "admin", tenant_id: authReq.user.tenant_id });
+      const admins = await User.findAll({
+        role: "admin",
+        tenant_id: authReq.user.tenant_id,
+      });
       res.json(admins || []);
     } catch (error: any) {
       console.error("Error fetching admins:", error);

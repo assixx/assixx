@@ -83,7 +83,7 @@ interface UserCreateData {
 }
 
 interface UserFilter {
-  tenant_id: number;  // PFLICHT!
+  tenant_id: number; // PFLICHT!
   role?: string;
   is_archived?: boolean;
   department_id?: number;
@@ -210,7 +210,10 @@ export class User {
     }
   }
 
-  static async findById(id: number, tenant_id: number): Promise<DbUser | undefined> {
+  static async findById(
+    id: number,
+    tenant_id: number,
+  ): Promise<DbUser | undefined> {
     try {
       const [rows] = await executeQuery<DbUser[]>(
         `
@@ -245,7 +248,7 @@ export class User {
   static async findByRole(
     role: string,
     includeArchived = false,
-    tenant_id: number,  // PFLICHT - nicht mehr optional!
+    tenant_id: number, // PFLICHT - nicht mehr optional!
   ): Promise<DbUser[]> {
     try {
       let query = `

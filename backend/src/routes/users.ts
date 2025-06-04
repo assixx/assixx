@@ -46,16 +46,16 @@ router.get(
 
       // Get query parameters
       const { role, limit } = req.query;
-      
+
       let users = await User.findAllByTenant(authReq.user.tenant_id);
-      
+
       // Filter by role if specified
-      if (role && typeof role === 'string') {
-        users = users.filter(user => user.role === role);
+      if (role && typeof role === "string") {
+        users = users.filter((user) => user.role === role);
       }
-      
+
       // Apply limit if specified
-      if (limit && typeof limit === 'string') {
+      if (limit && typeof limit === "string") {
         const limitNum = parseInt(limit, 10);
         if (!isNaN(limitNum) && limitNum > 0) {
           users = users.slice(0, limitNum);
@@ -76,7 +76,7 @@ router.get(
         created_at: user.created_at,
         is_active: user.is_active,
         position: user.position,
-        department: user.department_name
+        department: user.department_name,
       }));
 
       res.json(sanitizedUsers);
@@ -97,7 +97,7 @@ router.get(
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      
+
       // Check if user is admin or root
       if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
         res.status(403).json({ message: "Access denied" });
@@ -106,7 +106,7 @@ router.get(
 
       const userId = parseInt(req.params.id);
       const user = await User.findById(userId, authReq.user.tenant_id);
-      
+
       if (!user) {
         res.status(404).json({ message: "Benutzer nicht gefunden" });
         return;
@@ -132,7 +132,7 @@ router.put(
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      
+
       // Check if user is admin or root
       if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
         res.status(403).json({ message: "Access denied" });
@@ -157,7 +157,7 @@ router.put(
 
       // Update user
       const success = await User.update(userId, updateData);
-      
+
       if (!success) {
         res.status(500).json({ message: "Aktualisierung fehlgeschlagen" });
         return;
@@ -182,7 +182,7 @@ router.delete(
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      
+
       // Check if user is admin or root
       if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
         res.status(403).json({ message: "Access denied" });
@@ -190,10 +190,12 @@ router.delete(
       }
 
       const userId = parseInt(req.params.id);
-      
+
       // Prevent self-deletion
       if (userId === authReq.user.id) {
-        res.status(400).json({ message: "Sie können sich nicht selbst löschen" });
+        res
+          .status(400)
+          .json({ message: "Sie können sich nicht selbst löschen" });
         return;
       }
 
@@ -205,7 +207,7 @@ router.delete(
       }
 
       const success = await User.delete(userId);
-      
+
       if (!success) {
         res.status(500).json({ message: "Löschen fehlgeschlagen" });
         return;

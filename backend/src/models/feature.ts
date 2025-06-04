@@ -148,11 +148,7 @@ export class Feature {
         throw new Error(`Feature ${featureCode} not found`);
       }
 
-      const {
-        activatedBy = null,
-        expiresAt = null,
-        config = null,
-      } = options;
+      const { activatedBy = null, expiresAt = null, config = null } = options;
 
       const query = `
         INSERT INTO tenant_features 

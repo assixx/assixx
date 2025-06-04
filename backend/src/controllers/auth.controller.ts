@@ -59,7 +59,10 @@ class AuthController {
     res: Response,
   ): Promise<void> {
     try {
-      const user = await userService.getUserById(req.user!.id, req.user!.tenantId);
+      const user = await userService.getUserById(
+        req.user!.id,
+        req.user!.tenantId,
+      );
 
       if (!user) {
         res.status(404).json({ message: "User not found" });

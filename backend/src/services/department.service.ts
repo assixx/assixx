@@ -45,7 +45,11 @@ class DepartmentService {
   /**
    * Holt einen Department Eintrag per ID
    */
-  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<DepartmentData | null> {
+  async getById(
+    _tenantDb: Pool,
+    id: number,
+    tenantId: number,
+  ): Promise<DepartmentData | null> {
     try {
       return await Department.findById(id, tenantId);
     } catch (error) {

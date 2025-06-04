@@ -141,8 +141,10 @@ class AdminLogController {
         ip_address: req.ip,
         entity_type: req.body.entity_type || undefined,
         entity_id: req.body.entity_id || undefined,
-        new_values: req.body.details ? { details: req.body.details } : undefined,
-        user_agent: req.get('user-agent') || undefined,
+        new_values: req.body.details
+          ? { details: req.body.details }
+          : undefined,
+        user_agent: req.get("user-agent") || undefined,
       };
       const result = await adminService.create(req.tenantDb, logData);
       res.status(201).json(result);
