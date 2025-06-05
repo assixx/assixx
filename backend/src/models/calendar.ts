@@ -3,15 +3,15 @@
  * Handles database operations for the calendar events and attendees
  */
 
-import pool from "../database";
-import User from "./user";
-import { logger } from "../utils/logger";
-import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import pool from '../database';
+import User from './user';
+import { logger } from '../utils/logger';
+import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 // Helper function to handle both real pool and mock database
 async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: any[],
+  params?: any[]
 ): Promise<[T, any]> {
   const result = await (pool as any).query(sql, params);
   if (Array.isArray(result) && result.length === 2) {
@@ -26,7 +26,7 @@ async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
 function formatDateForMysql(dateString: string | Date | null): string | null {
   if (!dateString) return null;
   const date = new Date(dateString);
-  return date.toISOString().slice(0, 19).replace("T", " ");
+  return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 // Database interfaces
@@ -34,17 +34,17 @@ interface DbCalendarEvent extends RowDataPacket {
   id: number;
   tenant_id: number;
   title: string;
-  description?: string | Buffer | { type: "Buffer"; data: number[] };
+  description?: string | Buffer | { type: 'Buffer'; data: number[] };
   location?: string;
   start_time: Date;
   end_time: Date;
   all_day: boolean | number;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   created_by: number;
   reminder_time?: number | null;
   color: string;
-  status: "active" | "cancelled";
+  status: 'active' | 'cancelled';
   created_at: Date;
   updated_at: Date;
   // Extended fields from joins
@@ -54,7 +54,7 @@ interface DbCalendarEvent extends RowDataPacket {
 
 interface DbEventAttendee extends RowDataPacket {
   user_id: number;
-  response_status: "pending" | "accepted" | "declined" | "tentative";
+  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
   responded_at?: Date;
   username?: string;
   first_name?: string;
@@ -64,15 +64,15 @@ interface DbEventAttendee extends RowDataPacket {
 }
 
 interface EventQueryOptions {
-  status?: "active" | "cancelled";
-  filter?: "all" | "company" | "department" | "team";
+  status?: 'active' | 'cancelled';
+  filter?: 'all' | 'company' | 'department' | 'team';
   search?: string;
   start_date?: string;
   end_date?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortDir?: "ASC" | "DESC";
+  sortDir?: 'ASC' | 'DESC';
 }
 
 interface EventCreateData {
@@ -83,7 +83,7 @@ interface EventCreateData {
   start_time: string | Date;
   end_time: string | Date;
   all_day?: boolean;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   created_by: number;
   reminder_time?: number | null;
@@ -97,9 +97,9 @@ interface EventUpdateData {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
-  org_level?: "company" | "department" | "team";
+  org_level?: 'company' | 'department' | 'team';
   org_id?: number;
-  status?: "active" | "cancelled";
+  status?: 'active' | 'cancelled';
   reminder_time?: number | string | null;
   color?: string;
   created_by?: number;
@@ -122,19 +122,19 @@ export class Calendar {
   static async getAllEvents(
     tenantId: number,
     userId: number,
-    options: EventQueryOptions = {},
+    options: EventQueryOptions = {}
   ) {
     try {
       const {
-        status = "active",
-        filter = "all",
-        search = "",
+        status = 'active',
+        filter = 'all',
+        search = '',
         start_date,
         end_date,
         page = 1,
         limit = 50,
-        sortBy = "start_time",
-        sortDir = "ASC",
+        sortBy = 'start_time',
+        sortDir = 'ASC',
       } = options;
 
       // Determine user's department and team for access control
@@ -155,13 +155,13 @@ export class Calendar {
       const queryParams: any[] = [userId, tenantId, status];
 
       // Apply org level filter
-      if (filter !== "all") {
-        query += " AND e.org_level = ?";
+      if (filter !== 'all') {
+        query += ' AND e.org_level = ?';
         queryParams.push(filter);
       }
 
       // Apply access control for non-admin users
-      if (role !== "admin" && role !== "root") {
+      if (role !== 'admin' && role !== 'root') {
         query += ` AND (
           e.org_level = 'company' OR 
           (e.org_level = 'department' AND e.org_id = ?) OR
@@ -173,19 +173,19 @@ export class Calendar {
 
       // Apply date range filter
       if (start_date) {
-        query += " AND e.end_time >= ?";
+        query += ' AND e.end_time >= ?';
         queryParams.push(start_date);
       }
 
       if (end_date) {
-        query += " AND e.start_time <= ?";
+        query += ' AND e.start_time <= ?';
         queryParams.push(end_date);
       }
 
       // Apply search filter
       if (search) {
         query +=
-          " AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
+          ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
         const searchTerm = `%${search}%`;
         queryParams.push(searchTerm, searchTerm, searchTerm);
       }
@@ -195,28 +195,28 @@ export class Calendar {
 
       // Apply pagination
       const offset = (page - 1) * limit;
-      query += " LIMIT ? OFFSET ?";
+      query += ' LIMIT ? OFFSET ?';
       queryParams.push(parseInt(limit.toString(), 10), offset);
 
       // Execute query
       const [events] = await executeQuery<DbCalendarEvent[]>(
         query,
-        queryParams,
+        queryParams
       );
 
       // Convert Buffer description to String if needed
       events.forEach((event) => {
         if (event.description && Buffer.isBuffer(event.description)) {
-          event.description = event.description.toString("utf8");
+          event.description = event.description.toString('utf8');
         } else if (
           event.description &&
-          typeof event.description === "object" &&
-          "type" in event.description &&
-          event.description.type === "Buffer" &&
+          typeof event.description === 'object' &&
+          'type' in event.description &&
+          event.description.type === 'Buffer' &&
           Array.isArray(event.description.data)
         ) {
           event.description = Buffer.from(event.description.data).toString(
-            "utf8",
+            'utf8'
           );
         }
       });
@@ -231,13 +231,13 @@ export class Calendar {
       const countParams: any[] = [tenantId, status];
 
       // Apply org level filter for count
-      if (filter !== "all") {
-        countQuery += " AND e.org_level = ?";
+      if (filter !== 'all') {
+        countQuery += ' AND e.org_level = ?';
         countParams.push(filter);
       }
 
       // Apply access control for non-admin users for count
-      if (role !== "admin" && role !== "root") {
+      if (role !== 'admin' && role !== 'root') {
         countQuery += ` AND (
           e.org_level = 'company' OR 
           (e.org_level = 'department' AND e.org_id = ?) OR
@@ -249,26 +249,26 @@ export class Calendar {
 
       // Apply date range filter for count
       if (start_date) {
-        countQuery += " AND e.end_time >= ?";
+        countQuery += ' AND e.end_time >= ?';
         countParams.push(start_date);
       }
 
       if (end_date) {
-        countQuery += " AND e.start_time <= ?";
+        countQuery += ' AND e.start_time <= ?';
         countParams.push(end_date);
       }
 
       // Apply search filter for count
       if (search) {
         countQuery +=
-          " AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)";
+          ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
         const searchTerm = `%${search}%`;
         countParams.push(searchTerm, searchTerm, searchTerm);
       }
 
       const [countResult] = await executeQuery<CountResult[]>(
         countQuery,
-        countParams,
+        countParams
       );
       const totalEvents = countResult[0].total;
 
@@ -282,7 +282,7 @@ export class Calendar {
         },
       };
     } catch (error) {
-      logger.error("Error in getAllEvents:", error);
+      logger.error('Error in getAllEvents:', error);
       throw error;
     }
   }
@@ -293,7 +293,7 @@ export class Calendar {
   static async getEventById(
     id: number,
     tenantId: number,
-    userId: number,
+    userId: number
   ): Promise<DbCalendarEvent | null> {
     try {
       // Determine user's department and team for access control
@@ -325,33 +325,33 @@ export class Calendar {
 
       // Convert Buffer description to String if needed
       if (event.description && Buffer.isBuffer(event.description)) {
-        event.description = event.description.toString("utf8");
+        event.description = event.description.toString('utf8');
       } else if (
         event.description &&
-        typeof event.description === "object" &&
-        "type" in event.description &&
-        event.description.type === "Buffer" &&
+        typeof event.description === 'object' &&
+        'type' in event.description &&
+        event.description.type === 'Buffer' &&
         Array.isArray(event.description.data)
       ) {
         event.description = Buffer.from(event.description.data).toString(
-          "utf8",
+          'utf8'
         );
       }
 
       // Check access control for non-admin users
-      if (role !== "admin" && role !== "root") {
+      if (role !== 'admin' && role !== 'root') {
         // Check if user is an attendee
         const [attendeeRows] = await executeQuery<RowDataPacket[]>(
-          "SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
-          [id, userId],
+          'SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
+          [id, userId]
         );
 
         const isAttendee = attendeeRows.length > 0;
 
         const hasAccess =
-          event.org_level === "company" ||
-          (event.org_level === "department" && event.org_id === departmentId) ||
-          (event.org_level === "team" && event.org_id === teamId) ||
+          event.org_level === 'company' ||
+          (event.org_level === 'department' && event.org_id === departmentId) ||
+          (event.org_level === 'team' && event.org_id === teamId) ||
           isAttendee;
 
         if (!hasAccess) {
@@ -361,7 +361,7 @@ export class Calendar {
 
       return event;
     } catch (error) {
-      logger.error("Error in getEventById:", error);
+      logger.error('Error in getEventById:', error);
       throw error;
     }
   }
@@ -370,7 +370,7 @@ export class Calendar {
    * Create a new calendar event
    */
   static async createEvent(
-    eventData: EventCreateData,
+    eventData: EventCreateData
   ): Promise<DbCalendarEvent | null> {
     try {
       const {
@@ -398,12 +398,12 @@ export class Calendar {
         !org_id ||
         !created_by
       ) {
-        throw new Error("Missing required fields");
+        throw new Error('Missing required fields');
       }
 
       // Ensure dates are valid
       if (new Date(start_time) > new Date(end_time)) {
-        throw new Error("Start time must be before end time");
+        throw new Error('Start time must be before end time');
       }
 
       // Insert new event
@@ -426,24 +426,24 @@ export class Calendar {
         org_id,
         created_by,
         reminder_time || null,
-        color || "#3498db",
+        color || '#3498db',
       ]);
 
       // Get the created event
       const createdEvent = await this.getEventById(
         result.insertId,
         tenant_id,
-        created_by,
+        created_by
       );
 
       // Add the creator as an attendee with 'accepted' status
       if (createdEvent) {
-        await this.addEventAttendee(createdEvent.id, created_by, "accepted");
+        await this.addEventAttendee(createdEvent.id, created_by, 'accepted');
       }
 
       return createdEvent;
     } catch (error) {
-      logger.error("Error in createEvent:", error);
+      logger.error('Error in createEvent:', error);
       throw error;
     }
   }
@@ -454,7 +454,7 @@ export class Calendar {
   static async updateEvent(
     id: number,
     eventData: EventUpdateData,
-    tenantId: number,
+    tenantId: number
   ): Promise<DbCalendarEvent | null> {
     try {
       const {
@@ -472,71 +472,71 @@ export class Calendar {
       } = eventData;
 
       // Build query dynamically based on provided fields
-      let query = "UPDATE calendar_events SET updated_at = NOW()";
+      let query = 'UPDATE calendar_events SET updated_at = NOW()';
       const queryParams: any[] = [];
 
       if (title !== undefined) {
-        query += ", title = ?";
+        query += ', title = ?';
         queryParams.push(title);
       }
 
       if (description !== undefined) {
-        query += ", description = ?";
+        query += ', description = ?';
         queryParams.push(description);
       }
 
       if (location !== undefined) {
-        query += ", location = ?";
+        query += ', location = ?';
         queryParams.push(location);
       }
 
       if (start_time !== undefined) {
-        query += ", start_time = ?";
+        query += ', start_time = ?';
         queryParams.push(formatDateForMysql(start_time));
       }
 
       if (end_time !== undefined) {
-        query += ", end_time = ?";
+        query += ', end_time = ?';
         queryParams.push(formatDateForMysql(end_time));
       }
 
       if (all_day !== undefined) {
-        query += ", all_day = ?";
+        query += ', all_day = ?';
         queryParams.push(all_day ? 1 : 0);
       }
 
       if (org_level !== undefined) {
-        query += ", org_level = ?";
+        query += ', org_level = ?';
         queryParams.push(org_level);
       }
 
       if (org_id !== undefined) {
-        query += ", org_id = ?";
+        query += ', org_id = ?';
         queryParams.push(org_id);
       }
 
       if (status !== undefined) {
-        query += ", status = ?";
+        query += ', status = ?';
         queryParams.push(status);
       }
 
       if (reminder_time !== undefined) {
-        query += ", reminder_time = ?";
+        query += ', reminder_time = ?';
         // Convert empty string to null for integer field
         const reminderValue =
-          reminder_time === "" || reminder_time === null
+          reminder_time === '' || reminder_time === null
             ? null
             : parseInt(reminder_time.toString()) || null;
         queryParams.push(reminderValue);
       }
 
       if (color !== undefined) {
-        query += ", color = ?";
+        query += ', color = ?';
         queryParams.push(color);
       }
 
       // Finish query
-      query += " WHERE id = ? AND tenant_id = ?";
+      query += ' WHERE id = ? AND tenant_id = ?';
       queryParams.push(id, tenantId);
 
       // Execute update
@@ -546,11 +546,11 @@ export class Calendar {
       const updatedEvent = await this.getEventById(
         id,
         tenantId,
-        eventData.created_by || 0,
+        eventData.created_by || 0
       );
       return updatedEvent;
     } catch (error) {
-      logger.error("Error in updateEvent:", error);
+      logger.error('Error in updateEvent:', error);
       throw error;
     }
   }
@@ -562,7 +562,7 @@ export class Calendar {
     try {
       // Delete event
       const query =
-        "DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?";
+        'DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?';
       const [result] = await executeQuery<ResultSetHeader>(query, [
         id,
         tenantId,
@@ -570,7 +570,7 @@ export class Calendar {
 
       return result.affectedRows > 0;
     } catch (error) {
-      logger.error("Error in deleteEvent:", error);
+      logger.error('Error in deleteEvent:', error);
       throw error;
     }
   }
@@ -582,35 +582,35 @@ export class Calendar {
     eventId: number,
     userId: number,
     responseStatus:
-      | "pending"
-      | "accepted"
-      | "declined"
-      | "tentative" = "pending",
+      | 'pending'
+      | 'accepted'
+      | 'declined'
+      | 'tentative' = 'pending'
   ): Promise<boolean> {
     try {
       // Check if already an attendee
       const [attendees] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
-        [eventId, userId],
+        'SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
+        [eventId, userId]
       );
 
       if (attendees.length > 0) {
         // Update existing attendee status
         await executeQuery(
-          "UPDATE calendar_attendees SET response_status = ?, responded_at = NOW() WHERE event_id = ? AND user_id = ?",
-          [responseStatus, eventId, userId],
+          'UPDATE calendar_attendees SET response_status = ?, responded_at = NOW() WHERE event_id = ? AND user_id = ?',
+          [responseStatus, eventId, userId]
         );
       } else {
         // Add new attendee
         await executeQuery(
-          "INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at) VALUES (?, ?, ?, NOW())",
-          [eventId, userId, responseStatus],
+          'INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at) VALUES (?, ?, ?, NOW())',
+          [eventId, userId, responseStatus]
         );
       }
 
       return true;
     } catch (error) {
-      logger.error("Error in addEventAttendee:", error);
+      logger.error('Error in addEventAttendee:', error);
       throw error;
     }
   }
@@ -620,12 +620,12 @@ export class Calendar {
    */
   static async removeEventAttendee(
     eventId: number,
-    userId: number,
+    userId: number
   ): Promise<boolean> {
     try {
       // Remove attendee
       const query =
-        "DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?";
+        'DELETE FROM calendar_attendees WHERE event_id = ? AND user_id = ?';
       const [result] = await executeQuery<ResultSetHeader>(query, [
         eventId,
         userId,
@@ -633,7 +633,7 @@ export class Calendar {
 
       return result.affectedRows > 0;
     } catch (error) {
-      logger.error("Error in removeEventAttendee:", error);
+      logger.error('Error in removeEventAttendee:', error);
       throw error;
     }
   }
@@ -644,23 +644,23 @@ export class Calendar {
   static async respondToEvent(
     eventId: number,
     userId: number,
-    response: string,
+    response: string
   ): Promise<boolean> {
     try {
       // Validate response
-      const validResponses = ["accepted", "declined", "tentative"];
+      const validResponses = ['accepted', 'declined', 'tentative'];
       if (!validResponses.includes(response)) {
-        throw new Error("Invalid response status");
+        throw new Error('Invalid response status');
       }
 
       // Update response
       return await this.addEventAttendee(
         eventId,
         userId,
-        response as "accepted" | "declined" | "tentative",
+        response as 'accepted' | 'declined' | 'tentative'
       );
     } catch (error) {
-      logger.error("Error in respondToEvent:", error);
+      logger.error('Error in respondToEvent:', error);
       throw error;
     }
   }
@@ -670,7 +670,7 @@ export class Calendar {
    */
   static async getEventAttendees(
     eventId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<DbEventAttendee[]> {
     try {
       const query = `
@@ -689,7 +689,7 @@ export class Calendar {
       ]);
       return attendees;
     } catch (error) {
-      logger.error("Error in getEventAttendees:", error);
+      logger.error('Error in getEventAttendees:', error);
       throw error;
     }
   }
@@ -701,7 +701,7 @@ export class Calendar {
     tenantId: number,
     userId: number,
     days = 7,
-    limit = 5,
+    limit = 5
   ): Promise<DbCalendarEvent[]> {
     try {
       // Get user info for access control
@@ -714,8 +714,8 @@ export class Calendar {
       endDate.setDate(today.getDate() + days);
 
       // Format dates for MySQL
-      const todayStr = today.toISOString().split("T")[0];
-      const endDateStr = endDate.toISOString().split("T")[0];
+      const todayStr = today.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
 
       // Build query for dashboard events
       let query = `
@@ -732,7 +732,7 @@ export class Calendar {
       const queryParams: any[] = [userId, tenantId, todayStr, endDateStr];
 
       // Apply access control for non-admin users
-      if (role !== "admin" && role !== "root") {
+      if (role !== 'admin' && role !== 'root') {
         query += ` AND (
           e.org_level = 'company' OR 
           (e.org_level = 'department' AND e.org_id = ?) OR
@@ -751,29 +751,29 @@ export class Calendar {
 
       const [events] = await executeQuery<DbCalendarEvent[]>(
         query,
-        queryParams,
+        queryParams
       );
 
       // Convert Buffer description to String if needed
       events.forEach((event) => {
         if (event.description && Buffer.isBuffer(event.description)) {
-          event.description = event.description.toString("utf8");
+          event.description = event.description.toString('utf8');
         } else if (
           event.description &&
-          typeof event.description === "object" &&
-          "type" in event.description &&
-          event.description.type === "Buffer" &&
+          typeof event.description === 'object' &&
+          'type' in event.description &&
+          event.description.type === 'Buffer' &&
           Array.isArray(event.description.data)
         ) {
           event.description = Buffer.from(event.description.data).toString(
-            "utf8",
+            'utf8'
           );
         }
       });
 
       return events;
     } catch (error) {
-      logger.error("Error in getDashboardEvents:", error);
+      logger.error('Error in getDashboardEvents:', error);
       throw error;
     }
   }
@@ -784,13 +784,13 @@ export class Calendar {
   static async canManageEvent(
     eventId: number,
     userId: number,
-    userInfo: UserInfo | null = null,
+    userInfo: UserInfo | null = null
   ): Promise<boolean> {
     try {
       // Get event details
       const [events] = await executeQuery<DbCalendarEvent[]>(
-        "SELECT * FROM calendar_events WHERE id = ?",
-        [eventId],
+        'SELECT * FROM calendar_events WHERE id = ?',
+        [eventId]
       );
 
       if (events.length === 0) {
@@ -822,7 +822,7 @@ export class Calendar {
       }
 
       // Admins can manage all events
-      if (role === "admin" || role === "root") {
+      if (role === 'admin' || role === 'root') {
         return true;
       }
 
@@ -833,8 +833,8 @@ export class Calendar {
 
       // Department managers can manage department events
       if (
-        role === "manager" &&
-        event.org_level === "department" &&
+        role === 'manager' &&
+        event.org_level === 'department' &&
         event.org_id === departmentId
       ) {
         return true;
@@ -842,8 +842,8 @@ export class Calendar {
 
       // Team leads can manage team events
       if (
-        role === "team_lead" &&
-        event.org_level === "team" &&
+        role === 'team_lead' &&
+        event.org_level === 'team' &&
         event.org_id === teamId
       ) {
         return true;
@@ -851,7 +851,7 @@ export class Calendar {
 
       return false;
     } catch (error) {
-      logger.error("Error in canManageEvent:", error);
+      logger.error('Error in canManageEvent:', error);
       throw error;
     }
   }

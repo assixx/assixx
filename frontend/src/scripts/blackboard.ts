@@ -6,7 +6,7 @@
 
 import type { User } from '../types/api.types';
 import { getAuthToken, showSuccess, showError } from './auth';
-import { closeModal } from './dashboard-scripts';
+import { closeModal as dashboardCloseModal } from './dashboard-scripts';
 
 interface BlackboardEntry {
   id: number;
@@ -23,6 +23,19 @@ interface BlackboardEntry {
   created_at: string;
   updated_at: string;
   tags?: string[];
+  attachment_count?: number;
+}
+
+interface BlackboardAttachment {
+  id: number;
+  entry_id: number;
+  filename: string;
+  original_name: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: number;
+  uploaded_at: string;
+  uploader_name?: string;
 }
 
 interface Department {
@@ -64,6 +77,65 @@ let departments: Department[] = [];
 let teams: Team[] = [];
 let isAdmin: boolean = false;
 let currentUserId: number | null = null;
+let selectedFiles: File[] = [];
+let uploadedAttachments: BlackboardAttachment[] = [];
+
+// Modal helper functions to handle different implementations
+function openModal(modalId: string): void {
+  const modal = document.getElementById(modalId) as HTMLElement;
+  if (!modal) return;
+
+  // Check if it's the new modal style (class="modal")
+  if (modal.classList.contains('modal') && typeof window.showModal === 'function') {
+    window.showModal(modalId);
+  } 
+  // Check if it's the old modal style (class="modal-overlay")
+  else if (modal.classList.contains('modal-overlay')) {
+    // Use the original dashboard modal behavior
+    modal.style.display = 'flex'; // Add display flex for modal-overlay
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  // Try DashboardUI if available
+  else if (typeof window.DashboardUI?.openModal === 'function') {
+    window.DashboardUI.openModal(modalId);
+  } 
+  // Fallback implementation
+  else {
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      modal.classList.add('active');
+    }, 10);
+  }
+}
+
+function closeModal(modalId: string): void {
+  const modal = document.getElementById(modalId) as HTMLElement;
+  if (!modal) return;
+
+  // Check if it's the new modal style (class="modal")
+  if (modal.classList.contains('modal') && typeof window.hideModal === 'function') {
+    window.hideModal(modalId);
+  } 
+  // Check if it's the old modal style (class="modal-overlay")
+  else if (modal.classList.contains('modal-overlay')) {
+    // Use the original dashboard modal behavior
+    modal.style.opacity = '0';
+    modal.style.visibility = 'hidden';
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  // Try DashboardUI if available
+  else if (typeof window.DashboardUI?.closeModal === 'function') {
+    window.DashboardUI.closeModal(modalId);
+  } 
+  // Use imported function as fallback
+  else {
+    dashboardCloseModal(modalId);
+  }
+}
 
 // Initialize when document is ready
 // Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
@@ -75,6 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Alle Schließen-Buttons einrichten
   setupCloseButtons();
+  
+  // Check if previewAttachment is available
+  console.log('[Blackboard] Checking window.previewAttachment:', typeof window.previewAttachment);
+  if (typeof window.previewAttachment !== 'function') {
+    console.error('[Blackboard] previewAttachment function not found in window!');
+  }
 
   // Check if user is logged in
   checkLoggedIn()
@@ -93,6 +171,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Load departments and teams for form dropdowns
           loadDepartmentsAndTeams();
+
+          // Check if we have an entry parameter in the URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const entryId = urlParams.get('entry');
+          
+          if (entryId) {
+            // If we have an entry ID, load all entries and scroll to the specific one
+            entriesLoadingEnabled = true;
+            loadEntries().then(() => {
+              // Scroll to the specific entry after loading
+              const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
+              if (entryElement) {
+                entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add a highlight effect
+                entryElement.classList.add('highlight-entry');
+                setTimeout(() => {
+                  entryElement.classList.remove('highlight-entry');
+                }, 3000);
+              }
+            });
+          }
 
           // Wir laden die Einträge erst wenn der Button geklickt wird
           const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
@@ -133,14 +232,10 @@ function setupCloseButtons(): void {
   // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
   document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
-      // Finde das übergeordnete Modal
-      const modal = this.closest('.modal-overlay') as HTMLElement;
+      // Finde das übergeordnete Modal (both modal-overlay and modal classes)
+      const modal = this.closest('.modal-overlay, .modal') as HTMLElement;
       if (modal) {
-        if (typeof window.DashboardUI?.closeModal === 'function') {
-          window.DashboardUI.closeModal(modal.id);
-        } else {
-          closeModal(modal.id);
-        }
+        closeModal(modal.id);
       } else {
         console.error('No parent modal found for close button');
       }
@@ -148,15 +243,11 @@ function setupCloseButtons(): void {
   });
 
   // Schließen beim Klicken außerhalb des Modal-Inhalts
-  document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
+  document.querySelectorAll<HTMLElement>('.modal-overlay, .modal').forEach((modal) => {
     modal.addEventListener('click', (event: MouseEvent) => {
       // Nur schließen, wenn der Klick auf den Modal-Hintergrund erfolgt (nicht auf den Inhalt)
       if (event.target === modal) {
-        if (typeof window.DashboardUI?.closeModal === 'function') {
-          window.DashboardUI.closeModal(modal.id);
-        } else {
-          closeModal(modal.id);
-        }
+        closeModal(modal.id);
       }
     });
   });
@@ -268,6 +359,153 @@ function setupEventListeners(): void {
       this.classList.add('active');
     });
   });
+
+  // File upload handling
+  setupFileUploadHandlers();
+}
+
+/**
+ * Setup file upload handlers for attachments
+ */
+function setupFileUploadHandlers(): void {
+  const dropZone = document.getElementById('attachmentDropZone') as HTMLDivElement;
+  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement;
+
+  if (!dropZone || !fileInput) return;
+
+  // Click to upload
+  dropZone.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // File input change
+  fileInput.addEventListener('change', (event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.files) {
+      handleFileSelection(Array.from(target.files));
+    }
+  });
+
+  // Drag and drop
+  dropZone.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+  });
+
+  dropZone.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dropZone.classList.remove('drag-over');
+    
+    if (event.dataTransfer?.files) {
+      handleFileSelection(Array.from(event.dataTransfer.files));
+    }
+  });
+}
+
+/**
+ * Handle file selection for attachments
+ */
+function handleFileSelection(files: File[]): void {
+  const maxFiles = 5;
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+
+  // Filter valid files
+  const validFiles = files.filter(file => {
+    if (!allowedTypes.includes(file.type)) {
+      showError(`Dateiformat nicht unterstützt: ${file.name}`);
+      return false;
+    }
+    if (file.size > maxSize) {
+      showError(`Datei zu groß (max 10MB): ${file.name}`);
+      return false;
+    }
+    return true;
+  });
+
+  // Check total file count
+  if (selectedFiles.length + validFiles.length > maxFiles) {
+    showError(`Maximal ${maxFiles} Dateien erlaubt`);
+    return;
+  }
+
+  // Add to selected files
+  selectedFiles = [...selectedFiles, ...validFiles];
+  
+  // Update preview
+  updateAttachmentPreview();
+}
+
+/**
+ * Update attachment preview display
+ */
+function updateAttachmentPreview(): void {
+  const preview = document.getElementById('attachmentPreview') as HTMLDivElement;
+  const list = document.getElementById('attachmentList') as HTMLDivElement;
+
+  if (!preview || !list) return;
+
+  if (selectedFiles.length === 0) {
+    preview.style.display = 'none';
+    return;
+  }
+
+  preview.style.display = 'block';
+  list.innerHTML = '';
+
+  selectedFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'attachment-item';
+    
+    const icon = file.type === 'application/pdf' ? 'fa-file-pdf pdf' : 'fa-file-image image';
+    const size = formatFileSize(file.size);
+    
+    item.innerHTML = `
+      <div class="attachment-info">
+        <i class="fas ${icon} attachment-icon"></i>
+        <div class="attachment-details">
+          <div class="attachment-name">${escapeHtml(file.name)}</div>
+          <div class="attachment-size">${size}</div>
+        </div>
+      </div>
+      <button type="button" class="attachment-remove" onclick="removeAttachment(${index})">
+        <i class="fas fa-times"></i> Entfernen
+      </button>
+    `;
+    
+    list.appendChild(item);
+  });
+}
+
+/**
+ * Remove attachment from selection
+ */
+function removeAttachment(index: number): void {
+  selectedFiles.splice(index, 1);
+  updateAttachmentPreview();
+  
+  // Reset file input
+  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement;
+  if (fileInput) {
+    fileInput.value = '';
+  }
+}
+
+/**
+ * Format file size for display
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 /**
@@ -487,7 +725,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   const priorityIcon = getPriorityIcon(entry.priority_level);
   
   container.innerHTML = `
-    <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
+    <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
       <div class="pushpin ${randomPushpin}"></div>
       
       <h4 style="margin: 0 0 10px 0; font-weight: 600; color: #1a1a1a;">
@@ -497,6 +735,13 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       <div style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
         ${escapeHtml(entry.content).substring(0, 150).replace(/\n/g, '<br>')}${entry.content.length > 150 ? '...' : ''}
       </div>
+      
+      ${entry.attachment_count && entry.attachment_count > 0 ? `
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
+          <i class="fas fa-paperclip" style="color: #666;"></i>
+          <span style="color: #666; font-size: 12px;">${entry.attachment_count} Anhang${entry.attachment_count > 1 ? 'änge' : ''}</span>
+        </div>
+      ` : ''}
       
       <div style="font-size: 12px; color: #666; display: flex; justify-content: space-between; align-items: center;">
         <span>
@@ -619,22 +864,31 @@ function openEntryForm(entryId?: number): void {
   document.querySelectorAll('.color-option').forEach((option) => {
     option.classList.remove('active');
   });
-  document.querySelector('.color-option[data-color="#f8f9fa"]')?.classList.add('active');
+  document.querySelector('.color-option[data-color="yellow"]')?.classList.add('active');
+
+  // Reset file selection
+  selectedFiles = [];
+  updateAttachmentPreview();
+  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement;
+  if (fileInput) {
+    fileInput.value = '';
+  }
 
   if (entryId) {
     // Load entry data for editing
     loadEntryForEdit(entryId);
   } else {
-    // New entry
+    // New entry - reset org dropdown
     updateOrgIdDropdown('all');
+    const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement;
+    if (entryOrgLevel) {
+      entryOrgLevel.value = 'company';
+      updateOrgIdDropdown('company');
+    }
   }
 
-  // Show modal
-  if (typeof window.DashboardUI?.openModal === 'function') {
-    window.DashboardUI.openModal('entryFormModal');
-  } else {
-    modal.style.display = 'flex';
-  }
+  // Show modal using the wrapper function
+  openModal('entryFormModal');
 }
 
 /**
@@ -714,8 +968,21 @@ async function saveEntry(): Promise<void> {
     });
 
     if (response.ok) {
+      const savedEntry = await response.json();
+      
+      // Upload attachments if any
+      if (selectedFiles.length > 0 && !entryId) {
+        // Only upload attachments for new entries
+        await uploadAttachments(savedEntry.id);
+      }
+      
       showSuccess(entryId ? 'Eintrag erfolgreich aktualisiert!' : 'Eintrag erfolgreich erstellt!');
       closeModal('entryFormModal');
+      
+      // Clear selected files
+      selectedFiles = [];
+      updateAttachmentPreview();
+      
       entriesLoadingEnabled = true;
       loadEntries();
     } else {
@@ -776,6 +1043,63 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
     console.error('Error loading entry:', error);
     showError('Ein Fehler ist aufgetreten');
   }
+}
+
+/**
+ * Upload attachments for an entry
+ */
+async function uploadAttachments(entryId: number): Promise<void> {
+  if (selectedFiles.length === 0) return;
+
+  const token = getAuthToken();
+  if (!token) return;
+
+  const formData = new FormData();
+  selectedFiles.forEach(file => {
+    formData.append('attachments', file);
+  });
+
+  try {
+    const response = await fetch(`/api/blackboard/${entryId}/attachments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      showError(error.message || 'Fehler beim Hochladen der Anhänge');
+    }
+  } catch (error) {
+    console.error('Error uploading attachments:', error);
+    showError('Fehler beim Hochladen der Anhänge');
+  }
+}
+
+/**
+ * Load attachments for an entry
+ */
+async function loadAttachments(entryId: number): Promise<BlackboardAttachment[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  try {
+    const response = await fetch(`/api/blackboard/${entryId}/attachments`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Error loading attachments:', error);
+  }
+
+  return [];
 }
 
 /**
@@ -858,10 +1182,12 @@ function formatDate(dateString: string): string {
  * View entry details
  */
 async function viewEntry(entryId: number): Promise<void> {
+  console.log(`[Blackboard] viewEntry called for entry ${entryId}`);
   const token = getAuthToken();
   if (!token) return;
 
   try {
+    console.log(`[Blackboard] Fetching entry ${entryId}...`);
     const response = await fetch(`/api/blackboard/${entryId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -870,6 +1196,12 @@ async function viewEntry(entryId: number): Promise<void> {
 
     if (response.ok) {
       const entry = await response.json();
+      console.log(`[Blackboard] Entry ${entryId} loaded:`, entry);
+      
+      // Load attachments FIRST
+      console.log(`[Blackboard] Loading attachments for entry ${entryId}...`);
+      const attachments = await loadAttachments(entryId);
+      console.log(`[Blackboard] Attachments loaded:`, attachments);
       
       // Show entry detail modal
       const detailContent = document.getElementById('entryDetailContent') as HTMLElement;
@@ -893,9 +1225,38 @@ async function viewEntry(entryId: number): Promise<void> {
               ${entry.tags.map(tag => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
             </div>
           ` : ''}
+          ${attachments.length > 0 ? `
+            <div class="entry-attachments">
+              <h4 class="entry-attachments-title">
+                <i class="fas fa-paperclip"></i> Anhänge (${attachments.length})
+              </h4>
+              <div class="entry-attachment-list" id="attachment-list-${entryId}">
+                ${attachments.map(att => {
+                  const isPDF = att.mime_type === 'application/pdf';
+                  const isImage = att.mime_type.startsWith('image/');
+                  
+                  console.log(`[Blackboard] Rendering attachment:`, att);
+                  
+                  return `
+                    <div class="entry-attachment-item" 
+                         data-attachment-id="${att.id}"
+                         data-mime-type="${att.mime_type}"
+                         data-filename="${escapeHtml(att.original_name)}"
+                         style="cursor: pointer;"
+                         title="Vorschau: ${escapeHtml(att.original_name)}"
+                         onclick="console.log('[Blackboard] Inline onclick fired!', ${att.id}); window.previewAttachment && window.previewAttachment(${att.id}, '${att.mime_type}', '${escapeHtml(att.original_name).replace(/'/g, "\\'")}'); return false;">
+                      <i class="fas ${isPDF ? 'fa-file-pdf' : 'fa-file-image'}"></i>
+                      <span>${escapeHtml(att.original_name)}</span>
+                      <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
         `;
         
-        // Update footer buttons
+        // Update footer buttons BEFORE showing modal
         const footer = document.getElementById('entryDetailFooter') as HTMLElement;
         if (footer && canEdit) {
           footer.innerHTML = `
@@ -907,30 +1268,381 @@ async function viewEntry(entryId: number): Promise<void> {
               <i class="fas fa-trash"></i> Löschen
             </button>
           `;
-          // Re-attach close button listener
-          setupCloseButtons();
         }
       }
       
-      // Show modal
-      if (typeof window.DashboardUI?.openModal === 'function') {
-        window.DashboardUI.openModal('entryDetailModal');
-      } else {
-        const modal = document.getElementById('entryDetailModal');
-        if (modal) {
-          modal.classList.add('active');
-          modal.style.opacity = '1';
-          modal.style.visibility = 'visible';
-        }
+      // Show modal FIRST
+      console.log('[Blackboard] Showing entry detail modal');
+      const detailModal = document.getElementById('entryDetailModal');
+      if (!detailModal) {
+        console.error('[Blackboard] Entry detail modal not found!');
+        return;
+      }
+      
+      // Use modal wrapper to show detail modal
+      console.log('[Blackboard] Opening entry detail modal');
+      openModal('entryDetailModal');
+      
+      console.log('[Blackboard] Entry detail modal displayed');
+      
+      // Re-attach close button listeners after modal is shown
+      setupCloseButtons();
+      
+      // NOW add click handlers for attachments AFTER modal is visible
+      if (attachments.length > 0) {
+        setTimeout(() => {
+          const attachmentList = document.getElementById(`attachment-list-${entryId}`);
+          console.log(`[Blackboard] Attachment list element:`, attachmentList);
+          
+          if (!attachmentList) {
+            console.error('[Blackboard] Attachment list not found!');
+            return;
+          }
+          
+          const attachmentItems = attachmentList.querySelectorAll('.entry-attachment-item');
+          console.log(`[Blackboard] Found ${attachmentItems.length} attachment items`);
+          
+          // Debug DOM structure
+          console.log('[Blackboard] Attachment list HTML:', attachmentList.innerHTML);
+          
+          attachmentItems.forEach((item, index) => {
+            const htmlItem = item as HTMLElement;
+            const attachmentId = parseInt(htmlItem.getAttribute('data-attachment-id') || '0');
+            const mimeType = htmlItem.getAttribute('data-mime-type') || '';
+            const filename = htmlItem.getAttribute('data-filename') || '';
+            
+            console.log(`[Blackboard] Setting up attachment ${index}:`, { 
+              attachmentId, 
+              mimeType, 
+              filename,
+              element: htmlItem,
+              parentElement: htmlItem.parentElement
+            });
+            
+            // Direct click handler without cloning
+            htmlItem.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log(`[Blackboard] Attachment onclick fired:`, { attachmentId, mimeType, filename });
+              
+              // Call preview function
+              if (typeof window.previewAttachment === 'function') {
+                console.log('[Blackboard] Calling window.previewAttachment');
+                window.previewAttachment(attachmentId, mimeType, filename);
+              } else if (typeof previewAttachment === 'function') {
+                console.log('[Blackboard] Calling previewAttachment directly');
+                previewAttachment(attachmentId, mimeType, filename);
+              } else {
+                console.error('[Blackboard] previewAttachment function not found!');
+              }
+            };
+            
+            // Also add addEventListener as backup
+            htmlItem.addEventListener('click', (e) => {
+              console.log(`[Blackboard] Attachment addEventListener fired:`, { attachmentId, mimeType, filename });
+            }, true); // Use capture phase
+            
+            // Visual feedback
+            htmlItem.style.cursor = 'pointer';
+            htmlItem.style.transition = 'all 0.2s ease';
+            
+            htmlItem.addEventListener('mouseenter', () => {
+              htmlItem.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              htmlItem.style.transform = 'scale(1.02)';
+            });
+            
+            htmlItem.addEventListener('mouseleave', () => {
+              htmlItem.style.backgroundColor = '';
+              htmlItem.style.transform = '';
+            });
+            
+            // Log computed styles to check for issues
+            const computedStyle = window.getComputedStyle(htmlItem);
+            console.log(`[Blackboard] Attachment ${index} computed styles:`, {
+              display: computedStyle.display,
+              visibility: computedStyle.visibility,
+              pointerEvents: computedStyle.pointerEvents,
+              zIndex: computedStyle.zIndex,
+              position: computedStyle.position
+            });
+          });
+          
+          // Check if modal is blocking
+          const modal = document.getElementById('entryDetailModal');
+          if (modal) {
+            const modalStyle = window.getComputedStyle(modal);
+            console.log('[Blackboard] Modal computed styles:', {
+              zIndex: modalStyle.zIndex,
+              position: modalStyle.position,
+              pointerEvents: modalStyle.pointerEvents,
+              display: modalStyle.display,
+              visibility: modalStyle.visibility,
+              opacity: modalStyle.opacity
+            });
+            console.log('[Blackboard] Modal dimensions:', {
+              offsetWidth: modal.offsetWidth,
+              offsetHeight: modal.offsetHeight
+            });
+          }
+          
+          // Check modal content
+          const modalContent = document.querySelector('#entryDetailModal .modal-body');
+          if (modalContent) {
+            const contentStyle = window.getComputedStyle(modalContent as HTMLElement);
+            console.log('[Blackboard] Modal content styles:', {
+              display: contentStyle.display,
+              visibility: contentStyle.visibility,
+              overflow: contentStyle.overflow
+            });
+            console.log('[Blackboard] Modal content dimensions:', {
+              offsetWidth: (modalContent as HTMLElement).offsetWidth,
+              offsetHeight: (modalContent as HTMLElement).offsetHeight
+            });
+          }
+          
+          // Test direct element access
+          console.log('[Blackboard] Testing direct access...');
+          const testAttachment = document.querySelector(`#attachment-list-${entryId} .entry-attachment-item`) as HTMLElement;
+          if (testAttachment) {
+            console.log('[Blackboard] Test attachment found:', testAttachment);
+            console.log('[Blackboard] Can you see and click this element?', {
+              offsetWidth: testAttachment.offsetWidth,
+              offsetHeight: testAttachment.offsetHeight,
+              offsetTop: testAttachment.offsetTop,
+              offsetLeft: testAttachment.offsetLeft
+            });
+          }
+        }, 300); // Increased timeout to ensure modal is fully rendered
       }
     }
   } catch (error) {
-    console.error('Error viewing entry:', error);
-    showError('Fehler beim Laden des Eintrags');
+      console.error('Error viewing entry:', error);
+      showError('Fehler beim Laden des Eintrags');
+    }
+}
+
+// Extend window interface for modal and attachment functions
+declare global {
+  interface Window {
+    showModal?: (modalId: string) => void;
+    hideModal?: (modalId: string) => void;
+    openEntryForm?: (entryId?: number) => void;
+    viewEntry?: (entryId: number) => void;
+    editEntry?: (entryId: number) => void;
+    deleteEntry?: (entryId: number) => void;
+    confirmEntryRead?: (entryId: number) => void;
+    viewConfirmationStatus?: (entryId: number) => void;
+    handleFileDownload?: (attachmentId: number, filename: string) => void;
+    previewAttachment?: (attachmentId: number, mimeType: string, fileName: string) => void;
+    deleteAttachment?: (attachmentId: number) => void;
+    DashboardUI?: {
+      openModal: (modalId: string) => void;
+      closeModal: (modalId: string) => void;
+      showToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
+      formatDate: (dateString: string) => string;
+    };
   }
 }
 
-// Extend window for blackboard functions
+/**
+ * Preview attachment in modal
+ */
+async function previewAttachment(attachmentId: number, mimeType: string, fileName: string): Promise<void> {
+  console.log(`[Blackboard] previewAttachment called:`, { attachmentId, mimeType, fileName });
+  const token = getAuthToken();
+  if (!token) {
+    console.error('[Blackboard] No auth token for preview');
+    return;
+  }
+
+  // Create preview modal if it doesn't exist
+  let previewModal = document.getElementById('attachmentPreviewModal');
+  if (!previewModal) {
+    previewModal = document.createElement('div');
+    previewModal.id = 'attachmentPreviewModal';
+    previewModal.className = 'modal-overlay';
+    previewModal.innerHTML = `
+      <div class="modal-container modal-lg">
+        <div class="modal-header">
+          <h2 id="previewTitle">Vorschau</h2>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
+        </div>
+        <div class="modal-body" id="previewContent" style="overflow: auto; max-height: calc(90vh - 200px); min-height: 400px;">
+          <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Lade Vorschau...</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a id="downloadLink" class="btn btn-primary" download>
+            <i class="fas fa-download"></i> Herunterladen
+          </a>
+          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(previewModal);
+    setupCloseButtons();
+  }
+
+  // Show modal using the same approach as other modals
+  console.log('[Blackboard] Showing preview modal');
+  previewModal.style.display = 'flex';
+  previewModal.classList.add('active');
+  previewModal.style.opacity = '1';
+  previewModal.style.visibility = 'visible';
+  
+  // Update title
+  const titleElement = document.getElementById('previewTitle');
+  if (titleElement) titleElement.textContent = `Vorschau: ${fileName}`;
+  
+  // Update download link
+  const downloadLink = document.getElementById('downloadLink') as HTMLAnchorElement;
+  if (downloadLink) {
+    downloadLink.href = `/api/blackboard/attachments/${attachmentId}?download=true`;
+    downloadLink.setAttribute('download', fileName);
+    // Add click handler to download with auth token
+    downloadLink.onclick = async (e) => {
+      e.preventDefault();
+      try {
+        const response = await fetch(`/api/blackboard/attachments/${attachmentId}?download=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Download failed');
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download error:', error);
+        showError('Fehler beim Herunterladen der Datei');
+      }
+    };
+  }
+  
+  // Load preview content
+  const previewContent = document.getElementById('previewContent');
+  if (!previewContent) return;
+
+  try {
+    const attachmentUrl = `/api/blackboard/attachments/${attachmentId}`;
+    
+    if (mimeType.startsWith('image/')) {
+      // Fetch image with authorization header and convert to blob URL
+      const response = await fetch(attachmentUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to load image');
+      
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Display image
+      previewContent.innerHTML = `
+        <div class="text-center">
+          <img src="${blobUrl}" alt="${fileName}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        </div>
+      `;
+      
+      // Clean up blob URL when modal is closed
+      const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
+      closeButtons.forEach(btn => {
+        btn.addEventListener('click', () => URL.revokeObjectURL(blobUrl), { once: true });
+      });
+    } else if (mimeType === 'application/pdf') {
+      // For PDFs, use object tag instead of iframe to avoid CSP issues
+      const response = await fetch(attachmentUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to load PDF');
+      
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Display PDF using object tag
+      previewContent.innerHTML = `
+        <div style="width: 100%; height: 600px; position: relative;">
+          <object data="${blobUrl}" 
+                  type="application/pdf" 
+                  width="100%" 
+                  height="100%" 
+                  style="border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div style="text-align: center; padding: 40px;">
+              <i class="fas fa-file-pdf fa-5x" style="color: #e74c3c; margin-bottom: 20px;"></i>
+              <p>PDF-Vorschau konnte nicht geladen werden.</p>
+              <button id="openPdfNewTab" class="btn btn-primary" style="margin-top: 20px;">
+                <i class="fas fa-external-link-alt"></i> In neuem Tab öffnen
+              </button>
+            </div>
+          </object>
+        </div>
+      `;
+      
+      // Add click handler for "open in new tab" button
+      setTimeout(() => {
+        const openButton = document.getElementById('openPdfNewTab');
+        if (openButton) {
+          openButton.onclick = async () => {
+            try {
+              const response = await fetch(attachmentUrl, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              const blob = await response.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.target = '_blank';
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 100);
+            } catch (error) {
+              console.error('Error opening PDF in new tab:', error);
+              showError('Fehler beim Öffnen der PDF');
+            }
+          };
+        }
+      }, 100);
+      
+      // Clean up blob URL when modal is closed
+      const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
+      closeButtons.forEach(btn => {
+        btn.addEventListener('click', () => URL.revokeObjectURL(blobUrl), { once: true });
+      });
+    } else {
+      // Unsupported file type
+      previewContent.innerHTML = `
+        <div class="text-center" style="padding: 40px;">
+          <i class="fas fa-file fa-5x" style="color: var(--text-secondary); margin-bottom: 20px;"></i>
+          <p>Vorschau für diesen Dateityp nicht verfügbar.</p>
+          <p class="text-muted">${fileName}</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading preview:', error);
+    previewContent.innerHTML = `
+      <div class="text-center" style="padding: 40px;">
+        <i class="fas fa-exclamation-circle fa-3x" style="color: var(--danger-color); margin-bottom: 20px;"></i>
+        <p>Fehler beim Laden der Vorschau.</p>
+      </div>
+    `;
+  }
+}
+
 declare global {
   interface Window {
     editEntry: typeof openEntryForm;
@@ -938,6 +1650,8 @@ declare global {
     changePage: typeof changePage;
     viewEntry: typeof viewEntry;
     openEntryForm: typeof openEntryForm;
+    removeAttachment: typeof removeAttachment;
+    previewAttachment: typeof previewAttachment;
   }
 }
 
@@ -948,4 +1662,6 @@ if (typeof window !== 'undefined') {
   window.changePage = changePage;
   window.viewEntry = viewEntry;
   window.openEntryForm = openEntryForm;
+  window.removeAttachment = removeAttachment;
+  window.previewAttachment = previewAttachment;
 }

@@ -2,11 +2,11 @@
  * Authentication API Routes
  */
 
-import express, { Router, Request, Response } from "express";
-import { authenticateToken } from "../middleware/auth";
+import express, { Router, Request, Response } from 'express';
+import { authenticateToken } from '../middleware/auth';
 
 // Import models (now ES modules)
-import User from "../models/user";
+import User from '../models/user';
 
 const router: Router = express.Router();
 
@@ -26,13 +26,13 @@ interface AuthenticatedRequest extends Request {
  * @desc Get current user profile
  * @access Private
  */
-router.get("/user", authenticateToken, async (req, res): Promise<void> => {
+router.get('/user', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
@@ -42,8 +42,8 @@ router.get("/user", authenticateToken, async (req, res): Promise<void> => {
 
     res.json(userWithoutPassword);
   } catch (error: any) {
-    console.error("Error in get user profile:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error in get user profile:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -52,8 +52,8 @@ router.get("/user", authenticateToken, async (req, res): Promise<void> => {
  * @desc Logout user (client-side only)
  * @access Public
  */
-router.get("/logout", (_req: Request, res: Response): void => {
-  res.json({ message: "Logout successful" });
+router.get('/logout', (_req: Request, res: Response): void => {
+  res.json({ message: 'Logout successful' });
 });
 
 export default router;

@@ -711,6 +711,12 @@
               </a>
             </li>
             <li class="sidebar-item">
+              <a href="#schwarzes-brett-buttons" class="sidebar-link">
+                <span class="icon">📌</span>
+                <span>Schwarzes Brett</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
               <a href="#forms" class="sidebar-link">
                 <span class="icon">📝</span>
                 <span>Forms</span>
@@ -813,6 +819,520 @@
               <h4 style="color: var(--text-primary); margin: 20px 0 15px 0">Danger Buttons (Löschen)</h4>
               <button class="btn btn-danger">Löschen</button>
               <button class="btn btn-danger">Entfernen</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Schwarzes Brett Button Varianten Section -->
+        <section id="schwarzes-brett-buttons" class="demo-section">
+          <h2 class="demo-title">Schwarzes Brett Button - Glassmorphismus Varianten</h2>
+          <div class="demo-card">
+            <div class="card-header">
+              <h3 class="card-title">10 Ultra-moderne Glassmorphismus Designs</h3>
+            </div>
+            <div class="card-body">
+              <style>
+                /* Base styles for all variants */
+                .sb-button-grid {
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                  gap: 30px;
+                  margin-top: 30px;
+                }
+
+                .sb-button-wrapper {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 20px;
+                  background: rgba(255, 255, 255, 0.02);
+                  backdrop-filter: blur(10px);
+                  border-radius: 12px;
+                  border: 1px solid rgba(255, 255, 255, 0.05);
+                }
+
+                .sb-button-number {
+                  color: var(--primary-color);
+                  font-weight: 600;
+                  font-size: 14px;
+                  margin-bottom: 5px;
+                }
+
+                .sb-button {
+                  position: relative;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  width: 100%;
+                  padding: 12px 24px;
+                  font-size: 0.875rem;
+                  font-weight: 600;
+                  border: none;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  overflow: visible;
+                  text-decoration: none;
+                  color: white;
+                }
+
+                /* Variant 1: Klassisches Glassmorphismus mit gelben Akzenten */
+                .sb-button-1 {
+                  background: rgba(230, 184, 0, 0.08);
+                  backdrop-filter: blur(20px) saturate(180%);
+                  border: 1px solid rgba(230, 184, 0, 0.2);
+                  border-radius: 14px;
+                  box-shadow: 
+                    0 8px 32px rgba(230, 184, 0, 0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                }
+
+                .sb-button-1:hover {
+                  background: rgba(230, 184, 0, 0.12);
+                  border-color: rgba(230, 184, 0, 0.3);
+                  transform: translateY(-2px);
+                  box-shadow: 
+                    0 12px 40px rgba(230, 184, 0, 0.25),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                }
+
+                /* Variant 2: Neon-Glow Effekt */
+                .sb-button-2 {
+                  background: rgba(255, 255, 255, 0.03);
+                  backdrop-filter: blur(40px) brightness(1.1);
+                  border: 1px solid rgba(230, 184, 0, 0.3);
+                  border-radius: 20px;
+                  box-shadow: 
+                    0 0 30px rgba(230, 184, 0, 0.4),
+                    0 0 60px rgba(230, 184, 0, 0.2),
+                    inset 0 0 20px rgba(230, 184, 0, 0.1);
+                  text-shadow: 0 0 10px rgba(230, 184, 0, 0.8);
+                }
+
+                .sb-button-2:hover {
+                  box-shadow: 
+                    0 0 40px rgba(230, 184, 0, 0.6),
+                    0 0 80px rgba(230, 184, 0, 0.3),
+                    inset 0 0 30px rgba(230, 184, 0, 0.2);
+                  transform: scale(1.02);
+                }
+
+                /* Variant 3: Aurora/Gradient Border */
+                .sb-button-3 {
+                  background: rgba(255, 255, 255, 0.02);
+                  backdrop-filter: blur(20px) saturate(200%);
+                  border-radius: 16px;
+                  position: relative;
+                  padding: 14px 26px;
+                }
+
+                .sb-button-3::before {
+                  content: '';
+                  position: absolute;
+                  inset: -2px;
+                  border-radius: 16px;
+                  padding: 2px;
+                  background: linear-gradient(
+                    45deg,
+                    #e6b800,
+                    #ffeb3b,
+                    #e6b800,
+                    #ffd54f,
+                    #e6b800
+                  );
+                  -webkit-mask: 
+                    linear-gradient(#fff 0 0) content-box, 
+                    linear-gradient(#fff 0 0);
+                  mask: 
+                    linear-gradient(#fff 0 0) content-box, 
+                    linear-gradient(#fff 0 0);
+                  -webkit-mask-composite: xor;
+                  mask-composite: exclude;
+                  animation: gradient-rotate 3s linear infinite;
+                }
+
+                @keyframes gradient-rotate {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+
+                .sb-button-3:hover {
+                  background: rgba(255, 255, 255, 0.05);
+                  transform: translateY(-2px);
+                }
+
+                /* Variant 4: Holographic Effect */
+                .sb-button-4 {
+                  background: 
+                    linear-gradient(
+                      135deg,
+                      rgba(230, 184, 0, 0.1) 0%,
+                      rgba(255, 255, 255, 0.05) 25%,
+                      rgba(230, 184, 0, 0.1) 50%,
+                      rgba(255, 255, 255, 0.05) 75%,
+                      rgba(230, 184, 0, 0.1) 100%
+                    );
+                  backdrop-filter: blur(15px) saturate(150%);
+                  border: 1px solid rgba(255, 255, 255, 0.2);
+                  border-radius: 12px;
+                  position: relative;
+                  overflow: hidden;
+                }
+
+                .sb-button-4::before {
+                  content: '';
+                  position: absolute;
+                  top: -50%;
+                  left: -50%;
+                  width: 200%;
+                  height: 200%;
+                  background: linear-gradient(
+                    45deg,
+                    transparent 30%,
+                    rgba(255, 255, 255, 0.1) 50%,
+                    transparent 70%
+                  );
+                  animation: holographic 3s linear infinite;
+                }
+
+                @keyframes holographic {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+
+                .sb-button-4:hover {
+                  border-color: rgba(230, 184, 0, 0.3);
+                  transform: perspective(100px) rotateX(-5deg);
+                }
+
+                /* Variant 5: Frosted Glass mit Pin-Icon */
+                .sb-button-5 {
+                  background: rgba(255, 255, 255, 0.06);
+                  backdrop-filter: blur(30px) brightness(1.05);
+                  border: 1px solid rgba(255, 255, 255, 0.15);
+                  border-radius: 18px;
+                  padding-left: 50px;
+                  box-shadow: 
+                    0 8px 32px rgba(0, 0, 0, 0.2),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.1);
+                }
+
+                .sb-button-5::before {
+                  content: '📌';
+                  position: absolute;
+                  left: 20px;
+                  font-size: 20px;
+                  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+                  animation: pin-wobble 2s ease-in-out infinite;
+                }
+
+                @keyframes pin-wobble {
+                  0%, 100% { transform: rotate(-5deg); }
+                  50% { transform: rotate(5deg); }
+                }
+
+                .sb-button-5:hover {
+                  background: rgba(255, 255, 255, 0.08);
+                  transform: translateY(-3px) rotate(1deg);
+                  box-shadow: 
+                    0 12px 40px rgba(0, 0, 0, 0.3),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.2);
+                }
+
+                /* Variant 6: Liquid Glass Effect */
+                .sb-button-6 {
+                  background: rgba(230, 184, 0, 0.05);
+                  backdrop-filter: blur(25px) contrast(1.2);
+                  border: 2px solid transparent;
+                  border-radius: 50px;
+                  position: relative;
+                  overflow: hidden;
+                  background-clip: padding-box;
+                }
+
+                .sb-button-6::before {
+                  content: '';
+                  position: absolute;
+                  inset: 0;
+                  border-radius: 50px;
+                  padding: 2px;
+                  background: linear-gradient(
+                    90deg,
+                    rgba(230, 184, 0, 0.4),
+                    rgba(255, 255, 255, 0.2),
+                    rgba(230, 184, 0, 0.4)
+                  );
+                  -webkit-mask: 
+                    linear-gradient(#fff 0 0) content-box, 
+                    linear-gradient(#fff 0 0);
+                  mask: 
+                    linear-gradient(#fff 0 0) content-box, 
+                    linear-gradient(#fff 0 0);
+                  -webkit-mask-composite: xor;
+                  mask-composite: exclude;
+                  animation: liquid-flow 3s ease-in-out infinite;
+                }
+
+                @keyframes liquid-flow {
+                  0%, 100% { transform: translateX(-100%); }
+                  50% { transform: translateX(100%); }
+                }
+
+                .sb-button-6:hover {
+                  background: rgba(230, 184, 0, 0.08);
+                  transform: scale(1.05);
+                }
+
+                /* Variant 7: Crystal Clear mit 3D Tiefe */
+                .sb-button-7 {
+                  background: 
+                    linear-gradient(
+                      135deg,
+                      rgba(255, 255, 255, 0.1) 0%,
+                      rgba(255, 255, 255, 0.02) 100%
+                    );
+                  backdrop-filter: blur(20px) saturate(180%);
+                  border: 1px solid rgba(255, 255, 255, 0.2);
+                  border-radius: 10px;
+                  box-shadow: 
+                    0 4px 16px rgba(0, 0, 0, 0.3),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+                    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+                  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+                }
+
+                .sb-button-7:hover {
+                  background: 
+                    linear-gradient(
+                      135deg,
+                      rgba(230, 184, 0, 0.15) 0%,
+                      rgba(255, 255, 255, 0.05) 100%
+                    );
+                  transform: translateY(-2px);
+                  box-shadow: 
+                    0 8px 24px rgba(0, 0, 0, 0.4),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+                    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+                }
+
+                /* Variant 8: Cyberpunk Style */
+                .sb-button-8 {
+                  background: rgba(0, 0, 0, 0.6);
+                  backdrop-filter: blur(10px) brightness(0.8);
+                  border: 1px solid #e6b800;
+                  border-radius: 0;
+                  position: relative;
+                  text-transform: uppercase;
+                  letter-spacing: 2px;
+                  font-size: 0.8rem;
+                  clip-path: polygon(
+                    0 0,
+                    calc(100% - 10px) 0,
+                    100% 10px,
+                    100% 100%,
+                    10px 100%,
+                    0 calc(100% - 10px)
+                  );
+                  box-shadow: 
+                    0 0 20px rgba(230, 184, 0, 0.5),
+                    inset 0 0 20px rgba(230, 184, 0, 0.1);
+                }
+
+                .sb-button-8::after {
+                  content: '';
+                  position: absolute;
+                  inset: 0;
+                  background: linear-gradient(
+                    45deg,
+                    transparent 30%,
+                    rgba(230, 184, 0, 0.3) 50%,
+                    transparent 70%
+                  );
+                  animation: cyber-scan 2s linear infinite;
+                }
+
+                @keyframes cyber-scan {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(100%); }
+                }
+
+                .sb-button-8:hover {
+                  background: rgba(230, 184, 0, 0.1);
+                  box-shadow: 
+                    0 0 30px rgba(230, 184, 0, 0.7),
+                    inset 0 0 30px rgba(230, 184, 0, 0.2);
+                }
+
+                /* Variant 9: Minimalistisch mit Outline */
+                .sb-button-9 {
+                  background: transparent;
+                  backdrop-filter: blur(10px);
+                  border: 2px solid rgba(230, 184, 0, 0.3);
+                  border-radius: 8px;
+                  position: relative;
+                  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .sb-button-9::before {
+                  content: '';
+                  position: absolute;
+                  inset: -2px;
+                  border-radius: 8px;
+                  background: rgba(230, 184, 0, 0.1);
+                  opacity: 0;
+                  transition: opacity 0.4s ease;
+                  z-index: -1;
+                }
+
+                .sb-button-9:hover {
+                  border-color: rgba(230, 184, 0, 0.6);
+                  color: #e6b800;
+                  transform: translateY(-1px);
+                }
+
+                .sb-button-9:hover::before {
+                  opacity: 1;
+                }
+
+                /* Variant 10: Premium Gold Glass */
+                .sb-button-10 {
+                  background: 
+                    radial-gradient(
+                      ellipse at top,
+                      rgba(255, 215, 0, 0.15) 0%,
+                      rgba(230, 184, 0, 0.05) 100%
+                    );
+                  backdrop-filter: blur(30px) saturate(200%) brightness(1.1);
+                  border: 1px solid rgba(255, 215, 0, 0.3);
+                  border-radius: 16px;
+                  box-shadow: 
+                    0 8px 32px rgba(230, 184, 0, 0.2),
+                    0 0 80px rgba(255, 215, 0, 0.1),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+                    inset 0 -2px 4px rgba(230, 184, 0, 0.2);
+                  position: relative;
+                  overflow: hidden;
+                }
+
+                .sb-button-10::before {
+                  content: '';
+                  position: absolute;
+                  top: -2px;
+                  left: -2px;
+                  right: -2px;
+                  height: 50%;
+                  background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.2) 0%,
+                    transparent 100%
+                  );
+                  border-radius: 16px 16px 100px 100px;
+                  pointer-events: none;
+                }
+
+                .sb-button-10:hover {
+                  background: 
+                    radial-gradient(
+                      ellipse at top,
+                      rgba(255, 215, 0, 0.2) 0%,
+                      rgba(230, 184, 0, 0.08) 100%
+                    );
+                  transform: translateY(-3px) scale(1.02);
+                  box-shadow: 
+                    0 12px 40px rgba(230, 184, 0, 0.3),
+                    0 0 100px rgba(255, 215, 0, 0.15),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                    inset 0 -2px 4px rgba(230, 184, 0, 0.1);
+                }
+              </style>
+
+              <div class="sb-button-grid">
+                <!-- Variant 1 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #1</span>
+                  <button class="sb-button sb-button-1">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Klassisches Glassmorphismus</small>
+                </div>
+
+                <!-- Variant 2 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #2</span>
+                  <button class="sb-button sb-button-2">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Neon-Glow Effekt</small>
+                </div>
+
+                <!-- Variant 3 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #3</span>
+                  <button class="sb-button sb-button-3">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Aurora Gradient Border</small>
+                </div>
+
+                <!-- Variant 4 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #4</span>
+                  <button class="sb-button sb-button-4">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Holographic Effect</small>
+                </div>
+
+                <!-- Variant 5 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #5</span>
+                  <button class="sb-button sb-button-5">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Frosted Glass mit Pin</small>
+                </div>
+
+                <!-- Variant 6 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #6</span>
+                  <button class="sb-button sb-button-6">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Liquid Glass Effect</small>
+                </div>
+
+                <!-- Variant 7 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #7</span>
+                  <button class="sb-button sb-button-7">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Crystal Clear 3D</small>
+                </div>
+
+                <!-- Variant 8 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #8</span>
+                  <button class="sb-button sb-button-8">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Cyberpunk Style</small>
+                </div>
+
+                <!-- Variant 9 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #9</span>
+                  <button class="sb-button sb-button-9">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Minimalistisch Outline</small>
+                </div>
+
+                <!-- Variant 10 -->
+                <div class="sb-button-wrapper">
+                  <span class="sb-button-number">Variante #10</span>
+                  <button class="sb-button sb-button-10">Schwarzes Brett</button>
+                  <small style="color: var(--text-secondary); text-align: center;">Premium Gold Glass</small>
+                </div>
+              </div>
+
+              <div style="margin-top: 40px; padding: 20px; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h4 style="color: var(--primary-color); margin-bottom: 15px;">Design-Merkmale:</h4>
+                <ul style="color: var(--text-secondary); line-height: 1.8;">
+                  <li><strong>Variante 1:</strong> Klassisches Glassmorphismus mit subtilen gelben Akzenten</li>
+                  <li><strong>Variante 2:</strong> Leuchtender Neon-Glow für maximale Aufmerksamkeit</li>
+                  <li><strong>Variante 3:</strong> Animierter Gradient-Border mit Aurora-Effekt</li>
+                  <li><strong>Variante 4:</strong> Holographischer Schimmer mit 3D-Rotation</li>
+                  <li><strong>Variante 5:</strong> Frosted Glass mit animiertem Pin-Icon</li>
+                  <li><strong>Variante 6:</strong> Flüssiger Glass-Effekt mit Flow-Animation</li>
+                  <li><strong>Variante 7:</strong> Crystal Clear mit realistischer 3D-Tiefe</li>
+                  <li><strong>Variante 8:</strong> Futuristischer Cyberpunk-Look mit Scan-Effekt</li>
+                  <li><strong>Variante 9:</strong> Minimalistisches Design mit Outline-Focus</li>
+                  <li><strong>Variante 10:</strong> Premium Gold Glass mit Luxus-Feeling</li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>

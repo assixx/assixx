@@ -3,12 +3,12 @@
  * Handles document business logic
  */
 
-import * as path from "path";
-import { promises as fs } from "fs";
-import { fileURLToPath } from "url";
-import Document from "../models/document";
-import { logger } from "../utils/logger";
-import { formatPaginationResponse } from "../utils/helpers";
+import * as path from 'path';
+import { promises as fs } from 'fs';
+import { fileURLToPath } from 'url';
+import Document from '../models/document';
+import { logger } from '../utils/logger';
+import { formatPaginationResponse } from '../utils/helpers';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -19,10 +19,10 @@ import type {
   DbDocument,
   DocumentCreateData as ModelDocumentCreateData,
   DocumentUpdateData as ModelDocumentUpdateData,
-} from "../models/document";
+} from '../models/document';
 
 // Service-specific interfaces
-interface DocumentData extends Omit<DbDocument, "file_content"> {
+interface DocumentData extends Omit<DbDocument, 'file_content'> {
   tenantId: number;
   name: string;
   filename: string;
@@ -89,7 +89,7 @@ class DocumentService {
   private uploadDir: string;
 
   constructor() {
-    this.uploadDir = path.join(__dirname, "../../../uploads/documents");
+    this.uploadDir = path.join(__dirname, '../../../uploads/documents');
   }
 
   /**
@@ -108,11 +108,11 @@ class DocumentService {
         pagination: formatPaginationResponse(
           total,
           Math.floor(offset / limit) + 1,
-          limit,
+          limit
         ),
       };
     } catch (error) {
-      logger.error("Error in document service getDocuments:", error);
+      logger.error('Error in document service getDocuments:', error);
       throw error;
     }
   }
@@ -122,7 +122,7 @@ class DocumentService {
    */
   async getDocumentById(
     documentId: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<DocumentData | null> {
     try {
       const doc = await Document.findById(documentId);
@@ -133,13 +133,13 @@ class DocumentService {
         tenantId: doc.tenant_id,
         name: doc.file_name,
         filename: doc.file_name,
-        mimetype: "application/pdf", // Default for now
+        mimetype: 'application/pdf', // Default for now
         size: 0, // Would need to be calculated
         uploaded_by: doc.user_id,
-        category: doc.category || "other",
+        category: doc.category || 'other',
       };
     } catch (error) {
-      logger.error("Error in document service getDocumentById:", error);
+      logger.error('Error in document service getDocumentById:', error);
       throw error;
     }
   }
@@ -148,7 +148,7 @@ class DocumentService {
    * Create new document record
    */
   async createDocument(
-    documentData: ServiceDocumentCreateData,
+    documentData: ServiceDocumentCreateData
   ): Promise<DocumentData | null> {
     try {
       const modelData: ModelDocumentCreateData = {
@@ -164,7 +164,7 @@ class DocumentService {
       const documentId = await Document.create(modelData);
       return await this.getDocumentById(documentId, documentData.tenantId);
     } catch (error) {
-      logger.error("Error in document service createDocument:", error);
+      logger.error('Error in document service createDocument:', error);
       throw error;
     }
   }
@@ -175,7 +175,7 @@ class DocumentService {
   async updateDocument(
     documentId: number,
     updateData: ServiceDocumentUpdateData,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       // Check if document exists
@@ -194,7 +194,7 @@ class DocumentService {
       await Document.update(documentId, modelUpdateData);
       return true;
     } catch (error) {
-      logger.error("Error in document service updateDocument:", error);
+      logger.error('Error in document service updateDocument:', error);
       throw error;
     }
   }
@@ -215,14 +215,14 @@ class DocumentService {
         const filePath = path.join(this.uploadDir, document.filename);
         await fs.unlink(filePath);
       } catch (fileError) {
-        logger.warn("Error deleting file:", fileError);
+        logger.warn('Error deleting file:', fileError);
       }
 
       // Delete database record
       await Document.delete(documentId);
       return true;
     } catch (error) {
-      logger.error("Error in document service deleteDocument:", error);
+      logger.error('Error in document service deleteDocument:', error);
       throw error;
     }
   }
@@ -238,7 +238,7 @@ class DocumentService {
       await fs.access(filePath);
       return filePath;
     } catch {
-      throw new Error("File not found");
+      throw new Error('File not found');
     }
   }
 
@@ -247,7 +247,7 @@ class DocumentService {
    */
   async getDocumentsByUser(
     userId: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<DocumentData[]> {
     try {
       const dbDocuments = await Document.findByUserId(userId);
@@ -256,16 +256,16 @@ class DocumentService {
         tenantId: doc.tenant_id,
         name: doc.file_name,
         filename: doc.file_name,
-        mimetype: "application/pdf", // Default for now
+        mimetype: 'application/pdf', // Default for now
         size: 0, // Would need to be calculated
         uploaded_by: doc.user_id,
-        description: doc.description || "",
-        category: doc.category || "other",
+        description: doc.description || '',
+        category: doc.category || 'other',
         created_at: doc.upload_date,
         updated_at: doc.upload_date,
       }));
     } catch (error) {
-      logger.error("Error in document service getDocumentsByUser:", error);
+      logger.error('Error in document service getDocumentsByUser:', error);
       throw error;
     }
   }
@@ -292,7 +292,7 @@ class DocumentService {
             : 0,
       };
     } catch (error) {
-      logger.error("Error in document service getDocumentStats:", error);
+      logger.error('Error in document service getDocumentStats:', error);
       throw error;
     }
   }

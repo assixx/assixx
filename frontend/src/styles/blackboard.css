@@ -24,8 +24,8 @@ main.container.main-content.sidebar-collapsed {
 
 /* Also ensure any container inside main-content uses full width */
 .main-content.sidebar-collapsed .blackboard-container {
-  max-width: 100% !important;
-  width: calc(100% - 80px) !important; /* Account for padding */
+  max-width: 99% !important;
+  /*width: calc(100% - 80px) !important; /* Account for padding */
 }
 
 /* Pinnwand Container */
@@ -580,30 +580,93 @@ main.container.main-content.sidebar-collapsed {
   box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.12));
 }
 
-/* Detail modal - angepasst an Assixx Design */
+/* Detail modal - Compact Design Standards */
+#entryDetailModal {
+  z-index: 2000;
+}
+
+#entryDetailModal .modal-container {
+  max-width: 600px;
+  width: 90%;
+}
+
+#entryDetailModal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+}
+
 .entry-detail-header {
-  border-bottom: 1px solid var(--border-color, #ddd);
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.entry-detail-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .entry-detail-meta {
   display: flex;
   align-items: center;
-  margin-top: 0.5rem;
-  color: var(--text-secondary, #757575);
-  font-size: 0.875rem;
+  margin-top: var(--spacing-sm);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  gap: var(--spacing-lg);
+}
+
+.entry-detail-meta span {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.entry-detail-meta i {
+  opacity: 0.6;
+  font-size: 12px;
 }
 
 .entry-detail-content {
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-  color: var(--text-primary, #212121);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  word-break: break-word;
 }
 
-/* Confirmation status styles - angepasst an Assixx Design*/
+/* Entry Tags - Compact Design */
+.entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.entry-tags .badge {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.entry-tags .badge:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Confirmation status styles - Compact Design */
 .confirmation-status-pending {
-  color: var(--text-secondary, #757575);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .confirmation-status-confirmed {
@@ -984,4 +1047,295 @@ main.container.main-content.sidebar-collapsed {
   .search-btn {
     min-width: 44px;
   }
+}
+
+/* ========================================
+   ATTACHMENT UPLOAD ZONE
+   ======================================== */
+
+.attachment-upload-zone {
+  background: rgba(255, 255, 255, 0.05);
+  border: 3px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.attachment-upload-zone:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.attachment-upload-zone.drag-over {
+  background: rgba(0, 123, 255, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0;
+}
+
+/* Attachment Preview */
+.attachment-preview {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.attachment-icon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.attachment-icon.pdf {
+  color: #e74c3c;
+}
+
+.attachment-icon.image {
+  color: #2ecc71;
+}
+
+.attachment-details {
+  flex: 1;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.attachment-remove {
+  background: rgba(231, 76, 60, 0.2);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e74c3c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.attachment-remove:hover {
+  background: rgba(231, 76, 60, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Attachment Display in Entry - Compact Design */
+.entry-attachments {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.entry-attachments-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.entry-attachments-title i {
+  color: var(--primary-color);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.entry-attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.entry-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.entry-attachment-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.entry-attachment-item i {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.entry-attachment-item i.fa-file-pdf {
+  color: #e74c3c;
+}
+
+.entry-attachment-item i.fa-file-image {
+  color: #2ecc71;
+}
+
+.entry-attachment-item span {
+  font-size: 14px;
+}
+
+.attachment-size {
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Highlight Effect for linked entries */
+.highlight-entry {
+    animation: highlightPulse 3s ease-in-out;
+}
+
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    25%, 75% {
+        box-shadow: 0 5px 20px rgba(0, 142, 255, 0.6), 0 0 30px rgba(0, 142, 255, 0.3);
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 5px 25px rgba(0, 142, 255, 0.8), 0 0 40px rgba(0, 142, 255, 0.4);
+        transform: scale(1.03);
+    }
+}
+
+/* Attachment Preview Modal - Compact Design */
+#attachmentPreviewModal {
+    z-index: 10000;
+}
+
+#attachmentPreviewModal .modal-container {
+    max-width: 90%;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+}
+
+#attachmentPreviewModal .modal-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#attachmentPreviewModal .modal-header h2 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+#attachmentPreviewModal .modal-body {
+    padding: var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    max-height: calc(90vh - 200px);
+    overflow: auto;
+}
+
+#attachmentPreviewModal img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#attachmentPreviewModal object {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-sm);
+}
+
+#attachmentPreviewModal .modal-footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
 }

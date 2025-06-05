@@ -1,0 +1,592 @@
+<!-- Entry Form Modal - Design Standards Compliant -->
+<div class="modal" id="entryFormModal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Neuer Eintrag</h3>
+      <button class="modal-close" onclick="hideModal('entryFormModal')">&times;</button>
+    </div>
+    <form id="entryForm">
+      <input type="hidden" id="entryId" name="entry_id" />
+
+      <!-- Titel und Inhalt -->
+      <div class="form-group">
+        <label for="entryTitle" class="form-label">Titel</label>
+        <input type="text" class="form-control" id="entryTitle" name="title" required placeholder="Was ist das Thema?" />
+      </div>
+
+      <div class="form-group">
+        <label for="entryContent" class="form-label">Inhalt</label>
+        <textarea class="form-control" id="entryContent" name="content" rows="6" required placeholder="Ihre Nachricht hier..."></textarea>
+        <small class="form-hint">Tipp: Sie können **Fett**, *Kursiv* und Listen verwenden!</small>
+      </div>
+
+      <!-- Sichtbarkeit mit Custom Dropdown -->
+      <div class="form-group">
+        <label class="form-label">Wer soll den Eintrag sehen?</label>
+        <div class="custom-dropdown">
+          <div class="dropdown-display" id="orgLevelDisplay" onclick="toggleDropdown('orgLevel')">
+            <span>Bitte wählen</span>
+            <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+              <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="dropdown-options" id="orgLevelDropdown">
+            <div class="dropdown-option" onclick="selectOrgLevel('company', 'Alle Mitarbeiter')">Alle Mitarbeiter</div>
+            <div class="dropdown-option" onclick="selectOrgLevel('department', 'Bestimmte Abteilung')">Bestimmte Abteilung</div>
+            <div class="dropdown-option" onclick="selectOrgLevel('team', 'Bestimmtes Team')">Bestimmtes Team</div>
+          </div>
+          <input type="hidden" name="org_level" id="orgLevelValue" required />
+        </div>
+      </div>
+
+      <div class="form-group" id="orgIdContainer" style="display: none;">
+        <label class="form-label">Welche Abteilung/Team?</label>
+        <div class="custom-dropdown">
+          <div class="dropdown-display" id="orgIdDisplay" onclick="toggleDropdown('orgId')">
+            <span>Bitte wählen</span>
+            <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+              <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="dropdown-options" id="orgIdDropdown">
+            <!-- Wird dynamisch gefüllt -->
+          </div>
+          <input type="hidden" name="org_id" id="orgIdValue" />
+        </div>
+      </div>
+
+      <!-- Wichtigkeit mit Custom Dropdown -->
+      <div class="form-group">
+        <label class="form-label">Priorität</label>
+        <div class="custom-dropdown">
+          <div class="dropdown-display" id="priorityDisplay" onclick="toggleDropdown('priority')">
+            <span>Normal</span>
+            <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+              <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="dropdown-options" id="priorityDropdown">
+            <div class="dropdown-option" onclick="selectPriority('low', 'Niedrig')">Niedrig</div>
+            <div class="dropdown-option" onclick="selectPriority('medium', 'Normal')">Normal</div>
+            <div class="dropdown-option" onclick="selectPriority('high', 'Hoch')">Hoch</div>
+            <div class="dropdown-option" onclick="selectPriority('critical', 'Dringend')">Dringend</div>
+          </div>
+          <input type="hidden" name="priority_level" id="priorityValue" value="medium" />
+        </div>
+      </div>
+
+      <!-- Gültig bis -->
+      <div class="form-group">
+        <label for="entryExpiresAt" class="form-label">Gültig bis (optional)</label>
+        <input type="date" class="form-control" id="entryExpiresAt" name="expires_at" />
+      </div>
+
+      <!-- Farbe auswählen -->
+      <div class="form-group">
+        <label class="form-label">Farbe</label>
+        <div class="color-picker-grid">
+          <button type="button" class="color-option active" data-color="yellow" style="background: rgba(253, 230, 138, 0.2); border: 1px solid rgba(253, 230, 138, 0.5);">
+            <span class="color-dot" style="background: #fde68a;"></span>
+            Gelb
+          </button>
+          <button type="button" class="color-option" data-color="pink" style="background: rgba(251, 207, 232, 0.2); border: 1px solid rgba(251, 207, 232, 0.5);">
+            <span class="color-dot" style="background: #fbcfe8;"></span>
+            Pink
+          </button>
+          <button type="button" class="color-option" data-color="blue" style="background: rgba(191, 219, 254, 0.2); border: 1px solid rgba(191, 219, 254, 0.5);">
+            <span class="color-dot" style="background: #bfdbfe;"></span>
+            Blau
+          </button>
+          <button type="button" class="color-option" data-color="green" style="background: rgba(190, 242, 100, 0.2); border: 1px solid rgba(190, 242, 100, 0.5);">
+            <span class="color-dot" style="background: #bef264;"></span>
+            Grün
+          </button>
+          <button type="button" class="color-option" data-color="orange" style="background: rgba(253, 186, 116, 0.2); border: 1px solid rgba(253, 186, 116, 0.5);">
+            <span class="color-dot" style="background: #fdba74;"></span>
+            Orange
+          </button>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="form-group">
+        <label for="entryTags" class="form-label">Tags (optional)</label>
+        <input type="text" class="form-control" id="entryTags" name="tags" placeholder="Wichtig, Meeting, Update (mit Komma trennen)" />
+      </div>
+
+      <!-- Checkbox für Bestätigung -->
+      <div class="form-group">
+        <label class="checkbox-container">
+          <input type="checkbox" id="entryRequiresConfirmation" name="requires_confirmation" />
+          <span class="checkbox-label">Mitarbeiter müssen bestätigen, dass sie diesen Eintrag gelesen haben</span>
+        </label>
+      </div>
+
+      <!-- Anhänge -->
+      <div class="form-group">
+        <label class="form-label">Anhänge (optional)</label>
+        <div class="attachment-upload-zone" id="attachmentDropZone">
+          <div class="upload-icon">
+            <i class="fas fa-cloud-upload-alt"></i>
+          </div>
+          <p class="upload-text">Dateien hierher ziehen oder klicken zum Auswählen</p>
+          <p class="upload-hint">Max. 5 Dateien, je 10MB (PDF, JPG, PNG, GIF)</p>
+          <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" style="display: none;">
+        </div>
+        
+        <!-- Anhang-Vorschau -->
+        <div id="attachmentPreview" class="attachment-preview" style="display: none;">
+          <h4 class="preview-title">Ausgewählte Dateien:</h4>
+          <div id="attachmentList" class="attachment-list"></div>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary">Speichern</button>
+        <button type="button" class="btn btn-secondary" onclick="hideModal('entryFormModal')">Abbrechen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Modal Styles gemäß Design Standards */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--error-color);
+}
+
+.modal form {
+  padding: var(--spacing-lg);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.form-control:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(33, 150, 243, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(33, 150, 243, 0.15),
+    inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-hint {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Custom Dropdown Styles */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.dropdown-display:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-display svg {
+  transition: transform 0.3s ease;
+}
+
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1001;
+}
+
+.dropdown-options.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option:hover {
+  background: rgba(33, 150, 243, 0.2);
+  color: white;
+  padding-left: 16px;
+}
+
+/* Color Picker */
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.color-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.color-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.color-option.active {
+  border-color: var(--primary-color);
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Checkbox */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Attachment Upload Zone */
+.attachment-upload-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.attachment-upload-zone:hover {
+  border-color: rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.05);
+}
+
+.attachment-upload-zone.drag-active {
+  border-color: var(--primary-color);
+  background: rgba(33, 150, 243, 0.1);
+  transform: scale(1.02);
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: var(--spacing-md);
+}
+
+.upload-text {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+
+<script>
+// Modal Functions gemäß Design Standards
+function showModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      modal.classList.add('active');
+    }, 10);
+  }
+}
+
+function hideModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
+  }
+}
+
+// Dropdown Functions
+function toggleDropdown(type) {
+  const display = document.getElementById(type + 'Display');
+  const dropdown = document.getElementById(type + 'Dropdown');
+
+  // Alle anderen schließen
+  document.querySelectorAll('.dropdown-display').forEach(d => {
+    if (d !== display) d.classList.remove('active');
+  });
+  document.querySelectorAll('.dropdown-options').forEach(d => {
+    if (d !== dropdown) d.classList.remove('active');
+  });
+
+  display.classList.toggle('active');
+  dropdown.classList.toggle('active');
+}
+
+// Org Level Selection
+function selectOrgLevel(value, text) {
+  document.getElementById('orgLevelDisplay').querySelector('span').textContent = text;
+  document.getElementById('orgLevelValue').value = value;
+  document.getElementById('orgLevelDisplay').classList.remove('active');
+  document.getElementById('orgLevelDropdown').classList.remove('active');
+
+  // Show/Hide org ID container
+  if (value === 'department' || value === 'team') {
+    document.getElementById('orgIdContainer').style.display = 'block';
+    loadOrgOptions(value);
+  } else {
+    document.getElementById('orgIdContainer').style.display = 'none';
+  }
+}
+
+// Priority Selection
+function selectPriority(value, text) {
+  document.getElementById('priorityDisplay').querySelector('span').textContent = text;
+  document.getElementById('priorityValue').value = value;
+  document.getElementById('priorityDisplay').classList.remove('active');
+  document.getElementById('priorityDropdown').classList.remove('active');
+}
+
+// Org ID Selection
+function selectOrgId(value, text) {
+  document.getElementById('orgIdDisplay').querySelector('span').textContent = text;
+  document.getElementById('orgIdValue').value = value;
+  document.getElementById('orgIdDisplay').classList.remove('active');
+  document.getElementById('orgIdDropdown').classList.remove('active');
+}
+
+// Load org options dynamically
+async function loadOrgOptions(type) {
+  const dropdown = document.getElementById('orgIdDropdown');
+  dropdown.innerHTML = '<div class="dropdown-option">Laden...</div>';
+
+  try {
+    const endpoint = type === 'department' ? '/api/departments' : '/api/teams';
+    const response = await fetch(endpoint);
+    const items = await response.json();
+
+    dropdown.innerHTML = items.map(item => 
+      `<div class="dropdown-option" onclick="selectOrgId('${item.id}', '${item.name}')">${item.name}</div>`
+    ).join('');
+  } catch (error) {
+    dropdown.innerHTML = '<div class="dropdown-option">Fehler beim Laden</div>';
+  }
+}
+
+// Color picker
+document.addEventListener('DOMContentLoaded', function() {
+  const colorOptions = document.querySelectorAll('.color-option');
+  colorOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      colorOptions.forEach(opt => opt.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+});
+
+// Click outside to close dropdowns
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+  }
+});
+
+// Close modal on background click
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal')) {
+    const modalId = e.target.id;
+    hideModal(modalId);
+  }
+});
+</script>

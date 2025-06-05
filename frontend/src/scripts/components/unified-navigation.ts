@@ -434,6 +434,11 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
+                <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
+                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
+                    </svg>
+                </button>
                 <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
@@ -442,11 +447,6 @@ class UnifiedNavigation {
                     <span class="title-content">
                         <span class="title-text">Schwarzes Brett</span>
                     </span>
-                </button>
-                <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
-                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="white">
-                        <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
-                    </svg>
                 </button>
                 <div class="user-info-card" id="sidebar-user-info-card">
                     <img id="sidebar-user-avatar" class="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
@@ -567,7 +567,7 @@ class UnifiedNavigation {
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
       mainContent?.classList.add('sidebar-collapsed');
-      this.updateToggleIcon(true);
+      this.updateToggleIcon();
     }
 
     // Toggle click handler
@@ -582,7 +582,7 @@ class UnifiedNavigation {
       localStorage.setItem('sidebarCollapsed', newState.toString());
       
       // Update icon
-      this.updateToggleIcon(newState);
+      this.updateToggleIcon();
     });
 
     // Hover effect for toggle button
@@ -612,7 +612,7 @@ class UnifiedNavigation {
     this.addCollapsedTooltips();
   }
 
-  private updateToggleIcon(isCollapsed: boolean): void {
+  private updateToggleIcon(): void {
     const iconPath = document.querySelector('.toggle-icon-path');
     if (iconPath) {
       // Keep hamburger menu as default
@@ -972,13 +972,13 @@ const unifiedNavigationCSS = `
         justify-content: center;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--text-primary);
-        margin: 21px 0 var(--spacing-sm) 0;
+        color: #333;
+        margin: 60px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(20px) saturate(180%);
-        border-radius: var(--radius-md);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #e6b800;
+        
+        border-radius: 0px;
+        border: none;
         transition: all 0.3s ease;
         cursor: pointer;
         width: 98%;
@@ -986,23 +986,42 @@ const unifiedNavigationCSS = `
         margin-right: 1%;
         text-align: center;
         position: relative;
-        box-shadow: 
-            0 4px 16px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 1px rgb(59, 36, 0), 0 2px 2px rgb(0, 0, 0);
         overflow: visible;
+        transform: rotate(-3deg);
+    }
+
+    /* Sticky Note folded corner - inner fold */
+    .sidebar-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(45deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+        transform: rotate(45deg);
+        transform-origin: bottom right;
+    }
+
+    .sidebar-title::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 20px 20px 0 0;
+        border-color: #fff transparent #0000 transparent;
+        z-index: 1;
     }
 
     .sidebar-title:hover {
-        transform: translateY(-1px);
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(255, 255, 255, 0.15);
+        transform: rotate(-1deg) translateY(-2px);
         box-shadow: 
-            -10px -9px 20px rgba(255, 235, 59, 0.45), 
-            5px 0px 10px rgb(76, 175, 90), 
-            -6px 1px 10px rgb(33, 150, 243), 
-            0px 9px 15px rgb(255, 61, 0), 
-            0 2px 20px rgba(0, 0, 0, 0), 
-            inset 0 1px 0 rgba(255, 255, 255, 0);
+            0 5px 10px rgba(0, 0, 0, 0.25),
+            0 2px 4px rgba(0, 0, 0, 0.15);
     }
 
     .sidebar-title:hover .pin-head {
@@ -1015,68 +1034,70 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-title:active {
-        transform: translateY(0);
+        transform: rotate(-1deg) translateY(0);
     }
 
     /* Pinned icon styles */
     .pinned-icon {
         position: absolute;
-        top: -8px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
+        z-index: 2;
     }
 
     /* Pin head (only the head visible - like pushed in) */
     .pin-head {
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
-        background: #c40202;
+        background: #d32f2f;
         display: block;
         position: relative;
         box-shadow: 
-            0 2px 4px rgba(0, 0, 0, 0.3),
-            inset -1px -1px 2px rgba(0, 0, 0, 0.2),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+            0 3px 6px rgba(0, 0, 0, 0.4),
+            inset -2px -2px 3px rgba(0, 0, 0, 0.3),
+            inset 2px 2px 3px rgba(255, 255, 255, 0.4);
         transition: all 0.2s ease;
     }
 
     .pin-head::after {
         content: '';
         position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 5px;
-        height: 5px;
+        top: 4px;
+        left: 4px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.7);
     }
 
     /* Pin needle (appears on hover - full pushpin) */
     .pin-needle {
         position: absolute;
-        top: -8px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
         opacity: 0;
         transition: all 0.3s ease;
+        z-index: 2;
     }
 
     /* Pin needle head */
     .pin-needle::before {
         content: '';
         position: absolute;
-        top: -8px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
-        background: #c40202;
+        background: #d32f2f;
         box-shadow: 
-            0 2px 4px rgba(0, 0, 0, 0.3),
-            inset -1px -1px 2px rgba(0, 0, 0, 0.2),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+            0 3px 6px rgba(0, 0, 0, 0.4),
+            inset -2px -2px 3px rgba(0, 0, 0, 0.3),
+            inset 2px 2px 3px rgba(255, 255, 255, 0.4);
     }
 
     /* Pin needle shaft */
@@ -1087,12 +1108,12 @@ const unifiedNavigationCSS = `
         left: 50%;
         transform: translateX(-50%);
         width: 2px;
-        height: 20px;
+        height: 22px;
         background: linear-gradient(to bottom, 
-            #999 0%, 
-            #777 50%, 
-            #555 100%);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            #aaa 0%, 
+            #888 50%, 
+            #666 100%);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
 
     .title-content {
@@ -1111,21 +1132,27 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar-toggle {
+        position: absolute;
+        top: 10px;
+        left: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 100%;
+        width: 36px;
         height: 36px;
-        background: transparent;
-        border: none;
+        background: rgba(255, 255, 255, 0);
+        border: 1px solid rgba(255, 255, 255, 0);
+        border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-bottom: var(--spacing-lg);
         color: white;
+        z-index: 100;
     }
 
     .sidebar-toggle:hover {
-        transform: scale(1.1);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
     }
 
     .sidebar-toggle:hover .toggle-icon {
@@ -1144,9 +1171,12 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-title {
         padding: var(--spacing-sm);
         justify-content: center;
-        margin: 21px 4px var(--spacing-sm) 4px;
+        margin: 40px 4px var(--spacing-sm) 4px;
         width: calc(100% - 8px);
         font-size: 0;
+        transform: rotate(-2deg);
+        background: #e6b800;
+        min-height: 40px;
     }
 
     .sidebar.collapsed .title-text {
@@ -1161,24 +1191,26 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-toggle {
-        width: calc(100% - 16px);
-        margin: 0 8px var(--spacing-lg) 8px;
+        left: 2px;
+        width: 30px;
+        height: 30px;
+        position: relative;
     }
 
     .sidebar.collapsed .pinned-icon {
-        top: -7px;
+        top: -9px;
     }
 
     .sidebar.collapsed .pin-head {
-        width: 14px;
-        height: 14px;
+        width: 16px;
+        height: 16px;
     }
 
     .sidebar.collapsed .pin-head::after {
-        width: 4px;
-        height: 4px;
-        top: 2px;
-        left: 2px;
+        width: 5px;
+        height: 5px;
+        top: 3px;
+        left: 3px;
     }
 
     .sidebar.collapsed .user-info-card {
@@ -1313,6 +1345,7 @@ const unifiedNavigationCSS = `
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
         animation: fadeInUp 0.6s ease-out;
+        margin-top:15px;
     }
 
     /* Welcome hero style gradient backgrounds */
