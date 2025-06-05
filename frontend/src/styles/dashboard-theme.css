@@ -104,6 +104,11 @@ body {
   padding: var(--spacing-lg);
 }
 
+/* Container full width when sidebar is collapsed */
+.main-content.sidebar-collapsed .container {
+  max-width: none;
+}
+
 /* Cards */
 .card {
   background-color: var(--background-light);

@@ -11,19 +11,31 @@
   position: relative;
 }
 
+/* Override container max-width when sidebar is collapsed */
+.main-content.sidebar-collapsed .container {
+  max-width: none !important;
+}
+
+/* Specific override for blackboard page - main element has both classes */
+main.container.main-content.sidebar-collapsed {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Also ensure any container inside main-content uses full width */
+.main-content.sidebar-collapsed .blackboard-container {
+  max-width: 100% !important;
+  width: calc(100% - 80px) !important; /* Account for padding */
+}
+
 /* Pinnwand Container */
 .blackboard-container {
   width: 100%;
   min-height: calc(100vh - 120px);
-  background: 
-    /* Cork texture */
-    linear-gradient(45deg, #b08d57 25%, transparent 25%),
-    linear-gradient(-45deg, #b08d57 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #b08d57 75%),
-    linear-gradient(-45deg, transparent 75%, #b08d57 75%);
+  background: linear-gradient(45deg,#0000 25%,transparent 0),linear-gradient(-45deg,#1f1f1f 25%,transparent 0),linear-gradient(45deg,transparent 75%,#b08d5700 0),linear-gradient(-45deg,#0000 75%,#2e2e2ee3 0);
   background-size: 30px 30px;
   background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
-  background-color: #c9a876;
+  
   border-radius: 12px;
   box-shadow: 
     inset 0 2px 8px rgba(0, 0, 0, 0.3),

@@ -1217,6 +1217,22 @@ const unifiedNavigationCSS = `
     .main-content.sidebar-collapsed {
         margin-left: 70px;
     }
+    
+    /* Container full width when sidebar collapsed */
+    .main-content.sidebar-collapsed .container {
+        max-width: none;
+    }
+    
+    /* Content sections full width when sidebar collapsed */
+    .main-content.sidebar-collapsed .content-section {
+        max-width: none;
+        width: 100%;
+    }
+    
+    /* Cards inside collapsed layout use more space */
+    .main-content.sidebar-collapsed .card {
+        max-width: none;
+    }
 
 
     /* Tooltip styles for collapsed items */
