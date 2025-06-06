@@ -973,7 +973,7 @@ const unifiedNavigationCSS = `
         font-size: 0.875rem;
         font-weight: 600;
         color: #333;
-        margin: 60px 0 var(--spacing-sm) 0;
+        margin: 30px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
         background: #e6b800;
         
@@ -1651,7 +1651,7 @@ const unifiedNavigationCSS = `
     .layout-container {
         display: flex;
         min-height: calc(100vh - 60px);
-        margin-top: 60px;
+        margin-top: 10px;
     }
 
     .main-content {

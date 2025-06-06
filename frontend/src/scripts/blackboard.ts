@@ -20,6 +20,10 @@ interface BlackboardEntry {
   color: string;
   created_by: number;
   created_by_name?: string;
+  author_name?: string;
+  author_first_name?: string;
+  author_last_name?: string;
+  author_full_name?: string;
   created_at: string;
   updated_at: string;
   tags?: string[];
@@ -172,15 +176,15 @@ document.addEventListener('DOMContentLoaded', () => {
           // Load departments and teams for form dropdowns
           loadDepartmentsAndTeams();
 
-          // Check if we have an entry parameter in the URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const entryId = urlParams.get('entry');
-          
-          if (entryId) {
-            // If we have an entry ID, load all entries and scroll to the specific one
-            entriesLoadingEnabled = true;
-            loadEntries().then(() => {
-              // Scroll to the specific entry after loading
+          // Always load entries on page load
+          entriesLoadingEnabled = true;
+          loadEntries().then(() => {
+            // Check if we have an entry parameter in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const entryId = urlParams.get('entry');
+            
+            if (entryId) {
+              // If we have an entry ID, scroll to the specific one
               const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
               if (entryElement) {
                 entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -190,16 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
                   entryElement.classList.remove('highlight-entry');
                 }, 3000);
               }
-            });
-          }
+            }
+          });
 
-          // Wir laden die Einträge erst wenn der Button geklickt wird
+          // Hide the load entries button since entries are loaded automatically
           const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
           if (loadEntriesBtn) {
-            loadEntriesBtn.addEventListener('click', () => {
-              entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
-              loadEntries();
-            });
+            loadEntriesBtn.style.display = 'none';
           }
 
           // Retry-Button Ereignisbehandlung
@@ -745,7 +746,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       
       <div style="font-size: 12px; color: #666; display: flex; justify-content: space-between; align-items: center;">
         <span>
-          <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.created_by_name || 'Unknown')}
+          <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.author_full_name || entry.author_name || 'Unknown')}
         </span>
         <span>
           ${formatDate(entry.created_at)}
@@ -1213,7 +1214,7 @@ async function viewEntry(entryId: number): Promise<void> {
           <div class="entry-detail-header">
             <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
             <div class="entry-detail-meta">
-              <span><i class="fas fa-user"></i> ${escapeHtml(entry.created_by_name || 'Unknown')}</span>
+              <span><i class="fas fa-user"></i> ${escapeHtml(entry.author_full_name || entry.author_name || 'Unknown')}</span>
               <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
             </div>
           </div>

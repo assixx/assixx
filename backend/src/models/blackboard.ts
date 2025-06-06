@@ -141,6 +141,9 @@ export class Blackboard {
       let query = `
         SELECT e.*, 
                u.username as author_name,
+               u.first_name as author_first_name,
+               u.last_name as author_last_name,
+               CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id
@@ -272,6 +275,9 @@ export class Blackboard {
       const query = `
         SELECT e.*, 
                u.username as author_name,
+               u.first_name as author_first_name,
+               u.last_name as author_last_name,
+               CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id
@@ -626,6 +632,9 @@ export class Blackboard {
       let query = `
         SELECT e.*, 
                u.username as author_name,
+               u.first_name as author_first_name,
+               u.last_name as author_last_name,
+               CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id
