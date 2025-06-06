@@ -28,8 +28,11 @@ Für die schnellste und einfachste Einrichtung der Entwicklungsumgebung:
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
 
+# In Docker-Verzeichnis wechseln
+cd docker
+
 # Docker-Umgebung starten
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose up -d
 
 # Auf http://localhost:3000 zugreifen
 ```
@@ -111,12 +114,12 @@ git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
 
 # Docker starten
-./docker-start.sh
+cd docker && docker-compose up -d
 
 # Auf http://localhost:3000 zugreifen
 
 # Docker stoppen
-./docker-stop.sh
+cd docker && docker-compose down
 ```
 
 Die Docker-Entwicklungsumgebung bietet:
@@ -127,14 +130,17 @@ Die Docker-Entwicklungsumgebung bietet:
 - ✅ **Production-Ready** - Gleiche Umgebung wie in Production
 
 ```bash
-# Entwicklungsumgebung starten
-docker-compose -f docker-compose.dev.yml up -d
+# Entwicklungsumgebung starten (aus docker/ Verzeichnis)
+cd docker && docker-compose up -d
 
 # Logs anzeigen
-docker-compose -f docker-compose.dev.yml logs -f
+cd docker && docker-compose logs -f
 
 # Umgebung stoppen
-docker-compose -f docker-compose.dev.yml down
+cd docker && docker-compose down
+
+# Status prüfen (NEU!)
+/home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
 Details siehe:

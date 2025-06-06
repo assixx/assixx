@@ -8,31 +8,34 @@
 > **INFO:** Wenn Docker verwendet wird, sind viele der lokalen Checks nicht notwendig!
 
 ```bash
-# Docker Container Status prüfen
-docker ps
+# Working Directory ist WICHTIG!
+cd /home/scs/projects/Assixx/docker
 
 # Docker Compose Services prüfen
 docker-compose ps
 
 # Backend Logs prüfen (sollten keine Fehler zeigen)
-docker logs assixx-backend --tail=50
+docker-compose logs backend --tail=50
 
 # MySQL Logs prüfen (sollte stabil laufen)
-docker logs assixx-mysql --tail=20
+docker-compose logs mysql --tail=20
 
 # Health Check über Docker
-docker exec assixx-backend curl -s http://localhost:3000/health | jq '.'
+docker exec docker-backend-1 curl -s http://localhost:3000/health | jq '.'
 
 # TypeScript Build im Docker Container prüfen
-docker exec assixx-backend npm run typecheck
+docker exec docker-backend-1 npm run typecheck
+
+# ODER nutze das neue Status-Script (empfohlen):
+/home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
 ### ✅ Erwartete Docker Ausgabe:
 
 ```
 NAME                COMMAND                  SERVICE             STATUS              PORTS
-assixx-backend      "docker-entrypoint.s…"   backend             Up 2 minutes        0.0.0.0:3000->3000/tcp
-assixx-mysql        "docker-entrypoint.s…"   mysql               Up 2 minutes        0.0.0.0:3306->3306/tcp, 33060/tcp
+docker-backend-1    "docker-entrypoint.s…"   backend             Up 2 minutes        0.0.0.0:3000->3000/tcp
+docker-mysql-1      "docker-entrypoint.s…"   mysql               Up 2 minutes        0.0.0.0:3306->3306/tcp, 33060/tcp
 ```
 
 ## ✅ Development Start Checkliste
@@ -44,13 +47,19 @@ assixx-mysql        "docker-entrypoint.s…"   mysql               Up 2 minutes 
 #### 🐳 Docker Version:
 ```bash
 # TypeScript Build im Container
-docker exec assixx-backend npm run build:ts
+docker exec docker-backend-1 npm run build:ts
 
 # Type-Checking im Container
-docker exec assixx-backend npm run typecheck
+docker exec docker-backend-1 npm run typecheck
 
 # ESLint im Container
-docker exec assixx-backend npm run lint:ts
+docker exec docker-backend-1 npm run lint:ts
+
+# Auto-Fix mit ESLint (EMPFOHLEN nach Errors)
+docker exec docker-backend-1 npm run lint:fix
+
+# Code mit Prettier formatieren
+docker exec docker-backend-1 npm run format
 ```
 
 #### 💻 Lokale Version:
@@ -309,6 +318,9 @@ git status
 
 ---
 
-**Zuletzt aktualisiert:** 06.02.2025  
-**Wichtige Änderung:** Docker ist jetzt die primäre Entwicklungsmethode!  
+**Zuletzt aktualisiert:** 06.06.2025  
+**Wichtige Änderungen:** 
+- Docker ist jetzt die primäre Entwicklungsmethode!
+- NEU: Code-Formatierung & Auto-Fix Befehle hinzugefügt
+- ESLint v9 Konfiguration wird jetzt unterstützt
 **Zweck:** Sicherstellen dass Entwicklungsumgebung stabil ist bevor neue Features entwickelt werden

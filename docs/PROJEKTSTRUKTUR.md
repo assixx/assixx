@@ -1,6 +1,6 @@
 # 📁 Assixx Projektstruktur
 
-> **Letzte Aktualisierung:** 02.06.2025 - Restrukturierung für bessere Organisation  
+> **Letzte Aktualisierung:** 06.06.2025 - Weitere Updates und neue Tools  
 > **Status:** ✅ Projekt-Struktur bereinigt und reorganisiert
 
 ## 🏗️ Überblick
@@ -36,7 +36,6 @@ Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
 ├── TODO.md               # Aktuelle Aufgabenliste
 ├── CLAUDE.md             # Claude AI Anweisungen
 ├── CLAUDE.local.md       # Lokale Notizen (nicht im Git)
-├── BUGS-GEFUNDEN.md      # Bug-Tracking
 ├── LICENSE               # MIT Lizenz
 ├── COPYRIGHT             # Copyright-Informationen
 ├── package.json          # Root-Abhängigkeiten
@@ -56,6 +55,7 @@ docs/
 ├── BEFORE-STARTING-DEV.md       # Dev-Checkliste
 ├── CONTRIBUTOR-AGREEMENT.md     # Contributor Agreement
 ├── DATABASE-SETUP-README.md     # Datenbank-Dokumentation
+├── DATABASE-MIGRATION-GUIDE.md  # Migration Best Practices
 ├── DEPLOYMENT.md                # Deployment-Guide
 ├── DESIGN-STANDARDS.md          # UI/UX Standards
 ├── DEVELOPMENT-GUIDE.md         # Entwickler-Guide
@@ -81,12 +81,14 @@ docs/
 scripts/
 ├── apply-sql-updates.sh      # SQL-Updates anwenden
 ├── backup-database.sh        # Datenbank-Backup
+├── dev-status.sh            # 🆕 Development Status Check
 ├── fix-esm-imports.js        # ESM Import Fixes
 ├── quick-backup.sh           # Schnelles Backup
 ├── regenerate-schema.sh      # Schema regenerieren
 ├── restore-database.sh       # Datenbank wiederherstellen
 ├── setup-backup-cron.sh      # Backup-Cron einrichten
-└── setup-docker-db.sh        # Docker DB Setup
+├── setup-docker-db.sh        # Docker DB Setup
+└── update-font-awesome.sh    # Font Awesome aktualisieren
 ```
 
 ### 📁 docker/ (NEU - Docker-Konfigurationen)

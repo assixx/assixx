@@ -1,9 +1,48 @@
 # Assixx Beta-Test TODO-Liste
 
+## 🚀 TL;DR - AKTUELLE PHASE (30 Sekunden Überblick)
+
+**Was:** Simon's systematisches Testing & Debugging  
+**Ziel:** Version 0.1.0 - Alle Features zu 100% funktionsfähig  
+**Status:** 1/12 Bereiche getestet (Schwarzes Brett teilweise)  
+**Branch:** debugging/v0.1.0 (bereits viele Fixes implementiert!)  
+**Fokus:** UI, Benutzerfreundlichkeit, Einfachheit, Design  
+**Nächster Schritt:** Authentication & Navigation testen  
+
+---
+
 > **Neue Strategie:** Erst Stabilität, dann Features!
 > **Ziel Version 0.1.0:** Stabile Entwicklungsversion mit allen funktionierenden Features
 > **Ziel Version 1.0.0:** Beta-Test Version mit Deal-Breaker Features
-> **Aktueller Stand:** 01.06.2025 - Systematisches Debugging & Testing Phase
+> **Aktueller Stand:** 06.06.2025 - Systematisches Debugging & Testing Phase
+
+## 🆕 BEREITS IM debugging/v0.1.0 BRANCH GETESTET/VERBESSERT:
+
+✅ **Schwarzes Brett (Teilweise getestet)**
+- Dashboard-Integration: Widget zeigt 5 neueste Einträge
+- Zentrale Blackboard-Seite mit realistischem Pinnwand-Design
+- Verschiedene Content-Typen (Sticky Notes, Notizzettel, Info-Boxen)
+- 4 verschiedene Pushpin-Styles mit Hover-Animationen
+- Berechtigungssystem (nur Admins können posten)
+
+✅ **Sidebar Navigation Improvements**
+- Collapsible Sidebar mit localStorage-Persistenz
+- Icon-only Modus bei eingeklappter Sidebar
+- Repositionierter Toggle-Button (top-left)
+- Full-width Content bei eingeklappter Sidebar
+- Modernisierte User-Info-Card mit Glassmorphismus
+
+✅ **Employee Management Improvements**
+- Department Description Buffer-Anzeige behoben
+- UI-Verbesserungen in der Mitarbeiterverwaltung
+
+✅ **Multi-Tenant Isolation**
+- Vollständige Implementierung der Tenant-Isolation
+- Sicherheitslücken geschlossen
+
+✅ **Code-Qualität**
+- ESLint v9 Konfiguration und Auto-Formatierung
+- TypeScript-Fehler reduziert
 
 ## 🚀 FÜR NEUEN CHAT:
 
@@ -70,11 +109,14 @@
    - [ ] Kategorisierung
    - [ ] Suche/Filter
 
-5. **Schwarzes Brett**
-   - [ ] Einträge erstellen
-   - [ ] Bearbeiten/Löschen
-   - [ ] Kategorien
-   - [ ] Anhänge
+5. **Schwarzes Brett** ✅ TEILWEISE
+   - [x] Einträge erstellen ✅
+   - [x] Bearbeiten/Löschen ✅
+   - [x] Pinnwand-Design mit verschiedenen Content-Typen ✅
+   - [x] Prioritäts-System ✅
+   - [ ] Anhänge (PDFs, Bilder)
+   - [ ] Tags-System vollständig implementieren
+   - [ ] Bestätigungs-System für wichtige Mitteilungen
 
 6. **Chat-System**
    - [ ] Nachrichten senden
@@ -117,7 +159,7 @@
     - [ ] Benachrichtigungen
     - [ ] Sprache/Theme
 
-### Fortschritt: 0/12 Bereiche getestet
+### Fortschritt: 1/12 Bereiche getestet (Schwarzes Brett teilweise)
 
 ## 🧪 PHASE 0: Funktionstests ✅ ABGESCHLOSSEN
 
@@ -426,6 +468,13 @@
 - [x] TypeScript Build-Pipeline für Frontend (01.06.2025)
 - [x] Multi-Tenant Isolation Bug behoben (01.06.2025)
 - [x] Automatisches Backup-System implementiert (01.06.2025)
+- [x] Blackboard/Schwarzes Brett - Dashboard Widget (04.06.2025)
+- [x] Blackboard/Schwarzes Brett - Pinnwand-Design implementiert (04.06.2025)
+- [x] Sidebar Navigation als "Schwarzes Brett" mit Pushpin (04.06.2025)
+- [x] Collapsible Sidebar mit localStorage-Persistenz (04.06.2025)
+- [x] Employee Management UI-Verbesserungen (04.06.2025)
+- [x] ESLint v9 Konfiguration und Auto-Formatierung (02.06.2025)
+- [x] Plan & Feature Management System (02.06.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
 

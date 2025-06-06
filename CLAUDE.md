@@ -7,15 +7,51 @@
 
 ## 🚀 START HIER - PFLICHTLEKTÜRE VOR ARBEITSBEGINN
 
+## 🐳 DOCKER QUICK-CHECK (30 Sekunden)
+
+**IMMER ZUERST ausführen:**
+```bash
+# Working Directory ist WICHTIG!
+cd /home/scs/projects/Assixx/docker
+
+# Alles in einem Befehl:
+docker-compose ps && curl -s http://localhost:3000/health | jq '.' && echo "✅ Ready to develop!"
+
+# ODER nutze das neue Status-Script (empfohlen):
+/home/scs/projects/Assixx/scripts/dev-status.sh
+```
+
+## ⚠️ BEKANNTE STOLPERFALLEN
+
+**Diese Fehler treten häufig auf - hier die Lösungen:**
+
+1. **docker-compose nicht gefunden**
+   → IMMER aus `/home/scs/projects/Assixx/docker` ausführen!
+
+2. **TypeScript Test-Fehler (56 errors)**
+   → Normal für v0.1.0, können ignoriert werden
+   → Tests werden später aktualisiert
+
+3. **SMTP Warnings beim Docker Start**
+   → Können ignoriert werden (Email-Config optional)
+
+4. **Port 3000 bereits belegt**
+   → `lsof -i :3000` und dann `kill -9 <PID>`
+   → Oder: `docker-compose down` vorher ausführen
+
 ## ⛔ STOP! PFLICHT-CHECKLISTE VOR ENTWICKLUNG
 
 **DIESE SCHRITTE MÜSSEN IN EXAKTER REIHENFOLGE AUSGEFÜHRT WERDEN:**
 
-- [ ] ✅ TODO.md gelesen
+- [ ] ✅ Docker Quick-Check ausgeführt
+- [ ] ✅ TODO.md gelesen (nur "AKTUELLE PHASE" Section)
 - [ ] ✅ CLAUDE.md gelesen
-- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen
+- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen  
+- [ ] ✅ docs/DESIGN-STANDARDS.md gelesen
+- [ ] ✅ README.md gelesen
+- [ ] ✅ docs/DATABASE-MIGRATION-GUIDE.md gelesen
 - [ ] ⚠️ **docs/BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
-- [ ] ✅ Erst DANN: Weitere Dokumente
+- [ ] ✅ Erst DANN: Mit Entwicklung beginnen
 
 **🚫 KEINE ENTWICKLUNG OHNE ABGESCHLOSSENE CHECKLISTE!**
 
@@ -93,6 +129,7 @@ cat /home/scs/projects/Assixx/docs/BEFORE-STARTING-DEV.md
 - **Architektur**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - **Features**: [FEATURES.md](./docs/FEATURES.md)
 - **Datenbank**: [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)
+- **🆕 Migration Guide**: [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
 - **Setup Guides**:
   - 🪟 [Windows (WSL)](./docs/SETUP-WINDOWS-WSL.md)
   - 🐧 [Ubuntu/Linux](./docs/SETUP-UBUNTU-LINUX.md)
@@ -164,6 +201,20 @@ function validateSubdomain(value) {
 #### Wenn Simon sagt "weiter machen mit Assixx Projekt":
 
 0. **🤖 AUTOMATISCH:** TodoWrite mit Pflicht-Checkliste erstellen!
+   
+   ```json
+   [
+     {"id": "1", "content": "Docker Quick-Check ausführen", "status": "pending", "priority": "high"},
+     {"id": "2", "content": "TODO.md lesen (nur TL;DR Section)", "status": "pending", "priority": "high"},
+     {"id": "3", "content": "CLAUDE.md lesen", "status": "pending", "priority": "high"},
+     {"id": "4", "content": "docs/PROJEKTSTRUKTUR.md lesen", "status": "pending", "priority": "high"},
+     {"id": "5", "content": "docs/DESIGN-STANDARDS.md lesen", "status": "pending", "priority": "high"},
+     {"id": "6", "content": "README.md lesen", "status": "pending", "priority": "high"},
+     {"id": "7", "content": "docs/DATABASE-MIGRATION-GUIDE.md lesen", "status": "pending", "priority": "high"},
+     {"id": "8", "content": "docs/BEFORE-STARTING-DEV.md AUSFÜHREN", "status": "pending", "priority": "high"},
+     {"id": "9", "content": "Mit Entwicklung beginnen", "status": "pending", "priority": "medium"}
+   ]
+   ```
 
    - TODO.md lesen
    - CLAUDE.md lesen
@@ -205,11 +256,12 @@ function validateSubdomain(value) {
 
 5. **📝 DOKUMENTATIONS-PFLICHT**:
    - Bei DB-Änderungen → docs/DATABASE-SETUP-README.md aktualisieren
+   - **🆕 Bei DB-Migrationen → ZUERST docs/DATABASE-MIGRATION-GUIDE.md lesen!**
    - Bei neuen Features → docs/FEATURES.md ergänzen
    - Bei UI-Änderungen → docs/DESIGN-STANDARDS.md prüfen
    - Bei Struktur-Änderungen → docs/PROJEKTSTRUKTUR.md aktualisieren
 
-### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (01.06.2025)
+### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (06.06.2025)
 
 #### Version 0.1.0 - Stabilität vor Features!
 - **Fokus:** Systematisches Testing & Debugging
@@ -227,11 +279,14 @@ function validateSubdomain(value) {
 - **Keine lokale Installation mehr nötig**
 - **Backup-System läuft automatisch**
 
-### 📌 WICHTIGE UPDATES (01.06.2025)
-- ✅ Docker Setup komplett
-- ✅ Multi-Tenant Isolation behoben
-- ✅ Automatisches Backup-System aktiv
-- 🔥 AKTUELL: Systematisches Testing für v0.1.0
+### 📌 WICHTIGE UPDATES (06.06.2025)
+- ✅ Docker Setup komplett (01.06.2025)
+- ✅ Multi-Tenant Isolation behoben (01.06.2025)
+- ✅ Automatisches Backup-System aktiv (01.06.2025)
+- ✅ debugging/v0.1.0 Branch mit vielen Fixes (02-04.06.2025)
+- ✅ Schwarzes Brett teilweise getestet (04.06.2025)
+- ✅ DATABASE-MIGRATION-GUIDE.md erstellt (02.06.2025)
+- 🔥 AKTUELL: Systematisches Testing für v0.1.0 (1/12 Bereiche)
 
 ### 📊 PROJEKT-ÜBERSICHT
 
@@ -245,21 +300,24 @@ function validateSubdomain(value) {
 
 ### 📌 AKTUELLE SCHWERPUNKTE
 
-1. ✅ TypeScript Backend Migration (30.05.2025 - HEUTE ABGESCHLOSSEN!)
+1. ✅ TypeScript Backend Migration (30.05.2025 - ABGESCHLOSSEN)
 2. ✅ Survey Tool komplett fertiggestellt (29.01.2025)
 3. ✅ Security & Stabilität Phase (ERLEDIGT)
    - Cookie vulnerability gepatcht
    - CSRF-Protection modernisiert
    - Rate Limiting implementiert
    - Input Validation verstärkt
+4. ✅ Docker Setup (01.06.2025 - ERLEDIGT)
+5. 🔥 Systematisches Testing & Debugging (AKTUELL - 1/12 Bereiche)
 
-### 🚨 KRITISCHE BETA-PRIORITÄTEN (Stand: 30.05.2025)
+### 🚨 KRITISCHE BETA-PRIORITÄTEN (Stand: 06.06.2025)
 
-1. **🐳 Docker Setup** (1-2 Tage) - Für einfaches Beta-Deployment
-2. **🌴 Urlaubsantrag-System** (Woche 1) - DEAL-BREAKER Feature
-3. **💰 Gehaltsabrechnung Upload** (Woche 1-2) - DEAL-BREAKER Feature
-4. **🔧 TPM-System** (Woche 2-3) - DEAL-BREAKER Feature
-5. **📱 Mobile/PWA** (Parallel) - Kritisch für Industriearbeiter
+1. **✅ Docker Setup** - ERLEDIGT (01.06.2025)
+2. **🔥 Version 0.1.0 Testing** (2-3 Wochen) - AKTUELL
+3. **🌴 Urlaubsantrag-System** (Nach v0.1.0) - DEAL-BREAKER Feature
+4. **💰 Gehaltsabrechnung Upload** (Nach v0.1.0) - DEAL-BREAKER Feature
+5. **🔧 TPM-System** (Nach v0.1.0) - DEAL-BREAKER Feature
+6. **📱 Mobile/PWA** (Parallel) - Kritisch für Industriearbeiter
 
 ---
 

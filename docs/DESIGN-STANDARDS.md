@@ -1,7 +1,7 @@
 # Assixx Design Standards Guide
 
-> **Version:** 2.0.0  
-> **Letztes Update:** 26.01.2025  
+> **Version:** 2.1.0  
+> **Letztes Update:** 06.06.2025  
 > **Erstellt von:** Simon Öztürk & Claude AI
 
 ## 🎨 Übersicht
