@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Load Blackboard Preview - zeigt die neuesten 5 Einträge
+  // Load Blackboard Preview - zeigt die neuesten 3 Einträge
   async function loadBlackboardPreview(): Promise<void> {
     try {
       const token = getAuthToken();
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await fetch('/api/blackboard/entries?limit=5&sortBy=created_at&sortOrder=DESC', {
+      const response = await fetch('/api/blackboard/entries?limit=3&sortBy=created_at&sortOrder=DESC', {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -249,6 +249,12 @@ class UnifiedNavigation {
           label: 'Feature Management',
           url: '/pages/feature-management.html',
         },
+        {
+          id: 'profile',
+          icon: this.getSVGIcon('user'),
+          label: 'Mein Profil',
+          url: '/pages/admin-profile.html',
+        },
       ],
 
       // Employee Navigation (9 Items)

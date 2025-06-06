@@ -25,6 +25,8 @@ interface DashboardData {
 
 interface CreateAdminFormElements extends HTMLFormControlsCollection {
   username: HTMLInputElement;
+  first_name: HTMLInputElement;
+  last_name: HTMLInputElement;
   email: HTMLInputElement;
   email_confirm: HTMLInputElement;
   password: HTMLInputElement;
@@ -100,6 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const adminData = {
       username: elements.username.value,
+      first_name: elements.first_name.value,
+      last_name: elements.last_name.value,
       email: elements.email.value,
       password: elements.password.value,
       position: elements.position.value,

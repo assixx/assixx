@@ -150,6 +150,7 @@ function renderAdminTable() {
         <tr>
           <th>ID</th>
           <th>Benutzername</th>
+          <th>Name</th>
           <th>E-Mail</th>
           <th>Position</th>
           <th>Status</th>
@@ -159,10 +160,13 @@ function renderAdminTable() {
         </tr>
       </thead>
       <tbody>
-        ${admins.map(admin => `
+        ${admins.map(admin => {
+          const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || '-';
+          return `
           <tr>
             <td>${admin.id}</td>
             <td>${admin.username}</td>
+            <td>${fullName}</td>
             <td>${admin.email || '-'}</td>
             <td>${admin.position ? getPositionDisplay(admin.position) : '-'}</td>
             <td>
@@ -177,7 +181,7 @@ function renderAdminTable() {
               <button class="action-btn delete" data-admin-id="${admin.id}">Löschen</button>
             </td>
           </tr>
-        `).join('')}
+        `;}).join('')}
       </tbody>
     </table>
   `;
@@ -235,6 +239,8 @@ async function editAdminHandler(adminId: number) {
   
   // Formular mit Admin-Daten füllen
   (document.getElementById('adminUsername') as HTMLInputElement).value = admin.username;
+  (document.getElementById('adminFirstName') as HTMLInputElement).value = admin.first_name || '';
+  (document.getElementById('adminLastName') as HTMLInputElement).value = admin.last_name || '';
   (document.getElementById('adminEmail') as HTMLInputElement).value = admin.email || '';
   (document.getElementById('adminEmailConfirm') as HTMLInputElement).value = admin.email || '';
   
@@ -376,6 +382,8 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
   
   const formData: any = {
     username: (document.getElementById('adminUsername') as HTMLInputElement).value,
+    first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
+    last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
     email: email,
     password: password,
     position: (document.getElementById('positionDropdownValue') as HTMLInputElement).value,
