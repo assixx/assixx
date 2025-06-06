@@ -73,11 +73,11 @@ jobs:
       - name: Run Docker Compose tests
         run: |
           cp docker/.env.docker.example docker/.env.docker
-          cd docker && docker-compose up -d
+          cd docker && docker compose up -d
           sleep 30
-          docker-compose ps
+          docker compose ps
           curl -f http://localhost:3000/health || exit 1
-          docker-compose down
+          docker compose down
 
   security-scan:
     runs-on: ubuntu-latest
