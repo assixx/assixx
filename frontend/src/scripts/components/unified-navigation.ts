@@ -986,7 +986,7 @@ const unifiedNavigationCSS = `
         margin-right: 1%;
         text-align: center;
         position: relative;
-        box-shadow: 0 8px 1px rgb(59, 36, 0), 0 2px 2px rgb(0, 0, 0);
+        
         overflow: visible;
         transform: rotate(-3deg);
     }
@@ -995,8 +995,8 @@ const unifiedNavigationCSS = `
     .sidebar-title::after {
         content: '';
         position: absolute;
-        bottom: 0;
-        right: 0;
+        bottom: -4px;
+        right: -0.6px;
         width: 20px;
         height: 20px;
         background: linear-gradient(45deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
@@ -1007,13 +1007,13 @@ const unifiedNavigationCSS = `
     .sidebar-title::before {
         content: '';
         position: absolute;
-        bottom: 0;
-        right: 0;
+        bottom: -4px;
+        right: -0.6px;
         width: 0;
         height: 0;
         border-style: solid;
-        border-width: 20px 20px 0 0;
-        border-color: #fff transparent #0000 transparent;
+        border-width: 10px 10px 4px 3px;
+        border-color: #fff #0c0d0e #0000 transparent;
         z-index: 1;
     }
 
@@ -1176,7 +1176,7 @@ const unifiedNavigationCSS = `
         font-size: 0;
         transform: rotate(-2deg);
         background: #e6b800;
-        min-height: 40px;
+        min-height: 25px;
     }
 
     .sidebar.collapsed .title-text {
@@ -1214,7 +1214,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .user-info-card {
-        padding: var(--spacing-md);
+        padding: 16px;
         flex-direction: column;
         align-items: center;
         min-height: auto;
@@ -1271,6 +1271,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-link,
     .sidebar.collapsed .sidebar-title {
         position: relative;
+        padding-right: 0px;
     }
 
     .sidebar.collapsed .sidebar-link:hover::after,
@@ -1324,6 +1325,22 @@ const unifiedNavigationCSS = `
     /* Icon centering in collapsed state */
     .sidebar.collapsed .sidebar-link .icon {
         margin: 0;
+    }
+    
+    /* Active link styling for collapsed sidebar */
+    .sidebar.collapsed .sidebar-item.active .sidebar-link {
+        
+        width: 36px;
+        height: 36px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    
+    .sidebar.collapsed .sidebar-item.active .sidebar-link::before {
+        display: none;
     }
 
     .user-info-card {

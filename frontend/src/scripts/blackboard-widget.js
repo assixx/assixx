@@ -14,6 +14,29 @@ class BlackboardWidget {
   async init() {
     this.render();
     await this.loadEntries();
+    
+    // Listen for sidebar toggle events
+    this.setupSidebarListener();
+  }
+  
+  setupSidebarListener() {
+    // Use MutationObserver to detect sidebar class changes
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          // Sidebar state changed, reload entries
+          this.loadEntries();
+        }
+      });
+    });
+    
+    observer.observe(sidebar, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
   }
 
   render() {
@@ -43,7 +66,12 @@ class BlackboardWidget {
     const contentElement = document.getElementById('blackboard-widget-content');
 
     try {
-      const response = await fetch('/api/blackboard/dashboard?limit=3', {
+      // Check if sidebar is collapsed
+      const sidebar = document.querySelector('.sidebar');
+      const isCollapsed = sidebar && sidebar.classList.contains('collapsed');
+      const limit = isCollapsed ? 5 : 3;
+      
+      const response = await fetch(`/api/blackboard/dashboard?limit=${limit}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
@@ -98,7 +126,7 @@ class BlackboardWidget {
   }
 
   createMiniNote(entry) {
-    const colors = ['yellow', 'blue', 'green', 'red', 'orange'];
+    const colors = ['yellow', 'blue', 'green', 'red', 'orange', 'pink'];
     const color = entry.color || colors[Math.floor(Math.random() * colors.length)];
 
     // Format date

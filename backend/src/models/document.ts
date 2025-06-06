@@ -300,7 +300,7 @@ export class Document {
       params.push(category);
     }
 
-    query += " ORDER BY d.upload_date DESC";
+    query += " ORDER BY d.uploaded_at DESC";
 
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, params);
@@ -478,31 +478,31 @@ export class Document {
 
     // Add date range filters
     if (filters.uploadDateFrom) {
-      query += " AND d.upload_date >= ?";
+      query += " AND d.uploaded_at >= ?";
       params.push(filters.uploadDateFrom);
     }
 
     if (filters.uploadDateTo) {
-      query += " AND d.upload_date <= ?";
+      query += " AND d.uploaded_at <= ?";
       params.push(filters.uploadDateTo);
     }
 
     // Add ordering
     if (filters.orderBy) {
       const validOrderFields = [
-        "upload_date",
-        "file_name",
+        "uploaded_at",
+        "filename",
         "category",
         "year",
         "month",
       ];
       const orderField = validOrderFields.includes(filters.orderBy)
         ? filters.orderBy
-        : "upload_date";
+        : "uploaded_at";
       const orderDirection = filters.orderDirection === "ASC" ? "ASC" : "DESC";
       query += ` ORDER BY d.${orderField} ${orderDirection}`;
     } else {
-      query += " ORDER BY d.upload_date DESC";
+      query += " ORDER BY d.uploaded_at DESC";
     }
 
     // Add pagination

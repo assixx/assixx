@@ -1333,7 +1333,7 @@
     <script type="module" src="/scripts/show-section.ts"></script>
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
     <script type="module" src="/scripts/employee-deletion.ts"></script>
-    <script src="/scripts/blackboard-widget.js"></script>
+    <script src="/scripts/blackboard-widget.js" type="module"></script>
     <script>
       // Direkte Event-Listener hinzufügen
       console.log('Adding direct event listeners');
@@ -2146,7 +2146,10 @@
           if (response.ok) {
             alert('Gehaltsabrechnung erfolgreich hochgeladen');
             e.target.reset();
-            loadPayslipsTable();
+            // TODO: Implement loadPayslipsTable() when payslips table is added
+            if (typeof loadPayslipsTable === 'function') {
+              loadPayslipsTable();
+            }
           } else {
             const error = await response.json();
             alert(`Fehler: ${error.message}`);
