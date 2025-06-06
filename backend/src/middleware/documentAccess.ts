@@ -1,11 +1,11 @@
 /**
  * Middleware für die Überprüfung der Dokumentenzugriffsberechtigungen
  */
-import { Request, Response, NextFunction } from 'express';
-import Document from '../models/document.js';
-import User from '../models/user.js';
-import { logger } from '../utils/logger.js';
-import { DocumentRequest } from '../types/request.types.js';
+import { Request, Response, NextFunction } from "express";
+import Document from "../models/document.js";
+import User from "../models/user.js";
+import { logger } from "../utils/logger.js";
+import { DocumentRequest } from "../types/request.types.js";
 
 export interface DocumentAccessOptions {
   allowAdmin?: boolean;
@@ -26,7 +26,7 @@ export const checkDocumentAccess =
       allowAdmin: true,
       allowDepartmentHeads: false,
       requireOwnership: true,
-    }
+    },
   ) =>
   async (req: DocumentRequest, res: Response, next: NextFunction) => {
     try {
@@ -36,15 +36,15 @@ export const checkDocumentAccess =
       const { documentId } = req.params;
 
       if (!userId || !userRole) {
-        return res.status(401).json({ error: 'Nicht authentifiziert' });
+        return res.status(401).json({ error: "Nicht authentifiziert" });
       }
 
       if (!tenantId) {
-        return res.status(400).json({ error: 'Tenant nicht gefunden' });
+        return res.status(400).json({ error: "Tenant nicht gefunden" });
       }
 
       logger.info(
-        `Checking document access for user ${userId} (role: ${userRole}) to document ${documentId}`
+        `Checking document access for user ${userId} (role: ${userRole}) to document ${documentId}`,
       );
 
       // Prüfe, ob das Dokument existiert
@@ -52,14 +52,14 @@ export const checkDocumentAccess =
       if (!document) {
         logger.warn(`Document ${documentId} not found`);
         return res.status(404).json({
-          error: 'Dokument nicht gefunden',
+          error: "Dokument nicht gefunden",
         });
       }
 
       // Admin-Zugriff prüfen
-      if (options.allowAdmin && userRole === 'admin') {
+      if (options.allowAdmin && userRole === "admin") {
         logger.info(
-          `Admin access granted for user ${userId} to document ${documentId}`
+          `Admin access granted for user ${userId} to document ${documentId}`,
         );
         req.document = document;
         return next();
@@ -68,18 +68,18 @@ export const checkDocumentAccess =
       // Besitzer-Zugriff prüfen
       if (document.uploadedFor === userId) {
         logger.info(
-          `Owner access granted for user ${userId} to document ${documentId}`
+          `Owner access granted for user ${userId} to document ${documentId}`,
         );
         req.document = document;
         return next();
       }
 
       // Abteilungsleiter-Zugriff prüfen
-      if (options.allowDepartmentHeads && userRole === 'department_head') {
+      if (options.allowDepartmentHeads && userRole === "department_head") {
         const user = await User.findById(userId, tenantId);
         const documentOwner = await User.findById(
           document.uploadedFor,
-          tenantId
+          tenantId,
         );
 
         if (
@@ -88,7 +88,7 @@ export const checkDocumentAccess =
           user.department === documentOwner.department
         ) {
           logger.info(
-            `Department head access granted for user ${userId} to document ${documentId}`
+            `Department head access granted for user ${userId} to document ${documentId}`,
           );
           req.document = document;
           return next();
@@ -98,7 +98,7 @@ export const checkDocumentAccess =
       // Wenn requireOwnership false ist und keine anderen Bedingungen zutreffen
       if (!options.requireOwnership) {
         logger.info(
-          `General access granted for user ${userId} to document ${documentId} (ownership not required)`
+          `General access granted for user ${userId} to document ${documentId} (ownership not required)`,
         );
         req.document = document;
         return next();
@@ -106,15 +106,15 @@ export const checkDocumentAccess =
 
       // Zugriff verweigert
       logger.warn(
-        `Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`
+        `Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`,
       );
       return res.status(403).json({
-        error: 'Keine Berechtigung für dieses Dokument',
+        error: "Keine Berechtigung für dieses Dokument",
       });
     } catch (error) {
-      logger.error('Error in checkDocumentAccess middleware:', error);
+      logger.error("Error in checkDocumentAccess middleware:", error);
       return res.status(500).json({
-        error: 'Fehler bei der Überprüfung der Dokumentenberechtigung',
+        error: "Fehler bei der Überprüfung der Dokumentenberechtigung",
       });
     }
   };
@@ -125,7 +125,7 @@ export const checkDocumentAccess =
 export const checkPublicDocumentAccess = async (
   req: Request & { document?: any },
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { documentId } = req.params;
@@ -133,23 +133,23 @@ export const checkPublicDocumentAccess = async (
     const document = await Document.findById(parseInt(documentId, 10));
     if (!document) {
       return res.status(404).json({
-        error: 'Dokument nicht gefunden',
+        error: "Dokument nicht gefunden",
       });
     }
 
     // Prüfe, ob das Dokument öffentlich ist
     if (!document.isPublic) {
       return res.status(403).json({
-        error: 'Dieses Dokument ist nicht öffentlich zugänglich',
+        error: "Dieses Dokument ist nicht öffentlich zugänglich",
       });
     }
 
     req.document = document;
     return next();
   } catch (error) {
-    logger.error('Error in checkPublicDocumentAccess middleware:', error);
+    logger.error("Error in checkPublicDocumentAccess middleware:", error);
     return res.status(500).json({
-      error: 'Fehler beim Abrufen des Dokuments',
+      error: "Fehler beim Abrufen des Dokuments",
     });
   }
 };

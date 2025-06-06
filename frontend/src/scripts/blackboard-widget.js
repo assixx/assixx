@@ -4,20 +4,20 @@
  */
 
 class BlackboardWidget {
-    constructor(containerId) {
-        this.container = document.getElementById(containerId);
-        this.entries = [];
-        this.loading = false;
-        this.init();
-    }
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.entries = [];
+    this.loading = false;
+    this.init();
+  }
 
-    async init() {
-        this.render();
-        await this.loadEntries();
-    }
+  async init() {
+    this.render();
+    await this.loadEntries();
+  }
 
-    render() {
-        this.container.innerHTML = `
+  render() {
+    this.container.innerHTML = `
             <div class="blackboard-widget">
                 <div class="blackboard-widget-header">
                     <h3 class="blackboard-widget-title">
@@ -36,96 +36,95 @@ class BlackboardWidget {
                 </div>
             </div>
         `;
-    }
+  }
 
-    async loadEntries() {
-        this.loading = true;
-        const contentElement = document.getElementById('blackboard-widget-content');
+  async loadEntries() {
+    this.loading = true;
+    const contentElement = document.getElementById('blackboard-widget-content');
 
-        try {
-            const response = await fetch('/api/blackboard/dashboard?limit=3', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+    try {
+      const response = await fetch('/api/blackboard/dashboard?limit=3', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-            if (!response.ok) {
-                throw new Error('Failed to load entries');
-            }
+      if (!response.ok) {
+        throw new Error('Failed to load entries');
+      }
 
-            this.entries = await response.json();
-            this.renderEntries();
-        } catch (error) {
-            console.error('Error loading blackboard entries:', error);
-            contentElement.innerHTML = `
+      this.entries = await response.json();
+      this.renderEntries();
+    } catch (error) {
+      console.error('Error loading blackboard entries:', error);
+      contentElement.innerHTML = `
                 <div class="blackboard-widget-empty">
                     <i class="fas fa-exclamation-circle"></i>
                     <p>Fehler beim Laden der Einträge</p>
                 </div>
             `;
-        } finally {
-            this.loading = false;
-        }
+    } finally {
+      this.loading = false;
     }
+  }
 
-    renderEntries() {
-        const contentElement = document.getElementById('blackboard-widget-content');
+  renderEntries() {
+    const contentElement = document.getElementById('blackboard-widget-content');
 
-        if (this.entries.length === 0) {
-            contentElement.innerHTML = `
+    if (this.entries.length === 0) {
+      contentElement.innerHTML = `
                 <div class="blackboard-widget-empty">
                     <i class="fas fa-sticky-note"></i>
                     <p>Keine aktuellen Einträge</p>
                 </div>
             `;
-            return;
-        }
+      return;
+    }
 
-        const notesHtml = this.entries.map(entry => this.createMiniNote(entry)).join('');
-        contentElement.innerHTML = `
+    const notesHtml = this.entries.map((entry) => this.createMiniNote(entry)).join('');
+    contentElement.innerHTML = `
             <div class="mini-notes-container">
                 ${notesHtml}
             </div>
         `;
 
-        // Add click handlers
-        this.entries.forEach(entry => {
-            const noteElement = document.getElementById(`mini-note-${entry.id}`);
-            if (noteElement) {
-                noteElement.addEventListener('click', () => this.openEntry(entry.id));
-            }
-        });
+    // Add click handlers
+    this.entries.forEach((entry) => {
+      const noteElement = document.getElementById(`mini-note-${entry.id}`);
+      if (noteElement) {
+        noteElement.addEventListener('click', () => this.openEntry(entry.id));
+      }
+    });
+  }
+
+  createMiniNote(entry) {
+    const colors = ['yellow', 'blue', 'green', 'red', 'orange'];
+    const color = entry.color || colors[Math.floor(Math.random() * colors.length)];
+
+    // Format date
+    const date = new Date(entry.created_at);
+    const formattedDate = date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+
+    // Handle content that might be an object
+    let contentText = entry.content;
+    if (typeof contentText === 'object' && contentText !== null) {
+      // If it's a Buffer object or similar
+      if (contentText.type === 'Buffer' && Array.isArray(contentText.data)) {
+        contentText = String.fromCharCode.apply(null, contentText.data);
+      } else {
+        contentText = JSON.stringify(contentText);
+      }
     }
 
-    createMiniNote(entry) {
-        const colors = ['yellow', 'blue', 'green', 'red', 'orange'];
-        const color = entry.color || colors[Math.floor(Math.random() * colors.length)];
-        
-        // Format date
-        const date = new Date(entry.created_at);
-        const formattedDate = date.toLocaleDateString('de-DE', { 
-            day: '2-digit', 
-            month: '2-digit' 
-        });
+    // Truncate content
+    const maxContentLength = 80;
+    const truncatedContent =
+      contentText.length > maxContentLength ? `${contentText.substring(0, maxContentLength)}...` : contentText;
 
-        // Handle content that might be an object
-        let contentText = entry.content;
-        if (typeof contentText === 'object' && contentText !== null) {
-            // If it's a Buffer object or similar
-            if (contentText.type === 'Buffer' && Array.isArray(contentText.data)) {
-                contentText = String.fromCharCode.apply(null, contentText.data);
-            } else {
-                contentText = JSON.stringify(contentText);
-            }
-        }
-        
-        // Truncate content
-        const maxContentLength = 80;
-        const truncatedContent = contentText.length > maxContentLength 
-            ? contentText.substring(0, maxContentLength) + '...'
-            : contentText;
-
-        return `
+    return `
             <div class="mini-note ${color}" id="mini-note-${entry.id}">
                 <div class="mini-pushpin"></div>
                 <div class="mini-note-title">${this.escapeHtml(entry.title)}</div>
@@ -139,42 +138,42 @@ class BlackboardWidget {
                 </div>
             </div>
         `;
-    }
+  }
 
-    getPriorityLabel(priority) {
-        const labels = {
-            'urgent': 'Dringend',
-            'high': 'Hoch',
-            'normal': 'Normal',
-            'low': 'Niedrig'
-        };
-        return labels[priority] || 'Normal';
-    }
+  getPriorityLabel(priority) {
+    const labels = {
+      urgent: 'Dringend',
+      high: 'Hoch',
+      normal: 'Normal',
+      low: 'Niedrig',
+    };
+    return labels[priority] || 'Normal';
+  }
 
-    openEntry(entryId) {
-        // Navigate to blackboard page with entry ID
-        window.location.href = `/pages/blackboard.html?entry=${entryId}`;
-    }
+  openEntry(entryId) {
+    // Navigate to blackboard page with entry ID
+    window.location.href = `/pages/blackboard.html?entry=${entryId}`;
+  }
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-    refresh() {
-        this.loadEntries();
-    }
+  refresh() {
+    this.loadEntries();
+  }
 }
 
 // Auto-initialize if container exists
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('blackboard-widget-container')) {
-        window.blackboardWidget = new BlackboardWidget('blackboard-widget-container');
-    }
+  if (document.getElementById('blackboard-widget-container')) {
+    window.blackboardWidget = new BlackboardWidget('blackboard-widget-container');
+  }
 });
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = BlackboardWidget;
+  module.exports = BlackboardWidget;
 }

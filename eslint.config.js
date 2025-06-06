@@ -182,6 +182,7 @@ export default [
       'dist/**',
       'build/**',
       'coverage/**',
+      'backend/dist/**',
       'frontend/dist/**',
       'frontend/src/scripts/lib/**',
       'frontend/src/styles/lib/**',

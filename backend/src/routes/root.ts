@@ -3,16 +3,16 @@
  * API endpoints for root user admin management and dashboard
  */
 
-import express, { Router } from 'express';
-import bcrypt from 'bcrypt';
-import { authenticateToken, authorizeRole } from '../auth';
-import { logger } from '../utils/logger';
+import express, { Router } from "express";
+import bcrypt from "bcrypt";
+import { authenticateToken, authorizeRole } from "../auth";
+import { logger } from "../utils/logger";
 
 // Import models (now ES modules)
-import User from '../models/user';
-import AdminLog from '../models/adminLog';
-import Tenant from '../models/tenant';
-import pool from '../database';
+import User from "../models/user";
+import AdminLog from "../models/adminLog";
+import Tenant from "../models/tenant";
+import pool from "../database";
 
 const router: Router = express.Router();
 
@@ -87,17 +87,17 @@ interface DatabaseError extends Error {
 
 // Admin-Benutzer erstellen - POST /admins endpoint
 router.post(
-  '/admins',
+  "/admins",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     logger.info(
-      `Attempt to create admin user by root user: ${req.user.username}`
+      `Attempt to create admin user by root user: ${req.user.username}`,
     );
     try {
       const adminData = {
         ...req.body,
-        role: 'admin',
+        role: "admin",
         tenant_id: req.user.tenant_id,
         is_active: true, // Ensure new admins are active by default
       };
@@ -106,8 +106,8 @@ router.post(
       // Add admin to tenant_admins table
       try {
         await (pool as any).query(
-          'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
-          [req.user.tenant_id, adminId]
+          "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
+          [req.user.tenant_id, adminId],
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
       } catch (taError: any) {
@@ -118,38 +118,38 @@ router.post(
       logger.info(`Admin user created successfully with ID: ${adminId}`);
       res
         .status(201)
-        .json({ message: 'Admin-Benutzer erfolgreich erstellt', adminId });
+        .json({ message: "Admin-Benutzer erfolgreich erstellt", adminId });
     } catch (error: any) {
-      logger.error('Fehler beim Erstellen des Admin-Benutzers:', error);
+      logger.error("Fehler beim Erstellen des Admin-Benutzers:", error);
       const dbError = error as DatabaseError;
-      if (dbError.code === 'ER_DUP_ENTRY') {
+      if (dbError.code === "ER_DUP_ENTRY") {
         res.status(409).json({
           message:
-            'Ein Benutzer mit diesem Benutzernamen oder dieser E-Mail existiert bereits.',
+            "Ein Benutzer mit diesem Benutzernamen oder dieser E-Mail existiert bereits.",
         });
         return;
       }
       res.status(500).json({
-        message: 'Fehler beim Erstellen des Admin-Benutzers',
+        message: "Fehler beim Erstellen des Admin-Benutzers",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Legacy endpoint for backward compatibility
 router.post(
-  '/create-admin',
+  "/create-admin",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     logger.info(
-      `Attempt to create admin user by root user: ${req.user.username}`
+      `Attempt to create admin user by root user: ${req.user.username}`,
     );
     try {
       const adminData = {
         ...req.body,
-        role: 'admin',
+        role: "admin",
         tenant_id: req.user.tenant_id,
         is_active: true, // Ensure new admins are active by default
       };
@@ -158,8 +158,8 @@ router.post(
       // Add admin to tenant_admins table
       try {
         await (pool as any).query(
-          'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
-          [req.user.tenant_id, adminId]
+          "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
+          [req.user.tenant_id, adminId],
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
       } catch (taError: any) {
@@ -170,37 +170,37 @@ router.post(
       logger.info(`Admin user created successfully with ID: ${adminId}`);
       res
         .status(201)
-        .json({ message: 'Admin-Benutzer erfolgreich erstellt', adminId });
+        .json({ message: "Admin-Benutzer erfolgreich erstellt", adminId });
     } catch (error: any) {
-      logger.error('Fehler beim Erstellen des Admin-Benutzers:', error);
+      logger.error("Fehler beim Erstellen des Admin-Benutzers:", error);
       const dbError = error as DatabaseError;
-      if (dbError.code === 'ER_DUP_ENTRY') {
+      if (dbError.code === "ER_DUP_ENTRY") {
         res.status(409).json({
           message:
-            'Ein Benutzer mit diesem Benutzernamen oder dieser E-Mail existiert bereits.',
+            "Ein Benutzer mit diesem Benutzernamen oder dieser E-Mail existiert bereits.",
         });
         return;
       }
       res.status(500).json({
-        message: 'Fehler beim Erstellen des Admin-Benutzers',
+        message: "Fehler beim Erstellen des Admin-Benutzers",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Liste aller Admin-Benutzer abrufen
 router.get(
-  '/admins',
+  "/admins",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     logger.info(
-      `Fetching admin users list for root user: ${req.user.username}`
+      `Fetching admin users list for root user: ${req.user.username}`,
     );
     try {
       // Admins mit erweiterten Informationen abrufen - NUR vom eigenen Tenant!
-      const admins = await User.findByRole('admin', true, req.user.tenant_id);
+      const admins = await User.findByRole("admin", true, req.user.tenant_id);
 
       // Tenant-Informationen hinzufügen
       const adminsWithTenants = await Promise.all(
@@ -210,32 +210,32 @@ router.get(
             admin.tenant_name = tenant ? tenant.name : null;
           }
           return admin;
-        })
+        }),
       );
 
       logger.info(`Retrieved ${adminsWithTenants.length} admin users`);
       res.json(adminsWithTenants);
     } catch (error: any) {
-      logger.error('Fehler beim Abrufen der Admin-Benutzer:', error);
+      logger.error("Fehler beim Abrufen der Admin-Benutzer:", error);
       res.status(500).json({
-        message: 'Fehler beim Abrufen der Admin-Benutzer',
+        message: "Fehler beim Abrufen der Admin-Benutzer",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Admin-Benutzer aktualisieren
 router.put(
-  '/admins/:id',
+  "/admins/:id",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     const adminId = req.params.id;
     const updateData = req.body;
 
     logger.info(
-      `Updating admin (ID: ${adminId}) by root user: ${req.user.username}`
+      `Updating admin (ID: ${adminId}) by root user: ${req.user.username}`,
     );
     logger.info(`Update data received:`, updateData);
 
@@ -243,10 +243,10 @@ router.put(
       // Prüfen ob Admin existiert
       const admin = await User.findById(
         parseInt(adminId, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
-      if (!admin || admin.role !== 'admin') {
-        res.status(404).json({ message: 'Admin nicht gefunden' });
+      if (!admin || admin.role !== "admin") {
+        res.status(404).json({ message: "Admin nicht gefunden" });
         return;
       }
 
@@ -259,51 +259,51 @@ router.put(
       const success = await User.update(parseInt(adminId, 10), updateData);
 
       if (success) {
-        res.json({ message: 'Admin erfolgreich aktualisiert' });
+        res.json({ message: "Admin erfolgreich aktualisiert" });
       } else {
-        res.status(500).json({ message: 'Fehler beim Aktualisieren' });
+        res.status(500).json({ message: "Fehler beim Aktualisieren" });
       }
     } catch (error: any) {
-      logger.error('Fehler beim Aktualisieren des Admins:', error);
+      logger.error("Fehler beim Aktualisieren des Admins:", error);
       res.status(500).json({
-        message: 'Fehler beim Aktualisieren',
+        message: "Fehler beim Aktualisieren",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Admin-Benutzer löschen
 router.delete(
-  '/admins/:id',
+  "/admins/:id",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
 
     logger.info(
-      `Attempt to delete admin (ID: ${adminId}) by root user: ${rootUser}`
+      `Attempt to delete admin (ID: ${adminId}) by root user: ${rootUser}`,
     );
 
     try {
       // Zuerst prüfen, ob der zu löschende Benutzer wirklich ein Admin ist
       const adminToDelete = await User.findById(
         parseInt(adminId, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!adminToDelete) {
         logger.warn(`Admin user with ID ${adminId} not found`);
-        res.status(404).json({ message: 'Admin-Benutzer nicht gefunden' });
+        res.status(404).json({ message: "Admin-Benutzer nicht gefunden" });
         return;
       }
 
-      if (adminToDelete.role !== 'admin') {
+      if (adminToDelete.role !== "admin") {
         logger.warn(`User with ID ${adminId} is not an admin`);
         res
           .status(403)
-          .json({ message: 'Der zu löschende Benutzer ist kein Admin' });
+          .json({ message: "Der zu löschende Benutzer ist kein Admin" });
         return;
       }
 
@@ -312,53 +312,53 @@ router.delete(
 
       if (success) {
         logger.info(`Admin user with ID ${adminId} deleted successfully`);
-        res.json({ message: 'Admin-Benutzer erfolgreich gelöscht' });
+        res.json({ message: "Admin-Benutzer erfolgreich gelöscht" });
       } else {
         logger.warn(`Failed to delete admin user with ID ${adminId}`);
         res
           .status(500)
-          .json({ message: 'Fehler beim Löschen des Admin-Benutzers' });
+          .json({ message: "Fehler beim Löschen des Admin-Benutzers" });
       }
     } catch (error: any) {
       logger.error(`Error deleting admin user with ID ${adminId}:`, error);
       res.status(500).json({
-        message: 'Fehler beim Löschen des Admin-Benutzers',
+        message: "Fehler beim Löschen des Admin-Benutzers",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // NEUE ROUTE: Details eines Admin-Benutzers abrufen
 router.get(
-  '/admin/:id',
+  "/admin/:id",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
 
     logger.info(
-      `Root user ${rootUser} requesting details for admin ${adminId}`
+      `Root user ${rootUser} requesting details for admin ${adminId}`,
     );
 
     try {
       const admin = await User.findById(
         parseInt(adminId, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
-        res.status(404).json({ message: 'Admin-Benutzer nicht gefunden' });
+        res.status(404).json({ message: "Admin-Benutzer nicht gefunden" });
         return;
       }
 
-      if (admin.role !== 'admin') {
+      if (admin.role !== "admin") {
         logger.warn(`User with ID ${adminId} is not an admin`);
         res
           .status(403)
-          .json({ message: 'Der abgefragte Benutzer ist kein Admin' });
+          .json({ message: "Der abgefragte Benutzer ist kein Admin" });
         return;
       }
 
@@ -376,18 +376,18 @@ router.get(
     } catch (error: any) {
       logger.error(`Error retrieving details for admin ${adminId}:`, error);
       res.status(500).json({
-        message: 'Fehler beim Abrufen der Admin-Details',
+        message: "Fehler beim Abrufen der Admin-Details",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // NEUE ROUTE: Admin-Benutzer aktualisieren
 router.put(
-  '/admin/:id',
+  "/admin/:id",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
@@ -397,20 +397,20 @@ router.put(
     try {
       const admin = await User.findById(
         parseInt(adminId, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
-        res.status(404).json({ message: 'Admin-Benutzer nicht gefunden' });
+        res.status(404).json({ message: "Admin-Benutzer nicht gefunden" });
         return;
       }
 
-      if (admin.role !== 'admin') {
+      if (admin.role !== "admin") {
         logger.warn(`User with ID ${adminId} is not an admin`);
         res
           .status(403)
-          .json({ message: 'Der zu aktualisierende Benutzer ist kein Admin' });
+          .json({ message: "Der zu aktualisierende Benutzer ist kein Admin" });
         return;
       }
 
@@ -426,7 +426,7 @@ router.put(
       };
 
       // Wenn ein neues Passwort übermittelt wurde, Hash erstellen
-      if (new_password && new_password.trim() !== '') {
+      if (new_password && new_password.trim() !== "") {
         updateData.password = await bcrypt.hash(new_password, 10);
       }
 
@@ -434,50 +434,50 @@ router.put(
       await User.update(parseInt(adminId, 10), updateData);
 
       logger.info(
-        `Admin ${adminId} updated successfully by root user ${rootUser}`
+        `Admin ${adminId} updated successfully by root user ${rootUser}`,
       );
-      res.json({ message: 'Admin-Benutzer erfolgreich aktualisiert' });
+      res.json({ message: "Admin-Benutzer erfolgreich aktualisiert" });
     } catch (error: any) {
       logger.error(`Error updating admin ${adminId}:`, error);
       res.status(500).json({
-        message: 'Fehler beim Aktualisieren des Admin-Benutzers',
+        message: "Fehler beim Aktualisieren des Admin-Benutzers",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // NEUE ROUTE: Admin-Logs abrufen
 router.get(
-  '/admin/:id/logs',
+  "/admin/:id/logs",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
     const days = parseInt(req.query.days as string) || 0; // 0 bedeutet alle Logs
 
     logger.info(
-      `Root user ${rootUser} requesting logs for admin ${adminId} (days: ${days})`
+      `Root user ${rootUser} requesting logs for admin ${adminId} (days: ${days})`,
     );
 
     try {
       const admin = await User.findById(
         parseInt(adminId, 10),
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!admin) {
         logger.warn(`Admin with ID ${adminId} not found`);
-        res.status(404).json({ message: 'Admin-Benutzer nicht gefunden' });
+        res.status(404).json({ message: "Admin-Benutzer nicht gefunden" });
         return;
       }
 
-      if (admin.role !== 'admin') {
+      if (admin.role !== "admin") {
         logger.warn(`User with ID ${adminId} is not an admin`);
         res
           .status(403)
-          .json({ message: 'Der abgefragte Benutzer ist kein Admin' });
+          .json({ message: "Der abgefragte Benutzer ist kein Admin" });
         return;
       }
 
@@ -489,18 +489,18 @@ router.get(
     } catch (error: any) {
       logger.error(`Error retrieving logs for admin ${adminId}:`, error);
       res.status(500).json({
-        message: 'Fehler beim Abrufen der Admin-Logs',
+        message: "Fehler beim Abrufen der Admin-Logs",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Alle Tenants abrufen
 router.get(
-  '/tenants',
+  "/tenants",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     logger.info(`Root user ${req.user.username} requesting tenants list`);
 
@@ -508,33 +508,33 @@ router.get(
       const tenants = await Tenant.findAll();
       res.json(tenants);
     } catch (error: any) {
-      logger.error('Fehler beim Abrufen der Tenants:', error);
+      logger.error("Fehler beim Abrufen der Tenants:", error);
       res.status(500).json({
-        message: 'Fehler beim Abrufen der Tenants',
+        message: "Fehler beim Abrufen der Tenants",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Dashboard-Daten für Root-User
 router.get(
-  '/dashboard-data',
+  "/dashboard-data",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     logger.info(`Root user ${req.user.username} requesting dashboard data`);
 
     try {
       // Anzahl der Admins abrufen
-      const admins = await User.findByRole('admin', false, req.user.tenant_id);
+      const admins = await User.findByRole("admin", false, req.user.tenant_id);
       const adminCount = admins.length;
 
       // Anzahl der Mitarbeiter abrufen
       const employees = await User.findByRole(
-        'employee',
+        "employee",
         false,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
       const employeeCount = employees.length;
 
@@ -548,37 +548,37 @@ router.get(
       };
 
       logger.info(
-        `Dashboard data retrieved successfully for root user ${req.user.username}`
+        `Dashboard data retrieved successfully for root user ${req.user.username}`,
       );
       res.json(dashboardData);
     } catch (error: any) {
       logger.error(`Error retrieving dashboard data:`, error);
       res.status(500).json({
-        message: 'Fehler beim Abrufen der Dashboard-Daten',
+        message: "Fehler beim Abrufen der Dashboard-Daten",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // NEUE ROUTE: Storage-Informationen für Root-User
 router.get(
-  '/storage-info',
+  "/storage-info",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     logger.info(`Root user ${req.user.username} requesting storage info`);
 
     try {
       // Import necessary model
-      const Document = (await import('../models/document')).default;
+      const Document = (await import("../models/document")).default;
 
       // Get tenant information
       const tenant = await Tenant.findById(req.user.tenant_id);
 
       if (!tenant) {
         logger.error(`Tenant ${req.user.tenant_id} not found`);
-        res.status(404).json({ message: 'Tenant nicht gefunden' });
+        res.status(404).json({ message: "Tenant nicht gefunden" });
         return;
       }
 
@@ -590,11 +590,11 @@ router.get(
       };
 
       const totalStorage =
-        storageLimits[tenant.current_plan || 'basic'] || storageLimits['basic'];
+        storageLimits[tenant.current_plan || "basic"] || storageLimits["basic"];
 
       // Get actual storage usage (sum of all document sizes)
       const usedStorage = await Document.getTotalStorageUsed(
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       // Calculate percentage
@@ -604,32 +604,32 @@ router.get(
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100), // Cap at 100%
-        plan: tenant.current_plan || 'basic',
+        plan: tenant.current_plan || "basic",
       };
 
       logger.info(
-        `Storage info for tenant ${req.user.tenant_id}: ${usedStorage} / ${totalStorage} bytes (${percentage}%)`
+        `Storage info for tenant ${req.user.tenant_id}: ${usedStorage} / ${totalStorage} bytes (${percentage}%)`,
       );
       res.json(storageInfo);
     } catch (error: any) {
       logger.error(`Error retrieving storage info:`, error);
       res.status(500).json({
-        message: 'Fehler beim Abrufen der Speicherinformationen',
+        message: "Fehler beim Abrufen der Speicherinformationen",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // NEUE ROUTE: Tenant komplett löschen (Root-User löscht sich selbst und seinen Tenant)
 router.delete(
-  '/delete-tenant',
+  "/delete-tenant",
   authenticateToken,
-  authorizeRole('root'),
+  authorizeRole("root"),
   async (req, res): Promise<void> => {
     const rootUser = req.user;
     logger.warn(
-      `Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`
+      `Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`,
     );
 
     try {
@@ -638,7 +638,7 @@ router.delete(
 
       if (!tenant) {
         logger.error(`Tenant ${rootUser.tenant_id} not found`);
-        res.status(404).json({ message: 'Tenant nicht gefunden' });
+        res.status(404).json({ message: "Tenant nicht gefunden" });
         return;
       }
 
@@ -646,16 +646,16 @@ router.delete(
       await AdminLog.create({
         user_id: rootUser.id,
         tenant_id: rootUser.tenant_id,
-        action: 'TENANT_DELETE_INITIATED',
+        action: "TENANT_DELETE_INITIATED",
         ip_address: req.ip,
-        entity_type: 'tenant',
+        entity_type: "tenant",
         entity_id: rootUser.tenant_id,
         new_values: {
           tenant_name: tenant.company_name,
           subdomain: tenant.subdomain,
           initiated_by: rootUser.username,
         },
-        user_agent: req.get('user-agent'),
+        user_agent: req.get("user-agent"),
       });
 
       // Delete the entire tenant (cascades to all related data)
@@ -663,32 +663,32 @@ router.delete(
 
       if (success) {
         logger.warn(
-          `Tenant ${rootUser.tenant_id} and all associated data deleted successfully`
+          `Tenant ${rootUser.tenant_id} and all associated data deleted successfully`,
         );
         res.json({
           success: true,
           message:
-            'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht',
+            "Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht",
         });
       } else {
         logger.error(`Failed to delete tenant ${rootUser.tenant_id}`);
         res.status(500).json({
           success: false,
-          message: 'Fehler beim Löschen des Tenants',
+          message: "Fehler beim Löschen des Tenants",
         });
       }
     } catch (error: any) {
       logger.error(
         `Critical error deleting tenant ${rootUser.tenant_id}:`,
-        error
+        error,
       );
       res.status(500).json({
         success: false,
-        message: 'Kritischer Fehler beim Löschen des Tenants',
+        message: "Kritischer Fehler beim Löschen des Tenants",
         error: error.message,
       });
     }
-  }
+  },
 );
 
 export default router;

@@ -3,14 +3,14 @@
  * Handles feature management for multi-tenant system
  */
 
-import express, { Router, Request, Response } from 'express';
-import { authenticateToken, authorizeRole } from '../auth';
-import { checkFeature } from '../middleware/features';
-import { logger } from '../utils/logger';
+import express, { Router, Request, Response } from "express";
+import { authenticateToken, authorizeRole } from "../auth";
+import { checkFeature } from "../middleware/features";
+import { logger } from "../utils/logger";
 
 // Import Feature model and database (now ES modules)
-import Feature from '../models/feature';
-import db from '../database';
+import Feature from "../models/feature";
+import db from "../database";
 
 const router: Router = express.Router();
 
@@ -67,21 +67,21 @@ interface FeatureUsageRequest extends AuthenticatedRequest {
 
 // Get all available features (public)
 router.get(
-  '/available',
+  "/available",
   async (_req: Request, res: Response): Promise<void> => {
     try {
       const features = await Feature.findAll();
       res.json(features);
     } catch (error: any) {
       logger.error(`Error fetching available features: ${error.message}`);
-      res.status(500).json({ error: 'Fehler beim Abrufen der Features' });
+      res.status(500).json({ error: "Fehler beim Abrufen der Features" });
     }
-  }
+  },
 );
 
 // Get features for a specific tenant (authenticated)
 router.get(
-  '/tenant/:tenantId',
+  "/tenant/:tenantId",
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -92,10 +92,10 @@ router.get(
 
       if (
         requestedTenantId !== userTenantId &&
-        authReq.user.role !== 'root' &&
-        authReq.user.role !== 'admin'
+        authReq.user.role !== "root" &&
+        authReq.user.role !== "admin"
       ) {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+        res.status(403).json({ error: "Keine Berechtigung" });
         return;
       }
 
@@ -105,14 +105,14 @@ router.get(
       logger.error(`Error fetching tenant features: ${error.message}`);
       res
         .status(500)
-        .json({ error: 'Fehler beim Abrufen der Tenant-Features' });
+        .json({ error: "Fehler beim Abrufen der Tenant-Features" });
     }
-  }
+  },
 );
 
 // Get my features
 router.get(
-  '/my-features',
+  "/my-features",
   authenticateToken as any,
   async (req: any, res: any): Promise<void> => {
     try {
@@ -121,21 +121,21 @@ router.get(
       res.json(features);
     } catch (error: any) {
       logger.error(`Error fetching my features: ${error.message}`);
-      res.status(500).json({ error: 'Fehler beim Abrufen der Features' });
+      res.status(500).json({ error: "Fehler beim Abrufen der Features" });
     }
-  }
+  },
 );
 
 // Activate feature (Root and Admin only)
 router.post(
-  '/activate',
+  "/activate",
   authenticateToken as any,
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
       // Only Root and Admin can activate features
-      if (authReq.user.role !== 'root' && authReq.user.role !== 'admin') {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+      if (authReq.user.role !== "root" && authReq.user.role !== "admin") {
+        res.status(403).json({ error: "Keine Berechtigung" });
         return;
       }
 
@@ -144,7 +144,7 @@ router.post(
       if (!tenantId || !featureCode) {
         res
           .status(400)
-          .json({ error: 'Tenant ID und Feature Code sind erforderlich' });
+          .json({ error: "Tenant ID und Feature Code sind erforderlich" });
         return;
       }
 
@@ -154,25 +154,25 @@ router.post(
       await Feature.activateForTenant(tenantId, featureCode, options);
 
       logger.info(
-        `Feature ${featureCode} activated for tenant ${tenantId} by user ${authReq.user.username}`
+        `Feature ${featureCode} activated for tenant ${tenantId} by user ${authReq.user.username}`,
       );
-      res.json({ message: 'Feature erfolgreich aktiviert' });
+      res.json({ message: "Feature erfolgreich aktiviert" });
     } catch (error: any) {
       logger.error(`Error activating feature: ${error.message}`);
-      res.status(500).json({ error: 'Fehler beim Aktivieren des Features' });
+      res.status(500).json({ error: "Fehler beim Aktivieren des Features" });
     }
-  }
+  },
 );
 
 // Deactivate feature (Root and Admin only)
 router.post(
-  '/deactivate',
+  "/deactivate",
   authenticateToken as any,
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      if (authReq.user.role !== 'root' && authReq.user.role !== 'admin') {
-        res.status(403).json({ error: 'Keine Berechtigung' });
+      if (authReq.user.role !== "root" && authReq.user.role !== "admin") {
+        res.status(403).json({ error: "Keine Berechtigung" });
         return;
       }
 
@@ -181,26 +181,26 @@ router.post(
       if (!tenantId || !featureCode) {
         res
           .status(400)
-          .json({ error: 'Tenant ID und Feature Code sind erforderlich' });
+          .json({ error: "Tenant ID und Feature Code sind erforderlich" });
         return;
       }
 
       await Feature.deactivateForTenant(tenantId, featureCode);
 
       logger.info(
-        `Feature ${featureCode} deactivated for tenant ${tenantId} by user ${authReq.user.username}`
+        `Feature ${featureCode} deactivated for tenant ${tenantId} by user ${authReq.user.username}`,
       );
-      res.json({ message: 'Feature erfolgreich deaktiviert' });
+      res.json({ message: "Feature erfolgreich deaktiviert" });
     } catch (error: any) {
       logger.error(`Error deactivating feature: ${error.message}`);
-      res.status(500).json({ error: 'Fehler beim Deaktivieren des Features' });
+      res.status(500).json({ error: "Fehler beim Deaktivieren des Features" });
     }
-  }
+  },
 );
 
 // Get feature usage statistics
 router.get(
-  '/usage/:featureCode',
+  "/usage/:featureCode",
   authenticateToken as any,
   async (req: any, res: any): Promise<void> => {
     try {
@@ -211,7 +211,7 @@ router.get(
       if (!startDate || !endDate) {
         res
           .status(400)
-          .json({ error: 'Start- und Enddatum sind erforderlich' });
+          .json({ error: "Start- und Enddatum sind erforderlich" });
         return;
       }
 
@@ -219,21 +219,21 @@ router.get(
         req.tenantId,
         featureCode,
         startDate,
-        endDate
+        endDate,
       );
       res.json(stats);
     } catch (error: any) {
       logger.error(`Error fetching usage stats: ${error.message}`);
       res
         .status(500)
-        .json({ error: 'Fehler beim Abrufen der Nutzungsstatistiken' });
+        .json({ error: "Fehler beim Abrufen der Nutzungsstatistiken" });
     }
-  }
+  },
 );
 
 // Test route to check feature access
 router.get(
-  '/test/:featureCode',
+  "/test/:featureCode",
   authenticateToken as any,
   async (req: any, res: any, next: any): Promise<void> => {
     await checkFeature(req.params.featureCode)(req, res, next);
@@ -243,19 +243,19 @@ router.get(
       message: `Zugriff auf Feature ${req.params.featureCode} gewährt`,
       feature: req.params.featureCode,
     });
-  }
+  },
 );
 
 // Get all tenants with features (Root only)
 router.get(
-  '/all-tenants',
+  "/all-tenants",
   authenticateToken as any,
-  authorizeRole('root') as any,
+  authorizeRole("root") as any,
   async (_req: any, res: any): Promise<void> => {
     try {
       // Get all tenants
       const [tenants] = await (db as any).execute(
-        'SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name'
+        "SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name",
       );
 
       // Get activated features for each tenant
@@ -266,13 +266,13 @@ router.get(
       res.json(tenants);
     } catch (error: any) {
       logger.error(
-        `Error fetching all tenants with features: ${error.message}`
+        `Error fetching all tenants with features: ${error.message}`,
       );
       res
         .status(500)
-        .json({ error: 'Fehler beim Abrufen der Tenant-Features' });
+        .json({ error: "Fehler beim Abrufen der Tenant-Features" });
     }
-  }
+  },
 );
 
 export default router;

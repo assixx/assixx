@@ -1,11 +1,11 @@
-import pool from '../database';
-import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import pool from "../database";
+import { logger } from "../utils/logger";
+import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 // Helper function to handle both real pool and mock database
 async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: any[]
+  params?: any[],
 ): Promise<[T, any]> {
   const result = await (pool as any).query(sql, params);
   if (Array.isArray(result) && result.length === 2) {
@@ -31,7 +31,7 @@ interface DbTenantFeature extends RowDataPacket {
   id?: number;
   tenant_id: number;
   feature_id: number;
-  status: 'active' | 'trial' | 'disabled';
+  status: "active" | "trial" | "disabled";
   valid_from?: Date;
   valid_until?: Date | null;
   custom_price?: number | null;
@@ -62,7 +62,7 @@ export class Feature {
   static async findAll(): Promise<DbFeature[]> {
     try {
       const [features] = await executeQuery<DbFeature[]>(
-        'SELECT * FROM features WHERE is_active = true ORDER BY category, name'
+        "SELECT * FROM features WHERE is_active = true ORDER BY category, name",
       );
       return features;
     } catch (error) {
@@ -75,13 +75,13 @@ export class Feature {
   static async findByCode(code: string): Promise<DbFeature | undefined> {
     try {
       const [features] = await executeQuery<DbFeature[]>(
-        'SELECT * FROM features WHERE code = ?',
-        [code]
+        "SELECT * FROM features WHERE code = ?",
+        [code],
       );
       return features[0];
     } catch (error) {
       logger.error(
-        `Error finding feature by code: ${(error as Error).message}`
+        `Error finding feature by code: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -90,7 +90,7 @@ export class Feature {
   // Prüfen ob Tenant ein Feature hat
   static async checkTenantAccess(
     tenantId: number,
-    featureCode: string
+    featureCode: string,
   ): Promise<boolean> {
     try {
       const query = `
@@ -122,7 +122,7 @@ export class Feature {
         feature.current_usage >= feature.usage_limit
       ) {
         logger.warn(
-          `Feature ${featureCode} usage limit reached for tenant ${tenantId}`
+          `Feature ${featureCode} usage limit reached for tenant ${tenantId}`,
         );
         return false;
       }
@@ -130,7 +130,7 @@ export class Feature {
       return true;
     } catch (error) {
       logger.error(
-        `Error checking tenant feature access: ${(error as Error).message}`
+        `Error checking tenant feature access: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -140,7 +140,7 @@ export class Feature {
   static async activateForTenant(
     tenantId: number,
     featureCode: string,
-    options: FeatureActivationOptions = {}
+    options: FeatureActivationOptions = {},
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -175,7 +175,7 @@ export class Feature {
       return true;
     } catch (error) {
       logger.error(
-        `Error activating feature for tenant: ${(error as Error).message}`
+        `Error activating feature for tenant: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -184,7 +184,7 @@ export class Feature {
   // Feature für Tenant deaktivieren
   static async deactivateForTenant(
     tenantId: number,
-    featureCode: string
+    featureCode: string,
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -203,7 +203,7 @@ export class Feature {
       return true;
     } catch (error) {
       logger.error(
-        `Error deactivating feature for tenant: ${(error as Error).message}`
+        `Error deactivating feature for tenant: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -214,7 +214,7 @@ export class Feature {
     tenantId: number,
     featureCode: string,
     userId: number | null = null,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, any> = {},
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -224,14 +224,14 @@ export class Feature {
 
       // Log erstellen
       await executeQuery(
-        'INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)',
-        [tenantId, feature.id, userId, JSON.stringify(metadata)]
+        "INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)",
+        [tenantId, feature.id, userId, JSON.stringify(metadata)],
       );
 
       // Current usage erhöhen
       await executeQuery(
-        'UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?',
-        [tenantId, feature.id]
+        "UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?",
+        [tenantId, feature.id],
       );
 
       return true;
@@ -267,7 +267,7 @@ export class Feature {
       return features;
     } catch (error) {
       logger.error(
-        `Error fetching tenant features: ${(error as Error).message}`
+        `Error fetching tenant features: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -278,7 +278,7 @@ export class Feature {
     tenantId: number,
     featureCode: string,
     startDate: Date | string,
-    endDate: Date | string
+    endDate: Date | string,
   ): Promise<FeatureUsageStat[]> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -315,14 +315,14 @@ export class Feature {
   // Check if a feature is enabled for a specific tenant
   static async isEnabledForTenant(
     featureKey: string,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     try {
       // Use the existing checkTenantAccess method which does exactly what we need
       return await this.checkTenantAccess(tenantId, featureKey);
     } catch (error) {
       logger.error(
-        `Error checking if feature ${featureKey} is enabled for tenant ${tenantId}: ${(error as Error).message}`
+        `Error checking if feature ${featureKey} is enabled for tenant ${tenantId}: ${(error as Error).message}`,
       );
       return false;
     }

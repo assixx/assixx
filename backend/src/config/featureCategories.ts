@@ -35,34 +35,34 @@ export interface CategoryWithFeatures {
 export const featureCategories: Record<string, FeatureCategory> = {
   // Kern-Features (Core) - Essential system features
   core: {
-    name: 'Kern-Features',
-    icon: '⚙️',
+    name: "Kern-Features",
+    icon: "⚙️",
     features: {
       basic_employees: {
-        displayName: 'Basis Mitarbeiterverwaltung',
-        description: 'Bis zu 10 Mitarbeiter verwalten',
+        displayName: "Basis Mitarbeiterverwaltung",
+        description: "Bis zu 10 Mitarbeiter verwalten",
         details: [
-          'Mitarbeiterprofile erstellen',
-          'Grundlegende Stammdaten verwalten',
-          'Zugriffsrechte verwalten',
+          "Mitarbeiterprofile erstellen",
+          "Grundlegende Stammdaten verwalten",
+          "Zugriffsrechte verwalten",
         ],
       },
       unlimited_employees: {
-        displayName: 'Unbegrenzte Mitarbeiter',
-        description: 'Keine Begrenzung der Mitarbeiteranzahl',
+        displayName: "Unbegrenzte Mitarbeiter",
+        description: "Keine Begrenzung der Mitarbeiteranzahl",
         details: [
-          'Unbegrenzte Mitarbeiteranzahl',
-          'Erweiterte Verwaltungsfunktionen',
-          'Bulk-Import/Export',
+          "Unbegrenzte Mitarbeiteranzahl",
+          "Erweiterte Verwaltungsfunktionen",
+          "Bulk-Import/Export",
         ],
       },
       document_upload: {
-        displayName: 'Dokument Upload',
-        description: 'Basis Dokumenten-Upload Funktion',
+        displayName: "Dokument Upload",
+        description: "Basis Dokumenten-Upload Funktion",
         details: [
-          'Sichere Dokumentenverwaltung',
-          'Lohnabrechnungen hochladen',
-          'Mitarbeiterdokumente verwalten',
+          "Sichere Dokumentenverwaltung",
+          "Lohnabrechnungen hochladen",
+          "Mitarbeiterdokumente verwalten",
         ],
       },
     },
@@ -70,37 +70,37 @@ export const featureCategories: Record<string, FeatureCategory> = {
 
   // Kommunikation (Communication) - Team collaboration features
   communication: {
-    name: 'Kommunikation',
-    icon: '💬',
+    name: "Kommunikation",
+    icon: "💬",
     features: {
       chat: {
-        displayName: 'Chat-System',
-        description: 'Integrierter Firmen-Chat für Teams',
+        displayName: "Chat-System",
+        description: "Integrierter Firmen-Chat für Teams",
         details: [
-          'Direkte Nachrichten',
-          'Gruppenchats',
-          'Dateiübertragung',
-          'Nachrichtenplanung',
+          "Direkte Nachrichten",
+          "Gruppenchats",
+          "Dateiübertragung",
+          "Nachrichtenplanung",
         ],
       },
       blackboard: {
-        displayName: 'Schwarzes Brett',
-        description: 'Digitales schwarzes Brett für Ankündigungen',
+        displayName: "Schwarzes Brett",
+        description: "Digitales schwarzes Brett für Ankündigungen",
         details: [
-          'Firmenweite Ankündigungen',
-          'Abteilungsspezifische Mitteilungen',
-          'Prioritätsstufen',
-          'Lesebestätigungen',
+          "Firmenweite Ankündigungen",
+          "Abteilungsspezifische Mitteilungen",
+          "Prioritätsstufen",
+          "Lesebestätigungen",
         ],
       },
       surveys: {
-        displayName: 'Umfrage-Tool',
-        description: 'Mitarbeiterbefragungen mit anonymen Optionen',
+        displayName: "Umfrage-Tool",
+        description: "Mitarbeiterbefragungen mit anonymen Optionen",
         details: [
-          'Anonyme Umfragen',
-          'Verschiedene Fragetypen',
-          'Automatische Auswertung',
-          'Vorlagen-Bibliothek',
+          "Anonyme Umfragen",
+          "Verschiedene Fragetypen",
+          "Automatische Auswertung",
+          "Vorlagen-Bibliothek",
         ],
       },
     },
@@ -108,37 +108,37 @@ export const featureCategories: Record<string, FeatureCategory> = {
 
   // Organisation (Organization) - Planning and management features
   organization: {
-    name: 'Organisation',
-    icon: '📊',
+    name: "Organisation",
+    icon: "📊",
     features: {
       calendar: {
-        displayName: 'Firmenkalender',
-        description: 'Integrierter Kalender für Termine und Events',
+        displayName: "Firmenkalender",
+        description: "Integrierter Kalender für Termine und Events",
         details: [
-          'Firmentermine verwalten',
-          'Abteilungskalender',
-          'Teamkalender',
-          'Erinnerungen',
+          "Firmentermine verwalten",
+          "Abteilungskalender",
+          "Teamkalender",
+          "Erinnerungen",
         ],
       },
       shifts: {
-        displayName: 'Schichtplanung',
-        description: 'Vollständiges Schichtplanungs-Tool',
+        displayName: "Schichtplanung",
+        description: "Vollständiges Schichtplanungs-Tool",
         details: [
-          'Schichtvorlagen',
-          'Mitarbeiter-Zuweisung',
-          'Tauschbörse',
-          'Überstunden-Tracking',
+          "Schichtvorlagen",
+          "Mitarbeiter-Zuweisung",
+          "Tauschbörse",
+          "Überstunden-Tracking",
         ],
       },
       kvp: {
-        displayName: 'KVP System',
-        description: 'Kontinuierlicher Verbesserungsprozess',
+        displayName: "KVP System",
+        description: "Kontinuierlicher Verbesserungsprozess",
         details: [
-          'Verbesserungsvorschläge',
-          'Bewertungssystem',
-          'Prämienberechnung',
-          'Statistiken',
+          "Verbesserungsvorschläge",
+          "Bewertungssystem",
+          "Prämienberechnung",
+          "Statistiken",
         ],
       },
     },
@@ -151,7 +151,7 @@ export const featureCategories: Record<string, FeatureCategory> = {
  * @returns Category and feature information
  */
 export function getFeatureCategory(
-  featureCode: string
+  featureCode: string,
 ): FeatureCategoryInfo | null {
   for (const [categoryKey, category] of Object.entries(featureCategories)) {
     if (category.features[featureCode]) {

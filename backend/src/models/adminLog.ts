@@ -1,11 +1,11 @@
-import pool from '../database';
-import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import pool from "../database";
+import { logger } from "../utils/logger";
+import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 // Helper function to handle both real pool and mock database
 async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: any[]
+  params?: any[],
 ): Promise<[T, any]> {
   const result = await (pool as any).query(sql, params);
   if (Array.isArray(result) && result.length === 2) {
@@ -95,7 +95,7 @@ export class AdminLog {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching admin logs for user ${userId}: ${(error as Error).message}`
+        `Error fetching admin logs for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -111,7 +111,7 @@ export class AdminLog {
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
       logger.error(
-        `Error fetching last login for user ${userId}: ${(error as Error).message}`
+        `Error fetching last login for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }

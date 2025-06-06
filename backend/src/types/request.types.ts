@@ -3,9 +3,9 @@
  * These types extend Express Request with authentication and file upload support
  */
 
-import { Request, ParamsDictionary } from 'express-serve-static-core';
-import { ParsedQs } from 'qs';
-import { TenantInfo } from './tenant.types';
+import { Request, ParamsDictionary } from "express-serve-static-core";
+import { ParsedQs } from "qs";
+import { TenantInfo } from "./tenant.types";
 
 // User object that gets attached to authenticated requests
 export interface AuthUser {
@@ -43,7 +43,7 @@ export interface PaginatedRequest extends AuthenticatedRequest {
     limit?: string;
     offset?: string;
     sort?: string;
-    order?: 'asc' | 'desc';
+    order?: "asc" | "desc";
   };
   pagination?: {
     page: number;
