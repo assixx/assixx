@@ -3,22 +3,18 @@
  * Handles admin log business logic
  */
 
-import AdminLog from '../models/adminLog';
-import { Pool } from 'mysql2/promise';
+import AdminLog from "../models/adminLog";
+import { Pool } from "mysql2/promise";
 
 // Import types from AdminLog model
 import type {
   DbAdminLog,
   AdminLogCreateData as ModelAdminLogCreateData,
-} from '../models/adminLog';
+} from "../models/adminLog";
 
 // Service-specific interfaces
-interface AdminLogData extends DbAdminLog {
-  tenant_id?: number;
-  entity_type?: string | null;
-  entity_id?: number | null;
-  user_agent?: string | null;
-  created_at?: Date;
+interface AdminLogData extends Omit<DbAdminLog, "tenant_id"> {
+  tenant_id: number;
   user_name?: string;
   user_role?: string;
 }
@@ -33,11 +29,9 @@ interface AdminLogFilters {
   offset?: number;
 }
 
-interface AdminLogCreateData extends ModelAdminLogCreateData {
-  tenant_id?: number;
-  entity_type?: string | null;
-  entity_id?: number | null;
-  user_agent?: string | null;
+interface AdminLogCreateData
+  extends Omit<ModelAdminLogCreateData, "tenant_id"> {
+  tenant_id: number;
 }
 
 interface AdminLogUpdateData {
@@ -53,7 +47,7 @@ class AdminLogService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: AdminLogFilters = {}
+    filters: AdminLogFilters = {},
   ): Promise<AdminLogData[]> {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
@@ -66,7 +60,7 @@ class AdminLogService {
       }
       return [];
     } catch (error) {
-      console.error('Error in AdminLogService.getAll:', error);
+      console.error("Error in AdminLogService.getAll:", error);
       throw error;
     }
   }
@@ -84,34 +78,37 @@ class AdminLogService {
    */
   async create(
     _tenantDb: Pool,
-    data: AdminLogCreateData
+    data: AdminLogCreateData,
   ): Promise<AdminLogData> {
     try {
       const modelData: ModelAdminLogCreateData = {
         user_id: data.user_id,
+        tenant_id: data.tenant_id,
         action: data.action,
         ip_address: data.ip_address,
-        status: 'success',
-        details: data.details,
+        entity_type: data.entity_type,
+        entity_id: data.entity_id,
+        old_values: data.old_values,
+        new_values: data.new_values,
+        user_agent: data.user_agent,
       };
       const id = await AdminLog.create(modelData);
       // Return the data without trying to match RowDataPacket structure
       return {
         id,
-        user_id: modelData.user_id,
-        action: modelData.action,
-        ip_address: modelData.ip_address,
-        status: modelData.status,
-        details: modelData.details,
-        timestamp: new Date(),
+        admin_id: modelData.user_id,
         tenant_id: data.tenant_id,
-        entity_type: data.entity_type,
-        entity_id: data.entity_id,
-        user_agent: data.user_agent,
+        action: modelData.action,
+        entity_type: modelData.entity_type,
+        entity_id: modelData.entity_id,
+        old_values: modelData.old_values,
+        new_values: modelData.new_values,
+        ip_address: modelData.ip_address,
+        user_agent: modelData.user_agent,
         created_at: new Date(),
       } as AdminLogData;
     } catch (error) {
-      console.error('Error in AdminLogService.create:', error);
+      console.error("Error in AdminLogService.create:", error);
       throw error;
     }
   }
@@ -122,7 +119,7 @@ class AdminLogService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: AdminLogUpdateData
+    _data: AdminLogUpdateData,
   ): Promise<AdminLogData | null> {
     // TODO: Implement update method in AdminLog model
     return null;

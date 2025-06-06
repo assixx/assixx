@@ -8,8 +8,8 @@
  * to expose the full KVP functionality.
  */
 
-import KVPModel from '../models/kvp';
-import { Pool } from 'mysql2/promise';
+import KVPModel from "../models/kvp";
+import { Pool } from "mysql2/promise";
 
 // Import the actual KVP model methods
 // Destructured methods are unused - commented out to fix TypeScript errors
@@ -73,13 +73,13 @@ interface Suggestion {
   title: string;
   description: string;
   category_id: number;
-  org_level: 'company' | 'department' | 'team';
+  org_level: "company" | "department" | "team";
   org_id: number;
   submitted_by: number;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  priority: "low" | "normal" | "high" | "urgent";
   expected_benefit?: string;
   estimated_cost?: number;
-  status: 'new' | 'in_progress' | 'implemented' | 'rejected';
+  status: "new" | "in_progress" | "implemented" | "rejected";
   assigned_to?: number;
   actual_savings?: number;
   created_at: Date;
@@ -93,17 +93,17 @@ class KvpService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: KvpFilters = {}
+    _filters: KvpFilters = {},
   ): Promise<KvpEntry[]> {
     try {
       // The actual KVP model doesn't have a generic getAll method
       // This should probably call getSuggestions instead
       console.warn(
-        'KvpService.getAll: This method should use getSuggestions from the KVP model'
+        "KvpService.getAll: This method should use getSuggestions from the KVP model",
       );
-      throw new Error('Method needs refactoring - use getSuggestions instead');
+      throw new Error("Method needs refactoring - use getSuggestions instead");
     } catch (error) {
-      console.error('Error in KvpService.getAll:', error);
+      console.error("Error in KvpService.getAll:", error);
       throw error;
     }
   }
@@ -115,13 +115,13 @@ class KvpService {
   async getById(_tenantDb: Pool, _id: number): Promise<KvpEntry | null> {
     try {
       console.warn(
-        'KvpService.getById: This method should use getSuggestionById from the KVP model'
+        "KvpService.getById: This method should use getSuggestionById from the KVP model",
       );
       throw new Error(
-        'Method needs refactoring - use getSuggestionById instead'
+        "Method needs refactoring - use getSuggestionById instead",
       );
     } catch (error) {
-      console.error('Error in KvpService.getById:', error);
+      console.error("Error in KvpService.getById:", error);
       throw error;
     }
   }
@@ -133,13 +133,13 @@ class KvpService {
   async create(_tenantDb: Pool, _data: KvpCreateData): Promise<KvpEntry> {
     try {
       console.warn(
-        'KvpService.create: This method should use createSuggestion from the KVP model'
+        "KvpService.create: This method should use createSuggestion from the KVP model",
       );
       throw new Error(
-        'Method needs refactoring - use createSuggestion instead'
+        "Method needs refactoring - use createSuggestion instead",
       );
     } catch (error) {
-      console.error('Error in KvpService.create:', error);
+      console.error("Error in KvpService.create:", error);
       throw error;
     }
   }
@@ -151,17 +151,17 @@ class KvpService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: KvpUpdateData
+    _data: KvpUpdateData,
   ): Promise<KvpEntry | null> {
     try {
       console.warn(
-        'KvpService.update: This method should use updateSuggestionStatus from the KVP model'
+        "KvpService.update: This method should use updateSuggestionStatus from the KVP model",
       );
       throw new Error(
-        'Method needs refactoring - use updateSuggestionStatus instead'
+        "Method needs refactoring - use updateSuggestionStatus instead",
       );
     } catch (error) {
-      console.error('Error in KvpService.update:', error);
+      console.error("Error in KvpService.update:", error);
       throw error;
     }
   }
@@ -173,13 +173,13 @@ class KvpService {
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     try {
       console.warn(
-        'KvpService.delete: This method should use deleteSuggestion from the KVP model'
+        "KvpService.delete: This method should use deleteSuggestion from the KVP model",
       );
       throw new Error(
-        'Method needs refactoring - use deleteSuggestion instead'
+        "Method needs refactoring - use deleteSuggestion instead",
       );
     } catch (error) {
-      console.error('Error in KvpService.delete:', error);
+      console.error("Error in KvpService.delete:", error);
       throw error;
     }
   }
@@ -194,7 +194,7 @@ class KvpService {
     try {
       return await KVPModel.getCategories(tenantId);
     } catch (error) {
-      console.error('Error in KvpService.getCategories:', error);
+      console.error("Error in KvpService.getCategories:", error);
       throw error;
     }
   }
@@ -206,12 +206,12 @@ class KvpService {
     tenantId: number,
     userId: number,
     userRole: string,
-    filters: KvpFilters = {}
+    filters: KvpFilters = {},
   ): Promise<Suggestion[]> {
     try {
       return await KVPModel.getSuggestions(tenantId, userId, userRole, filters);
     } catch (error) {
-      console.error('Error in KvpService.getSuggestions:', error);
+      console.error("Error in KvpService.getSuggestions:", error);
       throw error;
     }
   }
@@ -223,7 +223,7 @@ class KvpService {
     try {
       return await KVPModel.createSuggestion(data);
     } catch (error) {
-      console.error('Error in KvpService.createSuggestion:', error);
+      console.error("Error in KvpService.createSuggestion:", error);
       throw error;
     }
   }
@@ -235,7 +235,7 @@ class KvpService {
     try {
       return await KVPModel.getDashboardStats(tenantId);
     } catch (error) {
-      console.error('Error in KvpService.getDashboardStats:', error);
+      console.error("Error in KvpService.getDashboardStats:", error);
       throw error;
     }
   }

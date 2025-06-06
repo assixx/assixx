@@ -34,7 +34,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
   }
 
   // Mitarbeiter-Informationen abrufen für Anzeige im Dialog
-  fetch(`/admin/employees/${employeeId}`, {
+  fetch(`/api/users/${employeeId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then((response) => {
@@ -47,18 +47,26 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       selectedEmployeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim();
 
       // Prüfen, ob der Mitarbeiter Dokumente hat
-      return fetch(`/documents?user_id=${employeeId}`, {
+      return fetch(`/api/documents?user_id=${employeeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     })
-    .then((response) => {
+    .then(async (response) => {
       if (!response.ok) {
-        throw new Error('Dokumente konnten nicht abgerufen werden');
+        // If documents endpoint fails, assume no documents
+        console.warn('Dokumente konnten nicht abgerufen werden, fahre fort ohne Dokumentenzählung');
+        return [];
       }
-      return response.json();
+      try {
+        const data = await response.json();
+        return Array.isArray(data) ? data : (data.documents || []);
+      } catch {
+        // If JSON parsing fails, assume no documents
+        return [];
+      }
     })
     .then((documents: Document[]) => {
-      documentCount = documents.length;
+      documentCount = Array.isArray(documents) ? documents.length : 0;
 
       // Dialog-Inhalt zusammenstellen basierend auf den Dokumenten
       let dialogContent = `
@@ -171,49 +179,10 @@ function processEmployeeDeletion(): void {
 
   // Basierend auf der gewählten Option unterschiedliche Aktionen ausführen
   if (selectedOption === 'archive') {
-    // Mitarbeiter archivieren
-    fetch(`/admin/archive-employee/${selectedEmployeeId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({}), // Leerer Körper, da keine Daten benötigt werden
-    })
-      .then((response) => response.json())
-      .then((result: DeletionResponse) => {
-        if (result.success) {
-          // Erfolgsmeldung anzeigen
-          // eslint-disable-next-line no-alert
-          alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich archiviert.`);
-
-          // Dialog schließen und Mitarbeiterliste aktualisieren
-          hideModal('delete-employee-modal');
-
-          // Mitarbeiterliste aktualisieren
-          interface WindowWithTables extends Window {
-            loadEmployeesTable?: (action: string) => void;
-            loadDashboardStats?: () => void;
-          }
-          const windowWithTables = window as unknown as WindowWithTables;
-          if (typeof windowWithTables.loadEmployeesTable === 'function') {
-            windowWithTables.loadEmployeesTable('reload');
-          }
-
-          // Dashboard-Statistiken aktualisieren
-          if (typeof windowWithTables.loadDashboardStats === 'function') {
-            windowWithTables.loadDashboardStats();
-          }
-        } else {
-          // eslint-disable-next-line no-alert
-          alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Archivieren des Mitarbeiters'}`);
-        }
-      })
-      .catch((error) => {
-        console.error('Fehler beim Archivieren des Mitarbeiters:', error);
-        // eslint-disable-next-line no-alert
-        alert(`Fehler: ${error.message}`);
-      });
+    // Archivierung ist derzeit nicht implementiert
+    // eslint-disable-next-line no-alert
+    alert('Die Archivierungsfunktion ist derzeit nicht verfügbar. Bitte verwenden Sie die Lösch-Option.');
+    return;
   } else if (selectedOption === 'delete') {
     // Zusätzliche Bestätigung einholen, wenn Dokumente vorhanden sind
     if (documentCount > 0) {
@@ -229,18 +198,29 @@ function processEmployeeDeletion(): void {
         return; // Abbrechen, wenn der Benutzer nicht bestätigt
       }
 
-      // Force-Delete verwenden, um Mitarbeiter mit Dokumenten zu löschen
-      fetch(`/admin/delete-employee/${selectedEmployeeId}/force`, {
+      // Delete verwenden, um Mitarbeiter zu löschen
+      fetch(`/api/users/${selectedEmployeeId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
-        .then((response) => response.json())
-        .then((result: DeletionResponse) => {
-          if (result.success) {
-            // eslint-disable-next-line no-alert
-            alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
+        .then(async (response) => {
+          if (response.ok) {
+            // Try to parse JSON response, but don't fail if it's not JSON
+            try {
+              const result = await response.json();
+              if (result.message) {
+                // eslint-disable-next-line no-alert
+                alert(result.message);
+              } else {
+                // eslint-disable-next-line no-alert
+                alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
+              }
+            } catch {
+              // eslint-disable-next-line no-alert
+              alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
+            }
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
@@ -258,8 +238,15 @@ function processEmployeeDeletion(): void {
               windowWithTables2.loadDashboardStats();
             }
           } else {
-            // eslint-disable-next-line no-alert
-            alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+            // Handle error response
+            try {
+              const error = await response.json();
+              // eslint-disable-next-line no-alert
+              alert(`Fehler: ${error.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+            } catch {
+              // eslint-disable-next-line no-alert
+              alert('Fehler beim Löschen des Mitarbeiters');
+            }
           }
         })
         .catch((error) => {
@@ -269,17 +256,28 @@ function processEmployeeDeletion(): void {
         });
     } else {
       // Normales Löschen ohne Dokumente
-      fetch(`/admin/delete-employee/${selectedEmployeeId}`, {
+      fetch(`/api/users/${selectedEmployeeId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
-        .then((response) => response.json())
-        .then((result: DeletionResponse) => {
-          if (result.success) {
-            // eslint-disable-next-line no-alert
-            alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
+        .then(async (response) => {
+          if (response.ok) {
+            // Try to parse JSON response, but don't fail if it's not JSON
+            try {
+              const result = await response.json();
+              if (result.message) {
+                // eslint-disable-next-line no-alert
+                alert(result.message);
+              } else {
+                // eslint-disable-next-line no-alert
+                alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
+              }
+            } catch {
+              // eslint-disable-next-line no-alert
+              alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
+            }
             hideModal('delete-employee-modal');
 
             // Mitarbeiterliste aktualisieren
@@ -297,8 +295,15 @@ function processEmployeeDeletion(): void {
               windowWithTables2.loadDashboardStats();
             }
           } else {
-            // eslint-disable-next-line no-alert
-            alert(`Fehler: ${result.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+            // Handle error response
+            try {
+              const error = await response.json();
+              // eslint-disable-next-line no-alert
+              alert(`Fehler: ${error.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+            } catch {
+              // eslint-disable-next-line no-alert
+              alert('Fehler beim Löschen des Mitarbeiters');
+            }
           }
         })
         .catch((error) => {

@@ -1,4 +1,3 @@
-/* eslint-disable indent */
 /**
  * Blackboard Widget Component
  * Displays recent blackboard entries on dashboards
@@ -255,7 +254,7 @@ class BlackboardWidget {
       this.loadEntries();
     } catch (error) {
       console.error('Error confirming entry:', error);
-      // eslint-disable-next-line no-alert
+
       alert('Fehler bei der Lesebestätigung.');
     }
   }

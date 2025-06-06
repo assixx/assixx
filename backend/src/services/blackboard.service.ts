@@ -8,8 +8,8 @@ import {
   createEntry,
   updateEntry,
   deleteEntry,
-} from '../models/blackboard';
-import { Pool } from 'mysql2/promise';
+} from "../models/blackboard";
+import { Pool } from "mysql2/promise";
 
 // Interfaces
 interface BlackboardEntry {
@@ -18,7 +18,7 @@ interface BlackboardEntry {
   title: string;
   content: string;
   category?: string | null;
-  priority: 'low' | 'normal' | 'high';
+  priority: "low" | "normal" | "high";
   is_pinned: boolean | number;
   color?: string | null;
   tags?: string | null;
@@ -44,7 +44,7 @@ interface BlackboardAttachment {
 
 interface BlackboardFilters {
   category?: string;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
   is_pinned?: boolean;
   search?: string;
   page?: number;
@@ -56,7 +56,7 @@ interface BlackboardCreateData {
   title: string;
   content: string;
   category?: string | null;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
   is_pinned?: boolean;
   color?: string | null;
   tags?: string | null;
@@ -68,7 +68,7 @@ interface BlackboardUpdateData {
   title?: string;
   content?: string;
   category?: string | null;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
   is_pinned?: boolean;
   color?: string | null;
   tags?: string | null;
@@ -81,7 +81,7 @@ class BlackboardService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: BlackboardFilters = {}
+    _filters: BlackboardFilters = {},
   ): Promise<BlackboardEntry[]> {
     // getAllEntries expects (tenantId, userId, options)
     // For now, return empty array as we need tenant_id and user_id
@@ -97,7 +97,7 @@ class BlackboardService {
       const entry = await (getEntryById as any)(id, 1);
       return entry as BlackboardEntry | null;
     } catch (error) {
-      console.error('Error in BlackboardService.getById:', error);
+      console.error("Error in BlackboardService.getById:", error);
       throw error;
     }
   }
@@ -107,13 +107,13 @@ class BlackboardService {
    */
   async create(
     _tenantDb: Pool,
-    data: BlackboardCreateData
+    data: BlackboardCreateData,
   ): Promise<BlackboardEntry> {
     try {
       const entry = await (createEntry as any)(data);
       return entry as BlackboardEntry;
     } catch (error) {
-      console.error('Error in BlackboardService.create:', error);
+      console.error("Error in BlackboardService.create:", error);
       throw error;
     }
   }
@@ -124,14 +124,14 @@ class BlackboardService {
   async update(
     _tenantDb: Pool,
     id: number,
-    data: BlackboardUpdateData
+    data: BlackboardUpdateData,
   ): Promise<BlackboardEntry | null> {
     try {
       // TODO: updateEntry expects different parameters
       const entry = await (updateEntry as any)(id, 1, data);
       return entry as BlackboardEntry | null;
     } catch (error) {
-      console.error('Error in BlackboardService.update:', error);
+      console.error("Error in BlackboardService.update:", error);
       throw error;
     }
   }
@@ -144,7 +144,7 @@ class BlackboardService {
       // TODO: deleteEntry expects different parameters
       return await (deleteEntry as any)(id, 1);
     } catch (error) {
-      console.error('Error in BlackboardService.delete:', error);
+      console.error("Error in BlackboardService.delete:", error);
       throw error;
     }
   }

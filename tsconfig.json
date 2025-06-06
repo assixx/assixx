@@ -39,6 +39,11 @@
     "uploads",
     "logs",
     "*.test.js",
-    "*.test.ts"
+    "*.test.ts",
+    "**/__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "backend/src/__tests__/**/*",
+    "backend/src/**/__tests__/**/*"
   ]
 }

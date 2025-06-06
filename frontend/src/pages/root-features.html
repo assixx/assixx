@@ -3,19 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Feature Management - Assixx</title>
+    <title>Plan & Feature Management - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
-      /* Glassmorphismus Design-Standards */
-
+      
+      /* Global Box Sizing */
+      * {
+        box-sizing: border-box;
+      }
+      
       /* Dramatischer Hintergrund-Gradient */
       body {
         position: relative;
         min-height: 100vh;
         overflow-x: hidden;
         background: #000;
+        margin: 0;
+        padding: 0;
       }
 
       body::after {
@@ -37,793 +45,1452 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
+      /* Header anpassungen für root-features */
       .header {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 8px 20px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
-      /* Glassmorphismus für Sidebar */
-      .sidebar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          8px 0 32px rgba(0, 0, 0, 0.3),
-          inset -1px 0 0 rgba(255, 255, 255, 0.1);
-      }
-
-      /* Features Container */
-      .features-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 24px;
-      }
-
-      h1 {
-        color: var(--primary-color);
-        margin-bottom: 32px;
-        font-size: 2.5rem;
-        animation: fadeInUp 0.6s ease-out;
-      }
-
-      /* Category Tabs */
-      .category-tabs {
+      /* Layout Container - Standard Assixx Layout */
+      .layout-container {
         display: flex;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-xl);
-        padding: var(--spacing-sm);
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
-        box-shadow:
-          0 4px 16px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        margin-top: 64px; /* Header height */
+      }
+      
+      /* Main Content Area - innerhalb layout-container */
+      .main-content {
+        flex: 1;
+        padding: 24px 24px 120px 24px; /* bottom für summary bar */
+        min-height: calc(100vh - 64px);
+        background: transparent;
+      }
+      
+      /* Mobile responsiv */
+      @media (max-width: 768px) {
+        .layout-container {
+          flex-direction: column;
+        }
       }
 
-      .category-tab {
-        padding: 12px 24px;
-        background: rgba(255, 255, 255, 0.05);
+      /* Plan Selection Header */
+      .plan-header {
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-sm);
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .current-plan-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+
+      .plan-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .plan-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--accent-gradient);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+
+      .plan-badge.enterprise {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+        border-color: rgba(255, 215, 0, 0.3);
+        color: #ffd700;
+      }
+
+      /* Plan Selection Cards */
+      .plan-selection {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 24px;
+      }
+
+      .plan-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 24px;
+        position: relative;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .plan-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .plan-card.current {
+        border-color: var(--primary-color);
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      .plan-card.recommended {
+        border-color: rgba(255, 215, 0, 0.5);
+      }
+
+      .plan-card.recommended::before {
+        content: 'EMPFOHLEN';
+        position: absolute;
+        top: -12px;
+        right: 20px;
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        color: #000;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .plan-name {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .plan-price {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 4px;
+      }
+
+      .plan-price small {
+        font-size: 16px;
         color: var(--text-secondary);
-        font-weight: 600;
+        font-weight: 400;
+      }
+
+      .plan-description {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 20px;
+        opacity: 0.8;
+      }
+
+      .plan-limits {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .limit-item {
+        flex: 1;
+        text-align: center;
+      }
+
+      .limit-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: block;
+      }
+
+      .limit-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        opacity: 0.7;
+      }
+
+      .plan-features {
+        margin-bottom: 20px;
+      }
+
+      .plan-feature {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .plan-feature.included {
+        color: var(--text-primary);
+      }
+
+      .plan-feature i {
+        width: 16px;
+        color: var(--success-color);
+      }
+
+      .plan-action {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
       }
 
-      .category-tab:hover {
-        background: rgba(255, 255, 255, 0.08);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      .plan-action:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary-color);
       }
 
-      .category-tab.active {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
+      .plan-action.current {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        cursor: default;
+      }
+
+      /* Features Section */
+      .features-section {
+        margin-top: 48px;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+
+      .section-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .feature-filters {
+        display: flex;
+        gap: 12px;
+      }
+
+      .filter-btn {
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .filter-btn:hover,
+      .filter-btn.active {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary-color);
         color: var(--primary-color);
-        box-shadow: 0 4px 12px rgba(0, 142, 255, 0.2);
-      }
-
-      .category-tab::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        transform: rotate(45deg) translate(-70%, -70%);
-        transition: transform 0.6s;
-      }
-
-      .category-tab:hover::after {
-        transform: rotate(45deg) translate(-30%, -30%);
       }
 
       /* Feature Categories */
       .feature-category {
-        margin-bottom: var(--spacing-xl);
-        animation: fadeInUp 0.6s ease-out;
+        margin-bottom: 32px;
       }
 
       .category-header {
         display: flex;
         align-items: center;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-lg);
+        gap: 12px;
+        margin-bottom: 16px;
       }
 
       .category-icon {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
         font-size: 24px;
-        border: 1px solid rgba(0, 142, 255, 0.3);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
       }
 
       .category-title {
-        font-size: 1.5rem;
+        font-size: 20px;
         font-weight: 600;
         color: var(--text-primary);
       }
 
-      /* Feature Grid */
       .features-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: var(--spacing-lg);
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
       }
 
-      /* Feature Card - Glassmorphismus */
       .feature-card {
         background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
-        padding: var(--spacing-lg);
-        transition: all 0.3s ease;
+        border-radius: 12px;
+        padding: 20px;
         position: relative;
-        overflow: hidden;
+        transition: all 0.3s ease;
       }
 
       .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow:
-          0 12px 40px rgba(0, 0, 0, 0.5),
-          inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        border-color: rgba(0, 142, 255, 0.5);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       }
 
       .feature-card.active {
-        border-color: rgba(76, 175, 80, 0.5);
-        background: rgba(76, 175, 80, 0.03);
+        border-color: var(--success-color);
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .feature-card.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
 
       .feature-status {
         position: absolute;
-        top: var(--spacing-md);
-        right: var(--spacing-md);
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
+        top: 12px;
+        right: 12px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
       }
 
       .status-active {
         background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-        border: 1px solid rgba(76, 175, 80, 0.3);
+        color: var(--success-color);
       }
 
       .status-inactive {
         background: rgba(255, 255, 255, 0.1);
         color: var(--text-secondary);
-        border: 1px solid rgba(255, 255, 255, 0.2);
       }
 
-      .feature-header {
-        margin-bottom: var(--spacing-md);
+      .status-locked {
+        background: rgba(255, 152, 0, 0.2);
+        color: var(--warning-color);
       }
 
       .feature-name {
-        font-size: 1.25rem;
+        font-size: 18px;
         font-weight: 600;
         color: var(--text-primary);
-        margin-bottom: var(--spacing-xs);
+        margin-bottom: 8px;
       }
 
       .feature-description {
-        color: var(--text-secondary);
         font-size: 14px;
-        line-height: 1.6;
-        margin-bottom: var(--spacing-lg);
-      }
-
-      /* Feature Pricing */
-      .feature-pricing {
-        display: flex;
-        align-items: baseline;
-        gap: var(--spacing-sm);
-        margin-bottom: var(--spacing-md);
-      }
-
-      .price-amount {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--primary-color);
-      }
-
-      .price-period {
         color: var(--text-secondary);
-        font-size: 14px;
+        margin-bottom: 12px;
+        opacity: 0.8;
       }
 
-      /* Feature Details */
-      .feature-details {
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        padding-top: var(--spacing-md);
-        margin-bottom: var(--spacing-lg);
-      }
-
-      .feature-list {
-        list-style: none;
-        padding: 0;
-      }
-
-      .feature-list li {
-        padding: var(--spacing-xs) 0;
+      .feature-plan-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        font-size: 12px;
         color: var(--text-secondary);
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
+        margin-bottom: 16px;
       }
 
-      .feature-list li::before {
-        content: '✓';
-        color: var(--primary-color);
-        font-weight: bold;
-      }
-
-      /* Feature Actions */
       .feature-actions {
         display: flex;
-        gap: var(--spacing-sm);
+        gap: 8px;
       }
 
-      /* Buttons mit Glassmorphismus und Shine-Effekt */
-      .btn {
-        position: relative;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
-        padding: 10px 20px;
-        border-radius: var(--radius-sm);
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
+      /* Feature-spezifische Buttons - nur innerhalb von Features */
+      .feature-actions .btn {
         flex: 1;
+        padding: 8px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
         text-align: center;
+      }
+
+      .feature-actions .btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.3);
       }
 
       .btn-activate {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-        color: white;
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .btn-activate:hover {
+        background: var(--primary-dark);
       }
 
       .btn-deactivate {
-        background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.1));
-        border-color: rgba(244, 67, 54, 0.3);
-        color: white;
+        background: rgba(244, 67, 54, 0.2);
+        border-color: var(--error-color);
+        color: var(--error-color);
       }
 
-      .btn-info {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-        border-color: rgba(255, 255, 255, 0.2);
-        color: var(--text-secondary);
+      .btn-deactivate:hover {
+        background: rgba(244, 67, 54, 0.3);
       }
 
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      .feature-actions .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
-      .btn::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        transform: rotate(45deg) translate(-70%, -70%);
-        transition: transform 0.6s;
-      }
-
-      .btn:hover::after {
-        transform: rotate(45deg) translate(-30%, -30%);
-      }
-
-      /* Summary Card */
-      .summary-card {
+      /* Add-ons Section */
+      .addons-section {
+        margin-top: 48px;
+        margin-bottom: 100px; /* Platz für Summary Bar */
         background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
-        padding: var(--spacing-xl);
-        margin-bottom: var(--spacing-xl);
-        animation: fadeInUp 0.6s ease-out;
+        border-radius: 12px;
+        padding: 32px;
       }
 
-      .summary-grid {
+      .addons-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--spacing-lg);
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
       }
 
-      .summary-item {
+      .addon-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 20px;
         text-align: center;
       }
 
-      .summary-value {
-        font-size: 2.5rem;
+      .addon-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+      }
+
+      .addon-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .addon-price {
+        font-size: 20px;
         font-weight: 700;
         color: var(--primary-color);
-        margin-bottom: var(--spacing-xs);
+        margin-bottom: 4px;
+      }
+
+      .addon-unit {
+        font-size: 12px;
+        color: var(--text-secondary);
+        opacity: 0.7;
+      }
+
+      .addon-current {
+        margin: 12px 0;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .addon-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .addon-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .addon-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary-color);
+      }
+
+      .addon-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        min-width: 40px;
+        text-align: center;
+      }
+
+      /* Summary Bar - angepasst für Standard-Layout */
+      .summary-bar {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid hsla(0,0%,100%,.1);
+        bottom: 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,.3);
+        left: 280px;
+        padding: 12px 24px;
+        position: fixed;
+        right: 0;
+        z-index: 900;
+      }
+      
+      /* Mobile responsiv */
+      @media (max-width: 768px) {
+        .summary-bar {
+          left: 0;
+        }
+      }
+
+      .summary-content {
+        max-width: 100%;
+        margin: 0;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .summary-items {
+        display: flex;
+        gap: 32px;
+      }
+
+      .summary-item {
+        display: flex;
+        flex-direction: column;
       }
 
       .summary-label {
+        font-size: 11px;
         color: var(--text-secondary);
+        opacity: 0.7;
+      }
+
+      .summary-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .summary-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      .btn-save {
+        padding: 8px 24px;
+        background: var(--primary-color);
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-weight: 600;
         font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
       }
 
-      /* Animationen */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* Responsive */
-      @media (max-width: 768px) {
-        .features-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .summary-grid {
-          grid-template-columns: 1fr;
-        }
+      .btn-save:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
       }
     </style>
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
     <!-- Header -->
     <header class="header">
       <a href="/pages/root-dashboard.html" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
+        <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <div id="user-info">
           <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
         </div>
-        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+        <button id="logout-btn" class="btn btn-secondary btn-logout">
           <i class="fas fa-sign-out-alt"></i>
           Abmelden
         </button>
       </div>
     </header>
 
-    <!-- Main Layout with Sidebar -->
+    <!-- Layout Container -->
     <div class="layout-container">
       <!-- Unified Sidebar Navigation -->
       <aside class="sidebar">
         <!-- Navigation wird durch unified-navigation.js injiziert -->
       </aside>
 
-      <!-- Main Content Area -->
-      <main class="main-content">
-        <div class="features-container">
-          <h1>Feature Management</h1>
+      <!-- Main Content -->
+    <div class="main-content">
+      <!-- Current Plan Header -->
+      <div class="plan-header">
+        <div class="current-plan-info">
+          <div>
+            <h1 class="plan-title">Plan & Feature Management</h1>
+            <p style="color: var(--text-secondary); margin-top: 8px;">
+              Verwalten Sie Ihren Plan und aktivieren Sie Features für 
+              <strong id="tenant-name">Ihre Organisation</strong>
+            </p>
+          </div>
+          <div class="plan-badge enterprise">
+            <i class="fas fa-crown"></i>
+            <span>Enterprise Plan</span>
+          </div>
+        </div>
 
-          <!-- Summary Card -->
-          <div class="summary-card">
-            <div class="summary-grid">
-              <div class="summary-item">
-                <div id="total-features" class="summary-value">0</div>
-                <div class="summary-label">Verfügbare Features</div>
+        <!-- Plan Selection -->
+        <div class="plan-selection">
+          <!-- Basic Plan -->
+          <div class="plan-card" data-plan="basic">
+            <h3 class="plan-name">Basic</h3>
+            <div class="plan-price">49€ <small>/Monat</small></div>
+            <p class="plan-description">Perfekt für kleine Teams und Startups</p>
+            
+            <div class="plan-limits">
+              <div class="limit-item">
+                <span class="limit-value">10</span>
+                <span class="limit-label">Mitarbeiter</span>
               </div>
-              <div class="summary-item">
-                <div id="active-features" class="summary-value">0</div>
-                <div class="summary-label">Aktive Features</div>
+              <div class="limit-item">
+                <span class="limit-value">1</span>
+                <span class="limit-label">Admin</span>
               </div>
-              <div class="summary-item">
-                <div id="monthly-cost" class="summary-value">0€</div>
-                <div class="summary-label">Monatliche Kosten</div>
+            </div>
+
+            <div class="plan-features">
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Mitarbeiterverwaltung</span>
               </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Dokumentenverwaltung</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>E-Mail Benachrichtigungen</span>
+              </div>
+              <div class="plan-feature">
+                <i class="fas fa-times" style="color: var(--text-secondary); opacity: 0.5;"></i>
+                <span style="opacity: 0.5;">Erweiterte Features</span>
+              </div>
+            </div>
+
+            <button class="plan-action">Zu Basic wechseln</button>
+          </div>
+
+          <!-- Professional Plan -->
+          <div class="plan-card recommended" data-plan="professional">
+            <h3 class="plan-name">Professional</h3>
+            <div class="plan-price">149€ <small>/Monat</small></div>
+            <p class="plan-description">Für wachsende Unternehmen</p>
+            
+            <div class="plan-limits">
+              <div class="limit-item">
+                <span class="limit-value">50</span>
+                <span class="limit-label">Mitarbeiter</span>
+              </div>
+              <div class="limit-item">
+                <span class="limit-value">3</span>
+                <span class="limit-label">Admins</span>
+              </div>
+            </div>
+
+            <div class="plan-features">
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Alle Basic Features</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Schwarzes Brett & Chat</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Kalender & Teams</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Erweiterte Berichte</span>
+              </div>
+            </div>
+
+            <button class="plan-action">Zu Professional wechseln</button>
+          </div>
+
+          <!-- Enterprise Plan -->
+          <div class="plan-card current" data-plan="enterprise">
+            <h3 class="plan-name">Enterprise</h3>
+            <div class="plan-price">299€ <small>/Monat</small></div>
+            <p class="plan-description">Für große Organisationen</p>
+            
+            <div class="plan-limits">
+              <div class="limit-item">
+                <span class="limit-value">∞</span>
+                <span class="limit-label">Mitarbeiter</span>
+              </div>
+              <div class="limit-item">
+                <span class="limit-value">∞</span>
+                <span class="limit-label">Admins</span>
+              </div>
+            </div>
+
+            <div class="plan-features">
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Alle Professional Features</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Schichtplanung & KVP</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>API Zugang & Automation</span>
+              </div>
+              <div class="plan-feature included">
+                <i class="fas fa-check"></i>
+                <span>Priority Support</span>
+              </div>
+            </div>
+
+            <button class="plan-action current">Aktueller Plan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features Section -->
+      <div class="features-section">
+        <div class="section-header">
+          <h2 class="section-title">Verfügbare Features</h2>
+          <div class="feature-filters">
+            <button class="filter-btn active" data-filter="all">Alle</button>
+            <button class="filter-btn" data-filter="active">Aktiv</button>
+            <button class="filter-btn" data-filter="included">Im Plan enthalten</button>
+            <button class="filter-btn" data-filter="addons">Zusätzlich buchbar</button>
+          </div>
+        </div>
+
+        <div id="features-container">
+          <!-- Features werden hier dynamisch geladen -->
+        </div>
+      </div>
+
+      <!-- Add-ons Section -->
+      <div class="addons-section">
+        <h2 class="section-title">Zusätzliche Ressourcen</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          Erweitern Sie Ihre Kapazitäten nach Bedarf
+        </p>
+
+        <div class="addons-grid">
+          <!-- Zusätzliche Mitarbeiter -->
+          <div class="addon-card">
+            <div class="addon-icon">👥</div>
+            <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
+            <div class="addon-price">5€</div>
+            <div class="addon-unit">pro Mitarbeiter/Monat</div>
+            <div class="addon-current">Aktuell: <strong>0</strong> zusätzlich</div>
+            <div class="addon-controls">
+              <button class="addon-btn" onclick="adjustAddon('employees', -1)">
+                <i class="fas fa-minus"></i>
+              </button>
+              <span class="addon-value" id="addon-employees">0</span>
+              <button class="addon-btn" onclick="adjustAddon('employees', 1)">
+                <i class="fas fa-plus"></i>
+              </button>
             </div>
           </div>
 
-          <!-- Category Tabs -->
-          <div class="category-tabs">
-            <button class="category-tab active" data-category="all">Alle Features</button>
-            <button class="category-tab" data-category="basis">Basis</button>
-            <button class="category-tab" data-category="premium">Premium</button>
-            <button class="category-tab" data-category="enterprise">Enterprise</button>
+          <!-- Zusätzliche Admins -->
+          <div class="addon-card">
+            <div class="addon-icon">👔</div>
+            <h3 class="addon-name">Zusätzliche Admins</h3>
+            <div class="addon-price">10€</div>
+            <div class="addon-unit">pro Admin/Monat</div>
+            <div class="addon-current">Aktuell: <strong>0</strong> zusätzlich</div>
+            <div class="addon-controls">
+              <button class="addon-btn" onclick="adjustAddon('admins', -1)">
+                <i class="fas fa-minus"></i>
+              </button>
+              <span class="addon-value" id="addon-admins">0</span>
+              <button class="addon-btn" onclick="adjustAddon('admins', 1)">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
           </div>
 
-          <!-- Features werden hier dynamisch eingefügt -->
-          <div id="features-container">
-            <!-- Loading state -->
-            <div style="text-align: center; padding: 40px; color: var(--text-secondary)">
-              <p>Features werden geladen...</p>
+          <!-- Zusätzlicher Speicher -->
+          <div class="addon-card">
+            <div class="addon-icon">💾</div>
+            <h3 class="addon-name">Zusätzlicher Speicher</h3>
+            <div class="addon-price">10€</div>
+            <div class="addon-unit">pro 100GB/Monat</div>
+            <div class="addon-current">Aktuell: <strong>100GB</strong> inklusive</div>
+            <div class="addon-controls">
+              <button class="addon-btn" onclick="adjustAddon('storage', -100)">
+                <i class="fas fa-minus"></i>
+              </button>
+              <span class="addon-value" id="addon-storage">0</span>
+              <button class="addon-btn" onclick="adjustAddon('storage', 100)">
+                <i class="fas fa-plus"></i>
+              </button>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
 
-    <!-- Font Awesome für Icons -->
+    <!-- Summary Bar -->
+    <div class="summary-bar">
+      <div class="summary-content">
+        <div class="summary-items">
+          <div class="summary-item">
+            <span class="summary-label">Aktueller Plan</span>
+            <span class="summary-value" id="summary-plan">Enterprise</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Aktive Features</span>
+            <span class="summary-value" id="summary-features">9 / 9</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Monatliche Kosten</span>
+            <span class="summary-value" id="summary-cost">299,00€</span>
+          </div>
+        </div>
+        <div class="summary-actions">
+          <button class="btn-save" onclick="saveChanges()">
+            <i class="fas fa-save"></i> Änderungen speichern
+          </button>
+        </div>
+      </div>
+    </div>
+    </div> <!-- End main-content -->
+    </div> <!-- End layout-container -->
+
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-    <!-- JavaScript -->
+    <!-- Scripts -->
+    <script type="module" src="/scripts/header-user-info.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script>
-      // Authentication Check
-      const token = localStorage.getItem('token');
-      if (!token) {
-        window.location.href = '/pages/login.html';
-      }
+      // Plan data will be loaded from API
+      let plans = {
+        basic: {
+          id: 1,
+          name: 'Basic',
+          price: 49.00,
+          maxEmployees: 10,
+          maxAdmins: 1,
+          features: ['basic_employees', 'document_upload']
+        },
+        professional: {
+          id: 2,
+          name: 'Professional',
+          price: 149.00,
+          maxEmployees: 50,
+          maxAdmins: 3,
+          features: ['basic_employees', 'document_upload', 'blackboard', 'chat', 'calendar']
+        },
+        enterprise: {
+          id: 3,
+          name: 'Enterprise',
+          price: 299.00,
+          maxEmployees: Infinity,
+          maxAdmins: Infinity,
+          features: ['all']
+        }
+      };
+      let allPlans = [];
 
-      // Decode JWT to get user info
+      const featureCategories = {
+        'Kern-Features': {
+          icon: '⚙️',
+          features: [
+            {
+              code: 'basic_employees',
+              name: 'Mitarbeiterverwaltung',
+              description: 'Verwalten Sie Ihre Mitarbeiter effizient',
+              minPlan: 'basic',
+              active: true
+            },
+            {
+              code: 'document_upload',
+              name: 'Dokumentenverwaltung',
+              description: 'Zentrale Ablage für alle Dokumente',
+              minPlan: 'basic',
+              active: true
+            }
+          ]
+        },
+        'Kommunikation': {
+          icon: '💬',
+          features: [
+            {
+              code: 'blackboard',
+              name: 'Schwarzes Brett',
+              description: 'Unternehmensweite Ankündigungen',
+              minPlan: 'professional',
+              active: true
+            },
+            {
+              code: 'chat',
+              name: 'Chat System',
+              description: 'Echtzeit-Kommunikation im Team',
+              minPlan: 'professional',
+              active: true
+            },
+            {
+              code: 'surveys',
+              name: 'Umfragen',
+              description: 'Mitarbeiterfeedback sammeln',
+              minPlan: 'enterprise',
+              active: true
+            }
+          ]
+        },
+        'Organisation': {
+          icon: '📊',
+          features: [
+            {
+              code: 'calendar',
+              name: 'Firmenkalender',
+              description: 'Termine und Events verwalten',
+              minPlan: 'professional',
+              active: true
+            },
+            {
+              code: 'shift_planning',
+              name: 'Schichtplanung',
+              description: 'Automatisierte Schichtpläne',
+              minPlan: 'enterprise',
+              active: true
+            },
+            {
+              code: 'kvp',
+              name: 'KVP System',
+              description: 'Kontinuierliche Verbesserung',
+              minPlan: 'enterprise',
+              active: false
+            }
+          ]
+        }
+      };
+
+      let currentPlan = null;
+      let currentTenant = null;
+      let activeFeatures = [];
+      let tenantAddons = {};
+      let currentTenantId = null;
+      const token = localStorage.getItem('token');
+      
+      // Decode JWT to get tenant ID
       function parseJwt(token) {
         try {
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split('')
-              .map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-              })
-              .join(''),
-          );
-          return JSON.parse(jsonPayload);
+          return JSON.parse(atob(token.split('.')[1]));
         } catch (e) {
           return null;
         }
       }
-
-      const userInfo = parseJwt(token);
-      if (userInfo && userInfo.role !== 'root') {
-        window.location.href = '/pages/login.html';
-      }
-
-      // Feature Category Mapping
-      const featureCategories = {
-        'Kern-Features': {
-          icon: '⚙️',
-          features: {
-            basic_employees: {
-              name: 'Mitarbeiterverwaltung',
-              details: ['Unbegrenzte Mitarbeiter', 'Dokumentenverwaltung', 'Abteilungen & Teams', 'Berechtigungssystem'],
-              tier: 'basis',
-            },
-            unlimited_employees: {
-              name: 'Unbegrenzte Mitarbeiter',
-              details: ['Keine Limitierung', 'Vollständige Verwaltung', 'Alle Funktionen', 'Premium Support'],
-              tier: 'enterprise',
-            },
-            document_upload: {
-              name: 'Dokumentenverwaltung',
-              details: ['PDF-Upload', 'Kategorisierung', 'Versionierung', 'Zugriffsprotokoll'],
-              tier: 'basis',
-            },
-          },
-        },
-        Kommunikation: {
-          icon: '💬',
-          features: {
-            blackboard: {
-              name: 'Schwarzes Brett',
-              details: ['Ankündigungen erstellen', 'Kategorien & Tags', 'Prioritätsstufen', 'Lesebestätigungen'],
-              tier: 'premium',
-            },
-            chat: {
-              name: 'Chat System',
-              details: ['Einzel- und Gruppenchats', 'Dateifreigabe', 'Suchfunktion', 'Benachrichtigungen'],
-              tier: 'premium',
-            },
-            surveys: {
-              name: 'Umfragen',
-              details: ['Multiple-Choice Fragen', 'Anonyme Teilnahme', 'Auswertungen', 'Export-Funktionen'],
-              tier: 'enterprise',
-            },
-          },
-        },
-        Organisation: {
-          icon: '📊',
-          features: {
-            calendar: {
-              name: 'Firmenkalender',
-              details: ['Terminverwaltung', 'Urlaubskalender', 'Wiederkehrende Events', 'Erinnerungen'],
-              tier: 'premium',
-            },
-            shifts: {
-              name: 'Schichtplanung',
-              details: ['Schichtvorlagen', 'Automatische Planung', 'Tauschbörse', 'Überstundenverwaltung'],
-              tier: 'enterprise',
-            },
-            kvp: {
-              name: 'KVP System',
-              details: ['Vorschlagswesen', 'Bewertungssystem', 'Punkte & Prämien', 'Statistiken'],
-              tier: 'enterprise',
-            },
-          },
-        },
-      };
-
-      // Global variables
-      let allFeatures = [];
-      let currentTenant = null;
-      let currentCategoryFilter = 'all';
-
-      // Load current tenant info
-      async function loadCurrentTenant() {
-        try {
-          const response = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) throw new Error('Failed to load user profile');
-
-          const userData = await response.json();
-
-          currentTenant = {
-            id: userData.tenant_id,
-            company_name: userData.company_name || 'Ihre Organisation',
-            subdomain: userData.subdomain || 'your-company',
-          };
-
-          await loadTenantFeatures(currentTenant.id);
-        } catch (error) {
-          console.error('Error loading current tenant:', error);
-          alert('Fehler beim Laden der Organisation');
+      
+      // Get tenant ID from token
+      if (token) {
+        const decoded = parseJwt(token);
+        if (decoded && decoded.tenant_id) {
+          currentTenantId = decoded.tenant_id;
         }
       }
 
-      // Load all available features
-      async function loadAvailableFeatures() {
-        try {
-          const response = await fetch('/api/features/available', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) throw new Error('Failed to load features');
-
-          allFeatures = await response.json();
-          displayFeatures();
-        } catch (error) {
-          console.error('Error loading features:', error);
-          alert('Fehler beim Laden der Features');
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async () => {
+        if (!token) {
+          window.location.href = '/pages/login.html';
+          return;
         }
-      }
 
-      // Load features for selected tenant
-      async function loadTenantFeatures(tenantId) {
-        if (!tenantId || !currentTenant) return;
+        await loadInitialData();
+        
+        // Plan selection
+        document.querySelectorAll('.plan-card').forEach(card => {
+          card.addEventListener('click', () => selectPlan(card.dataset.plan));
+        });
 
-        try {
-          const response = await fetch(`/api/features/tenant/${tenantId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterFeatures(btn.dataset.filter);
           });
+        });
+      });
 
-          if (!response.ok) throw new Error('Failed to load tenant features');
+      // Load all initial data
+      async function loadInitialData() {
+        try {
+          // Load available plans - using simple route for now
+          const plansResponse = await fetch('/api/plans/simple', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (!plansResponse.ok) {
+            console.error('Failed to load plans:', plansResponse.status);
+            throw new Error('Failed to load plans');
+          }
+          
+          allPlans = await plansResponse.json();
+          console.log('Loaded plans:', allPlans);
+          
+          // Check if response is an array
+          if (!Array.isArray(allPlans)) {
+            console.error('Plans response is not an array:', allPlans);
+            throw new Error('Invalid plans response');
+          }
+          
+          // Convert to object format for compatibility, keeping defaults if load fails
+          const loadedPlans = {};
+          allPlans.forEach(plan => {
+            loadedPlans[plan.code] = {
+              id: plan.id,
+              name: plan.name,
+              price: plan.base_price,
+              maxEmployees: plan.max_employees || Infinity,
+              maxAdmins: plan.max_admins || Infinity,
+              features: plan.features.map(f => f.feature_code)
+            };
+          });
+          
+          // Only replace plans if we got valid data
+          if (Object.keys(loadedPlans).length > 0) {
+            plans = loadedPlans;
+          }
 
-          currentTenant.features = await response.json();
+          // Load current tenant plan
+          const currentPlanResponse = await fetch('/api/plans/current', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (!currentPlanResponse.ok) {
+            console.error('Failed to load current plan:', currentPlanResponse.status);
+            // Fallback to basic plan if no plan found
+            currentPlan = 'basic';
+            tenantAddons = {};
+          } else {
+            const currentPlanData = await currentPlanResponse.json();
+            console.log('Current plan data:', currentPlanData);
+            
+            if (currentPlanData.plan && currentPlanData.plan.plan_code) {
+              currentPlan = currentPlanData.plan.plan_code;
+              // Handle trial status by mapping to actual plan
+              if (currentPlan === 'trial' || currentPlanData.plan.status === 'trial') {
+                // Get actual plan from plan_id
+                const planId = currentPlanData.plan.plan_id;
+                if (planId === 1) currentPlan = 'basic';
+                else if (planId === 2) currentPlan = 'professional';
+                else if (planId === 3) currentPlan = 'enterprise';
+                else currentPlan = 'basic'; // Default fallback
+              }
+              tenantAddons = currentPlanData.addons.reduce((acc, addon) => {
+                acc[addon.addon_type] = addon.quantity;
+                return acc;
+              }, {});
+            } else {
+              console.warn('No plan data found, using fallback');
+              currentPlan = 'basic';
+              tenantAddons = {};
+            }
+          }
+
+          // Update UI with current plan
+          updatePlanUI();
+          
+          // Load tenant features
+          await loadTenantFeatures();
+          
+          // Update summary
           updateSummary();
+          
+          // Hide Add-ons filter for Enterprise plan on load
+          if (currentPlan === 'enterprise') {
+            document.querySelector('[data-filter="addons"]').style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Error loading initial data:', error);
+          alert('Fehler beim Laden der Daten');
+        }
+      }
+
+      // Load tenant features
+      async function loadTenantFeatures() {
+        try {
+          const response = await fetch('/api/features/my-features', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const features = await response.json();
+          
+          // Update feature states in categories
+          Object.values(featureCategories).forEach(category => {
+            category.features.forEach(feature => {
+              const tenantFeature = features.find(f => f.code === feature.code);
+              if (tenantFeature) {
+                feature.active = tenantFeature.is_available === 1;
+              }
+            });
+          });
+          
+          loadFeatures();
         } catch (error) {
           console.error('Error loading tenant features:', error);
         }
       }
 
-      // Update summary statistics
-      function updateSummary() {
-        if (!currentTenant || !currentTenant.features) return;
-
-        const activeFeatures = currentTenant.features.filter((f) => f.is_available);
-        const monthlyCost = activeFeatures.reduce((sum, f) => {
-          const feature = allFeatures.find((af) => af.code === f.code);
-          const price = feature ? parseFloat(feature.base_price) || 0 : 0;
-          return sum + price;
-        }, 0);
-
-        document.getElementById('total-features').textContent = allFeatures.length;
-        document.getElementById('active-features').textContent = activeFeatures.length;
-        document.getElementById('monthly-cost').textContent = monthlyCost.toFixed(2) + '€';
+      // Update plan UI
+      function updatePlanUI() {
+        // Update plan cards
+        document.querySelectorAll('.plan-card').forEach(card => {
+          card.classList.remove('current');
+          const btn = card.querySelector('.plan-action');
+          btn.classList.remove('current');
+          btn.textContent = `Zu ${card.querySelector('.plan-name').textContent} wechseln`;
+        });
+        
+        const currentCard = document.querySelector(`[data-plan="${currentPlan}"]`);
+        if (currentCard) {
+          currentCard.classList.add('current');
+          const btn = currentCard.querySelector('.plan-action');
+          btn.classList.add('current');
+          btn.textContent = 'Aktueller Plan';
+        }
+        
+        // Update plan badge
+        const badge = document.querySelector('.plan-badge span');
+        if (badge) {
+          const planName = plans[currentPlan]?.name || currentPlan || 'Basic';
+          badge.textContent = `${planName} Plan`;
+        }
+        
+        // Update addons
+        if (tenantAddons.employees) {
+          document.getElementById('addon-employees').textContent = tenantAddons.employees;
+        }
+        if (tenantAddons.admins) {
+          document.getElementById('addon-admins').textContent = tenantAddons.admins;
+        }
+        if (tenantAddons.storage_gb) {
+          document.getElementById('addon-storage').textContent = `${tenantAddons.storage_gb}GB`;
+        }
       }
 
-      // Display features
-      function displayFeatures() {
+      function loadFeatures() {
         const container = document.getElementById('features-container');
         container.innerHTML = '';
 
-        // Filter features based on current category
-        let filteredFeatures = allFeatures;
-        if (currentCategoryFilter !== 'all') {
-          filteredFeatures = allFeatures.filter((f) => {
-            // Find the feature in our mapping to get its tier
-            for (const category of Object.values(featureCategories)) {
-              if (category.features[f.code]) {
-                return category.features[f.code].tier === currentCategoryFilter;
-              }
-            }
-            return false;
-          });
-        }
-
-        // Create categories
         Object.entries(featureCategories).forEach(([categoryName, categoryData]) => {
           const categoryDiv = document.createElement('div');
           categoryDiv.className = 'feature-category';
-
-          const categoryFeatures = filteredFeatures.filter((f) => categoryData.features[f.code]);
-          if (categoryFeatures.length === 0) return;
-
+          
           categoryDiv.innerHTML = `
-                    <div class="category-header">
-                        <div class="category-icon">${categoryData.icon}</div>
-                        <h2 class="category-title">${categoryName}</h2>
+            <div class="category-header">
+              <div class="category-icon">${categoryData.icon}</div>
+              <h3 class="category-title">${categoryName}</h3>
+            </div>
+            <div class="features-grid">
+              ${categoryData.features.map(feature => {
+                const isIncludedInPlan = isFeatureIncludedInPlan(feature.code, currentPlan);
+                const canActivate = canActivateFeature(feature.minPlan, currentPlan);
+                const isActive = feature.active;
+                
+                return `
+                  <div class="feature-card ${isActive ? 'active' : ''} ${!canActivate ? 'locked' : ''}" 
+                       data-feature="${feature.code}"
+                       data-min-plan="${feature.minPlan}">
+                    <span class="feature-status ${isActive ? 'status-active' : (!canActivate ? 'status-locked' : 'status-inactive')}">
+                      ${isActive ? 'Aktiv' : (!canActivate ? 'Gesperrt' : 'Inaktiv')}
+                    </span>
+                    <h4 class="feature-name">${feature.name}</h4>
+                    <p class="feature-description">${feature.description}</p>
+                    <div class="feature-plan-badge">
+                      ${getPlanBadge(feature.minPlan)}
                     </div>
-                    <div class="features-grid">
-                        ${categoryFeatures
-                          .map((feature) => {
-                            const isActive = currentTenant?.features?.find((tf) => tf.code === feature.code && tf.is_available);
-                            const mappedFeature = categoryData.features[feature.code];
-                            const displayName = mappedFeature?.name || feature.name;
-                            const details = mappedFeature?.details || [];
-
-                            return `
-                                <div class="feature-card ${isActive ? 'active' : ''}" data-feature-code="${feature.code}">
-                                    <span class="feature-status ${isActive ? 'status-active' : 'status-inactive'}">
-                                        ${isActive ? 'Aktiv' : 'Inaktiv'}
-                                    </span>
-                                    <div class="feature-header">
-                                        <h3 class="feature-name">${displayName}</h3>
-                                    </div>
-                                    <p class="feature-description">${feature.description}</p>
-                                    <div class="feature-pricing">
-                                        <span class="price-amount">${feature.base_price === 0 || feature.base_price === '0.00' ? 'Kostenlos' : parseFloat(feature.base_price).toFixed(2) + '€'}</span>
-                                        <span class="price-period">${feature.base_price === 0 || feature.base_price === '0.00' ? '/ immer' : '/ Monat'}</span>
-                                    </div>
-                                    ${
-                                      details.length > 0
-                                        ? `
-                                        <div class="feature-details">
-                                            <ul class="feature-list">
-                                                ${details.map((detail) => `<li>${detail}</li>`).join('')}
-                                            </ul>
-                                        </div>
-                                    `
-                                        : ''
-                                    }
-                                    <div class="feature-actions">
-                                        ${
-                                          feature.base_price === 0
-                                            ? `<button class="btn btn-info" disabled>Kern-Feature</button>`
-                                            : (isActive
-                                                ? `<button class="btn btn-deactivate" onclick="toggleFeature('${feature.code}', false)">Deaktivieren</button>`
-                                                : `<button class="btn btn-activate" onclick="toggleFeature('${feature.code}', true)">Aktivieren</button>`) +
-                                              `<button class="btn btn-info" onclick="showFeatureInfo('${feature.code}')">Details</button>`
-                                        }
-                                    </div>
-                                </div>
-                            `;
-                          })
-                          .join('')}
+                    <div class="feature-actions">
+                      ${canActivate ? (
+                        isActive ? 
+                          `<button class="btn btn-deactivate" onclick="toggleFeature('${feature.code}', false)">
+                            Deaktivieren
+                          </button>` :
+                          `<button class="btn btn-activate" onclick="toggleFeature('${feature.code}', true)">
+                            Aktivieren
+                          </button>`
+                      ) : (
+                        `<button class="btn" disabled>
+                          Upgrade benötigt
+                        </button>`
+                      )}
                     </div>
+                  </div>
                 `;
-
+              }).join('')}
+            </div>
+          `;
+          
           container.appendChild(categoryDiv);
         });
       }
 
-      // Toggle feature activation
-      async function toggleFeature(featureCode, activate) {
-        if (!currentTenant) return;
+      function isFeatureIncludedInPlan(featureCode, plan) {
+        const planData = plans[plan];
+        if (!planData || !planData.features) {
+          console.warn(`Plan data not found for plan: ${plan}`);
+          return false;
+        }
+        return planData.features.includes('all') || planData.features.includes(featureCode);
+      }
 
-        const feature = allFeatures.find((f) => f.code === featureCode);
-        const action = activate ? 'aktivieren' : 'deaktivieren';
+      function canActivateFeature(minPlan, currentPlan) {
+        const planOrder = ['basic', 'professional', 'enterprise'];
+        return planOrder.indexOf(currentPlan) >= planOrder.indexOf(minPlan);
+      }
 
-        if (!confirm(`Möchten Sie das Feature "${feature.name}" für ${currentTenant.company_name} ${action}?`)) {
+      function getPlanBadge(plan) {
+        const badges = {
+          basic: 'Ab Basic',
+          professional: 'Ab Professional',
+          enterprise: 'Enterprise Only'
+        };
+        return badges[plan] || plan;
+      }
+
+      async function selectPlan(plan) {
+        if (plan === currentPlan) return;
+        
+        const planName = plans[plan]?.name || plan;
+        if (!confirm(`Möchten Sie wirklich zum ${planName} Plan wechseln?`)) {
           return;
         }
 
+        try {
+          const response = await fetch('/api/plans/change', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tenantId: currentTenantId,
+              newPlanCode: plan
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Plan-Wechsel fehlgeschlagen');
+          }
+
+          const result = await response.json();
+          
+          // Update local state
+          currentPlan = plan;
+          
+          // Update UI
+          updatePlanUI();
+          
+          // Hide or show Add-ons filter based on plan
+          const addonsFilterBtn = document.querySelector('[data-filter="addons"]');
+          if (plan === 'enterprise') {
+            addonsFilterBtn.style.display = 'none';
+            if (addonsFilterBtn.classList.contains('active')) {
+              document.querySelector('[data-filter="all"]').click();
+            }
+          } else {
+            addonsFilterBtn.style.display = 'inline-flex';
+          }
+          
+          // Reload features for new plan
+          await loadTenantFeatures();
+          updateSummary();
+          
+          alert('Plan erfolgreich geändert!');
+        } catch (error) {
+          console.error('Error changing plan:', error);
+          alert('Fehler beim Plan-Wechsel');
+        }
+      }
+
+      async function toggleFeature(featureCode, activate) {
         try {
           const endpoint = activate ? '/api/features/activate' : '/api/features/deactivate';
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              tenantId: currentTenant.id,
-              featureCode: featureCode,
-            }),
+              tenantId: currentTenantId,
+              featureCode: featureCode
+            })
           });
 
           if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Operation failed');
+            throw new Error('Feature-Änderung fehlgeschlagen');
           }
 
-          await loadTenantFeatures(currentTenant.id);
-          await loadAvailableFeatures();
-
-          alert(`Feature "${feature.name}" wurde erfolgreich ${action === 'aktivieren' ? 'aktiviert' : 'deaktiviert'}!`);
+          // Update local state
+          Object.values(featureCategories).forEach(category => {
+            const feature = category.features.find(f => f.code === featureCode);
+            if (feature) {
+              feature.active = activate;
+            }
+          });
+          
+          loadFeatures();
+          updateSummary();
         } catch (error) {
           console.error('Error toggling feature:', error);
-          alert(`Fehler beim ${action} des Features: ${error.message}`);
+          alert('Fehler beim Ändern des Features');
         }
       }
 
-      // Show feature info
-      function showFeatureInfo(featureCode) {
-        const feature = allFeatures.find((f) => f.code === featureCode);
-        alert(`Detaillierte Informationen zu "${feature.name}" kommen bald!`);
-      }
-
-      // Logout
-      document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/pages/login.html';
-      });
-
-      // Initialize category tabs
-      function initializeCategoryTabs() {
-        const tabs = document.querySelectorAll('.category-tab');
-        tabs.forEach((tab) => {
-          tab.addEventListener('click', (e) => {
-            // Remove active class from all tabs
-            tabs.forEach((t) => t.classList.remove('active'));
-            // Add active class to clicked tab
-            e.target.classList.add('active');
-            // Update current filter
-            currentCategoryFilter = e.target.getAttribute('data-category');
-            // Re-display features
-            displayFeatures();
-          });
+      function filterFeatures(filter) {
+        const cards = document.querySelectorAll('.feature-card');
+        
+        cards.forEach(card => {
+          let show = true;
+          
+          switch(filter) {
+            case 'active':
+              show = card.classList.contains('active');
+              break;
+            case 'included':
+              show = isFeatureIncludedInPlan(card.dataset.feature, currentPlan);
+              break;
+            case 'addons':
+              show = !isFeatureIncludedInPlan(card.dataset.feature, currentPlan) && 
+                     !card.classList.contains('locked');
+              break;
+          }
+          
+          card.style.display = show ? 'block' : 'none';
         });
       }
 
-      // Initialize
-      async function init() {
-        initializeCategoryTabs();
-        await loadCurrentTenant();
-        await loadAvailableFeatures();
+      function adjustAddon(type, change) {
+        // Map frontend names to backend names
+        const addonMap = {
+          'employees': 'employees',
+          'admins': 'admins',
+          'storage': 'storage_gb'
+        };
+        
+        const backendType = addonMap[type];
+        const currentValue = tenantAddons[backendType] || 0;
+        const newValue = Math.max(0, currentValue + change);
+        
+        tenantAddons[backendType] = newValue;
+        document.getElementById(`addon-${type}`).textContent = 
+          type === 'storage' ? `${newValue}GB` : newValue;
+        updateSummary();
       }
 
-      init();
+      function updateSummary() {
+        // Count active features
+        let activeCount = 0;
+        let totalCount = 0;
+        
+        Object.values(featureCategories).forEach(category => {
+          category.features.forEach(feature => {
+            if (canActivateFeature(feature.minPlan, currentPlan)) {
+              totalCount++;
+              if (feature.active) activeCount++;
+            }
+          });
+        });
+        
+        // Get plan data with fallback
+        const planData = plans[currentPlan] || { price: 0, name: currentPlan || 'Basic' };
+        
+        // Calculate cost
+        let totalCost = planData.price || 0;
+        totalCost += (tenantAddons.employees || 0) * 5;
+        totalCost += (tenantAddons.admins || 0) * 10;
+        totalCost += ((tenantAddons.storage_gb || 0) / 100) * 10;
+        
+        // Update UI
+        document.getElementById('summary-plan').textContent = planData.name;
+        document.getElementById('summary-features').textContent = `${activeCount} / ${totalCount}`;
+        document.getElementById('summary-cost').textContent = `${totalCost.toFixed(2)}€`;
+      }
+
+      async function saveChanges() {
+        try {
+          // Save addons
+          const response = await fetch('/api/plans/addons', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tenantId: currentTenantId,
+              addons: tenantAddons
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Speichern fehlgeschlagen');
+          }
+
+          const result = await response.json();
+          
+          // Update cost display
+          if (result.costs) {
+            const totalCost = result.costs.totalCost;
+            document.getElementById('summary-cost').textContent = `${totalCost.toFixed(2)}€`;
+          }
+          
+          alert('Änderungen erfolgreich gespeichert!');
+        } catch (error) {
+          console.error('Error saving changes:', error);
+          alert('Fehler beim Speichern der Änderungen');
+        }
+      }
+
     </script>
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
   </body>
 </html>

@@ -3,11 +3,11 @@
  * Handles all authentication-related business logic
  */
 
-import { Request, Response } from 'express';
-import authService from '../services/auth.service';
-import userService from '../services/user.service';
-import { logger } from '../utils/logger';
-import { AuthenticatedRequest } from '../types/request.types';
+import { Request, Response } from "express";
+import authService from "../services/auth.service";
+import userService from "../services/user.service";
+import { logger } from "../utils/logger";
+import { AuthenticatedRequest } from "../types/request.types";
 
 // Interfaces for request bodies
 interface LoginRequest extends Request {
@@ -46,8 +46,8 @@ class AuthController {
         },
       });
     } catch (error) {
-      logger.error('Error in auth check:', error);
-      res.status(500).json({ message: 'Server error' });
+      logger.error("Error in auth check:", error);
+      res.status(500).json({ message: "Server error" });
     }
   }
 
@@ -56,20 +56,23 @@ class AuthController {
    */
   async getUserProfile(
     req: AuthenticatedRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
-      const user = await userService.getUserById(req.user!.id);
+      const user = await userService.getUserById(
+        req.user!.id,
+        req.user!.tenantId,
+      );
 
       if (!user) {
-        res.status(404).json({ message: 'User not found' });
+        res.status(404).json({ message: "User not found" });
         return;
       }
 
       res.json(user);
     } catch (error) {
-      logger.error('Error in get user profile:', error);
-      res.status(500).json({ message: 'Server error' });
+      logger.error("Error in get user profile:", error);
+      res.status(500).json({ message: "Server error" });
     }
   }
 
@@ -77,54 +80,54 @@ class AuthController {
    * Login user
    */
   async login(req: LoginRequest, res: Response): Promise<void> {
-    console.log('[DEBUG] AuthController.login called');
+    console.log("[DEBUG] AuthController.login called");
     try {
       const { username, password } = req.body;
-      console.log('[DEBUG] Login attempt for username:', username);
+      console.log("[DEBUG] Login attempt for username:", username);
 
       // Validate input
       if (!username || !password) {
-        console.log('[DEBUG] Missing username or password');
+        console.log("[DEBUG] Missing username or password");
         res.status(400).json({
-          message: 'Username and password are required',
+          message: "Username and password are required",
         });
         return;
       }
 
       // Authenticate user
-      console.log('[DEBUG] Calling authService.authenticateUser');
+      console.log("[DEBUG] Calling authService.authenticateUser");
       const result = await authService.authenticateUser(username, password);
-      console.log('[DEBUG] Auth result:', result ? 'Success' : 'Failed');
+      console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
 
       if (!result.success) {
         res.status(401).json({
-          message: result.message || 'Invalid credentials',
+          message: result.message || "Invalid credentials",
         });
         return;
       }
 
       // Set token as httpOnly cookie for HTML pages
-      res.cookie('token', result.token!, {
+      res.cookie("token", result.token!, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
       // Return user data and token (compatible with legacy frontend)
       res.json({
-        message: 'Login erfolgreich',
+        message: "Login erfolgreich",
         token: result.token,
         role: result.user!.role,
         user: result.user,
       });
     } catch (error: any) {
-      logger.error('Login error:', error);
-      console.error('[DEBUG] Login error details:', error.message, error.stack);
+      logger.error("Login error:", error);
+      console.error("[DEBUG] Login error details:", error.message, error.stack);
       res.status(500).json({
-        message: 'Server error during login',
+        message: "Server error during login",
         error:
-          process.env.NODE_ENV === 'development' ? error.message : undefined,
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   }
@@ -139,9 +142,9 @@ class AuthController {
         username: req.body.username,
         password: req.body.password,
         email: req.body.email,
-        vorname: req.body.first_name || '',
-        nachname: req.body.last_name || '',
-        role: req.body.role as 'admin' | 'employee' | undefined,
+        vorname: req.body.first_name || "",
+        nachname: req.body.last_name || "",
+        role: req.body.role as "admin" | "employee" | undefined,
         tenantId: req.body.tenant_id,
       };
 
@@ -150,18 +153,18 @@ class AuthController {
 
       if (!result.success) {
         res.status(400).json({
-          message: result.message || 'Registration failed',
+          message: result.message || "Registration failed",
         });
         return;
       }
 
       res.status(201).json({
-        message: 'Registration successful',
+        message: "Registration successful",
         user: result.user,
       });
     } catch (error) {
-      logger.error('Registration error:', error);
-      res.status(500).json({ message: 'Server error during registration' });
+      logger.error("Registration error:", error);
+      res.status(500).json({ message: "Server error during registration" });
     }
   }
 
@@ -170,13 +173,13 @@ class AuthController {
    */
   async logout(_req: Request, res: Response): Promise<void> {
     // Clear the httpOnly cookie
-    res.clearCookie('token', {
+    res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
 
-    res.json({ message: 'Logout successful' });
+    res.json({ message: "Logout successful" });
   }
 }
 

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <!-- Blackboard spezifische Styles -->
     <link rel="stylesheet" href="/styles/blackboard.css" />
+    <link rel="stylesheet" href="/styles/blackboard-update.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -200,7 +201,7 @@
   <body>
     <!-- Header -->
     <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
+      <a href="/pages/admin-dashboard.html" class="logo-container">
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
       </a>
       <div class="header-actions">
@@ -230,7 +231,7 @@
             <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
           </div>
           <div>
-            <button id="newEntryBtn" class="btn btn-primary" onclick="openEntryForm()">
+            <button id="newEntryBtn" class="btn btn-primary">
               <i class="fas fa-plus"></i>
               Neuer Eintrag
             </button>
@@ -292,37 +293,44 @@
           </div>
         </div>
 
-        <!-- Entries werden erst nach Knopfdruck geladen -->
-        <div class="card mb-4 text-center p-4" id="loadEntriesCard">
-          <h3>Blackboard-Einträge</h3>
-          <p class="text-secondary mb-3">Klicke auf den Button, um Einträge zu laden</p>
-          <button id="loadEntriesBtn" class="btn btn-primary">
-            <i class="fas fa-sync-alt"></i>
-            Einträge laden
-          </button>
-        </div>
-
-        <!-- Loading Indicator (versteckt innerhalb der Karte) -->
-        <div id="loadingIndicator" class="card mb-4 text-center p-5 d-none">
-          <div class="loading-spinner"></div>
-          <p class="mt-3 text-secondary">Einträge werden geladen...</p>
-        </div>
-
-        <!-- No Entries Message -->
-        <div id="noEntriesMessage" class="card mb-4 d-none">
-          <div class="card-body text-center">
-            <i class="fas fa-info-circle mb-2" style="font-size: 24px; color: var(--primary-color)"></i>
-            <p>Keine Einträge gefunden.</p>
-            <button id="retryLoadBtn" class="btn btn-outline-primary mt-3">
-              <i class="fas fa-redo"></i>
-              Erneut versuchen
+        <!-- Pinnwand Container -->
+        <div class="blackboard-container" id="blackboardContainer">
+          <!-- Initial Load Button -->
+          <div class="text-center p-5" id="loadEntriesCard">
+            <h3 class="text-white mb-3">Willkommen am Schwarzen Brett</h3>
+            <p class="text-white opacity-75 mb-4">Klicke auf den Button, um die Einträge zu laden</p>
+            <button id="loadEntriesBtn" class="btn btn-primary btn-lg">
+              <i class="fas fa-thumbtack me-2"></i>
+              Einträge anheften
             </button>
           </div>
-        </div>
 
-        <!-- Blackboard Entries -->
-        <div id="blackboardEntries" class="admin-grid d-none">
-          <!-- Einträge werden dynamisch eingefügt -->
+          <!-- Loading Indicator -->
+          <div id="loadingIndicator" class="text-center p-5 d-none">
+            <div class="loading-spinner"></div>
+            <p class="mt-3 text-white">Einträge werden geladen...</p>
+          </div>
+
+          <!-- No Entries Message -->
+          <div id="noEntriesMessage" class="text-center p-5 d-none">
+            <div class="pinboard-item">
+              <div class="pinboard-sticky color-yellow text-center">
+                <div class="pushpin pushpin-red"></div>
+                <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0.5;"></i>
+                <h4>Noch keine Einträge</h4>
+                <p>Das Schwarze Brett ist noch leer.</p>
+                <button id="retryLoadBtn" class="btn btn-sm btn-outline-dark mt-3">
+                  <i class="fas fa-redo"></i>
+                  Erneut versuchen
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pinboard Grid -->
+          <div id="blackboardEntries" class="pinboard-grid d-none">
+            <!-- Einträge werden dynamisch eingefügt -->
+          </div>
         </div>
 
         <!-- Pagination -->
@@ -355,32 +363,31 @@
     </div>
 
     <!-- Entry Form Modal -->
-    <div class="modal-overlay" id="entryFormModal">
-      <div class="modal-container modal-lg">
+    <div class="modal" id="entryFormModal" style="display: none;">
+      <div class="modal-content">
         <div class="modal-header">
-          <h2 id="entryFormModalLabel">Neuer Eintrag</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
+          <h3 class="modal-title" id="entryFormModalLabel">Neuer Eintrag</h3>
+          <button type="button" class="modal-close" onclick="hideModal('entryFormModal')">&times;</button>
         </div>
-        <div class="modal-body">
-          <form id="entryForm" class="simple-form">
-            <input type="hidden" id="entryId" />
+        <form id="entryForm">
+            <input type="hidden" id="entryId" name="entry_id" />
 
             <!-- Titel und Inhalt -->
-            <div class="form-group large-form-group">
-              <label for="entryTitle" class="big-label">Titel</label>
-              <input type="text" class="big-input" id="entryTitle" required />
+            <div class="form-group">
+              <label for="entryTitle" class="form-label">Titel</label>
+              <input type="text" class="form-control" id="entryTitle" name="title" required placeholder="Was ist das Thema?" />
             </div>
 
-            <div class="form-group large-form-group">
-              <label for="entryContent" class="big-label">Inhalt</label>
-              <textarea class="big-input" id="entryContent" rows="6" required></textarea>
-              <div class="simple-hint">Markdown-Formatierung möglich</div>
+            <div class="form-group">
+              <label for="entryContent" class="form-label">Inhalt</label>
+              <textarea class="form-control" id="entryContent" name="content" rows="6" required placeholder="Ihre Nachricht hier..."></textarea>
+              <small class="form-hint">Tipp: Sie können **Fett**, *Kursiv* und Listen verwenden!</small>
             </div>
 
             <!-- Organisationseinheit -->
-            <div class="form-group large-form-group">
-              <label for="entryOrgLevel" class="big-label">Wer soll den Eintrag sehen?</label>
-              <select class="big-input" id="entryOrgLevel" required>
+            <div class="form-group">
+              <label for="entryOrgLevel" class="form-label">Wer soll den Eintrag sehen?</label>
+              <select class="form-control" id="entryOrgLevel" name="org_level" required>
                 <option value="" disabled selected>-- Bitte wählen --</option>
                 <option value="company">Alle Mitarbeiter</option>
                 <option value="department">Bestimmte Abteilung</option>
@@ -388,80 +395,94 @@
               </select>
             </div>
 
-            <div class="form-group large-form-group">
-              <label for="entryOrgId" class="big-label">Welche Abteilung/Team?</label>
-              <select class="big-input" id="entryOrgId" required disabled>
+            <div class="form-group" id="orgIdContainer" style="display: none;">
+              <label for="entryOrgId" class="form-label">Welche Abteilung/Team?</label>
+              <select class="form-control" id="entryOrgId" name="org_id">
                 <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
               </select>
             </div>
 
             <!-- Wichtigkeit und Datum -->
-            <div class="form-group large-form-group">
-              <label for="entryPriority" class="big-label">Wie wichtig ist der Eintrag?</label>
-              <select class="big-input" id="entryPriority">
+            <div class="form-group">
+              <label for="entryPriority" class="form-label">Wie wichtig ist der Eintrag?</label>
+              <select class="form-control" id="entryPriority" name="priority_level">
                 <option value="low">Niedrig</option>
-                <option value="normal" selected>Normal</option>
+                <option value="medium" selected>Normal</option>
                 <option value="high">Hoch</option>
-                <option value="urgent">Dringend</option>
+                <option value="critical">Dringend</option>
               </select>
             </div>
 
-            <div class="form-group large-form-group">
-              <label for="entryExpiresAt" class="big-label">Gültig bis (optional)</label>
-              <input type="date" class="big-input" id="entryExpiresAt" />
+            <div class="form-group">
+              <label for="entryExpiresAt" class="form-label">Gültig bis (optional)</label>
+              <input type="date" class="form-control" id="entryExpiresAt" name="expires_at" />
             </div>
 
             <!-- Farbe auswählen -->
-            <div class="form-group large-form-group">
-              <label class="big-label">Farbe des Eintrags</label>
+            <div class="form-group">
+              <label class="form-label">Farbe des Eintrags</label>
               <div class="color-picker">
-                <button type="button" class="color-option active" data-color="blue" style="background: #2196f3">
+                <button type="button" class="color-option active" data-color="yellow" style="background: #fde68a">
+                  <span>💛</span>
+                  Gelb
+                </button>
+                <button type="button" class="color-option" data-color="pink" style="background: #fbcfe8">
+                  <span>💗</span>
+                  Pink
+                </button>
+                <button type="button" class="color-option" data-color="blue" style="background: #bfdbfe">
                   <span>💙</span>
                   Blau
                 </button>
-                <button type="button" class="color-option" data-color="green" style="background: #4caf50">
+                <button type="button" class="color-option" data-color="green" style="background: #bef264">
                   <span>💚</span>
                   Grün
                 </button>
-                <button type="button" class="color-option" data-color="orange" style="background: #ff9800">
+                <button type="button" class="color-option" data-color="orange" style="background: #fdba74">
                   <span>🧡</span>
                   Orange
-                </button>
-                <button type="button" class="color-option" data-color="red" style="background: #f44336">
-                  <span>❤️</span>
-                  Rot
-                </button>
-                <button type="button" class="color-option" data-color="purple" style="background: #9c27b0">
-                  <span>💜</span>
-                  Lila
-                </button>
-                <button type="button" class="color-option" data-color="gray" style="background: #757575">
-                  <span>🖤</span>
-                  Grau
                 </button>
               </div>
             </div>
 
             <!-- Tags hinzufügen -->
-            <div class="form-group large-form-group">
-              <label for="entryTags" class="big-label">Tags (mit Komma trennen)</label>
-              <input type="text" class="big-input" id="entryTags" placeholder="Wichtig, Meeting, Update..." />
-              <div class="simple-hint">Beispiele: Wichtig, Meeting, Wartung, Sicherheit</div>
+            <div class="form-group">
+              <label for="entryTags" class="form-label">Tags (mit Komma trennen)</label>
+              <input type="text" class="form-control" id="entryTags" name="tags" placeholder="Wichtig, Meeting, Update..." />
+              <div class="form-hint">Beispiele: Wichtig, Meeting, Wartung, Sicherheit</div>
             </div>
 
             <!-- Checkbox für Bestätigung -->
-            <div class="form-group large-form-group">
+            <div class="form-group">
               <div class="simple-checkbox">
-                <input type="checkbox" id="entryRequiresConfirmation" />
+                <input type="checkbox" id="entryRequiresConfirmation" name="requires_confirmation" />
                 <label for="entryRequiresConfirmation">Mitarbeiter müssen bestätigen, dass sie diesen Eintrag gelesen haben</label>
               </div>
             </div>
+
+            <!-- Anhänge hinzufügen -->
+            <div class="form-group">
+              <label class="form-label">Anhänge (optional)</label>
+              <div class="attachment-upload-zone" id="attachmentDropZone">
+                <div class="upload-icon">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <p class="upload-text">Dateien hierher ziehen oder klicken zum Auswählen</p>
+                <p class="upload-hint">Max. 5 Dateien, je 10MB (PDF, JPG, PNG, GIF)</p>
+                <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" style="display: none;">
+              </div>
+              
+              <!-- Anhang-Vorschau -->
+              <div id="attachmentPreview" class="attachment-preview" style="display: none;">
+                <h4 class="preview-title">Ausgewählte Dateien:</h4>
+                <div id="attachmentList" class="attachment-list"></div>
+              </div>
+            </div>
           </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="big-button secondary-button" data-action="close">Abbrechen</button>
-          <button type="button" class="big-button primary-button" id="saveEntryBtn">Speichern</button>
-        </div>
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary" id="saveEntryBtn">Speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="hideModal('entryFormModal')">Abbrechen</button>
+          </div>
       </div>
     </div>
 
@@ -520,26 +541,33 @@
 
     <!-- Marked.js for Markdown rendering -->
     <script type="module" src="/scripts/lib/marked.min.js"></script>
-    <!-- Standalone scripts für Blackboard -->
+    <!-- Modal Functions gemäß Design Standards -->
     <script>
+      // Modal Functions
+      function showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+          modal.style.display = 'flex';
+          setTimeout(() => {
+            modal.classList.add('active');
+          }, 10);
+        }
+      }
+
+      function hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+          modal.classList.remove('active');
+          setTimeout(() => {
+            modal.style.display = 'none';
+          }, 300);
+        }
+      }
+
       // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
       window.DashboardUI = {
-        openModal: function (modalId) {
-          const modal = document.getElementById(modalId);
-          if (modal) {
-            modal.style.opacity = '1';
-            modal.style.visibility = 'visible';
-            modal.classList.add('active');
-          }
-        },
-        closeModal: function (modalId) {
-          const modal = document.getElementById(modalId);
-          if (modal) {
-            modal.style.opacity = '0';
-            modal.style.visibility = 'hidden';
-            modal.classList.remove('active');
-          }
-        },
+        openModal: showModal,
+        closeModal: hideModal,
         showToast: function (message, type) {
           // Einfache Toast-Implementierung
           const toast = document.createElement('div');
@@ -605,5 +633,7 @@
     <script type="module" src="/scripts/blackboard.ts"></script>
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
+    <!-- Update Modal to Design Standards -->
+    <script src="/scripts/update-blackboard-modal.js"></script>
   </body>
 </html>

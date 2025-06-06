@@ -381,14 +381,191 @@
       .stat-card:hover {
         animation: subtle-pulse 2s infinite;
       }
+      
+      /* Action buttons in tables - equal width */
+      .table td:last-child .btn {
+        min-width: 110px;
+        margin: 2px;
+      }
+      
+      /* Status buttons - Outline style like Secondary buttons */
+      .btn-status-active {
+        background: transparent;
+        border: 1px solid #ff6b35;
+        color: #ff6b35;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      
+      .btn-status-active:hover {
+        background: rgba(255, 107, 53, 0.1);
+        border-color: #ff5722;
+        color: #ff5722;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+      }
+      
+      .btn-status-inactive {
+        background: transparent;
+        border: 1px solid #28a745;
+        color: #28a745;
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+      
+      .btn-status-inactive:hover {
+        background: rgba(40, 167, 69, 0.1);
+        border-color: #218838;
+        color: #218838;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+      }
+      
+      /* Blackboard Preview Styles */
+      .blackboard-preview {
+        min-height: 200px;
+      }
+      
+      .blackboard-preview .list-item {
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        margin-bottom: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .blackboard-preview .list-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+      }
+      
+      .blackboard-preview .list-item::before {
+        content: '📌';
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        font-size: 14px;
+        opacity: 0.8;
+      }
+      
+      .blackboard-preview .list-item-content {
+        margin-left: 24px;
+      }
+      
+      .blackboard-preview .list-item-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .blackboard-preview .list-item-meta {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .blackboard-preview .priority-badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+      }
+      
+      .blackboard-preview .priority-urgent {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+      
+      .blackboard-preview .priority-high {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+      }
+      
+      .blackboard-preview .priority-normal {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.3);
+      }
+      
+      .blackboard-preview .priority-low {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+      
+      /* Skeleton Loading */
+      .loading-placeholder {
+        padding: 8px 0;
+      }
+      
+      .skeleton {
+        background: linear-gradient(90deg, 
+          rgba(255, 255, 255, 0.05) 25%, 
+          rgba(255, 255, 255, 0.1) 50%, 
+          rgba(255, 255, 255, 0.05) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+      
+      .skeleton-text {
+        height: 48px;
+        width: 100%;
+      }
+      
+      @keyframes skeleton-loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+      
+      /* Empty State */
+      .blackboard-empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+      }
+      
+      .blackboard-empty-state i {
+        font-size: 48px;
+        opacity: 0.3;
+        margin-bottom: 16px;
+      }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/blackboard-widget.css" />
   </head>
   <body>
     <!-- Header -->
     <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
+      <a href="/pages/admin-dashboard.html" class="logo-container">
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
@@ -435,6 +612,9 @@
               <div class="stat-label">Teams</div>
             </div>
           </div>
+
+          <!-- Blackboard Widget -->
+          <div id="blackboard-widget-container" style="margin-top: 2rem;"></div>
 
           <!-- Main Grid Container -->
           <div class="admin-grid">
@@ -525,6 +705,26 @@
                   </div>
                 </div>
                 <a href="/calendar" class="view-all-link">
+                  Alle anzeigen
+                  <span class="arrow">→</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Blackboard Card -->
+            <div class="card compact-card">
+              <div class="card-header">
+                <h2 class="card-title">Schwarzes Brett</h2>
+              </div>
+              <div class="compact-content">
+                <div class="blackboard-preview" id="blackboard-preview">
+                  <div class="loading-placeholder">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                  </div>
+                </div>
+                <a href="/pages/blackboard.html" class="view-all-link">
                   Alle anzeigen
                   <span class="arrow">→</span>
                 </a>
@@ -752,6 +952,7 @@
           </div>
         </section>
 
+
         <!-- Settings Section -->
         <section id="settings-section" class="content-section" style="display: none">
           <h1>Einstellungen</h1>
@@ -784,17 +985,35 @@
           </div>
           <div class="form-group">
             <label class="form-label">Status</label>
-            <select name="status" class="form-control">
-              <option value="active" selected>Aktiv</option>
-              <option value="inactive">Inaktiv</option>
-            </select>
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="department-status-display" onclick="toggleDropdown('department-status')">
+                <span>Aktiv</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="dropdown-options" id="department-status-dropdown" style="display: none">
+                <div class="dropdown-option" onclick="selectDropdownOption('department-status', 'active', 'Aktiv')">Aktiv</div>
+                <div class="dropdown-option" onclick="selectDropdownOption('department-status', 'inactive', 'Inaktiv')">Inaktiv</div>
+              </div>
+              <input type="hidden" name="status" id="department-status-select" value="active" />
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Sichtbarkeit</label>
-            <select name="visibility" class="form-control">
-              <option value="public" selected>Öffentlich</option>
-              <option value="private">Privat</option>
-            </select>
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="department-visibility-display" onclick="toggleDropdown('department-visibility')">
+                <span>Öffentlich</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="dropdown-options" id="department-visibility-dropdown" style="display: none">
+                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'public', 'Öffentlich')">Öffentlich</div>
+                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'private', 'Privat')">Privat</div>
+              </div>
+              <input type="hidden" name="visibility" id="department-visibility-select" value="public" />
+            </div>
           </div>
           <button type="submit" class="btn btn-primary">Abteilung erstellen</button>
         </form>
@@ -1114,6 +1333,7 @@
     <script type="module" src="/scripts/show-section.ts"></script>
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
     <script type="module" src="/scripts/employee-deletion.ts"></script>
+    <script src="/scripts/blackboard-widget.js"></script>
     <script>
       // Direkte Event-Listener hinzufügen
       console.log('Adding direct event listeners');
@@ -1186,6 +1406,31 @@
                 item.classList.remove('active');
               });
               this.parentElement.classList.add('active');
+            } else if (href === '#employees') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing employees section');
+              showSection('employees');
+            } else if (href === '#documents') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing documents section');
+              showSection('documents');
+            } else if (href === '#teams') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing teams section');
+              showSection('teams');
+            } else if (href === '#payslips') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing payslips section');
+              showSection('payslips');
+            } else if (href === '#settings') {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Showing settings section');
+              showSection('settings');
             }
           });
         });
@@ -1296,15 +1541,30 @@
           if (response.ok) {
             const departments = await response.json();
             console.log(`Loaded ${departments.length} departments`);
+            // Debug: Show first department data
+            if (departments.length > 0) {
+              console.log('Department data:', departments[0]);
+            }
 
             const tbody = document.getElementById('departments-table-body');
             if (tbody) {
               tbody.innerHTML = departments
                 .map(
-                  (dept) => `
+                  (dept) => {
+                    // Convert Buffer to String if needed
+                    let description = '-';
+                    if (dept.description) {
+                      if (dept.description.type === 'Buffer' && dept.description.data) {
+                        description = String.fromCharCode(...dept.description.data);
+                      } else if (typeof dept.description === 'string') {
+                        description = dept.description;
+                      }
+                    }
+                    
+                    return `
                             <tr>
                                 <td>${dept.name}</td>
-                                <td>${dept.description || '-'}</td>
+                                <td>${description}</td>
                                 <td>
                                     <span class="badge ${dept.status === 'active' ? 'badge-success' : 'badge-warning'}">
                                         ${dept.status === 'active' ? 'Aktiv' : 'Inaktiv'}
@@ -1319,15 +1579,15 @@
                                 <td>${dept.employee_count || 0}</td>
                                 <td>${dept.team_count || 0}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
+                                    <button class="btn btn-sm ${dept.status === 'active' ? 'btn-status-active' : 'btn-status-inactive'}" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
                                         ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
                                     </button>
                                     <button class="btn btn-sm btn-primary" onclick="editDepartment(${dept.id})">Bearbeiten</button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${dept.id})">Löschen</button>
                                 </td>
                             </tr>
-                        `,
-                )
+                        `;
+                  })
                 .join('');
             } else {
               console.error('Departments table body not found');
@@ -1382,6 +1642,17 @@
           if (response.ok) {
             const department = await response.json();
             console.log('Department data:', department);
+            
+            // Convert Buffer to String if needed
+            let description = '';
+            if (department.description) {
+              if (department.description.type === 'Buffer' && department.description.data) {
+                // Convert Buffer array to string
+                description = String.fromCharCode(...department.description.data);
+              } else if (typeof department.description === 'string') {
+                description = department.description;
+              }
+            }
 
             // Erstelle ein Modal für die Bearbeitung
             const modalHTML = `
@@ -1398,21 +1669,39 @@
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Beschreibung</label>
-                                        <textarea name="description" class="form-control" rows="3">${department.description || ''}</textarea>
+                                        <textarea name="description" class="form-control" rows="3">${description}</textarea>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Status</label>
-                                        <select name="status" class="form-control">
-                                            <option value="active" ${department.status === 'active' ? 'selected' : ''}>Aktiv</option>
-                                            <option value="inactive" ${department.status === 'inactive' ? 'selected' : ''}>Inaktiv</option>
-                                        </select>
+                                        <div class="custom-dropdown">
+                                            <div class="dropdown-display" id="edit-department-status-display" onclick="toggleDropdown('edit-department-status')">
+                                                <span>${department.status === 'active' ? 'Aktiv' : 'Inaktiv'}</span>
+                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+                                            </div>
+                                            <div class="dropdown-options" id="edit-department-status-dropdown" style="display: none">
+                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-status', 'active', 'Aktiv')">Aktiv</div>
+                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-status', 'inactive', 'Inaktiv')">Inaktiv</div>
+                                            </div>
+                                            <input type="hidden" name="status" id="edit-department-status-select" value="${department.status}" />
+                                        </div>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Sichtbarkeit</label>
-                                        <select name="visibility" class="form-control">
-                                            <option value="public" ${department.visibility === 'public' ? 'selected' : ''}>Öffentlich</option>
-                                            <option value="private" ${department.visibility === 'private' ? 'selected' : ''}>Privat</option>
-                                        </select>
+                                        <div class="custom-dropdown">
+                                            <div class="dropdown-display" id="edit-department-visibility-display" onclick="toggleDropdown('edit-department-visibility')">
+                                                <span>${department.visibility === 'public' ? 'Öffentlich' : 'Privat'}</span>
+                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                                </svg>
+                                            </div>
+                                            <div class="dropdown-options" id="edit-department-visibility-dropdown" style="display: none">
+                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-visibility', 'public', 'Öffentlich')">Öffentlich</div>
+                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-visibility', 'private', 'Privat')">Privat</div>
+                                            </div>
+                                            <input type="hidden" name="visibility" id="edit-department-visibility-select" value="${department.visibility}" />
+                                        </div>
                                     </div>
                                     <button type="button" class="btn btn-primary" onclick="updateDepartment(${departmentId})">Änderungen speichern</button>
                                 </form>
@@ -1478,6 +1767,49 @@
         }
       }
 
+      // Load documents table
+      async function loadDocumentsTable() {
+        console.log('Loading documents table');
+        const token = localStorage.getItem('token');
+        
+        try {
+          const response = await fetch('/api/documents', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          
+          if (response.ok) {
+            const documents = await response.json();
+            console.log(`Loaded ${documents.length} documents`);
+            
+            const tbody = document.getElementById('documents-table-body');
+            if (tbody) {
+              tbody.innerHTML = documents
+                .map(
+                  (doc) => `
+                    <tr>
+                      <td>${doc.filename}</td>
+                      <td>${doc.category || '-'}</td>
+                      <td>${doc.uploaded_by_name || 'Unbekannt'}</td>
+                      <td>${new Date(doc.upload_date).toLocaleDateString('de-DE')}</td>
+                      <td>
+                        <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})">
+                          Download
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">
+                          Löschen
+                        </button>
+                      </td>
+                    </tr>
+                  `,
+                )
+                .join('');
+            }
+          }
+        } catch (error) {
+          console.error('Error loading documents:', error);
+        }
+      }
+
       // Abteilung löschen
       async function deleteDepartment(departmentId) {
         console.log(`Deleting department ${departmentId}`);
@@ -1507,12 +1839,12 @@
       }
 
       // Mitarbeiter bearbeiten
-      async function editEmployee(employeeId) {
+      async function editEmployeeAsync(employeeId) {
         console.log(`Editing employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/admin/employees/${employeeId}`, {
+          const response = await fetch(`/api/users/${employeeId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -1523,52 +1855,97 @@
             // Erstelle ein Modal für die Bearbeitung
             const modalHTML = `
                         <div class="modal" id="edit-employee-modal" style="display: flex;">
-                            <div class="modal-content">
+                            <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
                                 <div class="modal-header">
                                     <h3 class="modal-title">Mitarbeiter bearbeiten</h3>
                                     <button type="button" class="modal-close" onclick="document.getElementById('edit-employee-modal').remove()">&times;</button>
                                 </div>
                                 <form id="edit-employee-form">
-                                    <div class="form-group">
-                                        <label class="form-label">Benutzername</label>
-                                        <input type="text" name="username" class="form-control" value="${employee.username}" required>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-group">
+                                            <label class="form-label">Benutzername</label>
+                                            <input type="text" name="username" class="form-control" value="${employee.username || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">E-Mail</label>
+                                            <input type="email" name="email" class="form-control" value="${employee.email || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Vorname</label>
+                                            <input type="text" name="first_name" class="form-control" value="${employee.first_name || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Nachname</label>
+                                            <input type="text" name="last_name" class="form-control" value="${employee.last_name || ''}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Telefon</label>
+                                            <input type="tel" name="phone" class="form-control" value="${employee.phone || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Mitarbeiter-ID</label>
+                                            <input type="text" name="employee_id" class="form-control" value="${employee.employee_id || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Position</label>
+                                            <input type="text" name="position" class="form-control" value="${employee.position || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Abteilung</label>
+                                            <select name="department_id" class="form-control" id="edit-employee-department-select">
+                                                <option value="">Keine Abteilung</option>
+                                                <!-- Wird dynamisch gefüllt -->
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">IBAN</label>
+                                            <input type="text" name="iban" class="form-control" value="${employee.iban || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Geburtsdatum</label>
+                                            <input type="date" name="birthday" class="form-control" value="${employee.birthday ? employee.birthday.split('T')[0] : ''}">
+                                        </div>
+                                        <div class="form-group" style="grid-column: span 2;">
+                                            <label class="form-label">Adresse</label>
+                                            <textarea name="address" class="form-control" rows="2">${employee.address || ''}</textarea>
+                                        </div>
+                                        <div class="form-group" style="grid-column: span 2;">
+                                            <label class="form-label">Notizen</label>
+                                            <textarea name="notes" class="form-control" rows="3">${employee.notes || ''}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Status</label>
+                                            <div class="custom-dropdown">
+                                                <div class="dropdown-display" id="edit-employee-status-display" onclick="toggleDropdown('edit-employee-status')">
+                                                    <span>${employee.is_active ? 'Aktiv' : 'Inaktiv'}</span>
+                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                                    </svg>
+                                                </div>
+                                                <div class="dropdown-options" id="edit-employee-status-dropdown" style="display: none">
+                                                    <div class="dropdown-option" data-value="1" onclick="selectDropdownOption('edit-employee-status', '1', 'Aktiv')">
+                                                        Aktiv
+                                                    </div>
+                                                    <div class="dropdown-option" data-value="0" onclick="selectDropdownOption('edit-employee-status', '0', 'Inaktiv')">
+                                                        Inaktiv
+                                                    </div>
+                                                </div>
+                                                <input type="hidden" name="is_active" id="edit-employee-status-select" value="${employee.is_active ? '1' : '0'}" />
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Neues Passwort (optional)</label>
+                                            <input type="password" name="password" class="form-control" placeholder="Leer lassen für keine Änderung">
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">E-Mail</label>
-                                        <input type="email" name="email" class="form-control" value="${employee.email}" required>
+                                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">
+                                            Abbrechen
+                                        </button>
+                                        <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">
+                                            <i class="fas fa-save"></i> Änderungen speichern
+                                        </button>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Vorname</label>
-                                        <input type="text" name="first_name" class="form-control" value="${employee.first_name}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Nachname</label>
-                                        <input type="text" name="last_name" class="form-control" value="${employee.last_name}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Alter</label>
-                                        <input type="number" name="age" class="form-control" min="18" max="100" value="${employee.age || ''}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Position</label>
-                                        <input type="text" name="position" class="form-control" value="${employee.position || ''}">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Abteilung</label>
-                                        <select name="department_id" class="form-control" id="edit-employee-department-select">
-                                            <option value="">Keine Abteilung</option>
-                                            <!-- Wird dynamisch gefüllt -->
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Status</label>
-                                        <select name="status" class="form-control">
-                                            <option value="active" ${employee.status === 'active' ? 'selected' : ''}>Aktiv</option>
-                                            <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Inaktiv</option>
-                                        </select>
-                                    </div>
-                                    <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">Änderungen speichern</button>
-                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">Abbrechen</button>
                                 </form>
                             </div>
                         </div>
@@ -1632,13 +2009,35 @@
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // Bei leerer Abteilung setzen wir null statt leeren String
+        // Convert string values to proper types
         if (data.department_id === '') {
           data.department_id = null;
+        } else if (data.department_id) {
+          data.department_id = parseInt(data.department_id);
         }
 
+        // Convert is_active to boolean and add status field
+        data.is_active = data.is_active === '1';
+        // Also set the status field based on is_active
+        data.status = data.is_active ? 'active' : 'inactive';
+
+        // Remove password if empty
+        if (!data.password || data.password.trim() === '') {
+          delete data.password;
+        }
+
+        // Clean up empty values but keep is_active and status even if false
+        Object.keys(data).forEach(key => {
+          if (key !== 'is_active' && key !== 'status' && (data[key] === '' || data[key] === null)) {
+            delete data[key];
+          }
+        });
+
+        // Debug log to check what we're sending
+        console.log('Sending update data:', data);
+
         try {
-          const response = await fetch(`/admin/employees/${employeeId}`, {
+          const response = await fetch(`/api/users/${employeeId}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -1653,46 +2052,39 @@
             const modal = document.getElementById('edit-employee-modal');
             if (modal) modal.remove();
             // Tabelle neu laden
-            loadEmployeesTable('reload');
+            if (typeof loadEmployeesTable === 'function') {
+              loadEmployeesTable();
+            }
+            // Diese Funktionen sind möglicherweise nicht global verfügbar
+            if (typeof window.loadRecentEmployees === 'function') {
+              window.loadRecentEmployees();
+            }
+            if (typeof window.loadDashboardStats === 'function') {
+              window.loadDashboardStats();
+            }
+            // Als Fallback die Seite neu laden um alle Daten zu aktualisieren
+            if (typeof loadEmployeesTable !== 'function') {
+              window.location.reload();
+            }
           } else {
             const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
           }
         } catch (error) {
           console.error('Error updating employee:', error);
-          alert('Ein Fehler ist aufgetreten.');
+          alert('Ein Fehler ist aufgetreten beim Aktualisieren des Mitarbeiters.');
         }
       }
 
       // Mitarbeiter löschen
       async function deleteEmployee(employeeId) {
-        console.log(`Deleting employee ${employeeId}`);
-        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten? Dies kann nicht rückgängig gemacht werden.')) {
-          return;
-        }
-
-        const token = localStorage.getItem('token');
-
-        try {
-          const response = await fetch(`/admin/delete-employee/${employeeId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              alert('Mitarbeiter erfolgreich gelöscht');
-              loadEmployeesTable('reload');
-            } else {
-              alert(`Fehler: ${result.message || 'Unbekannter Fehler'}`);
-            }
-          } else {
-            alert('Fehler beim Löschen des Mitarbeiters.');
-          }
-        } catch (error) {
-          console.error('Error deleting employee:', error);
-          alert('Ein Fehler ist aufgetreten.');
+        // This function is now handled by employee-deletion.ts
+        // Call the enhanced delete dialog from employee-deletion.ts
+        if (window.deleteEmployee) {
+          window.deleteEmployee(employeeId);
+        } else {
+          console.error('Delete employee function not loaded from employee-deletion.ts');
+          alert('Löschfunktion nicht verfügbar. Bitte laden Sie die Seite neu.');
         }
       }
 
@@ -1881,6 +2273,131 @@
         console.log('Show all employees');
       }
 
+      // Load employees table
+      async function loadEmployeesTable() {
+        console.log('Loading employees table...');
+        const token = localStorage.getItem('token');
+        
+        try {
+          const response = await fetch('/api/users?role=employee', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load employees');
+          }
+
+          const employees = await response.json();
+          const tableBody = document.getElementById('employees-table-body');
+          
+          if (!tableBody) {
+            console.error('employees-table-body not found');
+            return;
+          }
+
+          tableBody.innerHTML = '';
+
+          if (employees.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="7" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
+              </tr>
+            `;
+            return;
+          }
+
+          employees.forEach((employee) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
+              <td>${employee.email || ''}</td>
+              <td>${employee.id || ''}</td>
+              <td>${employee.position || 'Mitarbeiter'}</td>
+              <td>${employee.department || 'Keine Abteilung'}</td>
+              <td>
+                <span class="badge ${employee.is_active ? 'badge-success' : 'badge-danger'}">
+                  ${employee.is_active ? 'Aktiv' : 'Inaktiv'}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+        } catch (error) {
+          console.error('Error loading employees:', error);
+          const tableBody = document.getElementById('employees-table-body');
+          if (tableBody) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="7" class="text-center text-danger">Fehler beim Laden der Mitarbeiter</td>
+              </tr>
+            `;
+          }
+        }
+      }
+
+      // Make functions globally available (delay to ensure they're defined)
+      document.addEventListener('DOMContentLoaded', () => {
+        window.loadEmployeesTable = loadEmployeesTable;
+        window.editEmployee = editEmployee;
+        window.editEmployeeAsync = editEmployeeAsync;
+        window.updateEmployee = updateEmployee;
+        window.deleteEmployee = deleteEmployee;
+        window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
+        window.loadPayslipsTable = loadPayslipsTable || (() => console.log('loadPayslipsTable not implemented'));
+        window.loadEmployeesForPayslipSelect = loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
+        window.loadDepartmentsTable = loadDepartmentsTable;
+        window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
+        window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
+        window.loadDashboardStats = window.loadDashboardStats || (() => console.log('loadDashboardStats not implemented'));
+      });
+
+      // Edit employee - Placeholder function, actual implementation below
+      function editEmployee(employeeId) {
+        // This is overridden by the async function below
+        window.editEmployeeAsync(employeeId);
+      }
+
+      // Delete employee
+      async function deleteEmployee(employeeId) {
+        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?')) {
+          return;
+        }
+
+        const token = localStorage.getItem('token');
+
+        try {
+          const response = await fetch(`/api/users/${employeeId}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            alert('Mitarbeiter erfolgreich gelöscht');
+            loadEmployeesTable(); // Reload the table
+            loadRecentEmployees(); // Update recent employees
+            loadDashboardStats(); // Update statistics
+          } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message}`);
+          }
+        } catch (error) {
+          console.error('Error deleting employee:', error);
+          alert('Ein Fehler ist aufgetreten');
+        }
+      }
+
       function showAllDocuments() {
         console.log('Show all documents');
       }
@@ -1893,55 +2410,7 @@
         console.log('Show all teams');
       }
 
-      // Section Navigation
-      function showSection(sectionName) {
-        // Hide all sections
-        document.querySelectorAll('.content-section').forEach((section) => {
-          section.style.display = 'none';
-        });
-
-        // Show the selected section
-        const selectedSection = document.getElementById(sectionName + '-section');
-        if (selectedSection) {
-          selectedSection.style.display = 'block';
-        }
-
-        // Update active state in sidebar
-        document.querySelectorAll('.sidebar-item').forEach((item) => {
-          item.classList.remove('active');
-        });
-
-        // Find and activate the clicked item
-        document.querySelectorAll('.sidebar-link').forEach((link) => {
-          const onclickAttr = link.getAttribute('onclick');
-          const hrefAttr = link.getAttribute('href');
-
-          // Check if either the onclick contains the sectionName or the href matches the section
-          if ((onclickAttr && onclickAttr.includes(sectionName)) || (hrefAttr && hrefAttr === '#' + sectionName)) {
-            link.parentElement.classList.add('active');
-          }
-        });
-
-        // Load section-specific data
-        switch (sectionName) {
-          case 'employees':
-            loadEmployeesTable();
-            break;
-          case 'documents':
-            loadDocumentsTable();
-            break;
-          case 'payslips':
-            loadPayslipsTable();
-            loadEmployeesForPayslipSelect();
-            break;
-          case 'departments':
-            loadDepartmentsTable();
-            break;
-          case 'teams':
-            loadTeamsTable();
-            break;
-        }
-      }
+      // Section Navigation is now handled by show-section.ts module
     </script>
 
     <style>
@@ -2056,6 +2525,19 @@
         gap: var(--spacing-sm);
       }
 
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+      }
+
       .badge-primary {
         background-color: var(--primary-color);
         color: white;
@@ -2064,6 +2546,69 @@
       .badge-secondary {
         background-color: var(--secondary-color);
         color: white;
+      }
+
+      .badge-success {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(76, 175, 80, 0.9);
+        background: rgba(76, 175, 80, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        width: fit-content;
+        transition: all 0.2s ease;
+      }
+
+      .badge-danger {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(244, 67, 54, 0.9);
+        background: rgba(244, 67, 54, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        width: fit-content;
+        transition: all 0.2s ease;
+      }
+      
+      tr:hover .badge-success {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+      
+      tr:hover .badge-danger {
+        background: rgba(244, 67, 54, 0.15);
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .badge-warning {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(255, 152, 0, 0.9);
+        background: rgba(255, 152, 0, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(255, 152, 0, 0.2);
+        width: fit-content;
+        transition: all 0.2s ease;
+      }
+      
+      tr:hover .badge-warning {
+        background: rgba(255, 152, 0, 0.15);
+        border-color: rgba(255, 152, 0, 0.3);
       }
 
       .department-list,

@@ -40,6 +40,8 @@ interface UserProfileResponse {
   lastName?: string;
   birthDate?: string;
   profilePicture?: string;
+  company_name?: string;
+  subdomain?: string;
 }
 
 interface UnreadCountResponse {
@@ -98,6 +100,17 @@ class UnifiedNavigation {
         const userData: UserProfileResponse = await response.json();
         const user = userData.user || userData;
 
+        // Update company info (new)
+        const companyElement = document.getElementById('sidebar-company-name');
+        if (companyElement && userData.company_name) {
+          companyElement.textContent = userData.company_name;
+        }
+
+        const domainElement = document.getElementById('sidebar-domain');
+        if (domainElement && userData.subdomain) {
+          domainElement.textContent = `${userData.subdomain}.assixx.de`;
+        }
+
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
@@ -114,14 +127,7 @@ class UnifiedNavigation {
           }
         }
 
-        const sidebarBirthdate = document.getElementById('sidebar-user-birthdate');
-        if (sidebarBirthdate) {
-          const birthDateStr = userData.birthdate || userData.birthDate || (user as User).birthDate;
-          if (birthDateStr) {
-            const birthdate = new Date(birthDateStr);
-            sidebarBirthdate.textContent = `Geboren: ${birthdate.toLocaleDateString('de-DE')}`;
-          }
-        }
+        // Birthdate removed as requested
 
         // Update avatar if we have profile picture
         const sidebarAvatar = document.getElementById('sidebar-user-avatar') as HTMLImageElement;
@@ -154,6 +160,29 @@ class UnifiedNavigation {
           label: 'Mitarbeiter',
           url: '#employees',
           section: 'employees',
+          children: [
+            {
+              id: 'employees-list',
+              label: 'Mitarbeiterliste',
+              url: '#employees',
+              section: 'employees',
+            },
+          ],
+        },
+        {
+          id: 'departments',
+          icon: this.getSVGIcon('building'),
+          label: 'Abteilungen',
+          url: '#departments',
+          section: 'departments',
+          children: [
+            {
+              id: 'departments-all',
+              label: 'Alle Abteilungen',
+              url: '#departments',
+              section: 'departments',
+            },
+          ],
         },
         {
           id: 'documents',
@@ -161,12 +190,6 @@ class UnifiedNavigation {
           label: 'Dokumente',
           url: '#documents',
           section: 'documents',
-        },
-        {
-          id: 'blackboard',
-          icon: this.getSVGIcon('blackboard'),
-          label: 'Blackboard',
-          url: '/pages/blackboard.html',
         },
         {
           id: 'calendar',
@@ -207,13 +230,6 @@ class UnifiedNavigation {
           section: 'payslips',
         },
         {
-          id: 'departments',
-          icon: this.getSVGIcon('building'),
-          label: 'Abteilungen',
-          url: '#departments',
-          section: 'departments',
-        },
-        {
           id: 'teams',
           icon: this.getSVGIcon('team'),
           label: 'Teams',
@@ -248,12 +264,6 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('document'),
           label: 'Meine Dokumente',
           url: '/pages/employee-documents.html',
-        },
-        {
-          id: 'blackboard',
-          icon: this.getSVGIcon('blackboard'),
-          label: 'Blackboard',
-          url: '/pages/blackboard.html',
         },
         {
           id: 'calendar',
@@ -424,21 +434,30 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <h3 class="sidebar-title">
-                    <span class="title-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,8L8,12L12,16L16,12L12,8Z"/>
-                        </svg>
+                <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
+                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
+                    </svg>
+                </button>
+                <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
+                    <span class="title-icon pinned-icon">
+                        <span class="pin-head"></span>
+                        <span class="pin-needle"></span>
                     </span>
-                    Navigation
-                </h3>
+                    <span class="title-content">
+                        <span class="title-text">Schwarzes Brett</span>
+                    </span>
+                </button>
                 <div class="user-info-card" id="sidebar-user-info-card">
                     <img id="sidebar-user-avatar" class="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
                     <div class="user-details">
+                        <div class="company-info">
+                            <div class="company-name" id="sidebar-company-name">Firmennamen lädt...</div>
+                            <div class="company-domain" id="sidebar-domain">Domain lädt...</div>
+                        </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
-                        <div class="user-role-badge">${this.getRoleDisplay()}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
-                        <div class="user-birthdate" id="sidebar-user-birthdate"></div>
+                        <div class="user-role-badge">${this.getRoleDisplay()}</div>
                     </div>
                 </div>
                 <ul class="sidebar-menu">
@@ -451,7 +470,8 @@ class UnifiedNavigation {
 
   private createMenuItem(item: NavItem, isActive: boolean = false): string {
     const activeClass = isActive ? 'active' : '';
-    const clickHandler = item.section ? `onclick="showSection('${item.section}')"` : '';
+    const hasChildren = item.children && item.children.length > 0;
+    const clickHandler = item.section && !hasChildren ? `onclick="showSection('${item.section}')"` : '';
 
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
@@ -459,6 +479,36 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'pending-surveys') {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    }
+
+    // If has children, create a dropdown
+    if (hasChildren) {
+      const submenuItems = item.children!.map(child => `
+        <li class="submenu-item">
+          <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
+            <span class="submenu-label">${child.label}</span>
+          </a>
+        </li>
+      `).join('');
+
+      return `
+        <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+            <span class="icon">${item.icon}</span>
+            <span class="label">${item.label}</span>
+            <span class="nav-indicator"></span>
+            <span class="submenu-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            </span>
+            ${badgeHtml}
+          </a>
+          <ul class="submenu" id="submenu-${item.id}" style="display: none;">
+            ${submenuItems}
+          </ul>
+        </li>
+      `;
     }
 
     return `
@@ -498,8 +548,98 @@ class UnifiedNavigation {
       }
     });
 
+    // Sidebar Toggle
+    this.attachSidebarToggle();
+
     // Update active state on page load
     this.updateActiveNavigation();
+  }
+
+  private attachSidebarToggle(): void {
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!toggleBtn || !sidebar) return;
+
+    // Check localStorage for saved state
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+      sidebar.classList.add('collapsed');
+      mainContent?.classList.add('sidebar-collapsed');
+      this.updateToggleIcon();
+    }
+
+    // Toggle click handler
+    toggleBtn.addEventListener('click', () => {
+      const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
+      const newState = !isCurrentlyCollapsed;
+      
+      sidebar.classList.toggle('collapsed');
+      mainContent?.classList.toggle('sidebar-collapsed');
+      
+      // Save state
+      localStorage.setItem('sidebarCollapsed', newState.toString());
+      
+      // Update icon
+      this.updateToggleIcon();
+    });
+
+    // Hover effect for toggle button
+    toggleBtn.addEventListener('mouseenter', () => {
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      const iconPath = toggleBtn.querySelector('.toggle-icon-path');
+      if (iconPath) {
+        if (isCollapsed) {
+          // Show arrow right when collapsed
+          iconPath.setAttribute('d', 'M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z');
+        } else {
+          // Show sidebar left when expanded
+          iconPath.setAttribute('d', 'M14,7L9,12L14,17V7Z');
+        }
+      }
+    });
+
+    toggleBtn.addEventListener('mouseleave', () => {
+      const iconPath = toggleBtn.querySelector('.toggle-icon-path');
+      if (iconPath) {
+        // Reset to hamburger menu
+        iconPath.setAttribute('d', 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z');
+      }
+    });
+
+    // Add tooltips for collapsed sidebar items
+    this.addCollapsedTooltips();
+  }
+
+  private updateToggleIcon(): void {
+    const iconPath = document.querySelector('.toggle-icon-path');
+    if (iconPath) {
+      // Keep hamburger menu as default
+      iconPath.setAttribute('d', 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z');
+    }
+  }
+
+  private addCollapsedTooltips(): void {
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+
+    const navItems = sidebar.querySelectorAll('.sidebar-link');
+    navItems.forEach(item => {
+      const label = item.querySelector('.label')?.textContent;
+      if (label) {
+        item.setAttribute('title', '');
+        
+        // Show tooltip only when sidebar is collapsed
+        item.addEventListener('mouseenter', () => {
+          if (sidebar.classList.contains('collapsed')) {
+            item.setAttribute('title', label);
+          } else {
+            item.setAttribute('title', '');
+          }
+        });
+      }
+    });
   }
 
   private handleLogout(): void {
@@ -585,6 +725,15 @@ class UnifiedNavigation {
     this.loadUserInfo();
     this.injectNavigationHTML();
     this.attachEventListeners();
+    
+    // Restore sidebar state after refresh
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      sidebar?.classList.add('collapsed');
+      mainContent?.classList.add('sidebar-collapsed');
+    }
   }
 
   // Public method to set active navigation
@@ -785,7 +934,6 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        z-index: 100;
         transition: all 0.3s ease;
         overflow-y: auto;
         overflow-x: hidden;
@@ -814,84 +962,534 @@ const unifiedNavigationCSS = `
         min-height: 100%;
         display: flex;
         flex-direction: column;
+        overflow: visible;
+        position: relative;
     }
 
     .sidebar-title {
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm);
-        font-size: 1rem;
+        justify-content: center;
+        font-size: 0.875rem;
         font-weight: 600;
-        color: var(--text-primary);
-        margin: 0 0 var(--spacing-lg) 0;
+        color: #333;
+        margin: 60px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: var(--radius-md);
-        border: 1px solid rgba(33, 150, 243, 0.2);
+        background: #e6b800;
+        
+        border-radius: 0px;
+        border: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        width: 98%;
+        margin-left: 1%;
+        margin-right: 1%;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 8px 1px rgb(59, 36, 0), 0 2px 2px rgb(0, 0, 0);
+        overflow: visible;
+        transform: rotate(-3deg);
     }
 
-    .title-icon {
-        font-size: 1rem;
+    /* Sticky Note folded corner - inner fold */
+    .sidebar-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(45deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+        transform: rotate(45deg);
+        transform-origin: bottom right;
+    }
+
+    .sidebar-title::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 20px 20px 0 0;
+        border-color: #fff transparent #0000 transparent;
+        z-index: 1;
+    }
+
+    .sidebar-title:hover {
+        transform: rotate(-1deg) translateY(-2px);
+        box-shadow: 
+            0 5px 10px rgba(0, 0, 0, 0.25),
+            0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .sidebar-title:hover .pin-head {
+        opacity: 0;
+    }
+
+    .sidebar-title:hover .pin-needle {
+        opacity: 1;
+        top: -18px;
+    }
+
+    .sidebar-title:active {
+        transform: rotate(-1deg) translateY(0);
+    }
+
+    /* Pinned icon styles */
+    .pinned-icon {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+    }
+
+    /* Pin head (only the head visible - like pushed in) */
+    .pin-head {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #d32f2f;
+        display: block;
+        position: relative;
+        box-shadow: 
+            0 3px 6px rgba(0, 0, 0, 0.4),
+            inset -2px -2px 3px rgba(0, 0, 0, 0.3),
+            inset 2px 2px 3px rgba(255, 255, 255, 0.4);
+        transition: all 0.2s ease;
+    }
+
+    .pin-head::after {
+        content: '';
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Pin needle (appears on hover - full pushpin) */
+    .pin-needle {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 2;
+    }
+
+    /* Pin needle head */
+    .pin-needle::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #d32f2f;
+        box-shadow: 
+            0 3px 6px rgba(0, 0, 0, 0.4),
+            inset -2px -2px 3px rgba(0, 0, 0, 0.3),
+            inset 2px 2px 3px rgba(255, 255, 255, 0.4);
+    }
+
+    /* Pin needle shaft */
+    .pin-needle::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 22px;
+        background: linear-gradient(to bottom, 
+            #aaa 0%, 
+            #888 50%, 
+            #666 100%);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    .title-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .title-text {
+        transition: opacity 0.3s ease, width 0.3s ease;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .sidebar-toggle {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0);
+        border: 1px solid rgba(255, 255, 255, 0);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: white;
+        z-index: 100;
+    }
+
+    .sidebar-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
+
+    .sidebar-toggle:hover .toggle-icon {
+        opacity: 0.8;
+    }
+
+    .toggle-icon {
+        transition: transform 0.3s ease;
+    }
+
+    /* Collapsed Sidebar Styles */
+    .sidebar.collapsed {
+        width: 70px;
+    }
+
+    .sidebar.collapsed .sidebar-title {
+        padding: var(--spacing-sm);
+        justify-content: center;
+        margin: 40px 4px var(--spacing-sm) 4px;
+        width: calc(100% - 8px);
+        font-size: 0;
+        transform: rotate(-2deg);
+        background: #e6b800;
+        min-height: 40px;
+    }
+
+    .sidebar.collapsed .title-text {
+        opacity: 0;
+        width: 0;
+        display: none;
+    }
+
+    .sidebar.collapsed .title-content {
+        gap: 0;
+        justify-content: center;
+    }
+
+    .sidebar.collapsed .sidebar-toggle {
+        left: 2px;
+        width: 30px;
+        height: 30px;
+        position: relative;
+    }
+
+    .sidebar.collapsed .pinned-icon {
+        top: -9px;
+    }
+
+    .sidebar.collapsed .pin-head {
+        width: 16px;
+        height: 16px;
+    }
+
+    .sidebar.collapsed .pin-head::after {
+        width: 5px;
+        height: 5px;
+        top: 3px;
+        left: 3px;
+    }
+
+    .sidebar.collapsed .user-info-card {
+        padding: var(--spacing-md);
+        flex-direction: column;
+        align-items: center;
+        min-height: auto;
+    }
+
+    .sidebar.collapsed .user-details {
+        display: none;
+    }
+
+    .sidebar.collapsed .sidebar-link {
+        padding: var(--spacing-sm);
+        justify-content: center;
+    }
+
+    .sidebar.collapsed .sidebar-link .label {
+        display: none;
+    }
+
+    .sidebar.collapsed .submenu-arrow {
+        display: none;
+    }
+
+    .sidebar.collapsed .submenu {
+        display: none !important;
+    }
+
+    .sidebar.collapsed .storage-widget {
+        display: none;
+    }
+
+    /* Main content adjustment for collapsed sidebar */
+    .main-content.sidebar-collapsed {
+        margin-left: 70px;
+    }
+    
+    /* Container full width when sidebar collapsed */
+    .main-content.sidebar-collapsed .container {
+        max-width: none;
+    }
+    
+    /* Content sections full width when sidebar collapsed */
+    .main-content.sidebar-collapsed .content-section {
+        max-width: none;
+        width: 100%;
+    }
+    
+    /* Cards inside collapsed layout use more space */
+    .main-content.sidebar-collapsed .card {
+        max-width: none;
+    }
+
+
+    /* Tooltip styles for collapsed items */
+    .sidebar.collapsed .sidebar-link,
+    .sidebar.collapsed .sidebar-title {
+        position: relative;
+    }
+
+    .sidebar.collapsed .sidebar-link:hover::after,
+    .sidebar.collapsed .sidebar-title:hover::after {
+        content: attr(title);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 10px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        border-radius: 6px;
+        font-size: 14px;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        animation: tooltipFadeIn 0.3s ease forwards;
+    }
+
+    @keyframes tooltipFadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Badge adjustments for collapsed sidebar */
+    .sidebar.collapsed .nav-badge {
+        position: absolute !important;
+        top: 4px !important;
+        right: 4px !important;
+        left: auto !important;
+        font-size: 0.6rem !important;
+        padding: 1px 4px !important;
+        min-width: 14px !important;
+    }
+
+    /* Smooth transitions */
+    .sidebar,
+    .main-content,
+    .sidebar-link,
+    .sidebar-link .label,
+    .title-text,
+    .user-details,
+    .storage-widget {
+        transition: all 0.3s ease;
+    }
+
+    /* Icon centering in collapsed state */
+    .sidebar.collapsed .sidebar-link .icon {
+        margin: 0;
     }
 
     .user-info-card {
         display: flex;
         align-items: center;
-        gap: var(--spacing-md);
-        padding: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: var(--radius-md);
+        gap: 12px;
+        padding: var(--spacing-lg) var(--spacing-xl);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        min-height: 100px;
+        animation: fadeInUp 0.6s ease-out;
+        margin-top:15px;
     }
 
-    /* Avatar Styles für Sidebar - IMG Element wie im Header */
+    /* Welcome hero style gradient backgrounds */
+    .user-info-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+            radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.07) 0%, transparent 50%);
+        opacity: 1;
+        z-index: 0;
+    }
+
+    .user-info-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 200px;
+        height: 200px;
+        
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .user-info-card > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .user-info-card:hover {
+        background: rgba(255, 255, 255, 0.03);
+        transform: translateY(-5px);
+        border-color: rgba(33, 150, 243, 0.3);
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15),
+            0 0 40px rgba(33, 150, 243, 0.1);
+    }
+
+    /* Avatar Styles - Ohne Border */
     #sidebar-user-avatar,
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
         display: block !important;
-        width: 36px !important;
-        height: 36px !important;
-        border-radius: 50% !important;
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 12px !important;
         object-fit: cover !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border: none !important;
         flex-shrink: 0 !important;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Avatar padding when sidebar is collapsed */
+    .sidebar.collapsed .user-avatar {
+        padding: 3px;
+    }
+
+    .user-info-card:hover .user-avatar {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .user-details {
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .company-info {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    .company-name {
+        font-weight: 600;
+        color: var(--primary-light);
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+    }
+
+    .company-domain {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-name {
-        font-weight: 600;
+        font-weight: 500;
         color: var(--text-primary);
-        font-size: 0.95rem;
-        margin-bottom: 2px;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
+    }
+
+    .user-full-name {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.6);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-role-badge {
-        display: inline-block;
-        font-size: 0.75rem;
-        color: var(--text-primary);
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(251, 191, 36, 0.9);
+        background: rgba(251, 191, 36, 0.1);
+        padding: 3px 8px;
+        border-radius: 6px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
         font-weight: 700;
-        margin-bottom: 4px;
+        border: 1px solid rgba(251, 191, 36, 0.2);
+        width: fit-content;
+        margin-top: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .user-info-card:hover .user-role-badge {
+        background: rgba(251, 191, 36, 0.15);
+        border-color: rgba(251, 191, 36, 0.3);
     }
     
-    .user-full-name {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-    }
-    
-    .user-birthdate {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        opacity: 0.8;
-    }
 
     .sidebar-menu {
         list-style: none;
@@ -976,6 +1574,60 @@ const unifiedNavigationCSS = `
             height: 200px;
             opacity: 0;
         }
+    }
+
+    /* Submenu Styles */
+    .sidebar-item.has-submenu .sidebar-link {
+        position: relative;
+    }
+
+    .submenu-arrow {
+        margin-left: auto;
+        transition: transform 0.3s ease;
+        opacity: 0.6;
+    }
+
+    .sidebar-item.has-submenu.open .submenu-arrow {
+        transform: rotate(180deg);
+    }
+
+    .submenu {
+        margin-left: 32px;
+        margin-top: 4px;
+        margin-bottom: 8px;
+        list-style: none;
+        padding: 0;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .submenu-item {
+        margin-bottom: 2px;
+    }
+
+    .submenu-link {
+        display: block;
+        padding: 8px 16px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .submenu-link:hover {
+        background: rgba(33, 150, 243, 0.08);
+        color: var(--primary-color);
+        border-color: rgba(33, 150, 243, 0.15);
+        transform: translateX(4px);
+    }
+
+    .submenu-link.active {
+        background: rgba(33, 150, 243, 0.12);
+        color: var(--primary-color);
+        border-color: rgba(33, 150, 243, 0.2);
+        font-weight: 500;
     }
 
     /* Layout adjustments */
@@ -1167,6 +1819,29 @@ if (!document.querySelector('#unified-navigation-styles')) {
 }
 
 // Export to window for backwards compatibility
+
+// Global function for submenu toggle
+(window as any).toggleSubmenu = function(event: Event, itemId: string) {
+  event.preventDefault();
+  const submenu = document.getElementById(`submenu-${itemId}`);
+  const parentItem = submenu?.closest('.sidebar-item');
+  
+  if (submenu && parentItem) {
+    const isOpen = submenu.style.display !== 'none';
+    
+    // Close all other submenus
+    document.querySelectorAll('.submenu').forEach(menu => {
+      (menu as HTMLElement).style.display = 'none';
+      menu.closest('.sidebar-item')?.classList.remove('open');
+    });
+    
+    // Toggle current submenu
+    if (!isOpen) {
+      submenu.style.display = 'block';
+      parentItem.classList.add('open');
+    }
+  }
+};
 
 // Navigation automatisch initialisieren
 document.addEventListener('DOMContentLoaded', () => {

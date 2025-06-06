@@ -1,0 +1,4 @@
+#!/bin/bash
+# Wrapper script for docker-compose to work from project root
+
+cd "$(dirname "$0")/docker" && docker-compose "$@"

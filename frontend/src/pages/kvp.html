@@ -1352,7 +1352,7 @@
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           currentUser = payload;
-          document.getElementById('user-info').textContent = payload.username || 'User';
+          // User info wird durch header-user-info.ts geladen
         } catch (e) {
           localStorage.removeItem('token');
           window.location.href = '/login';

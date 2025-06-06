@@ -1,14 +1,340 @@
 /**
- * Blackboard System Styles - Angepasst an das Assixx-Dashboard-Design
+ * Blackboard System Styles - Pinnwand Design
  */
 
-/* Main content padding */
+/* Main content padding - für Pinnwand-Layout */
 .main-content {
   padding: var(--spacing-lg);
   width: 100%;
   overflow-y: auto;
   height: calc(100vh - 56px);
+  position: relative;
 }
+
+/* Override container max-width when sidebar is collapsed */
+.main-content.sidebar-collapsed .container {
+  max-width: none !important;
+}
+
+/* Specific override for blackboard page - main element has both classes */
+main.container.main-content.sidebar-collapsed {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Also ensure any container inside main-content uses full width */
+.main-content.sidebar-collapsed .blackboard-container {
+  max-width: 99% !important;
+  /*width: calc(100% - 80px) !important; /* Account for padding */
+}
+
+/* Pinnwand Container */
+.blackboard-container {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  background: linear-gradient(45deg,#0000 25%,transparent 0),linear-gradient(-45deg,#1f1f1f 25%,transparent 0),linear-gradient(45deg,transparent 75%,#b08d5700 0),linear-gradient(-45deg,#0000 75%,#2e2e2ee3 0);
+  background-size: 30px 30px;
+  background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
+  
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 40px;
+  position: relative;
+  overflow: visible;
+}
+
+/* Cork texture overlay for more realism */
+.blackboard-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+/* Pinboard Items Grid */
+.pinboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+  position: relative;
+}
+
+/* Base Pinboard Item */
+.pinboard-item {
+  position: relative;
+  transition: transform 0.2s ease, z-index 0s;
+  z-index: 1;
+}
+
+.pinboard-item:hover {
+  transform: translateY(-5px) scale(1.02);
+  z-index: 10;
+}
+
+/* Sticky Note Style */
+.pinboard-sticky {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 20px;
+  min-height: 200px;
+  position: relative;
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.2),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+  transform: rotate(var(--rotation, -2deg));
+}
+
+/* Different sticky note colors */
+.pinboard-sticky.color-yellow {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.pinboard-sticky.color-pink {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+}
+
+.pinboard-sticky.color-blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.pinboard-sticky.color-green {
+  background: linear-gradient(135deg, #d9f99d 0%, #bef264 100%);
+}
+
+.pinboard-sticky.color-orange {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+}
+
+/* Larger Note Style (A5/A4) */
+.pinboard-note {
+  background: linear-gradient(to bottom, #fff 0%, #f9fafb 100%);
+  padding: 30px;
+  min-height: 300px;
+  position: relative;
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  transform: rotate(var(--rotation, 1deg));
+}
+
+/* Paper lines for notes */
+.pinboard-note::after {
+  content: '';
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #e5e7eb 27px,
+    #e5e7eb 28px
+  );
+  pointer-events: none;
+}
+
+/* Info Box Style */
+.pinboard-info {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 2px solid #0284c7;
+  padding: 20px;
+  min-height: 150px;
+  position: relative;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform: rotate(var(--rotation, -1deg));
+}
+
+/* Document/PDF Preview */
+.pinboard-document {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  padding: 0;
+  position: relative;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  transform: rotate(var(--rotation, 2deg));
+  overflow: hidden;
+}
+
+.pinboard-document .document-header {
+  background: #f3f4f6;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pinboard-document .document-preview {
+  padding: 20px;
+  min-height: 200px;
+  background: 
+    repeating-linear-gradient(
+      transparent,
+      transparent 20px,
+      #f9fafb 20px,
+      #f9fafb 21px
+    );
+}
+
+/* Image Style */
+.pinboard-image {
+  background: #fff;
+  padding: 10px;
+  position: relative;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transform: rotate(var(--rotation, -3deg));
+}
+
+.pinboard-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Pushpin Styles */
+.pushpin {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s ease;
+}
+
+.pinboard-item:hover .pushpin {
+  transform: translateX(-50%) translateY(-3px);
+}
+
+/* Red Pushpin */
+.pushpin-red {
+  width: 30px;
+  height: 30px;
+}
+
+.pushpin-red::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(45deg);
+  top: 0;
+  left: 5px;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.pushpin-red::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, #868e96 0%, #495057 100%);
+  top: 15px;
+  left: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Blue Pushpin */
+.pushpin-blue {
+  width: 30px;
+  height: 30px;
+}
+
+.pushpin-blue::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle at 30% 30%, #74c0fc, #1c7ed6);
+  border-radius: 50%;
+  top: 0;
+  left: 5px;
+  box-shadow: 
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+/* Yellow Pushpin */
+.pushpin-yellow {
+  width: 25px;
+  height: 25px;
+}
+
+.pushpin-yellow::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 30% 30%, #ffd43b, #fab005);
+  border-radius: 50%;
+  top: 0;
+  left: 4px;
+  box-shadow: 
+    inset -1px -1px 3px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 3px rgba(255, 255, 255, 0.5);
+}
+
+/* Metal Thumbtack */
+.pushpin-metal {
+  width: 30px;
+  height: 30px;
+}
+
+.pushpin-metal::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: 
+    radial-gradient(circle at 30% 30%, #e9ecef, #868e96);
+  border-radius: 50%;
+  top: 0;
+  left: 6px;
+  box-shadow: 
+    inset -2px -2px 3px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.6),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.pushpin-metal::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #343a40;
+  border-radius: 50%;
+  top: 5px;
+  left: 11px;
+}
+
+/* Random rotation classes */
+.rotate-1 { --rotation: 1deg; }
+.rotate-2 { --rotation: 2deg; }
+.rotate-3 { --rotation: 3deg; }
+.rotate-n1 { --rotation: -1deg; }
+.rotate-n2 { --rotation: -2deg; }
+.rotate-n3 { --rotation: -3deg; }
 
 /* Overlay für Modals */
 .modal-overlay {
@@ -254,30 +580,93 @@
   box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.12));
 }
 
-/* Detail modal - angepasst an Assixx Design */
+/* Detail modal - Compact Design Standards */
+#entryDetailModal {
+  z-index: 2000;
+}
+
+#entryDetailModal .modal-container {
+  max-width: 600px;
+  width: 90%;
+}
+
+#entryDetailModal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+}
+
 .entry-detail-header {
-  border-bottom: 1px solid var(--border-color, #ddd);
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.entry-detail-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .entry-detail-meta {
   display: flex;
   align-items: center;
-  margin-top: 0.5rem;
-  color: var(--text-secondary, #757575);
-  font-size: 0.875rem;
+  margin-top: var(--spacing-sm);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  gap: var(--spacing-lg);
+}
+
+.entry-detail-meta span {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.entry-detail-meta i {
+  opacity: 0.6;
+  font-size: 12px;
 }
 
 .entry-detail-content {
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-  color: var(--text-primary, #212121);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  word-break: break-word;
 }
 
-/* Confirmation status styles - angepasst an Assixx Design*/
+/* Entry Tags - Compact Design */
+.entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.entry-tags .badge {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.entry-tags .badge:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Confirmation status styles - Compact Design */
 .confirmation-status-pending {
-  color: var(--text-secondary, #757575);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .confirmation-status-confirmed {
@@ -658,4 +1047,295 @@
   .search-btn {
     min-width: 44px;
   }
+}
+
+/* ========================================
+   ATTACHMENT UPLOAD ZONE
+   ======================================== */
+
+.attachment-upload-zone {
+  background: rgba(255, 255, 255, 0.05);
+  border: 3px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.attachment-upload-zone:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.attachment-upload-zone.drag-over {
+  background: rgba(0, 123, 255, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0;
+}
+
+/* Attachment Preview */
+.attachment-preview {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.attachment-icon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.attachment-icon.pdf {
+  color: #e74c3c;
+}
+
+.attachment-icon.image {
+  color: #2ecc71;
+}
+
+.attachment-details {
+  flex: 1;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.attachment-remove {
+  background: rgba(231, 76, 60, 0.2);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e74c3c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.attachment-remove:hover {
+  background: rgba(231, 76, 60, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Attachment Display in Entry - Compact Design */
+.entry-attachments {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.entry-attachments-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.entry-attachments-title i {
+  color: var(--primary-color);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.entry-attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.entry-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.entry-attachment-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.entry-attachment-item i {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.entry-attachment-item i.fa-file-pdf {
+  color: #e74c3c;
+}
+
+.entry-attachment-item i.fa-file-image {
+  color: #2ecc71;
+}
+
+.entry-attachment-item span {
+  font-size: 14px;
+}
+
+.attachment-size {
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Highlight Effect for linked entries */
+.highlight-entry {
+    animation: highlightPulse 3s ease-in-out;
+}
+
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    25%, 75% {
+        box-shadow: 0 5px 20px rgba(0, 142, 255, 0.6), 0 0 30px rgba(0, 142, 255, 0.3);
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 5px 25px rgba(0, 142, 255, 0.8), 0 0 40px rgba(0, 142, 255, 0.4);
+        transform: scale(1.03);
+    }
+}
+
+/* Attachment Preview Modal - Compact Design */
+#attachmentPreviewModal {
+    z-index: 10000;
+}
+
+#attachmentPreviewModal .modal-container {
+    max-width: 90%;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+}
+
+#attachmentPreviewModal .modal-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#attachmentPreviewModal .modal-header h2 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+#attachmentPreviewModal .modal-body {
+    padding: var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    max-height: calc(90vh - 200px);
+    overflow: auto;
+}
+
+#attachmentPreviewModal img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#attachmentPreviewModal object {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-sm);
+}
+
+#attachmentPreviewModal .modal-footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
 }

@@ -54,6 +54,7 @@ services:
       - ../frontend:/app/frontend:delegated
       - ../package.json:/app/package.json:ro
       - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../eslint.config.js:/app/eslint.config.js:ro
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
@@ -90,6 +91,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: assixx-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: assixx_user
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      UPLOAD_LIMIT: 50M
+    networks:
+      - assixx-network
+    depends_on:
+      - mysql
 
   # Optional: Nginx als Reverse Proxy (für Production)
   # nginx:

@@ -18,16 +18,20 @@
 
 ## 🆕 BEREITS IM debugging/v0.1.0 BRANCH GETESTET/VERBESSERT:
 
-✅ **Schwarzes Brett (Teilweise getestet)**
+✅ **Blackboard/Schwarzes Brett Feature - Phase 1 & 2**
 - Dashboard-Integration: Widget zeigt 5 neueste Einträge
 - Zentrale Blackboard-Seite mit realistischem Pinnwand-Design
 - Verschiedene Content-Typen (Sticky Notes, Notizzettel, Info-Boxen)
 - 4 verschiedene Pushpin-Styles mit Hover-Animationen
+- Zufällige Rotation für natürlichen Look
 - Berechtigungssystem (nur Admins können posten)
+- Sidebar-Navigation: "Schwarzes Brett" mit animiertem Pushpin
 
 ✅ **Sidebar Navigation Improvements**
+- "Navigation" umbenannt zu "Schwarzes Brett" mit Pushpin-Icon
 - Collapsible Sidebar mit localStorage-Persistenz
 - Icon-only Modus bei eingeklappter Sidebar
+- Animierter roter Pushpin mit Hover-Effekt
 - Repositionierter Toggle-Button (top-left)
 - Full-width Content bei eingeklappter Sidebar
 - Modernisierte User-Info-Card mit Glassmorphismus
@@ -43,6 +47,15 @@
 ✅ **Code-Qualität**
 - ESLint v9 Konfiguration und Auto-Formatierung
 - TypeScript-Fehler reduziert
+
+✅ **Plan & Feature Management System** (02.06.2025)
+- Komplett neues Backend für Subscription Plans (Basic/Professional/Enterprise)
+- root-features.html komplett überarbeitet mit Plan-Auswahl
+- Add-ons System für zusätzliche Mitarbeiter/Admins/Speicher
+- Datenbank-Migration erfolgreich (trotz Schwierigkeiten)
+
+📚 **Neue Dokumentation erstellt:**
+- [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md) - Lernpunkte aus Migration Issues
 
 ## 🚀 FÜR NEUEN CHAT:
 
@@ -473,7 +486,7 @@
 - [x] Sidebar Navigation als "Schwarzes Brett" mit Pushpin (04.06.2025)
 - [x] Collapsible Sidebar mit localStorage-Persistenz (04.06.2025)
 - [x] Employee Management UI-Verbesserungen (04.06.2025)
-- [x] ESLint v9 Konfiguration und Auto-Formatierung (02.06.2025)
+- [x] ESLint v9 Konfiguration und Auto-Formatierung (06.06.2025)
 - [x] Plan & Feature Management System (02.06.2025)
 
 ## 📈 Beta-Test Erfolgskriterien
