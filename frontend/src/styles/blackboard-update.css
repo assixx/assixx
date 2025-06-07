@@ -221,7 +221,7 @@ select.form-control {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.3s ease;
-  color: var(--text-primary);
+  color: #000;
   font-size: 12px;
   min-height: 60px;
 }
