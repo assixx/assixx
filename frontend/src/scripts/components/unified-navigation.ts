@@ -66,6 +66,20 @@ class UnifiedNavigation {
     this.loadUserInfo();
     this.injectNavigationHTML();
     this.attachEventListeners();
+    
+    // Update badge counts
+    setTimeout(() => {
+      this.updateUnreadMessages();
+      this.updatePendingSurveys();
+      this.updateUnreadDocuments();
+    }, 1000);
+    
+    // Update badges every 30 seconds
+    setInterval(() => {
+      this.updateUnreadMessages();
+      this.updatePendingSurveys();
+      this.updateUnreadDocuments();
+    }, 30000);
   }
 
   private loadUserInfo(): void {
@@ -270,6 +284,7 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('document'),
           label: 'Meine Dokumente',
           url: '/pages/employee-documents.html',
+          badge: 'unread-documents',
         },
         {
           id: 'calendar',
@@ -485,6 +500,8 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'pending-surveys') {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    } else if (item.badge === 'unread-documents') {
+      badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
     // If has children, create a dropdown
@@ -671,6 +688,11 @@ class UnifiedNavigation {
     const navId = link.dataset.navId;
     if (navId) {
       localStorage.setItem('activeNavigation', navId);
+      
+      // If user clicked on documents, mark all as read
+      if (navId === 'documents' && this.currentRole === 'employee') {
+        this.markAllDocumentsAsRead();
+      }
     }
 
     // Add navigation animation
@@ -686,19 +708,40 @@ class UnifiedNavigation {
       item.classList.remove('active');
     });
 
-    // Set active based on current page or stored state
-    if (activeNav) {
+    // Check if we just logged in or on main dashboard page
+    const isMainDashboard = currentPath.includes('admin-dashboard') || 
+                           currentPath.includes('employee-dashboard') || 
+                           currentPath.includes('root-dashboard');
+    
+    // If on dashboard page and no specific section is active, default to overview
+    if (isMainDashboard && (!activeNav || activeNav === 'dashboard')) {
+      // Force "Übersicht" to be active
+      const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
+      if (dashboardLink) {
+        dashboardLink.closest('.sidebar-item')?.classList.add('active');
+      }
+      // Clear any stored navigation to prevent last selected from being active
+      localStorage.removeItem('activeNavigation');
+    } else if (activeNav && activeNav !== 'dashboard') {
+      // Only use stored navigation if it's not the dashboard
       const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
       if (activeLink) {
         activeLink.closest('.sidebar-item')?.classList.add('active');
       }
     } else {
-      // Auto-detect active page
-      this.autoDetectActivePage(currentPath);
+      // For other pages, auto-detect or default to dashboard
+      const detected = this.autoDetectActivePage(currentPath);
+      if (!detected) {
+        // If no match found, default to dashboard
+        const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
+        if (dashboardLink) {
+          dashboardLink.closest('.sidebar-item')?.classList.add('active');
+        }
+      }
     }
   }
 
-  private autoDetectActivePage(currentPath: string): void {
+  private autoDetectActivePage(currentPath: string): boolean {
     const menuItems = this.getNavigationForRole(this.currentRole);
     const matchingItem = menuItems.find((item) => {
       if (!item.url || item.url.startsWith('#')) return false;
@@ -709,8 +752,10 @@ class UnifiedNavigation {
       const link = document.querySelector(`[data-nav-id="${matchingItem.id}"]`);
       if (link) {
         link.closest('.sidebar-item')?.classList.add('active');
+        return true;
       }
     }
+    return false;
   }
 
   private animateNavigation(link: HTMLElement): void {
@@ -811,6 +856,67 @@ class UnifiedNavigation {
       }
     } catch (error) {
       console.error('Error updating pending surveys:', error);
+    }
+  }
+
+  // Ungelesene Dokumente aktualisieren
+  public async updateUnreadDocuments(): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+
+      // Nur für Employees
+      const role = localStorage.getItem('userRole') || this.currentRole;
+      if (role !== 'employee') return;
+
+      const response = await fetch('/api/employee/documents/unread-count', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById('documents-unread-badge');
+        if (badge) {
+          const count = data.unreadCount || 0;
+          if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count.toString();
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating unread documents:', error);
+    }
+  }
+
+  // Mark all documents as read
+  private async markAllDocumentsAsRead(): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+
+      const response = await fetch('/api/employee/documents/mark-all-read', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Hide the badge immediately
+        const badge = document.getElementById('documents-unread-badge');
+        if (badge) {
+          badge.style.display = 'none';
+        }
+      }
+    } catch (error) {
+      console.error('Error marking documents as read:', error);
     }
   }
 
@@ -1629,21 +1735,21 @@ const unifiedNavigationCSS = `
     }
 
     .submenu-link {
-        display: block;
+        display: inline flow-root list-item;
         padding: 8px 16px;
         color: var(--text-secondary);
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
         transition: all 0.2s ease;
-        border: 1px solid transparent;
+        transform: translateX(6px);
     }
 
     .submenu-link:hover {
         background: rgba(33, 150, 243, 0.08);
-        color: var(--primary-color);
+        
         border-color: rgba(33, 150, 243, 0.15);
-        transform: translateX(4px);
+        transform: translateX(20px);
     }
 
     .submenu-link.active {

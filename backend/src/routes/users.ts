@@ -7,6 +7,7 @@ import express, { Router, Request } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
+import bcrypt from "bcrypt";
 import { authenticateToken } from "../auth";
 import { logger } from "../utils/logger";
 
@@ -155,6 +156,16 @@ router.put(
         return;
       }
 
+      // Hash password if provided
+      if (updateData.password && updateData.password.trim() !== '') {
+        const saltRounds = 10;
+        updateData.password = await bcrypt.hash(updateData.password, saltRounds);
+        logger.info(`Password updated for user ${userId} by admin ${authReq.user.id}`);
+      } else {
+        // Remove empty password field
+        delete updateData.password;
+      }
+
       // Update user
       const success = await User.update(userId, updateData);
 
@@ -296,6 +307,12 @@ router.put(
       const authReq = req as AuthenticatedRequest;
       const userId = authReq.user.id;
       const updateData = req.body;
+
+      // Prevent password updates through profile endpoint
+      // Password changes should go through /profile/password
+      delete updateData.password;
+      delete updateData.role;
+      delete updateData.tenant_id;
 
       // Validate email if provided
       if (updateData.email) {

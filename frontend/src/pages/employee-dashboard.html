@@ -1044,5 +1044,13 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
+    
+    <!-- Force dashboard to be active on page load -->
+    <script type="module">
+      document.addEventListener('DOMContentLoaded', () => {
+        // Clear any stored active navigation to ensure dashboard is selected
+        localStorage.removeItem('activeNavigation');
+      });
+    </script>
   </body>
 </html>

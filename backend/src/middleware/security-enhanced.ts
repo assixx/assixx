@@ -154,7 +154,7 @@ export const securityHeaders = helmet({
         "https://cdnjs.cloudflare.com",
       ],
       connectSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      frameSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       manifestSrc: ["'self'"],

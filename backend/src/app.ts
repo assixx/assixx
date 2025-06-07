@@ -81,19 +81,21 @@ app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
 
   // Map TypeScript filenames to their compiled counterparts
   const mappings: { [key: string]: string } = {
-    "unified-navigation": "unified-navigation-WK4P3xYJ.js",
-    "root-dashboard": "root-dashboard-Dd5fNxRe.js",
-    "header-user-info": "header-user-info-DIJZF5-V.js",
-    "admin-dashboard": "admin-dashboard-Ba8leqBE.js",
-    "admin-config": "admin-config-GvweoBT9.js",
-    auth: "auth-PrTXY5uP.js",
-    blackboard: "blackboard-Da9DEVDT.js",
-    calendar: "calendar-79pOn4qQ.js",
-    chat: "chat-BNToM1Lh.js",
-    "dashboard-scripts": "dashboard-scripts-mfyoCHE-.js",
-    shifts: "shifts-DSdc87QX.js",
-    "storage-upgrade": "storage-upgrade-AeatrjF1.js",
-    "components/unified-navigation": "unified-navigation-WK4P3xYJ.js",
+    "unified-navigation": "unified-navigation-BfYsmZeM.js",
+    "root-dashboard": "root-dashboard-BFom39QU.js",
+    "header-user-info": "header-user-info-qZ8A0Mc0.js",
+    "admin-dashboard": "admin-dashboard-B4rOc41N.js",
+    "admin-config": "admin-config-BtBp1tIq.js",
+    auth: "auth-DvDpumDN.js",
+    blackboard: "blackboard-HvChAPxR.js",
+    calendar: "calendar-QUNb3N9b.js",
+    chat: "chat-B3I5JTQ6.js",
+    "dashboard-scripts": "dashboard-scripts-DTyBRpOL.js",
+    shifts: "shifts-D8eez77b.js",
+    "storage-upgrade": "storage-upgrade-BYD2E46R.js",
+    "admin-profile": "admin-profile-Ca31WhxZ.js",
+    "manage-admins": "manage-admins-B3DFtgPh.js",
+    "components/unified-navigation": "unified-navigation-BfYsmZeM.js",
   };
 
   const compiledFile = mappings[filename];

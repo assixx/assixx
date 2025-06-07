@@ -595,6 +595,51 @@
         animation: spin 1.5s linear infinite;
       }
 
+      /* Recipient Type Selector Styles */
+      .recipient-type-selector {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .radio-option {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .radio-option:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(33, 150, 243, 0.3);
+      }
+
+      .radio-option input[type="radio"] {
+        margin-right: 8px;
+        accent-color: var(--primary-color);
+      }
+
+      .radio-option input[type="radio"]:checked + span {
+        color: var(--primary-color);
+        font-weight: 500;
+      }
+
+      .radio-option input[type="radio"]:checked {
+        transform: scale(1.1);
+      }
+
+      .radio-option:has(input[type="radio"]:checked) {
+        background: rgba(33, 150, 243, 0.1);
+        border-color: rgba(33, 150, 243, 0.5);
+        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15);
+      }
+
       /* Anpassungen für mobile Geräte */
       @media (max-width: 768px) {
         .form-row {
@@ -613,15 +658,15 @@
   <body>
     <!-- Header -->
     <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
+      <a href="/pages/admin-dashboard.html" class="logo-container">
+        <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Lade...</span>
+        <div id="user-info" class="user-info">
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" class="user-avatar" />
+          <span id="user-name" class="user-name">Lade...</span>
         </div>
-        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+        <button id="logout-btn" class="btn-logout">
           <i class="fas fa-sign-out-alt"></i>
           Abmelden
         </button>
@@ -630,14 +675,9 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Sidebar Navigation -->
+      <!-- Unified Sidebar Navigation -->
       <aside class="sidebar">
-        <nav class="sidebar-nav">
-          <h3 class="sidebar-title">Navigation</h3>
-          <ul class="sidebar-menu" id="nav-menu">
-            <!-- Wird dynamisch gefüllt -->
-          </ul>
-        </nav>
+        <!-- Navigation wird durch unified-navigation.js injiziert -->
       </aside>
 
       <!-- Main Content Area -->
@@ -681,8 +721,30 @@
               <div class="form-row">
                 <div class="form-col">
                   <div class="form-group">
-                    <label for="user-select" class="form-label">Mitarbeiter auswählen</label>
-                    <div class="custom-dropdown">
+                    <label class="form-label">Empfänger-Typ</label>
+                    <div class="recipient-type-selector">
+                      <label class="radio-option">
+                        <input type="radio" name="recipientType" value="user" checked onchange="updateRecipientSelector('user')">
+                        <span>Einzelner Mitarbeiter</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" name="recipientType" value="team" onchange="updateRecipientSelector('team')">
+                        <span>Team</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" name="recipientType" value="department" onchange="updateRecipientSelector('department')">
+                        <span>Abteilung</span>
+                      </label>
+                      <label class="radio-option">
+                        <input type="radio" name="recipientType" value="company" onchange="updateRecipientSelector('company')">
+                        <span>Gesamte Firma</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="form-group" id="recipientSelectorGroup">
+                    <label for="user-select" class="form-label" id="recipientLabel">Mitarbeiter auswählen</label>
+                    <div class="custom-dropdown" id="userDropdownContainer">
                       <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
                         <span>Bitte Mitarbeiter auswählen</span>
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -692,7 +754,38 @@
                       <div class="dropdown-options" id="userDropdown">
                         <!-- Wird dynamisch befüllt -->
                       </div>
-                      <input type="hidden" name="userId" id="userValue" required />
+                      <input type="hidden" name="userId" id="userValue" />
+                    </div>
+                    
+                    <div class="custom-dropdown" id="teamDropdownContainer" style="display: none;">
+                      <div class="dropdown-display placeholder" id="teamDisplay" onclick="toggleDropdown('team')">
+                        <span>Bitte Team auswählen</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                      </div>
+                      <div class="dropdown-options" id="teamDropdown">
+                        <!-- Wird dynamisch befüllt -->
+                      </div>
+                      <input type="hidden" name="teamId" id="teamValue" />
+                    </div>
+                    
+                    <div class="custom-dropdown" id="departmentDropdownContainer" style="display: none;">
+                      <div class="dropdown-display placeholder" id="departmentDisplay" onclick="toggleDropdown('department')">
+                        <span>Bitte Abteilung auswählen</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                      </div>
+                      <div class="dropdown-options" id="departmentDropdown">
+                        <!-- Wird dynamisch befüllt -->
+                      </div>
+                      <input type="hidden" name="departmentId" id="departmentValue" />
+                    </div>
+                    
+                    <div id="companyInfo" style="display: none; padding: 12px; background: rgba(33, 150, 243, 0.1); border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.3);">
+                      <i class="fas fa-info-circle" style="color: #2196F3; margin-right: 8px;"></i>
+                      Das Dokument wird für alle Mitarbeiter der Firma sichtbar sein.
                     </div>
                   </div>
 
@@ -816,15 +909,14 @@
       document.addEventListener('DOMContentLoaded', () => {
         console.log('Document upload page loaded');
 
-        // Benutzer-Info, Logout-Button und Navigation einrichten
-        setupUserInfo();
-        setupNavigation();
 
         // Datei-Upload-Bereich einrichten
         setupFileUpload();
 
         // Mitarbeiter-Liste laden
         loadEmployees();
+        loadTeams();
+        loadDepartments();
 
         // Formular-Einreichung einrichten
         const uploadForm = document.getElementById('upload-form');
@@ -836,16 +928,122 @@
         setupDropdowns();
       });
 
+      // Empfänger-Selector aktualisieren
+      function updateRecipientSelector(type) {
+        const userContainer = document.getElementById('userDropdownContainer');
+        const teamContainer = document.getElementById('teamDropdownContainer');
+        const departmentContainer = document.getElementById('departmentDropdownContainer');
+        const companyInfo = document.getElementById('companyInfo');
+        const recipientLabel = document.getElementById('recipientLabel');
+        
+        // Alle Container verstecken
+        userContainer.style.display = 'none';
+        teamContainer.style.display = 'none';
+        departmentContainer.style.display = 'none';
+        companyInfo.style.display = 'none';
+        
+        // Required-Attribute zurücksetzen
+        document.getElementById('userValue').removeAttribute('required');
+        document.getElementById('teamValue').removeAttribute('required');
+        document.getElementById('departmentValue').removeAttribute('required');
+        
+        // Je nach Typ anzeigen
+        switch(type) {
+          case 'user':
+            userContainer.style.display = 'block';
+            document.getElementById('userValue').setAttribute('required', 'required');
+            recipientLabel.textContent = 'Mitarbeiter auswählen';
+            break;
+          case 'team':
+            teamContainer.style.display = 'block';
+            document.getElementById('teamValue').setAttribute('required', 'required');
+            recipientLabel.textContent = 'Team auswählen';
+            break;
+          case 'department':
+            departmentContainer.style.display = 'block';
+            document.getElementById('departmentValue').setAttribute('required', 'required');
+            recipientLabel.textContent = 'Abteilung auswählen';
+            break;
+          case 'company':
+            companyInfo.style.display = 'block';
+            recipientLabel.textContent = 'Empfänger';
+            break;
+        }
+      }
+
+      // Teams laden
+      async function loadTeams() {
+        const token = localStorage.getItem('token');
+        try {
+          const response = await fetch('/api/teams', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const teams = await response.json();
+            const teamDropdown = document.getElementById('teamDropdown');
+            
+            teamDropdown.innerHTML = teams.map(team => `
+              <div class="dropdown-option" onclick="selectOption('team', '${team.id}', '${team.name}')">
+                ${team.name}
+              </div>
+            `).join('');
+          }
+        } catch (error) {
+          console.error('Error loading teams:', error);
+        }
+      }
+
+      // Abteilungen laden
+      async function loadDepartments() {
+        const token = localStorage.getItem('token');
+        try {
+          const response = await fetch('/api/departments', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const departments = await response.json();
+            const departmentDropdown = document.getElementById('departmentDropdown');
+            
+            departmentDropdown.innerHTML = departments.map(dept => `
+              <div class="dropdown-option" onclick="selectOption('department', '${dept.id}', '${dept.name}')">
+                ${dept.name}
+              </div>
+            `).join('');
+          }
+        } catch (error) {
+          console.error('Error loading departments:', error);
+        }
+      }
+
       // Bestätigungsdialog anzeigen
       function showConfirmationDialog(formData, callback) {
-        const employeeDisplay = document.getElementById('userDisplay').querySelector('span').textContent;
+        const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
+        let recipientDisplay = '';
+        
+        switch(recipientType) {
+          case 'user':
+            recipientDisplay = `Mitarbeiter: ${document.getElementById('userDisplay').querySelector('span').textContent}`;
+            break;
+          case 'team':
+            recipientDisplay = `Team: ${document.getElementById('teamDisplay').querySelector('span').textContent}`;
+            break;
+          case 'department':
+            recipientDisplay = `Abteilung: ${document.getElementById('departmentDisplay').querySelector('span').textContent}`;
+            break;
+          case 'company':
+            recipientDisplay = 'Empfänger: Gesamte Firma';
+            break;
+        }
+        
         const categoryDisplay = document.getElementById('categoryDisplay').querySelector('span').textContent;
         const fileInput = document.getElementById('file-input');
         const fileName = fileInput.files[0].name;
 
         const confirmMsg =
           `Bitte bestätigen Sie den Dokument-Upload:\n\n` +
-          `Mitarbeiter: ${employeeDisplay}\n` +
+          `${recipientDisplay}\n` +
           `Kategorie: ${categoryDisplay}\n` +
           `Dateiname: ${fileName}\n` +
           (formData.get('year') ? `Jahr: ${formData.get('year')}\n` : '') +
@@ -857,107 +1055,7 @@
         }
       }
 
-      // Benutzerinfo im Header anzeigen
-      function setupUserInfo() {
-        const userInfo = document.getElementById('user-info');
-        const username = localStorage.getItem('username') || 'Admin';
-        if (userInfo) {
-          userInfo.textContent = username;
-        }
 
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-          logoutBtn.addEventListener('click', () => {
-            if (confirm('Möchten Sie sich wirklich abmelden?')) {
-              localStorage.removeItem('token');
-              localStorage.removeItem('role');
-              window.location.href = '/';
-            }
-          });
-        }
-      }
-
-      // Navigation einrichten
-      function setupNavigation() {
-        const navMenu = document.getElementById('nav-menu');
-        if (!navMenu) return;
-
-        const role = localStorage.getItem('role') || 'admin';
-        const currentPage = '/document-upload';
-
-        // Navigationseinträge basierend auf der Rolle
-        const navItems = [
-          {
-            href: '/admin-dashboard',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
-            text: 'Dashboard',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/employee-dashboard',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
-            text: 'Dashboard',
-            roles: ['employee'],
-          },
-          {
-            href: '/document-upload',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,15V17H16V15H8M8,11V13H16V11H8"/></svg>',
-            text: 'Dokumente hochladen',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/admin-dashboard#departments',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
-            text: 'Abteilungen',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/admin-dashboard#employees',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
-            text: 'Mitarbeiter',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/admin-dashboard#documents',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
-            text: 'Dokumente',
-            roles: ['admin', 'root'],
-          },
-          {
-            href: '/employee-documents',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
-            text: 'Meine Dokumente',
-            roles: ['employee'],
-          },
-          {
-            href: '/salary-documents',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
-            text: 'Gehaltsabrechnungen',
-            roles: ['employee'],
-          },
-          {
-            href: '/feature-management',
-            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
-            text: 'Feature Management',
-            roles: ['admin', 'root'],
-          },
-        ];
-
-        // Navigationseinträge filtern und anzeigen
-        const filteredItems = navItems.filter((item) => item.roles.includes(role));
-        navMenu.innerHTML = filteredItems
-          .map(
-            (item) => `
-                <li class="sidebar-item ${currentPage === item.href ? 'active' : ''}">
-                    <a href="${item.href}" class="sidebar-link">
-                        <span class="icon">${item.icon}</span>
-                        <span>${item.text}</span>
-                    </a>
-                </li>
-            `,
-          )
-          .join('');
-      }
 
       // Datei-Upload-Bereich einrichten
       function setupFileUpload() {
@@ -1146,18 +1244,87 @@
         const token = localStorage.getItem('token');
         const uploadButton = document.getElementById('upload-button');
 
+        // Empfänger-Typ ermitteln
+        const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
+        formData.append('recipientType', recipientType);
+        
         // Überprüfen, ob alle erforderlichen Felder ausgefüllt sind
-        const userId = formData.get('userId');
         const category = formData.get('category');
         const fileInput = document.getElementById('file-input');
+        
+        let recipientId = null;
+        let recipientName = '';
+        
+        switch(recipientType) {
+          case 'user':
+            recipientId = formData.get('userId');
+            recipientName = document.getElementById('userDisplay').querySelector('span').textContent;
+            if (!recipientId || recipientId === '') {
+              showError('Bitte wählen Sie einen Mitarbeiter aus.');
+              return;
+            }
+            break;
+          case 'team':
+            recipientId = formData.get('teamId');
+            recipientName = document.getElementById('teamDisplay').querySelector('span').textContent;
+            if (!recipientId || recipientId === '') {
+              showError('Bitte wählen Sie ein Team aus.');
+              return;
+            }
+            break;
+          case 'department':
+            recipientId = formData.get('departmentId');
+            recipientName = document.getElementById('departmentDisplay').querySelector('span').textContent;
+            if (!recipientId || recipientId === '') {
+              showError('Bitte wählen Sie eine Abteilung aus.');
+              return;
+            }
+            break;
+          case 'company':
+            recipientName = 'Gesamte Firma';
+            // Kein recipientId nötig für company
+            break;
+        }
 
-        if (!userId || !category || !fileInput.files.length) {
+        if (!category || !fileInput.files.length) {
           showError('Bitte füllen Sie alle erforderlichen Felder aus und wählen Sie eine Datei aus.');
           return;
         }
 
+        // Entferne nicht benötigte Felder aus FormData
+        const cleanFormData = new FormData();
+        
+        // Füge nur die benötigten Felder hinzu
+        cleanFormData.append('recipientType', recipientType);
+        cleanFormData.append('document', fileInput.files[0]);
+        cleanFormData.append('category', category);
+        
+        // Füge optionale Felder nur hinzu, wenn sie einen Wert haben
+        const description = formData.get('description');
+        if (description) cleanFormData.append('description', description);
+        
+        const year = formData.get('year');
+        if (year) cleanFormData.append('year', year);
+        
+        const month = formData.get('month');
+        if (month) cleanFormData.append('month', month);
+        
+        // Füge nur den relevanten Empfänger hinzu
+        switch(recipientType) {
+          case 'user':
+            cleanFormData.append('userId', formData.get('userId'));
+            break;
+          case 'team':
+            cleanFormData.append('teamId', formData.get('teamId'));
+            break;
+          case 'department':
+            cleanFormData.append('departmentId', formData.get('departmentId'));
+            break;
+          // Bei 'company' wird kein spezifischer Empfänger benötigt
+        }
+        
         // Bestätigungsdialog anzeigen
-        showConfirmationDialog(formData, async () => {
+        showConfirmationDialog(cleanFormData, async () => {
           // Button-Zustand ändern
           if (uploadButton) {
             uploadButton.disabled = true;
@@ -1174,12 +1341,12 @@
           hideSuccess();
 
           try {
-            const response = await fetch('/documents/upload', {
+            const response = await fetch('/api/documents/upload', {
               method: 'POST',
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-              body: formData,
+              body: cleanFormData,
             });
 
             const result = await response.json();
@@ -1187,6 +1354,22 @@
             if (response.ok) {
               console.log('Upload successful:', result);
               form.reset();
+              
+              // Dropdowns zurücksetzen
+              document.getElementById('userDisplay').querySelector('span').textContent = 'Bitte Mitarbeiter auswählen';
+              document.getElementById('userDisplay').classList.add('placeholder');
+              document.getElementById('teamDisplay').querySelector('span').textContent = 'Bitte Team auswählen';
+              document.getElementById('teamDisplay').classList.add('placeholder');
+              document.getElementById('departmentDisplay').querySelector('span').textContent = 'Bitte Abteilung auswählen';
+              document.getElementById('departmentDisplay').classList.add('placeholder');
+              document.getElementById('categoryDisplay').querySelector('span').textContent = 'Bitte Kategorie auswählen';
+              document.getElementById('categoryDisplay').classList.add('placeholder');
+              document.getElementById('monthDisplay').querySelector('span').textContent = 'Monat auswählen (optional)';
+              document.getElementById('monthDisplay').classList.add('placeholder');
+              
+              // Empfänger-Typ zurück auf 'user' setzen
+              document.querySelector('input[name="recipientType"][value="user"]').checked = true;
+              updateRecipientSelector('user');
 
               // Datei-Info und Vorschau zurücksetzen
               const fileInfo = document.getElementById('file-info');
@@ -1323,7 +1506,21 @@
         });
       }
     </script>
+    
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
+    
+    <!-- Logout Functionality -->
+    <script>
+      document.getElementById('logout-btn').addEventListener('click', function() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('user');
+        window.location.href = '/pages/login.html';
+      });
+    </script>
   </body>
 </html>

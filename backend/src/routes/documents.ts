@@ -93,10 +93,40 @@ router.post(
       }
 
       const { originalname, path: filePath } = req.file;
-      const { userId, category, description, year, month } = req.body;
+      const { userId, teamId, departmentId, recipientType, category, description, year, month } = req.body;
 
-      if (!userId) {
-        throw new Error("Kein Benutzer ausgewählt");
+      // Validate recipient based on type
+      let recipientData: any = {
+        recipient_type: recipientType || 'user',
+        user_id: null,
+        team_id: null,
+        department_id: null
+      };
+
+      switch (recipientType) {
+        case 'user':
+          if (!userId) {
+            throw new Error("Kein Benutzer ausgewählt");
+          }
+          recipientData.user_id = parseInt(userId, 10);
+          break;
+        case 'team':
+          if (!teamId) {
+            throw new Error("Kein Team ausgewählt");
+          }
+          recipientData.team_id = parseInt(teamId, 10);
+          break;
+        case 'department':
+          if (!departmentId) {
+            throw new Error("Keine Abteilung ausgewählt");
+          }
+          recipientData.department_id = parseInt(departmentId, 10);
+          break;
+        case 'company':
+          // No specific ID needed for company-wide documents
+          break;
+        default:
+          throw new Error("Ungültiger Empfänger-Typ");
       }
 
       // Read file content
@@ -104,7 +134,10 @@ router.post(
 
       const documentId = await Document.create({
         fileName: originalname,
-        userId: parseInt(userId, 10),
+        userId: recipientData.user_id,
+        teamId: recipientData.team_id,
+        departmentId: recipientData.department_id,
+        recipientType: recipientData.recipient_type,
         fileContent,
         category: category || "other",
         description: description || "",
@@ -128,19 +161,49 @@ router.post(
         );
 
         if (isEmailFeatureEnabled) {
-          const user = await User.findById(
-            parseInt(userId, 10),
-            authReq.user.tenant_id,
-          );
-          if (user && user.email) {
-            await emailService.sendNewDocumentNotification(user, {
-              file_name: originalname,
-              category: category || "other",
-              upload_date: new Date(),
-            });
-            logger.info(
-              `Email notification sent to ${user.email} for document ${documentId}`,
-            );
+          const documentInfo = {
+            file_name: originalname,
+            category: category || "other",
+            upload_date: new Date(),
+          };
+
+          switch (recipientType) {
+            case 'user':
+              // Send to individual user
+              if (userId) {
+                const user = await User.findById(
+                  parseInt(userId, 10),
+                  authReq.user.tenant_id,
+                );
+                if (user && user.email) {
+                  await emailService.sendNewDocumentNotification(user, documentInfo);
+                  logger.info(
+                    `Email notification sent to ${user.email} for document ${documentId}`,
+                  );
+                }
+              }
+              break;
+              
+            case 'team':
+              // TODO: Send to all team members
+              logger.info(
+                `Team notifications not yet implemented for document ${documentId}`,
+              );
+              break;
+              
+            case 'department':
+              // TODO: Send to all department members
+              logger.info(
+                `Department notifications not yet implemented for document ${documentId}`,
+              );
+              break;
+              
+            case 'company':
+              // TODO: Send to all company members
+              logger.info(
+                `Company-wide notifications not yet implemented for document ${documentId}`,
+              );
+              break;
           }
         }
       } catch (emailError: any) {

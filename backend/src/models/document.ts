@@ -36,7 +36,10 @@ interface DbDocument extends RowDataPacket {
 }
 
 interface DocumentCreateData {
-  userId: number;
+  userId?: number | null;
+  teamId?: number | null;
+  departmentId?: number | null;
+  recipientType?: 'user' | 'team' | 'department' | 'company';
   fileName: string;
   fileContent?: Buffer;
   category?: string;
@@ -69,6 +72,9 @@ interface CountResult extends RowDataPacket {
 export class Document {
   static async create({
     userId,
+    teamId,
+    departmentId,
+    recipientType = "user",
     fileName,
     fileContent,
     category = "other",
@@ -77,21 +83,45 @@ export class Document {
     month,
     tenant_id,
   }: DocumentCreateData): Promise<number> {
-    logger.info(
-      `Creating new document for user ${userId} in category ${category}`,
-    );
+    // Log based on recipient type
+    let logMessage = `Creating new document in category ${category} for `;
+    switch (recipientType) {
+      case 'user':
+        logMessage += `user ${userId}`;
+        break;
+      case 'team':
+        logMessage += `team ${teamId}`;
+        break;
+      case 'department':
+        logMessage += `department ${departmentId}`;
+        break;
+      case 'company':
+        logMessage += `entire company (tenant ${tenant_id})`;
+        break;
+    }
+    logger.info(logMessage);
+    
+    // We need to also set default values for required fields
     const query =
-      "INSERT INTO documents (user_id, file_name, file_content, category, description, year, month, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+      "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
         userId,
+        teamId,
+        departmentId,
+        recipientType,
         fileName,
+        fileName, // original_name - same as filename for now
+        `/uploads/${fileName}`, // file_path
+        fileContent ? fileContent.length : 0, // file_size
+        'application/octet-stream', // mime_type - default for now
         fileContent,
         category,
         description,
         year,
         month,
         tenant_id,
+        userId, // created_by - same as userId for now
       ]);
       logger.info(`Document created successfully with ID ${result.insertId}`);
       return result.insertId;
@@ -341,6 +371,77 @@ export class Document {
     }
   }
 
+  // Search documents with employee access (personal, team, department, company)
+  static async searchWithEmployeeAccess(
+    userId: number,
+    tenantId: number,
+    searchTerm: string,
+  ): Promise<DbDocument[]> {
+    logger.info(
+      `Searching accessible documents for employee ${userId} with term: ${searchTerm}`,
+    );
+    
+    const query = `
+      SELECT DISTINCT d.*,
+        u.first_name, u.last_name,
+        CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+        t.name as team_name,
+        dept.name as department_name,
+        CASE 
+          WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
+          WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
+          WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
+          WHEN d.recipient_type = 'company' THEN 'Gesamte Firma'
+          ELSE 'Unbekannt'
+        END as recipient_display
+      FROM documents d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN teams t ON d.team_id = t.id
+      LEFT JOIN departments dept ON d.department_id = dept.id
+      WHERE d.tenant_id = ?
+        AND (d.file_name LIKE ? OR d.description LIKE ?)
+        AND (
+          -- Personal documents
+          (d.recipient_type = 'user' AND d.user_id = ?)
+          OR
+          -- Team documents (user is member of the team)
+          (d.recipient_type = 'team' AND d.team_id IN (
+            SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
+          ))
+          OR
+          -- Department documents (user is in the department)
+          (d.recipient_type = 'department' AND d.department_id = (
+            SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
+          ))
+          OR
+          -- Company-wide documents
+          d.recipient_type = 'company'
+        )
+      ORDER BY d.uploaded_at DESC`;
+      
+    try {
+      const [rows] = await executeQuery<DbDocument[]>(query, [
+        tenantId,
+        `%${searchTerm}%`,
+        `%${searchTerm}%`,
+        userId,
+        userId,
+        tenantId,
+        userId,
+        tenantId
+      ]);
+      logger.info(
+        `Found ${rows.length} accessible documents matching search for employee ${userId}`,
+      );
+      return rows;
+    } catch (error) {
+      logger.error(
+        `Error searching accessible documents for employee ${userId}: ${(error as Error).message}`,
+      );
+      throw error;
+    }
+  }
+
   // Count method with optional filters
   static async count(filters?: DocumentCountFilter): Promise<number> {
     // If no filters provided, count all documents
@@ -390,6 +491,70 @@ export class Document {
   static async findByUser(userId: number): Promise<DbDocument[]> {
     // Alias for findByUserId for legacy compatibility
     return this.findByUserId(userId);
+  }
+
+  // Find all documents accessible to an employee (personal, team, department, company)
+  static async findByEmployeeWithAccess(userId: number, tenantId: number): Promise<DbDocument[]> {
+    logger.info(
+      `Fetching all accessible documents for employee ${userId} in tenant ${tenantId}`,
+    );
+    
+    const query = `
+      SELECT DISTINCT d.*, 
+        u.first_name, u.last_name,
+        CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+        t.name as team_name,
+        dept.name as department_name,
+        CASE 
+          WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
+          WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
+          WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
+          WHEN d.recipient_type = 'company' THEN 'Gesamte Firma'
+          ELSE 'Unbekannt'
+        END as recipient_display
+      FROM documents d
+      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN teams t ON d.team_id = t.id
+      LEFT JOIN departments dept ON d.department_id = dept.id
+      WHERE d.tenant_id = ?
+        AND (
+          -- Personal documents
+          (d.recipient_type = 'user' AND d.user_id = ?)
+          OR
+          -- Team documents (user is member of the team)
+          (d.recipient_type = 'team' AND d.team_id IN (
+            SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
+          ))
+          OR
+          -- Department documents (user is in the department)
+          (d.recipient_type = 'department' AND d.department_id = (
+            SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
+          ))
+          OR
+          -- Company-wide documents
+          d.recipient_type = 'company'
+        )
+      ORDER BY d.uploaded_at DESC`;
+      
+    try {
+      const [rows] = await executeQuery<DbDocument[]>(query, [
+        tenantId,
+        userId,
+        userId,
+        tenantId,
+        userId,
+        tenantId
+      ]);
+      logger.info(
+        `Retrieved ${rows.length} accessible documents for employee ${userId}`,
+      );
+      return rows;
+    } catch (error) {
+      logger.error(
+        `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`,
+      );
+      throw error;
+    }
   }
 
   // Count documents by tenant
@@ -526,6 +691,50 @@ export class Document {
       );
       throw error;
     }
+  }
+
+  // Mark document as read by a user
+  static async markAsRead(documentId: number, userId: number, tenantId: number): Promise<void> {
+    const query = `
+      INSERT INTO document_read_status (document_id, user_id, tenant_id)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP
+    `;
+    await executeQuery(query, [documentId, userId, tenantId]);
+  }
+
+  // Check if a document has been read by a user
+  static async isReadByUser(documentId: number, userId: number, tenantId: number): Promise<boolean> {
+    const query = `
+      SELECT 1 FROM document_read_status
+      WHERE document_id = ? AND user_id = ? AND tenant_id = ?
+      LIMIT 1
+    `;
+    const [results] = await executeQuery<RowDataPacket[]>(query, [documentId, userId, tenantId]);
+    return results.length > 0;
+  }
+
+  // Get unread documents count for a user
+  static async getUnreadCountForUser(userId: number, tenantId: number): Promise<number> {
+    const query = `
+      SELECT COUNT(DISTINCT d.id) as unread_count
+      FROM documents d
+      LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = ? AND drs.tenant_id = ?
+      LEFT JOIN user_teams ut ON d.team_id = ut.team_id AND ut.user_id = ? AND ut.tenant_id = ?
+      LEFT JOIN users u ON u.id = ? AND u.tenant_id = ?
+      WHERE d.tenant_id = ?
+        AND drs.id IS NULL
+        AND (
+          (d.recipient_type = 'user' AND d.user_id = ?)
+          OR (d.recipient_type = 'team' AND ut.user_id IS NOT NULL)
+          OR (d.recipient_type = 'department' AND d.department_id = u.department_id)
+          OR d.recipient_type = 'company'
+        )
+    `;
+    const [results] = await executeQuery<RowDataPacket[]>(query, [
+      userId, tenantId, userId, tenantId, userId, tenantId, tenantId, userId
+    ]);
+    return results[0]?.unread_count || 0;
   }
 }
 

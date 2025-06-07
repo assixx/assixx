@@ -1334,6 +1334,38 @@
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
     <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
+    
+    <!-- Initialize dashboard on page load -->
+    <script type="module">
+      // Ensure dashboard section is shown on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        // Small delay to ensure all modules are loaded
+        setTimeout(() => {
+          // Check if a specific section was requested in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const requestedSection = urlParams.get('section');
+          
+          // If no specific section or 'dashboard-section' requested, show dashboard
+          if (!requestedSection || requestedSection === 'dashboard-section' || requestedSection === 'dashboard') {
+            // Use showSection directly (it's already imported statically)
+            if (typeof showSection === 'function') {
+              showSection('dashboard');
+            } else {
+              // Fallback if function not available
+              const dashboardSection = document.getElementById('dashboard-section');
+              if (dashboardSection) {
+                // Hide all sections
+                document.querySelectorAll('.content-section').forEach(section => {
+                  section.style.display = 'none';
+                });
+                // Show dashboard
+                dashboardSection.style.display = 'block';
+              }
+            }
+          }
+        }, 100);
+      });
+    </script>
     <script>
       // Direkte Event-Listener hinzufügen
       console.log('Adding direct event listeners');
@@ -1778,30 +1810,57 @@
           });
           
           if (response.ok) {
-            const documents = await response.json();
+            const data = await response.json();
+            const documents = data.documents || data;
             console.log(`Loaded ${documents.length} documents`);
             
             const tbody = document.getElementById('documents-table-body');
             if (tbody) {
               tbody.innerHTML = documents
                 .map(
-                  (doc) => `
+                  (doc) => {
+                    // Bestimme den Empfänger-Text basierend auf recipient_type
+                    let recipientDisplay = '-';
+                    if (doc.recipient_type === 'user' && doc.employee_name) {
+                      recipientDisplay = doc.employee_name;
+                    } else if (doc.recipient_type === 'team' && doc.team_name) {
+                      recipientDisplay = `Team: ${doc.team_name}`;
+                    } else if (doc.recipient_type === 'department' && doc.department_name) {
+                      recipientDisplay = `Abteilung: ${doc.department_name}`;
+                    } else if (doc.recipient_type === 'company') {
+                      recipientDisplay = 'Gesamte Firma';
+                    } else if (doc.employee_name) {
+                      // Fallback für alte Dokumente
+                      recipientDisplay = doc.employee_name;
+                    }
+                    
+                    return `
                     <tr>
-                      <td>${doc.filename}</td>
+                      <td>${doc.file_name || doc.filename || '-'}</td>
+                      <td>${recipientDisplay}</td>
                       <td>${doc.category || '-'}</td>
-                      <td>${doc.uploaded_by_name || 'Unbekannt'}</td>
-                      <td>${new Date(doc.upload_date).toLocaleDateString('de-DE')}</td>
+                      <td>${doc.upload_date ? new Date(doc.upload_date).toLocaleDateString('de-DE') : '-'}</td>
+                      <td>
+                        <span class="badge ${doc.is_archived ? 'badge-secondary' : 'badge-success'}">
+                          ${doc.is_archived ? 'Archiviert' : 'Aktiv'}
+                        </span>
+                      </td>
                       <td>
                         <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})">
-                          Download
+                          <i class="fas fa-download"></i>
                         </button>
+                        ${!doc.is_archived ? `
+                          <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})">
+                            <i class="fas fa-archive"></i>
+                          </button>
+                        ` : ''}
                         <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">
-                          Löschen
+                          <i class="fas fa-trash"></i>
                         </button>
                       </td>
                     </tr>
-                  `,
-                )
+                  `;
+                })
                 .join('');
             }
           }
@@ -1883,10 +1942,6 @@
                                             <input type="tel" name="phone" class="form-control" value="${employee.phone || ''}">
                                         </div>
                                         <div class="form-group">
-                                            <label class="form-label">Mitarbeiter-ID</label>
-                                            <input type="text" name="employee_id" class="form-control" value="${employee.employee_id || ''}">
-                                        </div>
-                                        <div class="form-group">
                                             <label class="form-label">Position</label>
                                             <input type="text" name="position" class="form-control" value="${employee.position || ''}">
                                         </div>
@@ -1898,16 +1953,8 @@
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label class="form-label">IBAN</label>
-                                            <input type="text" name="iban" class="form-control" value="${employee.iban || ''}">
-                                        </div>
-                                        <div class="form-group">
                                             <label class="form-label">Geburtsdatum</label>
                                             <input type="date" name="birthday" class="form-control" value="${employee.birthday ? employee.birthday.split('T')[0] : ''}">
-                                        </div>
-                                        <div class="form-group" style="grid-column: span 2;">
-                                            <label class="form-label">Adresse</label>
-                                            <textarea name="address" class="form-control" rows="2">${employee.address || ''}</textarea>
                                         </div>
                                         <div class="form-group" style="grid-column: span 2;">
                                             <label class="form-label">Notizen</label>
@@ -1935,7 +1982,11 @@
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Neues Passwort (optional)</label>
-                                            <input type="password" name="password" class="form-control" placeholder="Leer lassen für keine Änderung">
+                                            <input type="password" name="password" id="edit-employee-password" class="form-control" placeholder="Leer lassen für keine Änderung">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Passwort bestätigen</label>
+                                            <input type="password" name="password_confirm" id="edit-employee-password-confirm" class="form-control" placeholder="Passwort wiederholen">
                                         </div>
                                     </div>
                                     <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
@@ -2009,6 +2060,20 @@
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
+        // Password validation
+        if (data.password && data.password.trim() !== '') {
+          if (data.password !== data.password_confirm) {
+            alert('Die Passwörter stimmen nicht überein!');
+            return;
+          }
+          // Remove password_confirm from data as it's not needed for the API
+          delete data.password_confirm;
+        } else {
+          // Remove both password fields if empty
+          delete data.password;
+          delete data.password_confirm;
+        }
+
         // Convert string values to proper types
         if (data.department_id === '') {
           data.department_id = null;
@@ -2020,11 +2085,6 @@
         data.is_active = data.is_active === '1';
         // Also set the status field based on is_active
         data.status = data.is_active ? 'active' : 'inactive';
-
-        // Remove password if empty
-        if (!data.password || data.password.trim() === '') {
-          delete data.password;
-        }
 
         // Clean up empty values but keep is_active and status even if false
         Object.keys(data).forEach(key => {
@@ -2135,7 +2195,7 @@
         formData.append('category', 'payslip');
 
         try {
-          const response = await fetch('/documents/upload', {
+          const response = await fetch('/api/documents/upload', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -2411,6 +2471,72 @@
 
       function showAllTeams() {
         console.log('Show all teams');
+      }
+      
+      // Dokument herunterladen
+      async function downloadDocument(documentId) {
+        const token = localStorage.getItem('token');
+        try {
+          window.location.href = `/api/documents/download/${documentId}?token=${token}`;
+        } catch (error) {
+          console.error('Error downloading document:', error);
+          alert('Fehler beim Herunterladen des Dokuments');
+        }
+      }
+      
+      // Dokument archivieren
+      async function archiveDocument(documentId) {
+        if (!confirm('Möchten Sie dieses Dokument archivieren?')) {
+          return;
+        }
+        
+        const token = localStorage.getItem('token');
+        try {
+          const response = await fetch(`/api/documents/archive/${documentId}`, {
+            method: 'PUT',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            alert('Dokument erfolgreich archiviert');
+            loadDocumentsTable();
+          } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
+          }
+        } catch (error) {
+          console.error('Error archiving document:', error);
+          alert('Fehler beim Archivieren des Dokuments');
+        }
+      }
+      
+      // Dokument löschen
+      async function deleteDocument(documentId) {
+        if (!confirm('Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+          return;
+        }
+        
+        const token = localStorage.getItem('token');
+        try {
+          const response = await fetch(`/api/documents/${documentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            alert('Dokument erfolgreich gelöscht');
+            loadDocumentsTable();
+          } else {
+            const error = await response.json();
+            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
+          }
+        } catch (error) {
+          console.error('Error deleting document:', error);
+          alert('Fehler beim Löschen des Dokuments');
+        }
       }
 
       // Section Navigation is now handled by show-section.ts module
