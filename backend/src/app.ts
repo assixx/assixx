@@ -34,6 +34,9 @@ import {
   sanitizeInputs,
 } from "./middleware/security-enhanced";
 
+// Page protection middleware
+import { protectPage, contentSecurityPolicy } from "./middleware/pageAuth";
+
 // Routes
 import routes from "./routes";
 
@@ -46,12 +49,17 @@ const app: Application = express();
 app.use(morgan("combined"));
 app.use(cors(corsOptions));
 app.use(securityHeaders);
+app.use(contentSecurityPolicy); // Add CSP headers
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Input sanitization middleware - apply globally to all routes
 app.use(sanitizeInputs as any);
+
+// Protect HTML pages based on user role
+app.use('*.html', protectPage as any);
+app.use('/pages/*.html', protectPage as any);
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
 const distPath = path.join(__dirname, "../../frontend/dist");
@@ -311,6 +319,11 @@ app.use(routes);
 // HTML Routes - Serve pages
 import htmlRoutes from "./routes/html.routes";
 app.use(htmlRoutes);
+
+// Root redirect - send users to appropriate dashboard based on role
+import { redirectToDashboard } from "./middleware/pageAuth";
+app.get('/', redirectToDashboard as any);
+app.get('/dashboard', redirectToDashboard as any);
 
 // Error handling middleware
 app.use(

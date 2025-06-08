@@ -83,11 +83,34 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     headers,
   });
 
-  // If unauthorized, redirect to login
+  // Handle authentication errors
   if (response.status === 401) {
     removeAuthToken();
     window.location.href = '/pages/login.html';
     throw new Error('Unauthorized');
+  }
+
+  // Handle forbidden errors (wrong role)
+  if (response.status === 403) {
+    const userRole = localStorage.getItem('userRole');
+    let redirectUrl = '/pages/login.html';
+    
+    // Redirect to appropriate dashboard based on role
+    switch (userRole) {
+      case 'employee':
+        redirectUrl = '/pages/employee-dashboard.html';
+        break;
+      case 'admin':
+        redirectUrl = '/pages/admin-dashboard.html';
+        break;
+      case 'root':
+        redirectUrl = '/pages/root-dashboard.html';
+        break;
+    }
+    
+    console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
+    window.location.href = redirectUrl;
+    throw new Error('Forbidden - insufficient permissions');
   }
 
   return response;

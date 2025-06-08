@@ -5,9 +5,13 @@
 
 import type { User, BlackboardEntry } from '../types/api.types';
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
+import { initPageProtection } from './pageProtection';
 
 // Navigation initialization
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize page protection first
+  initPageProtection();
+  
   loadNavigation();
   setupEventListeners();
   checkTokenExpiry();
