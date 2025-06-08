@@ -23,6 +23,7 @@ import Document from "../models/document";
 import User from "../models/user";
 import Feature from "../models/feature";
 import emailService from "../utils/emailService";
+import documentController from "../controllers/document.controller";
 
 const router: Router = express.Router();
 
@@ -302,15 +303,76 @@ router.get(
   },
 );
 
+// Preview document (for iframe display)
+router.get(
+  "/preview/:documentId",
+  authenticateToken as any,
+  checkDocumentAccess({ 
+    allowAdmin: true, 
+    requireOwnership: false 
+  }) as any,
+  async (req: any, res: any): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const documentReq = req as any;
+      const document = documentReq.document || await Document.findById(
+        parseInt(req.params.documentId, 10),
+      );
+
+      if (!document) {
+        res.status(404).json({ message: "Dokument nicht gefunden" });
+        return;
+      }
+
+      // Set headers for inline display (not download)
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${document.fileName || document.file_name}"`,
+      );
+      
+      // Handle different possible buffer/content formats
+      let contentBuffer: Buffer;
+      if (document.fileContent) {
+        contentBuffer = document.fileContent;
+      } else if (document.file_content) {
+        contentBuffer = document.file_content;
+      } else {
+        res.status(500).json({ message: "Dokument hat keinen Inhalt" });
+        return;
+      }
+      
+      res.setHeader("Content-Length", contentBuffer.length.toString());
+
+      // Send file content
+      res.send(contentBuffer);
+
+      logger.info(
+        `Document ${req.params.documentId} previewed by user ${authReq.user.id}`,
+      );
+    } catch (error: any) {
+      logger.error(`Error previewing document: ${error.message}`);
+      res.status(500).json({
+        message: "Fehler beim Anzeigen des Dokuments",
+        error: error.message,
+      });
+    }
+  },
+);
+
 // Download document
 router.get(
   "/download/:documentId",
   authenticateToken as any,
-  checkDocumentAccess as any,
+  checkDocumentAccess({ 
+    allowAdmin: true, 
+    requireOwnership: false 
+  }) as any,
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const document = await Document.findById(
+      const documentReq = req as any;
+      const document = documentReq.document || await Document.findById(
         parseInt(req.params.documentId, 10),
       );
 
@@ -323,12 +385,24 @@ router.get(
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${document.fileName}"`,
+        `attachment; filename="${document.fileName || document.file_name}"`,
       );
-      res.setHeader("Content-Length", document.fileContent.length);
+      
+      // Handle different possible buffer/content formats
+      let contentBuffer: Buffer;
+      if (document.fileContent) {
+        contentBuffer = document.fileContent;
+      } else if (document.file_content) {
+        contentBuffer = document.file_content;
+      } else {
+        res.status(500).json({ message: "Dokument hat keinen Inhalt" });
+        return;
+      }
+      
+      res.setHeader("Content-Length", contentBuffer.length.toString());
 
       // Send file content
-      res.send(document.fileContent);
+      res.send(contentBuffer);
 
       logger.info(
         `Document ${req.params.documentId} downloaded by user ${authReq.user.id}`,
@@ -402,6 +476,44 @@ router.delete(
         error: error.message,
       });
     }
+  },
+);
+
+// NEW ROUTES WITH CONTROLLER
+
+// Get documents with scope-based filtering
+router.get(
+  "/v2",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.getDocuments(req, res);
+  },
+);
+
+// Get document by ID
+router.get(
+  "/v2/:id",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.getDocumentById(req, res);
+  },
+);
+
+// Download document
+router.get(
+  "/:id/download",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.downloadDocument(req, res);
+  },
+);
+
+// Mark document as read
+router.post(
+  "/:id/read",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.markDocumentAsRead(req, res);
   },
 );
 

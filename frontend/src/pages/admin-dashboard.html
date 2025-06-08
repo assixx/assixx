@@ -558,7 +558,8 @@
         margin-bottom: 16px;
       }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
   </head>
@@ -865,7 +866,12 @@
         <section id="documents-section" class="content-section" style="display: none">
           <h1>Dokumentenverwaltung</h1>
           <div class="flex-between mb-3">
-            <a href="/document-upload" class="btn btn-primary">Dokument hochladen</a>
+            <div>
+              <button class="btn btn-primary" onclick="window.location.href='/pages/document-upload.html'">
+                <i class="fas fa-upload me-2"></i>Dokument hochladen
+              </button>
+              <a href="/pages/documents.html" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
+            </div>
             <div class="search-container">
               <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
               <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
@@ -1233,6 +1239,31 @@
 
       .modal form {
         padding: var(--spacing-lg);
+      }
+
+      /* Button Group Styles */
+      .btn-group {
+        display: inline-flex;
+        vertical-align: middle;
+        gap: 4px;
+      }
+
+      .btn-group > .btn {
+        position: relative;
+        flex: 0 1 auto;
+      }
+
+      /* Utility Classes */
+      .me-1 {
+        margin-right: 0.25rem !important;
+      }
+
+      /* Better button styles for tables */
+      .table .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: var(--radius-sm);
       }
     </style>
     
@@ -1853,17 +1884,22 @@
                         </span>
                       </td>
                       <td>
-                        <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})">
-                          <i class="fas fa-download"></i>
-                        </button>
-                        ${!doc.is_archived ? `
-                          <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})">
-                            <i class="fas fa-archive"></i>
+                        <div class="btn-group" role="group">
+                          <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})" title="Herunterladen">
+                            <i class="fas fa-download me-1"></i>
+                            Download
                           </button>
-                        ` : ''}
-                        <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">
-                          <i class="fas fa-trash"></i>
-                        </button>
+                          ${!doc.is_archived ? `
+                            <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archivieren">
+                              <i class="fas fa-archive me-1"></i>
+                              Archiv
+                            </button>
+                          ` : ''}
+                          <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})" title="Löschen">
+                            <i class="fas fa-trash me-1"></i>
+                            Löschen
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   `;

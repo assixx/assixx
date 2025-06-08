@@ -12,14 +12,13 @@ const pagePermissions: Record<string, string[]> = {
   'admin-profile': ['admin', 'root'],
   'admin-config': ['admin', 'root'],
   'feature-management': ['admin', 'root'],
-  'document-upload': ['admin', 'root'],
   'survey-admin': ['admin', 'root'],
   'org-management': ['admin', 'root'],
   'archived-employees': ['admin', 'root'],
   
   // Employee pages
   'employee-dashboard': ['employee', 'admin', 'root'],
-  'employee-documents': ['employee', 'admin', 'root'],
+  'documents': ['employee', 'admin', 'root'],
   'employee-profile': ['employee'],
   'profile': ['employee', 'admin', 'root'],
   'salary-documents': ['employee', 'admin', 'root'],

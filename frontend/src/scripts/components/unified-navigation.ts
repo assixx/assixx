@@ -288,7 +288,7 @@ class UnifiedNavigation {
           id: 'documents',
           icon: this.getSVGIcon('document'),
           label: 'Meine Dokumente',
-          url: '/pages/employee-documents.html',
+          url: '/pages/documents.html',
           badge: 'unread-documents',
         },
         {

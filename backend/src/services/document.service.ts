@@ -9,6 +9,8 @@ import { fileURLToPath } from "url";
 import Document from "../models/document";
 import { logger } from "../utils/logger";
 import { formatPaginationResponse } from "../utils/helpers";
+import pool from "../database";
+import { RowDataPacket } from "mysql2/promise";
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -16,27 +18,46 @@ const __dirname = path.dirname(__filename);
 
 // Import types from Document model
 import type {
-  DbDocument,
   DocumentCreateData as ModelDocumentCreateData,
   DocumentUpdateData as ModelDocumentUpdateData,
 } from "../models/document";
 
 // Service-specific interfaces
-interface DocumentData extends Omit<DbDocument, "file_content"> {
+interface DocumentData extends RowDataPacket {
+  id: number;
+  tenant_id: number;
   tenantId: number;
   name: string;
   filename: string;
+  file_name: string;
   mimetype: string;
+  mime_type?: string;
   size: number;
+  file_size: number;
   uploaded_by: number;
   uploaded_by_name?: string;
   user_name?: string | null;
+  user_id: number;
+  team_id?: number;
+  department_id?: number;
+  recipient_type: string;
+  category: string;
+  scope: string;
+  description?: string;
+  tags?: string[];
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+  is_read?: boolean;
 }
 
 interface GetDocumentsOptions {
   tenantId: number;
   category?: string;
   userId?: number;
+  scope?: 'all' | 'company' | 'department' | 'team' | 'personal';
+  departmentId?: number;
+  teamId?: number;
   limit: number;
   offset: number;
 }
@@ -83,8 +104,6 @@ interface RawDocumentStats {
   totalSize?: number;
 }
 
-// Removed unused DocumentQueryResult interface
-
 class DocumentService {
   private uploadDir: string;
 
@@ -97,14 +116,98 @@ class DocumentService {
    */
   async getDocuments(options: GetDocumentsOptions): Promise<DocumentsResponse> {
     try {
-      const { limit, offset } = options;
+      const { tenantId, userId, scope, departmentId, teamId, limit, offset } = options;
 
-      // TODO: Implement findAll method in Document model
-      const documents = [] as DocumentData[];
-      const total = 0;
+      // Build SQL query based on scope
+      let query = `
+        SELECT 
+          d.id,
+          d.tenant_id,
+          d.created_by as uploaded_by,
+          d.user_id,
+          d.team_id,
+          d.department_id,
+          d.recipient_type,
+          d.category,
+          d.filename as file_name,
+          d.original_name,
+          d.file_path,
+          d.file_size,
+          d.mime_type,
+          d.description,
+          d.tags,
+          d.uploaded_at as created_at,
+          d.uploaded_at as updated_at,
+          d.is_archived as is_deleted,
+          -- Uploader info
+          CONCAT(uploader.first_name, ' ', uploader.last_name) as uploaded_by_name,
+          -- Check if document has been read
+          CASE 
+            WHEN drs.id IS NOT NULL THEN 1 
+            ELSE 0 
+          END as is_read,
+          -- Determine scope based on recipient_type
+          CASE 
+            WHEN d.recipient_type = 'company' THEN 'company'
+            WHEN d.recipient_type = 'department' THEN 'department'
+            WHEN d.recipient_type = 'team' THEN 'team'
+            WHEN d.recipient_type = 'user' AND d.user_id = ? THEN 'personal'
+            ELSE 'other'
+          END as scope
+        FROM documents d
+        LEFT JOIN users uploader ON d.created_by = uploader.id
+        LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = ?
+        WHERE d.tenant_id = ?
+          AND d.is_archived = 0
+      `;
+
+      const params: any[] = [userId, userId, tenantId];
+
+      // Add scope-based filters
+      if (scope && scope !== 'all') {
+        switch (scope) {
+          case 'company':
+            query += ` AND d.recipient_type = 'company'`;
+            break;
+          case 'department':
+            query += ` AND d.recipient_type = 'department' AND d.department_id = ?`;
+            params.push(departmentId);
+            break;
+          case 'team':
+            query += ` AND d.recipient_type = 'team' AND d.team_id = ?`;
+            params.push(teamId);
+            break;
+          case 'personal':
+            query += ` AND d.recipient_type = 'user' AND d.user_id = ?`;
+            params.push(userId);
+            break;
+        }
+      } else {
+        // Show all documents user has access to
+        query += ` AND (
+          d.recipient_type = 'company' OR
+          (d.recipient_type = 'department' AND d.department_id = ?) OR
+          (d.recipient_type = 'team' AND d.team_id = ?) OR
+          (d.recipient_type = 'user' AND d.user_id = ?)
+        )`;
+        params.push(departmentId, teamId, userId);
+      }
+
+      // Get total count
+      const countQuery = query.replace('SELECT', 'SELECT COUNT(*) as total FROM (SELECT') + ') as subquery';
+      const countResult = await (pool as any).query(countQuery, params);
+      const countRows = Array.isArray(countResult) && countResult.length === 2 ? countResult[0] : countResult;
+      const total = countRows[0]?.total || 0;
+
+      // Add ordering and pagination
+      query += ` ORDER BY d.uploaded_at DESC LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
+
+      const queryResult = await (pool as any).query(query, params);
+      const rows = Array.isArray(queryResult) && queryResult.length === 2 ? queryResult[0] : queryResult;
 
       return {
-        data: documents,
+        data: rows,
         pagination: formatPaginationResponse(
           total,
           Math.floor(offset / limit) + 1,
@@ -133,11 +236,19 @@ class DocumentService {
         tenantId: doc.tenant_id,
         name: doc.file_name,
         filename: doc.file_name,
+        file_name: doc.file_name,
         mimetype: "application/pdf", // Default for now
+        mime_type: "application/pdf",
         size: 0, // Would need to be calculated
+        file_size: 0,
         uploaded_by: doc.user_id,
         category: doc.category || "other",
-      };
+        recipient_type: "user", // Default
+        scope: "personal", // Default
+        created_at: doc.upload_date?.toISOString() || new Date().toISOString(),
+        updated_at: doc.upload_date?.toISOString() || new Date().toISOString(),
+        is_deleted: doc.is_archived || false,
+      } as DocumentData;
     } catch (error) {
       logger.error("Error in document service getDocumentById:", error);
       throw error;
@@ -256,14 +367,20 @@ class DocumentService {
         tenantId: doc.tenant_id,
         name: doc.file_name,
         filename: doc.file_name,
+        file_name: doc.file_name,
         mimetype: "application/pdf", // Default for now
+        mime_type: "application/pdf",
         size: 0, // Would need to be calculated
+        file_size: 0,
         uploaded_by: doc.user_id,
         description: doc.description || "",
         category: doc.category || "other",
-        created_at: doc.upload_date,
-        updated_at: doc.upload_date,
-      }));
+        recipient_type: "user", // Default
+        scope: "personal", // Default
+        created_at: doc.upload_date.toISOString(),
+        updated_at: doc.upload_date.toISOString(),
+        is_deleted: doc.is_archived || false,
+      } as DocumentData));
     } catch (error) {
       logger.error("Error in document service getDocumentsByUser:", error);
       throw error;
@@ -294,6 +411,25 @@ class DocumentService {
     } catch (error) {
       logger.error("Error in document service getDocumentStats:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Mark document as read by user
+   */
+  async markDocumentAsRead(documentId: number, userId: number, tenantId: number): Promise<boolean> {
+    try {
+      const query = `
+        INSERT INTO document_read_status (document_id, user_id, tenant_id)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP
+      `;
+      
+      await (pool as any).query(query, [documentId, userId, tenantId]);
+      return true;
+    } catch (error) {
+      logger.error("Error marking document as read:", error);
+      return false;
     }
   }
 }

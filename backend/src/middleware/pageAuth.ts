@@ -40,9 +40,9 @@ const pagePermissions: Record<string, PageConfig> = {
     allowedRoles: ['admin', 'root'],
     redirectOnFail: '/pages/employee-dashboard.html'
   },
-  '/pages/document-upload.html': {
-    allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html'
+  '/pages/documents.html': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/pages/login.html'
   },
   '/pages/survey-admin.html': {
     allowedRoles: ['admin', 'root'],
@@ -59,10 +59,6 @@ const pagePermissions: Record<string, PageConfig> = {
   
   // Employee pages
   '/pages/employee-dashboard.html': {
-    allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
-  },
-  '/pages/employee-documents.html': {
     allowedRoles: ['employee', 'admin', 'root'],
     redirectOnFail: '/pages/login.html'
   },
@@ -253,6 +249,7 @@ export function contentSecurityPolicy(_req: Request, res: Response, next: NextFu
     "img-src 'self' data: blob:; " +
     "font-src 'self' data:; " +
     "connect-src 'self' ws: wss:; " +
+    "frame-src 'self' blob:; " +
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self';"

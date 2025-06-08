@@ -176,8 +176,8 @@ function createEmployeeNavigation(user: User): string {
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/pages/my-documents.html">
-                <i class="fas fa-file-alt me-1"></i> Meine Dokumente
+              <a class="nav-link" href="/pages/documents.html">
+                <i class="fas fa-file-alt me-1"></i> Dokumente
               </a>
             </li>
           </ul>
