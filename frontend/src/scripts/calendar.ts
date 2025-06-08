@@ -1218,7 +1218,6 @@ async function loadEventForEdit(eventId: number): Promise<void> {
  * Delete event
  */
 async function deleteEvent(eventId: number): Promise<void> {
-  // eslint-disable-next-line no-alert
   if (!confirm('Möchten Sie diesen Termin wirklich löschen?')) {
     return;
   }

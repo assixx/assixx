@@ -143,7 +143,7 @@ const showNewEmployeeModal = function (): void {
     loadDepartmentsForEmployeeSelect();
   } else {
     console.error('employee-modal element not found!');
-    // eslint-disable-next-line no-alert
+
     alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
   }
 };
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error loading teams:', error);
     }
   }
-  
+
   // Load Blackboard Preview - zeigt die neuesten 3 Einträge
   async function loadBlackboardPreview(): Promise<void> {
     try {
@@ -440,16 +440,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Render entries
-      const entriesHtml = entries.map((entry: any) => {
-        const priorityClass = `priority-${entry.priority || 'normal'}`;
-        const priorityLabel = getPriorityLabel(entry.priority);
-        const createdDate = new Date(entry.created_at).toLocaleDateString('de-DE', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
+      const entriesHtml = entries
+        .map((entry: any) => {
+          const priorityClass = `priority-${entry.priority || 'normal'}`;
+          const priorityLabel = getPriorityLabel(entry.priority);
+          const createdDate = new Date(entry.created_at).toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          });
 
-        return `
+          return `
           <div class="list-item" onclick="window.location.href='/pages/blackboard.html'">
             <div class="list-item-content">
               <div class="list-item-title">${entry.title}</div>
@@ -460,13 +461,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
         `;
-      }).join('');
+        })
+        .join('');
 
       previewContainer.innerHTML = entriesHtml;
-
     } catch (error) {
       console.error('Error loading blackboard preview:', error);
-      
+
       const previewContainer = document.getElementById('blackboard-preview');
       if (previewContainer) {
         previewContainer.innerHTML = `
@@ -485,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
       urgent: 'Dringend',
       high: 'Hoch',
       normal: 'Normal',
-      low: 'Niedrig'
+      low: 'Niedrig',
     };
     return labels[priority] || 'Normal';
   }
@@ -503,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailError = document.getElementById('email-error') as HTMLElement;
     if (employeeData.email !== employeeData.email_confirm) {
       if (emailError) emailError.style.display = 'block';
-      // eslint-disable-next-line no-alert
+
       alert('Die E-Mail-Adressen stimmen nicht überein');
       return;
     } else {
@@ -514,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordError = document.getElementById('password-error') as HTMLElement;
     if (employeeData.password !== employeeData.password_confirm) {
       if (passwordError) passwordError.style.display = 'block';
-      // eslint-disable-next-line no-alert
+
       alert('Die Passwörter stimmen nicht überein');
       return;
     } else {
@@ -523,7 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Validierung auf Client-Seite, um bessere Fehlermeldungen zu geben
     if (!employeeData.username || employeeData.username.length < 3) {
-      // eslint-disable-next-line no-alert
       alert('Der Benutzername muss mindestens 3 Zeichen lang sein.');
       return;
     }
@@ -615,7 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Logout function
   function logout(): void {
-    // eslint-disable-next-line no-alert
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
@@ -779,7 +778,7 @@ document.addEventListener('DOMContentLoaded', () => {
             description = dept.description;
           }
         }
-        
+
         const item = document.createElement('div');
         item.className = 'compact-item';
         item.innerHTML = `
@@ -843,8 +842,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
-      status: formData.get('status') as string || 'active',
-      visibility: formData.get('visibility') as string || 'public',
+      status: (formData.get('status') as string) || 'active',
+      visibility: (formData.get('visibility') as string) || 'public',
     };
 
     try {
@@ -941,7 +940,7 @@ if (typeof window !== 'undefined') {
   window.showNewEmployeeModal = showNewEmployeeModal;
   window.loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
   window.showSection = showSection;
-  
+
   // Export the async functions that are defined inside DOMContentLoaded
   // We need to wait for DOMContentLoaded to ensure they're defined
   document.addEventListener('DOMContentLoaded', () => {

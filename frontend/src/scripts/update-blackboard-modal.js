@@ -151,7 +151,7 @@ async function loadOrgOptions(type) {
         (item) => `<div class="dropdown-option" onclick="selectOrgId('${item.id}', '${item.name}')">${item.name}</div>`,
       )
       .join('');
-  } catch (error) {
+  } catch (err) {
     dropdownOptions.innerHTML = '<div class="dropdown-option">Fehler beim Laden</div>';
   }
 }

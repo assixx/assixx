@@ -58,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Logout button
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      // eslint-disable-next-line no-alert
       if (confirm('Möchten Sie sich wirklich abmelden?')) {
         removeAuthToken();
         localStorage.removeItem('role');

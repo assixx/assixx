@@ -93,36 +93,45 @@ router.post(
       }
 
       const { originalname, path: filePath } = req.file;
-      const { userId, teamId, departmentId, recipientType, category, description, year, month } = req.body;
+      const {
+        userId,
+        teamId,
+        departmentId,
+        recipientType,
+        category,
+        description,
+        year,
+        month,
+      } = req.body;
 
       // Validate recipient based on type
       let recipientData: any = {
-        recipient_type: recipientType || 'user',
+        recipient_type: recipientType || "user",
         user_id: null,
         team_id: null,
-        department_id: null
+        department_id: null,
       };
 
       switch (recipientType) {
-        case 'user':
+        case "user":
           if (!userId) {
             throw new Error("Kein Benutzer ausgewählt");
           }
           recipientData.user_id = parseInt(userId, 10);
           break;
-        case 'team':
+        case "team":
           if (!teamId) {
             throw new Error("Kein Team ausgewählt");
           }
           recipientData.team_id = parseInt(teamId, 10);
           break;
-        case 'department':
+        case "department":
           if (!departmentId) {
             throw new Error("Keine Abteilung ausgewählt");
           }
           recipientData.department_id = parseInt(departmentId, 10);
           break;
-        case 'company':
+        case "company":
           // No specific ID needed for company-wide documents
           break;
         default:
@@ -168,7 +177,7 @@ router.post(
           };
 
           switch (recipientType) {
-            case 'user':
+            case "user":
               // Send to individual user
               if (userId) {
                 const user = await User.findById(
@@ -176,29 +185,32 @@ router.post(
                   authReq.user.tenant_id,
                 );
                 if (user && user.email) {
-                  await emailService.sendNewDocumentNotification(user, documentInfo);
+                  await emailService.sendNewDocumentNotification(
+                    user,
+                    documentInfo,
+                  );
                   logger.info(
                     `Email notification sent to ${user.email} for document ${documentId}`,
                   );
                 }
               }
               break;
-              
-            case 'team':
+
+            case "team":
               // TODO: Send to all team members
               logger.info(
                 `Team notifications not yet implemented for document ${documentId}`,
               );
               break;
-              
-            case 'department':
+
+            case "department":
               // TODO: Send to all department members
               logger.info(
                 `Department notifications not yet implemented for document ${documentId}`,
               );
               break;
-              
-            case 'company':
+
+            case "company":
               // TODO: Send to all company members
               logger.info(
                 `Company-wide notifications not yet implemented for document ${documentId}`,

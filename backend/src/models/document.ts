@@ -39,7 +39,7 @@ interface DocumentCreateData {
   userId?: number | null;
   teamId?: number | null;
   departmentId?: number | null;
-  recipientType?: 'user' | 'team' | 'department' | 'company';
+  recipientType?: "user" | "team" | "department" | "company";
   fileName: string;
   fileContent?: Buffer;
   category?: string;
@@ -86,21 +86,21 @@ export class Document {
     // Log based on recipient type
     let logMessage = `Creating new document in category ${category} for `;
     switch (recipientType) {
-      case 'user':
+      case "user":
         logMessage += `user ${userId}`;
         break;
-      case 'team':
+      case "team":
         logMessage += `team ${teamId}`;
         break;
-      case 'department':
+      case "department":
         logMessage += `department ${departmentId}`;
         break;
-      case 'company':
+      case "company":
         logMessage += `entire company (tenant ${tenant_id})`;
         break;
     }
     logger.info(logMessage);
-    
+
     // We need to also set default values for required fields
     const query =
       "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -114,7 +114,7 @@ export class Document {
         fileName, // original_name - same as filename for now
         `/uploads/${fileName}`, // file_path
         fileContent ? fileContent.length : 0, // file_size
-        'application/octet-stream', // mime_type - default for now
+        "application/octet-stream", // mime_type - default for now
         fileContent,
         category,
         description,
@@ -380,7 +380,7 @@ export class Document {
     logger.info(
       `Searching accessible documents for employee ${userId} with term: ${searchTerm}`,
     );
-    
+
     const query = `
       SELECT DISTINCT d.*,
         u.first_name, u.last_name,
@@ -418,7 +418,7 @@ export class Document {
           d.recipient_type = 'company'
         )
       ORDER BY d.uploaded_at DESC`;
-      
+
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [
         tenantId,
@@ -428,7 +428,7 @@ export class Document {
         userId,
         tenantId,
         userId,
-        tenantId
+        tenantId,
       ]);
       logger.info(
         `Found ${rows.length} accessible documents matching search for employee ${userId}`,
@@ -494,11 +494,14 @@ export class Document {
   }
 
   // Find all documents accessible to an employee (personal, team, department, company)
-  static async findByEmployeeWithAccess(userId: number, tenantId: number): Promise<DbDocument[]> {
+  static async findByEmployeeWithAccess(
+    userId: number,
+    tenantId: number,
+  ): Promise<DbDocument[]> {
     logger.info(
       `Fetching all accessible documents for employee ${userId} in tenant ${tenantId}`,
     );
-    
+
     const query = `
       SELECT DISTINCT d.*, 
         u.first_name, u.last_name,
@@ -535,7 +538,7 @@ export class Document {
           d.recipient_type = 'company'
         )
       ORDER BY d.uploaded_at DESC`;
-      
+
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [
         tenantId,
@@ -543,7 +546,7 @@ export class Document {
         userId,
         tenantId,
         userId,
-        tenantId
+        tenantId,
       ]);
       logger.info(
         `Retrieved ${rows.length} accessible documents for employee ${userId}`,
@@ -694,7 +697,11 @@ export class Document {
   }
 
   // Mark document as read by a user
-  static async markAsRead(documentId: number, userId: number, tenantId: number): Promise<void> {
+  static async markAsRead(
+    documentId: number,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
     const query = `
       INSERT INTO document_read_status (document_id, user_id, tenant_id)
       VALUES (?, ?, ?)
@@ -704,18 +711,29 @@ export class Document {
   }
 
   // Check if a document has been read by a user
-  static async isReadByUser(documentId: number, userId: number, tenantId: number): Promise<boolean> {
+  static async isReadByUser(
+    documentId: number,
+    userId: number,
+    tenantId: number,
+  ): Promise<boolean> {
     const query = `
       SELECT 1 FROM document_read_status
       WHERE document_id = ? AND user_id = ? AND tenant_id = ?
       LIMIT 1
     `;
-    const [results] = await executeQuery<RowDataPacket[]>(query, [documentId, userId, tenantId]);
+    const [results] = await executeQuery<RowDataPacket[]>(query, [
+      documentId,
+      userId,
+      tenantId,
+    ]);
     return results.length > 0;
   }
 
   // Get unread documents count for a user
-  static async getUnreadCountForUser(userId: number, tenantId: number): Promise<number> {
+  static async getUnreadCountForUser(
+    userId: number,
+    tenantId: number,
+  ): Promise<number> {
     const query = `
       SELECT COUNT(DISTINCT d.id) as unread_count
       FROM documents d
@@ -732,7 +750,14 @@ export class Document {
         )
     `;
     const [results] = await executeQuery<RowDataPacket[]>(query, [
-      userId, tenantId, userId, tenantId, userId, tenantId, tenantId, userId
+      userId,
+      tenantId,
+      userId,
+      tenantId,
+      userId,
+      tenantId,
+      tenantId,
+      userId,
     ]);
     return results[0]?.unread_count || 0;
   }

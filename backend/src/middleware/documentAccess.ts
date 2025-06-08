@@ -66,8 +66,8 @@ export const checkDocumentAccess =
       }
 
       // Zugriff basierend auf Empfängertyp prüfen
-      switch (document.recipient_type || 'user') {
-        case 'user':
+      switch (document.recipient_type || "user") {
+        case "user":
           // Einzelner Benutzer - nur der Empfänger hat Zugriff
           if (document.user_id === userId) {
             logger.info(
@@ -77,22 +77,22 @@ export const checkDocumentAccess =
             return next();
           }
           break;
-          
-        case 'team':
+
+        case "team":
           // TODO: Prüfen ob Benutzer im Team ist
           logger.info(
             `Team document access check not yet implemented for document ${documentId}`,
           );
           break;
-          
-        case 'department':
+
+        case "department":
           // TODO: Prüfen ob Benutzer in der Abteilung ist
           logger.info(
             `Department document access check not yet implemented for document ${documentId}`,
           );
           break;
-          
-        case 'company':
+
+        case "company":
           // Alle Benutzer des Tenants haben Zugriff
           if (document.tenant_id === tenantId) {
             logger.info(
@@ -105,12 +105,14 @@ export const checkDocumentAccess =
       }
 
       // Abteilungsleiter-Zugriff prüfen (nur für user-spezifische Dokumente)
-      if (options.allowDepartmentHeads && userRole === "department_head" && document.recipient_type === 'user' && document.user_id) {
+      if (
+        options.allowDepartmentHeads &&
+        userRole === "department_head" &&
+        document.recipient_type === "user" &&
+        document.user_id
+      ) {
         const user = await User.findById(userId, tenantId);
-        const documentOwner = await User.findById(
-          document.user_id,
-          tenantId,
-        );
+        const documentOwner = await User.findById(document.user_id, tenantId);
 
         if (
           user &&

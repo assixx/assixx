@@ -66,11 +66,16 @@ router.get(
       const authReq = req as any;
       const employeeId = authReq.user.id;
       const tenantId = authReq.user.tenant_id;
-      logger.info(`Employee ${employeeId} requesting their accessible documents`);
-      
+      logger.info(
+        `Employee ${employeeId} requesting their accessible documents`,
+      );
+
       // Use the new method that includes team, department, and company documents
-      const documents = await Document.findByEmployeeWithAccess(employeeId, tenantId);
-      
+      const documents = await Document.findByEmployeeWithAccess(
+        employeeId,
+        tenantId,
+      );
+
       logger.info(
         `Retrieved ${documents.length} accessible documents for Employee ${employeeId}`,
       );
@@ -98,24 +103,27 @@ router.post(
       const authReq = req as any;
       const employeeId = authReq.user.id;
       const tenantId = authReq.user.tenant_id;
-      logger.info(`Employee ${employeeId} marking all accessible documents as read`);
-      
+      logger.info(
+        `Employee ${employeeId} marking all accessible documents as read`,
+      );
+
       // Get all accessible documents
-      const documents = await Document.findByEmployeeWithAccess(employeeId, tenantId);
-      
+      const documents = await Document.findByEmployeeWithAccess(
+        employeeId,
+        tenantId,
+      );
+
       // Mark each document as read
       for (const doc of documents) {
         await Document.markAsRead(doc.id, employeeId, tenantId);
       }
-      
+
       logger.info(
         `Marked ${documents.length} documents as read for Employee ${employeeId}`,
       );
       res.json({ success: true, markedCount: documents.length });
     } catch (error: any) {
-      logger.error(
-        `Error marking documents as read: ${error.message}`,
-      );
+      logger.error(`Error marking documents as read: ${error.message}`);
       res.status(500).json({
         message: "Fehler beim Markieren der Dokumente als gelesen",
         error: error.message,
@@ -133,10 +141,13 @@ router.get(
       const authReq = req as any;
       const employeeId = authReq.user.id;
       const tenantId = authReq.user.tenant_id;
-      
+
       // Get real unread count from database
-      const unreadCount = await Document.getUnreadCountForUser(employeeId, tenantId);
-      
+      const unreadCount = await Document.getUnreadCountForUser(
+        employeeId,
+        tenantId,
+      );
+
       res.json({ unreadCount });
     } catch (error: any) {
       logger.error(`Error getting unread document count: ${error.message}`);
@@ -163,10 +174,14 @@ router.get(
         res.status(400).json({ message: "Suchbegriff erforderlich" });
         return;
       }
-      
+
       // Use the new search method that includes team, department, and company documents
-      const documents = await Document.searchWithEmployeeAccess(employeeId, tenantId, String(query));
-      
+      const documents = await Document.searchWithEmployeeAccess(
+        employeeId,
+        tenantId,
+        String(query),
+      );
+
       logger.info(
         `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${query}`,
       );
@@ -250,40 +265,42 @@ router.get(
       // Prüfen, ob der Mitarbeiter Zugriff auf das Dokument hat
       let hasAccess = false;
       const tenantId = authReq.user.tenant_id;
-      
-      switch (document.recipient_type || 'user') {
-        case 'user':
+
+      switch (document.recipient_type || "user") {
+        case "user":
           // Persönliche Dokumente
           hasAccess = document.user_id == employeeId;
           break;
-          
-        case 'team':
+
+        case "team":
           // Team-Dokumente - prüfen ob Mitarbeiter im Team ist
           try {
             const [teamMembership] = await executeQuery<RowDataPacket[]>(
-              'SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ? AND tenant_id = ?',
-              [employeeId, document.team_id, tenantId]
+              "SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ? AND tenant_id = ?",
+              [employeeId, document.team_id, tenantId],
             );
             hasAccess = teamMembership.length > 0;
           } catch (err: any) {
             logger.error(`Error checking team membership: ${err.message}`);
           }
           break;
-          
-        case 'department':
+
+        case "department":
           // Abteilungs-Dokumente - prüfen ob Mitarbeiter in der Abteilung ist
           try {
             const [userDept] = await executeQuery<RowDataPacket[]>(
-              'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
-              [employeeId, tenantId]
+              "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
+              [employeeId, tenantId],
             );
             hasAccess = userDept[0]?.department_id == document.department_id;
           } catch (err: any) {
-            logger.error(`Error checking department membership: ${err.message}`);
+            logger.error(
+              `Error checking department membership: ${err.message}`,
+            );
           }
           break;
-          
-        case 'company':
+
+        case "company":
           // Firmen-Dokumente - alle Mitarbeiter des Tenants haben Zugriff
           hasAccess = document.tenant_id == tenantId;
           break;

@@ -66,14 +66,14 @@ class UnifiedNavigation {
     this.loadUserInfo();
     this.injectNavigationHTML();
     this.attachEventListeners();
-    
+
     // Update badge counts
     setTimeout(() => {
       this.updateUnreadMessages();
       this.updatePendingSurveys();
       this.updateUnreadDocuments();
     }, 1000);
-    
+
     // Update badges every 30 seconds
     setInterval(() => {
       this.updateUnreadMessages();
@@ -506,13 +506,17 @@ class UnifiedNavigation {
 
     // If has children, create a dropdown
     if (hasChildren) {
-      const submenuItems = item.children!.map(child => `
+      const submenuItems = item
+        .children!.map(
+          (child) => `
         <li class="submenu-item">
           <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
-      `).join('');
+      `,
+        )
+        .join('');
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
@@ -582,7 +586,7 @@ class UnifiedNavigation {
     const toggleBtn = document.getElementById('sidebar-toggle');
     const sidebar = document.querySelector('.sidebar');
     const mainContent = document.querySelector('.main-content');
-    
+
     if (!toggleBtn || !sidebar) return;
 
     // Check localStorage for saved state
@@ -597,13 +601,13 @@ class UnifiedNavigation {
     toggleBtn.addEventListener('click', () => {
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
-      
+
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle('sidebar-collapsed');
-      
+
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
-      
+
       // Update icon
       this.updateToggleIcon();
     });
@@ -648,11 +652,11 @@ class UnifiedNavigation {
     if (!sidebar) return;
 
     const navItems = sidebar.querySelectorAll('.sidebar-link');
-    navItems.forEach(item => {
+    navItems.forEach((item) => {
       const label = item.querySelector('.label')?.textContent;
       if (label) {
         item.setAttribute('title', '');
-        
+
         // Show tooltip only when sidebar is collapsed
         item.addEventListener('mouseenter', () => {
           if (sidebar.classList.contains('collapsed')) {
@@ -688,7 +692,7 @@ class UnifiedNavigation {
     const navId = link.dataset.navId;
     if (navId) {
       localStorage.setItem('activeNavigation', navId);
-      
+
       // If user clicked on documents, mark all as read
       if (navId === 'documents' && this.currentRole === 'employee') {
         this.markAllDocumentsAsRead();
@@ -709,10 +713,11 @@ class UnifiedNavigation {
     });
 
     // Check if we just logged in or on main dashboard page
-    const isMainDashboard = currentPath.includes('admin-dashboard') || 
-                           currentPath.includes('employee-dashboard') || 
-                           currentPath.includes('root-dashboard');
-    
+    const isMainDashboard =
+      currentPath.includes('admin-dashboard') ||
+      currentPath.includes('employee-dashboard') ||
+      currentPath.includes('root-dashboard');
+
     // If on dashboard page and no specific section is active, default to overview
     if (isMainDashboard && (!activeNav || activeNav === 'dashboard')) {
       // Force "Übersicht" to be active
@@ -776,7 +781,7 @@ class UnifiedNavigation {
     this.loadUserInfo();
     this.injectNavigationHTML();
     this.attachEventListeners();
-    
+
     // Restore sidebar state after refresh
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
@@ -1950,20 +1955,20 @@ if (!document.querySelector('#unified-navigation-styles')) {
 // Export to window for backwards compatibility
 
 // Global function for submenu toggle
-(window as any).toggleSubmenu = function(event: Event, itemId: string) {
+(window as any).toggleSubmenu = function (event: Event, itemId: string) {
   event.preventDefault();
   const submenu = document.getElementById(`submenu-${itemId}`);
   const parentItem = submenu?.closest('.sidebar-item');
-  
+
   if (submenu && parentItem) {
     const isOpen = submenu.style.display !== 'none';
-    
+
     // Close all other submenus
-    document.querySelectorAll('.submenu').forEach(menu => {
+    document.querySelectorAll('.submenu').forEach((menu) => {
       (menu as HTMLElement).style.display = 'none';
       menu.closest('.sidebar-item')?.classList.remove('open');
     });
-    
+
     // Toggle current submenu
     if (!isOpen) {
       submenu.style.display = 'block';

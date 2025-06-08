@@ -117,7 +117,6 @@ function handleFileSelect(e: Event, elements: ProfilePictureElements): void {
 
   // Check file type
   if (!file.type.match('image.*')) {
-    // eslint-disable-next-line no-alert
     alert('Bitte wählen Sie eine Bilddatei aus (JPEG, PNG, GIF, etc.).');
     if (elements.fileInput) {
       elements.fileInput.value = '';
@@ -127,7 +126,6 @@ function handleFileSelect(e: Event, elements: ProfilePictureElements): void {
 
   // Check file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    // eslint-disable-next-line no-alert
     alert('Die Datei ist zu groß. Maximale Größe ist 5MB.');
     if (elements.fileInput) {
       elements.fileInput.value = '';
@@ -163,7 +161,6 @@ async function uploadProfilePicture(e: Event, elements: ProfilePictureElements):
 
   const file = elements.fileInput.files?.[0];
   if (!file) {
-    // eslint-disable-next-line no-alert
     alert('Bitte wählen Sie eine Datei aus.');
     return;
   }
@@ -222,7 +219,6 @@ async function uploadProfilePicture(e: Event, elements: ProfilePictureElements):
  * Remove profile picture
  */
 async function removeProfilePicture(elements: ProfilePictureElements): Promise<void> {
-  // eslint-disable-next-line no-alert
   if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) {
     return;
   }

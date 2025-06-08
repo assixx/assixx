@@ -22,7 +22,7 @@ export function showSection(sectionName: string): void {
   if (!sectionName.endsWith('-section')) {
     sectionId = sectionName + '-section';
   }
-  
+
   const targetSection = document.getElementById(sectionId);
   if (targetSection) {
     targetSection.style.display = 'block';
@@ -45,7 +45,7 @@ export function showSection(sectionName: string): void {
     window.history.pushState({ section: sectionId }, '', url);
 
     console.info(`[ShowSection] Section ${sectionId} displayed`);
-    
+
     // Load section-specific data (with small delay to ensure functions are loaded)
     setTimeout(() => {
       const sectionBaseName = sectionName.replace('-section', '');

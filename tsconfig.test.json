@@ -1,20 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "esnext",
-    "target": "esnext",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "types": ["node", "jest"],
-    "lib": ["esnext"],
-    "skipLibCheck": true
+    "module": "commonjs",
+    "types": ["node", "jest", "@types/jest"]
   },
   "include": [
-    "backend/src/**/*.ts",
-    "backend/src/**/*.test.ts"
+    "backend/src/**/*.test.ts",
+    "backend/src/**/*.spec.ts",
+    "backend/src/__tests__/**/*"
   ],
   "exclude": [
     "node_modules",

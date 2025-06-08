@@ -157,10 +157,15 @@ router.put(
       }
 
       // Hash password if provided
-      if (updateData.password && updateData.password.trim() !== '') {
+      if (updateData.password && updateData.password.trim() !== "") {
         const saltRounds = 10;
-        updateData.password = await bcrypt.hash(updateData.password, saltRounds);
-        logger.info(`Password updated for user ${userId} by admin ${authReq.user.id}`);
+        updateData.password = await bcrypt.hash(
+          updateData.password,
+          saltRounds,
+        );
+        logger.info(
+          `Password updated for user ${userId} by admin ${authReq.user.id}`,
+        );
       } else {
         // Remove empty password field
         delete updateData.password;

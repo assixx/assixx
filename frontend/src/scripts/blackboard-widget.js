@@ -14,16 +14,16 @@ class BlackboardWidget {
   async init() {
     this.render();
     await this.loadEntries();
-    
+
     // Listen for sidebar toggle events
     this.setupSidebarListener();
   }
-  
+
   setupSidebarListener() {
     // Use MutationObserver to detect sidebar class changes
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return;
-    
+
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -32,10 +32,10 @@ class BlackboardWidget {
         }
       });
     });
-    
+
     observer.observe(sidebar, {
       attributes: true,
-      attributeFilter: ['class']
+      attributeFilter: ['class'],
     });
   }
 
@@ -70,7 +70,7 @@ class BlackboardWidget {
       const sidebar = document.querySelector('.sidebar');
       const isCollapsed = sidebar && sidebar.classList.contains('collapsed');
       const limit = isCollapsed ? 5 : 3;
-      
+
       const response = await fetch(`/api/blackboard/dashboard?limit=${limit}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,

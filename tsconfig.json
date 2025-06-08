@@ -31,11 +31,10 @@
     "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types", "./backend/src/types"]
   },
-  "include": ["backend/**/*"],
+  "include": ["backend/**/*", "frontend/**/*"],
   "exclude": [
     "node_modules",
     "dist",
-    "frontend",
     "uploads",
     "logs",
     "*.test.js",
@@ -44,6 +43,8 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "backend/src/__tests__/**/*",
-    "backend/src/**/__tests__/**/*"
+    "backend/src/**/__tests__/**/*",
+    "backend/jest.config.js",
+    "backend/jest.config.cjs"
   ]
 }

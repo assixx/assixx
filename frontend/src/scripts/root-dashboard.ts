@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-operators */
 /**
  * Root Dashboard Script
  * Handles root user dashboard functionality and admin management
@@ -83,18 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!createAdminForm) return;
 
     const elements = createAdminForm.elements;
-    
+
     // Validate email match
     if (elements.email.value !== elements.email_confirm.value) {
-      // eslint-disable-next-line no-alert
       alert('Die E-Mail-Adressen stimmen nicht überein!');
       elements.email_confirm.focus();
       return;
     }
-    
+
     // Validate password match
     if (elements.password.value !== elements.password_confirm.value) {
-      // eslint-disable-next-line no-alert
       alert('Die Passwörter stimmen nicht überein!');
       elements.password_confirm.focus();
       return;
@@ -107,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
       email: elements.email.value,
       password: elements.password.value,
       position: elements.position.value,
-      notes: elements.notes?.value || ''
+      notes: elements.notes?.value || '',
     };
 
     try {
@@ -122,18 +119,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         await response.json();
-        // eslint-disable-next-line no-alert
+
         alert('Admin erfolgreich erstellt');
         createAdminForm.reset();
         loadAdmins();
       } else {
         const error = await response.json();
-        // eslint-disable-next-line no-alert
+
         alert(`Fehler: ${error.message}`);
       }
     } catch (error) {
       console.error('Fehler beim Erstellen des Admins:', error);
-      // eslint-disable-next-line no-alert
+
       alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     }
   }
@@ -161,21 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
-  }
-
-  // Helper function to display position names
-  function getPositionDisplay(position: string): string {
-    const positionMap: Record<string, string> = {
-      bereichsleiter: 'Bereichsleiter',
-      personalleiter: 'Personalleiter',
-      geschaeftsfuehrer: 'Geschäftsführer',
-      werksleiter: 'Werksleiter',
-      produktionsleiter: 'Produktionsleiter',
-      qualitaetsleiter: 'Qualitätsleiter',
-      'it-leiter': 'IT-Leiter',
-      vertriebsleiter: 'Vertriebsleiter'
-    };
-    return positionMap[position] || position;
   }
 
   // Dashboard-Statistiken laden
@@ -237,16 +219,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Admin-Liste anzeigen (kept for loadAdmins count functionality)
-  function displayAdmins(admins: AdminUser[]): void {
+  function displayAdmins(_admins: AdminUser[]): void {
     // Function kept empty as we removed the admin table
     // But keeping it to not break loadAdmins() which updates the count
   }
 
-
   // Ausloggen
   function logout(): void {
     console.info('Logging out...');
-    // eslint-disable-next-line no-alert
+
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
       removeAuthToken();
       localStorage.removeItem('role');

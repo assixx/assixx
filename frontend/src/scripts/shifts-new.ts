@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-operators */
 /**
  * New Shift Planning System - TypeScript Implementation
  * Interactive weekly shift planning with drag & drop functionality
@@ -1055,7 +1054,6 @@ class ShiftPlanningSystem {
   resetSchedule(): void {
     if (!this.isAdmin) return;
 
-    // eslint-disable-next-line no-alert
     if (!confirm('Möchten Sie den aktuellen Schichtplan wirklich zurücksetzen?')) {
       return;
     }

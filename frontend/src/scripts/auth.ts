@@ -163,21 +163,21 @@ export function logout(): void {
 // Show success message
 export function showSuccess(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
-  // eslint-disable-next-line no-alert
+
   alert(`✅ ${message}`);
 }
 
 // Show error message
 export function showError(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
-  // eslint-disable-next-line no-alert
+
   alert(`❌ ${message}`);
 }
 
 // Show info message
 export function showInfo(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
-  // eslint-disable-next-line no-alert
+
   alert(`ℹ️ ${message}`);
 }
 
