@@ -81,7 +81,6 @@ let teams: Team[] = [];
 let isAdmin: boolean = false;
 let currentUserId: number | null = null;
 let selectedFiles: File[] = [];
-let uploadedAttachments: BlackboardAttachment[] = [];
 
 // Modal helper functions to handle different implementations
 function openModal(modalId: string): void {
@@ -1144,24 +1143,6 @@ async function deleteEntry(entryId: number): Promise<void> {
 }
 
 // Utility functions
-function getPriorityBadge(priority: string): string {
-  const badges: Record<string, string> = {
-    low: '<span class="badge badge-success">Niedrig</span>',
-    medium: '<span class="badge badge-warning">Mittel</span>',
-    high: '<span class="badge badge-danger">Hoch</span>',
-    critical: '<span class="badge badge-dark">Kritisch</span>',
-  };
-  return badges[priority] || '';
-}
-
-function getOrgLevelBadge(level: string): string {
-  const badges: Record<string, string> = {
-    all: '<span class="badge badge-info">Alle</span>',
-    department: '<span class="badge badge-primary">Abteilung</span>',
-    team: '<span class="badge badge-secondary">Team</span>',
-  };
-  return badges[level] || '';
-}
 
 function escapeHtml(text: string): string {
   const map: Record<string, string> = {
@@ -1231,7 +1212,7 @@ async function viewEntry(entryId: number): Promise<void> {
             entry.tags && entry.tags.length > 0
               ? `
             <div class="entry-tags">
-              ${entry.tags.map((tag) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
+              ${entry.tags.map((tag: string) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
             </div>
           `
               : ''

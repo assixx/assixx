@@ -12,8 +12,12 @@
 **DIESE SCHRITTE MÜSSEN IN EXAKTER REIHENFOLGE AUSGEFÜHRT WERDEN:**
 
 - [ ] ✅ TODO.md gelesen
+- [ ] ✅ README.md gelesen
 - [ ] ✅ CLAUDE.md gelesen
+- [ ] ✅ docs/DATABASE-MIGRATION-GUIDE.md gelesen
 - [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen
+- [ ] ✅ docs/DESIGN-STANDARDS.md gelesen
+- [ ] ✅ docs/TYPESCRIPT-STANDARDS.md gelesen
 - [ ] ⚠️ **docs/BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
 - [ ] ✅ Erst DANN: Weitere Dokumente
 
