@@ -39,26 +39,9 @@
         background: #000;
       }
 
-      body::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(
-          circle at 50% 50%,
-          #1e1e1e 0%,
-          #121212 50%,
-          #0a0a0a 100%
-        );
-        opacity: 0.9;
-        z-index: -1;
-      }
-
       body::after {
         content: '';
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         right: 0;
@@ -66,11 +49,12 @@
         background: linear-gradient(
           135deg,
           transparent 0%,
-          rgba(0, 142, 255, 0.08) 25%,
+          rgba(0, 142, 255, 0.08) 100%,
           #01000482 60%,
           rgba(0, 0, 4, 0.6) 90%,
           black 100%
         );
+        pointer-events: none;
         z-index: -1;
       }
 

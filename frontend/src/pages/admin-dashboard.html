@@ -569,9 +569,16 @@
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
+        <!-- Role Switch Button -->
+        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
+          <i class="fas fa-exchange-alt"></i>
+          <span class="role-switch-text">Als Mitarbeiter</span>
+        </button>
+        
         <div id="user-info">
           <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
+          <span id="role-indicator" class="role-badge admin">Admin</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
           <i class="fas fa-sign-out-alt"></i>
@@ -2757,5 +2764,8 @@
         align-items: center;
       }
     </style>
+    
+    <!-- Role Switch Script -->
+    <script type="module" src="/scripts/role-switch.ts"></script>
   </body>
 </html>

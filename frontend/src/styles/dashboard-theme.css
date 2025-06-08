@@ -41,6 +41,10 @@
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+  
+  /* Role Colors */
+  --admin-color: #ff6b6b;
+  --employee-color: #4ecdc4;
 }
 
 * {
@@ -721,4 +725,71 @@ body {
   border-top: 1px solid var(--border-color);
   margin: 0 calc(-1 * var(--spacing-lg));
   margin-top: var(--spacing-lg);
+}
+
+/* Role Switch Button Styles */
+.btn-role-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-role-switch:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--employee-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+}
+
+.btn-role-switch i {
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.btn-role-switch:hover i {
+  transform: rotate(180deg);
+}
+
+/* Role Badge Indicator */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+.role-badge.admin {
+  background: var(--admin-color);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+}
+
+.role-badge.employee {
+  background: var(--employee-color);
+  color: white;
+  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4);
+}
+
+/* Header actions adjustment */
+.header-actions {
+  gap: 16px;
+}
+
+#user-info {
+  align-items: center;
 }

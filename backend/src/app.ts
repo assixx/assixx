@@ -8,6 +8,7 @@ import express, { Application, Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import morgan from "morgan";
+import fs from "fs";
 
 // ES modules equivalent of __dirname - only define if not already defined
 const __filename =
@@ -75,27 +76,37 @@ app.use(
   }),
 );
 
-// Development mode: Handle TypeScript files with regex
+// Development mode: Handle TypeScript files
 app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
   const filename = req.params[0];
+  
+  // In development, check if compiled JS exists first
+  const jsPath = path.join(distPath, 'js', `${filename}.js`);
+  if (fs.existsSync(jsPath)) {
+    console.log(`[DEBUG] Serving compiled JS instead of TS: ${jsPath}`);
+    res.type('application/javascript').sendFile(jsPath);
+    return;
+  }
 
-  // Map TypeScript filenames to their compiled counterparts
+  // In production, use mappings
   const mappings: { [key: string]: string } = {
     "unified-navigation": "unified-navigation-BfYsmZeM.js",
-    "root-dashboard": "root-dashboard-BFom39QU.js",
-    "header-user-info": "header-user-info-qZ8A0Mc0.js",
-    "admin-dashboard": "admin-dashboard-B4rOc41N.js",
-    "admin-config": "admin-config-BtBp1tIq.js",
-    auth: "auth-DvDpumDN.js",
-    blackboard: "blackboard-HvChAPxR.js",
-    calendar: "calendar-QUNb3N9b.js",
-    chat: "chat-B3I5JTQ6.js",
-    "dashboard-scripts": "dashboard-scripts-DTyBRpOL.js",
-    shifts: "shifts-D8eez77b.js",
-    "storage-upgrade": "storage-upgrade-BYD2E46R.js",
-    "admin-profile": "admin-profile-Ca31WhxZ.js",
-    "manage-admins": "manage-admins-B3DFtgPh.js",
+    "root-dashboard": "root-dashboard-CHsFywFw.js",
+    "header-user-info": "header-user-info-1MDgaGxC.js",
+    "admin-dashboard": "admin-dashboard-J7q-854B.js",
+    "admin-config": "admin-config-Dlrux5AS.js",
+    auth: "auth-DaWTNZHb.js",
+    blackboard: "blackboard-D-4V5M2Z.js",
+    calendar: "calendar-DZzF_Spp.js",
+    chat: "chat-CvUUAy0Q.js",
+    "dashboard-scripts": "dashboard-scripts-UWEFJuZK.js",
+    shifts: "shifts-B0SMHx9A.js",
+    "storage-upgrade": "storage-upgrade-BW4oTGba.js",
+    "admin-profile": "admin-profile-DZbBoSek.js",
+    "manage-admins": "manage-admins-Cq7FX0VL.js",
     "components/unified-navigation": "unified-navigation-BfYsmZeM.js",
+    "role-switch": "role-switch-YHcsXLV-.js",
+    "employee-dashboard": "employee-dashboard-663ipqu1.js"
   };
 
   const compiledFile = mappings[filename];
@@ -103,12 +114,12 @@ app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
     console.log(`[DEBUG] Redirecting ${req.path} to /js/${compiledFile}`);
     res.redirect(`/js/${compiledFile}`);
   } else {
-    console.error(`[DEBUG] No mapping found for ${filename}`);
+    // For missing files, return empty module to avoid syntax errors
+    console.warn(`[DEBUG] No mapping found for ${filename}, returning empty module`);
     res
-      .status(404)
       .type("application/javascript")
       .send(
-        `console.error('TypeScript file ${req.path} not found. Mapping missing for ${filename}');`,
+        `// Empty module for ${filename}\nconsole.warn('Module ${filename} not found, loaded empty placeholder');`,
       );
   }
 });
@@ -283,6 +294,11 @@ app.post(
 import legacyRoutes from "./routes/legacy.routes";
 console.log("[DEBUG] Mounting legacy routes");
 app.use(legacyRoutes);
+
+// Role Switch Routes - BEFORE CSRF Protection
+import roleSwitchRoutes from "./routes/role-switch";
+console.log("[DEBUG] Mounting role-switch routes at /api/role-switch");
+app.use("/api/role-switch", roleSwitchRoutes);
 
 // CSRF Protection - applied to all routes except specified exceptions
 console.log("[DEBUG] Applying CSRF protection");

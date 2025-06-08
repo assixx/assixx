@@ -184,19 +184,27 @@ export function showInfo(message: string): void {
 // Initialize authentication on page load
 document.addEventListener('DOMContentLoaded', () => {
   const token = getAuthToken();
-  console.info('Auth check - Token found:', !!token);
-  console.info('Auth check - Current path:', window.location.pathname);
+  const userRole = localStorage.getItem('userRole');
+  const activeRole = localStorage.getItem('activeRole');
+  
+  console.info('[AUTH] Initialization:', {
+    token: !!token,
+    userRole,
+    activeRole,
+    path: window.location.pathname,
+    isEmployeeDashboard: window.location.pathname.includes('employee-dashboard')
+  });
 
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.info('No authentication token found, redirecting to login');
+    console.info('[AUTH] No authentication token found, redirecting to login');
     window.location.href = '/pages/login.html';
     return;
   }
 
   // Load user info if on authenticated page
   if (isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.info('Loading user info...');
+    console.info('[AUTH] Loading user info...');
     loadUserInfo().catch((error) => {
       console.error('Failed to load user info:', error);
       // Don't redirect immediately, let the user see the error
