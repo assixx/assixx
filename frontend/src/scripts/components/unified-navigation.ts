@@ -66,6 +66,11 @@ class UnifiedNavigation {
     this.loadUserInfo();
     this.injectNavigationHTML();
     this.attachEventListeners();
+    
+    // Fix logo navigation after DOM is ready
+    setTimeout(() => {
+      this.fixLogoNavigation();
+    }, 100);
 
     // Update badge counts
     setTimeout(() => {
@@ -923,6 +928,44 @@ class UnifiedNavigation {
     } catch (error) {
       console.error('Error marking documents as read:', error);
     }
+  }
+
+  // Fix logo navigation based on user role
+  private fixLogoNavigation(): void {
+    // Get user role (consider activeRole for role switching)
+    const userRole = localStorage.getItem('userRole');
+    const activeRole = localStorage.getItem('activeRole');
+    const currentRole = activeRole || userRole || this.currentRole;
+
+    // Find all logo containers
+    const logoLinks = document.querySelectorAll('.logo-container, a[href*="dashboard.html"]');
+    
+    logoLinks.forEach((link) => {
+      if (link instanceof HTMLAnchorElement && link.querySelector('.logo')) {
+        // Update href based on role
+        switch (currentRole) {
+          case 'employee':
+            link.href = '/pages/employee-dashboard.html';
+            break;
+          case 'admin':
+            link.href = '/pages/admin-dashboard.html';
+            break;
+          case 'root':
+            link.href = '/pages/root-dashboard.html';
+            break;
+          default:
+            // If no role found, default to current dashboard
+            console.warn('No user role found for logo navigation');
+        }
+      }
+    });
+
+    // Also fix logo when page visibility changes (tab switching)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.fixLogoNavigation();
+      }
+    });
   }
 
   // Storage Widget erstellen (nur für Root User)

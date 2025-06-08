@@ -1228,7 +1228,6 @@ async function viewEntry(entryId: number): Promise<void> {
                 ${attachments
                   .map((att) => {
                     const isPDF = att.mime_type === 'application/pdf';
-                    const isImage = att.mime_type.startsWith('image/');
 
                     console.log(`[Blackboard] Rendering attachment:`, att);
 
@@ -1338,7 +1337,7 @@ async function viewEntry(entryId: number): Promise<void> {
             // Also add addEventListener as backup
             htmlItem.addEventListener(
               'click',
-              (e) => {
+              (_) => {
                 console.log(`[Blackboard] Attachment addEventListener fired:`, { attachmentId, mimeType, filename });
               },
               true,
@@ -1426,27 +1425,7 @@ async function viewEntry(entryId: number): Promise<void> {
 }
 
 // Extend window interface for modal and attachment functions
-declare global {
-  interface Window {
-    showModal?: (modalId: string) => void;
-    hideModal?: (modalId: string) => void;
-    openEntryForm?: (entryId?: number) => void;
-    viewEntry?: (entryId: number) => void;
-    editEntry?: (entryId: number) => void;
-    deleteEntry?: (entryId: number) => void;
-    confirmEntryRead?: (entryId: number) => void;
-    viewConfirmationStatus?: (entryId: number) => void;
-    handleFileDownload?: (attachmentId: number, filename: string) => void;
-    previewAttachment?: (attachmentId: number, mimeType: string, fileName: string) => void;
-    deleteAttachment?: (attachmentId: number) => void;
-    DashboardUI?: {
-      openModal: (modalId: string) => void;
-      closeModal: (modalId: string) => void;
-      showToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
-      formatDate: (dateString: string) => string;
-    };
-  }
-}
+// Type declarations moved to the bottom of the file
 
 /**
  * Preview attachment in modal
@@ -1649,13 +1628,25 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
 
 declare global {
   interface Window {
+    showModal?: (modalId: string) => void;
+    hideModal?: (modalId: string) => void;
+    openEntryForm: typeof openEntryForm;
+    viewEntry: typeof viewEntry;
     editEntry: typeof openEntryForm;
     deleteEntry: typeof deleteEntry;
-    changePage: typeof changePage;
-    viewEntry: typeof viewEntry;
-    openEntryForm: typeof openEntryForm;
-    removeAttachment: typeof removeAttachment;
+    confirmEntryRead?: (entryId: number) => void;
+    viewConfirmationStatus?: (entryId: number) => void;
+    handleFileDownload?: (attachmentId: number, filename: string) => void;
     previewAttachment: typeof previewAttachment;
+    deleteAttachment?: (attachmentId: number) => void;
+    changePage: typeof changePage;
+    removeAttachment: typeof removeAttachment;
+    DashboardUI?: {
+      openModal: (modalId: string) => void;
+      closeModal: (modalId: string) => void;
+      showToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
+      formatDate: (dateString: string) => string;
+    };
   }
 }
 

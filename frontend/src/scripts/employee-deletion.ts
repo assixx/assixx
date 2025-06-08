@@ -217,7 +217,7 @@ function processEmployeeDeletion(): void {
             // Mitarbeiterliste aktualisieren
             interface WindowWithTables2 extends Window {
               loadEmployeesTable?: (action: string) => void;
-              loadDashboardStats?: () => void;
+              loadDashboardStats?: () => Promise<void>;
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
@@ -270,7 +270,7 @@ function processEmployeeDeletion(): void {
             // Mitarbeiterliste aktualisieren
             interface WindowWithTables2 extends Window {
               loadEmployeesTable?: (action: string) => void;
-              loadDashboardStats?: () => void;
+              loadDashboardStats?: () => Promise<void>;
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {

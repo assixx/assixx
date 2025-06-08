@@ -39,6 +39,8 @@ let tenants: Tenant[] = [];
 // These will be properly defined later
 (window as any).editAdmin = null;
 (window as any).deleteAdmin = null;
+(window as any).showAddAdminModal = null;
+(window as any).closeAdminModal = null;
 
 // Logout wird jetzt durch header-user-info.ts gehandhabt
 
@@ -219,16 +221,6 @@ function renderAdminTable() {
   });
 }
 
-// Make functions available globally
-declare global {
-  interface Window {
-    showAddAdminModal: () => void;
-    editAdmin: (adminId: number) => Promise<void>;
-    deleteAdmin: (adminId: number) => Promise<void>;
-    closeAdminModal: () => void;
-  }
-}
-
 // Define functions before they're used
 async function editAdminHandler(adminId: number) {
   currentAdminId = adminId;
@@ -329,7 +321,7 @@ async function deleteAdminHandler(adminId: number) {
 }
 
 // Admin hinzufügen Modal anzeigen
-window.showAddAdminModal = function () {
+(window as any).showAddAdminModal = function () {
   currentAdminId = null;
   const modal = document.getElementById('adminModal');
   const title = document.getElementById('modalTitle');
@@ -362,7 +354,7 @@ window.showAddAdminModal = function () {
 };
 
 // Modal schließen
-window.closeAdminModal = function () {
+(window as any).closeAdminModal = function () {
   const modal = document.getElementById('adminModal');
   modal?.classList.remove('active');
   currentAdminId = null;
@@ -433,7 +425,7 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
 
     if (response.ok) {
       showSuccess(currentAdminId ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
-      window.closeAdminModal();
+      (window as any).closeAdminModal();
       await loadAdmins();
     } else {
       const error = await response.json();
@@ -458,7 +450,7 @@ function showSuccess(message: string) {
 window.addEventListener('click', (e) => {
   const modal = document.getElementById('adminModal');
   if (e.target === modal) {
-    closeAdminModal();
+    (window as any).closeAdminModal();
   }
 });
 
@@ -474,8 +466,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Assign global functions to handlers after DOM is ready
-  window.editAdmin = editAdminHandler;
-  window.deleteAdmin = deleteAdminHandler;
+  (window as any).editAdmin = editAdminHandler;
+  (window as any).deleteAdmin = deleteAdminHandler;
 
   // Daten laden
   await loadAdmins();

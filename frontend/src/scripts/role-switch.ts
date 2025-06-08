@@ -11,7 +11,6 @@ const currentView = localStorage.getItem('activeRole') || userRole;
 async function switchRole(): Promise<void> {
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
   const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
-  const switchText = switchBtn.querySelector('.role-switch-text') as HTMLElement;
   
   if (!switchBtn || !roleIndicator) return;
   
