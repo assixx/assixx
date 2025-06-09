@@ -18,7 +18,12 @@ interface EmployeeInfo extends User {
 /**
  * Download a document
  */
-function downloadDocument(docId: string | number): void {
+function downloadDocument(docId?: string | number): void {
+  if (!docId) {
+    console.error('No document ID provided');
+    return;
+  }
+  
   const token = getAuthToken();
   if (!token) return;
 
@@ -277,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Extend window for employee dashboard functions
 declare global {
   interface Window {
-    downloadDocument: typeof downloadDocument;
+    downloadDocument: (docId?: string | number) => void;
   }
 }
 

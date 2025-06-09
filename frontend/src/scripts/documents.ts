@@ -4,7 +4,7 @@
  */
 
 import { fetchWithAuth, showError, showSuccess } from './auth';
-import type { Document, User } from '../types/api.types';
+import type { Document } from '../types/api.types';
 
 // Document scope type
 type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal';
@@ -458,17 +458,26 @@ function closeDocumentModal(): void {
 /**
  * Download current document
  */
-async function downloadDocument(): Promise<void> {
-  const downloadBtn = document.getElementById('downloadButton');
-  if (!downloadBtn) {
-    console.error('Download button not found');
-    return;
-  }
+async function downloadDocument(docId?: string | number): Promise<void> {
+  let documentId: string;
   
-  const documentId = downloadBtn.getAttribute('data-document-id');
-  if (!documentId) {
-    console.error('No document ID found');
-    return;
+  if (docId) {
+    // Called with parameter from employee-dashboard
+    documentId = String(docId);
+  } else {
+    // Called without parameter from documents page
+    const downloadBtn = document.getElementById('downloadButton');
+    if (!downloadBtn) {
+      console.error('Download button not found');
+      return;
+    }
+    
+    const dataId = downloadBtn.getAttribute('data-document-id');
+    if (!dataId) {
+      console.error('No document ID found');
+      return;
+    }
+    documentId = dataId;
   }
   
   try {
@@ -647,7 +656,7 @@ declare global {
     toggleDropdown: (type: string) => void;
     selectSort: (value: SortOption, text: string) => void;
     closeDocumentModal: () => void;
-    downloadDocument: () => void;
+    downloadDocument: (docId?: string | number) => void;
   }
 }
 
