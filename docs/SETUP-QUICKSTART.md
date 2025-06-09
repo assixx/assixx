@@ -2,7 +2,37 @@
 
 > **Ziel:** Assixx in 5 Minuten lokal zum Laufen bringen!
 
-## 🚀 Option 1: Automatisches Setup (Empfohlen)
+## 🐳 Option 1: Docker Setup (NEU - Empfohlen!)
+
+```bash
+# 1. Repository klonen
+git clone [YOUR-REPO-URL] Assixx
+cd Assixx/docker
+
+# 2. Docker starten
+docker-compose up -d
+
+# 3. Fertig! Browser öffnen
+# http://localhost:3000
+```
+
+### ⚠️ Bekanntes Problem: package.json Fehler
+
+Falls der Backend-Container nicht startet mit Fehler:
+```
+error mounting "/app/package.json": no such file or directory
+```
+
+**Lösung:** Die package.json existiert nur im backend/ Ordner, nicht im Hauptverzeichnis.
+
+```bash
+# Temporärer Fix bis docker-compose.yml angepasst wird:
+cd /home/scs/projects/Assixx
+cp backend/package.json .
+cp backend/tsconfig.json .
+```
+
+## 🚀 Option 2: Automatisches Setup (Alternative)
 
 ### WSL/Ubuntu/Linux
 
