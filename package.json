@@ -67,7 +67,7 @@
     "@swc/helpers": "^0.5.17",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.8",
-    "@types/cors": "^2.8.18",
+    "@types/cors": "^2.8.19",
     "@types/express-rate-limit": "^5.1.3",
     "@types/express-validator": "^2.20.33",
     "@types/helmet": "^0.0.48",
