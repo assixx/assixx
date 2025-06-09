@@ -6,6 +6,8 @@
     <title>Blackboard - Assixx</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <!-- User Info Styles (für Avatar und Role Badge) -->
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
     <!-- Blackboard spezifische Styles -->
     <link rel="stylesheet" href="/styles/blackboard.css" />
     <link rel="stylesheet" href="/styles/blackboard-update.css" />
@@ -205,9 +207,16 @@
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
       </a>
       <div class="header-actions">
+        <!-- Role Switch Button -->
+        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen" style="display: none;">
+          <i class="fas fa-exchange-alt"></i>
+          <span class="role-switch-text">Als Mitarbeiter</span>
+        </button>
+        
         <div id="user-info">
           <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
+          <span id="role-indicator" class="role-badge admin" style="display: none;">Admin</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
           <i class="fas fa-sign-out-alt"></i>
@@ -754,6 +763,8 @@
     <script type="module" src="/scripts/blackboard.ts"></script>
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
+    <!-- Role Switch Functionality -->
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Update Modal to Design Standards -->
     <script src="/scripts/update-blackboard-modal.js" type="module"></script>
   </body>

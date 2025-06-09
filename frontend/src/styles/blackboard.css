@@ -292,6 +292,9 @@ main.container.main-content.sidebar-collapsed {
 .pinboard-pdf-preview object {
   display: block;
   pointer-events: none; /* Prevent interaction with embedded PDF */
+  /* Try to hide PDF toolbar - works in some browsers */
+  margin-top: -40px;
+  height: calc(100% + 40px);
 }
 
 /* PDF Overlay for click */

@@ -785,11 +785,21 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         </div>
       `;
     } else if (isPDF) {
+      // Adjust PDF height to account for hidden toolbar
+      let pdfHeightStyle = '';
+      if (attachmentSize === 'small') {
+        pdfHeightStyle = 'height: 240px;'; // 200 + 40 for toolbar
+      } else if (attachmentSize === 'medium') {
+        pdfHeightStyle = 'height: 340px;'; // 300 + 40 for toolbar
+      } else if (attachmentSize === 'large') {
+        pdfHeightStyle = 'height: 440px;'; // 400 + 40 for toolbar
+      }
+      
       contentHtml = `
-        <div class="pinboard-pdf-preview" style="${sizeStyle} margin: 0 auto; position: relative;">
-          <object data="/api/blackboard/attachments/${attachment.id}/preview" 
+        <div class="pinboard-pdf-preview" style="${sizeStyle} ${pdfHeightStyle} margin: 0 auto; position: relative;">
+          <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0" 
                   type="application/pdf" 
-                  style="width: 100%; height: 100%; min-height: 300px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  style="width: 100%; height: 100%; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div style="text-align: center; padding: 20px;">
               <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545; margin-bottom: 10px;"></i>
               <p style="color: #666;">PDF-Vorschau nicht verfügbar</p>
