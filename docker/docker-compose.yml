@@ -134,5 +134,7 @@ networks:
 volumes:
   mysql_data:
     name: assixx_mysql_data
+    external: true
   redis_data:
     name: assixx_redis_data
+    external: true

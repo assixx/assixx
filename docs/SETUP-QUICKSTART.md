@@ -23,10 +23,16 @@ Falls der Backend-Container nicht startet mit Fehler:
 error mounting "/app/package.json": no such file or directory
 ```
 
-**Lösung:** Die package.json existiert nur im backend/ Ordner, nicht im Hauptverzeichnis.
+**Lösung:** Die docker-compose.yml muss angepasst werden:
 
 ```bash
-# Temporärer Fix bis docker-compose.yml angepasst wird:
+# Fix in docker-compose.yml ändern von:
+- ./package.json:/app/package.json:ro
+
+# Zu:
+- ./backend/package.json:/app/backend/package.json:ro
+
+# Oder temporärer Workaround:
 cd /home/scs/projects/Assixx
 cp backend/package.json .
 cp backend/tsconfig.json .
