@@ -8,6 +8,7 @@ import express, { Application, Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import morgan from "morgan";
+import fs from "fs";
 
 // ES modules equivalent of __dirname - only define if not already defined
 const __filename =
@@ -33,6 +34,9 @@ import {
   sanitizeInputs,
 } from "./middleware/security-enhanced";
 
+// Page protection middleware
+import { protectPage, contentSecurityPolicy } from "./middleware/pageAuth";
+
 // Routes
 import routes from "./routes";
 
@@ -45,12 +49,17 @@ const app: Application = express();
 app.use(morgan("combined"));
 app.use(cors(corsOptions));
 app.use(securityHeaders);
+app.use(contentSecurityPolicy); // Add CSP headers
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Input sanitization middleware - apply globally to all routes
 app.use(sanitizeInputs as any);
+
+// Protect HTML pages based on user role
+app.use('*.html', protectPage as any);
+app.use('/pages/*.html', protectPage as any);
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
 const distPath = path.join(__dirname, "../../frontend/dist");
@@ -75,25 +84,37 @@ app.use(
   }),
 );
 
-// Development mode: Handle TypeScript files with regex
+// Development mode: Handle TypeScript files
 app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
   const filename = req.params[0];
+  
+  // In development, check if compiled JS exists first
+  const jsPath = path.join(distPath, 'js', `${filename}.js`);
+  if (fs.existsSync(jsPath)) {
+    console.log(`[DEBUG] Serving compiled JS instead of TS: ${jsPath}`);
+    res.type('application/javascript').sendFile(jsPath);
+    return;
+  }
 
-  // Map TypeScript filenames to their compiled counterparts
+  // In production, use mappings
   const mappings: { [key: string]: string } = {
-    "unified-navigation": "unified-navigation-WK4P3xYJ.js",
-    "root-dashboard": "root-dashboard-Dd5fNxRe.js",
-    "header-user-info": "header-user-info-DIJZF5-V.js",
-    "admin-dashboard": "admin-dashboard-Ba8leqBE.js",
-    "admin-config": "admin-config-GvweoBT9.js",
-    auth: "auth-PrTXY5uP.js",
-    blackboard: "blackboard-Da9DEVDT.js",
-    calendar: "calendar-79pOn4qQ.js",
-    chat: "chat-BNToM1Lh.js",
-    "dashboard-scripts": "dashboard-scripts-mfyoCHE-.js",
-    shifts: "shifts-DSdc87QX.js",
-    "storage-upgrade": "storage-upgrade-AeatrjF1.js",
-    "components/unified-navigation": "unified-navigation-WK4P3xYJ.js",
+    "unified-navigation": "unified-navigation-BfYsmZeM.js",
+    "root-dashboard": "root-dashboard-CHsFywFw.js",
+    "header-user-info": "header-user-info-1MDgaGxC.js",
+    "admin-dashboard": "admin-dashboard-J7q-854B.js",
+    "admin-config": "admin-config-Dlrux5AS.js",
+    auth: "auth-DaWTNZHb.js",
+    blackboard: "blackboard-D-4V5M2Z.js",
+    calendar: "calendar-DZzF_Spp.js",
+    chat: "chat-CvUUAy0Q.js",
+    "dashboard-scripts": "dashboard-scripts-UWEFJuZK.js",
+    shifts: "shifts-B0SMHx9A.js",
+    "storage-upgrade": "storage-upgrade-BW4oTGba.js",
+    "admin-profile": "admin-profile-DZbBoSek.js",
+    "manage-admins": "manage-admins-Cq7FX0VL.js",
+    "components/unified-navigation": "unified-navigation-BfYsmZeM.js",
+    "role-switch": "role-switch-YHcsXLV-.js",
+    "employee-dashboard": "employee-dashboard-663ipqu1.js"
   };
 
   const compiledFile = mappings[filename];
@@ -101,12 +122,12 @@ app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
     console.log(`[DEBUG] Redirecting ${req.path} to /js/${compiledFile}`);
     res.redirect(`/js/${compiledFile}`);
   } else {
-    console.error(`[DEBUG] No mapping found for ${filename}`);
+    // For missing files, return empty module to avoid syntax errors
+    console.warn(`[DEBUG] No mapping found for ${filename}, returning empty module`);
     res
-      .status(404)
       .type("application/javascript")
       .send(
-        `console.error('TypeScript file ${req.path} not found. Mapping missing for ${filename}');`,
+        `// Empty module for ${filename}\nconsole.warn('Module ${filename} not found, loaded empty placeholder');`,
       );
   }
 });
@@ -282,6 +303,11 @@ import legacyRoutes from "./routes/legacy.routes";
 console.log("[DEBUG] Mounting legacy routes");
 app.use(legacyRoutes);
 
+// Role Switch Routes - BEFORE CSRF Protection
+import roleSwitchRoutes from "./routes/role-switch";
+console.log("[DEBUG] Mounting role-switch routes at /api/role-switch");
+app.use("/api/role-switch", roleSwitchRoutes);
+
 // CSRF Protection - applied to all routes except specified exceptions
 console.log("[DEBUG] Applying CSRF protection");
 app.use(validateCSRFToken);
@@ -293,6 +319,11 @@ app.use(routes);
 // HTML Routes - Serve pages
 import htmlRoutes from "./routes/html.routes";
 app.use(htmlRoutes);
+
+// Root redirect - send users to appropriate dashboard based on role
+import { redirectToDashboard } from "./middleware/pageAuth";
+app.get('/', redirectToDashboard as any);
+app.get('/dashboard', redirectToDashboard as any);
 
 // Error handling middleware
 app.use(

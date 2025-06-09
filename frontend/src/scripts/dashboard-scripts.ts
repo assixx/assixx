@@ -204,7 +204,7 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
 // Expose global utilities
 declare global {
   interface Window {
-    DashboardUI: DashboardUI;
+    DashboardUI?: DashboardUI;
   }
 }
 

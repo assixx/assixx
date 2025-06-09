@@ -236,6 +236,38 @@ router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
 });
 
 /**
+ * @route GET /api/blackboard/entries
+ * @desc Alias for GET /api/blackboard - for backwards compatibility
+ */
+router.get("/entries", authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const tenantId = getTenantId(authReq.user);
+
+    const options = {
+      status: String(req.query.status || "active"),
+      filter: String(req.query.filter || "all"),
+      search: String(req.query.search || ""),
+      page: parseInt(String(req.query.page || "1"), 10),
+      limit: parseInt(String(req.query.limit || "10"), 10),
+      sortBy: String(req.query.sortBy || "created_at"),
+      sortDir: String(req.query.sortOrder || req.query.sortDir || "DESC"),
+    };
+
+    const result = await blackboardModel.getAllEntries(
+      tenantId,
+      authReq.user.id,
+      options as any,
+    );
+
+    res.json(result);
+  } catch (error: any) {
+    console.error("Error in GET /api/blackboard/entries:", error);
+    res.status(500).json({ message: "Error retrieving blackboard entries" });
+  }
+});
+
+/**
  * @route GET /api/blackboard/:id
  * @desc Get a specific blackboard entry
  */

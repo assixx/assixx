@@ -1376,6 +1376,12 @@ Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 3. **Inspiziere spezifische Selektoren** - zu globale Styles überschreiben oft Standards
 4. **Validiere HTML** - doppelte `class` Attribute werden ignoriert
 
+
+
+Für alle modals gilt bei:
+backdrop-filter: blur(20px) saturate(500%);
+
+  background: #1a1a1a4a;
 ---
 
 ## 🎯 Checkliste für neue Komponenten

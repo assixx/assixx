@@ -72,14 +72,17 @@ class DocumentController {
       const result = await documentService.getDocuments({
         tenantId: req.user.tenantId,
         category,
-        userId: userId ? parseInt(userId, 10) : undefined,
+        userId: userId ? parseInt(userId, 10) : req.user.id,
+        departmentId: req.user.department_id || undefined,
+        teamId: undefined, // TODO: Add team_id to user object
         limit,
         offset,
       });
 
       res.json({
         success: true,
-        ...result,
+        documents: result.data,
+        pagination: result.pagination,
       });
     } catch (error) {
       logger.error("Error getting documents:", error);
@@ -276,6 +279,43 @@ class DocumentController {
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
         message: "Error downloading document",
+      });
+    }
+  }
+
+  /**
+   * Mark document as read
+   */
+  async markDocumentAsRead(
+    req: DocumentByIdRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const success = await documentService.markDocumentAsRead(
+        parseInt(id, 10),
+        req.user.id,
+        req.user.tenantId,
+      );
+
+      if (!success) {
+        res.status(HTTP_STATUS.SERVER_ERROR).json({
+          success: false,
+          message: "Failed to mark document as read",
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        message: "Document marked as read",
+      });
+    } catch (error) {
+      logger.error("Error marking document as read:", error);
+      res.status(HTTP_STATUS.SERVER_ERROR).json({
+        success: false,
+        message: "Error marking document as read",
       });
     }
   }

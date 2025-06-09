@@ -18,7 +18,12 @@ interface EmployeeInfo extends User {
 /**
  * Download a document
  */
-function downloadDocument(docId: string | number): void {
+function downloadDocument(docId?: string | number): void {
+  if (!docId) {
+    console.error('No document ID provided');
+    return;
+  }
+  
   const token = getAuthToken();
   if (!token) return;
 
@@ -37,6 +42,38 @@ function downloadDocument(docId: string | number): void {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Debug logging
+  console.log('[Employee Dashboard] Starting initialization...');
+  
+  // Check if admin is viewing as employee
+  const userRole = localStorage.getItem('userRole');
+  const activeRole = localStorage.getItem('activeRole');
+  const token = localStorage.getItem('token');
+  
+  console.log('[Employee Dashboard] Role Check:', {
+    userRole,
+    activeRole,
+    token: token ? 'exists' : 'missing',
+    pathname: window.location.pathname
+  });
+  
+  const isAdminAsEmployee = userRole === 'admin' && activeRole === 'employee';
+  
+  console.log('[Employee Dashboard] Is Admin as Employee:', isAdminAsEmployee);
+  
+  // Show role indicator for admins
+  if (isAdminAsEmployee) {
+    const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+    const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
+    
+    if (roleIndicator) {
+      roleIndicator.style.display = 'inline-flex';
+    }
+    if (switchBtn) {
+      switchBtn.style.display = 'flex';
+    }
+  }
+  
   // DOM elements
   const documentTableBody = document.getElementById('recent-documents') as HTMLTableSectionElement;
   const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
@@ -58,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Logout button
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      // eslint-disable-next-line no-alert
       if (confirm('Möchten Sie sich wirklich abmelden?')) {
         removeAuthToken();
         localStorage.removeItem('role');
@@ -246,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Extend window for employee dashboard functions
 declare global {
   interface Window {
-    downloadDocument: typeof downloadDocument;
+    downloadDocument: (docId?: string | number) => void;
   }
 }
 

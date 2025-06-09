@@ -633,9 +633,16 @@
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
       </a>
       <div class="header-actions">
+        <!-- Role Switch Button (nur für Admins sichtbar) -->
+        <button id="role-switch-btn" class="btn-role-switch" title="Zurück zur Admin-Ansicht" style="display: none;">
+          <i class="fas fa-exchange-alt"></i>
+          <span class="role-switch-text">Als Admin</span>
+        </button>
+        
         <div id="user-info">
           <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
+          <span id="role-indicator" class="role-badge employee" style="display: none;">Mitarbeiter</span>
         </div>
         <button id="logout-btn" class="btn-logout">
           <i class="fas fa-sign-out-alt"></i>
@@ -718,7 +725,7 @@
         <!-- Quick Access Features -->
         <div class="dashboard-grid">
           <!-- Documents Card -->
-          <div class="feature-card" onclick="window.location.href='/employee-documents'">
+          <div class="feature-card" onclick="window.location.href='/pages/documents.html'">
             <div class="feature-icon">📄</div>
             <h3 class="feature-title">Meine Dokumente</h3>
             <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
@@ -875,9 +882,20 @@
           // Update welcome message
           document.getElementById('employee-name').textContent = `${payload.first_name || payload.username}`;
 
-          // Redirect if not employee
-          if (payload.role !== 'employee') {
+          // Redirect if not employee (but allow admins viewing as employee)
+          const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
+          console.log('[Employee Dashboard Auth] Role check:', {
+            role: payload.role,
+            activeRole: payload.activeRole,
+            isRoleSwitched: payload.isRoleSwitched,
+            isAdminAsEmployee
+          });
+          
+          if (payload.role !== 'employee' && !isAdminAsEmployee) {
+            console.log('[Employee Dashboard Auth] Redirecting - not authorized');
             window.location.href = payload.role === 'admin' ? '/admin-dashboard' : '/login';
+          } else {
+            console.log('[Employee Dashboard Auth] Access granted');
           }
         } catch (e) {
           localStorage.removeItem('token');
@@ -1044,5 +1062,16 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
+    
+    <!-- Force dashboard to be active on page load -->
+    <script type="module">
+      document.addEventListener('DOMContentLoaded', () => {
+        // Clear any stored active navigation to ensure dashboard is selected
+        localStorage.removeItem('activeNavigation');
+      });
+    </script>
+    
+    <!-- Role Switch Script -->
+    <script type="module" src="/scripts/role-switch.ts"></script>
   </body>
 </html>

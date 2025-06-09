@@ -114,6 +114,9 @@
               localStorage.setItem('user', JSON.stringify(data.user));
             }
 
+            // Clear any stored navigation state to ensure dashboard is active
+            localStorage.removeItem('activeNavigation');
+            
             // Redirect based on role
             switch (data.role) {
               case 'root':

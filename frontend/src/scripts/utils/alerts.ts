@@ -9,7 +9,6 @@
  * @param message - The message to display
  */
 export function showAlert(message: string): void {
-  // eslint-disable-next-line no-alert
   alert(message);
 }
 
@@ -19,7 +18,6 @@ export function showAlert(message: string): void {
  * @returns True if user clicked OK, false otherwise
  */
 export function showConfirm(message: string): boolean {
-  // eslint-disable-next-line no-alert
   return confirm(message);
 }
 
@@ -28,7 +26,6 @@ export function showConfirm(message: string): boolean {
  * @param message - The error message to display
  */
 export function showErrorAlert(message: string): void {
-  // eslint-disable-next-line no-alert
   alert(`Fehler: ${message}`);
 }
 
@@ -37,6 +34,5 @@ export function showErrorAlert(message: string): void {
  * @param message - The success message to display
  */
 export function showSuccessAlert(message: string): void {
-  // eslint-disable-next-line no-alert
   alert(`Erfolg: ${message}`);
 }

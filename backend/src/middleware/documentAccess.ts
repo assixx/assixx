@@ -65,22 +65,54 @@ export const checkDocumentAccess =
         return next();
       }
 
-      // Besitzer-Zugriff prüfen
-      if (document.uploadedFor === userId) {
-        logger.info(
-          `Owner access granted for user ${userId} to document ${documentId}`,
-        );
-        req.document = document;
-        return next();
+      // Zugriff basierend auf Empfängertyp prüfen
+      switch (document.recipient_type || "user") {
+        case "user":
+          // Einzelner Benutzer - nur der Empfänger hat Zugriff
+          if (document.user_id === userId) {
+            logger.info(
+              `User access granted for user ${userId} to document ${documentId}`,
+            );
+            req.document = document;
+            return next();
+          }
+          break;
+
+        case "team":
+          // TODO: Prüfen ob Benutzer im Team ist
+          logger.info(
+            `Team document access check not yet implemented for document ${documentId}`,
+          );
+          break;
+
+        case "department":
+          // TODO: Prüfen ob Benutzer in der Abteilung ist
+          logger.info(
+            `Department document access check not yet implemented for document ${documentId}`,
+          );
+          break;
+
+        case "company":
+          // Alle Benutzer des Tenants haben Zugriff
+          if (document.tenant_id === tenantId) {
+            logger.info(
+              `Company-wide access granted for user ${userId} to document ${documentId}`,
+            );
+            req.document = document;
+            return next();
+          }
+          break;
       }
 
-      // Abteilungsleiter-Zugriff prüfen
-      if (options.allowDepartmentHeads && userRole === "department_head") {
+      // Abteilungsleiter-Zugriff prüfen (nur für user-spezifische Dokumente)
+      if (
+        options.allowDepartmentHeads &&
+        userRole === "department_head" &&
+        document.recipient_type === "user" &&
+        document.user_id
+      ) {
         const user = await User.findById(userId, tenantId);
-        const documentOwner = await User.findById(
-          document.uploadedFor,
-          tenantId,
-        );
+        const documentOwner = await User.findById(document.user_id, tenantId);
 
         if (
           user &&

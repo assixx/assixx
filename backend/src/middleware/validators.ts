@@ -314,11 +314,21 @@ export const validateSurveyResponse: ValidationMiddleware[] = [
 // Document validators
 export const validateDocumentUpload: ValidationMiddleware[] = [
   body("userId")
-    .notEmpty()
+    .optional()
     .isInt({ min: 1 })
-    .withMessage(
-      "Benutzer-ID ist erforderlich und muss eine positive Zahl sein",
-    ),
+    .withMessage("Benutzer-ID muss eine positive Zahl sein"),
+  body("teamId")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Team-ID muss eine positive Zahl sein"),
+  body("departmentId")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Abteilungs-ID muss eine positive Zahl sein"),
+  body("recipientType")
+    .optional()
+    .isIn(["user", "team", "department", "company"])
+    .withMessage("Empfänger-Typ muss user, team, department oder company sein"),
   body("category")
     .optional()
     .trim()
@@ -352,8 +362,21 @@ export const validateDocumentUpload: ValidationMiddleware[] = [
       "10",
       "11",
       "12",
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember",
+      "", // Leer für "Kein Monat"
     ])
-    .withMessage("Monat muss zwischen 01 und 12 liegen"),
+    .withMessage("Ungültiger Monat"),
   handleValidationErrors,
 ];
 

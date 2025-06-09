@@ -48,6 +48,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.' && echo "✅ 
 - [ ] ✅ CLAUDE.md gelesen
 - [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen  
 - [ ] ✅ docs/DESIGN-STANDARDS.md gelesen
+- [ ] ✅ docs/TYPESCRIPT-STANDARDS.md gelesen
 - [ ] ✅ README.md gelesen
 - [ ] ✅ docs/DATABASE-MIGRATION-GUIDE.md gelesen
 - [ ] ⚠️ **docs/BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)

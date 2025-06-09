@@ -23,6 +23,7 @@ import Document from "../models/document";
 import User from "../models/user";
 import Feature from "../models/feature";
 import emailService from "../utils/emailService";
+import documentController from "../controllers/document.controller";
 
 const router: Router = express.Router();
 
@@ -93,10 +94,49 @@ router.post(
       }
 
       const { originalname, path: filePath } = req.file;
-      const { userId, category, description, year, month } = req.body;
+      const {
+        userId,
+        teamId,
+        departmentId,
+        recipientType,
+        category,
+        description,
+        year,
+        month,
+      } = req.body;
 
-      if (!userId) {
-        throw new Error("Kein Benutzer ausgewählt");
+      // Validate recipient based on type
+      let recipientData: any = {
+        recipient_type: recipientType || "user",
+        user_id: null,
+        team_id: null,
+        department_id: null,
+      };
+
+      switch (recipientType) {
+        case "user":
+          if (!userId) {
+            throw new Error("Kein Benutzer ausgewählt");
+          }
+          recipientData.user_id = parseInt(userId, 10);
+          break;
+        case "team":
+          if (!teamId) {
+            throw new Error("Kein Team ausgewählt");
+          }
+          recipientData.team_id = parseInt(teamId, 10);
+          break;
+        case "department":
+          if (!departmentId) {
+            throw new Error("Keine Abteilung ausgewählt");
+          }
+          recipientData.department_id = parseInt(departmentId, 10);
+          break;
+        case "company":
+          // No specific ID needed for company-wide documents
+          break;
+        default:
+          throw new Error("Ungültiger Empfänger-Typ");
       }
 
       // Read file content
@@ -104,7 +144,10 @@ router.post(
 
       const documentId = await Document.create({
         fileName: originalname,
-        userId: parseInt(userId, 10),
+        userId: recipientData.user_id,
+        teamId: recipientData.team_id,
+        departmentId: recipientData.department_id,
+        recipientType: recipientData.recipient_type,
         fileContent,
         category: category || "other",
         description: description || "",
@@ -128,19 +171,52 @@ router.post(
         );
 
         if (isEmailFeatureEnabled) {
-          const user = await User.findById(
-            parseInt(userId, 10),
-            authReq.user.tenant_id,
-          );
-          if (user && user.email) {
-            await emailService.sendNewDocumentNotification(user, {
-              file_name: originalname,
-              category: category || "other",
-              upload_date: new Date(),
-            });
-            logger.info(
-              `Email notification sent to ${user.email} for document ${documentId}`,
-            );
+          const documentInfo = {
+            file_name: originalname,
+            category: category || "other",
+            upload_date: new Date(),
+          };
+
+          switch (recipientType) {
+            case "user":
+              // Send to individual user
+              if (userId) {
+                const user = await User.findById(
+                  parseInt(userId, 10),
+                  authReq.user.tenant_id,
+                );
+                if (user && user.email) {
+                  await emailService.sendNewDocumentNotification(
+                    user,
+                    documentInfo,
+                  );
+                  logger.info(
+                    `Email notification sent to ${user.email} for document ${documentId}`,
+                  );
+                }
+              }
+              break;
+
+            case "team":
+              // TODO: Send to all team members
+              logger.info(
+                `Team notifications not yet implemented for document ${documentId}`,
+              );
+              break;
+
+            case "department":
+              // TODO: Send to all department members
+              logger.info(
+                `Department notifications not yet implemented for document ${documentId}`,
+              );
+              break;
+
+            case "company":
+              // TODO: Send to all company members
+              logger.info(
+                `Company-wide notifications not yet implemented for document ${documentId}`,
+              );
+              break;
           }
         }
       } catch (emailError: any) {
@@ -227,15 +303,76 @@ router.get(
   },
 );
 
+// Preview document (for iframe display)
+router.get(
+  "/preview/:documentId",
+  authenticateToken as any,
+  checkDocumentAccess({ 
+    allowAdmin: true, 
+    requireOwnership: false 
+  }) as any,
+  async (req: any, res: any): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const documentReq = req as any;
+      const document = documentReq.document || await Document.findById(
+        parseInt(req.params.documentId, 10),
+      );
+
+      if (!document) {
+        res.status(404).json({ message: "Dokument nicht gefunden" });
+        return;
+      }
+
+      // Set headers for inline display (not download)
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${document.fileName || document.file_name}"`,
+      );
+      
+      // Handle different possible buffer/content formats
+      let contentBuffer: Buffer;
+      if (document.fileContent) {
+        contentBuffer = document.fileContent;
+      } else if (document.file_content) {
+        contentBuffer = document.file_content;
+      } else {
+        res.status(500).json({ message: "Dokument hat keinen Inhalt" });
+        return;
+      }
+      
+      res.setHeader("Content-Length", contentBuffer.length.toString());
+
+      // Send file content
+      res.send(contentBuffer);
+
+      logger.info(
+        `Document ${req.params.documentId} previewed by user ${authReq.user.id}`,
+      );
+    } catch (error: any) {
+      logger.error(`Error previewing document: ${error.message}`);
+      res.status(500).json({
+        message: "Fehler beim Anzeigen des Dokuments",
+        error: error.message,
+      });
+    }
+  },
+);
+
 // Download document
 router.get(
   "/download/:documentId",
   authenticateToken as any,
-  checkDocumentAccess as any,
+  checkDocumentAccess({ 
+    allowAdmin: true, 
+    requireOwnership: false 
+  }) as any,
   async (req: any, res: any): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const document = await Document.findById(
+      const documentReq = req as any;
+      const document = documentReq.document || await Document.findById(
         parseInt(req.params.documentId, 10),
       );
 
@@ -248,12 +385,24 @@ router.get(
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${document.fileName}"`,
+        `attachment; filename="${document.fileName || document.file_name}"`,
       );
-      res.setHeader("Content-Length", document.fileContent.length);
+      
+      // Handle different possible buffer/content formats
+      let contentBuffer: Buffer;
+      if (document.fileContent) {
+        contentBuffer = document.fileContent;
+      } else if (document.file_content) {
+        contentBuffer = document.file_content;
+      } else {
+        res.status(500).json({ message: "Dokument hat keinen Inhalt" });
+        return;
+      }
+      
+      res.setHeader("Content-Length", contentBuffer.length.toString());
 
       // Send file content
-      res.send(document.fileContent);
+      res.send(contentBuffer);
 
       logger.info(
         `Document ${req.params.documentId} downloaded by user ${authReq.user.id}`,
@@ -327,6 +476,44 @@ router.delete(
         error: error.message,
       });
     }
+  },
+);
+
+// NEW ROUTES WITH CONTROLLER
+
+// Get documents with scope-based filtering
+router.get(
+  "/v2",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.getDocuments(req, res);
+  },
+);
+
+// Get document by ID
+router.get(
+  "/v2/:id",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.getDocumentById(req, res);
+  },
+);
+
+// Download document
+router.get(
+  "/:id/download",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.downloadDocument(req, res);
+  },
+);
+
+// Mark document as read
+router.post(
+  "/:id/read",
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    await documentController.markDocumentAsRead(req, res);
   },
 );
 

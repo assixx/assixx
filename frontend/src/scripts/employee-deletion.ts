@@ -8,11 +8,6 @@
 import type { User, Document } from '../types/api.types';
 import { getAuthToken } from './auth';
 
-interface DeletionResponse {
-  success: boolean;
-  message?: string;
-}
-
 // Variablen für den aktuellen Mitarbeiter und dessen Dokumente
 let selectedEmployeeId: number | null = null;
 let selectedEmployeeName: string = '';
@@ -28,7 +23,6 @@ function showDeleteEmployeeDialog(employeeId: number): void {
   // Token abrufen
   const token = getAuthToken();
   if (!token) {
-    // eslint-disable-next-line no-alert
     alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
     return;
   }
@@ -59,7 +53,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       }
       try {
         const data = await response.json();
-        return Array.isArray(data) ? data : (data.documents || []);
+        return Array.isArray(data) ? data : data.documents || [];
       } catch {
         // If JSON parsing fails, assume no documents
         return [];
@@ -149,7 +143,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
     })
     .catch((error) => {
       console.error('Fehler bei der Anzeige des Lösch-Dialogs:', error);
-      // eslint-disable-next-line no-alert
+
       alert(`Fehler: ${error.message}`);
     });
 }
@@ -172,7 +166,6 @@ function processEmployeeDeletion(): void {
   // Token abrufen
   const token = getAuthToken();
   if (!token) {
-    // eslint-disable-next-line no-alert
     alert('Keine Authentifizierung gefunden. Bitte melden Sie sich erneut an.');
     return;
   }
@@ -180,13 +173,12 @@ function processEmployeeDeletion(): void {
   // Basierend auf der gewählten Option unterschiedliche Aktionen ausführen
   if (selectedOption === 'archive') {
     // Archivierung ist derzeit nicht implementiert
-    // eslint-disable-next-line no-alert
+
     alert('Die Archivierungsfunktion ist derzeit nicht verfügbar. Bitte verwenden Sie die Lösch-Option.');
     return;
   } else if (selectedOption === 'delete') {
     // Zusätzliche Bestätigung einholen, wenn Dokumente vorhanden sind
     if (documentCount > 0) {
-      // eslint-disable-next-line no-alert
       const confirmDelete = confirm(
         `WARNUNG: ENDGÜLTIGES LÖSCHEN!\n\n` +
           `Sie sind dabei, den Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen ${documentCount} Dokumente endgültig zu löschen!\n\n` +
@@ -211,14 +203,13 @@ function processEmployeeDeletion(): void {
             try {
               const result = await response.json();
               if (result.message) {
-                // eslint-disable-next-line no-alert
                 alert(result.message);
               } else {
-                // eslint-disable-next-line no-alert
-                alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
+                alert(
+                  `Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`,
+                );
               }
             } catch {
-              // eslint-disable-next-line no-alert
               alert(`Mitarbeiter "${selectedEmployeeName}" und alle zugehörigen Dokumente wurden endgültig gelöscht.`);
             }
             hideModal('delete-employee-modal');
@@ -226,7 +217,7 @@ function processEmployeeDeletion(): void {
             // Mitarbeiterliste aktualisieren
             interface WindowWithTables2 extends Window {
               loadEmployeesTable?: (action: string) => void;
-              loadDashboardStats?: () => void;
+              loadDashboardStats?: () => Promise<void>;
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
@@ -241,17 +232,16 @@ function processEmployeeDeletion(): void {
             // Handle error response
             try {
               const error = await response.json();
-              // eslint-disable-next-line no-alert
+
               alert(`Fehler: ${error.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
             } catch {
-              // eslint-disable-next-line no-alert
               alert('Fehler beim Löschen des Mitarbeiters');
             }
           }
         })
         .catch((error) => {
           console.error('Fehler beim endgültigen Löschen des Mitarbeiters:', error);
-          // eslint-disable-next-line no-alert
+
           alert(`Fehler: ${error.message}`);
         });
     } else {
@@ -268,14 +258,11 @@ function processEmployeeDeletion(): void {
             try {
               const result = await response.json();
               if (result.message) {
-                // eslint-disable-next-line no-alert
                 alert(result.message);
               } else {
-                // eslint-disable-next-line no-alert
                 alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
               }
             } catch {
-              // eslint-disable-next-line no-alert
               alert(`Mitarbeiter "${selectedEmployeeName}" wurde erfolgreich gelöscht.`);
             }
             hideModal('delete-employee-modal');
@@ -283,7 +270,7 @@ function processEmployeeDeletion(): void {
             // Mitarbeiterliste aktualisieren
             interface WindowWithTables2 extends Window {
               loadEmployeesTable?: (action: string) => void;
-              loadDashboardStats?: () => void;
+              loadDashboardStats?: () => Promise<void>;
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
@@ -298,17 +285,16 @@ function processEmployeeDeletion(): void {
             // Handle error response
             try {
               const error = await response.json();
-              // eslint-disable-next-line no-alert
+
               alert(`Fehler: ${error.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
             } catch {
-              // eslint-disable-next-line no-alert
               alert('Fehler beim Löschen des Mitarbeiters');
             }
           }
         })
         .catch((error) => {
           console.error('Fehler beim Löschen des Mitarbeiters:', error);
-          // eslint-disable-next-line no-alert
+
           alert(`Fehler: ${error.message}`);
         });
     }

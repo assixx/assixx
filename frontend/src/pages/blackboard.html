@@ -240,10 +240,13 @@
 
         <!-- Filterleiste -->
         <div class="card mb-4">
-          <div class="card-header">
-            <h3 class="card-title">Filter & Suche</h3>
+          <div class="card-header" style="cursor: pointer;" id="filterToggle">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 class="card-title" style="margin: 0;">Filter & Suche</h3>
+              <i class="fas fa-chevron-down" id="filterToggleIcon" style="transition: transform 0.3s ease;"></i>
+            </div>
           </div>
-          <div class="card-body">
+          <div class="card-body" id="filterContent" style="display: none;">
             <!-- Moderne Filter-Kontrollen -->
             <div class="modern-filters">
               <!-- Floating Search Bar -->
@@ -543,6 +546,23 @@
     <script type="module" src="/scripts/lib/marked.min.js"></script>
     <!-- Modal Functions gemäß Design Standards -->
     <script>
+      // Filter Toggle Functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        const filterToggle = document.getElementById('filterToggle');
+        const filterContent = document.getElementById('filterContent');
+        const filterToggleIcon = document.getElementById('filterToggleIcon');
+        
+        filterToggle.addEventListener('click', function() {
+          if (filterContent.style.display === 'none') {
+            filterContent.style.display = 'block';
+            filterToggleIcon.style.transform = 'rotate(180deg)';
+          } else {
+            filterContent.style.display = 'none';
+            filterToggleIcon.style.transform = 'rotate(0deg)';
+          }
+        });
+      });
+
       // Modal Functions
       function showModal(modalId) {
         const modal = document.getElementById(modalId);
@@ -626,6 +646,13 @@
       .d-none {
         display: none !important;
       }
+      /* Filter Toggle Styles */
+      #filterToggle:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      #filterToggle {
+        transition: background 0.3s ease;
+      }
     </style>
     <!-- Blackboard Scripts -->
     <!-- Unified Navigation -->
@@ -634,6 +661,6 @@
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
     <!-- Update Modal to Design Standards -->
-    <script src="/scripts/update-blackboard-modal.js"></script>
+    <script src="/scripts/update-blackboard-modal.js" type="module"></script>
   </body>
 </html>

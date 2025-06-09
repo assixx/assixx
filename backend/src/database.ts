@@ -359,14 +359,14 @@ export async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
   params?: any[],
 ): Promise<[T, any]> {
-  if ('query' in pool && typeof pool.query === 'function') {
+  if ("query" in pool && typeof pool.query === "function") {
     const result = await (pool as any).query(sql, params);
     if (Array.isArray(result) && result.length === 2) {
       return result as [T, any];
     }
     return [result as T, null];
   }
-  throw new Error('Database pool not properly initialized');
+  throw new Error("Database pool not properly initialized");
 }
 
 // CommonJS compatibility

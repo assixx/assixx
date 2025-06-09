@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-operators */
 /**
  * Storage Service for Assixx
  * Handles localStorage with type safety and expiration

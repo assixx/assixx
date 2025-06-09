@@ -45,6 +45,7 @@
     gap: 1rem;
     overflow-x: auto;
     padding: 0.5rem 0;
+    justify-content: center;
 }
 
 /* Mini Note Styles */
@@ -88,6 +89,11 @@
 .mini-note.orange {
     background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
     color: #e65100;
+}
+
+.mini-note.pink {
+    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+    color: #880e4f;
 }
 
 /* Mini Pushpin */
@@ -146,7 +152,7 @@
 }
 
 .mini-note-priority {
-    display: flex;
+    /*display: flex;*/
     align-items: center;
     gap: 0.25rem;
 }

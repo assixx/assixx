@@ -11,15 +11,15 @@ export default [
   // Prettier configuration
   prettierConfig,
 
-  // TypeScript configuration
+  // TypeScript configuration for backend
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['backend/**/*.ts', 'backend/**/*.tsx'],
     languageOptions: {
       parser: typescript,
       parserOptions: {
         ecmaVersion: 2021,
         sourceType: 'module',
-        project: './tsconfig.json',
+        project: './backend/tsconfig.json',
       },
       globals: {
         console: 'readonly',
@@ -59,6 +59,87 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       'no-console': 'off',
+    },
+  },
+
+  // TypeScript configuration for frontend
+  {
+    files: ['frontend/**/*.ts', 'frontend/**/*.tsx'],
+    languageOptions: {
+      parser: typescript,
+      parserOptions: {
+        ecmaVersion: 2021,
+        sourceType: 'module',
+        project: './frontend/tsconfig.json',
+      },
+      globals: {
+        console: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        fetch: 'readonly',
+        FormData: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        alert: 'readonly',
+        confirm: 'readonly',
+        Element: 'readonly',
+        HTMLElement: 'readonly',
+        Event: 'readonly',
+        CustomEvent: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        atob: 'readonly',
+        btoa: 'readonly',
+        NodeJS: 'readonly',
+        closeAdminModal: 'readonly',
+        showModal: 'readonly',
+        hideModal: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptPlugin,
+      prettier,
+    },
+    rules: {
+      ...typescriptPlugin.configs.recommended.rules,
+      'prettier/prettier': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { 
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_' 
+        },
+      ],
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
+      'no-console': 'off',
+    },
+  },
+
+  // Test files configuration
+  {
+    files: ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**/*.ts'],
+    languageOptions: {
+      parser: typescript,
+      parserOptions: {
+        ecmaVersion: 2021,
+        sourceType: 'module',
+        project: './tsconfig.test.json',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptPlugin,
+      prettier,
+    },
+    rules: {
+      ...typescriptPlugin.configs.recommended.rules,
+      'prettier/prettier': 'error',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
 
@@ -159,6 +240,8 @@ export default [
         showSuccess: 'readonly',
         fileNameSpan: 'readonly',
         authService: 'readonly',
+        showModal: 'readonly',
+        hideModal: 'readonly',
       },
     },
   },

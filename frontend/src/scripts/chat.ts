@@ -1244,7 +1244,6 @@ class ChatClient {
   async deleteCurrentConversation(): Promise<void> {
     if (!this.currentConversationId) return;
 
-    // eslint-disable-next-line no-alert
     if (!confirm('Möchten Sie diese Unterhaltung wirklich löschen?')) {
       return;
     }

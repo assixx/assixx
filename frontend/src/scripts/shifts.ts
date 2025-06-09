@@ -1,4 +1,3 @@
-/* eslint-disable indent */
 /**
  * Shift Planning TypeScript
  * Handles all client-side functionality for the shift planning system

@@ -166,7 +166,7 @@ export function authenticateToken(
       return;
     }
 
-    const user = decoded as TokenPayload;
+    const user = decoded as TokenPayload & { activeRole?: string; isRoleSwitched?: boolean };
 
     // Normalize user object for consistency and ensure IDs are numbers
     const authenticatedUser: any = {
@@ -177,6 +177,8 @@ export function authenticateToken(
       firstName: "",
       lastName: "",
       role: user.role,
+      activeRole: user.activeRole || user.role, // Support für Dual-Role
+      isRoleSwitched: user.isRoleSwitched || false,
       tenantId: user.tenant_id ? parseInt(user.tenant_id.toString(), 10) : null,
       tenant_id: user.tenant_id,
       departmentId: null,

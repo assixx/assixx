@@ -138,6 +138,13 @@ export const securityHeaders = helmet({
         "https://cdn.jsdelivr.net",
         "https://cdnjs.cloudflare.com",
       ],
+      styleSrcElem: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://cdnjs.cloudflare.com",
+      ],
       scriptSrc: [
         "'self'",
         "'unsafe-inline'",
@@ -154,7 +161,7 @@ export const securityHeaders = helmet({
         "https://cdnjs.cloudflare.com",
       ],
       connectSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      frameSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       manifestSrc: ["'self'"],

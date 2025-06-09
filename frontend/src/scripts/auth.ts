@@ -83,11 +83,34 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     headers,
   });
 
-  // If unauthorized, redirect to login
+  // Handle authentication errors
   if (response.status === 401) {
     removeAuthToken();
     window.location.href = '/pages/login.html';
     throw new Error('Unauthorized');
+  }
+
+  // Handle forbidden errors (wrong role)
+  if (response.status === 403) {
+    const userRole = localStorage.getItem('userRole');
+    let redirectUrl = '/pages/login.html';
+    
+    // Redirect to appropriate dashboard based on role
+    switch (userRole) {
+      case 'employee':
+        redirectUrl = '/pages/employee-dashboard.html';
+        break;
+      case 'admin':
+        redirectUrl = '/pages/admin-dashboard.html';
+        break;
+      case 'root':
+        redirectUrl = '/pages/root-dashboard.html';
+        break;
+    }
+    
+    console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
+    window.location.href = redirectUrl;
+    throw new Error('Forbidden - insufficient permissions');
   }
 
   return response;
@@ -163,40 +186,48 @@ export function logout(): void {
 // Show success message
 export function showSuccess(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
-  // eslint-disable-next-line no-alert
+
   alert(`✅ ${message}`);
 }
 
 // Show error message
 export function showError(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
-  // eslint-disable-next-line no-alert
+
   alert(`❌ ${message}`);
 }
 
 // Show info message
 export function showInfo(message: string): void {
   // Simple alert for now, can be enhanced with toast notifications
-  // eslint-disable-next-line no-alert
+
   alert(`ℹ️ ${message}`);
 }
 
 // Initialize authentication on page load
 document.addEventListener('DOMContentLoaded', () => {
   const token = getAuthToken();
-  console.info('Auth check - Token found:', !!token);
-  console.info('Auth check - Current path:', window.location.pathname);
+  const userRole = localStorage.getItem('userRole');
+  const activeRole = localStorage.getItem('activeRole');
+  
+  console.info('[AUTH] Initialization:', {
+    token: !!token,
+    userRole,
+    activeRole,
+    path: window.location.pathname,
+    isEmployeeDashboard: window.location.pathname.includes('employee-dashboard')
+  });
 
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.info('No authentication token found, redirecting to login');
+    console.info('[AUTH] No authentication token found, redirecting to login');
     window.location.href = '/pages/login.html';
     return;
   }
 
   // Load user info if on authenticated page
   if (isAuthenticated() && !window.location.pathname.includes('login')) {
-    console.info('Loading user info...');
+    console.info('[AUTH] Loading user info...');
     loadUserInfo().catch((error) => {
       console.error('Failed to load user info:', error);
       // Don't redirect immediately, let the user see the error

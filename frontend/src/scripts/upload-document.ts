@@ -107,7 +107,6 @@ async function uploadDocument(e: Event): Promise<void> {
   const token = getAuthToken();
 
   if (!token) {
-    // eslint-disable-next-line no-alert
     alert('Bitte melden Sie sich erneut an');
     return;
   }
@@ -117,13 +116,11 @@ async function uploadDocument(e: Event): Promise<void> {
   const file = formData.get('document') as File;
 
   if (!userId) {
-    // eslint-disable-next-line no-alert
     alert('Bitte wählen Sie einen Mitarbeiter aus');
     return;
   }
 
   if (!file || file.size === 0) {
-    // eslint-disable-next-line no-alert
     alert('Bitte wählen Sie eine Datei aus');
     return;
   }
