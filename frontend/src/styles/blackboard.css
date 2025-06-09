@@ -235,7 +235,7 @@ main.container.main-content.sidebar-collapsed {
   transform: rotate(var(--rotation, -2deg));
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
-  overflow: hidden;
+  /*overflow: hidden;*/
 }
 
 .pinboard-attachment:hover {
@@ -286,14 +286,14 @@ main.container.main-content.sidebar-collapsed {
   position: relative;
   overflow: hidden;
   border-radius: 8px;
-  background: #f5f5f5;
+  background: #f5f5f500;
 }
 
 .pinboard-pdf-preview object {
   display: block;
   pointer-events: none; /* Prevent interaction with embedded PDF */
   /* Try to hide PDF toolbar - works in some browsers */
-  margin-top: -40px;
+  margin-top: 0px;
   height: calc(100% + 40px);
 }
 

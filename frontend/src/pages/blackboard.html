@@ -4,13 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blackboard - Assixx</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <!-- User Info Styles (für Avatar und Role Badge) -->
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- Blackboard spezifische Styles -->
-    <link rel="stylesheet" href="/styles/blackboard.css" />
-    <link rel="stylesheet" href="/styles/blackboard-update.css" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -198,27 +192,62 @@
         box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
       }
     </style>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/blackboard.css" />
+    <link rel="stylesheet" href="/styles/blackboard-update.css" />
+    <script>
+      // Protect user-info elements from being overwritten
+      window.addEventListener('DOMContentLoaded', function() {
+        // Store original elements
+        const userInfoDiv = document.getElementById('user-info');
+        const userAvatar = document.getElementById('user-avatar');
+        const userName = document.getElementById('user-name');
+        const roleIndicator = document.getElementById('role-indicator');
+        
+        if (userInfoDiv) {
+          // Create a MutationObserver to watch for changes
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
+                // If children were removed, restore them
+                if (userInfoDiv.children.length === 0) {
+                  console.log('[Blackboard] Restoring user-info elements');
+                  userInfoDiv.innerHTML = '';
+                  if (userAvatar) userInfoDiv.appendChild(userAvatar);
+                  if (userName) userInfoDiv.appendChild(userName);
+                  if (roleIndicator) userInfoDiv.appendChild(roleIndicator);
+                }
+              }
+            });
+          });
+          
+          // Start observing
+          observer.observe(userInfoDiv, { childList: true, subtree: false });
+        }
+      });
+    </script>
   </head>
   <body>
     <!-- Header -->
     <header class="header">
       <a href="/pages/admin-dashboard.html" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
+        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
       </a>
       <div class="header-actions">
         <!-- Role Switch Button -->
-        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen" style="display: none;">
+        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
           <i class="fas fa-exchange-alt"></i>
           <span class="role-switch-text">Als Mitarbeiter</span>
         </button>
         
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Lade...</span>
-          <span id="role-indicator" class="role-badge admin" style="display: none;">Admin</span>
+        <div id="user-info" style="display: flex !important; visibility: visible !important;">
+          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
+          <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
+          <span id="role-indicator" class="role-badge admin" style="display: inline-flex !important; visibility: visible !important;">Admin</span>
         </div>
-        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+        <button id="logout-btn" class="btn-logout btn btn-secondary">
           <i class="fas fa-sign-out-alt"></i>
           Abmelden
         </button>
@@ -757,12 +786,10 @@
         transition: background 0.3s ease;
       }
     </style>
-    <!-- Blackboard Scripts -->
+    <!-- Main blackboard script loaded FIRST to ensure user info is set -->
+    <script type="module" src="/scripts/blackboard.ts"></script>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/blackboard.ts"></script>
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
     <!-- Role Switch Functionality -->
     <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Update Modal to Design Standards -->

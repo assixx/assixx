@@ -169,6 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user is logged in
   checkLoggedIn()
     .then(() => {
+      // Load user info in header - with a small delay to ensure DOM is ready
+      setTimeout(() => {
+        loadHeaderUserInfo();
+      }, 100);
+      
       // Load user data
       fetchUserData()
         .then((userData: UserData) => {
@@ -652,6 +657,87 @@ async function fetchUserData(): Promise<UserData> {
   }
 
   return response.json();
+}
+
+/**
+ * Load Header User Info - same as in admin-dashboard.ts
+ */
+async function loadHeaderUserInfo(): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (!token) return;
+
+    console.log('[Blackboard] Loading header user info...');
+
+    const response = await fetch('/api/user/profile', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      const userData: User = await response.json();
+      console.log('[Blackboard] User data loaded:', userData);
+      
+      // First check if user-info div exists and restore structure if needed
+      const userInfoDiv = document.getElementById('user-info');
+      if (userInfoDiv) {
+        // If user-info has been overwritten (no children or just text), restore it
+        if (userInfoDiv.children.length === 0) {
+          console.log('[Blackboard] Restoring user-info structure...');
+          userInfoDiv.innerHTML = `
+            <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
+            <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
+            <span id="role-indicator" class="role-badge admin" style="display: inline-flex !important; visibility: visible !important;">Admin</span>
+          `;
+        }
+      }
+      
+      // Now get the elements
+      const userNameElement = document.getElementById('user-name') as HTMLElement;
+      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+      const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+
+      console.log('[Blackboard] Elements found after restore:', {
+        userNameElement: !!userNameElement,
+        userAvatar: !!userAvatar,
+        roleIndicator: !!roleIndicator
+      });
+
+      if (userNameElement) {
+        const fullName =
+          userData.first_name && userData.last_name
+            ? `${userData.first_name} ${userData.last_name}`
+            : userData.username;
+        userNameElement.textContent = fullName;
+        console.log('[Blackboard] Set user name to:', fullName);
+      }
+
+      if (userAvatar) {
+        // Always set a default avatar first
+        userAvatar.src = '/assets/images/default-avatar.svg';
+        
+        if (userData.profile_picture) {
+          userAvatar.src = userData.profile_picture;
+          userAvatar.onerror = function () {
+            this.src = '/assets/images/default-avatar.svg';
+          };
+        }
+        console.log('[Blackboard] Set avatar src to:', userAvatar.src);
+      }
+
+      // Update role indicator
+      if (roleIndicator && userData.role) {
+        roleIndicator.textContent = userData.role === 'admin' ? 'Admin' : 
+                                    userData.role === 'root' ? 'Root' : 
+                                    'Mitarbeiter';
+        roleIndicator.className = `role-badge ${userData.role}`;
+        console.log('[Blackboard] Set role to:', roleIndicator.textContent);
+      }
+    }
+  } catch (error) {
+    console.error('[Blackboard] Error loading user info:', error);
+  }
 }
 
 /**
