@@ -147,16 +147,68 @@ class BlackboardWidget {
       }
     }
 
-    // Truncate content
-    const maxContentLength = 80;
-    const truncatedContent =
-      contentText.length > maxContentLength ? `${contentText.substring(0, maxContentLength)}...` : contentText;
+    // Check if this is a direct attachment entry
+    const isDirectAttachment = contentText && contentText.startsWith('[Attachment:');
+    let contentHtml = '';
+
+    if (isDirectAttachment && entry.attachments && entry.attachments.length > 0) {
+      // Handle direct attachment display
+      const attachment = entry.attachments[0];
+      const isImage = attachment.mime_type.startsWith('image/');
+      const isPDF = attachment.mime_type === 'application/pdf';
+
+      if (isImage) {
+        contentHtml = `
+          <div class="mini-note-attachment">
+            <img src="/api/blackboard/attachments/${attachment.id}/preview" 
+                 alt="${this.escapeHtml(attachment.original_name)}" 
+                 style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 80px; color: #666;">
+              <i class="fas fa-image" style="font-size: 24px; margin-bottom: 5px;"></i>
+              <span style="font-size: 10px;">Bild</span>
+            </div>
+          </div>
+        `;
+      } else if (isPDF) {
+        contentHtml = `
+          <div class="mini-note-attachment" style="position: relative; height: 120px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
+            <object data="/api/blackboard/attachments/${attachment.id}/preview" 
+                    type="application/pdf" 
+                    style="width: 100%; height: 100%; pointer-events: none;">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
+                <i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545; margin-bottom: 5px;"></i>
+                <div style="font-size: 10px;">PDF-Dokument</div>
+              </div>
+            </object>
+          </div>
+        `;
+      }
+    } else {
+      // Regular text content
+      const maxContentLength = 80;
+      const truncatedContent =
+        contentText.length > maxContentLength ? `${contentText.substring(0, maxContentLength)}...` : contentText;
+      contentHtml = `<div class="mini-note-content">${this.escapeHtml(truncatedContent)}</div>`;
+    }
+
+    // Add attachment indicator if there are attachments but not a direct attachment
+    let attachmentIndicator = '';
+    if (!isDirectAttachment && entry.attachment_count && entry.attachment_count > 0) {
+      attachmentIndicator = `
+        <div class="mini-note-attachments">
+          <i class="fas fa-paperclip"></i>
+          <span>${entry.attachment_count}</span>
+        </div>
+      `;
+    }
 
     return `
-            <div class="mini-note ${color}" id="mini-note-${entry.id}">
+            <div class="mini-note ${color} ${isDirectAttachment ? 'has-attachment' : ''}" id="mini-note-${entry.id}">
                 <div class="mini-pushpin"></div>
                 <div class="mini-note-title">${this.escapeHtml(entry.title)}</div>
-                <div class="mini-note-content">${this.escapeHtml(truncatedContent)}</div>
+                ${contentHtml}
+                ${attachmentIndicator}
                 <div class="mini-note-meta">
                     <span class="mini-note-priority">
                         <span class="priority-dot ${entry.priority}"></span>

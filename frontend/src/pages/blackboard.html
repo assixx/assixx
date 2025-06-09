@@ -230,10 +230,14 @@
             <h1 class="card-title mb-2">Blackboard</h1>
             <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
           </div>
-          <div>
+          <div class="d-flex gap-2">
             <button id="newEntryBtn" class="btn btn-primary">
               <i class="fas fa-plus"></i>
               Neuer Eintrag
+            </button>
+            <button id="directAttachBtn" class="btn btn-secondary">
+              <i class="fas fa-paperclip"></i>
+              Bild/PDF anheften
             </button>
           </div>
         </div>
@@ -486,6 +490,96 @@
             <button type="submit" class="btn btn-primary" id="saveEntryBtn">Speichern</button>
             <button type="button" class="btn btn-secondary" onclick="hideModal('entryFormModal')">Abbrechen</button>
           </div>
+      </div>
+    </div>
+
+    <!-- Direct Attachment Modal -->
+    <div class="modal" id="directAttachModal" style="display: none;">
+      <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3 class="modal-title">Bild/PDF direkt anheften</h3>
+          <button type="button" class="modal-close" onclick="hideModal('directAttachModal')">&times;</button>
+        </div>
+        <form id="directAttachForm">
+          <div class="modal-body">
+            <!-- File Upload Area -->
+            <div class="form-group">
+              <label class="form-label">Datei auswählen</label>
+              <div 
+                id="directAttachDropZone" 
+                class="attachment-dropzone text-center p-4" 
+                style="border: 2px dashed rgba(255,255,255,0.3); border-radius: var(--radius-md); cursor: pointer; transition: all 0.3s ease;">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px;"></i>
+                <p class="mb-2">Datei hier ablegen oder klicken zum Auswählen</p>
+                <p class="text-secondary mb-0" style="font-size: 0.85rem;">Unterstützt: JPG, PNG, PDF (max. 10 MB)</p>
+                <input type="file" id="directAttachInput" accept="image/jpeg,image/jpg,image/png,application/pdf" style="display: none;" />
+              </div>
+            </div>
+
+            <!-- File Preview -->
+            <div id="directAttachPreview" class="form-group d-none">
+              <label class="form-label">Vorschau</label>
+              <div class="attachment-preview d-flex align-items-center gap-3 p-3" style="background: rgba(255,255,255,0.05); border-radius: var(--radius-sm);">
+                <div id="previewImage" style="max-width: 150px; max-height: 150px;"></div>
+                <div class="flex-grow-1">
+                  <div id="previewFileName" class="fw-bold"></div>
+                  <div id="previewFileSize" class="text-secondary"></div>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="clearDirectAttachment()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Title -->
+            <div class="form-group">
+              <label for="directAttachTitle" class="form-label">Titel (optional)</label>
+              <input type="text" class="form-control" id="directAttachTitle" placeholder="z.B. Urlaubsplan 2025" />
+            </div>
+
+            <!-- Organization Level -->
+            <div class="form-group">
+              <label for="directAttachOrgLevel" class="form-label">Sichtbarkeit</label>
+              <select class="form-control" id="directAttachOrgLevel">
+                <option value="company">Gesamte Firma</option>
+                <option value="department">Nur meine Abteilung</option>
+                <option value="team">Nur mein Team</option>
+              </select>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+              <label for="directAttachPriority" class="form-label">Priorität</label>
+              <select class="form-control" id="directAttachPriority">
+                <option value="low">Niedrig</option>
+                <option value="normal" selected>Normal</option>
+                <option value="high">Hoch</option>
+              </select>
+            </div>
+
+            <!-- Size Selection -->
+            <div class="form-group">
+              <label class="form-label">Anzeigegröße</label>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary size-option" data-size="small">
+                  <i class="fas fa-compress"></i> Klein
+                </button>
+                <button type="button" class="btn btn-outline-secondary size-option active" data-size="medium">
+                  <i class="fas fa-expand-arrows-alt"></i> Mittel
+                </button>
+                <button type="button" class="btn btn-outline-secondary size-option" data-size="large">
+                  <i class="fas fa-expand"></i> Groß
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideModal('directAttachModal')">Abbrechen</button>
+            <button type="button" class="btn btn-primary" id="saveDirectAttachBtn">
+              <i class="fas fa-thumbtack"></i> Anheften
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 

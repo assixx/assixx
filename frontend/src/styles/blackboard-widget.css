@@ -215,6 +215,42 @@
     }
 }
 
+/* Attachment Styles */
+.mini-note-attachment {
+    margin: 0.5rem 0;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.mini-note-attachment img {
+    display: block;
+    width: 100%;
+}
+
+.mini-note.has-attachment .mini-note-content {
+    display: none;
+}
+
+.mini-note-attachments {
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.mini-note-attachments i {
+    font-size: 0.8rem;
+}
+
+/* Adjust spacing for notes with attachments */
+.mini-note.has-attachment {
+    padding-bottom: 2.5rem;
+}
+
 /* Scrollbar Styling */
 .mini-notes-container::-webkit-scrollbar {
     height: 6px;
@@ -232,4 +268,37 @@
 
 .mini-notes-container::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mini note attachment preview */
+.mini-note-attachment {
+    margin: 8px 0;
+    position: relative;
+}
+
+.mini-note-attachment object {
+    pointer-events: none !important;
+    display: block;
+}
+
+.mini-note-attachment img,
+.mini-note-attachment object {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Mini note attachments indicator */
+.mini-note-attachments {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: #666;
+    opacity: 0.8;
+}
+
+.mini-note-attachments i {
+    font-size: 10px;
 }

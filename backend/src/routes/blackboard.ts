@@ -296,11 +296,12 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
 
 /**
  * @route POST /api/blackboard
- * @desc Create a new blackboard entry
+ * @desc Create a new blackboard entry (with optional direct attachment)
  */
 router.post(
   "/",
   authenticateToken,
+  upload.single("attachment"), // Handle single file upload
   canCreateForOrgLevel,
   async (req, res): Promise<void> => {
     try {
@@ -332,7 +333,40 @@ router.post(
         requires_confirmation: req.body.requires_confirmation || false,
       };
 
+      // Create the entry
       const entry = await blackboardModel.createEntry(entryData);
+
+      // If there's an uploaded file, add it as an attachment
+      if (authReq.file) {
+        try {
+          const attachmentId = await blackboardModel.addAttachment(entry.id, {
+            filename: authReq.file.filename,
+            originalName: authReq.file.originalname,
+            fileSize: authReq.file.size,
+            mimeType: authReq.file.mimetype,
+            filePath: authReq.file.path,
+            uploadedBy: authReq.user.id,
+          });
+
+          // Update entry with minimal attachment info for response
+          // The full attachment data will be loaded when fetching the entry
+          (entry as any).attachments = [{
+            id: attachmentId,
+            filename: authReq.file.filename,
+            original_name: authReq.file.originalname,
+            file_size: authReq.file.size,
+            mime_type: authReq.file.mimetype,
+          }];
+
+          logger.info(
+            `User ${authReq.user.id} created entry ${entry.id} with direct attachment ${attachmentId}`,
+          );
+        } catch (attachError: any) {
+          // If attachment fails, still return the created entry
+          logger.error(`Failed to add attachment to entry ${entry.id}:`, attachError);
+        }
+      }
+
       res.status(201).json(entry);
     } catch (error: any) {
       console.error("Error in POST /api/blackboard:", error);
@@ -595,12 +629,68 @@ router.get(
         `${disposition}; filename="${attachment.original_name}"`,
       );
       res.setHeader("Content-Type", attachment.mime_type);
+      
+      // Override X-Frame-Options to allow embedding
+      res.setHeader("X-Frame-Options", "SAMEORIGIN");
 
       // Send file
       res.sendFile(path.resolve(attachment.file_path));
     } catch (error: any) {
       console.error("Error in GET /api/blackboard/attachments/:id:", error);
       res.status(500).json({ message: "Fehler beim Herunterladen der Datei" });
+    }
+  },
+);
+
+/**
+ * @route GET /api/blackboard/attachments/:attachmentId/preview
+ * @desc Get a preview of an attachment (optimized for inline display)
+ */
+router.get(
+  "/attachments/:attachmentId/preview",
+  authenticateToken,
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const tenantId = getTenantId(authReq.user);
+      const attachmentId = parseInt(req.params.attachmentId, 10);
+
+      const attachment = await blackboardModel.getAttachmentById(
+        attachmentId,
+        tenantId,
+      );
+
+      if (!attachment) {
+        res.status(404).json({ message: "Anhang nicht gefunden" });
+        return;
+      }
+
+      // Check if file exists
+      try {
+        await fs.access(attachment.file_path);
+      } catch {
+        res.status(404).json({ message: "Datei nicht gefunden" });
+        return;
+      }
+
+      // Set appropriate headers for preview
+      res.setHeader("Content-Type", attachment.mime_type);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${attachment.original_name}"`,
+      );
+      
+      // Add cache headers for better performance
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      
+      // Override X-Frame-Options to allow embedding
+      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+
+      // Send file
+      res.sendFile(path.resolve(attachment.file_path));
+    } catch (error: any) {
+      console.error("Error in GET /api/blackboard/attachments/:id/preview:", error);
+      res.status(500).json({ message: "Fehler beim Laden der Vorschau" });
     }
   },
 );
