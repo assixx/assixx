@@ -26,8 +26,8 @@ interface CalendarEventCreateRequest extends TenantRequest {
     start_time: string | Date;
     end_time: string | Date;
     all_day?: boolean;
-    org_level: "company" | "department" | "team";
-    org_id: number;
+    org_level: "company" | "department" | "team" | "personal";
+    org_id?: number;
     created_by: number;
     reminder_time?: number | null;
     color?: string;
@@ -42,7 +42,7 @@ interface CalendarEventUpdateRequest extends TenantRequest {
     start_time?: string | Date;
     end_time?: string | Date;
     all_day?: boolean;
-    org_level?: "company" | "department" | "team";
+    org_level?: "company" | "department" | "team" | "personal";
     org_id?: number;
     status?: "active" | "cancelled";
     reminder_time?: number | string | null;

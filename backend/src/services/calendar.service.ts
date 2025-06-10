@@ -28,8 +28,8 @@ interface CalendarEvent {
   start_time: Date;
   end_time: Date;
   all_day: boolean | number;
-  org_level: "company" | "department" | "team";
-  org_id: number;
+  org_level: "company" | "department" | "team" | "personal";
+  org_id?: number;
   created_by: number;
   reminder_time?: number | null;
   color: string;
@@ -61,8 +61,8 @@ interface EventCreateData {
   start_time: string | Date;
   end_time: string | Date;
   all_day?: boolean;
-  org_level: "company" | "department" | "team";
-  org_id: number;
+  org_level: "company" | "department" | "team" | "personal";
+  org_id?: number;
   created_by: number;
   reminder_time?: number | null;
   color?: string;
@@ -75,7 +75,7 @@ interface EventUpdateData {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
-  org_level?: "company" | "department" | "team";
+  org_level?: "company" | "department" | "team" | "personal";
   org_id?: number;
   status?: "active" | "cancelled";
   reminder_time?: number | string | null;

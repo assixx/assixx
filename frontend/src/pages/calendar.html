@@ -6,9 +6,8 @@
     <title>Firmenkalender - Assixx</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <!-- FullCalendar CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" />
+    <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
     <!-- Calendar spezifische Styles -->
     <link rel="stylesheet" href="/styles/calendar.css" />
     <style>
@@ -467,13 +466,20 @@
   <body>
     <!-- Header -->
     <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
+      <a href="#" class="logo-container">
         <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
       </a>
       <div class="header-actions">
+        <!-- Role Switch Button -->
+        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
+          <i class="fas fa-exchange-alt"></i>
+          <span class="role-switch-text">Als Mitarbeiter</span>
+        </button>
+        
         <div id="user-info">
           <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
           <span id="user-name">Lade...</span>
+          <span id="role-indicator" class="role-badge admin">Admin</span>
         </div>
         <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
           <i class="fas fa-sign-out-alt"></i>
@@ -613,145 +619,313 @@
     <div class="modal-overlay" id="eventFormModal">
       <div class="modal-container modal-lg">
         <div class="modal-header">
-          <h2 id="eventFormModalLabel">Neuer Termin</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
+          <h2 class="modal-title">Neuer Termin</h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="modal-body">
-          <form id="eventForm" class="simple-form">
+          <form id="eventForm">
             <input type="hidden" id="eventId" />
 
             <!-- Titel und Inhalt -->
-            <div class="form-group large-form-group">
-              <label for="eventTitle" class="big-label">Titel</label>
-              <input type="text" class="big-input" id="eventTitle" required />
+            <div class="form-group">
+              <label for="eventTitle">
+                <i class="fas fa-heading"></i> Titel <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="eventTitle" 
+                name="title"
+                placeholder="Titel des Termins eingeben"
+                required 
+              />
             </div>
 
-            <div class="form-group large-form-group">
-              <label for="eventDescription" class="big-label">Beschreibung</label>
-              <textarea class="big-input" id="eventDescription" rows="4"></textarea>
-              <div class="simple-hint">Markdown-Formatierung möglich</div>
+            <div class="form-group">
+              <label for="eventDescription">
+                <i class="fas fa-align-left"></i> Beschreibung
+              </label>
+              <textarea 
+                class="form-control" 
+                id="eventDescription" 
+                name="description"
+                rows="4"
+                placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
+              ></textarea>
+              <small class="form-text text-muted">
+                <i class="fas fa-info-circle"></i> Markdown-Formatierung möglich
+              </small>
             </div>
 
             <!-- Datum und Zeit -->
-            <div class="form-group large-form-group">
-              <div class="flex gap-4 flex-wrap">
-                <div class="flex-half">
-                  <label for="eventStartDate" class="big-label">Startdatum</label>
-                  <input type="date" class="big-input" id="eventStartDate" required />
-                </div>
-                <div class="flex-half">
-                  <label for="eventStartTime" class="big-label">Startzeit</label>
-                  <input type="time" class="big-input" id="eventStartTime" required />
-                </div>
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="eventStartDate">
+                  <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="eventStartDate" 
+                  name="start_date"
+                  required 
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="eventStartTime">
+                  <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
+                </label>
+                <input 
+                  type="time" 
+                  class="form-control time-input" 
+                  id="eventStartTime" 
+                  name="start_time"
+                  required 
+                />
               </div>
             </div>
 
-            <div class="form-group large-form-group">
-              <div class="flex gap-4 flex-wrap">
-                <div class="flex-half">
-                  <label for="eventEndDate" class="big-label">Enddatum</label>
-                  <input type="date" class="big-input" id="eventEndDate" required />
-                </div>
-                <div class="flex-half">
-                  <label for="eventEndTime" class="big-label">Endzeit</label>
-                  <input type="time" class="big-input" id="eventEndTime" required />
-                </div>
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="eventEndDate">
+                  <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="eventEndDate" 
+                  name="end_date"
+                  required 
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="eventEndTime">
+                  <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
+                </label>
+                <input 
+                  type="time" 
+                  class="form-control time-input" 
+                  id="eventEndTime" 
+                  name="end_time"
+                  required 
+                />
               </div>
             </div>
 
-            <div class="form-group large-form-group">
-              <div class="simple-checkbox">
-                <input type="checkbox" id="eventAllDay" />
-                <label for="eventAllDay">Ganztägiger Termin</label>
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  type="checkbox" 
+                  class="custom-control-input" 
+                  id="eventAllDay" 
+                  name="all_day"
+                />
+                <label class="custom-control-label" for="eventAllDay">
+                  <i class="fas fa-sun"></i> Ganztägiger Termin
+                </label>
               </div>
             </div>
 
             <!-- Ort -->
-            <div class="form-group large-form-group">
-              <label for="eventLocation" class="big-label">Ort</label>
-              <input type="text" class="big-input" id="eventLocation" />
+            <div class="form-group">
+              <label for="eventLocation">
+                <i class="fas fa-map-marker-alt"></i> Ort
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="eventLocation" 
+                name="location"
+                placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
+              />
             </div>
 
             <!-- Organisationseinheit -->
-            <div class="form-group large-form-group">
-              <label class="big-label">Wer soll den Termin sehen?</label>
-              <div class="custom-select-wrapper" id="orgLevelWrapper">
-                <div class="custom-select-display" onclick="toggleOrgLevelDropdown()">
+            <div class="form-group">
+              <label>
+                <i class="fas fa-users"></i> Wer soll den Termin sehen? <span class="required">*</span>
+              </label>
+              <div class="custom-dropdown" id="orgLevelWrapper">
+                <div class="custom-select-display dropdown-display">
                   <span id="selectedOrgLevel">-- Bitte wählen --</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
-                <div class="custom-dropdown" id="orgLevelDropdown">
-                  <div class="dropdown-option" onclick="selectOrgLevel('company', 'Alle Mitarbeiter')">Alle Mitarbeiter</div>
-                  <div class="dropdown-option" onclick="selectOrgLevel('department', 'Bestimmte Abteilung')">Bestimmte Abteilung</div>
-                  <div class="dropdown-option" onclick="selectOrgLevel('team', 'Bestimmtes Team')">Bestimmtes Team</div>
+                <div class="dropdown-options" id="orgLevelDropdown">
+                  <div class="dropdown-option" data-value="company">
+                    <i class="fas fa-building"></i> Alle Mitarbeiter
+                  </div>
+                  <div class="dropdown-option" data-value="department">
+                    <i class="fas fa-sitemap"></i> Bestimmte Abteilung
+                  </div>
+                  <div class="dropdown-option" data-value="team">
+                    <i class="fas fa-user-friends"></i> Bestimmtes Team
+                  </div>
+                  <div class="dropdown-option" data-value="personal">
+                    <i class="fas fa-user"></i> Nur für mich
+                  </div>
                 </div>
               </div>
               <input type="hidden" id="eventOrgLevel" required />
             </div>
 
-            <div class="form-group large-form-group">
-              <label class="big-label">Welche Abteilung/Team?</label>
-              <div class="custom-select-wrapper" id="orgIdWrapper">
-                <div class="custom-select-display disabled" id="orgIdDisplay" onclick="toggleOrgIdDropdown()">
+            <div class="form-group" id="orgIdGroup" style="display: none;">
+              <label>Welche Abteilung/Team?</label>
+              <div class="custom-dropdown" id="orgIdWrapper">
+                <div class="custom-select-display dropdown-display disabled" id="orgIdDisplay">
                   <span id="selectedOrgId">-- Bitte erst oben auswählen --</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
-                <div class="custom-dropdown" id="orgIdDropdown">
+                <div class="dropdown-options" id="orgIdDropdown">
                   <!-- Wird dynamisch befüllt -->
                 </div>
               </div>
-              <input type="hidden" id="eventOrgId" required />
+              <input type="hidden" id="eventOrgId" />
             </div>
 
             <!-- Farbe und Erinnerung -->
-            <div class="form-group large-form-group">
-              <label for="eventColor" class="big-label">Farbe</label>
+            <div class="form-group">
+              <label>
+                <i class="fas fa-palette"></i> Farbe
+              </label>
               <div class="color-picker">
-                <div class="color-option" data-color="#3498db" style="background-color: #3498db"></div>
-                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71"></div>
-                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22"></div>
-                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6"></div>
-                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c"></div>
-                <div class="color-option" data-color="#f1c40f" style="background-color: #f1c40f"></div>
-                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c"></div>
-                <div class="color-option" data-color="#34495e" style="background-color: #34495e"></div>
+                <div class="color-option selected" data-color="#3498db" style="background-color: #3498db" title="Blau"></div>
+                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71" title="Grün"></div>
+                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22" title="Orange"></div>
+                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6" title="Lila"></div>
+                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c" title="Rot"></div>
+                <div class="color-option" data-color="#f1c40f" style="background-color: #f1c40f" title="Gelb"></div>
+                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c" title="Türkis"></div>
+                <div class="color-option" data-color="#34495e" style="background-color: #34495e" title="Dunkelgrau"></div>
               </div>
               <input type="hidden" id="eventColor" value="#3498db" />
             </div>
 
-            <div class="form-group large-form-group">
-              <label class="big-label">Erinnerung</label>
-              <div class="custom-select-wrapper" id="reminderWrapper">
-                <div class="custom-select-display" onclick="toggleReminderDropdown()">
+            <div class="form-group">
+              <label>
+                <i class="fas fa-bell"></i> Erinnerung
+              </label>
+              <div class="custom-dropdown" id="reminderWrapper">
+                <div class="custom-select-display dropdown-display">
                   <span id="selectedReminder">Keine Erinnerung</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
-                <div class="custom-dropdown" id="reminderDropdown">
-                  <div class="dropdown-option" onclick="selectReminder('', 'Keine Erinnerung')">Keine Erinnerung</div>
-                  <div class="dropdown-option" onclick="selectReminder('5', '5 Minuten vorher')">5 Minuten vorher</div>
-                  <div class="dropdown-option" onclick="selectReminder('15', '15 Minuten vorher')">15 Minuten vorher</div>
-                  <div class="dropdown-option" onclick="selectReminder('30', '30 Minuten vorher')">30 Minuten vorher</div>
-                  <div class="dropdown-option" onclick="selectReminder('60', '1 Stunde vorher')">1 Stunde vorher</div>
-                  <div class="dropdown-option" onclick="selectReminder('120', '2 Stunden vorher')">2 Stunden vorher</div>
-                  <div class="dropdown-option" onclick="selectReminder('1440', '1 Tag vorher')">1 Tag vorher</div>
+                <div class="dropdown-options" id="reminderDropdown">
+                  <div class="dropdown-option" data-value="">
+                    <i class="fas fa-bell-slash"></i> Keine Erinnerung
+                  </div>
+                  <div class="dropdown-option" data-value="5">
+                    <i class="fas fa-clock"></i> 5 Minuten vorher
+                  </div>
+                  <div class="dropdown-option" data-value="15">
+                    <i class="fas fa-clock"></i> 15 Minuten vorher
+                  </div>
+                  <div class="dropdown-option" data-value="30">
+                    <i class="fas fa-clock"></i> 30 Minuten vorher
+                  </div>
+                  <div class="dropdown-option" data-value="60">
+                    <i class="fas fa-clock"></i> 1 Stunde vorher
+                  </div>
+                  <div class="dropdown-option" data-value="120">
+                    <i class="fas fa-clock"></i> 2 Stunden vorher
+                  </div>
+                  <div class="dropdown-option" data-value="1440">
+                    <i class="fas fa-calendar-day"></i> 1 Tag vorher
+                  </div>
                 </div>
               </div>
               <input type="hidden" id="eventReminderTime" value="" />
             </div>
 
+            <!-- Wiederholung -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-redo"></i> Wiederholung
+              </label>
+              <div class="custom-dropdown" id="recurrenceWrapper">
+                <div class="custom-select-display dropdown-display">
+                  <span id="selectedRecurrence">Keine Wiederholung</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="recurrenceDropdown">
+                  <div class="dropdown-option" data-value="">
+                    <i class="fas fa-ban"></i> Keine Wiederholung
+                  </div>
+                  <div class="dropdown-option" data-value="daily">
+                    <i class="fas fa-calendar-day"></i> Täglich
+                  </div>
+                  <div class="dropdown-option" data-value="weekly">
+                    <i class="fas fa-calendar-week"></i> Wöchentlich
+                  </div>
+                  <div class="dropdown-option" data-value="biweekly">
+                    <i class="fas fa-calendar-week"></i> Alle zwei Wochen
+                  </div>
+                  <div class="dropdown-option" data-value="monthly">
+                    <i class="fas fa-calendar-alt"></i> Monatlich
+                  </div>
+                  <div class="dropdown-option" data-value="yearly">
+                    <i class="fas fa-calendar"></i> Jährlich
+                  </div>
+                  <div class="dropdown-option" data-value="weekdays">
+                    <i class="fas fa-briefcase"></i> Werktags (Mo-Fr)
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="eventRecurrence" value="" />
+              
+              <!-- Wiederholungs-Ende -->
+              <div id="recurrenceEndWrapper" style="display: none; margin-top: 16px;">
+                <label>Wiederholung endet</label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" onclick="toggleRecurrenceEndDropdown()">
+                    <span id="selectedRecurrenceEnd">Niemals</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="recurrenceEndDropdown">
+                    <div class="dropdown-option" onclick="selectRecurrenceEnd('never', 'Niemals')">
+                      <i class="fas fa-infinity"></i> Niemals
+                    </div>
+                    <div class="dropdown-option" onclick="selectRecurrenceEnd('after', 'Nach')">
+                      <i class="fas fa-hashtag"></i> Nach ... Wiederholungen
+                    </div>
+                    <div class="dropdown-option" onclick="selectRecurrenceEnd('date', 'Am')">
+                      <i class="fas fa-calendar-check"></i> Am bestimmten Datum
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Anzahl Wiederholungen -->
+                <div id="recurrenceCountWrapper" style="display: none; margin-top: 12px;">
+                  <input type="number" class="form-control" id="recurrenceCount" min="1" max="999" value="10" placeholder="Anzahl Wiederholungen">
+                </div>
+                
+                <!-- End-Datum -->
+                <div id="recurrenceEndDateWrapper" style="display: none; margin-top: 12px;">
+                  <input type="date" class="form-control" id="recurrenceEndDate">
+                </div>
+              </div>
+            </div>
+
             <!-- Teilnehmer -->
-            <div class="form-group large-form-group">
-              <label class="big-label">Teilnehmer</label>
+            <div class="form-group">
+              <label>
+                <i class="fas fa-user-plus"></i> Teilnehmer
+              </label>
               <div class="attendees-container" id="attendeesContainer">
                 <!-- Wird dynamisch befüllt -->
               </div>
-              <button type="button" class="btn btn-outline-primary mt-2" id="addAttendeeBtn">
+              <button type="button" class="btn btn-secondary btn-sm mt-2" id="addAttendeeBtn">
                 <i class="fas fa-plus"></i>
                 Teilnehmer hinzufügen
               </button>
@@ -767,14 +941,21 @@
 
     <!-- Attendees Modal -->
     <div class="modal-overlay" id="attendeesModal">
-      <div class="modal-container">
+      <div class="modal-container modal-md">
         <div class="modal-header">
-          <h2 id="attendeesModalLabel">Teilnehmer hinzufügen</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
+          <h2 class="modal-title">Teilnehmer hinzufügen</h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="modal-body">
           <div class="form-group mb-3">
-            <input type="text" class="form-input" id="attendeeSearch" placeholder="Mitarbeiter suchen..." />
+            <input 
+              type="text" 
+              class="form-control" 
+              id="attendeeSearch" 
+              placeholder="Mitarbeiter suchen..." 
+            />
           </div>
           <div class="attendees-list" id="attendeesList">
             <!-- Wird dynamisch befüllt -->
@@ -841,8 +1022,9 @@
     <!-- Marked.js for Markdown rendering -->
     <script type="module" src="/scripts/lib/marked.min.js"></script>
     <!-- FullCalendar -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
+    <!-- FullCalendar libraries (external, not bundled by Vite) -->
+    <script defer src="/scripts/lib/fullcalendar.min.js"></script>
+    <script defer src="/scripts/lib/fullcalendar-locales.min.js"></script>
     <!-- Standalone scripts for Calendar -->
     <script>
       // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
@@ -926,121 +1108,66 @@
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
 
-    <!-- Custom Dropdown Functions -->
-    <script>
-      // Custom Dropdown Functions für Calendar
-      let activeDropdown = null;
 
-      // Close dropdown when clicking outside
-      document.addEventListener('click', function (e) {
-        if (activeDropdown && !e.target.closest('.custom-select-wrapper')) {
-          closeAllDropdowns();
+    <!-- MutationObserver zum Schutz der Header-Struktur -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        const userInfoDiv = document.getElementById('user-info');
+        
+        if (userInfoDiv) {
+          // Speichere Referenzen zu den Original-Elementen
+          const originalAvatar = document.getElementById('user-avatar');
+          const originalUserName = document.getElementById('user-name');
+          const originalRoleIndicator = document.getElementById('role-indicator');
+          
+          const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
+                // Prüfe ob alle 3 Elemente vorhanden sind
+                const currentAvatar = document.getElementById('user-avatar');
+                const currentUserName = document.getElementById('user-name');
+                const currentRoleIndicator = document.getElementById('role-indicator');
+                
+                if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
+                  console.log('[Calendar] Restoring user-info elements');
+                  userInfoDiv.innerHTML = '';
+                  
+                  // Avatar wiederherstellen
+                  const newAvatar = originalAvatar ? originalAvatar.cloneNode(true) : document.createElement('img');
+                  newAvatar.id = 'user-avatar';
+                  newAvatar.src = '/assets/images/default-avatar.svg';
+                  newAvatar.alt = 'Avatar';
+                  userInfoDiv.appendChild(newAvatar);
+                  
+                  // Username wiederherstellen
+                  const newUserName = originalUserName ? originalUserName.cloneNode(true) : document.createElement('span');
+                  newUserName.id = 'user-name';
+                  newUserName.textContent = newUserName.textContent || 'Lade...';
+                  userInfoDiv.appendChild(newUserName);
+                  
+                  // Role Badge wiederherstellen
+                  const newRoleIndicator = originalRoleIndicator ? originalRoleIndicator.cloneNode(true) : document.createElement('span');
+                  newRoleIndicator.id = 'role-indicator';
+                  newRoleIndicator.className = 'role-badge admin';
+                  newRoleIndicator.textContent = newRoleIndicator.textContent || 'Admin';
+                  userInfoDiv.appendChild(newRoleIndicator);
+                }
+              }
+            });
+          });
+          
+          observer.observe(userInfoDiv, { childList: true, subtree: false });
         }
       });
-
-      function closeAllDropdowns() {
-        document.querySelectorAll('.custom-dropdown').forEach((dropdown) => {
-          dropdown.classList.remove('active');
-        });
-        document.querySelectorAll('.custom-select-display').forEach((display) => {
-          display.classList.remove('active');
-        });
-        activeDropdown = null;
-      }
-
-      // Org Level Dropdown
-      function toggleOrgLevelDropdown() {
-        const dropdown = document.getElementById('orgLevelDropdown');
-        const display = dropdown.previousElementSibling;
-
-        if (dropdown.classList.contains('active')) {
-          dropdown.classList.remove('active');
-          display.classList.remove('active');
-          activeDropdown = null;
-        } else {
-          closeAllDropdowns();
-          dropdown.classList.add('active');
-          display.classList.add('active');
-          activeDropdown = 'orgLevel';
-        }
-      }
-
-      function selectOrgLevel(value, text) {
-        document.getElementById('selectedOrgLevel').textContent = text;
-        document.getElementById('eventOrgLevel').value = value;
-
-        // Update org ID dropdown based on selection
-        const orgIdDisplay = document.getElementById('orgIdDisplay');
-        const orgIdDropdown = document.getElementById('orgIdDropdown');
-
-        if (value === 'company') {
-          orgIdDisplay.classList.add('disabled');
-          document.getElementById('selectedOrgId').textContent = 'Gesamte Firma';
-          document.getElementById('eventOrgId').value = '1';
-        } else {
-          orgIdDisplay.classList.remove('disabled');
-          document.getElementById('selectedOrgId').textContent = '-- Bitte wählen --';
-          document.getElementById('eventOrgId').value = '';
-          // Trigger the calendar.js updateOrgIdDropdown function
-          if (typeof updateOrgIdDropdown === 'function') {
-            updateOrgIdDropdown(value);
-          }
-        }
-
-        closeAllDropdowns();
-      }
-
-      // Org ID Dropdown
-      function toggleOrgIdDropdown() {
-        const display = document.getElementById('orgIdDisplay');
-        if (display.classList.contains('disabled')) return;
-
-        const dropdown = document.getElementById('orgIdDropdown');
-
-        if (dropdown.classList.contains('active')) {
-          dropdown.classList.remove('active');
-          display.classList.remove('active');
-          activeDropdown = null;
-        } else {
-          closeAllDropdowns();
-          dropdown.classList.add('active');
-          display.classList.add('active');
-          activeDropdown = 'orgId';
-        }
-      }
-
-      function selectOrgId(value, text) {
-        document.getElementById('selectedOrgId').textContent = text;
-        document.getElementById('eventOrgId').value = value;
-        closeAllDropdowns();
-      }
-
-      // Reminder Dropdown
-      function toggleReminderDropdown() {
-        const dropdown = document.getElementById('reminderDropdown');
-        const display = dropdown.previousElementSibling;
-
-        if (dropdown.classList.contains('active')) {
-          dropdown.classList.remove('active');
-          display.classList.remove('active');
-          activeDropdown = null;
-        } else {
-          closeAllDropdowns();
-          dropdown.classList.add('active');
-          display.classList.add('active');
-          activeDropdown = 'reminder';
-        }
-      }
-
-      function selectReminder(value, text) {
-        document.getElementById('selectedReminder').textContent = text;
-        document.getElementById('eventReminderTime').value = value;
-        closeAllDropdowns();
-      }
     </script>
 
+    <!-- Scripts in richtiger Reihenfolge -->
     <script type="module" src="/scripts/calendar.ts"></script>
     <!-- Header User Info Loading -->
     <script type="module" src="/scripts/header-user-info.ts"></script>
+    <!-- Role Switch Functionality -->
+    <script type="module" src="/scripts/role-switch.ts"></script>
+    <!-- Unified Navigation NACH calendar.ts -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

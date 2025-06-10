@@ -51,6 +51,7 @@ async function loadHeaderUserInfo(): Promise<void> {
       }
 
       // Update avatar
+      const avatarElement = document.getElementById('user-avatar') as HTMLImageElement;
       if (avatarElement && user.profile_picture) {
         avatarElement.src = user.profile_picture;
       }

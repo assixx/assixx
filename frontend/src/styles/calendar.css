@@ -82,7 +82,7 @@
 
 #calendar {
   width: 100%;
-  background-color: var(--background-light);
+  
   padding: 10px;
 }
 
@@ -316,6 +316,17 @@
   }
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Color Picker */
 .color-picker {
   display: flex;
@@ -345,7 +356,7 @@
   border: 2px solid #ffffff;
 }
 
-/* Modal Overlay */
+/* Modal Overlay - Glassmorphismus Design */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -353,6 +364,8 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,18 +383,23 @@
 }
 
 .modal-container {
-  background-color: var(--background-light);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-color);
   overflow: hidden;
   transform: translateY(20px);
   transition: transform 0.3s ease;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 .modal-overlay.active .modal-container {
@@ -400,27 +418,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.modal-header h2 {
-  color: var(--primary-color);
+.modal-title {
   font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
   margin: 0;
 }
 
 .modal-close {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
-  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
   color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.modal-close i {
+  font-size: 16px;
 }
 
 .modal-body {
@@ -432,13 +463,12 @@
 
 .modal-footer {
   padding: var(--spacing-md) var(--spacing-lg);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);
-  background-color: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.02);
   flex-shrink: 0;
-  margin-right: var(--spacing-sm);
 }
 
 /* Detail modal - angepasst an Assixx Design */
@@ -483,25 +513,218 @@
   margin-right: 5px;
 }
 
+/* Form Styles gemäß Design-Standards */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.form-group label i {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+  outline: none;
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-text {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.col-md-6 {
+  flex: 1;
+}
+
+.required {
+  color: #e74c3c;
+  font-weight: normal;
+}
+
+/* Custom Checkbox */
+.custom-control {
+  display: flex;
+  align-items: center;
+  padding-left: 0;
+}
+
+.custom-control-input {
+  width: 18px;
+  height: 18px;
+  margin-right: 0.75rem;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.custom-control-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-primary);
+}
+
+.custom-control-label i {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
+}
+
+/* Custom Dropdown gemäß Design-Standards */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dropdown-display:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-display.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 18, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1001;
+}
+
+.dropdown-options.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option:hover {
+  background: rgba(33, 150, 243, 0.2);
+  color: white;
+  padding-left: 16px;
+}
+
+.dropdown-option i {
+  margin-right: 0.5rem;
+  width: 16px;
+  text-align: center;
+}
+
 /* Attendees list */
 .attendees-container {
   max-height: 150px;
   overflow-y: auto;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
   padding: 10px;
   margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
 }
 
 .attendee-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--background-dark);
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-sm);
   margin-bottom: 5px;
+  transition: all 0.2s ease;
+}
+
+.attendee-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .attendee-item:last-child {
@@ -818,6 +1041,48 @@ select.big-input:disabled {
 /* Event dot indicator for list view */
 .fc-daygrid-dot-event .fc-event-title {
   font-weight: 500;
+}
+
+/* Text utilities */
+.text-muted {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Attendee modal styles */
+.attendees-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.attendee-option {
+  padding: 10px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.attendee-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.attendee-option input[type="checkbox"] {
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.attendee-option label {
+  cursor: pointer;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 /* Responsive adjustments */

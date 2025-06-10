@@ -102,7 +102,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
       end_date: (req.query.end || req.query.end_date) as string | undefined,
       page: parseInt(req.query.page ? String(req.query.page) : "1", 10),
       limit: parseInt(req.query.limit ? String(req.query.limit) : "50", 10),
-      sortBy: req.query.sortBy ? String(req.query.sortBy) : "start_time",
+      sortBy: req.query.sortBy ? String(req.query.sortBy) : "start_date",
       sortDir: req.query.sortDir ? String(req.query.sortDir) : "ASC",
     } as any;
 
@@ -215,8 +215,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       created_by: authReq.user.id,
       reminder_time: req.body.reminder_time,
       color: req.body.color,
-      recurring: req.body.recurring || false,
-      recurring_pattern: req.body.recurring_pattern,
+      recurrence_rule: req.body.recurrence_rule,
     };
 
     const event = await calendarModel.createEvent(eventData);

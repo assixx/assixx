@@ -937,36 +937,61 @@ class UnifiedNavigation {
     const activeRole = localStorage.getItem('activeRole');
     const currentRole = activeRole || userRole || this.currentRole;
 
-    // Find all logo containers
-    const logoLinks = document.querySelectorAll('.logo-container, a[href*="dashboard.html"]');
+    // Find all logo containers - expanded selector to catch all cases
+    const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
     
-    logoLinks.forEach((link) => {
-      if (link instanceof HTMLAnchorElement && link.querySelector('.logo')) {
-        // Update href based on role
-        switch (currentRole) {
-          case 'employee':
-            link.href = '/pages/employee-dashboard.html';
-            break;
-          case 'admin':
-            link.href = '/pages/admin-dashboard.html';
-            break;
-          case 'root':
-            link.href = '/pages/root-dashboard.html';
-            break;
-          default:
-            // If no role found, default to current dashboard
-            console.warn('No user role found for logo navigation');
+    logoContainers.forEach((container) => {
+      // Determine the dashboard URL based on role
+      let dashboardUrl = '/pages/employee-dashboard.html'; // default
+      switch (currentRole) {
+        case 'employee':
+          dashboardUrl = '/pages/employee-dashboard.html';
+          break;
+        case 'admin':
+          dashboardUrl = '/pages/admin-dashboard.html';
+          break;
+        case 'root':
+          dashboardUrl = '/pages/root-dashboard.html';
+          break;
+        default:
+          console.warn('No user role found for logo navigation, defaulting to employee dashboard');
+      }
+
+      if (container instanceof HTMLAnchorElement) {
+        // If it's already an anchor, update the href
+        container.href = dashboardUrl;
+        // Remove any onclick handlers that might interfere
+        container.onclick = null;
+        // Add event listener to prevent default if href is # or empty
+        if (container.getAttribute('href') === '#' || container.getAttribute('href') === '') {
+          container.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = dashboardUrl;
+          });
         }
+      } else {
+        // If it's not an anchor (like a div), add click handler
+        container.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.location.href = dashboardUrl;
+        });
+        // Add cursor pointer style
+        (container as HTMLElement).style.cursor = 'pointer';
       }
     });
 
     // Also fix logo when page visibility changes (tab switching)
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        this.fixLogoNavigation();
-      }
-    });
+    if (!this.visibilityListenerAdded) {
+      this.visibilityListenerAdded = true;
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          this.fixLogoNavigation();
+        }
+      });
+    }
   }
+
+  private visibilityListenerAdded = false;
 
   // Storage Widget erstellen (nur für Root User)
   private createStorageWidget(): string {

@@ -33,23 +33,32 @@ function formatDateForMysql(dateString: string | Date | null): string | null {
 interface DbCalendarEvent extends RowDataPacket {
   id: number;
   tenant_id: number;
+  user_id: number;
   title: string;
   description?: string | Buffer | { type: "Buffer"; data: number[] };
   location?: string;
-  start_time: Date;
-  end_time: Date;
+  start_date: Date;
+  end_date: Date;
   all_day: boolean | number;
-  org_level: "company" | "department" | "team";
-  org_id: number;
-  created_by: number;
-  reminder_time?: number | null;
-  color: string;
-  status: "active" | "cancelled";
+  type?: "meeting" | "training" | "vacation" | "sick_leave" | "other";
+  status?: "tentative" | "confirmed" | "cancelled";
+  is_private?: boolean | number;
+  reminder_minutes?: number | null;
+  color?: string;
+  recurrence_rule?: string | null;
+  parent_event_id?: number | null;
   created_at: Date;
   updated_at: Date;
   // Extended fields from joins
   creator_name?: string;
   user_response?: string | null;
+  // Aliases for API compatibility
+  start_time?: Date;
+  end_time?: Date;
+  org_level?: "company" | "department" | "team" | "personal";
+  org_id?: number;
+  created_by?: number;
+  reminder_time?: number | null;
 }
 
 interface DbEventAttendee extends RowDataPacket {
@@ -65,7 +74,7 @@ interface DbEventAttendee extends RowDataPacket {
 
 interface EventQueryOptions {
   status?: "active" | "cancelled";
-  filter?: "all" | "company" | "department" | "team";
+  filter?: "all" | "company" | "department" | "team" | "personal";
   search?: string;
   start_date?: string;
   end_date?: string;
@@ -83,11 +92,13 @@ interface EventCreateData {
   start_time: string | Date;
   end_time: string | Date;
   all_day?: boolean;
-  org_level: "company" | "department" | "team";
-  org_id: number;
+  org_level: "company" | "department" | "team" | "personal";
+  org_id?: number;
   created_by: number;
   reminder_time?: number | null;
   color?: string;
+  recurrence_rule?: string | null;
+  parent_event_id?: number | null;
 }
 
 interface EventUpdateData {
@@ -97,12 +108,13 @@ interface EventUpdateData {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
-  org_level?: "company" | "department" | "team";
+  org_level?: "company" | "department" | "team" | "personal";
   org_id?: number;
   status?: "active" | "cancelled";
   reminder_time?: number | string | null;
   color?: string;
   created_by?: number;
+  recurrence_rule?: string | null;
 }
 
 interface CountResult extends RowDataPacket {
@@ -133,13 +145,15 @@ export class Calendar {
         end_date,
         page = 1,
         limit = 50,
-        sortBy = "start_time",
+        sortBy = "start_date",
         sortDir = "ASC",
       } = options;
+      
+      // Map status from API to database
+      const dbStatus = status === "active" ? "confirmed" : status;
 
-      // Determine user's department and team for access control
-      const { role, departmentId, teamId } =
-        await User.getUserDepartmentAndTeam(userId);
+      // Determine user's role for access control
+      const { role } = await User.getUserDepartmentAndTeam(userId);
 
       // Build base query
       let query = `
@@ -147,38 +161,40 @@ export class Calendar {
                u.username as creator_name,
                CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
         FROM calendar_events e
-        LEFT JOIN users u ON e.created_by = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-      const queryParams: any[] = [userId, tenantId, status];
+      const queryParams: any[] = [userId, tenantId, dbStatus];
 
-      // Apply org level filter
+      // Apply org level filter (map to type)
       if (filter !== "all") {
-        query += " AND e.org_level = ?";
-        queryParams.push(filter);
+        if (filter === "company") {
+          query += " AND e.type IN ('meeting', 'training')";
+        } else if (filter === "personal") {
+          query += " AND e.type NOT IN ('meeting', 'training')";
+        }
       }
 
       // Apply access control for non-admin users
       if (role !== "admin" && role !== "root") {
         query += ` AND (
-          e.org_level = 'company' OR 
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?) OR
+          e.type IN ('meeting', 'training') OR 
+          e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
-        queryParams.push(departmentId || 0, teamId || 0, userId);
+        queryParams.push(userId, userId);
       }
 
       // Apply date range filter
       if (start_date) {
-        query += " AND e.end_time >= ?";
+        query += " AND e.end_date >= ?";
         queryParams.push(start_date);
       }
 
       if (end_date) {
-        query += " AND e.start_time <= ?";
+        query += " AND e.start_date <= ?";
         queryParams.push(end_date);
       }
 
@@ -204,8 +220,23 @@ export class Calendar {
         queryParams,
       );
 
-      // Convert Buffer description to String if needed
+      // Map database fields to API fields
       events.forEach((event) => {
+        // Map database column names to API property names
+        event.start_time = event.start_date;
+        event.end_time = event.end_date;
+        event.reminder_time = event.reminder_minutes;
+        event.created_by = event.user_id;
+        
+        // Map org fields based on type
+        if (event.type === 'meeting' || event.type === 'training') {
+          event.org_level = 'company';
+        } else {
+          event.org_level = 'personal';
+        }
+        event.org_id = 0;
+        
+        // Convert Buffer description to String if needed
         if (event.description && Buffer.isBuffer(event.description)) {
           event.description = event.description.toString("utf8");
         } else if (
@@ -228,33 +259,35 @@ export class Calendar {
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-      const countParams: any[] = [tenantId, status];
+      const countParams: any[] = [tenantId, dbStatus];
 
-      // Apply org level filter for count
+      // Apply org level filter for count (map to type)
       if (filter !== "all") {
-        countQuery += " AND e.org_level = ?";
-        countParams.push(filter);
+        if (filter === "company") {
+          countQuery += " AND e.type IN ('meeting', 'training')";
+        } else if (filter === "personal") {
+          countQuery += " AND e.type NOT IN ('meeting', 'training')";
+        }
       }
 
       // Apply access control for non-admin users for count
       if (role !== "admin" && role !== "root") {
         countQuery += ` AND (
-          e.org_level = 'company' OR 
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?) OR
+          e.type IN ('meeting', 'training') OR 
+          e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
-        countParams.push(departmentId || 0, teamId || 0, userId);
+        countParams.push(userId, userId);
       }
 
       // Apply date range filter for count
       if (start_date) {
-        countQuery += " AND e.end_time >= ?";
+        countQuery += " AND e.end_date >= ?";
         countParams.push(start_date);
       }
 
       if (end_date) {
-        countQuery += " AND e.start_time <= ?";
+        countQuery += " AND e.start_date <= ?";
         countParams.push(end_date);
       }
 
@@ -296,9 +329,8 @@ export class Calendar {
     userId: number,
   ): Promise<DbCalendarEvent | null> {
     try {
-      // Determine user's department and team for access control
-      const { role, departmentId, teamId } =
-        await User.getUserDepartmentAndTeam(userId);
+      // Determine user's role for access control
+      const { role } = await User.getUserDepartmentAndTeam(userId);
 
       // Query the event with user response status
       const query = `
@@ -306,7 +338,7 @@ export class Calendar {
                u.username as creator_name,
                CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
         FROM calendar_events e
-        LEFT JOIN users u ON e.created_by = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
         WHERE e.id = ? AND e.tenant_id = ?
       `;
@@ -322,6 +354,20 @@ export class Calendar {
       }
 
       const event = events[0];
+
+      // Map database fields to API fields
+      event.start_time = event.start_date;
+      event.end_time = event.end_date;
+      event.reminder_time = event.reminder_minutes;
+      event.created_by = event.user_id;
+      
+      // Map org fields based on type
+      if (event.type === 'meeting' || event.type === 'training') {
+        event.org_level = 'company';
+      } else {
+        event.org_level = 'personal';
+      }
+      event.org_id = 0;
 
       // Convert Buffer description to String if needed
       if (event.description && Buffer.isBuffer(event.description)) {
@@ -349,9 +395,9 @@ export class Calendar {
         const isAttendee = attendeeRows.length > 0;
 
         const hasAccess =
-          event.org_level === "company" ||
-          (event.org_level === "department" && event.org_id === departmentId) ||
-          (event.org_level === "team" && event.org_id === teamId) ||
+          event.type === "meeting" ||
+          event.type === "training" ||
+          event.user_id === userId ||
           isAttendee;
 
         if (!hasAccess) {
@@ -382,10 +428,11 @@ export class Calendar {
         end_time,
         all_day,
         org_level,
-        org_id,
         created_by,
         reminder_time,
         color,
+        recurrence_rule,
+        parent_event_id,
       } = eventData;
 
       // Validate required fields
@@ -394,8 +441,6 @@ export class Calendar {
         !title ||
         !start_time ||
         !end_time ||
-        !org_level ||
-        !org_id ||
         !created_by
       ) {
         throw new Error("Missing required fields");
@@ -406,27 +451,38 @@ export class Calendar {
         throw new Error("Start time must be before end time");
       }
 
+      // Map org_level to type for database
+      let eventType = 'other';
+      if (org_level === 'company') {
+        eventType = 'meeting';
+      } else if (org_level === 'team' || org_level === 'department') {
+        eventType = 'training';
+      }
+
       // Insert new event
       const query = `
         INSERT INTO calendar_events 
-        (tenant_id, title, description, location, start_time, end_time, all_day, 
-         org_level, org_id, created_by, reminder_time, color)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (tenant_id, user_id, title, description, location, start_date, end_date, all_day, 
+         type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const [result] = await executeQuery<ResultSetHeader>(query, [
         tenant_id,
+        created_by, // user_id
         title,
         description || null,
         location || null,
         formatDateForMysql(start_time),
         formatDateForMysql(end_time),
         all_day ? 1 : 0,
-        org_level,
-        org_id,
-        created_by,
+        eventType,
+        'confirmed', // status
+        0, // is_private
         reminder_time || null,
         color || "#3498db",
+        recurrence_rule || null,
+        parent_event_id || null,
       ]);
 
       // Get the created event
@@ -439,6 +495,11 @@ export class Calendar {
       // Add the creator as an attendee with 'accepted' status
       if (createdEvent) {
         await this.addEventAttendee(createdEvent.id, created_by, "accepted");
+        
+        // If this is a recurring event, generate future occurrences
+        if (recurrence_rule && !parent_event_id) {
+          await this.generateRecurringEvents(createdEvent, recurrence_rule);
+        }
       }
 
       return createdEvent;
@@ -465,7 +526,6 @@ export class Calendar {
         end_time,
         all_day,
         org_level,
-        org_id,
         status,
         reminder_time,
         color,
@@ -491,12 +551,12 @@ export class Calendar {
       }
 
       if (start_time !== undefined) {
-        query += ", start_time = ?";
+        query += ", start_date = ?";
         queryParams.push(formatDateForMysql(start_time));
       }
 
       if (end_time !== undefined) {
-        query += ", end_time = ?";
+        query += ", end_date = ?";
         queryParams.push(formatDateForMysql(end_time));
       }
 
@@ -506,13 +566,15 @@ export class Calendar {
       }
 
       if (org_level !== undefined) {
-        query += ", org_level = ?";
-        queryParams.push(org_level);
-      }
-
-      if (org_id !== undefined) {
-        query += ", org_id = ?";
-        queryParams.push(org_id);
+        // Map org_level to type for database
+        let eventType = 'other';
+        if (org_level === 'company') {
+          eventType = 'meeting';
+        } else if (org_level === 'team' || org_level === 'department') {
+          eventType = 'training';
+        }
+        query += ", type = ?";
+        queryParams.push(eventType);
       }
 
       if (status !== undefined) {
@@ -521,7 +583,7 @@ export class Calendar {
       }
 
       if (reminder_time !== undefined) {
-        query += ", reminder_time = ?";
+        query += ", reminder_minutes = ?";
         // Convert empty string to null for integer field
         const reminderValue =
           reminder_time === "" || reminder_time === null
@@ -705,7 +767,7 @@ export class Calendar {
   ): Promise<DbCalendarEvent[]> {
     try {
       // Get user info for access control
-      const { role, departmentId, teamId } =
+      const { role } =
         await User.getUserDepartmentAndTeam(userId);
 
       // Calculate date range
@@ -723,10 +785,10 @@ export class Calendar {
                u.username as creator_name,
                CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
         FROM calendar_events e
-        LEFT JOIN users u ON e.created_by = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
-        WHERE e.tenant_id = ? AND e.status = 'active'
-        AND e.start_time >= ? AND e.start_time <= ?
+        WHERE e.tenant_id = ? AND e.status = 'confirmed'
+        AND e.start_date >= ? AND e.start_date <= ?
       `;
 
       const queryParams: any[] = [userId, tenantId, todayStr, endDateStr];
@@ -734,17 +796,16 @@ export class Calendar {
       // Apply access control for non-admin users
       if (role !== "admin" && role !== "root") {
         query += ` AND (
-          e.org_level = 'company' OR 
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?) OR
+          e.type IN ('meeting', 'training') OR 
+          e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
-        queryParams.push(departmentId || 0, teamId || 0, userId);
+        queryParams.push(userId, userId);
       }
 
       // Sort by start time, limited to the next few events
       query += `
-        ORDER BY e.start_time ASC
+        ORDER BY e.start_date ASC
         LIMIT ?
       `;
       queryParams.push(parseInt(limit.toString(), 10));
@@ -754,8 +815,23 @@ export class Calendar {
         queryParams,
       );
 
-      // Convert Buffer description to String if needed
+      // Map database fields to API fields
       events.forEach((event) => {
+        // Map database column names to API property names
+        event.start_time = event.start_date;
+        event.end_time = event.end_date;
+        event.reminder_time = event.reminder_minutes;
+        event.created_by = event.user_id;
+        
+        // Map org fields based on type
+        if (event.type === 'meeting' || event.type === 'training') {
+          event.org_level = 'company';
+        } else {
+          event.org_level = 'personal';
+        }
+        event.org_id = 0;
+        
+        // Convert Buffer description to String if needed
         if (event.description && Buffer.isBuffer(event.description)) {
           event.description = event.description.toString("utf8");
         } else if (
@@ -801,24 +877,16 @@ export class Calendar {
 
       // Get user info if not provided
       const userRole = userInfo ? userInfo.role : null;
-      const userDeptId = userInfo ? userInfo.departmentId : null;
-      const userTeamId = userInfo ? userInfo.teamId : null;
 
-      // If already have user info, use it
-      let role: string | null,
-        departmentId: number | null,
-        teamId: number | null;
+      // Get user role
+      let role: string | null;
 
-      if (userRole && userDeptId !== undefined && userTeamId !== undefined) {
+      if (userRole) {
         role = userRole;
-        departmentId = userDeptId;
-        teamId = userTeamId;
       } else {
         // Otherwise get it from the database
         const userDetails = await User.getUserDepartmentAndTeam(userId);
         role = userDetails.role;
-        departmentId = userDetails.departmentId;
-        teamId = userDetails.teamId;
       }
 
       // Admins can manage all events
@@ -827,31 +895,117 @@ export class Calendar {
       }
 
       // Event creator can manage their events
-      if (event.created_by === userId) {
-        return true;
-      }
-
-      // Department managers can manage department events
-      if (
-        role === "manager" &&
-        event.org_level === "department" &&
-        event.org_id === departmentId
-      ) {
-        return true;
-      }
-
-      // Team leads can manage team events
-      if (
-        role === "team_lead" &&
-        event.org_level === "team" &&
-        event.org_id === teamId
-      ) {
+      if (event.user_id === userId) {
         return true;
       }
 
       return false;
     } catch (error) {
       logger.error("Error in canManageEvent:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate recurring events based on recurrence rule
+   */
+  static async generateRecurringEvents(
+    parentEvent: DbCalendarEvent,
+    recurrenceRule: string,
+  ): Promise<void> {
+    try {
+      // Parse recurrence rule
+      const [pattern, ...options] = recurrenceRule.split(';');
+      let count = 52; // Default to 1 year of weekly events
+      let until: Date | null = null;
+      
+      // Parse options
+      for (const option of options) {
+        if (option.startsWith('COUNT=')) {
+          count = parseInt(option.substring(6), 10);
+        } else if (option.startsWith('UNTIL=')) {
+          until = new Date(option.substring(6));
+        }
+      }
+      
+      // Calculate interval based on pattern
+      let intervalDays = 1;
+      switch (pattern) {
+        case 'daily':
+          intervalDays = 1;
+          break;
+        case 'weekly':
+          intervalDays = 7;
+          break;
+        case 'biweekly':
+          intervalDays = 14;
+          break;
+        case 'monthly':
+          intervalDays = 30; // Approximate
+          break;
+        case 'yearly':
+          intervalDays = 365;
+          break;
+        case 'weekdays':
+          intervalDays = 1; // Special handling needed
+          break;
+      }
+      
+      // Generate occurrences
+      const startDate = new Date(parentEvent.start_time);
+      const endDate = new Date(parentEvent.end_time);
+      const duration = endDate.getTime() - startDate.getTime();
+      
+      let currentDate = new Date(startDate);
+      let occurrences = 0;
+      
+      while (occurrences < count && (!until || currentDate <= until)) {
+        // Skip first occurrence (parent event)
+        if (occurrences > 0) {
+          // Skip weekends for weekdays pattern
+          if (pattern === 'weekdays') {
+            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+          }
+          
+          const newStartDate = new Date(currentDate);
+          const newEndDate = new Date(currentDate.getTime() + duration);
+          
+          // Create child event
+          await this.createEvent({
+            tenant_id: parentEvent.tenant_id,
+            title: parentEvent.title,
+            description: typeof parentEvent.description === 'string' 
+              ? parentEvent.description 
+              : parentEvent.description?.toString('utf8'),
+            location: parentEvent.location,
+            start_time: newStartDate.toISOString(),
+            end_time: newEndDate.toISOString(),
+            all_day: Boolean(parentEvent.all_day),
+            org_level: parentEvent.org_level,
+            org_id: parentEvent.org_id,
+            created_by: parentEvent.created_by,
+            reminder_time: parentEvent.reminder_time,
+            color: parentEvent.color,
+            parent_event_id: parentEvent.id,
+          });
+        }
+        
+        // Move to next occurrence
+        if (pattern === 'monthly') {
+          currentDate.setMonth(currentDate.getMonth() + 1);
+        } else if (pattern === 'yearly') {
+          currentDate.setFullYear(currentDate.getFullYear() + 1);
+        } else {
+          currentDate.setDate(currentDate.getDate() + intervalDays);
+        }
+        
+        occurrences++;
+      }
+      
+    } catch (error) {
+      logger.error("Error generating recurring events:", error);
       throw error;
     }
   }

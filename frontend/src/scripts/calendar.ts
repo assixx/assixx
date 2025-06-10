@@ -221,14 +221,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Load departments and teams for form dropdowns
         loadDepartmentsAndTeams();
 
-        // Initialize calendar
-        initializeCalendar();
+        // Initialize calendar - wrapped to prevent redirect on calendar errors
+        try {
+          initializeCalendar();
+        } catch (calendarError) {
+          console.error('Calendar initialization error:', calendarError);
+          showError('Kalender konnte nicht geladen werden.');
+        }
 
         // Load upcoming events
         loadUpcomingEvents();
 
         // Setup event listeners
         setupEventListeners();
+        
+        // Setup color picker
+        setupColorPicker();
       })
       .catch((error) => {
         console.error('Error loading user data:', error);
@@ -287,7 +295,15 @@ function initializeCalendar(): void {
     return;
   }
 
-  calendar = new window.FullCalendar.Calendar(calendarEl, {
+  // Check if FullCalendar is loaded
+  if (typeof window.FullCalendar === 'undefined') {
+    console.error('FullCalendar library not loaded');
+    showError('Kalender-Bibliothek konnte nicht geladen werden. Bitte laden Sie die Seite neu.');
+    return;
+  }
+
+  try {
+    calendar = new window.FullCalendar.Calendar(calendarEl, {
     initialView: calendarView,
     locale: 'de',
     headerToolbar: {
@@ -351,7 +367,11 @@ function initializeCalendar(): void {
     },
   });
 
-  calendar.render();
+    calendar.render();
+  } catch (error) {
+    console.error('Error initializing calendar:', error);
+    showError('Fehler beim Initialisieren des Kalenders. Bitte laden Sie die Seite neu.');
+  }
 }
 
 /**
@@ -452,6 +472,31 @@ function setupEventListeners(): void {
     });
   }
 
+  // Add attendee button
+  const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+  if (addAttendeeBtn) {
+    addAttendeeBtn.addEventListener('click', () => {
+      openModal('attendeesModal');
+      loadEmployeesForAttendees();
+    });
+  }
+  
+  // Add selected attendees button
+  const addSelectedAttendeesBtn = document.getElementById('addSelectedAttendeesBtn');
+  if (addSelectedAttendeesBtn) {
+    addSelectedAttendeesBtn.addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll<HTMLInputElement>('#attendeesList input[type="checkbox"]:checked');
+      checkboxes.forEach(checkbox => {
+        const userId = parseInt(checkbox.value);
+        if (!selectedAttendees.includes(userId)) {
+          selectedAttendees.push(userId);
+        }
+      });
+      updateSelectedAttendees();
+      closeModal('attendeesModal');
+    });
+  }
+
   // Attendee search
   const attendeeSearch = document.getElementById('attendeeSearch') as HTMLInputElement;
   if (attendeeSearch) {
@@ -459,6 +504,64 @@ function setupEventListeners(): void {
       searchAttendees(this.value);
     });
   }
+  
+  // Setup custom dropdown event delegation
+  document.addEventListener('click', function(e) {
+    const target = e.target as HTMLElement;
+    
+    // Handle dropdown toggles
+    if (target.closest('.dropdown-display')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const display = target.closest('.dropdown-display') as HTMLElement;
+      const wrapper = display.closest('.custom-dropdown');
+      const dropdown = wrapper?.querySelector('.dropdown-options') as HTMLElement;
+      
+      if (dropdown) {
+        // Check which dropdown was clicked
+        if (wrapper?.id === 'orgLevelWrapper') {
+          toggleOrgLevelDropdown();
+        } else if (wrapper?.id === 'reminderWrapper') {
+          toggleReminderDropdown();
+        } else if (wrapper?.id === 'recurrenceWrapper') {
+          toggleRecurrenceDropdown();
+        } else if (wrapper?.id === 'orgIdWrapper' && !display.classList.contains('disabled')) {
+          toggleOrgIdDropdown();
+        }
+      }
+    }
+    
+    // Handle dropdown option clicks
+    if (target.closest('.dropdown-option')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const option = target.closest('.dropdown-option') as HTMLElement;
+      const dropdown = option.closest('.dropdown-options');
+      const wrapper = dropdown?.closest('.custom-dropdown');
+      
+      if (dropdown?.id === 'orgLevelDropdown') {
+        // Extract value and text from the option
+        const value = option.dataset.value || '';
+        const text = option.textContent?.trim() || '';
+        selectOrgLevel(value, text);
+      } else if (dropdown?.id === 'reminderDropdown') {
+        const value = option.dataset.value || '';
+        const text = option.textContent?.trim() || '';
+        selectReminder(value, text);
+      } else if (dropdown?.id === 'recurrenceDropdown') {
+        const value = option.dataset.value || '';
+        const text = option.textContent?.trim() || '';
+        selectRecurrence(value, text);
+      }
+    }
+    
+    // Close dropdowns when clicking outside
+    if (!target.closest('.custom-dropdown')) {
+      closeAllDropdowns();
+    }
+  });
 }
 
 /**
@@ -1055,20 +1158,34 @@ async function saveEvent(): Promise<void> {
   const form = document.getElementById('eventForm') as HTMLFormElement;
   if (!form) return;
 
-  const formData = new FormData(form);
   const token = getAuthToken();
   if (!token) return;
 
+  // Get form values directly from elements
+  const titleInput = document.getElementById('eventTitle') as HTMLInputElement;
+  const descriptionInput = document.getElementById('eventDescription') as HTMLTextAreaElement;
+  const startDateInput = document.getElementById('eventStartDate') as HTMLInputElement;
+  const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement;
+  const endDateInput = document.getElementById('eventEndDate') as HTMLInputElement;
+  const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement;
+  const allDayInput = document.getElementById('eventAllDay') as HTMLInputElement;
+  const locationInput = document.getElementById('eventLocation') as HTMLInputElement;
+  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement;
+  const orgIdInput = document.getElementById('eventOrgId') as HTMLInputElement;
+  const colorInput = document.getElementById('eventColor') as HTMLInputElement;
+  const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement;
+  const eventIdInput = document.getElementById('eventId') as HTMLInputElement;
+
   // Get selected color
-  const selectedColor = document.querySelector('.color-option.active') as HTMLElement;
-  const color = selectedColor?.dataset.color || '#3788d8';
+  const selectedColor = document.querySelector('.color-option.selected') as HTMLElement;
+  const color = selectedColor?.dataset.color || colorInput?.value || '#3498db';
 
   // Parse dates and times
-  const startDate = formData.get('start_date') as string;
-  const startTime = formData.get('start_time') as string;
-  const endDate = formData.get('end_date') as string;
-  const endTime = formData.get('end_time') as string;
-  const allDay = (formData.get('all_day') as string) === 'on';
+  const startDate = startDateInput.value;
+  const startTime = startTimeInput.value;
+  const endDate = endDateInput.value;
+  const endTime = endTimeInput.value;
+  const allDay = allDayInput.checked;
 
   let startDateTime: string;
   let endDateTime: string;
@@ -1081,22 +1198,45 @@ async function saveEvent(): Promise<void> {
     endDateTime = `${endDate}T${endTime}:00`;
   }
 
+  // Get recurrence data
+  const recurrenceType = (document.getElementById('eventRecurrence') as HTMLInputElement)?.value;
+  let recurrenceRule = '';
+  
+  if (recurrenceType && recurrenceType !== '') {
+    // Build recurrence rule based on selection
+    const recurrenceEnd = (document.getElementById('selectedRecurrenceEnd') as HTMLElement)?.textContent;
+    const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement)?.value;
+    const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement)?.value;
+    
+    // Build simplified recurrence rule
+    recurrenceRule = recurrenceType;
+    
+    if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount) {
+      recurrenceRule += `;COUNT=${recurrenceCount}`;
+    } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate) {
+      recurrenceRule += `;UNTIL=${recurrenceEndDate}`;
+    }
+  }
+
   const eventData = {
-    title: formData.get('title') as string,
-    description: formData.get('description') as string,
+    title: titleInput.value,
+    description: descriptionInput.value,
     start_time: startDateTime,
     end_time: endDateTime,
     all_day: allDay,
-    location: formData.get('location') as string,
-    org_level: formData.get('org_level') as string,
+    location: locationInput.value,
+    org_level: orgLevelInput.value || 'personal',
     org_id:
-      formData.get('org_level') === 'personal' || formData.get('org_level') === 'company'
+      orgLevelInput.value === 'personal' || orgLevelInput.value === 'company'
         ? null
-        : parseInt(formData.get('org_id') as string),
+        : parseInt(orgIdInput.value),
     color,
-    reminder_time: formData.get('reminder_time') ? parseInt(formData.get('reminder_time') as string) : null,
+    reminder_time: reminderTimeInput.value ? parseInt(reminderTimeInput.value) : null,
     attendee_ids: selectedAttendees,
+    recurrence_rule: recurrenceRule || null,
   };
+
+  console.log('Saving event data:', eventData); // Debug log
 
   try {
     const eventId = formData.get('event_id') as string;
@@ -1317,37 +1457,13 @@ function removeAttendee(userId: number): void {
 }
 
 /**
- * Update selected attendees display
- */
-function updateSelectedAttendees(): void {
-  const container = document.getElementById('selectedAttendees') as HTMLElement;
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  selectedAttendees.forEach((userId) => {
-    const employee = employees.find((emp) => emp.id === userId);
-    if (!employee) return;
-
-    const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-    const chip = document.createElement('div');
-    chip.className = 'attendee-chip';
-    chip.innerHTML = `
-      <span>${escapeHtml(name)}</span>
-      <button onclick="removeAttendee(${userId})">
-        <i class="fas fa-times"></i>
-      </button>
-    `;
-    container.appendChild(chip);
-  });
-}
-
-/**
  * Check if user is logged in
  */
 function checkLoggedIn(): void {
   const token = getAuthToken();
   if (!token) {
+    console.error('No authentication token found');
+    window.location.href = '/pages/login.html';
     throw new Error('No authentication token found');
   }
 }
@@ -1445,7 +1561,259 @@ declare global {
     selectOrgId: typeof selectOrgId;
     addAttendee: typeof addAttendee;
     removeAttendee: typeof removeAttendee;
+    updateOrgIdDropdown: typeof updateOrgIdDropdown;
+    toggleOrgLevelDropdown: typeof toggleOrgLevelDropdown;
+    selectOrgLevel: typeof selectOrgLevel;
+    toggleOrgIdDropdown: typeof toggleOrgIdDropdown;
+    toggleReminderDropdown: typeof toggleReminderDropdown;
+    selectReminder: typeof selectReminder;
+    toggleRecurrenceDropdown: typeof toggleRecurrenceDropdown;
+    selectRecurrence: typeof selectRecurrence;
+    toggleRecurrenceEndDropdown: typeof toggleRecurrenceEndDropdown;
+    selectRecurrenceEnd: typeof selectRecurrenceEnd;
+    closeAllDropdowns: typeof closeAllDropdowns;
   }
+}
+
+/**
+ * Setup color picker functionality
+ */
+function setupColorPicker(): void {
+  const colorOptions = document.querySelectorAll('.color-option');
+  const colorInput = document.getElementById('eventColor') as HTMLInputElement;
+  
+  colorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      // Remove selected class from all
+      colorOptions.forEach(opt => opt.classList.remove('selected'));
+      // Add selected class to clicked
+      option.classList.add('selected');
+      // Update hidden input
+      if (colorInput) {
+        colorInput.value = (option as HTMLElement).dataset.color || '#3498db';
+      }
+    });
+  });
+}
+
+
+// Custom dropdown functions
+function toggleOrgLevelDropdown(): void {
+  const dropdown = document.getElementById('orgLevelDropdown');
+  const display = dropdown?.previousElementSibling;
+  
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function selectOrgLevel(value: string, text: string): void {
+  const selectedElement = document.getElementById('selectedOrgLevel');
+  const inputElement = document.getElementById('eventOrgLevel') as HTMLInputElement;
+  
+  if (selectedElement) selectedElement.textContent = text;
+  if (inputElement) inputElement.value = value;
+  
+  // Update org ID dropdown based on selection
+  updateOrgIdDropdown(value);
+  closeAllDropdowns();
+}
+
+function toggleOrgIdDropdown(): void {
+  const display = document.getElementById('orgIdDisplay');
+  if (display?.classList.contains('disabled')) return;
+  
+  const dropdown = document.getElementById('orgIdDropdown');
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function toggleReminderDropdown(): void {
+  const dropdown = document.getElementById('reminderDropdown');
+  const display = dropdown?.previousElementSibling;
+  
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function selectReminder(value: string, text: string): void {
+  const selectedElement = document.getElementById('selectedReminder');
+  const inputElement = document.getElementById('eventReminderTime') as HTMLInputElement;
+  
+  if (selectedElement) selectedElement.textContent = text;
+  if (inputElement) inputElement.value = value;
+  closeAllDropdowns();
+}
+
+function toggleRecurrenceDropdown(): void {
+  const dropdown = document.getElementById('recurrenceDropdown');
+  const display = dropdown?.previousElementSibling;
+  
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function selectRecurrence(value: string, text: string): void {
+  const selectedElement = document.getElementById('selectedRecurrence');
+  const inputElement = document.getElementById('eventRecurrence') as HTMLInputElement;
+  
+  if (selectedElement) selectedElement.textContent = text;
+  if (inputElement) inputElement.value = value;
+  
+  // Show/hide recurrence end options
+  const endWrapper = document.getElementById('recurrenceEndWrapper');
+  if (endWrapper) {
+    endWrapper.style.display = value && value !== '' ? 'block' : 'none';
+  }
+  
+  closeAllDropdowns();
+}
+
+function toggleRecurrenceEndDropdown(): void {
+  const dropdown = document.getElementById('recurrenceEndDropdown');
+  const display = dropdown?.previousElementSibling;
+  
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function selectRecurrenceEnd(value: string, text: string): void {
+  const selectedElement = document.getElementById('selectedRecurrenceEnd');
+  if (selectedElement) selectedElement.textContent = text;
+  
+  const countWrapper = document.getElementById('recurrenceCountWrapper');
+  const dateWrapper = document.getElementById('recurrenceEndDateWrapper');
+  
+  if (countWrapper && dateWrapper) {
+    if (value === 'after') {
+      countWrapper.style.display = 'block';
+      dateWrapper.style.display = 'none';
+    } else if (value === 'date') {
+      countWrapper.style.display = 'none';
+      dateWrapper.style.display = 'block';
+    } else {
+      countWrapper.style.display = 'none';
+      dateWrapper.style.display = 'none';
+    }
+  }
+  
+  closeAllDropdowns();
+}
+
+function closeAllDropdowns(): void {
+  document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+    dropdown.classList.remove('active');
+  });
+  document.querySelectorAll('.dropdown-display').forEach(display => {
+    display.classList.remove('active');
+  });
+  document.querySelectorAll('.dropdown-options').forEach(options => {
+    options.classList.remove('active');
+  });
+}
+
+
+// Load employees for attendees modal
+async function loadEmployeesForAttendees(): Promise<void> {
+  const token = getAuthToken();
+  if (!token) return;
+  
+  try {
+    const response = await fetch('/api/users', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (response.ok) {
+      const users = await response.json();
+      const attendeesList = document.getElementById('attendeesList');
+      
+      if (attendeesList) {
+        attendeesList.innerHTML = users.map((user: User) => `
+          <div class="attendee-option">
+            <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
+            <label for="attendee-${user.id}">
+              ${escapeHtml(user.first_name || '')} ${escapeHtml(user.last_name || '')} 
+              (${escapeHtml(user.username)})
+            </label>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (error) {
+    console.error('Error loading employees:', error);
+  }
+}
+
+// Update selected attendees display
+function updateSelectedAttendees(): void {
+  const container = document.getElementById('attendeesContainer');
+  if (!container) return;
+  
+  if (selectedAttendees.length === 0) {
+    container.innerHTML = '<p class="text-muted">Keine Teilnehmer ausgewählt</p>';
+    return;
+  }
+  
+  // Get employee details for selected attendees
+  const attendeeHTML = selectedAttendees.map(userId => {
+    const employee = employees.find(emp => emp.id === userId);
+    if (employee) {
+      return `
+        <div class="attendee-item">
+          <span class="attendee-name">
+            ${escapeHtml(employee.first_name || '')} ${escapeHtml(employee.last_name || '')}
+          </span>
+          <button type="button" class="remove-attendee" onclick="removeAttendee(${userId})">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+    }
+    return '';
+  }).filter(html => html !== '').join('');
+  
+  container.innerHTML = attendeeHTML;
 }
 
 // Export functions to window for backwards compatibility
@@ -1459,4 +1827,17 @@ if (typeof window !== 'undefined') {
   window.selectOrgId = selectOrgId;
   window.addAttendee = addAttendee;
   window.removeAttendee = removeAttendee;
+  window.updateOrgIdDropdown = updateOrgIdDropdown;
+  
+  // Custom dropdown functions
+  window.toggleOrgLevelDropdown = toggleOrgLevelDropdown;
+  window.selectOrgLevel = selectOrgLevel;
+  window.toggleOrgIdDropdown = toggleOrgIdDropdown;
+  window.toggleReminderDropdown = toggleReminderDropdown;
+  window.selectReminder = selectReminder;
+  window.toggleRecurrenceDropdown = toggleRecurrenceDropdown;
+  window.selectRecurrence = selectRecurrence;
+  window.toggleRecurrenceEndDropdown = toggleRecurrenceEndDropdown;
+  window.selectRecurrenceEnd = selectRecurrenceEnd;
+  window.closeAllDropdowns = closeAllDropdowns;
 }
