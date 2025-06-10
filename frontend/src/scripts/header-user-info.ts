@@ -23,6 +23,15 @@ async function loadHeaderUserInfo(): Promise<void> {
       userNameElement.textContent = payload.username || 'User';
     }
 
+    // Update role badge based on user role
+    const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+    if (roleIndicator && payload.role) {
+      roleIndicator.textContent = payload.role === 'admin' ? 'Admin' : 
+                                  payload.role === 'root' ? 'Root' : 
+                                  'Mitarbeiter';
+      roleIndicator.className = `role-badge ${payload.role}`;
+    }
+
     // Load full profile
     const response = await fetch('/api/user/profile', {
       headers: {
@@ -42,7 +51,6 @@ async function loadHeaderUserInfo(): Promise<void> {
       }
 
       // Update avatar
-      const avatarElement = document.getElementById('user-avatar') as HTMLImageElement;
       if (avatarElement && user.profile_picture) {
         avatarElement.src = user.profile_picture;
       }

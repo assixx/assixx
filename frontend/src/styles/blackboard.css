@@ -206,6 +206,7 @@ main.container.main-content.sidebar-collapsed {
   width: 100%;
   height: auto;
   display: block;
+  background: #000000e5;
 }
 
 /* Pushpin Styles */
@@ -221,6 +222,110 @@ main.container.main-content.sidebar-collapsed {
 
 .pinboard-item:hover .pushpin {
   transform: translateX(-50%) translateY(-3px);
+}
+
+/* Pinboard Attachment Style */
+.pinboard-attachment {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 6px 20px rgba(0, 0, 0, 0.1);
+  transform: rotate(var(--rotation, -2deg));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  /*overflow: hidden;*/
+}
+
+.pinboard-attachment:hover {
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.pinboard-attachment .pinboard-image {
+  margin: 10px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pinboard-attachment .pinboard-image:hover {
+  transform: scale(1.05);
+}
+
+.pinboard-attachment .pinboard-image img {
+  transition: all 0.2s ease;
+}
+
+.pinboard-attachment .pinboard-image:hover img {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+.pinboard-attachment .pinboard-pdf {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pinboard-attachment .pinboard-pdf:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.pinboard-attachment .pinboard-pdf:hover i {
+  color: #b91c1c !important;
+  transform: translateY(-2px);
+}
+
+/* PDF Preview Styles */
+.pinboard-pdf-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f5f5f500;
+}
+
+.pinboard-pdf-preview object {
+  display: block;
+  pointer-events: none; /* Prevent interaction with embedded PDF */
+  /* Try to hide PDF toolbar - works in some browsers */
+  margin-top: 0px;
+  height: calc(100% + 40px);
+}
+
+/* PDF Overlay for click */
+.pdf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.pdf-overlay i {
+  font-size: 48px;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.pdf-overlay:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.pdf-overlay:hover i {
+  opacity: 1;
 }
 
 /* Red Pushpin */
@@ -552,6 +657,7 @@ main.container.main-content.sidebar-collapsed {
   margin-bottom: 1rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1517,4 +1623,26 @@ main.container.main-content.sidebar-collapsed {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Size option buttons for direct attachment */
+.size-option {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.size-option:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-2px);
+}
+
+.size-option.active {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+/* Hide d-none elements */
+.d-none {
+  display: none !important;
 }

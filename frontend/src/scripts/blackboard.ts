@@ -81,6 +81,16 @@ let teams: Team[] = [];
 let isAdmin: boolean = false;
 let currentUserId: number | null = null;
 let selectedFiles: File[] = [];
+let directAttachmentFile: File | null = null;
+
+// Store event handlers globally to avoid duplicates
+let directAttachHandlers: {
+  dropZoneClick?: () => void;
+  fileInputChange?: (e: Event) => void;
+  dragOver?: (e: DragEvent) => void;
+  dragLeave?: () => void;
+  drop?: (e: DragEvent) => void;
+} = {};
 
 // Modal helper functions to handle different implementations
 function openModal(modalId: string): void {
@@ -159,6 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user is logged in
   checkLoggedIn()
     .then(() => {
+      // Load user info in header - with a small delay to ensure DOM is ready
+      setTimeout(() => {
+        loadHeaderUserInfo();
+      }, 100);
+      
       // Load user data
       fetchUserData()
         .then((userData: UserData) => {
@@ -327,6 +342,16 @@ function setupEventListeners(): void {
     });
   } else {
     console.error('New entry button not found');
+  }
+
+  // Direct attachment button
+  const directAttachBtn = document.getElementById('directAttachBtn') as HTMLButtonElement;
+  if (directAttachBtn) {
+    directAttachBtn.addEventListener('click', () => {
+      openDirectAttachModal();
+    });
+  } else {
+    console.error('Direct attachment button not found');
   }
 
   // Save entry button
@@ -635,6 +660,87 @@ async function fetchUserData(): Promise<UserData> {
 }
 
 /**
+ * Load Header User Info - same as in admin-dashboard.ts
+ */
+async function loadHeaderUserInfo(): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (!token) return;
+
+    console.log('[Blackboard] Loading header user info...');
+
+    const response = await fetch('/api/user/profile', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.ok) {
+      const userData: User = await response.json();
+      console.log('[Blackboard] User data loaded:', userData);
+      
+      // First check if user-info div exists and restore structure if needed
+      const userInfoDiv = document.getElementById('user-info');
+      if (userInfoDiv) {
+        // If user-info has been overwritten (no children or just text), restore it
+        if (userInfoDiv.children.length === 0) {
+          console.log('[Blackboard] Restoring user-info structure...');
+          userInfoDiv.innerHTML = `
+            <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
+            <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
+            <span id="role-indicator" class="role-badge admin" style="display: inline-flex !important; visibility: visible !important;">Admin</span>
+          `;
+        }
+      }
+      
+      // Now get the elements
+      const userNameElement = document.getElementById('user-name') as HTMLElement;
+      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+      const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
+
+      console.log('[Blackboard] Elements found after restore:', {
+        userNameElement: !!userNameElement,
+        userAvatar: !!userAvatar,
+        roleIndicator: !!roleIndicator
+      });
+
+      if (userNameElement) {
+        const fullName =
+          userData.first_name && userData.last_name
+            ? `${userData.first_name} ${userData.last_name}`
+            : userData.username;
+        userNameElement.textContent = fullName;
+        console.log('[Blackboard] Set user name to:', fullName);
+      }
+
+      if (userAvatar) {
+        // Always set a default avatar first
+        userAvatar.src = '/assets/images/default-avatar.svg';
+        
+        if (userData.profile_picture) {
+          userAvatar.src = userData.profile_picture;
+          userAvatar.onerror = function () {
+            this.src = '/assets/images/default-avatar.svg';
+          };
+        }
+        console.log('[Blackboard] Set avatar src to:', userAvatar.src);
+      }
+
+      // Update role indicator
+      if (roleIndicator && userData.role) {
+        roleIndicator.textContent = userData.role === 'admin' ? 'Admin' : 
+                                    userData.role === 'root' ? 'Root' : 
+                                    'Mitarbeiter';
+        roleIndicator.className = `role-badge ${userData.role}`;
+        console.log('[Blackboard] Set role to:', roleIndicator.textContent);
+      }
+    }
+  } catch (error) {
+    console.error('[Blackboard] Error loading user info:', error);
+  }
+}
+
+/**
  * Load departments and teams
  */
 async function loadDepartmentsAndTeams(): Promise<void> {
@@ -723,6 +829,93 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   const canEdit = isAdmin || entry.created_by === currentUserId;
   const priorityIcon = getPriorityIcon(entry.priority_level);
 
+  // Check if this is a direct attachment
+  const isDirectAttachment = entry.content.startsWith('[Attachment:');
+  let attachmentSize = 'medium';
+  
+  if (isDirectAttachment) {
+    const sizeMatch = entry.content.match(/\[Attachment:(small|medium|large)\]/);
+    if (sizeMatch) {
+      attachmentSize = sizeMatch[1];
+    }
+  }
+
+  // Create different content based on whether it's a direct attachment
+  let contentHtml = '';
+  if (isDirectAttachment && entry.attachments && entry.attachments.length > 0) {
+    const attachment = entry.attachments[0];
+    const isImage = attachment.mime_type.startsWith('image/');
+    const isPDF = attachment.mime_type === 'application/pdf';
+    
+    // Set size class
+    let sizeStyle = '';
+    let pdfHeight = '300px';
+    if (attachmentSize === 'small') {
+      sizeStyle = 'max-width: 200px; max-height: 200px;';
+      pdfHeight = '200px';
+    } else if (attachmentSize === 'medium') {
+      sizeStyle = 'max-width: 300px; max-height: 300px;';
+      pdfHeight = '300px';
+    } else if (attachmentSize === 'large') {
+      sizeStyle = 'max-width: 400px; max-height: 400px;';
+      pdfHeight = '400px';
+    }
+    
+    if (isImage) {
+      contentHtml = `
+        <div class="pinboard-image" style="${sizeStyle} margin: 0 auto;">
+          <img src="/api/blackboard/attachments/${attachment.id}/preview" 
+               alt="${escapeHtml(attachment.original_name)}" 
+               style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${attachment.mime_type}', '${escapeHtml(attachment.original_name)}')">
+        </div>
+      `;
+    } else if (isPDF) {
+      // Adjust PDF height to account for hidden toolbar
+      let pdfHeightStyle = '';
+      if (attachmentSize === 'small') {
+        pdfHeightStyle = 'height: 240px;'; // 200 + 40 for toolbar
+      } else if (attachmentSize === 'medium') {
+        pdfHeightStyle = 'height: 340px;'; // 300 + 40 for toolbar
+      } else if (attachmentSize === 'large') {
+        pdfHeightStyle = 'height: 440px;'; // 400 + 40 for toolbar
+      }
+      
+      contentHtml = `
+        <div class="pinboard-pdf-preview" style="${sizeStyle} ${pdfHeightStyle} margin: 0 auto; position: relative;">
+          <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0" 
+                  type="application/pdf" 
+                  style="width: 100%; height: 100%; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; padding: 20px;">
+              <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545; margin-bottom: 10px;"></i>
+              <p style="color: #666;">PDF-Vorschau nicht verfügbar</p>
+              <button class="btn btn-sm btn-primary" 
+                      onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${attachment.mime_type}', '${escapeHtml(attachment.original_name).replace(/'/g, "\\'")}')">
+                PDF öffnen
+              </button>
+            </div>
+          </object>
+          <div class="pdf-overlay" 
+               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${attachment.mime_type}', '${escapeHtml(attachment.original_name).replace(/'/g, "\\'")}')"
+               title="Klicken für Vollansicht">
+            <i class="fas fa-expand"></i>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Override card class for attachments
+    cardClass = 'pinboard-attachment';
+    cardColor = 'white';
+  } else {
+    // Regular text content
+    contentHtml = `
+      <div style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+        ${escapeHtml(entry.content).substring(0, 150).replace(/\n/g, '<br>')}${entry.content.length > 150 ? '...' : ''}
+      </div>
+    `;
+  }
+
   container.innerHTML = `
     <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
       <div class="pushpin ${randomPushpin}"></div>
@@ -731,12 +924,10 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         ${priorityIcon} ${escapeHtml(entry.title)}
       </h4>
       
-      <div style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
-        ${escapeHtml(entry.content).substring(0, 150).replace(/\n/g, '<br>')}${entry.content.length > 150 ? '...' : ''}
-      </div>
+      ${contentHtml}
       
       ${
-        entry.attachment_count && entry.attachment_count > 0
+        !isDirectAttachment && entry.attachment_count && entry.attachment_count > 0
           ? `
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
           <i class="fas fa-paperclip" style="color: #666;"></i>
@@ -1641,6 +1832,8 @@ declare global {
     deleteAttachment?: (attachmentId: number) => void;
     changePage: typeof changePage;
     removeAttachment: typeof removeAttachment;
+    clearDirectAttachment: typeof clearDirectAttachment;
+    saveDirectAttachment: typeof saveDirectAttachment;
     DashboardUI?: {
       openModal: (modalId: string) => void;
       closeModal: (modalId: string) => void;
@@ -1659,4 +1852,295 @@ if (typeof window !== 'undefined') {
   window.openEntryForm = openEntryForm;
   window.removeAttachment = removeAttachment;
   window.previewAttachment = previewAttachment;
+  window.clearDirectAttachment = clearDirectAttachment;
+  window.saveDirectAttachment = saveDirectAttachment;
+}
+
+/**
+ * Open direct attachment modal
+ */
+function openDirectAttachModal(): void {
+  console.log('[DirectAttach] Opening modal');
+  const modal = document.getElementById('directAttachModal') as HTMLElement;
+  if (!modal) return;
+
+  // Reset form
+  const form = document.getElementById('directAttachForm') as HTMLFormElement;
+  if (form) form.reset();
+
+  // Reset file input and global file
+  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+  if (fileInput) {
+    console.log('[DirectAttach] Resetting file input');
+    fileInput.value = '';
+  }
+  directAttachmentFile = null;
+
+  // Hide preview
+  const preview = document.getElementById('directAttachPreview');
+  if (preview) preview.classList.add('d-none');
+
+  // Reset size selection
+  document.querySelectorAll('.size-option').forEach((btn) => {
+    btn.classList.remove('active');
+  });
+  const mediumButton = document.querySelector('.size-option[data-size="medium"]');
+  if (mediumButton) {
+    mediumButton.classList.add('active');
+    console.log('[DirectAttach] Set medium size as active');
+  }
+
+  // Show modal first
+  openModal('directAttachModal');
+  
+  // Setup file upload handlers after modal is shown
+  setTimeout(() => {
+    setupDirectAttachHandlers();
+  }, 100);
+}
+
+/**
+ * Setup direct attachment handlers
+ */
+function setupDirectAttachHandlers(): void {
+  console.log('[DirectAttach] Setting up handlers');
+  const dropZone = document.getElementById('directAttachDropZone') as HTMLDivElement;
+  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+  const saveBtn = document.getElementById('saveDirectAttachBtn') as HTMLButtonElement;
+
+  if (!dropZone || !fileInput) {
+    console.error('[DirectAttach] Missing required elements');
+    return;
+  }
+
+  // Remove old handlers if they exist
+  if (directAttachHandlers.dropZoneClick) {
+    dropZone.removeEventListener('click', directAttachHandlers.dropZoneClick);
+  }
+  if (directAttachHandlers.fileInputChange) {
+    fileInput.removeEventListener('change', directAttachHandlers.fileInputChange);
+  }
+  if (directAttachHandlers.dragOver) {
+    dropZone.removeEventListener('dragover', directAttachHandlers.dragOver);
+  }
+  if (directAttachHandlers.dragLeave) {
+    dropZone.removeEventListener('dragleave', directAttachHandlers.dragLeave);
+  }
+  if (directAttachHandlers.drop) {
+    dropZone.removeEventListener('drop', directAttachHandlers.drop);
+  }
+
+  // Create new handlers
+  directAttachHandlers.dropZoneClick = () => {
+    console.log('[DirectAttach] Drop zone clicked');
+    fileInput.click();
+  };
+
+  directAttachHandlers.fileInputChange = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    console.log('[DirectAttach] File input changed:', target.files?.length);
+    if (target.files && target.files[0]) {
+      handleDirectAttachFile(target.files[0]);
+    }
+  };
+
+  directAttachHandlers.dragOver = (event: DragEvent) => {
+    event.preventDefault();
+    dropZone.style.borderColor = 'rgba(0, 142, 255, 0.5)';
+    dropZone.style.background = 'rgba(0, 142, 255, 0.05)';
+  };
+
+  directAttachHandlers.dragLeave = () => {
+    dropZone.style.borderColor = 'rgba(255,255,255,0.3)';
+    dropZone.style.background = 'transparent';
+  };
+
+  directAttachHandlers.drop = (event: DragEvent) => {
+    event.preventDefault();
+    dropZone.style.borderColor = 'rgba(255,255,255,0.3)';
+    dropZone.style.background = 'transparent';
+
+    if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
+      console.log('[DirectAttach] File dropped:', event.dataTransfer.files[0].name);
+      handleDirectAttachFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  // Add new listeners
+  dropZone.addEventListener('click', directAttachHandlers.dropZoneClick);
+  fileInput.addEventListener('change', directAttachHandlers.fileInputChange);
+  dropZone.addEventListener('dragover', directAttachHandlers.dragOver);
+  dropZone.addEventListener('dragleave', directAttachHandlers.dragLeave);
+  dropZone.addEventListener('drop', directAttachHandlers.drop);
+
+  // Size selection buttons - use event delegation
+  document.querySelectorAll('.size-option').forEach((btn) => {
+    btn.onclick = function(this: HTMLElement) {
+      console.log('[DirectAttach] Size button clicked:', this.getAttribute('data-size'));
+      document.querySelectorAll('.size-option').forEach((b) => b.classList.remove('active'));
+      this.classList.add('active');
+    };
+  });
+  
+  // Save button handler
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      console.log('[DirectAttach] Save button clicked');
+      await saveDirectAttachment();
+    };
+  }
+}
+
+/**
+ * Handle direct attachment file selection
+ */
+function handleDirectAttachFile(file: File): void {
+  console.log('[DirectAttach] handleDirectAttachFile called with:', file.name, file.type, file.size);
+  
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+  if (!allowedTypes.includes(file.type)) {
+    showError('Nur JPG, PNG und PDF Dateien sind erlaubt');
+    return;
+  }
+
+  // Validate file size (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    showError('Die Datei darf maximal 10 MB groß sein');
+    return;
+  }
+
+  // Store the file globally
+  directAttachmentFile = file;
+  console.log('[DirectAttach] File stored globally');
+
+  // Show preview
+  const preview = document.getElementById('directAttachPreview');
+  const previewImage = document.getElementById('previewImage');
+  const fileName = document.getElementById('previewFileName');
+  const fileSize = document.getElementById('previewFileSize');
+
+  if (!preview || !previewImage || !fileName || !fileSize) return;
+
+  preview.classList.remove('d-none');
+  fileName.textContent = file.name;
+  fileSize.textContent = formatFileSize(file.size);
+
+  // Set title from filename if empty
+  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement;
+  if (titleInput && !titleInput.value) {
+    titleInput.value = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+  }
+
+  // Show preview based on file type
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImage.innerHTML = `<img src="${e.target?.result}" alt="${file.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
+    };
+    reader.readAsDataURL(file);
+  } else if (file.type === 'application/pdf') {
+    previewImage.innerHTML = `<i class="fas fa-file-pdf" style="font-size: 64px; color: #dc3545;"></i>`;
+  }
+}
+
+/**
+ * Clear direct attachment
+ */
+function clearDirectAttachment(): void {
+  console.log('[DirectAttach] Clearing attachment');
+  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+  const preview = document.getElementById('directAttachPreview');
+  
+  if (fileInput) fileInput.value = '';
+  if (preview) preview.classList.add('d-none');
+  
+  // Clear global file
+  directAttachmentFile = null;
+}
+
+/**
+ * Save direct attachment
+ */
+async function saveDirectAttachment(): Promise<void> {
+  console.log('[DirectAttach] saveDirectAttachment called');
+  console.log('[DirectAttach] Global file:', directAttachmentFile?.name || 'none');
+  
+  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement;
+  const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement;
+  const prioritySelect = document.getElementById('directAttachPriority') as HTMLSelectElement;
+  const sizeOption = document.querySelector('.size-option.active') as HTMLElement;
+
+  console.log('[DirectAttach] Elements found:', {
+    globalFile: directAttachmentFile?.name || 'none',
+    titleInput: !!titleInput,
+    orgLevelSelect: !!orgLevelSelect,
+    prioritySelect: !!prioritySelect,
+    sizeOption: sizeOption?.getAttribute('data-size') || 'none'
+  });
+
+  if (!directAttachmentFile) {
+    console.error('[DirectAttach] No file in global variable');
+    showError('Bitte wählen Sie eine Datei aus');
+    return;
+  }
+
+  const file = directAttachmentFile;
+  const title = titleInput?.value || file.name.replace(/\.[^/.]+$/, '');
+  const size = sizeOption?.getAttribute('data-size') || 'medium';
+
+  // Create FormData
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('content', `[Attachment:${size}]`); // Special content format
+  formData.append('org_level', orgLevelSelect?.value || 'company');
+  formData.append('org_id', '1'); // TODO: Get actual org_id based on level
+  formData.append('priority_level', prioritySelect?.value || 'normal');
+  formData.append('color', 'white'); // White background for images
+  formData.append('tags', 'attachment,image');
+  formData.append('attachment', file);
+
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showError('Keine Authentifizierung gefunden');
+      return;
+    }
+
+    const response = await fetch('/api/blackboard', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Fehler beim Speichern');
+    }
+
+    showSuccess('Datei erfolgreich angeheftet!');
+    closeModal('directAttachModal');
+    
+    // Clear global file after successful upload
+    directAttachmentFile = null;
+    
+    // Reset the form and file input for next use
+    const form = document.getElementById('directAttachForm') as HTMLFormElement;
+    if (form) form.reset();
+    
+    const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+    
+    const preview = document.getElementById('directAttachPreview');
+    if (preview) preview.classList.add('d-none');
+    
+    // Reload entries
+    entriesLoadingEnabled = true;
+    loadEntries();
+  } catch (error) {
+    console.error('Error saving direct attachment:', error);
+    showError(error instanceof Error ? error.message : 'Fehler beim Speichern');
+  }
 }

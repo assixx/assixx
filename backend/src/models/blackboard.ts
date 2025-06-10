@@ -39,6 +39,11 @@ interface DbBlackboardEntry extends RowDataPacket {
   // Extended fields from joins
   author_name?: string;
   is_confirmed?: number;
+  author_first_name?: string;
+  author_last_name?: string;
+  author_full_name?: string;
+  attachment_count?: number;
+  attachments?: DbBlackboardAttachment[];
 }
 
 interface DbBlackboardTag extends RowDataPacket {
@@ -144,7 +149,8 @@ export class Blackboard {
                u.first_name as author_first_name,
                u.last_name as author_last_name,
                CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed
+               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+               (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id
         LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
@@ -190,8 +196,8 @@ export class Blackboard {
         queryParams,
       );
 
-      // Konvertiere Buffer-Inhalte zu Strings
-      entries.forEach((entry) => {
+      // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
+      for (const entry of entries) {
         if (entry.content && Buffer.isBuffer(entry.content)) {
           entry.content = entry.content.toString("utf8");
         } else if (
@@ -203,7 +209,12 @@ export class Blackboard {
         ) {
           entry.content = Buffer.from(entry.content.data).toString("utf8");
         }
-      });
+
+        // Load attachments for entries with any attachments
+        if (entry.attachment_count > 0) {
+          entry.attachments = await this.getEntryAttachments(entry.id);
+        }
+      }
 
       // Count total entries for pagination
       let countQuery = `
@@ -278,7 +289,8 @@ export class Blackboard {
                u.first_name as author_first_name,
                u.last_name as author_last_name,
                CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed
+               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+               (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id
         LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
@@ -321,6 +333,9 @@ export class Blackboard {
           return null; // User doesn't have access to this entry
         }
       }
+
+      // Load attachments for the entry
+      entry.attachments = await this.getEntryAttachments(id);
 
       return entry;
     } catch (error) {
@@ -635,7 +650,8 @@ export class Blackboard {
                u.first_name as author_first_name,
                u.last_name as author_last_name,
                CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed
+               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+               (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
         FROM blackboard_entries e
         LEFT JOIN users u ON e.author_id = u.id
         LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
@@ -670,8 +686,8 @@ export class Blackboard {
         queryParams,
       );
 
-      // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries)
-      entries.forEach((entry) => {
+      // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries) und load attachments for direct attachment entries
+      for (const entry of entries) {
         if (entry.content && Buffer.isBuffer(entry.content)) {
           entry.content = entry.content.toString("utf8");
         } else if (
@@ -683,7 +699,12 @@ export class Blackboard {
         ) {
           entry.content = Buffer.from(entry.content.data).toString("utf8");
         }
-      });
+
+        // Load attachments for entries with any attachments
+        if (entry.attachment_count > 0) {
+          entry.attachments = await this.getEntryAttachments(entry.id);
+        }
+      }
 
       return entries;
     } catch (error) {
