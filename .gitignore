@@ -26,6 +26,13 @@ dist/
 *.tsbuildinfo
 *.d.ts.map
 
+# Vite build artifacts in root
+/css/
+/js/
+/fonts/
+/images/
+/pages/
+
 # IDE
 .vscode/
 .idea/
@@ -41,6 +48,7 @@ Thumbs.db
 temp/
 *.tmp
 *.cache
+docker/cookies.txt
 
 # Test coverage
 coverage/
