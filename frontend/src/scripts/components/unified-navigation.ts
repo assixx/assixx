@@ -1155,15 +1155,14 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.875rem;
+        font-size: 0.825rem;
         font-weight: 600;
-        color: #333;
+        color: #ffd83e;
         margin: 30px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
-        background: #e6b800;
-        
-        border-radius: 0px;
-        border: none;
+        background: #eabb0017;
+        border-radius: 5px;
+        border: 1.3px solid rgb(200, 149, 0);
         transition: all 0.3s ease;
         cursor: pointer;
         width: 98%;
@@ -1192,12 +1191,12 @@ const unifiedNavigationCSS = `
     .sidebar-title::before {
         content: '';
         position: absolute;
-        bottom: -4px;
-        right: -0.6px;
+        bottom: -5px;
+        right: -2px;
         width: 0;
         height: 0;
         border-style: solid;
-        border-width: 10px 10px 4px 3px;
+        border-width: 13px 10px 4px 3px;
         border-color: #fff #0c0d0e #0000 transparent;
         z-index: 1;
     }
@@ -1254,7 +1253,6 @@ const unifiedNavigationCSS = `
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.7);
     }
 
     /* Pin needle (appears on hover - full pushpin) */

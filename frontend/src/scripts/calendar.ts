@@ -906,26 +906,33 @@ async function viewEvent(eventId: number): Promise<void> {
 
     // Build modal content
     let modalContent = `
-      <h3>${escapeHtml(event.title)}</h3>
+      <h3>
+        <i class="fas fa-${event.all_day ? 'calendar-day' : 'clock'}"></i>
+        ${escapeHtml(event.title)}
+      </h3>
       ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ''}
       
       <div class="event-details-grid">
         <div class="detail-item">
           <i class="fas fa-calendar"></i>
-          <span>${event.all_day ? formattedStartDate : `${formattedStartDate} ${formattedStartTime}`}</span>
+          <span><strong>Beginn:</strong> ${event.all_day ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`}</span>
         </div>
         <div class="detail-item">
           <i class="fas fa-calendar-check"></i>
-          <span>${event.all_day ? formattedEndDate : `${formattedEndDate} ${formattedEndTime}`}</span>
+          <span><strong>Ende:</strong> ${event.all_day ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
         </div>
-        ${event.location ? `<div class="detail-item"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(event.location)}</span></div>` : ''}
+        ${event.location ? `
+        <div class="detail-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <span><strong>Ort:</strong> ${escapeHtml(event.location)}</span>
+        </div>` : ''}
         <div class="detail-item">
           <i class="fas fa-layer-group"></i>
-          <span>${levelText}</span>
+          <span><strong>Ebene:</strong> ${levelText}</span>
         </div>
         <div class="detail-item">
           <i class="fas fa-user"></i>
-          <span>Erstellt von: ${escapeHtml(event.creator_name || 'Unknown')}</span>
+          <span><strong>Erstellt von:</strong> ${escapeHtml(event.creator_name || 'Unknown')}</span>
         </div>
       </div>
     `;
@@ -956,18 +963,23 @@ async function viewEvent(eventId: number): Promise<void> {
 
     // Add user response buttons
     if (event.attendees?.some((a) => a.user_id === currentUserId)) {
+      const currentAttendee = event.attendees.find(a => a.user_id === currentUserId);
+      const currentResponse = currentAttendee?.response || 'pending';
+      
       modalContent += `
         <div class="response-buttons">
           <h4>Ihre Antwort</h4>
-          <button class="btn btn-success" onclick="respondToEvent(${event.id}, 'accepted')">
-            <i class="fas fa-check"></i> Zusagen
-          </button>
-          <button class="btn btn-warning" onclick="respondToEvent(${event.id}, 'tentative')">
-            <i class="fas fa-question"></i> Vielleicht
-          </button>
-          <button class="btn btn-danger" onclick="respondToEvent(${event.id}, 'declined')">
-            <i class="fas fa-times"></i> Absagen
-          </button>
+          <div class="btn-group">
+            <button class="btn ${currentResponse === 'accepted' ? 'btn-success' : 'btn-outline-success'}" onclick="respondToEvent(${event.id}, 'accepted')">
+              <i class="fas fa-check"></i> Zusagen
+            </button>
+            <button class="btn ${currentResponse === 'tentative' ? 'btn-warning' : 'btn-outline-warning'}" onclick="respondToEvent(${event.id}, 'tentative')">
+              <i class="fas fa-question"></i> Vielleicht
+            </button>
+            <button class="btn ${currentResponse === 'declined' ? 'btn-danger' : 'btn-outline-danger'}" onclick="respondToEvent(${event.id}, 'declined')">
+              <i class="fas fa-times"></i> Absagen
+            </button>
+          </div>
         </div>
       `;
     }
@@ -981,6 +993,17 @@ async function viewEvent(eventId: number): Promise<void> {
           </button>
           <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
             <i class="fas fa-trash"></i> Löschen
+          </button>
+          <button class="btn btn-secondary" data-action="close">
+            <i class="fas fa-times"></i> Schließen
+          </button>
+        </div>
+      `;
+    } else {
+      modalContent += `
+        <div class="modal-actions">
+          <button class="btn btn-secondary" data-action="close">
+            <i class="fas fa-times"></i> Schließen
           </button>
         </div>
       `;
@@ -1094,9 +1117,19 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   updateSelectedAttendees();
 
   if (eventId) {
+    // Update modal title for editing
+    const modalTitle = modal.querySelector('.modal-title');
+    if (modalTitle) {
+      modalTitle.textContent = 'Termin bearbeiten';
+    }
     // Load event data for editing
     loadEventForEdit(eventId);
   } else {
+    // Update modal title for new event
+    const modalTitle = modal.querySelector('.modal-title');
+    if (modalTitle) {
+      modalTitle.textContent = 'Neuer Termin';
+    }
     // New event
     if (startDate) {
       const startInput = document.getElementById('eventStartDate') as HTMLInputElement;
@@ -1401,25 +1434,55 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       const form = document.getElementById('eventForm') as HTMLFormElement;
       if (!form) return;
 
-      (form.elements.namedItem('event_id') as HTMLInputElement).value = event.id.toString();
-      (form.elements.namedItem('title') as HTMLInputElement).value = event.title;
-      (form.elements.namedItem('description') as HTMLTextAreaElement).value = event.description || '';
-      (form.elements.namedItem('location') as HTMLInputElement).value = event.location || '';
-      (form.elements.namedItem('org_level') as HTMLSelectElement).value = event.org_level;
+      // Set event ID
+      const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement;
+      if (eventIdInput) eventIdInput.value = event.id.toString();
+      
+      // Set basic fields
+      const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+      if (titleInput) titleInput.value = event.title;
+      
+      const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
+      if (descInput) descInput.value = event.description || '';
+      
+      const locationInput = form.elements.namedItem('location') as HTMLInputElement;
+      if (locationInput) locationInput.value = event.location || '';
+      
+      // Set org level using custom dropdown
+      const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
+      if (selectedOrgLevelSpan) {
+        const orgLevelText = event.org_level === 'company' ? 'Alle Mitarbeiter' :
+                           event.org_level === 'department' ? 'Bestimmte Abteilung' :
+                           event.org_level === 'team' ? 'Bestimmtes Team' : 
+                           'Persönlicher Termin';
+        selectedOrgLevelSpan.textContent = orgLevelText;
+        selectedOrgLevelSpan.dataset.value = event.org_level;
+      }
 
       // Parse dates
       const startDate = new Date(event.start_time);
       const endDate = new Date(event.end_time);
 
-      (form.elements.namedItem('start_date') as HTMLInputElement).value = formatDateForInput(startDate);
-      (form.elements.namedItem('end_date') as HTMLInputElement).value = formatDateForInput(endDate);
+      // Set date fields
+      const startDateInput = form.elements.namedItem('start_date') as HTMLInputElement;
+      if (startDateInput) startDateInput.value = formatDateForInput(startDate);
+      
+      const endDateInput = form.elements.namedItem('end_date') as HTMLInputElement;
+      if (endDateInput) endDateInput.value = formatDateForInput(endDate);
 
+      // Set all day checkbox
       const allDayCheckbox = form.elements.namedItem('all_day') as HTMLInputElement;
-      allDayCheckbox.checked = Boolean(event.all_day);
+      if (allDayCheckbox) {
+        allDayCheckbox.checked = Boolean(event.all_day);
+      }
 
+      // Set time fields
       if (!event.all_day) {
-        (form.elements.namedItem('start_time') as HTMLInputElement).value = formatTimeForInput(startDate);
-        (form.elements.namedItem('end_time') as HTMLInputElement).value = formatTimeForInput(endDate);
+        const startTimeInput = form.elements.namedItem('start_time') as HTMLInputElement;
+        if (startTimeInput) startTimeInput.value = formatTimeForInput(startDate);
+        
+        const endTimeInput = form.elements.namedItem('end_time') as HTMLInputElement;
+        if (endTimeInput) endTimeInput.value = formatTimeForInput(endDate);
       }
 
       // Update time inputs disabled state
@@ -1444,9 +1507,10 @@ async function loadEventForEdit(eventId: number): Promise<void> {
         colorOption.classList.add('active');
       }
 
-      // Set reminder
-      if (event.reminder_time !== undefined && event.reminder_time !== null) {
-        (form.elements.namedItem('reminder_time') as HTMLSelectElement).value = event.reminder_time.toString();
+      // Set reminder if field exists
+      const reminderSelect = document.getElementById('eventReminderTime') as HTMLSelectElement;
+      if (reminderSelect && event.reminder_time !== undefined && event.reminder_time !== null) {
+        reminderSelect.value = event.reminder_time.toString();
       }
 
       // Load attendees
@@ -2092,7 +2156,7 @@ function getEventFormModalTemplate(): string {
         </div>
         <div class="modal-body">
           <form id="eventForm">
-            <input type="hidden" id="eventId" />
+            <input type="hidden" id="eventId" name="event_id" />
 
             <!-- Titel und Inhalt -->
             <div class="form-group">
@@ -2402,17 +2466,18 @@ function getEventDetailModalTemplate(): string {
     <div class="modal-overlay" id="eventDetailModal">
       <div class="modal-container">
         <div class="modal-header">
-          <h2 id="eventDetailModalLabel">Termin Details</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
+          <h2 class="modal-title">
+            <i class="fas fa-calendar-alt"></i>
+            Termin Details
+          </h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="modal-body">
           <div id="eventDetailContent" class="fade-in">
             <!-- Wird dynamisch gefüllt -->
           </div>
-        </div>
-        <div class="modal-footer" id="eventDetailFooter">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-          <!-- Weitere Buttons werden dynamisch hinzugefügt -->
         </div>
       </div>
     </div>
