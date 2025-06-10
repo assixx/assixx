@@ -1536,7 +1536,7 @@ const unifiedNavigationCSS = `
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(115, 115, 115, 0.36);
         border-radius: var(--radius-lg);
         margin-bottom: 20px;
         position: relative;
@@ -1559,8 +1559,8 @@ const unifiedNavigationCSS = `
         right: 0;
         bottom: 0;
         background:
-            radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.07) 0%, transparent 50%);
+            radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
         opacity: 1;
         z-index: 0;
     }

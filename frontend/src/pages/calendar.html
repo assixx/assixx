@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="/styles/calendar.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      
+      
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -90,10 +92,7 @@
       }
 
       /* Modal Overlays - Glassmorphismus */
-      .modal-overlay {
-        background-color: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(10px);
-      }
+      /* Removed duplicate - defined in calendar.css */
 
       .modal-container {
         background: rgba(18, 18, 18, 0.95);
@@ -241,6 +240,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--text-primary);
       }
 
       .view-selector .btn.active {
@@ -273,120 +273,15 @@
         }
       }
 
-      /* Custom Select Dropdowns - Glassmorphismus wie in signup? */
-      .custom-select-wrapper {
+      /* Custom Dropdown Styles werden aus calendar.css geladen */
+
+      /* Custom Dropdown Wrapper - Korrigiert */
+      .custom-dropdown {
         position: relative;
         width: 100%;
       }
 
-      .custom-select-display {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 15px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: var(--radius-md);
-        color: var(--text-primary);
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(5px);
-      }
-
-      .custom-select-display:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.15);
-      }
-
-      .custom-select-display.active {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
-      }
-
-      .custom-select-display.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background: rgba(255, 255, 255, 0.02);
-      }
-
-      .custom-select-display svg {
-        opacity: 0.6;
-        transition: transform 0.3s ease;
-      }
-
-      .custom-select-display.active svg {
-        transform: rotate(180deg);
-      }
-
-      /* Custom Dropdown - Transparentes Glassmorphismus */
-      .custom-dropdown {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
-        background: rgba(18, 18, 18, 0.8);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-md);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        max-height: 280px;
-        overflow-y: auto;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        z-index: 1000;
-      }
-
-      .custom-dropdown.active {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-      }
-
-      .dropdown-option {
-        padding: 12px 16px;
-        color: var(--text-primary);
-        font-size: 15px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .dropdown-option:last-child {
-        border-bottom: none;
-      }
-
-      .dropdown-option:hover {
-        background: rgba(33, 150, 243, 0.2);
-        color: white;
-        padding-left: 20px;
-      }
-
-      .dropdown-option:active {
-        background: rgba(33, 150, 243, 0.3);
-      }
-
-      /* Scrollbar für Dropdown */
-      .custom-dropdown::-webkit-scrollbar {
-        width: 4px;
-      }
-
-      .custom-dropdown::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      .custom-dropdown::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
-      }
-
-      .custom-dropdown::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
+      /* Dropdown Styles werden aus calendar.css geladen */
 
       /* Search Input Styling - Glassmorphismus */
       .search-input-wrapper {
@@ -596,453 +491,46 @@
     </div>
     <!-- Ende des layout-container -->
 
-    <!-- Event Detail Modal -->
-    <div class="modal-overlay" id="eventDetailModal">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h2 id="eventDetailModalLabel">Termin Details</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div id="eventDetailContent" class="fade-in">
-            <!-- Wird dynamisch gefüllt -->
-          </div>
-        </div>
-        <div class="modal-footer" id="eventDetailFooter">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-          <!-- Weitere Buttons werden dynamisch hinzugefügt -->
-        </div>
-      </div>
-    </div>
+    <!-- Alle Modals werden dynamisch erstellt -->
 
-    <!-- Event Form Modal -->
-    <div class="modal-overlay" id="eventFormModal">
-      <div class="modal-container modal-lg">
-        <div class="modal-header">
-          <h2 class="modal-title">Neuer Termin</h2>
-          <button type="button" class="modal-close" data-action="close">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <form id="eventForm">
-            <input type="hidden" id="eventId" />
 
-            <!-- Titel und Inhalt -->
-            <div class="form-group">
-              <label for="eventTitle">
-                <i class="fas fa-heading"></i> Titel <span class="required">*</span>
-              </label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="eventTitle" 
-                name="title"
-                placeholder="Titel des Termins eingeben"
-                required 
-              />
-            </div>
 
-            <div class="form-group">
-              <label for="eventDescription">
-                <i class="fas fa-align-left"></i> Beschreibung
-              </label>
-              <textarea 
-                class="form-control" 
-                id="eventDescription" 
-                name="description"
-                rows="4"
-                placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
-              ></textarea>
-              <small class="form-text text-muted">
-                <i class="fas fa-info-circle"></i> Markdown-Formatierung möglich
-              </small>
-            </div>
 
-            <!-- Datum und Zeit -->
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="eventStartDate">
-                  <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
-                </label>
-                <input 
-                  type="date" 
-                  class="form-control" 
-                  id="eventStartDate" 
-                  name="start_date"
-                  required 
-                />
-              </div>
-              <div class="form-group col-md-6">
-                <label for="eventStartTime">
-                  <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
-                </label>
-                <input 
-                  type="time" 
-                  class="form-control time-input" 
-                  id="eventStartTime" 
-                  name="start_time"
-                  required 
-                />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="eventEndDate">
-                  <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
-                </label>
-                <input 
-                  type="date" 
-                  class="form-control" 
-                  id="eventEndDate" 
-                  name="end_date"
-                  required 
-                />
-              </div>
-              <div class="form-group col-md-6">
-                <label for="eventEndTime">
-                  <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
-                </label>
-                <input 
-                  type="time" 
-                  class="form-control time-input" 
-                  id="eventEndTime" 
-                  name="end_time"
-                  required 
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <div class="custom-control custom-checkbox">
-                <input 
-                  type="checkbox" 
-                  class="custom-control-input" 
-                  id="eventAllDay" 
-                  name="all_day"
-                />
-                <label class="custom-control-label" for="eventAllDay">
-                  <i class="fas fa-sun"></i> Ganztägiger Termin
-                </label>
-              </div>
-            </div>
-
-            <!-- Ort -->
-            <div class="form-group">
-              <label for="eventLocation">
-                <i class="fas fa-map-marker-alt"></i> Ort
-              </label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="eventLocation" 
-                name="location"
-                placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
-              />
-            </div>
-
-            <!-- Organisationseinheit -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-users"></i> Wer soll den Termin sehen? <span class="required">*</span>
-              </label>
-              <div class="custom-dropdown" id="orgLevelWrapper">
-                <div class="custom-select-display dropdown-display">
-                  <span id="selectedOrgLevel">-- Bitte wählen --</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="orgLevelDropdown">
-                  <div class="dropdown-option" data-value="company">
-                    <i class="fas fa-building"></i> Alle Mitarbeiter
-                  </div>
-                  <div class="dropdown-option" data-value="department">
-                    <i class="fas fa-sitemap"></i> Bestimmte Abteilung
-                  </div>
-                  <div class="dropdown-option" data-value="team">
-                    <i class="fas fa-user-friends"></i> Bestimmtes Team
-                  </div>
-                  <div class="dropdown-option" data-value="personal">
-                    <i class="fas fa-user"></i> Nur für mich
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventOrgLevel" required />
-            </div>
-
-            <div class="form-group" id="orgIdGroup" style="display: none;">
-              <label>Welche Abteilung/Team?</label>
-              <div class="custom-dropdown" id="orgIdWrapper">
-                <div class="custom-select-display dropdown-display disabled" id="orgIdDisplay">
-                  <span id="selectedOrgId">-- Bitte erst oben auswählen --</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="orgIdDropdown">
-                  <!-- Wird dynamisch befüllt -->
-                </div>
-              </div>
-              <input type="hidden" id="eventOrgId" />
-            </div>
-
-            <!-- Farbe und Erinnerung -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-palette"></i> Farbe
-              </label>
-              <div class="color-picker">
-                <div class="color-option selected" data-color="#3498db" style="background-color: #3498db" title="Blau"></div>
-                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71" title="Grün"></div>
-                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22" title="Orange"></div>
-                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6" title="Lila"></div>
-                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c" title="Rot"></div>
-                <div class="color-option" data-color="#f1c40f" style="background-color: #f1c40f" title="Gelb"></div>
-                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c" title="Türkis"></div>
-                <div class="color-option" data-color="#34495e" style="background-color: #34495e" title="Dunkelgrau"></div>
-              </div>
-              <input type="hidden" id="eventColor" value="#3498db" />
-            </div>
-
-            <div class="form-group">
-              <label>
-                <i class="fas fa-bell"></i> Erinnerung
-              </label>
-              <div class="custom-dropdown" id="reminderWrapper">
-                <div class="custom-select-display dropdown-display">
-                  <span id="selectedReminder">Keine Erinnerung</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="reminderDropdown">
-                  <div class="dropdown-option" data-value="">
-                    <i class="fas fa-bell-slash"></i> Keine Erinnerung
-                  </div>
-                  <div class="dropdown-option" data-value="5">
-                    <i class="fas fa-clock"></i> 5 Minuten vorher
-                  </div>
-                  <div class="dropdown-option" data-value="15">
-                    <i class="fas fa-clock"></i> 15 Minuten vorher
-                  </div>
-                  <div class="dropdown-option" data-value="30">
-                    <i class="fas fa-clock"></i> 30 Minuten vorher
-                  </div>
-                  <div class="dropdown-option" data-value="60">
-                    <i class="fas fa-clock"></i> 1 Stunde vorher
-                  </div>
-                  <div class="dropdown-option" data-value="120">
-                    <i class="fas fa-clock"></i> 2 Stunden vorher
-                  </div>
-                  <div class="dropdown-option" data-value="1440">
-                    <i class="fas fa-calendar-day"></i> 1 Tag vorher
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventReminderTime" value="" />
-            </div>
-
-            <!-- Wiederholung -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-redo"></i> Wiederholung
-              </label>
-              <div class="custom-dropdown" id="recurrenceWrapper">
-                <div class="custom-select-display dropdown-display">
-                  <span id="selectedRecurrence">Keine Wiederholung</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="recurrenceDropdown">
-                  <div class="dropdown-option" data-value="">
-                    <i class="fas fa-ban"></i> Keine Wiederholung
-                  </div>
-                  <div class="dropdown-option" data-value="daily">
-                    <i class="fas fa-calendar-day"></i> Täglich
-                  </div>
-                  <div class="dropdown-option" data-value="weekly">
-                    <i class="fas fa-calendar-week"></i> Wöchentlich
-                  </div>
-                  <div class="dropdown-option" data-value="biweekly">
-                    <i class="fas fa-calendar-week"></i> Alle zwei Wochen
-                  </div>
-                  <div class="dropdown-option" data-value="monthly">
-                    <i class="fas fa-calendar-alt"></i> Monatlich
-                  </div>
-                  <div class="dropdown-option" data-value="yearly">
-                    <i class="fas fa-calendar"></i> Jährlich
-                  </div>
-                  <div class="dropdown-option" data-value="weekdays">
-                    <i class="fas fa-briefcase"></i> Werktags (Mo-Fr)
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventRecurrence" value="" />
-              
-              <!-- Wiederholungs-Ende -->
-              <div id="recurrenceEndWrapper" style="display: none; margin-top: 16px;">
-                <label>Wiederholung endet</label>
-                <div class="custom-dropdown">
-                  <div class="dropdown-display" onclick="toggleRecurrenceEndDropdown()">
-                    <span id="selectedRecurrenceEnd">Niemals</span>
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                  </div>
-                  <div class="dropdown-options" id="recurrenceEndDropdown">
-                    <div class="dropdown-option" onclick="selectRecurrenceEnd('never', 'Niemals')">
-                      <i class="fas fa-infinity"></i> Niemals
-                    </div>
-                    <div class="dropdown-option" onclick="selectRecurrenceEnd('after', 'Nach')">
-                      <i class="fas fa-hashtag"></i> Nach ... Wiederholungen
-                    </div>
-                    <div class="dropdown-option" onclick="selectRecurrenceEnd('date', 'Am')">
-                      <i class="fas fa-calendar-check"></i> Am bestimmten Datum
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Anzahl Wiederholungen -->
-                <div id="recurrenceCountWrapper" style="display: none; margin-top: 12px;">
-                  <input type="number" class="form-control" id="recurrenceCount" min="1" max="999" value="10" placeholder="Anzahl Wiederholungen">
-                </div>
-                
-                <!-- End-Datum -->
-                <div id="recurrenceEndDateWrapper" style="display: none; margin-top: 12px;">
-                  <input type="date" class="form-control" id="recurrenceEndDate">
-                </div>
-              </div>
-            </div>
-
-            <!-- Teilnehmer -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-user-plus"></i> Teilnehmer
-              </label>
-              <div class="attendees-container" id="attendeesContainer">
-                <!-- Wird dynamisch befüllt -->
-              </div>
-              <button type="button" class="btn btn-secondary btn-sm mt-2" id="addAttendeeBtn">
-                <i class="fas fa-plus"></i>
-                Teilnehmer hinzufügen
-              </button>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="big-button secondary-button" data-action="close">Abbrechen</button>
-          <button type="button" class="big-button primary-button" id="saveEventBtn">Speichern</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Attendees Modal -->
-    <div class="modal-overlay" id="attendeesModal">
-      <div class="modal-container modal-md">
-        <div class="modal-header">
-          <h2 class="modal-title">Teilnehmer hinzufügen</h2>
-          <button type="button" class="modal-close" data-action="close">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group mb-3">
-            <input 
-              type="text" 
-              class="form-control" 
-              id="attendeeSearch" 
-              placeholder="Mitarbeiter suchen..." 
-            />
-          </div>
-          <div class="attendees-list" id="attendeesList">
-            <!-- Wird dynamisch befüllt -->
-            <div class="loading-placeholder">
-              <div class="loading-spinner"></div>
-              <p class="text-center mt-3">Mitarbeiter werden geladen...</p>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-          <button type="button" class="btn btn-primary" id="addSelectedAttendeesBtn">Hinzufügen</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Event Response Modal -->
-    <div class="modal-overlay" id="eventResponseModal">
-      <div class="modal-container modal-sm">
-        <div class="modal-header">
-          <h2 id="eventResponseModalLabel">Auf Einladung antworten</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p id="responseEventTitle" class="mb-4">Titel des Termins</p>
-          <div class="response-options">
-            <button type="button" class="response-btn" data-response="accepted">
-              <i class="fas fa-check"></i>
-              <span>Zusagen</span>
-            </button>
-            <button type="button" class="response-btn" data-response="tentative">
-              <i class="fas fa-question"></i>
-              <span>Vielleicht</span>
-            </button>
-            <button type="button" class="response-btn" data-response="declined">
-              <i class="fas fa-times"></i>
-              <span>Absagen</span>
-            </button>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Confirmation Modal -->
-    <div class="modal-overlay" id="confirmationModal">
-      <div class="modal-container modal-sm">
-        <div class="modal-header">
-          <h2 id="confirmationModalLabel">Bestätigung</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p id="confirmationMessage" class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirmActionBtn">Löschen</button>
-        </div>
-      </div>
-    </div>
 
     <!-- Marked.js for Markdown rendering -->
     <script type="module" src="/scripts/lib/marked.min.js"></script>
     <!-- FullCalendar -->
     <!-- FullCalendar libraries (external, not bundled by Vite) -->
-    <script defer src="/scripts/lib/fullcalendar.min.js"></script>
-    <script defer src="/scripts/lib/fullcalendar-locales.min.js"></script>
+    <script src="/scripts/lib/fullcalendar.min.js"></script>
+    <script src="/scripts/lib/fullcalendar-locales.min.js"></script>
     <!-- Standalone scripts for Calendar -->
     <script>
       // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
       window.DashboardUI = {
         openModal: function (modalId) {
+          console.log('DashboardUI.openModal called for:', modalId);
           const modal = document.getElementById(modalId);
+          console.log('Modal element found:', !!modal);
           if (modal) {
-            modal.style.opacity = '1';
-            modal.style.visibility = 'visible';
+            // Entferne zuerst die inline styles
+            modal.style.display = '';
+            modal.style.opacity = '';
+            modal.style.visibility = '';
+            // Dann füge active Klasse hinzu
             modal.classList.add('active');
+            console.log('Modal classes after open:', modal.className);
           }
         },
         closeModal: function (modalId) {
           const modal = document.getElementById(modalId);
           if (modal) {
-            modal.style.opacity = '0';
-            modal.style.visibility = 'hidden';
             modal.classList.remove('active');
+            // Entferne inline styles nach Animation
+            setTimeout(() => {
+              modal.style.display = '';
+              modal.style.opacity = '';
+              modal.style.visibility = '';
+            }, 300);
           }
         },
         showToast: function (message, type) {
@@ -1167,7 +655,7 @@
     <script type="module" src="/scripts/header-user-info.ts"></script>
     <!-- Role Switch Functionality -->
     <script type="module" src="/scripts/role-switch.ts"></script>
-    <!-- Unified Navigation NACH calendar.ts -->
+    <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

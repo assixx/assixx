@@ -5,7 +5,7 @@
 
 import type { User } from '../types/api.types';
 import { getAuthToken, showSuccess, showError } from './auth';
-import { closeModal, openModal } from './dashboard-scripts';
+import { modalManager } from './utils/modal-manager';
 
 // FullCalendar types
 interface FullCalendarApi {
@@ -199,9 +199,11 @@ function selectOrgId(id: number, name: string): void {
 }
 
 // Initialize when document is ready
-document.addEventListener('DOMContentLoaded', () => {
-  // Alle Schließen-Buttons einrichten
-  setupCloseButtons();
+function initializeApp() {
+  console.log('Calendar: Starting initialization...');
+  
+  // Register modal templates
+  registerModalTemplates();
 
   // Check if user is logged in
   try {
@@ -214,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Show/hide "New Event" button based on permissions
         const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
+        console.log('Calendar: newEventBtn found:', !!newEventBtn);
         if (newEventBtn) {
           newEventBtn.style.display = isAdmin ? 'block' : 'none';
         }
@@ -233,10 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
         loadUpcomingEvents();
 
         // Setup event listeners
+        console.log('Calendar: Setting up event listeners...');
         setupEventListeners();
         
         // Setup color picker
         setupColorPicker();
+        
+        console.log('Calendar: Initialization complete');
       })
       .catch((error) => {
         console.error('Error loading user data:', error);
@@ -246,49 +252,54 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Error checking login:', error);
     window.location.href = '/pages/login.html';
   }
-});
+}
+
+// Wait for both DOM and scripts to be ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  // DOM is already loaded, run directly
+  setTimeout(initializeApp, 100); // Small delay to ensure all scripts are loaded
+}
 
 /**
- * Setup close buttons for all modals
+ * Register all modal templates
  */
-function setupCloseButtons(): void {
-  // Füge Event-Listener zu allen Elementen mit data-action="close" hinzu
-  document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((button) => {
-    button.addEventListener('click', function (this: HTMLElement) {
-      // Finde das übergeordnete Modal
-      const modal = this.closest('.modal-overlay') as HTMLElement;
-      if (modal) {
-        if (window.DashboardUI?.closeModal) {
-          window.DashboardUI.closeModal(modal.id);
-        } else {
-          closeModal(modal.id);
-        }
-      } else {
-        console.error('No parent modal found for close button');
-      }
-    });
-  });
-
-  // Schließen beim Klicken außerhalb des Modal-Inhalts
-  document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
-    modal.addEventListener('click', (event: MouseEvent) => {
-      // Nur schließen, wenn der Klick auf den Modal-Hintergrund erfolgt (nicht auf den Inhalt)
-      if (event.target === modal) {
-        if (window.DashboardUI?.closeModal) {
-          window.DashboardUI.closeModal(modal.id);
-        } else {
-          closeModal(modal.id);
-        }
-      }
-    });
-  });
+function registerModalTemplates(): void {
+  console.log('Calendar: registerModalTemplates() called');
+  
+  // Event Form Modal Template
+  const eventFormTemplate = getEventFormModalTemplate();
+  console.log('Calendar: eventFormTemplate length:', eventFormTemplate.length);
+  modalManager.registerTemplate('eventFormModal', eventFormTemplate);
+  
+  // Event Detail Modal Template
+  modalManager.registerTemplate('eventDetailModal', getEventDetailModalTemplate());
+  
+  // Attendees Modal Template
+  modalManager.registerTemplate('attendeesModal', getAttendeesModalTemplate());
+  
+  // Event Response Modal Template
+  modalManager.registerTemplate('eventResponseModal', getEventResponseModalTemplate());
+  
+  console.log('Calendar: All modal templates registered');
 }
 
 /**
  * Initialize FullCalendar
  */
+let calendarInitialized = false;
+
 function initializeCalendar(): void {
+  if (calendarInitialized) {
+    console.log('Calendar: Already initialized, skipping...');
+    return;
+  }
+  
+  console.log('Calendar: Initializing FullCalendar...');
+  
   const calendarEl = document.getElementById('calendar') as HTMLElement;
+  console.log('Calendar: Calendar element found:', !!calendarEl);
 
   if (!calendarEl) {
     console.error('Calendar element not found');
@@ -296,11 +307,15 @@ function initializeCalendar(): void {
   }
 
   // Check if FullCalendar is loaded
+  console.log('Calendar: FullCalendar loaded:', typeof window.FullCalendar !== 'undefined');
   if (typeof window.FullCalendar === 'undefined') {
-    console.error('FullCalendar library not loaded');
-    showError('Kalender-Bibliothek konnte nicht geladen werden. Bitte laden Sie die Seite neu.');
+    console.log('Calendar: FullCalendar not yet loaded, waiting...');
+    // Try again after a short delay
+    setTimeout(() => initializeCalendar(), 500);
     return;
   }
+  
+  calendarInitialized = true;
 
   try {
     calendar = new window.FullCalendar.Calendar(calendarEl, {
@@ -328,11 +343,15 @@ function initializeCalendar(): void {
     navLinks: true,
     selectable: isAdmin, // Only admins can select dates to create events
     select(info: FullCalendarSelectInfo) {
+      console.log('Calendar: Date selected:', info);
       if (isAdmin) {
+        console.log('Calendar: User is admin, opening event form');
         // Bei Klick auf einzelnen Tag: allDay = false
         // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
         const allDay = info.allDay && info.view.type === 'dayGridMonth';
         openEventForm(null, info.start, info.end, allDay);
+      } else {
+        console.log('Calendar: User is not admin, ignoring selection');
       }
     },
     events: loadCalendarEvents,
@@ -426,10 +445,29 @@ function setupEventListeners(): void {
 
   // New event button
   const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
+  console.log('Calendar: Looking for newEventBtn:', newEventBtn);
   if (newEventBtn) {
-    newEventBtn.addEventListener('click', () => {
-      openEventForm();
+    console.log('Calendar: Adding click listener to newEventBtn');
+    // Remove any existing listeners
+    const newButton = newEventBtn.cloneNode(true) as HTMLButtonElement;
+    newEventBtn.parentNode?.replaceChild(newButton, newEventBtn);
+    
+    newButton.addEventListener('click', (e) => {
+      console.log('Calendar: New Event button clicked');
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Debug check
+      console.log('Calendar: About to call openEventForm...');
+      try {
+        openEventForm();
+        console.log('Calendar: openEventForm() call completed');
+      } catch (error) {
+        console.error('Calendar: Error calling openEventForm:', error);
+      }
     });
+  } else {
+    console.error('Calendar: newEventBtn not found!')
   }
 
   // Save event button
@@ -476,7 +514,7 @@ function setupEventListeners(): void {
   const addAttendeeBtn = document.getElementById('addAttendeeBtn');
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
-      openModal('attendeesModal');
+      modalManager.show('attendeesModal');
       loadEmployeesForAttendees();
     });
   }
@@ -493,7 +531,7 @@ function setupEventListeners(): void {
         }
       });
       updateSelectedAttendees();
-      closeModal('attendeesModal');
+      modalManager.hide('attendeesModal');
     });
   }
 
@@ -948,12 +986,17 @@ async function viewEvent(eventId: number): Promise<void> {
       `;
     }
 
-    // Show modal
-    const modalBody = document.getElementById('eventDetailsContent') as HTMLElement;
-    if (modalBody) {
-      modalBody.innerHTML = modalContent;
-      openModal('eventDetailsModal');
-    }
+    // Show modal with content
+    modalManager.show('eventDetailModal', {
+      content: modalContent,
+      onOpen: () => {
+        // Content is already in the modal template
+        const modalBody = document.getElementById('eventDetailContent');
+        if (modalBody) {
+          modalBody.innerHTML = modalContent;
+        }
+      }
+    });
   } catch (error) {
     console.error('Error viewing event:', error);
     showError('Fehler beim Laden der Termindetails.');
@@ -995,7 +1038,7 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
 
     if (apiResponse.ok) {
       showSuccess('Ihre Antwort wurde gespeichert.');
-      closeModal('eventDetailsModal');
+      modalManager.hide('eventDetailsModal');
 
       // Refresh calendar and upcoming events
       calendar.refetchEvents();
@@ -1014,8 +1057,21 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
  * Open event form for creating/editing
  */
 function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date, allDay?: boolean): void {
-  const modal = document.getElementById('eventFormModal') as HTMLElement;
-  if (!modal) return;
+  console.log('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
+  
+  // Check if modalManager exists
+  console.log('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
+  console.log('Calendar: modalManager.show exists:', typeof modalManager?.show === 'function');
+  
+  // Try to show the modal using modalManager
+  console.log('Calendar: Calling modalManager.show...');
+  const modal = modalManager.show('eventFormModal');
+  console.log('Calendar: modalManager.show returned:', !!modal);
+  
+  if (!modal) {
+    console.error('Calendar: Failed to show eventFormModal!');
+    return;
+  }
 
   // Reset form
   const form = document.getElementById('eventForm') as HTMLFormElement;
@@ -1023,9 +1079,15 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
 
   // Reset color selection
   document.querySelectorAll('.color-option').forEach((option) => {
-    option.classList.remove('active');
+    option.classList.remove('selected');
   });
-  document.querySelector('.color-option[data-color="#3788d8"]')?.classList.add('active');
+  document.querySelector('.color-option[data-color="#3498db"]')?.classList.add('selected');
+  
+  // Setup color picker for this modal instance
+  setupModalColorPicker();
+  
+  // Setup event listeners for modal buttons
+  setupModalEventListeners();
 
   // Clear attendees
   selectedAttendees = [];
@@ -1074,8 +1136,7 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     updateOrgIdDropdown('personal');
   }
 
-  // Show modal
-  openModal('eventFormModal');
+  // Modal is already shown above, no need to show again
 }
 
 /**
@@ -1101,8 +1162,9 @@ function formatTimeForInput(date: Date): string {
  * Update organization ID dropdown based on level
  */
 function updateOrgIdDropdown(level: string): void {
-  const orgIdContainer = document.getElementById('orgIdContainer') as HTMLElement;
+  const orgIdContainer = document.getElementById('orgIdGroup') as HTMLElement;
   const orgIdDropdown = document.getElementById('orgIdDropdown') as HTMLElement;
+  const orgIdDisplay = document.getElementById('orgIdDisplay') as HTMLElement;
 
   if (!orgIdContainer || !orgIdDropdown) return;
 
@@ -1114,40 +1176,48 @@ function updateOrgIdDropdown(level: string): void {
     orgIdContainer.style.display = 'block';
     const label = orgIdContainer.querySelector('label');
     if (label) label.textContent = 'Abteilung';
+    
+    // Enable the dropdown display
+    if (orgIdDisplay) {
+      orgIdDisplay.classList.remove('disabled');
+    }
 
-    const menu = document.createElement('div');
-    menu.className = 'dropdown-menu';
+    // Populate dropdown with departments
     departments.forEach((dept) => {
-      const item = document.createElement('a');
-      item.className = 'dropdown-item';
-      item.href = '#';
-      item.textContent = dept.name;
-      item.onclick = (e) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.dataset.value = dept.id.toString();
+      option.textContent = dept.name;
+      option.onclick = (e) => {
         e.preventDefault();
         selectOrgId(dept.id, dept.name);
+        closeAllDropdowns();
       };
-      menu.appendChild(item);
+      orgIdDropdown.appendChild(option);
     });
-    orgIdDropdown.appendChild(menu);
   } else if (level === 'team') {
     orgIdContainer.style.display = 'block';
     const label = orgIdContainer.querySelector('label');
     if (label) label.textContent = 'Team';
+    
+    // Enable the dropdown display
+    if (orgIdDisplay) {
+      orgIdDisplay.classList.remove('disabled');
+    }
 
-    const menu = document.createElement('div');
-    menu.className = 'dropdown-menu';
+    // Populate dropdown with teams
     teams.forEach((team) => {
-      const item = document.createElement('a');
-      item.className = 'dropdown-item';
-      item.href = '#';
-      item.textContent = team.name;
-      item.onclick = (e) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.dataset.value = team.id.toString();
+      option.textContent = team.name;
+      option.onclick = (e) => {
         e.preventDefault();
         selectOrgId(team.id, team.name);
+        closeAllDropdowns();
       };
-      menu.appendChild(item);
+      orgIdDropdown.appendChild(option);
     });
-    orgIdDropdown.appendChild(menu);
   }
 }
 
@@ -1155,11 +1225,19 @@ function updateOrgIdDropdown(level: string): void {
  * Save event
  */
 async function saveEvent(): Promise<void> {
+  console.log('saveEvent called');
+  
   const form = document.getElementById('eventForm') as HTMLFormElement;
-  if (!form) return;
+  if (!form) {
+    console.error('Form not found');
+    return;
+  }
 
   const token = getAuthToken();
-  if (!token) return;
+  if (!token) {
+    console.error('No token found');
+    return;
+  }
 
   // Get form values directly from elements
   const titleInput = document.getElementById('eventTitle') as HTMLInputElement;
@@ -1175,6 +1253,27 @@ async function saveEvent(): Promise<void> {
   const colorInput = document.getElementById('eventColor') as HTMLInputElement;
   const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement;
   const eventIdInput = document.getElementById('eventId') as HTMLInputElement;
+  
+  // Validate required fields
+  if (!titleInput?.value) {
+    showError('Bitte geben Sie einen Titel ein');
+    return;
+  }
+  
+  if (!startDateInput?.value) {
+    showError('Bitte wählen Sie ein Startdatum');
+    return;
+  }
+  
+  if (!endDateInput?.value) {
+    showError('Bitte wählen Sie ein Enddatum');
+    return;
+  }
+  
+  if (!orgLevelInput?.value) {
+    showError('Bitte wählen Sie aus, wer den Termin sehen soll');
+    return;
+  }
 
   // Get selected color
   const selectedColor = document.querySelector('.color-option.selected') as HTMLElement;
@@ -1186,6 +1285,18 @@ async function saveEvent(): Promise<void> {
   const endDate = endDateInput.value;
   const endTime = endTimeInput.value;
   const allDay = allDayInput.checked;
+  
+  // Validate time fields for non-all-day events
+  if (!allDay) {
+    if (!startTime) {
+      showError('Bitte wählen Sie eine Startzeit');
+      return;
+    }
+    if (!endTime) {
+      showError('Bitte wählen Sie eine Endzeit');
+      return;
+    }
+  }
 
   let startDateTime: string;
   let endDateTime: string;
@@ -1239,7 +1350,7 @@ async function saveEvent(): Promise<void> {
   console.log('Saving event data:', eventData); // Debug log
 
   try {
-    const eventId = formData.get('event_id') as string;
+    const eventId = eventIdInput.value;
     const url = eventId ? `/api/calendar/${eventId}` : '/api/calendar';
     const method = eventId ? 'PUT' : 'POST';
 
@@ -1254,7 +1365,7 @@ async function saveEvent(): Promise<void> {
 
     if (response.ok) {
       showSuccess(eventId ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!');
-      closeModal('eventFormModal');
+      modalManager.hide('eventFormModal');
 
       // Refresh calendar
       calendar.refetchEvents();
@@ -1345,12 +1456,12 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       }
     } else {
       showError('Fehler beim Laden des Termins');
-      closeModal('eventFormModal');
+      modalManager.hide('eventFormModal');
     }
   } catch (error) {
     console.error('Error loading event:', error);
     showError('Ein Fehler ist aufgetreten');
-    closeModal('eventFormModal');
+    modalManager.hide('eventFormModal');
   }
 }
 
@@ -1358,10 +1469,52 @@ async function loadEventForEdit(eventId: number): Promise<void> {
  * Delete event
  */
 async function deleteEvent(eventId: number): Promise<void> {
-  if (!confirm('Möchten Sie diesen Termin wirklich löschen?')) {
-    return;
+  // Create confirmation modal dynamically
+  const modalHtml = `
+    <div class="modal-overlay" id="confirmationModal">
+      <div class="modal-container modal-sm">
+        <div class="modal-header">
+          <h2>Bestätigung</h2>
+          <button type="button" class="modal-close" onclick="window.closeConfirmationModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.closeConfirmationModal()">Abbrechen</button>
+          <button type="button" class="btn btn-danger" onclick="window.confirmDeleteEvent(${eventId})">Löschen</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to body if it doesn't exist
+  if (!document.getElementById('confirmationModal')) {
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
+  
+  // Show modal
+  modalManager.show('confirmationModal');
+}
 
+/**
+ * Close confirmation modal and remove from DOM
+ */
+function closeConfirmationModal(): void {
+  const modal = document.getElementById('confirmationModal');
+  if (modal) {
+    modalManager.hide('confirmationModal');
+    // Remove modal from DOM after animation
+    setTimeout(() => {
+      modal.remove();
+    }, 300);
+  }
+}
+
+/**
+ * Confirm and execute event deletion
+ */
+async function confirmDeleteEvent(eventId: number): Promise<void> {
   const token = getAuthToken();
   if (!token) return;
 
@@ -1375,7 +1528,8 @@ async function deleteEvent(eventId: number): Promise<void> {
 
     if (response.ok) {
       showSuccess('Termin erfolgreich gelöscht!');
-      closeModal('eventDetailsModal');
+      closeConfirmationModal();
+      modalManager.hide('eventDetailsModal');
 
       // Refresh calendar
       calendar.refetchEvents();
@@ -1572,6 +1726,8 @@ declare global {
     toggleRecurrenceEndDropdown: typeof toggleRecurrenceEndDropdown;
     selectRecurrenceEnd: typeof selectRecurrenceEnd;
     closeAllDropdowns: typeof closeAllDropdowns;
+    closeConfirmationModal: typeof closeConfirmationModal;
+    confirmDeleteEvent: typeof confirmDeleteEvent;
   }
 }
 
@@ -1579,21 +1735,93 @@ declare global {
  * Setup color picker functionality
  */
 function setupColorPicker(): void {
+  // This function is now empty as we use setupModalColorPicker when modal opens
+}
+
+/**
+ * Setup color picker for modal instance
+ */
+function setupModalColorPicker(): void {
   const colorOptions = document.querySelectorAll('.color-option');
   const colorInput = document.getElementById('eventColor') as HTMLInputElement;
   
   colorOptions.forEach(option => {
-    option.addEventListener('click', () => {
+    // Remove existing listeners by cloning
+    const newOption = option.cloneNode(true) as HTMLElement;
+    option.parentNode?.replaceChild(newOption, option);
+    
+    newOption.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
       // Remove selected class from all
-      colorOptions.forEach(opt => opt.classList.remove('selected'));
+      document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
       // Add selected class to clicked
-      option.classList.add('selected');
+      newOption.classList.add('selected');
       // Update hidden input
       if (colorInput) {
-        colorInput.value = (option as HTMLElement).dataset.color || '#3498db';
+        colorInput.value = newOption.dataset.color || '#3498db';
       }
     });
   });
+}
+
+/**
+ * Setup event listeners for modal buttons
+ */
+function setupModalEventListeners(): void {
+  // Save event button
+  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement;
+  if (saveEventBtn) {
+    // Remove existing listeners by cloning
+    const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
+    saveEventBtn.parentNode?.replaceChild(newButton, saveEventBtn);
+    
+    newButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Save button clicked');
+      saveEvent();
+    });
+  }
+  
+  // Add attendee button
+  const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+  if (addAttendeeBtn) {
+    const newButton = addAttendeeBtn.cloneNode(true) as HTMLButtonElement;
+    addAttendeeBtn.parentNode?.replaceChild(newButton, addAttendeeBtn);
+    
+    newButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      modalManager.show('attendeesModal');
+      loadEmployeesForAttendees();
+    });
+  }
+  
+  // All day checkbox
+  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
+  if (allDayCheckbox) {
+    const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
+    allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
+    
+    newCheckbox.addEventListener('change', function() {
+      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      timeInputs.forEach((input) => {
+        input.disabled = this.checked;
+        if (this.checked) {
+          input.value = '';
+        }
+      });
+    });
+  }
+  
+  // Organization level change
+  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLInputElement;
+  if (eventOrgLevel) {
+    // This is already handled by the dropdown delegation
+    console.log('Organization level input found');
+  }
 }
 
 
@@ -1818,6 +2046,7 @@ function updateSelectedAttendees(): void {
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
+  console.log('Calendar: Exporting functions to window...');
   window.viewEvent = viewEvent;
   window.editEvent = (eventId: number) => openEventForm(eventId);
   window.deleteEvent = deleteEvent;
@@ -1840,4 +2069,425 @@ if (typeof window !== 'undefined') {
   window.toggleRecurrenceEndDropdown = toggleRecurrenceEndDropdown;
   window.selectRecurrenceEnd = selectRecurrenceEnd;
   window.closeAllDropdowns = closeAllDropdowns;
+  
+  // Confirmation modal functions
+  window.closeConfirmationModal = closeConfirmationModal;
+  window.confirmDeleteEvent = confirmDeleteEvent;
+  
+  console.log('Calendar: window.openEventForm available:', typeof window.openEventForm);
+}
+
+/**
+ * Get Event Form Modal Template
+ */
+function getEventFormModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="eventFormModal">
+      <div class="modal-container modal-lg">
+        <div class="modal-header">
+          <h2 class="modal-title">Neuer Termin</h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="eventForm">
+            <input type="hidden" id="eventId" />
+
+            <!-- Titel und Inhalt -->
+            <div class="form-group">
+              <label for="eventTitle">
+                <i class="fas fa-heading"></i> Titel <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="eventTitle" 
+                name="title"
+                placeholder="Titel des Termins eingeben"
+                required 
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="eventDescription">
+                <i class="fas fa-align-left"></i> Beschreibung
+              </label>
+              <textarea 
+                class="form-control" 
+                id="eventDescription" 
+                name="description"
+                rows="4"
+                placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
+              ></textarea>
+              <small class="form-text text-muted">
+                <i class="fas fa-info-circle"></i> Markdown-Formatierung möglich
+              </small>
+            </div>
+
+            <!-- Datum und Zeit -->
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="eventStartDate">
+                  <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="eventStartDate" 
+                  name="start_date"
+                  required 
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="eventStartTime">
+                  <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
+                </label>
+                <input 
+                  type="time" 
+                  class="form-control time-input" 
+                  id="eventStartTime" 
+                  name="start_time"
+                  required 
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="eventEndDate">
+                  <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="eventEndDate" 
+                  name="end_date"
+                  required 
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="eventEndTime">
+                  <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
+                </label>
+                <input 
+                  type="time" 
+                  class="form-control time-input" 
+                  id="eventEndTime" 
+                  name="end_time"
+                  required 
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  type="checkbox" 
+                  class="custom-control-input" 
+                  id="eventAllDay" 
+                  name="all_day"
+                />
+                <label class="custom-control-label" for="eventAllDay">
+                  <i class="fas fa-sun"></i> Ganztägiger Termin
+                </label>
+              </div>
+            </div>
+
+            <!-- Ort -->
+            <div class="form-group">
+              <label for="eventLocation">
+                <i class="fas fa-map-marker-alt"></i> Ort
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="eventLocation" 
+                name="location"
+                placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
+              />
+            </div>
+
+            <!-- Organisationseinheit -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-users"></i> Wer soll den Termin sehen? <span class="required">*</span>
+              </label>
+              <div class="custom-dropdown" id="orgLevelWrapper">
+                <div class="custom-select-display dropdown-display">
+                  <span id="selectedOrgLevel">-- Bitte wählen --</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="orgLevelDropdown">
+                  <div class="dropdown-option" data-value="company">
+                    <i class="fas fa-building"></i> Alle Mitarbeiter
+                  </div>
+                  <div class="dropdown-option" data-value="department">
+                    <i class="fas fa-sitemap"></i> Bestimmte Abteilung
+                  </div>
+                  <div class="dropdown-option" data-value="team">
+                    <i class="fas fa-user-friends"></i> Bestimmtes Team
+                  </div>
+                  <div class="dropdown-option" data-value="personal">
+                    <i class="fas fa-user"></i> Nur für mich
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="eventOrgLevel" required />
+            </div>
+
+            <div class="form-group" id="orgIdGroup" style="display: none;">
+              <label>Welche Abteilung/Team?</label>
+              <div class="custom-dropdown" id="orgIdWrapper">
+                <div class="custom-select-display dropdown-display disabled" id="orgIdDisplay">
+                  <span id="selectedOrgId">-- Bitte erst oben auswählen --</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="orgIdDropdown">
+                  <!-- Wird dynamisch befüllt -->
+                </div>
+              </div>
+              <input type="hidden" id="eventOrgId" />
+            </div>
+
+            <!-- Farbe -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-palette"></i> Farbe
+              </label>
+              <div class="color-picker">
+                <div class="color-option selected" data-color="#3498db" style="background-color: #3498db" title="Blau"></div>
+                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71" title="Grün"></div>
+                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22" title="Orange"></div>
+                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c" title="Rot"></div>
+                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6" title="Lila"></div>
+                <div class="color-option" data-color="#f39c12" style="background-color: #f39c12" title="Gelb"></div>
+                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c" title="Türkis"></div>
+              </div>
+              <input type="hidden" id="eventColor" value="#3498db" />
+            </div>
+
+            <!-- Teilnehmer -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-users"></i> Teilnehmer
+              </label>
+              <div id="selectedAttendees">
+                <!-- Wird dynamisch befüllt -->
+              </div>
+              <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn">
+                <i class="fas fa-plus"></i> Teilnehmer hinzufügen
+              </button>
+            </div>
+
+            <!-- Wiederkehrend -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-redo"></i> Wiederkehrend
+              </label>
+              <div class="custom-dropdown" id="recurrenceWrapper">
+                <div class="custom-select-display dropdown-display">
+                  <span id="selectedRecurrence">Keine Wiederholung</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="recurrenceDropdown">
+                  <div class="dropdown-option" data-value="">
+                    Keine Wiederholung
+                  </div>
+                  <div class="dropdown-option" data-value="daily">
+                    Täglich
+                  </div>
+                  <div class="dropdown-option" data-value="weekly">
+                    Wöchentlich
+                  </div>
+                  <div class="dropdown-option" data-value="monthly">
+                    Monatlich
+                  </div>
+                  <div class="dropdown-option" data-value="yearly">
+                    Jährlich
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="eventRecurrence" />
+            </div>
+
+            <!-- Wiederkehrung Ende -->
+            <div class="form-group" id="recurrenceEndWrapper" style="display: none;">
+              <label>
+                <i class="fas fa-calendar-times"></i> Wiederkehrung endet
+              </label>
+              <div class="custom-dropdown" id="recurrenceEndTypeWrapper">
+                <div class="custom-select-display dropdown-display" onclick="window.toggleRecurrenceEndDropdown()">
+                  <span id="selectedRecurrenceEnd">Nie</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="recurrenceEndDropdown">
+                  <div class="dropdown-option" data-value="never" onclick="window.selectRecurrenceEnd('never', 'Nie')">
+                    Nie
+                  </div>
+                  <div class="dropdown-option" data-value="after" onclick="window.selectRecurrenceEnd('after', 'Nach Anzahl')">
+                    Nach Anzahl
+                  </div>
+                  <div class="dropdown-option" data-value="until" onclick="window.selectRecurrenceEnd('until', 'An Datum')">
+                    An Datum
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="eventRecurrenceEndType" value="never" />
+              
+              <div class="mt-2" id="recurrenceEndDetails" style="display: none;">
+                <input type="number" class="form-control" id="eventRecurrenceCount" placeholder="Anzahl der Wiederholungen" min="1" style="display: none;" />
+                <input type="date" class="form-control" id="eventRecurrenceUntil" style="display: none;" />
+              </div>
+            </div>
+
+            <!-- Erinnerung -->
+            <div class="form-group">
+              <label>
+                <i class="fas fa-bell"></i> Erinnerung
+              </label>
+              <div class="custom-dropdown" id="reminderWrapper">
+                <div class="custom-select-display dropdown-display">
+                  <span id="selectedReminder">Keine Erinnerung</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="reminderDropdown">
+                  <div class="dropdown-option" data-value="">
+                    Keine Erinnerung
+                  </div>
+                  <div class="dropdown-option" data-value="15">
+                    15 Minuten vorher
+                  </div>
+                  <div class="dropdown-option" data-value="30">
+                    30 Minuten vorher
+                  </div>
+                  <div class="dropdown-option" data-value="60">
+                    1 Stunde vorher
+                  </div>
+                  <div class="dropdown-option" data-value="1440">
+                    1 Tag vorher
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="eventReminderTime" />
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-primary" id="saveEventBtn">
+            <i class="fas fa-save"></i> Speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Get Event Detail Modal Template
+ */
+function getEventDetailModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="eventDetailModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 id="eventDetailModalLabel">Termin Details</h2>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="eventDetailContent" class="fade-in">
+            <!-- Wird dynamisch gefüllt -->
+          </div>
+        </div>
+        <div class="modal-footer" id="eventDetailFooter">
+          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+          <!-- Weitere Buttons werden dynamisch hinzugefügt -->
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Get Attendees Modal Template
+ */
+function getAttendeesModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="attendeesModal">
+      <div class="modal-container modal-md">
+        <div class="modal-header">
+          <h2 class="modal-title">Teilnehmer hinzufügen</h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <input 
+              type="text" 
+              class="form-control" 
+              id="attendeeSearch" 
+              placeholder="Mitarbeiter suchen..."
+            />
+          </div>
+          <div id="attendeesList" class="attendees-list">
+            <!-- Wird dynamisch befüllt -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-primary" id="addSelectedAttendeesBtn">
+            <i class="fas fa-plus"></i> Ausgewählte hinzufügen
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Get Event Response Modal Template
+ */
+function getEventResponseModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="eventResponseModal">
+      <div class="modal-container modal-sm">
+        <div class="modal-header">
+          <h2 id="eventResponseModalLabel">Auf Einladung antworten</h2>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Wie möchten Sie auf diese Einladung antworten?</p>
+          <div class="response-buttons">
+            <button type="button" class="response-btn" data-response="accepted">
+              <i class="fas fa-check"></i>
+              <span>Zusagen</span>
+            </button>
+            <button type="button" class="response-btn" data-response="tentative">
+              <i class="fas fa-question"></i>
+              <span>Vielleicht</span>
+            </button>
+            <button type="button" class="response-btn" data-response="declined">
+              <i class="fas fa-times"></i>
+              <span>Absagen</span>
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+        </div>
+      </div>
+    </div>
+  `;
 }
