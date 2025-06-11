@@ -224,6 +224,47 @@ class UnifiedNavigation {
           url: '/pages/calendar.html',
         },
         {
+          id: 'lean-management',
+          icon: this.getSVGIcon('lean'),
+          label: 'LEAN-Management',
+          hasSubmenu: true,
+          submenu: [
+            {
+              id: 'kvp',
+              icon: this.getSVGIcon('lightbulb'),
+              label: 'KVP System',
+              url: '/pages/kvp.html',
+            },
+            {
+              id: 'surveys',
+              icon: this.getSVGIcon('poll'),
+              label: 'Umfragen',
+              url: '/pages/survey-admin.html',
+            },
+            {
+              id: 'tpm',
+              icon: this.getSVGIcon('wrench'),
+              label: 'TPM',
+              url: '#tpm',
+              section: 'tpm',
+            },
+            {
+              id: '5s',
+              icon: this.getSVGIcon('star'),
+              label: '5S',
+              url: '#5s',
+              section: '5s',
+            },
+            {
+              id: 'standards',
+              icon: this.getSVGIcon('checklist'),
+              label: 'Standards',
+              url: '#standards',
+              section: 'standards',
+            },
+          ],
+        },
+        {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
@@ -235,18 +276,6 @@ class UnifiedNavigation {
           label: 'Chat',
           url: '/pages/chat.html',
           badge: 'unread-messages',
-        },
-        {
-          id: 'kvp',
-          icon: this.getSVGIcon('lightbulb'),
-          label: 'KVP System',
-          url: '/pages/kvp.html',
-        },
-        {
-          id: 'surveys',
-          icon: this.getSVGIcon('poll'),
-          label: 'Umfragen',
-          url: '/pages/survey-admin.html',
         },
         {
           id: 'payslips',
@@ -276,7 +305,7 @@ class UnifiedNavigation {
         },
       ],
 
-      // Employee Navigation (9 Items)
+      // Employee Navigation (7 Items with LEAN submenu)
       employee: [
         {
           id: 'dashboard',
@@ -298,6 +327,48 @@ class UnifiedNavigation {
           url: '/pages/calendar.html',
         },
         {
+          id: 'lean-management',
+          icon: this.getSVGIcon('lean'),
+          label: 'LEAN-Management',
+          hasSubmenu: true,
+          submenu: [
+            {
+              id: 'kvp',
+              icon: this.getSVGIcon('lightbulb'),
+              label: 'KVP System',
+              url: '/pages/kvp.html',
+            },
+            {
+              id: 'surveys',
+              icon: this.getSVGIcon('poll'),
+              label: 'Umfragen',
+              url: '/pages/survey-employee.html',
+              badge: 'pending-surveys',
+            },
+            {
+              id: 'tpm',
+              icon: this.getSVGIcon('wrench'),
+              label: 'TPM',
+              url: '#tpm',
+              section: 'tpm',
+            },
+            {
+              id: '5s',
+              icon: this.getSVGIcon('star'),
+              label: '5S',
+              url: '#5s',
+              section: '5s',
+            },
+            {
+              id: 'standards',
+              icon: this.getSVGIcon('checklist'),
+              label: 'Standards',
+              url: '#standards',
+              section: 'standards',
+            },
+          ],
+        },
+        {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
@@ -309,19 +380,6 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
           url: '/pages/shifts.html',
-        },
-        {
-          id: 'kvp',
-          icon: this.getSVGIcon('lightbulb'),
-          label: 'KVP System',
-          url: '/pages/kvp.html',
-        },
-        {
-          id: 'surveys',
-          icon: this.getSVGIcon('poll'),
-          label: 'Umfragen',
-          url: '/pages/survey-employee.html',
-          badge: 'pending-surveys',
         },
         {
           id: 'profile',
@@ -397,6 +455,10 @@ class UnifiedNavigation {
       admin:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
       poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
+      lean: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
+      wrench: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></svg>',
+      star: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>',
+      checklist: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -497,7 +559,8 @@ class UnifiedNavigation {
   private createMenuItem(item: NavItem, isActive: boolean = false): string {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
-    const clickHandler = item.section && !hasChildren ? `onclick="showSection('${item.section}')"` : '';
+    const hasSubmenu = item.hasSubmenu && item.submenu && item.submenu.length > 0;
+    const clickHandler = item.section && !hasChildren && !hasSubmenu ? `onclick="showSection('${item.section}')"` : '';
 
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
@@ -509,7 +572,41 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
-    // If has children, create a dropdown
+    // If has submenu, create a dropdown
+    if (hasSubmenu) {
+      const submenuItems = item
+        .submenu!.map(
+          (child) => `
+        <li class="submenu-item">
+          <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
+            <span class="submenu-label">${child.label}</span>
+          </a>
+        </li>
+      `,
+        )
+        .join('');
+
+      return `
+        <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+            <span class="icon">${item.icon}</span>
+            <span class="label">${item.label}</span>
+            <span class="nav-indicator"></span>
+            <span class="submenu-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            </span>
+            ${badgeHtml}
+          </a>
+          <ul class="submenu" id="submenu-${item.id}" style="display: none;">
+            ${submenuItems}
+          </ul>
+        </li>
+      `;
+    }
+
+    // If has children, create a dropdown (old style)
     if (hasChildren) {
       const submenuItems = item
         .children!.map(
