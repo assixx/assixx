@@ -227,7 +227,7 @@ main.container.main-content.sidebar-collapsed {
 
 /* Pinboard Attachment Style */
 .pinboard-attachment {
-  background: #242424;
+  background: #646464;
   padding: 15px;
   border-radius: 15px;
   box-shadow: 
@@ -712,7 +712,7 @@ main.container.main-content.sidebar-collapsed {
 .entry-detail-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #000;
   margin: 0;
   display: flex;
   align-items: center;

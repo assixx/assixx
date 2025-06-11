@@ -920,7 +920,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
       <div class="pushpin ${randomPushpin}"></div>
       
-      <h4 style="margin: 0 0 10px 0; font-weight: 600; color:rgb(255, 255, 255);">
+      <h4 style="margin: 0 0 10px 0; font-weight: 600; color:rgb(0, 0, 0);">
         ${priorityIcon} ${escapeHtml(entry.title)}
       </h4>
       
@@ -937,7 +937,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           : ''
       }
       
-      <div style="font-size: 12px; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
         <span>
           <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.author_full_name || entry.author_name || 'Unknown')}
         </span>
