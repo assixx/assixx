@@ -54,6 +54,7 @@ interface DbUser extends RowDataPacket {
   // Additional fields from joins
   company_name?: string;
   subdomain?: string;
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
 }
 
 interface UserCreateData {
@@ -217,7 +218,7 @@ export class User {
     try {
       const [rows] = await executeQuery<DbUser[]>(
         `
-        SELECT u.*, d.name as department_name, t.company_name, t.subdomain
+        SELECT u.*, d.name as department_name, t.company_name, t.subdomain, u.availability_status
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         LEFT JOIN tenants t ON u.tenant_id = t.id
@@ -255,7 +256,7 @@ export class User {
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.created_at, u.department_id, 
         u.position, u.phone, u.profile_picture, u.status, u.is_archived,
-        u.is_active, u.last_login,
+        u.is_active, u.last_login, u.availability_status,
         d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
@@ -377,7 +378,7 @@ export class User {
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.employee_id, u.created_at,
         u.department_id, u.position, u.phone, u.status, u.is_archived,
-        u.is_active, u.last_login,
+        u.is_active, u.last_login, u.availability_status,
         d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id

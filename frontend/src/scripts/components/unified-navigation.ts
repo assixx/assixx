@@ -550,7 +550,7 @@ class UnifiedNavigation {
               <span id="role-indicator" class="role-badge ${userRole}">${userRole === 'admin' ? 'Admin' : userRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
             </div>
             
-            <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+            <button id="logout-btn" class="btn-logout btn btn-secondary">
               <i class="fas fa-sign-out-alt"></i>
               Abmelden
             </button>
@@ -1389,7 +1389,7 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        background: rgba(255, 255, 255, 0.1);
+        /*background: rgba(255, 255, 255, 0.1);*/
         padding: var(--spacing-xs) var(--spacing-sm);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1400,7 +1400,7 @@ const unifiedNavigationCSS = `
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        /*background: linear-gradient(135deg, var(--primary-color), var(--primary-light));*/
         display: flex;
         align-items: center;
         justify-content: center;

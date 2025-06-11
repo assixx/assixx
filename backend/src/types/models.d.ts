@@ -18,6 +18,7 @@ export interface User {
   birthDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  availabilityStatus?: 'available' | 'unavailable' | 'vacation' | 'sick';
 }
 
 export interface DatabaseUser {
@@ -39,6 +40,7 @@ export interface DatabaseUser {
   birth_date: Date | null;
   created_at: Date;
   updated_at: Date;
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
 }
 
 export interface Tenant {
@@ -239,4 +241,32 @@ export interface SurveyResponse {
   answers: any;
   completedAt: Date;
   createdAt: Date;
+}
+
+export interface EmployeeAvailability {
+  id: number;
+  employeeId: number;
+  tenantId: number;
+  status: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  startDate: Date | string;
+  endDate: Date | string;
+  reason?: string;
+  notes?: string;
+  createdBy?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface DatabaseEmployeeAvailability {
+  id: number;
+  employee_id: number;
+  tenant_id: number;
+  status: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  start_date: Date | string;
+  end_date: Date | string;
+  reason?: string;
+  notes?: string;
+  created_by?: number;
+  created_at?: Date;
+  updated_at?: Date;
 }

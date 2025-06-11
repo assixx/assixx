@@ -59,3 +59,69 @@ export function createApiResponse<T>(
     ...(error && { error, message: error }),
   };
 }
+
+/**
+ * Convert snake_case string to camelCase
+ */
+export function snakeToCamelString(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+/**
+ * Convert camelCase string to snake_case
+ */
+export function camelToSnakeString(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+/**
+ * Convert object keys from snake_case to camelCase
+ */
+export function snakeToCamel<T = any>(obj: any): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => snakeToCamel(item)) as any;
+  }
+  
+  if (typeof obj !== 'object' || obj instanceof Date) {
+    return obj;
+  }
+  
+  const converted: any = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const camelKey = snakeToCamelString(key);
+      converted[camelKey] = snakeToCamel(obj[key]);
+    }
+  }
+  return converted;
+}
+
+/**
+ * Convert object keys from camelCase to snake_case
+ */
+export function camelToSnake<T = any>(obj: any): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => camelToSnake(item)) as any;
+  }
+  
+  if (typeof obj !== 'object' || obj instanceof Date) {
+    return obj;
+  }
+  
+  const converted: any = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const snakeKey = camelToSnakeString(key);
+      converted[snakeKey] = camelToSnake(obj[key]);
+    }
+  }
+  return converted;
+}

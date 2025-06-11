@@ -736,6 +736,114 @@
   }
 }
 
+/* Employee Availability Status Styles */
+.employee-item.unavailable {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.employee-item.status-vacation {
+  background: rgba(255, 193, 7, 0.1);
+  border-left: 3px solid #ffc107;
+}
+
+.employee-item.status-sick {
+  background: rgba(220, 53, 69, 0.1);
+  border-left: 3px solid #dc3545;
+}
+
+.employee-item.status-unavailable {
+  background: rgba(108, 117, 125, 0.1);
+  border-left: 3px solid #6c757d;
+}
+
+/* Employee info container for name and badge */
+.employee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.employee-info .employee-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+/* Status badge styles within employee items */
+.employee-info .badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  width: fit-content;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+/* Adjust badge colors for better visibility in employee list */
+.employee-info .badge-success {
+  color: rgba(76, 175, 80, 0.95);
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.employee-info .badge-warning {
+  color: rgba(255, 193, 7, 0.95);
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.employee-info .badge-danger {
+  color: rgba(220, 53, 69, 0.95);
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.employee-info .badge-secondary {
+  color: rgba(108, 117, 125, 0.95);
+  background: rgba(108, 117, 125, 0.15);
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* Status icon positioning */
+.employee-info .status-icon {
+  margin-left: 8px;
+  font-size: 12px;
+}
+
+.status-icon {
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.status-icon.vacation {
+  color: #ffc107;
+}
+
+.status-icon.sick {
+  color: #dc3545;
+}
+
+.status-icon.unavailable {
+  color: #6c757d;
+}
+
+/* Prevent dragging unavailable employees */
+.employee-item[draggable="false"] {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.employee-item[draggable="false"]:hover {
+  cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .content-tabs {

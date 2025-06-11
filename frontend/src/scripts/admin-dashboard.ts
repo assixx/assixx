@@ -258,6 +258,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Setup Employee Status Modal
+  const statusForm = document.getElementById('employee-status-form') as HTMLFormElement;
+  if (statusForm) {
+    statusForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const employeeIdInput = document.getElementById('status-employee-id') as HTMLInputElement;
+      const employeeId = employeeIdInput?.value;
+      const formData = new FormData(statusForm);
+      
+      const availabilityData = {
+        employee_id: parseInt(employeeId),
+        status: formData.get('status'),
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date'),
+        notes: formData.get('notes')
+      };
+
+      try {
+        const token = getAuthToken();
+        const response = await fetch('/api/availability', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(availabilityData),
+        });
+
+        if (response.ok) {
+          showSuccess('Mitarbeiter-Status erfolgreich geändert!');
+          hideModal('employee-status-modal');
+          window.loadEmployeesTable?.(); // Reload employee list
+        } else {
+          const error = await response.json();
+          showError(error.message || 'Status konnte nicht geändert werden');
+        }
+      } catch (error) {
+        console.error('Error updating status:', error);
+        showError('Fehler beim Ändern des Status');
+      }
+    });
+  }
+
   const manageDocumentsLink = document.getElementById('manage-documents-link');
   if (manageDocumentsLink) {
     manageDocumentsLink.addEventListener('click', (e) => {
@@ -932,6 +976,8 @@ declare global {
     showSection: typeof showSection;
     loadRecentEmployees?: () => Promise<void>;
     loadDashboardStats?: () => Promise<void>;
+    loadEmployeesTable?: () => Promise<void>;
+    hideModal?: (modalId: string) => void;
   }
 }
 

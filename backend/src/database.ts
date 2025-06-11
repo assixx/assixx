@@ -48,43 +48,7 @@ if (USE_MOCK_DB) {
     >(sql: string, params?: any[]): Promise<T> {
       // Einfache Mock-Daten für Entwicklung
       if (sql.includes('SELECT * FROM users WHERE role = "employee"')) {
-        return [
-          [
-            {
-              id: 1,
-              username: "mitarbeiter1",
-              first_name: "Max",
-              last_name: "Mustermann",
-              email: "max@example.com",
-              role: "employee",
-              status: "active",
-              department_id: 1,
-              position: "Entwickler",
-            },
-            {
-              id: 2,
-              username: "mitarbeiter2",
-              first_name: "Anna",
-              last_name: "Schmidt",
-              email: "anna@example.com",
-              role: "employee",
-              status: "active",
-              department_id: 1,
-              position: "Designerin",
-            },
-            {
-              id: 3,
-              username: "mitarbeiter3",
-              first_name: "Thomas",
-              last_name: "Müller",
-              email: "thomas@example.com",
-              role: "employee",
-              status: "inactive",
-              department_id: 2,
-              position: "Manager",
-            },
-          ] as MockUser[],
-        ] as unknown as T;
+        return [[] as MockUser[]] as unknown as T;
       } else if (sql.includes("SELECT * FROM departments")) {
         return [
           [
@@ -122,7 +86,7 @@ if (USE_MOCK_DB) {
           ] as MockDocument[],
         ] as unknown as T;
       } else if (sql.includes("COUNT(*) as count FROM users")) {
-        return [[{ count: 3 }] as RowDataPacket[]] as T;
+        return [[{ count: 0 }] as RowDataPacket[]] as T;
       } else if (sql.includes("COUNT(*) as count FROM departments")) {
         return [[{ count: 2 }] as RowDataPacket[]] as T;
       } else if (sql.includes("COUNT(*) as count FROM documents")) {
@@ -164,57 +128,6 @@ if (USE_MOCK_DB) {
                 role: "admin",
                 department_id: null,
                 department_name: null,
-              },
-            ] as MockUser[],
-          ] as unknown as T;
-        } else if (userId == 1) {
-          return [
-            [
-              {
-                id: 1,
-                username: "mitarbeiter1",
-                first_name: "Max",
-                last_name: "Mustermann",
-                email: "max@example.com",
-                role: "employee",
-                status: "active",
-                department_id: 1,
-                department_name: "Entwicklung",
-                position: "Entwickler",
-              },
-            ] as MockUser[],
-          ] as unknown as T;
-        } else if (userId == 2) {
-          return [
-            [
-              {
-                id: 2,
-                username: "mitarbeiter2",
-                first_name: "Anna",
-                last_name: "Schmidt",
-                email: "anna@example.com",
-                role: "employee",
-                status: "active",
-                department_id: 1,
-                department_name: "Entwicklung",
-                position: "Designerin",
-              },
-            ] as MockUser[],
-          ] as unknown as T;
-        } else if (userId == 3) {
-          return [
-            [
-              {
-                id: 3,
-                username: "mitarbeiter3",
-                first_name: "Thomas",
-                last_name: "Müller",
-                email: "thomas@example.com",
-                role: "employee",
-                status: "inactive",
-                department_id: 2,
-                department_name: "Marketing",
-                position: "Manager",
               },
             ] as MockUser[],
           ] as unknown as T;

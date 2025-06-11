@@ -22,7 +22,6 @@ interface ShiftAssignment {
   department_id?: number;
   machine_id?: number;
   team_leader_id?: number;
-  area_id?: number;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -41,11 +40,6 @@ interface Machine {
   description?: string;
 }
 
-interface Area {
-  id: number;
-  name: string;
-  description?: string;
-}
 
 interface TeamLeader {
   id: number;
@@ -57,7 +51,6 @@ interface SelectedContext {
   departmentId: number | null;
   machineId: number | null;
   teamLeaderId: number | null;
-  areaId: number | null;
 }
 
 interface WeeklyShifts {
@@ -80,7 +73,6 @@ class ShiftPlanningSystem {
   private departments: Department[];
   private machines: Machine[];
   private teamLeaders: TeamLeader[];
-  private areas: Area[];
   private selectedContext: SelectedContext;
 
   private weeklyNotes: string;
@@ -99,12 +91,10 @@ class ShiftPlanningSystem {
     this.departments = [];
     this.machines = [];
     this.teamLeaders = [];
-    this.areas = [];
     this.selectedContext = {
       departmentId: null,
       machineId: null,
       teamLeaderId: null,
-      areaId: null,
     };
 
     this.weeklyNotes = '';
@@ -113,29 +103,44 @@ class ShiftPlanningSystem {
   }
 
   async init(): Promise<void> {
-    console.info('Initializing Shift Planning System...');
+    console.info('[SHIFTS] Initializing Shift Planning System...');
 
-    // Check user authentication and role
-    await this.checkUserRole();
+    try {
+      // Check user authentication and role
+      console.log('[SHIFTS DEBUG] Checking user role...');
+      await this.checkUserRole();
+      console.log('[SHIFTS DEBUG] User role:', this.userRole, 'Is admin:', this.isAdmin);
 
-    // Initialize event listeners
-    this.setupEventListeners();
+      // Initialize event listeners
+      console.log('[SHIFTS DEBUG] Setting up event listeners...');
+      this.setupEventListeners();
 
-    // Load context data
-    await this.loadContextData();
+      // Load context data
+      console.log('[SHIFTS DEBUG] Loading context data...');
+      await this.loadContextData();
 
-    // Load initial data
-    await this.loadEmployees();
-    await this.loadCurrentWeekData();
-    await this.loadWeeklyNotes();
+      // Load initial data
+      console.log('[SHIFTS DEBUG] Loading employees...');
+      await this.loadEmployees();
+      console.log('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
+      
+      console.log('[SHIFTS DEBUG] Loading current week data...');
+      await this.loadCurrentWeekData();
+      
+      console.log('[SHIFTS DEBUG] Loading weekly notes...');
+      await this.loadWeeklyNotes();
 
-    // Update UI based on user role
-    this.updateUIForRole();
+      // Update UI based on user role
+      console.log('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
+      this.updateUIForRole();
 
-    // Highlight employee's own shifts
-    this.highlightEmployeeShifts();
+      // Highlight employee's own shifts
+      this.highlightEmployeeShifts();
 
-    console.info('Shift Planning System initialized');
+      console.info('[SHIFTS] Shift Planning System initialized successfully');
+    } catch (error) {
+      console.error('[SHIFTS ERROR] Failed to initialize:', error);
+    }
   }
 
   async checkUserRole(): Promise<void> {
@@ -189,9 +194,32 @@ class ShiftPlanningSystem {
   }
 
   setupEventListeners(): void {
+    console.log('[SHIFTS DEBUG] Setting up event listeners');
+    
     // Week navigation
-    document.getElementById('prevWeekBtn')?.addEventListener('click', () => this.navigateWeek(-1));
-    document.getElementById('nextWeekBtn')?.addEventListener('click', () => this.navigateWeek(1));
+    const prevBtn = document.getElementById('prevWeekBtn');
+    const nextBtn = document.getElementById('nextWeekBtn');
+    
+    console.log('[SHIFTS DEBUG] Previous week button:', prevBtn);
+    console.log('[SHIFTS DEBUG] Next week button:', nextBtn);
+    
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        console.log('[SHIFTS DEBUG] Previous week button clicked');
+        this.navigateWeek(-1);
+      });
+    } else {
+      console.error('[SHIFTS ERROR] Previous week button not found!');
+    }
+    
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        console.log('[SHIFTS DEBUG] Next week button clicked');
+        this.navigateWeek(1);
+      });
+    } else {
+      console.error('[SHIFTS ERROR] Next week button not found!');
+    }
 
     // Employee selection (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
@@ -231,7 +259,11 @@ class ShiftPlanningSystem {
   }
 
   setupDragAndDrop(): void {
-    if (!this.isAdmin) return; // Only admins can drag employees
+    console.log('[SHIFTS DEBUG] Setting up drag and drop. Is admin:', this.isAdmin);
+    if (!this.isAdmin) {
+      console.log('[SHIFTS DEBUG] User is not admin, drag & drop disabled');
+      return;
+    }
 
     // Drag start on employee items
     document.addEventListener('dragstart', (e) => {
@@ -239,8 +271,11 @@ class ShiftPlanningSystem {
       const employeeItem = target.closest('.employee-item') as HTMLElement;
 
       if (employeeItem) {
+        console.log('[SHIFTS DEBUG] Drag start on employee:', employeeItem.dataset.employeeId);
+        
         // Check if employee is available for dragging
         if (employeeItem.getAttribute('draggable') === 'false') {
+          console.log('[SHIFTS DEBUG] Employee not draggable, preventing drag');
           e.preventDefault();
           return;
         }
@@ -250,6 +285,7 @@ class ShiftPlanningSystem {
 
         const employeeId = employeeItem.dataset.employeeId;
         if (employeeId && e.dataTransfer) {
+          console.log('[SHIFTS DEBUG] Setting drag data:', employeeId);
           e.dataTransfer.effectAllowed = 'copy';
           e.dataTransfer.setData('text/plain', employeeId);
         }
@@ -296,13 +332,19 @@ class ShiftPlanningSystem {
       const target = e.target as HTMLElement;
       const shiftCell = target.closest('.shift-cell') as HTMLElement;
 
+      console.log('[SHIFTS DEBUG] Drop event on:', target);
+
       if (shiftCell) {
         e.preventDefault();
         shiftCell.classList.remove('drag-over');
 
         const employeeId = e.dataTransfer?.getData('text/plain');
+        console.log('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
+        
         if (employeeId) {
           this.assignShift(shiftCell, parseInt(employeeId));
+        } else {
+          console.error('[SHIFTS ERROR] No employee ID in drop data');
         }
       }
     });
@@ -331,12 +373,6 @@ class ShiftPlanningSystem {
       this.selectedContext.teamLeaderId = target.value ? parseInt(target.value) : null;
     });
 
-    // Area selection
-    const areaSelect = document.getElementById('areaSelect') as HTMLSelectElement;
-    areaSelect?.addEventListener('change', (e) => {
-      const target = e.target as HTMLSelectElement;
-      this.selectedContext.areaId = target.value ? parseInt(target.value) : null;
-    });
   }
 
   setupNotesEvents(): void {
@@ -367,7 +403,7 @@ class ShiftPlanningSystem {
   }
 
   async loadContextData(): Promise<void> {
-    await Promise.all([this.loadDepartments(), this.loadMachines(), this.loadTeamLeaders(), this.loadAreas()]);
+    await Promise.all([this.loadDepartments(), this.loadMachines(), this.loadTeamLeaders()]);
   }
 
   async loadDepartments(): Promise<void> {
@@ -459,71 +495,41 @@ class ShiftPlanningSystem {
     } catch (error) {
       console.error('Error loading team leaders:', error);
       // Fallback data
-      this.teamLeaders = [
-        { id: 1, name: 'Max Mustermann', username: 'max.mustermann' },
-        { id: 2, name: 'Sarah Weber', username: 'sarah.weber' },
-        { id: 3, name: 'Michael Klein', username: 'michael.klein' },
-        { id: 4, name: 'Anna Fischer', username: 'anna.fischer' },
-      ];
+      this.teamLeaders = [];
     }
     this.populateTeamLeaderSelect();
   }
 
-  async loadAreas(): Promise<void> {
-    try {
-      const response = await fetch('/api/areas', {
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        this.areas = data.areas || [];
-      } else {
-        throw new Error('Failed to load areas');
-      }
-    } catch (error) {
-      console.error('Error loading areas:', error);
-      // Fallback data
-      this.areas = [
-        { id: 1, name: 'Halle A' },
-        { id: 2, name: 'Halle B' },
-        { id: 3, name: 'Lager Nord' },
-        { id: 4, name: 'Lager Süd' },
-        { id: 5, name: 'Bürobereich' },
-      ];
-    }
-    this.populateAreaSelect();
-  }
 
   populateDepartmentSelect(): void {
-    const select = document.getElementById('departmentSelect') as HTMLSelectElement;
-    if (!select) {
-      console.error('Department select element not found');
+    const dropdown = document.getElementById('departmentDropdown');
+    if (!dropdown) {
+      console.error('Department dropdown element not found');
       return;
     }
 
-    select.innerHTML = '<option value="">Abteilung wählen...</option>';
+    dropdown.innerHTML = '';
 
     console.info('Populating departments:', this.departments);
     this.departments.forEach((dept) => {
       console.info('Adding department:', dept);
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
       option.textContent = dept.name;
-      select.appendChild(option);
+      option.onclick = () => {
+        (window as any).selectOption('department', dept.id.toString(), dept.name);
+      };
+      dropdown.appendChild(option);
     });
 
-    console.info('Department select populated with', this.departments.length, 'departments');
+    console.info('Department dropdown populated with', this.departments.length, 'departments');
   }
 
   populateMachineSelect(): void {
-    const select = document.getElementById('machineSelect') as HTMLSelectElement;
-    if (!select) return;
+    const dropdown = document.getElementById('machineDropdown');
+    if (!dropdown) return;
 
-    select.innerHTML = '<option value="">Maschine wählen...</option>';
+    dropdown.innerHTML = '';
 
     // Filter machines by selected department if any
     let filteredMachines = this.machines;
@@ -532,40 +538,33 @@ class ShiftPlanningSystem {
     }
 
     filteredMachines.forEach((machine) => {
-      const option = document.createElement('option');
-      option.value = machine.id.toString();
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
       option.textContent = machine.name;
-      select.appendChild(option);
+      option.onclick = () => {
+        (window as any).selectOption('machine', machine.id.toString(), machine.name);
+      };
+      dropdown.appendChild(option);
     });
   }
 
   populateTeamLeaderSelect(): void {
-    const select = document.getElementById('teamLeaderSelect') as HTMLSelectElement;
-    if (!select) return;
+    const dropdown = document.getElementById('teamLeaderDropdown');
+    if (!dropdown) return;
 
-    select.innerHTML = '<option value="">Teamleiter wählen...</option>';
+    dropdown.innerHTML = '';
 
     this.teamLeaders.forEach((leader) => {
-      const option = document.createElement('option');
-      option.value = leader.id.toString();
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
       option.textContent = leader.name || leader.username;
-      select.appendChild(option);
+      option.onclick = () => {
+        (window as any).selectOption('teamLeader', leader.id.toString(), leader.name || leader.username);
+      };
+      dropdown.appendChild(option);
     });
   }
 
-  populateAreaSelect(): void {
-    const select = document.getElementById('areaSelect') as HTMLSelectElement;
-    if (!select) return;
-
-    select.innerHTML = '<option value="">Bereich wählen...</option>';
-
-    this.areas.forEach((area) => {
-      const option = document.createElement('option');
-      option.value = area.id.toString();
-      option.textContent = area.name;
-      select.appendChild(option);
-    });
-  }
 
   async onContextChange(): Promise<void> {
     // Reload machines when department changes
@@ -579,6 +578,7 @@ class ShiftPlanningSystem {
 
   async loadEmployees(): Promise<void> {
     try {
+      // First load users
       let url = '/api/users';
       const params = new URLSearchParams();
 
@@ -604,6 +604,10 @@ class ShiftPlanningSystem {
         const data = await response.json();
         const users = Array.isArray(data) ? data : data.users || [];
         this.employees = users.filter((user: User) => user.role === 'employee');
+        
+        // Now load current availability status
+        await this.loadAvailabilityStatus();
+        
         this.renderEmployeeList();
       } else {
         throw new Error('Failed to load employees');
@@ -611,55 +615,76 @@ class ShiftPlanningSystem {
     } catch (error) {
       console.error('Error loading employees:', error);
       // Fallback data
-      this.employees = [
-        {
-          id: 1,
-          username: 'john.doe',
-          first_name: 'John',
-          last_name: 'Doe',
-          email: 'john@example.com',
-          role: 'employee',
-          availability_status: 'available',
-        },
-        {
-          id: 2,
-          username: 'jane.smith',
-          first_name: 'Jane',
-          last_name: 'Smith',
-          email: 'jane@example.com',
-          role: 'employee',
-          availability_status: 'available',
-        },
-      ] as Employee[];
+      this.employees = [];
       this.renderEmployeeList();
+    }
+  }
+
+  async loadAvailabilityStatus(): Promise<void> {
+    try {
+      const response = await fetch('/api/availability/current', {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const availabilityData = data.employees || [];
+        
+        // Update employees with availability status
+        this.employees = this.employees.map(emp => {
+          const availability = availabilityData.find((a: any) => a.employeeId === emp.id);
+          if (availability) {
+            emp.availability_status = availability.availabilityStatus || 'available';
+          }
+          return emp;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading availability status:', error);
+      // Continue without availability status
     }
   }
 
   renderEmployeeList(): void {
     const container = document.getElementById('employeeList');
-    if (!container) return;
+    console.log('[SHIFTS DEBUG] Employee list container:', container);
+    
+    if (!container) {
+      console.error('[SHIFTS ERROR] Employee list container not found!');
+      return;
+    }
 
     container.innerHTML = '';
+    console.log('[SHIFTS DEBUG] Rendering employees:', this.employees.length);
 
     this.employees.forEach((employee) => {
       const item = document.createElement('div');
       item.className = 'employee-item';
       item.dataset.employeeId = employee.id.toString();
 
-      const isDraggable = this.isAdmin && employee.availability_status === 'available';
+      // Only available employees can be dragged
+      const isDraggable = this.isAdmin && (employee.availability_status === 'available' || !employee.availability_status);
       item.setAttribute('draggable', isDraggable.toString());
+      
+      console.log('[SHIFTS DEBUG] Employee:', employee.username, 'Draggable:', isDraggable, 'Status:', employee.availability_status);
 
-      if (!isDraggable) {
-        item.classList.add('unavailable');
+      // Add visual indicators for unavailable employees
+      if (employee.availability_status && employee.availability_status !== 'available') {
+        item.classList.add('unavailable', `status-${employee.availability_status}`);
       }
 
       const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
       const statusIcon = this.getAvailabilityIcon(employee.availability_status);
+      const statusBadge = this.getAvailabilityBadge(employee.availability_status);
 
       item.innerHTML = `
         <div class="employee-info">
           <span class="employee-name">${this.escapeHtml(name)}</span>
           ${statusIcon}
+          ${statusBadge}
         </div>
         <div class="employee-stats">
           <span class="shift-count">0</span>
@@ -669,6 +694,7 @@ class ShiftPlanningSystem {
       container.appendChild(item);
     });
 
+    console.log('[SHIFTS DEBUG] Employee list rendered');
     // Update shift counts
     this.updateEmployeeShiftCounts();
   }
@@ -683,6 +709,22 @@ class ShiftPlanningSystem {
         return '<i class="fas fa-ban status-icon unavailable" title="Nicht verfügbar"></i>';
       default:
         return '';
+    }
+  }
+
+  getAvailabilityBadge(status?: string): string {
+    switch (status) {
+      case 'available':
+        return '<span class="badge badge-success">Verfügbar</span>';
+      case 'vacation':
+        return '<span class="badge badge-warning">Urlaub</span>';
+      case 'sick':
+        return '<span class="badge badge-danger">Krank</span>';
+      case 'unavailable':
+        return '<span class="badge badge-secondary">Nicht verfügbar</span>';
+      default:
+        // Default to available if no status is set
+        return '<span class="badge badge-success">Verfügbar</span>';
     }
   }
 
@@ -742,14 +784,47 @@ class ShiftPlanningSystem {
     const date = shiftCell.dataset.date;
     const shift = shiftCell.dataset.shift;
 
-    if (!date || !shift) return;
+    console.log('[SHIFTS DEBUG] Assigning shift:', { date, shift, employeeId });
+
+    if (!date || !shift) {
+      console.error('[SHIFTS ERROR] Missing date or shift data on cell');
+      return;
+    }
 
     const employee = this.employees.find((e) => e.id === employeeId);
-    if (!employee) return;
+    if (!employee) {
+      console.error('[SHIFTS ERROR] Employee not found:', employeeId);
+      return;
+    }
+
+    console.log('[SHIFTS DEBUG] Found employee:', employee);
 
     // Check if employee is available
-    if (employee.availability_status !== 'available' && employee.availability_status !== undefined) {
-      showError(`${employee.first_name || employee.username} ist nicht verfügbar`);
+    if (employee.availability_status && employee.availability_status !== 'available') {
+      console.log('[SHIFTS DEBUG] Employee not available:', employee.availability_status);
+      
+      // Get status text and badge color
+      const statusText = {
+        'vacation': 'Urlaub',
+        'sick': 'Krank',
+        'unavailable': 'Beurlaubt'
+      }[employee.availability_status] || employee.availability_status;
+      
+      const statusBadgeClass = {
+        'vacation': 'badge-warning',
+        'sick': 'badge-danger',
+        'unavailable': 'badge-secondary'
+      }[employee.availability_status] || 'badge-secondary';
+      
+      const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+      
+      showError(`
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>Mitarbeiter kann nicht zugewiesen werden</span>
+          <strong>${employeeName}</strong>
+          <span class="badge ${statusBadgeClass}">${statusText}</span>
+        </div>
+      `);
       return;
     }
 
@@ -861,12 +936,19 @@ class ShiftPlanningSystem {
     const weekStart = this.getWeekStart(this.currentWeek);
     const weekContainer = document.getElementById('weekView');
 
-    if (!weekContainer) return;
+    console.log('[SHIFTS DEBUG] Rendering week view. Container:', weekContainer);
+
+    if (!weekContainer) {
+      console.error('[SHIFTS ERROR] Week view container not found!');
+      return;
+    }
 
     // Update week display
     const currentWeekElement = document.getElementById('currentWeek');
     if (currentWeekElement) {
       currentWeekElement.textContent = this.formatWeekRange(weekStart);
+    } else {
+      console.warn('[SHIFTS WARN] currentWeek element not found');
     }
 
     // Clear existing content
@@ -941,10 +1023,20 @@ class ShiftPlanningSystem {
   }
 
   navigateWeek(direction: number): void {
+    console.log('[SHIFTS DEBUG] Navigating week. Direction:', direction);
+    console.log('[SHIFTS DEBUG] Current week before:', this.currentWeek);
+    
     const newDate = new Date(this.currentWeek);
     newDate.setDate(newDate.getDate() + direction * 7);
     this.currentWeek = newDate;
-    this.loadCurrentWeekData();
+    
+    console.log('[SHIFTS DEBUG] New week after:', this.currentWeek);
+    
+    this.loadCurrentWeekData().then(() => {
+      console.log('[SHIFTS DEBUG] Week data loaded successfully');
+    }).catch(error => {
+      console.error('[SHIFTS ERROR] Failed to load week data:', error);
+    });
   }
 
   getWeekStart(date: Date): Date {
@@ -1003,7 +1095,6 @@ class ShiftPlanningSystem {
         department_id?: number;
         machine_id?: number;
         team_leader_id?: number;
-        area_id?: number;
       }> = [];
 
       Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
@@ -1018,7 +1109,6 @@ class ShiftPlanningSystem {
               department_id: this.selectedContext.departmentId || undefined,
               machine_id: this.selectedContext.machineId || undefined,
               team_leader_id: this.selectedContext.teamLeaderId || undefined,
-              area_id: this.selectedContext.areaId || undefined,
             });
           });
         });

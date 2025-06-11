@@ -36,6 +36,9 @@ export interface AuthenticatedRequest extends Request {
 // FileUploadRequest is removed - use AuthenticatedRequest directly
 // since file and files are already defined in Express.Request
 
+// Type alias for backward compatibility
+export type AuthRequest = AuthenticatedRequest;
+
 // Paginated request
 export interface PaginatedRequest extends AuthenticatedRequest {
   query: {

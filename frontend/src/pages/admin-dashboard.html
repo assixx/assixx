@@ -539,6 +539,31 @@
         opacity: 0.3;
         margin-bottom: 16px;
       }
+
+      /* Additional Badge Styles */
+      .badge-warning {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+      }
+
+      .badge-secondary {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+      }
+
+      /* Info Button Style */
+      .btn-info {
+        background: rgba(23, 162, 184, 0.2);
+        border: 1px solid rgba(23, 162, 184, 0.3);
+        color: #17a2b8;
+        transition: all 0.3s ease;
+      }
+
+      .btn-info:hover {
+        background: rgba(23, 162, 184, 0.3);
+        border-color: #17a2b8;
+        transform: translateY(-1px);
+      }
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -1013,6 +1038,65 @@
             </select>
           </div>
           <button type="submit" class="btn btn-primary">Team erstellen</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Employee Status Modal -->
+    <div id="employee-status-modal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Mitarbeiter-Status ändern</h3>
+          <button class="modal-close" onclick="hideModal('employee-status-modal')">&times;</button>
+        </div>
+        <form id="employee-status-form">
+          <input type="hidden" id="status-employee-id" />
+          <div class="form-group">
+            <label class="form-label">Mitarbeiter</label>
+            <input type="text" id="status-employee-name" class="form-control" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="employee-status-display" onclick="toggleDropdown('employee-status')">
+                <span>Verfügbar</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="dropdown-options" id="employee-status-dropdown" style="display: none">
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'available', 'Verfügbar')">
+                  <span class="badge badge-success">Verfügbar</span>
+                </div>
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'vacation', 'Urlaub')">
+                  <span class="badge badge-warning">Urlaub</span>
+                </div>
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'sick', 'Krank')">
+                  <span class="badge badge-danger">Krank</span>
+                </div>
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'unavailable', 'Beurlaubt')">
+                  <span class="badge badge-secondary">Beurlaubt</span>
+                </div>
+              </div>
+              <input type="hidden" name="status" id="employee-status-select" value="available" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Von Datum</label>
+            <input type="date" name="start_date" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bis Datum</label>
+            <input type="date" name="end_date" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notiz (optional)</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="z.B. Familienurlaub, Krankmeldung bis..."></textarea>
+          </div>
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">Status speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="hideModal('employee-status-modal')">Abbrechen</button>
+          </div>
         </form>
       </div>
     </div>
@@ -1868,6 +1952,64 @@
         }
       }
 
+      // Mitarbeiter-Status ändern
+      async function changeEmployeeStatus(employeeId) {
+        console.log(`Changing status for employee ${employeeId}`);
+        const token = localStorage.getItem('token');
+
+        try {
+          // Mitarbeiter-Daten laden
+          const response = await fetch(`/api/users/${employeeId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load employee data');
+          }
+
+          const employee = await response.json();
+          
+          // Modal-Felder befüllen
+          const employeeIdInput = document.getElementById('status-employee-id');
+          const employeeName = document.getElementById('status-employee-name');
+          const statusDropdown = document.getElementById('employee-status-dropdown');
+          const statusDisplay = document.getElementById('employee-status-display');
+          
+          if (employeeIdInput) employeeIdInput.value = employeeId;
+          if (employeeName) employeeName.textContent = `${employee.first_name} ${employee.last_name}`;
+          
+          // Aktuellen Status setzen
+          const currentStatus = employee.availability_status || 'available';
+          if (statusDisplay) {
+            const statusText = {
+              'available': 'Verfügbar',
+              'vacation': 'Urlaub', 
+              'sick': 'Krank',
+              'unavailable': 'Nicht verfügbar'
+            }[currentStatus] || 'Verfügbar';
+            statusDisplay.querySelector('span').textContent = statusText;
+          }
+          
+          // Modal öffnen
+          const modal = document.getElementById('employee-status-modal');
+          if (modal) {
+            modal.style.display = 'flex';
+            
+            // Form zurücksetzen
+            const form = document.getElementById('employee-status-form');
+            if (form) {
+              form.reset();
+              // Hidden input für employee_id setzen
+              const hiddenInput = form.querySelector('input[name="status"]');
+              if (hiddenInput) hiddenInput.value = currentStatus;
+            }
+          }
+        } catch (error) {
+          console.error('Error loading employee for status change:', error);
+          alert('Fehler beim Laden der Mitarbeiterdaten');
+        }
+      }
+
       // Abteilung löschen
       async function deleteDepartment(departmentId) {
         console.log(`Deleting department ${departmentId}`);
@@ -2384,11 +2526,14 @@
                 </span>
               </td>
               <td>
+                <button class="btn btn-sm btn-info" onclick="changeEmployeeStatus(${employee.id})">
+                  <i class="fas fa-user-clock"></i> Status ändern
+                </button>
                 <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
-                  <i class="fas fa-edit"></i>
+                  <i class="fas fa-edit"></i> Bearbeiten
                 </button>
                 <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})">
-                  <i class="fas fa-trash"></i>
+                  <i class="fas fa-trash"></i> Löschen
                 </button>
               </td>
             `;

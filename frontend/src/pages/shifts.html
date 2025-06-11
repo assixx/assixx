@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schichtplanung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/fontawesome-Ba-zWN2J.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -69,6 +68,7 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
         animation: fadeInUp 0.6s ease-out;
+        overflow: visible;
       }
 
       .shift-title {
@@ -81,7 +81,7 @@
 
       .shift-info-row {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: var(--spacing-lg);
         padding: var(--spacing-lg);
         background: rgba(255, 255, 255, 0.03);
@@ -92,6 +92,8 @@
         box-shadow:
           0 4px 16px rgba(0, 0, 0, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        position: relative;
+        z-index: 1;
       }
 
       .info-item {
@@ -99,6 +101,8 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
+        position: relative;
+        z-index: 10;
       }
 
       .info-label {
@@ -116,34 +120,90 @@
         color: var(--text-primary);
       }
 
-      .info-select {
+      /* Custom Dropdown Styles */
+      .custom-dropdown {
+        position: relative;
         width: 100%;
-        padding: var(--spacing-sm);
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-size: 14px;
-        font-weight: 600;
+        color: #fff;
         cursor: pointer;
         transition: all 0.3s ease;
+        min-height: 46px;
       }
 
-      .info-select:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
-      .info-select:hover {
-        border-color: var(--primary-color);
+      .dropdown-display.active {
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
       }
 
-      .info-select option {
-        background: rgba(18, 18, 18, 0.95);
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.98);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 9999;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
         color: var(--text-primary);
-        padding: var(--spacing-sm);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
       }
 
       .week-navigation {
@@ -377,12 +437,19 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
-      .sidebar-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--primary-color);
+      .shift-sidebar-title {
+        font-size: 17px;
+        font-weight: 500;
+        color: rgb(255, 255, 255);
         margin-bottom: var(--spacing-lg);
         text-align: center;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        padding: var(--spacing-md) var(--spacing-lg);
+        backdrop-filter: blur(40px) saturate(180%);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        border-radius: 14px;
+        box-shadow: 0 2px 6px rgb(0, 0, 0),inset 0 1px 0 hsla(0, 0%, 100%, 0.18);
       }
 
       .employee-list {
@@ -575,31 +642,48 @@
           <div class="shift-info-row">
             <div class="info-item">
               <div class="info-label">Abteilung</div>
-              <select class="info-select" id="departmentSelect">
-                <option value="">Abteilung wählen...</option>
-              </select>
-              <div class="info-value" id="currentDepartment" style="display: none">Produktion</div>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+                  <span>Abteilung wählen...</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="departmentDropdown">
+                  <!-- Options will be populated dynamically -->
+                </div>
+              </div>
+              <input type="hidden" id="departmentSelect" />
             </div>
             <div class="info-item">
               <div class="info-label">Maschine</div>
-              <select class="info-select" id="machineSelect">
-                <option value="">Maschine wählen...</option>
-              </select>
-              <div class="info-value" id="currentMachine" style="display: none">Anlage 01</div>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="machineDisplay" onclick="toggleDropdown('machine')">
+                  <span>Maschine wählen...</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="machineDropdown">
+                  <!-- Options will be populated dynamically -->
+                </div>
+              </div>
+              <input type="hidden" id="machineSelect" />
             </div>
             <div class="info-item">
               <div class="info-label">Teamleiter</div>
-              <select class="info-select" id="teamLeaderSelect">
-                <option value="">Teamleiter wählen...</option>
-              </select>
-              <div class="info-value" id="currentTeamLeader" style="display: none">Max Mustermann</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Bereich</div>
-              <select class="info-select" id="areaSelect">
-                <option value="">Bereich wählen...</option>
-              </select>
-              <div class="info-value" id="currentArea" style="display: none">Halle A</div>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="teamLeaderDisplay" onclick="toggleDropdown('teamLeader')">
+                  <span>Teamleiter wählen...</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="teamLeaderDropdown">
+                  <!-- Options will be populated dynamically -->
+                </div>
+              </div>
+              <input type="hidden" id="teamLeaderSelect" />
             </div>
           </div>
 
@@ -796,79 +880,9 @@
 
             <!-- Employee Sidebar -->
             <div class="employee-sidebar">
-              <h3 class="sidebar-title">Verfügbare Mitarbeiter</h3>
+              <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
               <div class="employee-list" id="employeeList">
-                <!-- Employee items will be loaded here -->
-                <div
-                  class="employee-item"
-                  data-employee-id="1"
-                  data-employee-name="Johann Müller"
-                  data-employee-status="available"
-                  draggable="true"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Johann Müller</div>
-                    <div class="availability-status status-available">Verfügbar</div>
-                  </div>
-                  <div class="employee-details">Erfahrung: 5 Jahre</div>
-                </div>
-
-                <div
-                  class="employee-item"
-                  data-employee-id="2"
-                  data-employee-name="Anna Schmidt"
-                  data-employee-status="limited"
-                  data-employee-restrictions="early"
-                  draggable="true"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Anna Schmidt</div>
-                    <div class="availability-status status-limited">Begrenzt</div>
-                  </div>
-                  <div class="employee-details">Nur Frühschicht</div>
-                </div>
-
-                <div
-                  class="employee-item unavailable"
-                  data-employee-id="3"
-                  data-employee-name="Peter Weber"
-                  data-employee-status="unavailable"
-                  draggable="false"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Peter Weber</div>
-                    <div class="availability-status status-unavailable">Urlaub</div>
-                  </div>
-                  <div class="employee-details">Bis 26.05.2025</div>
-                </div>
-
-                <div
-                  class="employee-item"
-                  data-employee-id="4"
-                  data-employee-name="Lisa Wagner"
-                  data-employee-status="available"
-                  draggable="true"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Lisa Wagner</div>
-                    <div class="availability-status status-available">Verfügbar</div>
-                  </div>
-                  <div class="employee-details">Erfahrung: 3 Jahre</div>
-                </div>
-
-                <div
-                  class="employee-item unavailable"
-                  data-employee-id="5"
-                  data-employee-name="Tom Fischer"
-                  data-employee-status="unavailable"
-                  draggable="false"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Tom Fischer</div>
-                    <div class="availability-status status-unavailable">Krank</div>
-                  </div>
-                  <div class="employee-details">Seit 20.05.2025</div>
-                </div>
+                <!-- Employee items will be loaded here dynamically -->
               </div>
             </div>
           </div>
@@ -882,6 +896,54 @@
       </main>
     </div>
 
+    <script>
+      // Dropdown Functions
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      function selectOption(type, value, text) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+        const hiddenInput = document.getElementById(type + 'Select');
+
+        display.querySelector('span').textContent = text;
+        display.classList.remove('active');
+        dropdown.classList.remove('active');
+        
+        // Set the hidden input value
+        if (hiddenInput) {
+          hiddenInput.value = value;
+          // Trigger change event
+          const event = new Event('change');
+          hiddenInput.dispatchEvent(event);
+        }
+      }
+
+      // Click outside to close
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Make functions globally available
+      window.toggleDropdown = toggleDropdown;
+      window.selectOption = selectOption;
+    </script>
     <script type="module" src="/scripts/auth.ts"></script>
     <script type="module" src="/scripts/shifts.ts"></script>
     <script type="module" src="/scripts/utils/modal-manager.ts"></script>
