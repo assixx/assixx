@@ -195,7 +195,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
       filter: String(req.query.filter || "all"),
       search: String(req.query.search || ""),
       page: parseInt(String(req.query.page || "1"), 10),
-      limit: parseInt(String(req.query.limit || "10"), 10),
+      limit: parseInt(String(req.query.limit || "18"), 10),
       sortBy: String(req.query.sortBy || "created_at"),
       sortDir: String(req.query.sortDir || "DESC"),
     };
@@ -249,7 +249,7 @@ router.get("/entries", authenticateToken, async (req, res): Promise<void> => {
       filter: String(req.query.filter || "all"),
       search: String(req.query.search || ""),
       page: parseInt(String(req.query.page || "1"), 10),
-      limit: parseInt(String(req.query.limit || "10"), 10),
+      limit: parseInt(String(req.query.limit || "18"), 10),
       sortBy: String(req.query.sortBy || "created_at"),
       sortDir: String(req.query.sortOrder || req.query.sortDir || "DESC"),
     };

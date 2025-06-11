@@ -204,6 +204,13 @@ class UnifiedNavigation {
           ],
         },
         {
+          id: 'teams',
+          icon: this.getSVGIcon('team'),
+          label: 'Teams',
+          url: '#teams',
+          section: 'teams',
+        },
+        {
           id: 'documents',
           icon: this.getSVGIcon('document'),
           label: 'Dokumente',
@@ -247,13 +254,6 @@ class UnifiedNavigation {
           label: 'Gehaltsabrechnungen',
           url: '#payslips',
           section: 'payslips',
-        },
-        {
-          id: 'teams',
-          icon: this.getSVGIcon('team'),
-          label: 'Teams',
-          url: '#teams',
-          section: 'teams',
         },
         {
           id: 'settings',
