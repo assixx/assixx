@@ -249,6 +249,23 @@ class ModalManager {
 // Export singleton instance
 export const modalManager = new ModalManager();
 
+// Export convenience functions
+export function openModal(content: string, config?: Partial<ModalConfig>): void {
+  const modalId = config?.id || 'modal-' + Date.now();
+  modalManager.show(modalId, {
+    ...config,
+    content
+  });
+}
+
+export function closeModal(modalId?: string): void {
+  if (modalId) {
+    modalManager.hide(modalId);
+  } else {
+    modalManager.hideAll();
+  }
+}
+
 // Also export for window access
 if (typeof window !== 'undefined') {
   (window as any).modalManager = modalManager;

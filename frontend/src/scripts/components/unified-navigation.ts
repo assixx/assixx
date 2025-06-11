@@ -56,6 +56,8 @@ class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
   private currentRole: 'admin' | 'employee' | 'root' | null = null;
   private navigationItems: NavigationItems;
+  private isCollapsed: boolean = false;
+  private userProfileData: UserProfileResponse | null = null;
 
   constructor() {
     this.navigationItems = this.getNavigationItems();
@@ -63,9 +65,15 @@ class UnifiedNavigation {
   }
 
   private init(): void {
+    // Inject CSS styles first
+    this.injectCSS();
+    
+    // Load collapsed state from localStorage
+    this.isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
     this.loadUserInfo();
     this.injectNavigationHTML();
-    this.attachEventListeners();
+    // Don't attach event listeners here - they will be attached after navigation is injected
     
     // Fix logo navigation after DOM is ready
     setTimeout(() => {
@@ -156,6 +164,18 @@ class UnifiedNavigation {
             sidebarAvatar.src = profilePic;
           }
         }
+        
+        // Also update header avatar
+        const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+        if (headerAvatar) {
+          const profilePic = userData.profile_picture || userData.profilePicture || (user as User).profilePicture;
+          if (profilePic) {
+            headerAvatar.src = profilePic;
+          }
+        }
+        
+        // Store profile data
+        this.userProfileData = userData;
       }
     } catch (error) {
       console.error('Error loading full user profile:', error);
@@ -471,6 +491,25 @@ class UnifiedNavigation {
   private injectNavigationHTML(): void {
     const navigation = this.createNavigationHTML();
 
+    // Check for navigation-container first (new approach)
+    const navigationContainer = document.getElementById('navigation-container');
+    if (navigationContainer) {
+      // Create full navigation structure with header and sidebar
+      const fullNavigation = this.createFullNavigationStructure();
+      navigationContainer.innerHTML = fullNavigation;
+      
+      // Re-attach event listeners after inserting HTML
+      setTimeout(() => {
+        console.log('[UnifiedNav] Re-attaching event listeners for navigation-container');
+        this.attachEventListeners();
+        this.updateUnreadMessages();
+        this.updatePendingSurveys();
+        this.updateUnreadDocuments();
+      }, 100);
+      
+      return;
+    }
+
     // Suche nach bestehender Sidebar und ersetze sie
     const existingSidebar = document.querySelector('.sidebar');
     if (existingSidebar) {
@@ -479,6 +518,63 @@ class UnifiedNavigation {
       // Erstelle neue Sidebar falls keine existiert
       this.createSidebarStructure();
     }
+  }
+
+  private createFullNavigationStructure(): string {
+    const userRole = this.currentRole || 'employee';
+    const userName = this.userProfileData?.username || this.currentUser?.username || 'User';
+    const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
+    const lastName = this.userProfileData?.last_name || this.userProfileData?.lastName || '';
+    const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
+    const profilePicture = this.userProfileData?.profile_picture || this.userProfileData?.profilePicture || '/assets/images/default-avatar.svg';
+    
+    return `
+      <!-- Header -->
+      <header class="header">
+        <a href="/${userRole === 'admin' ? 'admin' : userRole === 'root' ? 'root' : 'employee'}-dashboard" class="logo-container">
+          <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" />
+        </a>
+        <div class="header-content">
+          <div class="header-actions">
+            ${userRole === 'admin' || userRole === 'root' ? `
+              <!-- Role Switch Button -->
+              <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="role-switch-text">Als Mitarbeiter</span>
+              </button>
+            ` : ''}
+            
+            <div id="user-info">
+              <img id="user-avatar" src="${profilePicture}" alt="Avatar" />
+              <span id="user-name">${this.escapeHtml(displayName)}</span>
+              <span id="role-indicator" class="role-badge ${userRole}">${userRole === 'admin' ? 'Admin' : userRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
+            </div>
+            
+            <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+              <i class="fas fa-sign-out-alt"></i>
+              Abmelden
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Sidebar -->
+      <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
+        ${this.createNavigationHTML()}
+      </aside>
+    `;
+  }
+
+
+  private escapeHtml(text: string): string {
+    const map: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   private createSidebarStructure(): void {
@@ -686,32 +782,86 @@ class UnifiedNavigation {
 
   private attachSidebarToggle(): void {
     const toggleBtn = document.getElementById('sidebar-toggle');
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
+    
+    // Debug: Check how many sidebars exist
+    const allSidebars = document.querySelectorAll('.sidebar');
+    console.log('[UnifiedNav] Number of sidebars found:', allSidebars.length);
+    allSidebars.forEach((sb, index) => {
+      console.log(`[UnifiedNav] Sidebar ${index}:`, sb);
+      console.log(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
+    });
+    
+    // Try to find the navigation sidebar specifically
+    const navContainer = document.getElementById('navigation-container');
+    const sidebar = navContainer ? navContainer.querySelector('.sidebar') as HTMLElement : document.querySelector('.sidebar') as HTMLElement;
+    const mainContent = document.querySelector('.main-content') as HTMLElement;
 
-    if (!toggleBtn || !sidebar) return;
+    console.log('[UnifiedNav] Toggle button:', toggleBtn);
+    console.log('[UnifiedNav] Sidebar:', sidebar);
+    console.log('[UnifiedNav] Sidebar ID:', sidebar?.id);
+    console.log('[UnifiedNav] Sidebar class:', sidebar?.className);
+    console.log('[UnifiedNav] Main content:', mainContent);
+
+    if (!toggleBtn || !sidebar) {
+      console.error('[UnifiedNav] Toggle button or sidebar not found!');
+      return;
+    }
 
     // Check localStorage for saved state
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
       mainContent?.classList.add('sidebar-collapsed');
+      sidebar.style.setProperty('width', '70px', 'important');
       this.updateToggleIcon();
+    } else {
+      sidebar.style.setProperty('width', '280px', 'important');
     }
 
     // Toggle click handler
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('[UnifiedNav] Toggle clicked!');
+      console.log('[UnifiedNav] Sidebar classes before:', sidebar.className);
+      console.log('[UnifiedNav] Sidebar computed width:', window.getComputedStyle(sidebar).width);
+      
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle('sidebar-collapsed');
+      
+      // Set width directly as inline style to override any CSS
+      console.log('[UnifiedNav] Setting width for collapsed state:', newState);
+      if (newState) {
+        sidebar.style.width = '70px';
+        sidebar.style.setProperty('width', '70px', 'important');
+        console.log('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
+        
+        // Check if there's a CSS rule overriding
+        const computedStyle = window.getComputedStyle(sidebar);
+        console.log('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
+      } else {
+        sidebar.style.width = '280px';
+        sidebar.style.setProperty('width', '280px', 'important');
+        console.log('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
+      }
+      
+      // Force browser to recalculate styles
+      sidebar.offsetWidth;
 
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
+      this.isCollapsed = newState;
 
       // Update icon
       this.updateToggleIcon();
+      
+      console.log('[UnifiedNav] Sidebar collapsed state:', newState);
+      console.log('[UnifiedNav] Sidebar classes after:', sidebar.className);
+      console.log('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
     });
 
     // Hover effect for toggle button
@@ -1090,6 +1240,22 @@ class UnifiedNavigation {
 
   private visibilityListenerAdded = false;
 
+  // CSS injection method
+  private injectCSS(): void {
+    if (!document.querySelector('#unified-navigation-styles')) {
+      console.log('[UnifiedNav] Injecting CSS styles in init');
+      const styleSheet = document.createElement('style');
+      styleSheet.id = 'unified-navigation-styles';
+      styleSheet.textContent = unifiedNavigationCSS;
+      document.head.appendChild(styleSheet);
+      
+      // Force style recalculation
+      document.body.offsetHeight;
+    } else {
+      console.log('[UnifiedNav] CSS styles already present');
+    }
+  }
+
   // Storage Widget erstellen (nur für Root User)
   private createStorageWidget(): string {
     return `
@@ -1177,6 +1343,42 @@ class UnifiedNavigation {
 
 // CSS Styles für die Unified Navigation
 const unifiedNavigationCSS = `
+    /* Header Base Styles */
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 var(--spacing-lg);
+        z-index: 1000;
+    }
+    
+    .header .header-content {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .header .logo-container {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        margin-right: var(--spacing-lg);
+    }
+    
+    .header .logo {
+        height: 40px;
+        width: auto;
+    }
+
     .header .header-actions {
         display: flex;
         align-items: center;
@@ -1208,7 +1410,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar {
-        width: 280px;
+        width: 280px !important;
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(20px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -1216,7 +1418,7 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        transition: all 0.3s ease;
+        transition: width 0.3s ease !important;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -1445,7 +1647,7 @@ const unifiedNavigationCSS = `
 
     /* Collapsed Sidebar Styles */
     .sidebar.collapsed {
-        width: 70px;
+        width: 70px !important;
     }
 
     .sidebar.collapsed .sidebar-title {
@@ -1930,8 +2132,8 @@ const unifiedNavigationCSS = `
     /* Layout adjustments */
     .layout-container {
         display: flex;
-        min-height: calc(100vh - 60px);
-        margin-top: 10px;
+        min-height: 100vh;
+        padding-top: 60px; /* Space for fixed header */
     }
 
     .main-content {
@@ -2109,10 +2311,13 @@ const unifiedNavigationCSS = `
 
 // CSS automatisch einbinden
 if (!document.querySelector('#unified-navigation-styles')) {
+  console.log('[UnifiedNav] Injecting CSS styles');
   const styleSheet = document.createElement('style');
   styleSheet.id = 'unified-navigation-styles';
   styleSheet.textContent = unifiedNavigationCSS;
   document.head.appendChild(styleSheet);
+} else {
+  console.log('[UnifiedNav] CSS styles already present');
 }
 
 // Export to window for backwards compatibility
@@ -2141,9 +2346,18 @@ if (!document.querySelector('#unified-navigation-styles')) {
 };
 
 // Navigation automatisch initialisieren
-document.addEventListener('DOMContentLoaded', () => {
+// Prüfe ob DOM bereits geladen ist
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.unifiedNav = new UnifiedNavigation();
+  });
+} else {
+  // DOM ist bereits geladen, initialisiere sofort
   window.unifiedNav = new UnifiedNavigation();
+}
 
+// Setup periodic updates
+const setupPeriodicUpdates = () => {
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
     window.unifiedNav.updateUnreadMessages();
@@ -2161,7 +2375,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.unifiedNav.updateStorageInfo();
     setInterval(() => window.unifiedNav.updateStorageInfo(), 60000); // Alle 60 Sekunden
   }
-});
+};
+
+// Call setup after initialization
+setTimeout(setupPeriodicUpdates, 100);
 
 // Export to window for legacy support
 window.UnifiedNavigation = UnifiedNavigation;

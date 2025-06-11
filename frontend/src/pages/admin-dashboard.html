@@ -58,24 +58,6 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
-      .header {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      /* Glassmorphismus für Sidebar */
-      .sidebar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          8px 0 32px rgba(0, 0, 0, 0.3),
-          inset -1px 0 0 rgba(255, 255, 255, 0.1);
-      }
 
       /* Glassmorphismus für Stat-Cards */
       .stat-card {
@@ -564,37 +546,11 @@
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/pages/admin-dashboard.html" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
-      </a>
-      <div class="header-actions">
-        <!-- Role Switch Button -->
-        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
-          <i class="fas fa-exchange-alt"></i>
-          <span class="role-switch-text">Als Mitarbeiter</span>
-        </button>
-        
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Lade...</span>
-          <span id="role-indicator" class="role-badge admin">Admin</span>
-        </div>
-        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i>
-          Abmelden
-        </button>
-      </div>
-    </header>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Unified Sidebar Navigation -->
-      <aside class="sidebar">
-        <!-- Navigation wird durch unified-navigation.js injiziert -->
-      </aside>
-
       <!-- Main Content Area -->
       <main class="main-content">
         <!-- Dashboard Section -->
@@ -2801,7 +2757,5 @@
       }
     </style>
     
-    <!-- Role Switch Script -->
-    <script type="module" src="/scripts/role-switch.ts"></script>
   </body>
 </html>

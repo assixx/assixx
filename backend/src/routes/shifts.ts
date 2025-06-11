@@ -374,14 +374,54 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
     const startStr = startDate.toISOString().split("T")[0];
     const endStr = endDate.toISOString().split("T")[0];
 
-    // Temporarily return empty shifts array
-    // TODO: Implement proper shift fetching when shifts table is created
-    console.log(`Shifts requested for date range: ${startStr} to ${endStr}`);
+    const authReq = req as AuthenticatedRequest;
+    const tenantId = authReq.user.tenant_id || 1;
 
-    res.json({
-      success: true,
-      shifts: [],
-    });
+    try {
+      // Query shifts for the date range
+      const query = `
+        SELECT 
+          sa.id,
+          sa.shift_id,
+          sa.user_id as employee_id,
+          s.date,
+          s.start_time,
+          s.end_time,
+          CASE 
+            WHEN TIME(s.start_time) = '06:00:00' THEN 'early'
+            WHEN TIME(s.start_time) = '14:00:00' THEN 'late'
+            WHEN TIME(s.start_time) = '22:00:00' THEN 'night'
+            ELSE 'custom'
+          END as shift_type,
+          s.department_id,
+          s.team_id,
+          sa.notes,
+          u.first_name,
+          u.last_name,
+          u.username
+        FROM shift_assignments sa
+        JOIN shifts s ON sa.shift_id = s.id
+        JOIN users u ON sa.user_id = u.id
+        WHERE s.tenant_id = ?
+          AND s.date BETWEEN ? AND ?
+          AND sa.status = 'accepted'
+        ORDER BY s.date, s.start_time
+      `;
+
+      const [rows] = await (db as any).execute(query, [tenantId, startStr, endStr]);
+
+      res.json({
+        success: true,
+        shifts: rows || [],
+      });
+    } catch (error) {
+      console.error('Error fetching shifts:', error);
+      // Return empty array on error
+      res.json({
+        success: true,
+        shifts: [],
+      });
+    }
   } catch (error: any) {
     console.error("Error fetching shifts:", error);
     res.status(500).json({
@@ -411,21 +451,34 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
     const weekDate = new Date(String(week));
     const weekStart = weekDate.toISOString().split("T")[0];
 
-    // Calculate week end (7 days later)
-    const weekEnd = new Date(weekDate);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekEndStr = weekEnd.toISOString().split("T")[0];
+    const authReq = req as AuthenticatedRequest;
+    const tenantId = authReq.user.tenant_id || 1;
 
-    // Temporarily return empty notes
-    // TODO: Implement proper notes fetching when shift_notes table is created
-    console.log(
-      `Shift notes requested for week: ${weekStart} to ${weekEndStr}`,
-    );
+    try {
+      // Query shift notes for the week
+      const query = `
+        SELECT notes
+        FROM shift_notes
+        WHERE tenant_id = ?
+          AND date = ?
+        LIMIT 1
+      `;
 
-    res.json({
-      success: true,
-      notes: {},
-    });
+      const [rows] = await (db as any).execute(query, [tenantId, weekStart]);
+      const notes = rows && rows.length > 0 ? rows[0].notes : '';
+
+      res.json({
+        success: true,
+        notes: notes || '',
+      });
+    } catch (error) {
+      console.error('Error fetching shift notes:', error);
+      // Return empty notes on error
+      res.json({
+        success: true,
+        notes: '',
+      });
+    }
   } catch (error: any) {
     console.error("Error fetching shift notes:", error);
     res.status(500).json({
@@ -436,7 +489,7 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
 });
 
 /**
- * Create a new shift
+ * Create a new shift or save weekly shift plan
  * POST /api/shifts
  */
 router.post("/", authenticateToken, async (req, res): Promise<void> => {
@@ -452,18 +505,103 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       return;
     }
 
-    const shiftData = {
-      ...req.body,
-      tenant_id: authReq.user.tenant_id || 1,
-      created_by: authReq.user.id,
-    };
+    const tenantId = authReq.user.tenant_id || 1;
+    const { week_start, week_end, assignments, notes } = req.body;
 
-    const shift = await Shift.createShift(shiftData);
-    res.status(201).json({
-      success: true,
-      message: "Schicht erfolgreich erstellt",
-      shift,
-    });
+    // Check if this is a weekly shift plan save
+    if (week_start && week_end && assignments) {
+      try {
+        // Start transaction
+        await (db as any).beginTransaction();
+
+        // Delete existing assignments for this week
+        const deleteQuery = `
+          DELETE sa FROM shift_assignments sa
+          JOIN shifts s ON sa.shift_id = s.id
+          WHERE s.tenant_id = ?
+            AND s.date BETWEEN ? AND ?
+        `;
+        await (db as any).execute(deleteQuery, [tenantId, week_start, week_end]);
+
+        // Delete existing shifts for this week  
+        const deleteShiftsQuery = `
+          DELETE FROM shifts
+          WHERE tenant_id = ?
+            AND date BETWEEN ? AND ?
+        `;
+        await (db as any).execute(deleteShiftsQuery, [tenantId, week_start, week_end]);
+
+        // Create shifts and assignments
+        for (const assignment of assignments) {
+          // First create the shift
+          const shiftTime = {
+            'early': { start: '06:00:00', end: '14:00:00' },
+            'late': { start: '14:00:00', end: '22:00:00' },
+            'night': { start: '22:00:00', end: '06:00:00' }
+          }[assignment.shift_type] || { start: '08:00:00', end: '16:00:00' };
+
+          const [shiftResult] = await (db as any).execute(
+            `INSERT INTO shifts (tenant_id, plan_id, date, start_time, end_time, title, required_employees, department_id, team_id, created_by)
+             VALUES (?, 1, ?, ?, ?, ?, 1, ?, ?, ?)`,
+            [
+              tenantId,
+              assignment.shift_date,
+              shiftTime.start,
+              shiftTime.end,
+              assignment.shift_type,
+              assignment.department_id || null,
+              assignment.team_leader_id || null,
+              authReq.user.id
+            ]
+          );
+
+          const shiftId = shiftResult.insertId;
+
+          // Then create the assignment
+          await (db as any).execute(
+            `INSERT INTO shift_assignments (tenant_id, shift_id, user_id, assignment_type, status, assigned_by)
+             VALUES (?, ?, ?, 'assigned', 'accepted', ?)`,
+            [tenantId, shiftId, assignment.employee_id, authReq.user.id]
+          );
+        }
+
+        // Save weekly notes if provided
+        if (notes) {
+          await (db as any).execute(
+            `INSERT INTO shift_notes (tenant_id, date, notes, created_by)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE notes = VALUES(notes), updated_at = NOW()`,
+            [tenantId, week_start, notes, authReq.user.id]
+          );
+        }
+
+        // Commit transaction
+        await (db as any).commit();
+
+        res.json({
+          success: true,
+          message: "Schichtplan erfolgreich gespeichert",
+        });
+      } catch (error) {
+        // Rollback on error
+        await (db as any).rollback();
+        throw error;
+      }
+    } else {
+      // Single shift creation (existing logic)
+      const shiftData = {
+        ...req.body,
+        tenant_id: tenantId,
+        created_by: authReq.user.id,
+      };
+
+      const shift = await Shift.createShift(shiftData);
+      res.status(201).json({
+        success: true,
+        message: "Schicht erfolgreich erstellt",
+        shift,
+      });
+    }
   } catch (error: any) {
     console.error("Error creating shift:", error);
     res.status(500).json({
@@ -863,15 +1001,68 @@ router.get(
 
 /**
  * Save weekly notes
+ * POST /api/shifts/notes
+ */
+router.post(
+  "/notes",
+  authenticateToken,
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const { week, notes } = req.body;
+
+      if (!week) {
+        res.status(400).json({
+          success: false,
+          message: "Week date is required",
+        });
+        return;
+      }
+
+      const tenantId = authReq.user.tenant_id || 1;
+      const weekDate = new Date(week).toISOString().split('T')[0];
+
+      // Insert or update notes
+      const query = `
+        INSERT INTO shift_notes (tenant_id, date, notes, created_by)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          notes = VALUES(notes),
+          updated_at = NOW()
+      `;
+
+      await (db as any).execute(query, [
+        tenantId,
+        weekDate,
+        notes || '',
+        authReq.user.id
+      ]);
+
+      res.json({
+        success: true,
+        message: "Notizen gespeichert",
+      });
+    } catch (error: any) {
+      console.error("Error saving weekly notes:", error);
+      res.status(500).json({
+        success: false,
+        message: "Fehler beim Speichern der Wochennotizen",
+      });
+    }
+  },
+);
+
+/**
+ * Save weekly notes (legacy endpoint for compatibility)
  * POST /api/shifts/weekly-notes
  */
 router.post(
   "/weekly-notes",
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  authenticateToken,
+  async (req, res): Promise<void> => {
     try {
-      // const authReq = req as AuthenticatedRequest; // Unused
-      const { week, year } = req.body; // notes and context unused
+      const authReq = req as AuthenticatedRequest;
+      const { week, year, notes } = req.body;
 
       if (!week || !year) {
         res.status(400).json({
@@ -881,7 +1072,30 @@ router.post(
         return;
       }
 
-      // For now, just return success
+      // Convert week/year to date
+      const weekDate = new Date();
+      weekDate.setFullYear(parseInt(year));
+      weekDate.setDate(weekDate.getDate() + (parseInt(week) - 1) * 7);
+      const weekStart = weekDate.toISOString().split('T')[0];
+
+      const tenantId = authReq.user.tenant_id || 1;
+
+      // Insert or update notes
+      const query = `
+        INSERT INTO shift_notes (tenant_id, date, notes, created_by)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          notes = VALUES(notes),
+          updated_at = NOW()
+      `;
+
+      await (db as any).execute(query, [
+        tenantId,
+        weekStart,
+        notes || '',
+        authReq.user.id
+      ]);
+
       res.json({
         success: true,
         message: "Notizen gespeichert",

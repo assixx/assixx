@@ -783,3 +783,49 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* Shift Details Modal Styles */
+.shift-detail-modal {
+  padding: var(--spacing-lg);
+}
+
+.shift-detail-modal h3 {
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-lg);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.shift-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex: 0 0 180px;
+}
+
+.detail-value {
+  flex: 1;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}

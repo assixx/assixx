@@ -36,42 +36,6 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
-      .header {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      /* Glassmorphismus für Sidebar */
-      .sidebar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          8px 0 32px rgba(0, 0, 0, 0.3),
-          inset -1px 0 0 rgba(255, 255, 255, 0.1);
-      }
-
-      /* Fix for sidebar title alignment */
-      .sidebar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        margin: 0 0 16px 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 12px;
-        border: 1px solid rgba(33, 150, 243, 0.2);
-      }
 
       /* Demo Section Styles */
       .demo-section {
@@ -665,72 +629,11 @@
     </style>
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
-      </a>
-      <div class="header-actions">
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Design Standards</span>
-        </div>
-        <button class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i>
-          Demo
-        </button>
-      </div>
-    </header>
+    <!-- Navigation Container -->
+    <div id="navigation-container"></div>
 
-    <!-- Main Layout with Sidebar -->
+    <!-- Main Layout -->
     <div class="layout-container">
-      <!-- Sidebar Navigation -->
-      <aside class="sidebar">
-        <nav class="sidebar-nav">
-          <h3 class="sidebar-title">
-            <span class="title-icon">📐</span>
-            Navigation
-          </h3>
-          <ul class="sidebar-menu">
-            <li class="sidebar-item active">
-              <a href="#background" class="sidebar-link">
-                <span class="icon">🎨</span>
-                <span>Background</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="#cards" class="sidebar-link">
-                <span class="icon">📦</span>
-                <span>Cards</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="#buttons" class="sidebar-link">
-                <span class="icon">🔘</span>
-                <span>Buttons</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="#schwarzes-brett-buttons" class="sidebar-link">
-                <span class="icon">📌</span>
-                <span>Schwarzes Brett</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="#forms" class="sidebar-link">
-                <span class="icon">📝</span>
-                <span>Forms</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="#modals" class="sidebar-link">
-                <span class="icon">🪟</span>
-                <span>Modals</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
 
       <!-- Main Content Area -->
       <main class="main-content">
@@ -1672,7 +1575,7 @@
       });
     </script>
 
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
+    <!-- Scripts -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

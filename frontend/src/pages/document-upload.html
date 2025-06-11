@@ -36,26 +36,7 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
-      .header {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      /* Glassmorphismus für Sidebar */
-      .sidebar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          8px 0 32px rgba(0, 0, 0, 0.3),
-          inset -1px 0 0 rgba(255, 255, 255, 0.1);
-      }
+      /* Header und Sidebar werden von unified-navigation gehandelt */
 
       /* Fix for sidebar title alignment */
       .sidebar-title {
@@ -656,29 +637,11 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/pages/admin-dashboard.html" class="logo-container">
-        <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
-      </a>
-      <div class="header-actions">
-        <div id="user-info" class="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" class="user-avatar" />
-          <span id="user-name" class="user-name">Lade...</span>
-        </div>
-        <button id="logout-btn" class="btn-logout">
-          <i class="fas fa-sign-out-alt"></i>
-          Abmelden
-        </button>
-      </div>
-    </header>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Unified Sidebar Navigation -->
-      <aside class="sidebar">
-        <!-- Navigation wird durch unified-navigation.js injiziert -->
-      </aside>
 
       <!-- Main Content Area -->
       <main class="main-content">
@@ -1510,17 +1473,5 @@
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
-    
-    <!-- Logout Functionality -->
-    <script>
-      document.getElementById('logout-btn').addEventListener('click', function() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('user');
-        window.location.href = '/pages/login.html';
-      });
-    </script>
   </body>
 </html>

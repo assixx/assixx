@@ -35,14 +35,6 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
-      .header {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
 
       /* Glassmorphismus für Cards */
       .card {
@@ -171,21 +163,14 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
-      </a>
-      <div class="header-actions">
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Lade...</span>
-        </div>
-        <button onclick="window.location.href='/admin-dashboard'" class="btn btn-secondary">Zurück zum Dashboard</button>
-      </div>
-    </header>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
 
-    <div class="container mt-4">
+    <!-- Main Layout mit Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="container">
       <h1>Feature Management</h1>
 
       <!-- Tenant Auswahl -->
@@ -498,7 +483,10 @@
         loadTenants();
       });
     </script>
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
+        </div>
+      </main>
+    </div>
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>
