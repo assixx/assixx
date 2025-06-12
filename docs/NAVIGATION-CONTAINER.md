@@ -9,11 +9,12 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
 ### Funktionsweise
 
 1. **HTML-Struktur (minimal)**:
+
    ```html
    <body>
      <!-- Nur dieser eine Container -->
      <div id="navigation-container"></div>
-     
+
      <!-- Main Layout -->
      <div class="layout-container">
        <main class="main-content">
@@ -24,6 +25,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    ```
 
 2. **TypeScript generiert alles**:
+
    - `unified-navigation.ts` erstellt Header + Sidebar dynamisch
    - Rolle-basierte Menüs werden automatisch geladen
    - Badges, Avatar, User-Info werden zentral verwaltet
@@ -32,7 +34,10 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    ```html
    <script type="module" src="/scripts/auth.ts"></script>
    <script type="module" src="/scripts/shifts.ts"></script>
-   <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+   <script
+     type="module"
+     src="/scripts/components/unified-navigation.ts"
+   ></script>
    ```
 
 ### Vorteile
@@ -48,6 +53,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
 ### Funktionsweise
 
 1. **Jede Seite hat eigenen Header**:
+
    ```html
    <header class="header">
      <a href="/admin-dashboard" class="logo-container">
@@ -78,14 +84,14 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
 
 ## Vergleich der Systeme
 
-| Aspekt | Altes System | Neues System |
-|--------|--------------|--------------|
-| **Header-Definition** | In jeder HTML-Datei | Einmal in unified-navigation.ts |
-| **Sidebar-Definition** | Teilweise dynamisch | Komplett dynamisch |
-| **Scripts benötigt** | 3-5 verschiedene | Nur unified-navigation.ts |
-| **Wartbarkeit** | Schwer (viele Dateien) | Einfach (eine Datei) |
-| **Konsistenz** | Oft inkonsistent | Immer konsistent |
-| **Performance** | Mehr HTTP-Requests | Weniger Requests |
+| Aspekt                 | Altes System           | Neues System                    |
+| ---------------------- | ---------------------- | ------------------------------- |
+| **Header-Definition**  | In jeder HTML-Datei    | Einmal in unified-navigation.ts |
+| **Sidebar-Definition** | Teilweise dynamisch    | Komplett dynamisch              |
+| **Scripts benötigt**   | 3-5 verschiedene       | Nur unified-navigation.ts       |
+| **Wartbarkeit**        | Schwer (viele Dateien) | Einfach (eine Datei)            |
+| **Konsistenz**         | Oft inkonsistent       | Immer konsistent                |
+| **Performance**        | Mehr HTTP-Requests     | Weniger Requests                |
 
 ## Probleme bei der Migration (shifts.html Case Study)
 
@@ -94,11 +100,13 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
 **Problem**: Der Toggle-Button funktionierte bei shifts.html nicht, obwohl er bei anderen Seiten funktionierte.
 
 **Ursachen**:
+
 - Doppelte Event-Listener-Registrierung (einmal im init(), einmal nach DOM-Injection)
 - CSS-Konflikte durch lokale Styles in shifts.html
 - Das neue System verwendete CSS-Klassen, aber shifts.html hatte eigene `.sidebar` Styles
 
 **Lösung**:
+
 ```typescript
 // Entfernt: Doppelte attachEventListeners() Aufrufe
 // Hinzugefügt: Inline-Styles als Fallback
@@ -110,14 +118,17 @@ sidebar.style.setProperty('width', '70px', 'important');
 **Problem**: Im Header wurde immer der default-avatar angezeigt, nicht das Profilbild des Users.
 
 **Ursachen**:
+
 - Avatar-URL war hardcoded: `src="/assets/images/default-avatar.svg"`
 - Profildaten waren beim Erstellen des Headers noch nicht geladen
 - Kein Update-Mechanismus nach dem Laden der Profildaten
 
 **Lösung**:
+
 ```typescript
 // 1. Dynamischer Avatar bei der Erstellung
-const profilePicture = this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
+const profilePicture =
+  this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
 
 // 2. Update nach Profil-Load
 const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
@@ -175,6 +186,7 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 ## Migration Status & Roadmap
 
 ### ✅ Bereits migriert (Stand: 11.06.2025)
+
 - `shifts.html` - Schichtplanung (Referenz-Implementierung)
 - `admin-dashboard.html` - Admin Hauptseite ✅
 - `employee-dashboard.html` - Mitarbeiter Hauptseite ✅
@@ -208,11 +220,13 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 ### 📋 Noch zu migrieren
 
 #### Employee Dashboard & Seiten
+
 - [ ] `employee-profile.html` - Mitarbeiter Profil (braucht komplette Überarbeitung - verwendet altes Design-System)
 
 ### ✅ Erfolgreich migrierte Seiten:
 
 **Admin Dashboard & Seiten:**
+
 - ✅ `admin-dashboard.html` - Admin Hauptseite
 - ✅ `archived-employees.html` - Archivierte Mitarbeiter
 - ✅ `admin-config.html` - Admin Konfiguration
@@ -221,10 +235,12 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 - ✅ `manage-admins.html` - Admin-Verwaltung
 
 **Root Dashboard & Seiten:**
+
 - ✅ `root-dashboard.html` - Root Hauptseite
 - ✅ `root-features.html` - Root Feature-Verwaltung
 
 **Feature-Seiten:**
+
 - ✅ `blackboard.html` - Schwarzes Brett
 - ✅ `calendar.html` - Kalender
 - ✅ `chat.html` - Chat
@@ -233,28 +249,33 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 - ✅ `shifts.html` - Schichtplanung (Referenz-Implementierung)
 
 **Profile-Seiten:**
+
 - ✅ `admin-profile.html` - Admin Profil
 - ✅ `profile.html` - Allgemeines Profil
 - ✅ `root-profile.html` - Root Profil
 
 **Dokument-Seiten:**
+
 - ✅ `salary-documents.html` - Gehaltsabrechnungen
 - ✅ `employee-documents.html` - Mitarbeiter Dokumente
 - ✅ `document-upload.html` - Dokument Upload
 
 **Survey-Seiten:**
+
 - ✅ `survey-admin.html` - Umfragen Admin-Ansicht
 - ✅ `survey-employee.html` - Umfragen Mitarbeiter-Ansicht
 - ✅ `survey-details.html` - Umfragen Details
 - ✅ `survey-results.html` - Umfragen Ergebnisse
 
 **Sonstige Seiten:**
+
 - ✅ `storage-upgrade.html` - Speicher-Upgrade
 - ✅ `design-standards.html` - Design Standards (Entwickler-Seite)
 - ⚠️ `profile-picture.html` - Nur Komponente (keine Migration nötig)
 - ⚠️ `hilfe.html` - Statische Seite (keine Migration nötig)
 
 #### Ausgeschlossen von Migration
+
 - `login.html` - Keine Navigation benötigt
 - `signup.html` - Keine Navigation benötigt
 - `index.html` - Landing Page ohne Navigation
@@ -263,11 +284,13 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 ### Migrations-Priorität
 
 1. **Hohe Priorität** (Hauptseiten):
+
    - admin-dashboard.html
    - employee-dashboard.html
    - root-dashboard.html
 
 2. **Mittlere Priorität** (Häufig genutzte Features):
+
    - blackboard.html
    - calendar.html
    - chat.html
@@ -283,11 +306,13 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 ### Migration Zusammenfassung
 
 **Abgeschlossen:** 29 von 30 Seiten (97%)
+
 - ✅ 29 Seiten erfolgreich migriert
 - ⚠️ 1 Seite benötigt komplette Überarbeitung (`employee-profile.html`)
 - ⏰ Gesamtzeit: ~8 Stunden (schneller als geschätzt)
 
 **Hauptvorteile der Migration:**
+
 - 🎯 Konsistente Navigation auf allen Seiten
 - 🚀 Bessere Performance durch weniger Script-Duplikation
 - 🛠️ Einfachere Wartung - nur noch eine Datei für Navigation
@@ -295,6 +320,7 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 - 🔧 Keine Script-Konflikte mehr
 
 **Nächste Schritte:**
+
 1. `employee-profile.html` komplett neu gestalten (verwendet altes Design-System)
 2. Performance-Tests durchführen
 3. Browser-Kompatibilität prüfen

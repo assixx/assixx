@@ -1,6 +1,6 @@
 // Database-specific Type Definitions
 
-import { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 export interface DatabaseConfig {
   host: string;
@@ -18,11 +18,11 @@ export interface DatabaseConfig {
 export interface MockDatabase {
   query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
     sql: string,
-    params?: any[],
+    params?: any[]
   ): Promise<T>;
   execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
     sql: string,
-    params?: any[],
+    params?: any[]
   ): Promise<T>;
   getConnection(): Promise<any>;
 }

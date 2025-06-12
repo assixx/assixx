@@ -35,6 +35,7 @@ docker stop assixx-phpmyadmin && docker rm assixx-phpmyadmin
 Falls phpMyAdmin nicht gewünscht:
 
 1. **Adminer** (leichter):
+
    ```yaml
    adminer:
      image: adminer
@@ -64,6 +65,7 @@ Falls phpMyAdmin nicht gewünscht:
 ### ⚠️ Wichtig
 
 Die Datenbank-Verbindung erfolgt über das Docker-Netzwerk. Deshalb:
+
 - Host: `mysql` (nicht localhost!)
 - Port: 3306 (Standard MySQL Port)
 - Alle Änderungen wirken sich direkt auf die Entwicklungs-DB aus!

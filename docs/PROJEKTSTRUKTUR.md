@@ -6,6 +6,7 @@
 ## 🏗️ Überblick
 
 Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
+
 - ✅ Root-Verzeichnis aufgeräumt
 - ✅ Dokumentation in `docs/` verschoben
 - ✅ Scripts in `scripts/` organisiert
@@ -30,6 +31,7 @@ Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
 ## 🌳 Detaillierte Struktur
 
 ### 📁 Root-Verzeichnis (Aufgeräumt!)
+
 ```
 /home/scs/projects/Assixx/
 ├── README.md             # Projekt-Hauptdokumentation
@@ -47,6 +49,7 @@ Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
 ```
 
 ### 📁 docs/ (NEU - Alle Dokumentationen)
+
 ```
 docs/
 ├── AKTIONSPLAN-BETA-FIXES.md    # Beta-Deployment Plan
@@ -77,6 +80,7 @@ docs/
 ```
 
 ### 📁 scripts/ (NEU - Alle Shell-Scripts)
+
 ```
 scripts/
 ├── apply-sql-updates.sh      # SQL-Updates anwenden
@@ -92,6 +96,7 @@ scripts/
 ```
 
 ### 📁 docker/ (NEU - Docker-Konfigurationen)
+
 ```
 docker/
 ├── Dockerfile                    # Production Dockerfile
@@ -435,22 +440,26 @@ uploads/
 ## 📋 Wichtige Dateien
 
 ### Backend
+
 - `backend/src/server.ts` - Server Entry Point
 - `backend/src/app.ts` - Express App Setup
 - `backend/src/database.ts` - DB Connection Management
 
 ### Frontend
+
 - `frontend/src/index.html` - SPA Entry Point
 - `frontend/src/scripts/auth.ts` - Authentifizierung
 - `frontend/src/styles/style.css` - Haupt-Stylesheet
 
 ### Konfiguration
+
 - `.env` - Umgebungsvariablen (nicht im Git!)
 - `docker/.env.docker` - Docker Environment
 
 ## 📝 Hinweise zur Struktur
 
 ### ✅ Vorteile der neuen Struktur:
+
 1. **Sauberes Root-Verzeichnis** - Nur essenzielle Dateien
 2. **Organisierte Dokumentation** - Alles in `docs/`
 3. **Zentrale Scripts** - Alle Scripts in `scripts/`
@@ -458,12 +467,14 @@ uploads/
 5. **Bessere Übersichtlichkeit** - Logische Gruppierung
 
 ### 🚧 Migration-Status:
+
 - ✅ Dokumentation nach `docs/` verschoben
 - ✅ Scripts nach `scripts/` verschoben
 - ✅ Docker-Files nach `docker/` verschoben
 - ✅ Root-Verzeichnis aufgeräumt
 
 ### 📌 Nächste Schritte:
+
 1. Git-Repository mit neuer Struktur committen
 2. CI/CD Pipelines anpassen
 3. Deployment-Scripts aktualisieren
@@ -471,4 +482,4 @@ uploads/
 
 ---
 
-*Diese Datei wird bei Strukturänderungen aktualisiert.*
+_Diese Datei wird bei Strukturänderungen aktualisiert._

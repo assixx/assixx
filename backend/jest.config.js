@@ -21,10 +21,7 @@ export default {
       },
     ],
   },
-  testMatch: [
-    '**/__tests__/**/*.test.ts',
-    '**/__tests__/**/*.test.js',
-  ],
+  testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.js'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -34,15 +31,9 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-    '/build/',
-  ],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/'],
   moduleDirectories: ['node_modules', 'src'],
   maxWorkers: '50%',
   testTimeout: 30000,
-  transformIgnorePatterns: [
-    'node_modules/(?!(supertest)/)',
-  ],
+  transformIgnorePatterns: ['node_modules/(?!(supertest)/)'],
 };

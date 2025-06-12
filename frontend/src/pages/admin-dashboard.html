@@ -58,7 +58,6 @@
         z-index: -1;
       }
 
-
       /* Glassmorphismus für Stat-Cards */
       .stat-card {
         background: rgba(255, 255, 255, 0.02);
@@ -363,13 +362,13 @@
       .stat-card:hover {
         /*animation: subtle-pulse 2s infinite;*/
       }
-      
+
       /* Action buttons in tables - equal width */
       .table td:last-child .btn {
         min-width: 110px;
         margin: 2px;
       }
-      
+
       /* Status buttons - Outline style like Secondary buttons */
       .btn-status-active {
         background: transparent;
@@ -381,7 +380,7 @@
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
       }
-      
+
       .btn-status-active:hover {
         background: rgba(255, 107, 53, 0.1);
         border-color: #ff5722;
@@ -389,7 +388,7 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
       }
-      
+
       .btn-status-inactive {
         background: transparent;
         border: 1px solid #28a745;
@@ -400,7 +399,7 @@
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
       }
-      
+
       .btn-status-inactive:hover {
         background: rgba(40, 167, 69, 0.1);
         border-color: #218838;
@@ -408,12 +407,12 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
       }
-      
+
       /* Blackboard Preview Styles */
       .blackboard-preview {
         min-height: 200px;
       }
-      
+
       .blackboard-preview .list-item {
         padding: 12px;
         border-radius: 8px;
@@ -424,13 +423,13 @@
         position: relative;
         overflow: hidden;
       }
-      
+
       .blackboard-preview .list-item:hover {
         background: rgba(255, 255, 255, 0.04);
         border-color: rgba(255, 255, 255, 0.1);
         transform: translateX(4px);
       }
-      
+
       .blackboard-preview .list-item::before {
         content: '📌';
         position: absolute;
@@ -439,11 +438,11 @@
         font-size: 14px;
         opacity: 0.8;
       }
-      
+
       .blackboard-preview .list-item-content {
         margin-left: 24px;
       }
-      
+
       .blackboard-preview .list-item-title {
         font-weight: 600;
         color: var(--text-primary);
@@ -454,7 +453,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      
+
       .blackboard-preview .list-item-meta {
         font-size: 0.85rem;
         color: var(--text-secondary);
@@ -462,7 +461,7 @@
         align-items: center;
         gap: 12px;
       }
-      
+
       .blackboard-preview .priority-badge {
         display: inline-flex;
         align-items: center;
@@ -471,53 +470,49 @@
         border-radius: 12px;
         font-weight: 500;
       }
-      
+
       .blackboard-preview .priority-urgent {
         background: rgba(244, 67, 54, 0.2);
         color: #f44336;
         border: 1px solid rgba(244, 67, 54, 0.3);
       }
-      
+
       .blackboard-preview .priority-high {
         background: rgba(255, 152, 0, 0.2);
         color: #ff9800;
         border: 1px solid rgba(255, 152, 0, 0.3);
       }
-      
+
       .blackboard-preview .priority-normal {
         background: rgba(33, 150, 243, 0.2);
         color: #2196f3;
         border: 1px solid rgba(33, 150, 243, 0.3);
       }
-      
+
       .blackboard-preview .priority-low {
         background: rgba(76, 175, 80, 0.2);
         color: #4caf50;
         border: 1px solid rgba(76, 175, 80, 0.3);
       }
-      
+
       /* Skeleton Loading */
       .loading-placeholder {
         padding: 8px 0;
       }
-      
+
       .skeleton {
-        background: linear-gradient(90deg, 
-          rgba(255, 255, 255, 0.05) 25%, 
-          rgba(255, 255, 255, 0.1) 50%, 
-          rgba(255, 255, 255, 0.05) 75%
-        );
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s infinite;
         border-radius: 4px;
         margin-bottom: 8px;
       }
-      
+
       .skeleton-text {
         height: 48px;
         width: 100%;
       }
-      
+
       @keyframes skeleton-loading {
         0% {
           background-position: 200% 0;
@@ -526,14 +521,14 @@
           background-position: -200% 0;
         }
       }
-      
+
       /* Empty State */
       .blackboard-empty-state {
         text-align: center;
         padding: 40px 20px;
         color: var(--text-secondary);
       }
-      
+
       .blackboard-empty-state i {
         font-size: 48px;
         opacity: 0.3;
@@ -603,7 +598,7 @@
           </div>
 
           <!-- Blackboard Widget -->
-          <div id="blackboard-widget-container" style="margin-top: 2rem;"></div>
+          <div id="blackboard-widget-container" style="margin-top: 2rem"></div>
 
           <!-- Main Grid Container -->
           <div class="admin-grid">
@@ -849,7 +844,8 @@
           <div class="flex-between mb-3">
             <div>
               <button class="btn btn-primary" onclick="window.location.href='/pages/document-upload.html'">
-                <i class="fas fa-upload me-2"></i>Dokument hochladen
+                <i class="fas fa-upload me-2"></i>
+                Dokument hochladen
               </button>
               <a href="/pages/documents.html" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
             </div>
@@ -946,7 +942,6 @@
           </div>
         </section>
 
-
         <!-- Settings Section -->
         <section id="settings-section" class="content-section" style="display: none">
           <h1>Einstellungen</h1>
@@ -1003,7 +998,9 @@
                 </svg>
               </div>
               <div class="dropdown-options" id="department-visibility-dropdown" style="display: none">
-                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'public', 'Öffentlich')">Öffentlich</div>
+                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'public', 'Öffentlich')">
+                  Öffentlich
+                </div>
                 <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'private', 'Privat')">Privat</div>
               </div>
               <input type="hidden" name="visibility" id="department-visibility-select" value="public" />
@@ -1306,7 +1303,7 @@
         border-radius: var(--radius-sm);
       }
     </style>
-    
+
     <!-- Custom Dropdown Styles -->
     <style>
       .custom-dropdown {
@@ -1412,7 +1409,7 @@
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
     <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
-    
+
     <!-- Initialize dashboard on page load -->
     <script type="module">
       // Ensure dashboard section is shown on page load
@@ -1422,7 +1419,7 @@
           // Check if a specific section was requested in URL
           const urlParams = new URLSearchParams(window.location.search);
           const requestedSection = urlParams.get('section');
-          
+
           // If no specific section or 'dashboard-section' requested, show dashboard
           if (!requestedSection || requestedSection === 'dashboard-section' || requestedSection === 'dashboard') {
             // Use showSection directly (it's already imported statically)
@@ -1433,7 +1430,7 @@
               const dashboardSection = document.getElementById('dashboard-section');
               if (dashboardSection) {
                 // Hide all sections
-                document.querySelectorAll('.content-section').forEach(section => {
+                document.querySelectorAll('.content-section').forEach((section) => {
                   section.style.display = 'none';
                 });
                 // Show dashboard
@@ -1602,11 +1599,11 @@
       function toggleDropdown(dropdownId) {
         const dropdown = document.getElementById(dropdownId + '-dropdown');
         const display = document.getElementById(dropdownId + '-display');
-        
+
         if (dropdown && display) {
           dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
           display.classList.toggle('active');
-          
+
           // Optional: Close when clicking outside
           if (dropdown.style.display === 'block') {
             setTimeout(() => {
@@ -1621,12 +1618,12 @@
           }
         }
       }
-      
+
       function selectDropdownOption(dropdownId, value, text) {
         const hiddenInput = document.getElementById(dropdownId + '-select');
         const display = document.getElementById(dropdownId + '-display');
         const dropdown = document.getElementById(dropdownId + '-dropdown');
-        
+
         if (hiddenInput && display && dropdown) {
           hiddenInput.value = value;
           display.querySelector('span').textContent = text;
@@ -1659,19 +1656,18 @@
             const tbody = document.getElementById('departments-table-body');
             if (tbody) {
               tbody.innerHTML = departments
-                .map(
-                  (dept) => {
-                    // Convert Buffer to String if needed
-                    let description = '-';
-                    if (dept.description) {
-                      if (dept.description.type === 'Buffer' && dept.description.data) {
-                        description = String.fromCharCode(...dept.description.data);
-                      } else if (typeof dept.description === 'string') {
-                        description = dept.description;
-                      }
+                .map((dept) => {
+                  // Convert Buffer to String if needed
+                  let description = '-';
+                  if (dept.description) {
+                    if (dept.description.type === 'Buffer' && dept.description.data) {
+                      description = String.fromCharCode(...dept.description.data);
+                    } else if (typeof dept.description === 'string') {
+                      description = dept.description;
                     }
-                    
-                    return `
+                  }
+
+                  return `
                             <tr>
                                 <td>${dept.name}</td>
                                 <td>${description}</td>
@@ -1697,7 +1693,7 @@
                                 </td>
                             </tr>
                         `;
-                  })
+                })
                 .join('');
             } else {
               console.error('Departments table body not found');
@@ -1752,7 +1748,7 @@
           if (response.ok) {
             const department = await response.json();
             console.log('Department data:', department);
-            
+
             // Convert Buffer to String if needed
             let description = '';
             if (department.description) {
@@ -1881,38 +1877,37 @@
       async function loadDocumentsTable() {
         console.log('Loading documents table');
         const token = localStorage.getItem('token');
-        
+
         try {
           const response = await fetch('/api/documents', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             const documents = data.documents || data;
             console.log(`Loaded ${documents.length} documents`);
-            
+
             const tbody = document.getElementById('documents-table-body');
             if (tbody) {
               tbody.innerHTML = documents
-                .map(
-                  (doc) => {
-                    // Bestimme den Empfänger-Text basierend auf recipient_type
-                    let recipientDisplay = '-';
-                    if (doc.recipient_type === 'user' && doc.employee_name) {
-                      recipientDisplay = doc.employee_name;
-                    } else if (doc.recipient_type === 'team' && doc.team_name) {
-                      recipientDisplay = `Team: ${doc.team_name}`;
-                    } else if (doc.recipient_type === 'department' && doc.department_name) {
-                      recipientDisplay = `Abteilung: ${doc.department_name}`;
-                    } else if (doc.recipient_type === 'company') {
-                      recipientDisplay = 'Gesamte Firma';
-                    } else if (doc.employee_name) {
-                      // Fallback für alte Dokumente
-                      recipientDisplay = doc.employee_name;
-                    }
-                    
-                    return `
+                .map((doc) => {
+                  // Bestimme den Empfänger-Text basierend auf recipient_type
+                  let recipientDisplay = '-';
+                  if (doc.recipient_type === 'user' && doc.employee_name) {
+                    recipientDisplay = doc.employee_name;
+                  } else if (doc.recipient_type === 'team' && doc.team_name) {
+                    recipientDisplay = `Team: ${doc.team_name}`;
+                  } else if (doc.recipient_type === 'department' && doc.department_name) {
+                    recipientDisplay = `Abteilung: ${doc.department_name}`;
+                  } else if (doc.recipient_type === 'company') {
+                    recipientDisplay = 'Gesamte Firma';
+                  } else if (doc.employee_name) {
+                    // Fallback für alte Dokumente
+                    recipientDisplay = doc.employee_name;
+                  }
+
+                  return `
                     <tr>
                       <td>${doc.file_name || doc.filename || '-'}</td>
                       <td>${recipientDisplay}</td>
@@ -1929,12 +1924,16 @@
                             <i class="fas fa-download me-1"></i>
                             Download
                           </button>
-                          ${!doc.is_archived ? `
+                          ${
+                            !doc.is_archived
+                              ? `
                             <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archivieren">
                               <i class="fas fa-archive me-1"></i>
                               Archiv
                             </button>
-                          ` : ''}
+                          `
+                              : ''
+                          }
                           <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})" title="Löschen">
                             <i class="fas fa-trash me-1"></i>
                             Löschen
@@ -1968,33 +1967,34 @@
           }
 
           const employee = await response.json();
-          
+
           // Modal-Felder befüllen
           const employeeIdInput = document.getElementById('status-employee-id');
           const employeeName = document.getElementById('status-employee-name');
           const statusDropdown = document.getElementById('employee-status-dropdown');
           const statusDisplay = document.getElementById('employee-status-display');
-          
+
           if (employeeIdInput) employeeIdInput.value = employeeId;
           if (employeeName) employeeName.textContent = `${employee.first_name} ${employee.last_name}`;
-          
+
           // Aktuellen Status setzen
           const currentStatus = employee.availability_status || 'available';
           if (statusDisplay) {
-            const statusText = {
-              'available': 'Verfügbar',
-              'vacation': 'Urlaub', 
-              'sick': 'Krank',
-              'unavailable': 'Nicht verfügbar'
-            }[currentStatus] || 'Verfügbar';
+            const statusText =
+              {
+                available: 'Verfügbar',
+                vacation: 'Urlaub',
+                sick: 'Krank',
+                unavailable: 'Nicht verfügbar',
+              }[currentStatus] || 'Verfügbar';
             statusDisplay.querySelector('span').textContent = statusText;
           }
-          
+
           // Modal öffnen
           const modal = document.getElementById('employee-status-modal');
           if (modal) {
             modal.style.display = 'flex';
-            
+
             // Form zurücksetzen
             const form = document.getElementById('employee-status-form');
             if (form) {
@@ -2228,7 +2228,7 @@
         data.status = data.is_active ? 'active' : 'inactive';
 
         // Clean up empty values but keep is_active and status even if false
-        Object.keys(data).forEach(key => {
+        Object.keys(data).forEach((key) => {
           if (key !== 'is_active' && key !== 'status' && (data[key] === '' || data[key] === null)) {
             delete data[key];
           }
@@ -2481,7 +2481,7 @@
       async function loadEmployeesTable() {
         console.log('Loading employees table...');
         const token = localStorage.getItem('token');
-        
+
         try {
           const response = await fetch('/api/users?role=employee', {
             headers: {
@@ -2495,7 +2495,7 @@
 
           const employees = await response.json();
           const tableBody = document.getElementById('employees-table-body');
-          
+
           if (!tableBody) {
             console.error('employees-table-body not found');
             return;
@@ -2561,7 +2561,8 @@
         window.deleteEmployee = deleteEmployee;
         window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
         window.loadPayslipsTable = loadPayslipsTable || (() => console.log('loadPayslipsTable not implemented'));
-        window.loadEmployeesForPayslipSelect = loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
+        window.loadEmployeesForPayslipSelect =
+          loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
         window.loadDepartmentsTable = loadDepartmentsTable;
         window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
         window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
@@ -2616,7 +2617,7 @@
       function showAllTeams() {
         console.log('Show all teams');
       }
-      
+
       // Dokument herunterladen
       async function downloadDocument(documentId) {
         const token = localStorage.getItem('token');
@@ -2627,23 +2628,23 @@
           alert('Fehler beim Herunterladen des Dokuments');
         }
       }
-      
+
       // Dokument archivieren
       async function archiveDocument(documentId) {
         if (!confirm('Möchten Sie dieses Dokument archivieren?')) {
           return;
         }
-        
+
         const token = localStorage.getItem('token');
         try {
           const response = await fetch(`/api/documents/archive/${documentId}`, {
             method: 'PUT',
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
           });
-          
+
           if (response.ok) {
             alert('Dokument erfolgreich archiviert');
             loadDocumentsTable();
@@ -2656,20 +2657,24 @@
           alert('Fehler beim Archivieren des Dokuments');
         }
       }
-      
+
       // Dokument löschen
       async function deleteDocument(documentId) {
-        if (!confirm('Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        if (
+          !confirm(
+            'Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
+          )
+        ) {
           return;
         }
-        
+
         const token = localStorage.getItem('token');
         try {
           const response = await fetch(`/api/documents/${documentId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           if (response.ok) {
             alert('Dokument erfolgreich gelöscht');
             loadDocumentsTable();
@@ -2852,12 +2857,12 @@
         width: fit-content;
         transition: all 0.2s ease;
       }
-      
+
       tr:hover .badge-success {
         background: rgba(76, 175, 80, 0.15);
         border-color: rgba(76, 175, 80, 0.3);
       }
-      
+
       tr:hover .badge-danger {
         background: rgba(244, 67, 54, 0.15);
         border-color: rgba(244, 67, 54, 0.3);
@@ -2878,7 +2883,7 @@
         width: fit-content;
         transition: all 0.2s ease;
       }
-      
+
       tr:hover .badge-warning {
         background: rgba(255, 152, 0, 0.15);
         border-color: rgba(255, 152, 0, 0.3);
@@ -2901,6 +2906,5 @@
         align-items: center;
       }
     </style>
-    
   </body>
 </html>

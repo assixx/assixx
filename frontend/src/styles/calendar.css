@@ -82,7 +82,7 @@
 
 #calendar {
   width: 100%;
-  
+
   padding: 10px;
 }
 
@@ -580,7 +580,7 @@
 }
 
 #eventDetailContent h4::before {
-  content: '';
+  content: "";
   width: 4px;
   height: 20px;
   background: var(--primary-color);
@@ -1359,7 +1359,7 @@ select.big-input:disabled {
 }
 
 .color-option.selected::after {
-  content: '\2713';
+  content: "\2713";
   position: absolute;
   top: 50%;
   left: 50%;

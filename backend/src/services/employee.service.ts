@@ -8,8 +8,8 @@
  */
 
 // TODO: Fix import - employee model doesn't exist, using user model instead
-import User from "../models/user";
-import { Pool } from "mysql2/promise";
+import User from '../models/user';
+import { Pool } from 'mysql2/promise';
 
 // Interfaces
 // Re-export types from User model for consistency
@@ -17,7 +17,7 @@ import type {
   DbUser as EmployeeData,
   UserCreateData,
   UserFilter,
-} from "../models/user";
+} from '../models/user';
 
 // Map employee-specific types to User model types
 type EmployeeCreateData = UserCreateData;
@@ -32,13 +32,13 @@ class UserService {
    */
   async getAll(
     _tenantDb: Pool,
-    filters: EmployeeFilters,
+    filters: EmployeeFilters
   ): Promise<EmployeeData[]> {
     try {
       // Use the search method which supports filtering
       return await User.search(filters);
     } catch (error) {
-      console.error("Error in UserService.getAll:", error);
+      console.error('Error in UserService.getAll:', error);
       throw error;
     }
   }
@@ -49,13 +49,13 @@ class UserService {
   async getById(
     _tenantDb: Pool,
     id: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id, tenantId);
       return user || null;
     } catch (error) {
-      console.error("Error in UserService.getById:", error);
+      console.error('Error in UserService.getById:', error);
       throw error;
     }
   }
@@ -65,20 +65,20 @@ class UserService {
    */
   async create(
     _tenantDb: Pool,
-    data: EmployeeCreateData,
+    data: EmployeeCreateData
   ): Promise<EmployeeData> {
     try {
       if (!data.tenant_id) {
-        throw new Error("Tenant ID is required for user creation");
+        throw new Error('Tenant ID is required for user creation');
       }
       const id = await User.create(data);
       const created = await User.findById(id, data.tenant_id);
       if (!created) {
-        throw new Error("Failed to retrieve created user");
+        throw new Error('Failed to retrieve created user');
       }
       return created;
     } catch (error) {
-      console.error("Error in UserService.create:", error);
+      console.error('Error in UserService.create:', error);
       throw error;
     }
   }
@@ -90,7 +90,7 @@ class UserService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    data: EmployeeUpdateData,
+    data: EmployeeUpdateData
   ): Promise<EmployeeData | null> {
     try {
       const success = await User.update(id, data);
@@ -100,7 +100,7 @@ class UserService {
       }
       return null;
     } catch (error) {
-      console.error("Error in UserService.update:", error);
+      console.error('Error in UserService.update:', error);
       throw error;
     }
   }
@@ -112,7 +112,7 @@ class UserService {
     try {
       return await User.delete(id);
     } catch (error) {
-      console.error("Error in UserService.delete:", error);
+      console.error('Error in UserService.delete:', error);
       throw error;
     }
   }

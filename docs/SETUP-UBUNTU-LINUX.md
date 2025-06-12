@@ -14,12 +14,14 @@ Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung de
 ## 🎯 Setup-Optionen
 
 ### Option 1: Docker Setup (Empfohlen) ⭐
+
 - **Zeit:** 5-10 Minuten
 - **Schwierigkeit:** Einfach
 - **Ideal für:** Schnellen Start, Entwicklung, Testing
 - **Vorteile:** Keine manuelle Konfiguration, isolierte Umgebung
 
 ### Option 2: Manuelle Installation
+
 - **Zeit:** 30-45 Minuten
 - **Schwierigkeit:** Mittel
 - **Ideal für:** Produktionsumgebungen, volle Kontrolle
@@ -28,10 +30,12 @@ Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung de
 ## 📚 Inhaltsverzeichnis
 
 ### Docker Setup (Empfohlen):
+
 1. [System vorbereiten](#1-system-vorbereiten)
 2. [Docker Setup](#docker-setup-empfohlen)
 
 ### Manuelle Installation:
+
 3. [VS Code Installation](#2-vs-code-installation)
 4. [Git und GitHub Setup](#3-git-und-github-setup)
 5. [Node.js Installation](#4-nodejs-installation)
@@ -128,6 +132,7 @@ docker ps
 ### Schritt 2.5: Fertig! 🎉
 
 Deine Assixx-Entwicklungsumgebung läuft! Für weitere Details:
+
 - Siehe [DOCKER-SETUP.md](./DOCKER-SETUP.md) für erweiterte Docker-Konfiguration
 - Siehe [DOCKER-BEGINNERS-GUIDE.md](./DOCKER-BEGINNERS-GUIDE.md) für Docker-Grundlagen
 
@@ -643,6 +648,7 @@ Dein Assixx-Entwicklungsumgebung ist bereit!
 ### Täglicher Workflow:
 
 #### Mit Docker:
+
 ```bash
 # Terminal öffnen
 cd ~/projects/Assixx
@@ -661,6 +667,7 @@ code .
 ```
 
 #### Mit manueller Installation:
+
 ```bash
 # Terminal öffnen
 cd ~/projects/Assixx

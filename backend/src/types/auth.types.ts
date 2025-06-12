@@ -1,6 +1,6 @@
 // Authentication-specific Type Definitions
 
-import { User } from "./models";
+import { User } from './models';
 
 // Authentication Results
 export interface AuthResult {
@@ -14,7 +14,7 @@ export interface AuthResult {
 export interface TokenPayload {
   id: number;
   username: string;
-  role: "admin" | "employee" | "root";
+  role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
   iat?: number;
   exp?: number;
@@ -33,7 +33,7 @@ export interface UserRegistrationData {
   email: string;
   vorname: string;
   nachname: string;
-  role?: "admin" | "employee";
+  role?: 'admin' | 'employee';
   tenantId?: number;
 }
 

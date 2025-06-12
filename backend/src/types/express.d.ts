@@ -1,6 +1,6 @@
 // Express Request Extensions Type Definitions
 
-import { TenantInfo } from "./tenant.types";
+import { TenantInfo } from './tenant.types';
 
 declare global {
   namespace Express {

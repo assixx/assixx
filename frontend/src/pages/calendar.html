@@ -12,8 +12,7 @@
     <link rel="stylesheet" href="/styles/calendar.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
-      
-      
+
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -42,8 +41,6 @@
         pointer-events: none;
         z-index: -1;
       }
-
-
 
       /* Glassmorphismus für Cards */
       .card {
@@ -347,7 +344,6 @@
 
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
-
       <!-- Main Content -->
       <main class="container main-content">
         <div class="flex flex-between mb-4">
@@ -451,10 +447,6 @@
 
     <!-- Alle Modals werden dynamisch erstellt -->
 
-
-
-
-
     <!-- Marked.js for Markdown rendering -->
     <script type="module" src="/scripts/lib/marked.min.js"></script>
     <!-- FullCalendar -->
@@ -554,43 +546,42 @@
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
 
-
     <!-- MutationObserver zum Schutz der Header-Struktur -->
     <script>
-      window.addEventListener('DOMContentLoaded', function() {
+      window.addEventListener('DOMContentLoaded', function () {
         const userInfoDiv = document.getElementById('user-info');
-        
+
         if (userInfoDiv) {
           // Speichere Referenzen zu den Original-Elementen
           const originalAvatar = document.getElementById('user-avatar');
           const originalUserName = document.getElementById('user-name');
           const originalRoleIndicator = document.getElementById('role-indicator');
-          
-          const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
+
+          const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
               if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
                 // Prüfe ob alle 3 Elemente vorhanden sind
                 const currentAvatar = document.getElementById('user-avatar');
                 const currentUserName = document.getElementById('user-name');
                 const currentRoleIndicator = document.getElementById('role-indicator');
-                
+
                 if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
                   console.log('[Calendar] Restoring user-info elements');
                   userInfoDiv.innerHTML = '';
-                  
+
                   // Avatar wiederherstellen
                   const newAvatar = originalAvatar ? originalAvatar.cloneNode(true) : document.createElement('img');
                   newAvatar.id = 'user-avatar';
                   newAvatar.src = '/assets/images/default-avatar.svg';
                   newAvatar.alt = 'Avatar';
                   userInfoDiv.appendChild(newAvatar);
-                  
+
                   // Username wiederherstellen
                   const newUserName = originalUserName ? originalUserName.cloneNode(true) : document.createElement('span');
                   newUserName.id = 'user-name';
                   newUserName.textContent = newUserName.textContent || 'Lade...';
                   userInfoDiv.appendChild(newUserName);
-                  
+
                   // Role Badge wiederherstellen
                   const newRoleIndicator = originalRoleIndicator ? originalRoleIndicator.cloneNode(true) : document.createElement('span');
                   newRoleIndicator.id = 'role-indicator';
@@ -601,7 +592,7 @@
               }
             });
           });
-          
+
           observer.observe(userInfoDiv, { childList: true, subtree: false });
         }
       });

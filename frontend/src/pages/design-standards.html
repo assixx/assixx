@@ -145,7 +145,6 @@
         z-index: -1;
       }
 
-
       /* Demo Section Styles */
       .demo-section {
         margin-bottom: 60px;
@@ -332,7 +331,7 @@
         border-color: var(--primary-color);
         transform: translateY(-1px);
       }
-      
+
       /* Status buttons - Outline style like Secondary buttons */
       .btn-status-active {
         background: transparent;
@@ -345,7 +344,7 @@
         backdrop-filter: blur(10px);
         cursor: pointer;
       }
-      
+
       .btn-status-active:hover {
         background: rgba(255, 107, 53, 0.1);
         border-color: #ff5722;
@@ -353,7 +352,7 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
       }
-      
+
       .btn-status-inactive {
         background: transparent;
         border: 1px solid #28a745;
@@ -365,7 +364,7 @@
         backdrop-filter: blur(10px);
         cursor: pointer;
       }
-      
+
       .btn-status-inactive:hover {
         background: rgba(40, 167, 69, 0.1);
         border-color: #218838;
@@ -373,7 +372,7 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
       }
-      
+
       /* Danger buttons - Solid style for visibility */
       .btn-danger {
         background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
@@ -385,13 +384,13 @@
         transition: all 0.3s ease;
         cursor: pointer;
       }
-      
+
       .btn-danger:hover {
         background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
       }
-      
+
       /* Status Badges - Transparentes Design mit Border */
       .badge {
         display: inline-flex;
@@ -411,7 +410,7 @@
         background: rgba(76, 175, 80, 0.1);
         border: 1px solid rgba(76, 175, 80, 0.2);
       }
-      
+
       .badge-success:hover {
         background: rgba(76, 175, 80, 0.15);
         border-color: rgba(76, 175, 80, 0.3);
@@ -422,62 +421,62 @@
         background: rgba(255, 152, 0, 0.1);
         border: 1px solid rgba(255, 152, 0, 0.2);
       }
-      
+
       .badge-warning:hover {
         background: rgba(255, 152, 0, 0.15);
         border-color: rgba(255, 152, 0, 0.3);
       }
-      
+
       .badge-danger {
         color: rgba(244, 67, 54, 0.9);
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.2);
       }
-      
+
       .badge-danger:hover {
         background: rgba(244, 67, 54, 0.15);
         border-color: rgba(244, 67, 54, 0.3);
       }
-      
+
       .badge-primary {
         color: rgba(33, 150, 243, 0.9);
         background: rgba(33, 150, 243, 0.1);
         border: 1px solid rgba(33, 150, 243, 0.2);
       }
-      
+
       .badge-primary:hover {
         background: rgba(33, 150, 243, 0.15);
         border-color: rgba(33, 150, 243, 0.3);
       }
-      
+
       .badge-secondary {
         color: rgba(158, 158, 158, 0.9);
         background: rgba(158, 158, 158, 0.1);
         border: 1px solid rgba(158, 158, 158, 0.2);
       }
-      
+
       .badge-secondary:hover {
         background: rgba(158, 158, 158, 0.15);
         border-color: rgba(158, 158, 158, 0.3);
       }
-      
+
       .badge-info {
         color: rgba(23, 162, 184, 0.9);
         background: rgba(23, 162, 184, 0.1);
         border: 1px solid rgba(23, 162, 184, 0.2);
       }
-      
+
       .badge-info:hover {
         background: rgba(23, 162, 184, 0.15);
         border-color: rgba(23, 162, 184, 0.3);
       }
-      
+
       .badge-dark {
         color: rgba(52, 58, 64, 0.9);
         background: rgba(52, 58, 64, 0.1);
         border: 1px solid rgba(52, 58, 64, 0.2);
       }
-      
+
       .badge-dark:hover {
         background: rgba(52, 58, 64, 0.15);
         border-color: rgba(52, 58, 64, 0.3);
@@ -743,7 +742,6 @@
 
     <!-- Main Layout -->
     <div class="layout-container">
-
       <!-- Main Content Area -->
       <main class="main-content">
         <div class="page-header">
@@ -823,11 +821,11 @@
               <button class="btn btn-secondary">Abbrechen</button>
               <button class="btn btn-secondary">Zurück</button>
               <button class="btn btn-secondary">Mehr Info</button>
-              
+
               <h4 style="color: var(--text-primary); margin: 20px 0 15px 0">Status Buttons (Aktivieren/Deaktivieren)</h4>
               <button class="btn btn-status-active">Deaktivieren</button>
               <button class="btn btn-status-inactive">Aktivieren</button>
-              
+
               <h4 style="color: var(--text-primary); margin: 20px 0 15px 0">Danger Buttons (Löschen)</h4>
               <button class="btn btn-danger">Löschen</button>
               <button class="btn btn-danger">Entfernen</button>
@@ -849,38 +847,19 @@
               <span class="badge badge-danger">Gelöscht</span>
               <span class="badge badge-primary">Öffentlich</span>
               <span class="badge badge-secondary">Privat</span>
-              
+
               <h4 style="color: var(--text-primary); margin: 20px 0 15px 0">Info Badges</h4>
               <span class="badge badge-info">Neu</span>
               <span class="badge badge-dark">Archiviert</span>
-              
+
               <h4 style="color: var(--text-primary); margin: 20px 0 15px 0">Badge CSS</h4>
               <div class="code-block">
                 <code>
-.badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-weight: 700;
-  width: fit-content;
-  transition: all 0.2s ease;
-}
-
-.badge-success {
-  color: rgba(76, 175, 80, 0.9);
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-}
-
-.badge-warning {
-  color: rgba(255, 152, 0, 0.9);
-  background: rgba(255, 152, 0, 0.1);
-  border: 1px solid rgba(255, 152, 0, 0.2);
-}
+                  .badge { display: inline-flex; align-items: center; font-size: 11px; padding: 3px 8px; border-radius: 6px; text-transform:
+                  uppercase; letter-spacing: 0.8px; font-weight: 700; width: fit-content; transition: all 0.2s ease; } .badge-success {
+                  color: rgba(76, 175, 80, 0.9); background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.2); }
+                  .badge-warning { color: rgba(255, 152, 0, 0.9); background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0,
+                  0.2); }
                 </code>
               </div>
             </div>

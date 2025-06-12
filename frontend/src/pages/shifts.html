@@ -46,7 +46,6 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
-
       /* Main content area - wie calendar? */
       .main-content {
         padding: var(--spacing-lg);
@@ -449,7 +448,9 @@
         backdrop-filter: blur(40px) saturate(180%);
         -webkit-backdrop-filter: blur(40px) saturate(180%);
         border-radius: 14px;
-        box-shadow: 0 2px 6px rgb(0, 0, 0),inset 0 1px 0 hsla(0, 0%, 100%, 0.18);
+        box-shadow:
+          0 2px 6px rgb(0, 0, 0),
+          inset 0 1px 0 hsla(0, 0%, 100%, 0.18);
       }
 
       .employee-list {
@@ -631,7 +632,6 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-
       <!-- Main Content -->
       <main class="main-content">
         <div class="shift-planning-container">
@@ -922,7 +922,7 @@
         display.querySelector('span').textContent = text;
         display.classList.remove('active');
         dropdown.classList.remove('active');
-        
+
         // Set the hidden input value
         if (hiddenInput) {
           hiddenInput.value = value;

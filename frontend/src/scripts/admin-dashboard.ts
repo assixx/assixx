@@ -249,6 +249,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBlackboardPreview(); // Laden der Blackboard-Einträge
   }, 100);
 
+  // Handle section parameter on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const section = urlParams.get('section');
+  if (section) {
+    console.log('[Admin Dashboard] Section parameter found:', section);
+    showSection(section);
+  } else {
+    console.log('[Admin Dashboard] No section parameter, showing dashboard');
+    // Default to dashboard if no section specified
+    showSection('dashboard');
+  }
+
   // Setup manage links
   const manageEmployeesLink = document.getElementById('manage-employees-link');
   if (manageEmployeesLink) {
@@ -263,17 +275,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (statusForm) {
     statusForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const employeeIdInput = document.getElementById('status-employee-id') as HTMLInputElement;
       const employeeId = employeeIdInput?.value;
       const formData = new FormData(statusForm);
-      
+
       const availabilityData = {
         employee_id: parseInt(employeeId),
         status: formData.get('status'),
         start_date: formData.get('start_date'),
         end_date: formData.get('end_date'),
-        notes: formData.get('notes')
+        notes: formData.get('notes'),
       };
 
       try {

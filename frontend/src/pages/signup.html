@@ -11,12 +11,13 @@
       @import url('/styles/dashboard-theme.css');
 
       /* Dashboard-Style Design - weniger bunt, mehr dunkel/weiß/blau */
-      
+
       /* Emoji Font Support */
-      .country-option, #selectedFlag {
+      .country-option,
+      #selectedFlag {
         font-family: 'Ubuntu', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
       }
-      
+
       body {
         min-height: 100vh;
         display: flex;
@@ -648,7 +649,7 @@
       <span class="icon">←</span>
       <span>Zurück zur Hauptseite</span>
     </a>
-    
+
     <!-- Help Button -->
     <div class="help-button" onclick="showHelp()">?</div>
 
@@ -656,7 +657,13 @@
       <!-- Header -->
       <div class="signup-header">
         <div class="header-left">
-          <img src="/assets/images/logo.png" alt="Assixx Logo" class="signup-logo" onclick="window.location.reload()" style="cursor: pointer;" />
+          <img
+            src="/assets/images/logo.png"
+            alt="Assixx Logo"
+            class="signup-logo"
+            onclick="window.location.reload()"
+            style="cursor: pointer"
+          />
           <div class="header-text">
             <h1></h1>
             <!-- machen wir anders spöter -->
@@ -867,7 +874,7 @@
           0 8px 32px rgba(0, 0, 0, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
-      
+
       /* Back Button - Glassmorphismus Style wie in design-standards.html */
       .back-button {
         position: fixed;
@@ -892,7 +899,7 @@
           0 4px 16px rgba(0, 0, 0, 0.2),
           inset 0 1px 0 rgba(255, 255, 255, 0.05);
       }
-      
+
       .back-button:hover {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.15);
@@ -902,16 +909,16 @@
           0 6px 24px rgba(0, 0, 0, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
-      
+
       .back-button:active {
         transform: translateX(-3px) scale(0.98);
       }
-      
+
       .back-button .icon {
         font-size: 18px;
         transition: transform 0.3s ease;
       }
-      
+
       .back-button:hover .icon {
         transform: translateX(-3px);
       }

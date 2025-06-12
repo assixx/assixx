@@ -41,9 +41,6 @@
         z-index: -1;
       }
 
-
-
-
       /* Main Content Container */
       .container {
         padding: 24px;
@@ -468,7 +465,6 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-
       <!-- Main Content Area -->
       <main class="main-content">
         <div class="container">
@@ -537,14 +533,26 @@
                     </svg>
                   </div>
                   <div class="dropdown-options" id="positionDropdownDropdown">
-                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'bereichsleiter', 'Bereichsleiter')">Bereichsleiter</div>
-                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'personalleiter', 'Personalleiter')">Personalleiter</div>
-                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">Geschäftsführer</div>
+                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'bereichsleiter', 'Bereichsleiter')">
+                      Bereichsleiter
+                    </div>
+                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'personalleiter', 'Personalleiter')">
+                      Personalleiter
+                    </div>
+                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">
+                      Geschäftsführer
+                    </div>
                     <div class="dropdown-option" onclick="selectOption('positionDropdown', 'werksleiter', 'Werksleiter')">Werksleiter</div>
-                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'produktionsleiter', 'Produktionsleiter')">Produktionsleiter</div>
-                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'qualitaetsleiter', 'Qualitätsleiter')">Qualitätsleiter</div>
+                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'produktionsleiter', 'Produktionsleiter')">
+                      Produktionsleiter
+                    </div>
+                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'qualitaetsleiter', 'Qualitätsleiter')">
+                      Qualitätsleiter
+                    </div>
                     <div class="dropdown-option" onclick="selectOption('positionDropdown', 'it-leiter', 'IT-Leiter')">IT-Leiter</div>
-                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'vertriebsleiter', 'Vertriebsleiter')">Vertriebsleiter</div>
+                    <div class="dropdown-option" onclick="selectOption('positionDropdown', 'vertriebsleiter', 'Vertriebsleiter')">
+                      Vertriebsleiter
+                    </div>
                   </div>
                   <input type="hidden" name="position" id="positionDropdownValue" required />
                 </div>
@@ -556,7 +564,6 @@
               <button type="submit" class="btn btn-primary">Administrator erstellen</button>
             </form>
           </div>
-
         </div>
       </main>
     </div>
@@ -564,7 +571,7 @@
     <!-- JavaScript -->
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    
+
     <!-- Force dashboard to be active on page load -->
     <script type="module">
       document.addEventListener('DOMContentLoaded', () => {
@@ -584,19 +591,19 @@
       function toggleDropdown(dropdownId) {
         const display = document.getElementById(dropdownId + 'Display');
         const options = document.getElementById(dropdownId + 'Dropdown');
-        
+
         if (display && options) {
           display.classList.toggle('active');
           options.classList.toggle('active');
         }
-        
+
         // Close other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach(d => {
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
           if (d.id !== dropdownId + 'Display') {
             d.classList.remove('active');
           }
         });
-        document.querySelectorAll('.dropdown-options').forEach(o => {
+        document.querySelectorAll('.dropdown-options').forEach((o) => {
           if (o.id !== dropdownId + 'Dropdown') {
             o.classList.remove('active');
           }
@@ -607,7 +614,7 @@
         const display = document.getElementById(dropdownId + 'Display');
         const options = document.getElementById(dropdownId + 'Dropdown');
         const input = document.getElementById(dropdownId + 'Value');
-        
+
         if (display && input) {
           display.querySelector('span').textContent = text;
           input.value = value;
@@ -619,10 +626,10 @@
       // Close dropdowns when clicking outside
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach(d => {
+          document.querySelectorAll('.dropdown-display').forEach((d) => {
             d.classList.remove('active');
           });
-          document.querySelectorAll('.dropdown-options').forEach(o => {
+          document.querySelectorAll('.dropdown-options').forEach((o) => {
             o.classList.remove('active');
           });
         }

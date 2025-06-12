@@ -4,10 +4,10 @@
  * NOTE: This controller was previously named UserController but renamed for consistency
  */
 
-import { Request, Response } from "express";
-import { Pool } from "mysql2/promise";
-import employeeService from "../services/employee.service";
-import type { UserCreateData } from "../models/user";
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
+import employeeService from '../services/employee.service';
+import type { UserCreateData } from '../models/user';
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -32,7 +32,7 @@ interface EmployeeCreateRequest extends TenantRequest {
     first_name?: string;
     last_name?: string;
     phone?: string;
-    role?: "admin" | "user" | "manager";
+    role?: 'admin' | 'user' | 'manager';
     department_id?: number | null;
     team_id?: number | null;
     hire_date?: Date | string;
@@ -55,7 +55,7 @@ interface EmployeeUpdateRequest extends TenantRequest {
     first_name?: string;
     last_name?: string;
     phone?: string;
-    role?: "admin" | "user" | "manager";
+    role?: 'admin' | 'user' | 'manager';
     department_id?: number | null;
     team_id?: number | null;
     hire_date?: Date | string;
@@ -83,14 +83,14 @@ interface EmployeeGetRequest extends TenantRequest {
 interface EmployeeQueryRequest extends TenantRequest {
   query: {
     search?: string;
-    role?: "admin" | "user" | "manager";
+    role?: 'admin' | 'user' | 'manager';
     department_id?: string;
     team_id?: string;
     is_active?: string;
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
@@ -102,14 +102,14 @@ class EmployeeController {
   async getAll(req: EmployeeQueryRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       // Parse query parameters to appropriate types
       const tenantId = req.tenantId || req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: "Tenant ID not found" });
+        res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
@@ -122,7 +122,7 @@ class EmployeeController {
           : undefined,
         team_id: req.query.team_id ? parseInt(req.query.team_id) : undefined,
         is_active: req.query.is_active
-          ? req.query.is_active === "true"
+          ? req.query.is_active === 'true'
           : undefined,
         page: req.query.page ? parseInt(req.query.page) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit) : undefined,
@@ -133,10 +133,10 @@ class EmployeeController {
       const result = await employeeService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error) {
-      console.error("Error in EmployeeController.getAll:", error);
+      console.error('Error in EmployeeController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -148,34 +148,34 @@ class EmployeeController {
   async getById(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       // Get tenant ID from request
       const tenantId = req.tenantId || req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: "Tenant ID not found" });
+        res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
       const result = await employeeService.getById(req.tenantDb, id, tenantId);
       if (!result) {
-        res.status(404).json({ error: "Nicht gefunden" });
+        res.status(404).json({ error: 'Nicht gefunden' });
         return;
       }
       res.json(result);
     } catch (error) {
-      console.error("Error in EmployeeController.getById:", error);
+      console.error('Error in EmployeeController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -187,39 +187,39 @@ class EmployeeController {
   async create(req: EmployeeCreateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       // Get tenant ID from request
       const tenantId = req.tenantId || req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: "Tenant ID not found" });
+        res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
       const employeeData: UserCreateData = {
         username: req.body.username,
         email: req.body.email,
-        password: req.body.password || req.body.password_hash || "",
-        first_name: req.body.first_name || "",
-        last_name: req.body.last_name || "",
-        role: req.body.role || "user",
+        password: req.body.password || req.body.password_hash || '',
+        first_name: req.body.first_name || '',
+        last_name: req.body.last_name || '',
+        role: req.body.role || 'user',
         tenant_id: tenantId,
         department_id: req.body.department_id || undefined,
         profile_picture: req.body.profile_picture || undefined,
         position: req.body.position,
         phone: req.body.phone,
         employee_id: req.body.employee_id,
-        status: req.body.is_active === false ? "inactive" : "active",
+        status: req.body.is_active === false ? 'inactive' : 'active',
       };
       const result = await employeeService.create(req.tenantDb, employeeData);
       res.status(201).json(result);
     } catch (error) {
-      console.error("Error in EmployeeController.create:", error);
+      console.error('Error in EmployeeController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -231,13 +231,13 @@ class EmployeeController {
   async update(req: EmployeeUpdateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -254,9 +254,9 @@ class EmployeeController {
         phone: req.body.phone,
         status:
           req.body.is_active === false
-            ? "inactive"
+            ? 'inactive'
             : req.body.is_active === true
-              ? "active"
+              ? 'active'
               : undefined,
         is_archived: req.body.is_archived || req.body.archived,
       };
@@ -270,7 +270,7 @@ class EmployeeController {
       // Get tenant ID from request
       const tenantId = req.tenantId || req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: "Tenant ID not found" });
+        res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
@@ -278,14 +278,14 @@ class EmployeeController {
         req.tenantDb,
         id,
         tenantId,
-        updateData,
+        updateData
       );
       res.json(result);
     } catch (error) {
-      console.error("Error in EmployeeController.update:", error);
+      console.error('Error in EmployeeController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -297,23 +297,23 @@ class EmployeeController {
   async delete(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       await employeeService.delete(req.tenantDb, id);
       res.status(204).send();
     } catch (error) {
-      console.error("Error in EmployeeController.delete:", error);
+      console.error('Error in EmployeeController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

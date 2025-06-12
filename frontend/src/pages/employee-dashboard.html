@@ -38,7 +38,6 @@
         z-index: -1;
       }
 
-
       /* Employee Dashboard spezifische Styles */
       .welcome-hero {
         background: rgba(255, 255, 255, 0.02);
@@ -843,9 +842,9 @@
             role: payload.role,
             activeRole: payload.activeRole,
             isRoleSwitched: payload.isRoleSwitched,
-            isAdminAsEmployee
+            isAdminAsEmployee,
           });
-          
+
           if (payload.role !== 'employee' && !isAdminAsEmployee) {
             console.log('[Employee Dashboard Auth] Redirecting - not authorized');
             window.location.href = payload.role === 'admin' ? '/admin-dashboard' : '/login';
@@ -1015,7 +1014,7 @@
 
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    
+
     <!-- Force dashboard to be active on page load -->
     <script type="module">
       document.addEventListener('DOMContentLoaded', () => {
@@ -1023,6 +1022,5 @@
         localStorage.removeItem('activeNavigation');
       });
     </script>
-    
   </body>
 </html>

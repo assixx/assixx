@@ -40,7 +40,6 @@ interface Machine {
   description?: string;
 }
 
-
 interface TeamLeader {
   id: number;
   name: string;
@@ -123,10 +122,10 @@ class ShiftPlanningSystem {
       console.log('[SHIFTS DEBUG] Loading employees...');
       await this.loadEmployees();
       console.log('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
-      
+
       console.log('[SHIFTS DEBUG] Loading current week data...');
       await this.loadCurrentWeekData();
-      
+
       console.log('[SHIFTS DEBUG] Loading weekly notes...');
       await this.loadWeeklyNotes();
 
@@ -195,14 +194,14 @@ class ShiftPlanningSystem {
 
   setupEventListeners(): void {
     console.log('[SHIFTS DEBUG] Setting up event listeners');
-    
+
     // Week navigation
     const prevBtn = document.getElementById('prevWeekBtn');
     const nextBtn = document.getElementById('nextWeekBtn');
-    
+
     console.log('[SHIFTS DEBUG] Previous week button:', prevBtn);
     console.log('[SHIFTS DEBUG] Next week button:', nextBtn);
-    
+
     if (prevBtn) {
       prevBtn.addEventListener('click', () => {
         console.log('[SHIFTS DEBUG] Previous week button clicked');
@@ -211,7 +210,7 @@ class ShiftPlanningSystem {
     } else {
       console.error('[SHIFTS ERROR] Previous week button not found!');
     }
-    
+
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
         console.log('[SHIFTS DEBUG] Next week button clicked');
@@ -272,7 +271,7 @@ class ShiftPlanningSystem {
 
       if (employeeItem) {
         console.log('[SHIFTS DEBUG] Drag start on employee:', employeeItem.dataset.employeeId);
-        
+
         // Check if employee is available for dragging
         if (employeeItem.getAttribute('draggable') === 'false') {
           console.log('[SHIFTS DEBUG] Employee not draggable, preventing drag');
@@ -340,7 +339,7 @@ class ShiftPlanningSystem {
 
         const employeeId = e.dataTransfer?.getData('text/plain');
         console.log('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
-        
+
         if (employeeId) {
           this.assignShift(shiftCell, parseInt(employeeId));
         } else {
@@ -372,7 +371,6 @@ class ShiftPlanningSystem {
       const target = e.target as HTMLSelectElement;
       this.selectedContext.teamLeaderId = target.value ? parseInt(target.value) : null;
     });
-
   }
 
   setupNotesEvents(): void {
@@ -500,7 +498,6 @@ class ShiftPlanningSystem {
     this.populateTeamLeaderSelect();
   }
 
-
   populateDepartmentSelect(): void {
     const dropdown = document.getElementById('departmentDropdown');
     if (!dropdown) {
@@ -565,7 +562,6 @@ class ShiftPlanningSystem {
     });
   }
 
-
   async onContextChange(): Promise<void> {
     // Reload machines when department changes
     if (this.selectedContext.departmentId) {
@@ -604,10 +600,10 @@ class ShiftPlanningSystem {
         const data = await response.json();
         const users = Array.isArray(data) ? data : data.users || [];
         this.employees = users.filter((user: User) => user.role === 'employee');
-        
+
         // Now load current availability status
         await this.loadAvailabilityStatus();
-        
+
         this.renderEmployeeList();
       } else {
         throw new Error('Failed to load employees');
@@ -632,9 +628,9 @@ class ShiftPlanningSystem {
       if (response.ok) {
         const data = await response.json();
         const availabilityData = data.employees || [];
-        
+
         // Update employees with availability status
-        this.employees = this.employees.map(emp => {
+        this.employees = this.employees.map((emp) => {
           const availability = availabilityData.find((a: any) => a.employeeId === emp.id);
           if (availability) {
             emp.availability_status = availability.availabilityStatus || 'available';
@@ -651,7 +647,7 @@ class ShiftPlanningSystem {
   renderEmployeeList(): void {
     const container = document.getElementById('employeeList');
     console.log('[SHIFTS DEBUG] Employee list container:', container);
-    
+
     if (!container) {
       console.error('[SHIFTS ERROR] Employee list container not found!');
       return;
@@ -666,10 +662,18 @@ class ShiftPlanningSystem {
       item.dataset.employeeId = employee.id.toString();
 
       // Only available employees can be dragged
-      const isDraggable = this.isAdmin && (employee.availability_status === 'available' || !employee.availability_status);
+      const isDraggable =
+        this.isAdmin && (employee.availability_status === 'available' || !employee.availability_status);
       item.setAttribute('draggable', isDraggable.toString());
-      
-      console.log('[SHIFTS DEBUG] Employee:', employee.username, 'Draggable:', isDraggable, 'Status:', employee.availability_status);
+
+      console.log(
+        '[SHIFTS DEBUG] Employee:',
+        employee.username,
+        'Draggable:',
+        isDraggable,
+        'Status:',
+        employee.availability_status,
+      );
 
       // Add visual indicators for unavailable employees
       if (employee.availability_status && employee.availability_status !== 'available') {
@@ -802,22 +806,24 @@ class ShiftPlanningSystem {
     // Check if employee is available
     if (employee.availability_status && employee.availability_status !== 'available') {
       console.log('[SHIFTS DEBUG] Employee not available:', employee.availability_status);
-      
+
       // Get status text and badge color
-      const statusText = {
-        'vacation': 'Urlaub',
-        'sick': 'Krank',
-        'unavailable': 'Beurlaubt'
-      }[employee.availability_status] || employee.availability_status;
-      
-      const statusBadgeClass = {
-        'vacation': 'badge-warning',
-        'sick': 'badge-danger',
-        'unavailable': 'badge-secondary'
-      }[employee.availability_status] || 'badge-secondary';
-      
+      const statusText =
+        {
+          vacation: 'Urlaub',
+          sick: 'Krank',
+          unavailable: 'Beurlaubt',
+        }[employee.availability_status] || employee.availability_status;
+
+      const statusBadgeClass =
+        {
+          vacation: 'badge-warning',
+          sick: 'badge-danger',
+          unavailable: 'badge-secondary',
+        }[employee.availability_status] || 'badge-secondary';
+
       const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-      
+
       showError(`
         <div style="display: flex; align-items: center; gap: 8px;">
           <span>Mitarbeiter kann nicht zugewiesen werden</span>
@@ -1025,18 +1031,20 @@ class ShiftPlanningSystem {
   navigateWeek(direction: number): void {
     console.log('[SHIFTS DEBUG] Navigating week. Direction:', direction);
     console.log('[SHIFTS DEBUG] Current week before:', this.currentWeek);
-    
+
     const newDate = new Date(this.currentWeek);
     newDate.setDate(newDate.getDate() + direction * 7);
     this.currentWeek = newDate;
-    
+
     console.log('[SHIFTS DEBUG] New week after:', this.currentWeek);
-    
-    this.loadCurrentWeekData().then(() => {
-      console.log('[SHIFTS DEBUG] Week data loaded successfully');
-    }).catch(error => {
-      console.error('[SHIFTS ERROR] Failed to load week data:', error);
-    });
+
+    this.loadCurrentWeekData()
+      .then(() => {
+        console.log('[SHIFTS DEBUG] Week data loaded successfully');
+      })
+      .catch((error) => {
+        console.error('[SHIFTS ERROR] Failed to load week data:', error);
+      });
   }
 
   getWeekStart(date: Date): Date {
@@ -1270,37 +1278,40 @@ class ShiftPlanningSystem {
   private showShiftDetailsModal(shiftCell: HTMLElement): void {
     const date = shiftCell.dataset.date;
     const shift = shiftCell.dataset.shift;
-    
+
     if (!date || !shift) return;
 
     // Find shift details
     const shiftDate = new Date(date);
     const dayName = shiftDate.toLocaleDateString('de-DE', { weekday: 'long' });
     const dateStr = shiftDate.toLocaleDateString('de-DE');
-    
+
     // Get shift time based on type
     const shiftTimes: { [key: string]: string } = {
-      'early': '06:00 - 14:00',
-      'late': '14:00 - 22:00',
-      'night': '22:00 - 06:00'
+      early: '06:00 - 14:00',
+      late: '14:00 - 22:00',
+      night: '22:00 - 06:00',
     };
-    
+
     const shiftNames: { [key: string]: string } = {
-      'early': 'Frühschicht',
-      'late': 'Spätschicht',
-      'night': 'Nachtschicht'
+      early: 'Frühschicht',
+      late: 'Spätschicht',
+      night: 'Nachtschicht',
     };
 
     // Get assigned employees for this shift
     const employeeIds = this.weeklyShifts[date]?.[shift] || [];
-    const assignedEmployees = employeeIds.map(id => {
-      const employee = this.employees.find(e => e.id === id);
-      if (employee) {
-        const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-        return this.escapeHtml(name);
-      }
-      return '';
-    }).filter(name => name).join(', ');
+    const assignedEmployees = employeeIds
+      .map((id) => {
+        const employee = this.employees.find((e) => e.id === id);
+        if (employee) {
+          const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+          return this.escapeHtml(name);
+        }
+        return '';
+      })
+      .filter((name) => name)
+      .join(', ');
 
     const modalContent = `
       <div class="shift-detail-modal">
@@ -1318,16 +1329,24 @@ class ShiftPlanningSystem {
             <span class="detail-label">Zugewiesene Mitarbeiter:</span>
             <span class="detail-value">${assignedEmployees || 'Keine Mitarbeiter zugewiesen'}</span>
           </div>
-          ${this.selectedContext.departmentId ? `
+          ${
+            this.selectedContext.departmentId
+              ? `
           <div class="detail-row">
             <span class="detail-label">Abteilung:</span>
-            <span class="detail-value">${this.departments.find(d => d.id === this.selectedContext.departmentId)?.name || '-'}</span>
-          </div>` : ''}
-          ${this.selectedContext.machineId ? `
+            <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name || '-'}</span>
+          </div>`
+              : ''
+          }
+          ${
+            this.selectedContext.machineId
+              ? `
           <div class="detail-row">
             <span class="detail-label">Maschine:</span>
-            <span class="detail-value">${this.machines.find(m => m.id === this.selectedContext.machineId)?.name || '-'}</span>
-          </div>` : ''}
+            <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name || '-'}</span>
+          </div>`
+              : ''
+          }
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="window.modalManager.closeModal()">Schließen</button>
@@ -1337,7 +1356,7 @@ class ShiftPlanningSystem {
 
     openModal(modalContent, {
       title: 'Schichtdetails',
-      size: 'medium'
+      size: 'medium',
     });
   }
 }

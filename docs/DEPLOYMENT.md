@@ -87,10 +87,10 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/assixx.de/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/assixx.de/privkey.pem;
-    
+
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
-    
+
     location / {
         proxy_pass http://app:3000;
         proxy_http_version 1.1;
@@ -191,6 +191,7 @@ docker exec assixx-nginx nginx -s reload
 ### Environment-Dateien
 
 1. **Niemals .env-Dateien ins Repository committen**
+
    ```bash
    # .gitignore sollte enthalten:
    .env
@@ -199,6 +200,7 @@ docker exec assixx-nginx nginx -s reload
    ```
 
 2. **Sichere Passwörter verwenden**
+
    ```bash
    # Passwort-Generator verwenden
    openssl rand -base64 32
@@ -243,12 +245,14 @@ sudo ufw enable
 ### Docker Security Best Practices
 
 1. **Non-root User in Containers**
+
    ```dockerfile
    # In Dockerfile
    USER node
    ```
 
 2. **Read-only Dateisystem wo möglich**
+
    ```yaml
    # docker-compose.yml
    services:
@@ -270,14 +274,15 @@ sudo ufw enable
 ### Backup-Automatisierung
 
 1. **Datenbank-Backup mit Verschlüsselung**
+
    ```bash
    #!/bin/bash
    # secure-backup.sh
-   
+
    BACKUP_DIR="/secure/backups"
    DATE=$(date +%Y%m%d_%H%M%S)
    ENCRYPTION_KEY="your-encryption-key"
-   
+
    # Backup mit Kompression und Verschlüsselung
    docker exec assixx-mysql mysqldump -u root -p${DB_PASSWORD} --all-databases | \
      gzip | \
@@ -286,6 +291,7 @@ sudo ufw enable
    ```
 
 2. **Backup auf externen Server**
+
    ```bash
    # Rsync zu Backup-Server
    rsync -avz --delete "$BACKUP_DIR/" backup-server:/backups/assixx/
@@ -311,6 +317,7 @@ docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
 Die `docker-compose.monitoring.yml` enthält:
+
 - Prometheus für Metriken
 - Grafana für Visualisierung
 - Loki für Log-Aggregation
@@ -326,12 +333,14 @@ Die `docker-compose.monitoring.yml` enthält:
 ### Wichtige Metriken
 
 1. **Application Metrics**
+
    - Request Rate
    - Response Time
    - Error Rate
    - Active Users
 
 2. **System Metrics**
+
    - CPU Usage
    - Memory Usage
    - Disk I/O
@@ -510,18 +519,18 @@ services:
   traefik:
     image: traefik:v2.9
     command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
+      - '--api.insecure=true'
+      - '--providers.docker=true'
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
   app:
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`assixx.de`) || HostRegexp(`{subdomain:[a-z]+}.assixx.de`)"
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.app.rule=Host(`assixx.de`) || HostRegexp(`{subdomain:[a-z]+}.assixx.de`)'
 ```
 
 ## Troubleshooting
@@ -529,28 +538,31 @@ services:
 ### Docker-spezifische Probleme
 
 1. **Container startet nicht**
+
    ```bash
    # Logs prüfen
    docker-compose logs app
-   
+
    # Container manuell starten für Debug
    docker run -it --rm assixx-app:latest bash
    ```
 
 2. **Netzwerk-Probleme**
+
    ```bash
    # Docker-Netzwerke anzeigen
    docker network ls
-   
+
    # Container-Netzwerk prüfen
    docker inspect assixx-app | grep NetworkMode
    ```
 
 3. **Volume-Probleme**
+
    ```bash
    # Volumes anzeigen
    docker volume ls
-   
+
    # Volume inspizieren
    docker volume inspect assixx_mysql-data
    ```
@@ -558,6 +570,7 @@ services:
 ### Performance-Optimierung
 
 1. **Docker-Ressourcen erhöhen**
+
    ```yaml
    # docker-compose.yml
    services:
@@ -573,6 +586,7 @@ services:
    ```
 
 2. **Build-Cache nutzen**
+
    ```bash
    # Multi-stage builds für kleinere Images
    docker build --target production -t assixx-app:latest .
@@ -581,7 +595,7 @@ services:
 3. **Health Check optimieren**
    ```yaml
    healthcheck:
-     test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+     test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
      interval: 30s
      timeout: 10s
      retries: 3

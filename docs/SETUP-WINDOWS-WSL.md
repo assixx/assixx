@@ -9,12 +9,14 @@ Dieser Guide führt dich Schritt für Schritt durch die komplette Einrichtung de
 Es gibt zwei Wege, Assixx auf Windows einzurichten:
 
 ### 1. 🐳 **Docker Setup (EMPFOHLEN)** - ⏱️ ~15 Minuten
+
 - Schnellste und einfachste Methode
 - Automatische Konfiguration aller Komponenten
 - Keine manuelle Installation von Datenbank, Node.js etc.
 - Ideal für schnellen Start und einheitliche Entwicklungsumgebung
 
 ### 2. 🔧 **Manuelle Installation** - ⏱️ ~45-60 Minuten
+
 - Für fortgeschrittene Nutzer
 - Volle Kontrolle über alle Komponenten
 - Direkter Zugriff auf alle Services

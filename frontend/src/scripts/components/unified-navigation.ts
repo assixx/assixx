@@ -67,14 +67,14 @@ class UnifiedNavigation {
   private init(): void {
     // Inject CSS styles first
     this.injectCSS();
-    
+
     // Load collapsed state from localStorage
     this.isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    
+
     this.loadUserInfo();
     this.injectNavigationHTML();
     // Don't attach event listeners here - they will be attached after navigation is injected
-    
+
     // Fix logo navigation after DOM is ready
     setTimeout(() => {
       this.fixLogoNavigation();
@@ -109,6 +109,19 @@ class UnifiedNavigation {
       } catch (error) {
         console.error('Error parsing token:', error);
       }
+    }
+  }
+
+  private getSectionUrl(section: string): string {
+    // Check if we're on admin-dashboard page
+    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard.html');
+    
+    if (isOnAdminDashboard) {
+      // If we're already on admin dashboard, use simple query parameter
+      return `?section=${section}`;
+    } else {
+      // If we're on another page, navigate to admin dashboard with section parameter
+      return `/pages/admin-dashboard.html?section=${section}`;
     }
   }
 
@@ -164,7 +177,7 @@ class UnifiedNavigation {
             sidebarAvatar.src = profilePic;
           }
         }
-        
+
         // Also update header avatar
         const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
         if (headerAvatar) {
@@ -173,7 +186,7 @@ class UnifiedNavigation {
             headerAvatar.src = profilePic;
           }
         }
-        
+
         // Store profile data
         this.userProfileData = userData;
       }
@@ -190,20 +203,20 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Übersicht',
-          url: '/pages/admin-dashboard.html',
+          url: this.getSectionUrl('dashboard'),
           section: 'dashboard',
         },
         {
           id: 'employees',
           icon: this.getSVGIcon('users'),
           label: 'Mitarbeiter',
-          url: '#employees',
+          url: this.getSectionUrl('employees'),
           section: 'employees',
           children: [
             {
               id: 'employees-list',
               label: 'Mitarbeiterliste',
-              url: '#employees',
+              url: this.getSectionUrl('employees'),
               section: 'employees',
             },
           ],
@@ -212,13 +225,13 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '#departments',
+          url: this.getSectionUrl('departments'),
           section: 'departments',
           children: [
             {
               id: 'departments-all',
               label: 'Alle Abteilungen',
-              url: '#departments',
+              url: this.getSectionUrl('departments'),
               section: 'departments',
             },
           ],
@@ -227,14 +240,14 @@ class UnifiedNavigation {
           id: 'teams',
           icon: this.getSVGIcon('team'),
           label: 'Teams',
-          url: '#teams',
+          url: this.getSectionUrl('teams'),
           section: 'teams',
         },
         {
           id: 'documents',
           icon: this.getSVGIcon('document'),
           label: 'Dokumente',
-          url: '#documents',
+          url: this.getSectionUrl('documents'),
           section: 'documents',
         },
         {
@@ -265,21 +278,21 @@ class UnifiedNavigation {
               id: 'tpm',
               icon: this.getSVGIcon('wrench'),
               label: 'TPM',
-              url: '#tpm',
+              url: this.getSectionUrl('tpm'),
               section: 'tpm',
             },
             {
               id: '5s',
               icon: this.getSVGIcon('star'),
               label: '5S',
-              url: '#5s',
+              url: this.getSectionUrl('5s'),
               section: '5s',
             },
             {
               id: 'standards',
               icon: this.getSVGIcon('checklist'),
               label: 'Standards',
-              url: '#standards',
+              url: this.getSectionUrl('standards'),
               section: 'standards',
             },
           ],
@@ -369,21 +382,21 @@ class UnifiedNavigation {
               id: 'tpm',
               icon: this.getSVGIcon('wrench'),
               label: 'TPM',
-              url: '#tpm',
+              url: this.getSectionUrl('tpm'),
               section: 'tpm',
             },
             {
               id: '5s',
               icon: this.getSVGIcon('star'),
               label: '5S',
-              url: '#5s',
+              url: this.getSectionUrl('5s'),
               section: '5s',
             },
             {
               id: 'standards',
               icon: this.getSVGIcon('checklist'),
               label: 'Standards',
-              url: '#standards',
+              url: this.getSectionUrl('standards'),
               section: 'standards',
             },
           ],
@@ -476,9 +489,11 @@ class UnifiedNavigation {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
       poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
       lean: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
-      wrench: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></svg>',
+      wrench:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></svg>',
       star: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>',
-      checklist: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
+      checklist:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -497,7 +512,7 @@ class UnifiedNavigation {
       // Create full navigation structure with header and sidebar
       const fullNavigation = this.createFullNavigationStructure();
       navigationContainer.innerHTML = fullNavigation;
-      
+
       // Re-attach event listeners after inserting HTML
       setTimeout(() => {
         console.log('[UnifiedNav] Re-attaching event listeners for navigation-container');
@@ -506,7 +521,7 @@ class UnifiedNavigation {
         this.updatePendingSurveys();
         this.updateUnreadDocuments();
       }, 100);
-      
+
       return;
     }
 
@@ -526,8 +541,11 @@ class UnifiedNavigation {
     const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
     const lastName = this.userProfileData?.last_name || this.userProfileData?.lastName || '';
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
-    const profilePicture = this.userProfileData?.profile_picture || this.userProfileData?.profilePicture || '/assets/images/default-avatar.svg';
-    
+    const profilePicture =
+      this.userProfileData?.profile_picture ||
+      this.userProfileData?.profilePicture ||
+      '/assets/images/default-avatar.svg';
+
     return `
       <!-- Header -->
       <header class="header">
@@ -536,13 +554,17 @@ class UnifiedNavigation {
         </a>
         <div class="header-content">
           <div class="header-actions">
-            ${userRole === 'admin' || userRole === 'root' ? `
+            ${
+              userRole === 'admin' || userRole === 'root'
+                ? `
               <!-- Role Switch Button -->
               <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
                 <i class="fas fa-exchange-alt"></i>
                 <span class="role-switch-text">Als Mitarbeiter</span>
               </button>
-            ` : ''}
+            `
+                : ''
+            }
             
             <div id="user-info">
               <img id="user-avatar" src="${profilePicture}" alt="Avatar" />
@@ -565,14 +587,13 @@ class UnifiedNavigation {
     `;
   }
 
-
   private escapeHtml(text: string): string {
     const map: { [key: string]: string } = {
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
-      "'": '&#039;'
+      "'": '&#039;',
     };
     return text.replace(/[&<>"']/g, (m) => map[m]);
   }
@@ -656,7 +677,8 @@ class UnifiedNavigation {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
     const hasSubmenu = item.hasSubmenu && item.submenu && item.submenu.length > 0;
-    const clickHandler = item.section && !hasChildren && !hasSubmenu ? `onclick="showSection('${item.section}')"` : '';
+    // Remove onclick handler - use normal navigation instead
+    const clickHandler = '';
 
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
@@ -674,7 +696,7 @@ class UnifiedNavigation {
         .submenu!.map(
           (child) => `
         <li class="submenu-item">
-          <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
+          <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
@@ -708,7 +730,7 @@ class UnifiedNavigation {
         .children!.map(
           (child) => `
         <li class="submenu-item">
-          <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
+          <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
@@ -782,7 +804,7 @@ class UnifiedNavigation {
 
   private attachSidebarToggle(): void {
     const toggleBtn = document.getElementById('sidebar-toggle');
-    
+
     // Debug: Check how many sidebars exist
     const allSidebars = document.querySelectorAll('.sidebar');
     console.log('[UnifiedNav] Number of sidebars found:', allSidebars.length);
@@ -790,10 +812,12 @@ class UnifiedNavigation {
       console.log(`[UnifiedNav] Sidebar ${index}:`, sb);
       console.log(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
     });
-    
+
     // Try to find the navigation sidebar specifically
     const navContainer = document.getElementById('navigation-container');
-    const sidebar = navContainer ? navContainer.querySelector('.sidebar') as HTMLElement : document.querySelector('.sidebar') as HTMLElement;
+    const sidebar = navContainer
+      ? (navContainer.querySelector('.sidebar') as HTMLElement)
+      : (document.querySelector('.sidebar') as HTMLElement);
     const mainContent = document.querySelector('.main-content') as HTMLElement;
 
     console.log('[UnifiedNav] Toggle button:', toggleBtn);
@@ -822,24 +846,24 @@ class UnifiedNavigation {
     toggleBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       console.log('[UnifiedNav] Toggle clicked!');
       console.log('[UnifiedNav] Sidebar classes before:', sidebar.className);
       console.log('[UnifiedNav] Sidebar computed width:', window.getComputedStyle(sidebar).width);
-      
+
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle('sidebar-collapsed');
-      
+
       // Set width directly as inline style to override any CSS
       console.log('[UnifiedNav] Setting width for collapsed state:', newState);
       if (newState) {
         sidebar.style.width = '70px';
         sidebar.style.setProperty('width', '70px', 'important');
         console.log('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
-        
+
         // Check if there's a CSS rule overriding
         const computedStyle = window.getComputedStyle(sidebar);
         console.log('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
@@ -848,7 +872,7 @@ class UnifiedNavigation {
         sidebar.style.setProperty('width', '280px', 'important');
         console.log('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
       }
-      
+
       // Force browser to recalculate styles
       sidebar.offsetWidth;
 
@@ -858,7 +882,7 @@ class UnifiedNavigation {
 
       // Update icon
       this.updateToggleIcon();
-      
+
       console.log('[UnifiedNav] Sidebar collapsed state:', newState);
       console.log('[UnifiedNav] Sidebar classes after:', sidebar.className);
       console.log('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
@@ -970,15 +994,26 @@ class UnifiedNavigation {
       currentPath.includes('employee-dashboard') ||
       currentPath.includes('root-dashboard');
 
-    // If on dashboard page and no specific section is active, default to overview
-    if (isMainDashboard && (!activeNav || activeNav === 'dashboard')) {
-      // Force "Übersicht" to be active
-      const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
-      if (dashboardLink) {
-        dashboardLink.closest('.sidebar-item')?.classList.add('active');
+    // Check if we have a hash in URL (for section navigation)
+    const currentHash = window.location.hash.substring(1); // Remove #
+    
+    // If on dashboard page
+    if (isMainDashboard) {
+      if (currentHash && currentHash !== 'dashboard') {
+        // Use hash to determine active section
+        const hashLink = document.querySelector(`[data-nav-id="${currentHash}"]`);
+        if (hashLink) {
+          hashLink.closest('.sidebar-item')?.classList.add('active');
+        }
+      } else if (!activeNav || activeNav === 'dashboard') {
+        // Default to overview only if no hash and no stored nav
+        const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
+        if (dashboardLink) {
+          dashboardLink.closest('.sidebar-item')?.classList.add('active');
+        }
+        // Clear any stored navigation to prevent last selected from being active
+        localStorage.removeItem('activeNavigation');
       }
-      // Clear any stored navigation to prevent last selected from being active
-      localStorage.removeItem('activeNavigation');
     } else if (activeNav && activeNav !== 'dashboard') {
       // Only use stored navigation if it's not the dashboard
       const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
@@ -1186,7 +1221,7 @@ class UnifiedNavigation {
 
     // Find all logo containers - expanded selector to catch all cases
     const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
-    
+
     logoContainers.forEach((container) => {
       // Determine the dashboard URL based on role
       let dashboardUrl = '/pages/employee-dashboard.html'; // default
@@ -1248,7 +1283,7 @@ class UnifiedNavigation {
       styleSheet.id = 'unified-navigation-styles';
       styleSheet.textContent = unifiedNavigationCSS;
       document.head.appendChild(styleSheet);
-      
+
       // Force style recalculation
       document.body.offsetHeight;
     } else {

@@ -14,17 +14,20 @@ async function runMigration() {
     user: process.env.DB_USER || 'assixx_user',
     password: process.env.DB_PASSWORD || 'AssixxP@ss2025!',
     database: process.env.DB_NAME || 'assixx',
-    multipleStatements: true
+    multipleStatements: true,
   });
 
   try {
-    const migrationPath = path.join(__dirname, '../../../../database/migrations/003-add-plans-system.sql');
+    const migrationPath = path.join(
+      __dirname,
+      '../../../../database/migrations/003-add-plans-system.sql'
+    );
     const migration = fs.readFileSync(migrationPath, 'utf8');
-    
+
     console.log('Running migration: 003-add-plans-system.sql');
-    
+
     await connection.query(migration);
-    
+
     console.log('✅ Migration completed successfully!');
   } catch (error) {
     console.error('❌ Migration failed:', error.message);

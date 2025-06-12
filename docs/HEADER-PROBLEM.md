@@ -5,6 +5,7 @@
 Auf der blackboard.html Seite wurden das Profilbild und die Role-Badge im Header nicht angezeigt, obwohl sie im HTML vorhanden waren.
 
 ### Symptome:
+
 - Avatar und Role-Badge waren für ~1ms sichtbar beim Laden der Seite
 - Danach verschwanden sie komplett
 - Console logs zeigten: `Elements found: { userNameElement: false, userAvatar: false, roleIndicator: false }`
@@ -13,6 +14,7 @@ Auf der blackboard.html Seite wurden das Profilbild und die Role-Badge im Header
 ## Ursache
 
 Mehrere Scripts manipulierten gleichzeitig das `user-info` Element:
+
 1. Ein unbekanntes Script überschrieb `innerHTML` des user-info divs mit nur dem Benutzernamen
 2. Dadurch wurden alle Child-Elemente (img#user-avatar, span#user-name, span#role-indicator) gelöscht
 3. Timing-Konflikt zwischen verschiedenen Scripts
@@ -20,17 +22,21 @@ Mehrere Scripts manipulierten gleichzeitig das `user-info` Element:
 ## Lösung
 
 ### 1. MutationObserver zum Schutz (in blackboard.html)
+
 ```javascript
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', function () {
   const userInfoDiv = document.getElementById('user-info');
   const userAvatar = document.getElementById('user-avatar');
   const userName = document.getElementById('user-name');
   const roleIndicator = document.getElementById('role-indicator');
-  
+
   if (userInfoDiv) {
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (
+          mutation.type === 'childList' &&
+          mutation.target.id === 'user-info'
+        ) {
           if (userInfoDiv.children.length === 0) {
             console.log('[Blackboard] Restoring user-info elements');
             userInfoDiv.innerHTML = '';
@@ -41,13 +47,14 @@ window.addEventListener('DOMContentLoaded', function() {
         }
       });
     });
-    
+
     observer.observe(userInfoDiv, { childList: true, subtree: false });
   }
 });
 ```
 
 ### 2. Script-Reihenfolge geändert
+
 ```html
 <!-- Vorher: -->
 <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -59,6 +66,7 @@ window.addEventListener('DOMContentLoaded', function() {
 ```
 
 ### 3. Struktur-Wiederherstellung in loadHeaderUserInfo()
+
 ```typescript
 // Check if user-info has been overwritten
 const userInfoDiv = document.getElementById('user-info');
@@ -86,6 +94,7 @@ if (userInfoDiv && userInfoDiv.children.length === 0) {
 - `/frontend/src/styles/user-info-update.css` - Inline-Styles mit !important hinzugefügt
 
 ## Status
+
 ✅ GELÖST (09.01.2025)
 
 ---
@@ -95,6 +104,7 @@ if (userInfoDiv && userInfoDiv.children.length === 0) {
 Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge komplett im Header.
 
 ### Symptome:
+
 - Kein Role Switch Button vorhanden
 - Role Badge (`<span id="role-indicator">`) fehlte im user-info div
 - Nur Avatar und Username wurden angezeigt
@@ -109,16 +119,25 @@ Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge ko
 ## Lösung für Calendar.html
 
 ### 1. Vollständige Header-Struktur hinzugefügt
+
 ```html
 <div class="header-actions">
   <!-- Role Switch Button -->
-  <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
+  <button
+    id="role-switch-btn"
+    class="btn-role-switch"
+    title="Als Mitarbeiter anzeigen"
+  >
     <i class="fas fa-exchange-alt"></i>
     <span class="role-switch-text">Als Mitarbeiter</span>
   </button>
-  
+
   <div id="user-info">
-    <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
+    <img
+      id="user-avatar"
+      src="/assets/images/default-avatar.svg"
+      alt="Avatar"
+    />
     <span id="user-name">Lade...</span>
     <span id="role-indicator" class="role-badge admin">Admin</span>
   </div>
@@ -130,41 +149,47 @@ Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge ko
 ```
 
 ### 2. Erweiterter MutationObserver
+
 ```javascript
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', function () {
   const userInfoDiv = document.getElementById('user-info');
-  
+
   if (userInfoDiv) {
     // Speichere Referenzen zu den Original-Elementen
     const originalAvatar = document.getElementById('user-avatar');
     const originalUserName = document.getElementById('user-name');
     const originalRoleIndicator = document.getElementById('role-indicator');
-    
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
+
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (
+          mutation.type === 'childList' &&
+          mutation.target.id === 'user-info'
+        ) {
           // Prüfe ob alle 3 Elemente vorhanden sind
           const currentAvatar = document.getElementById('user-avatar');
           const currentUserName = document.getElementById('user-name');
-          const currentRoleIndicator = document.getElementById('role-indicator');
-          
+          const currentRoleIndicator =
+            document.getElementById('role-indicator');
+
           if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
             console.log('[Calendar] Restoring user-info elements');
             userInfoDiv.innerHTML = '';
-            
+
             // Alle 3 Elemente wiederherstellen
             // Avatar, Username und Role Badge
           }
         }
       });
     });
-    
+
     observer.observe(userInfoDiv, { childList: true, subtree: false });
   }
 });
 ```
 
 ### 3. Korrekte Script-Reihenfolge
+
 ```html
 <!-- Scripts in richtiger Reihenfolge -->
 <script type="module" src="/scripts/calendar.ts"></script>
@@ -188,4 +213,5 @@ window.addEventListener('DOMContentLoaded', function() {
 - `/frontend/src/scripts/header-user-info.ts` - avatarElement Variable Definition gefixt
 
 ## Status
+
 ✅ BEIDE PROBLEME GELÖST (10.01.2025)

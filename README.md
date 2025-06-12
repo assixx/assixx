@@ -49,24 +49,24 @@ Siehe auch [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) für deta
 
 ## 📚 Dokumentation
 
-| Dokument                                                  | Beschreibung                         |
-| --------------------------------------------------------- | ------------------------------------ |
-| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)             | Vollständige Verzeichnisstruktur     |
-| 📋 [FEATURES.md](./docs/FEATURES.md)                           | Komplette Feature-Übersicht & Preise |
-| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                   | Technische Architektur & Stack       |
-| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                   | Docker Development Environment       |
-| 🐳 [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) | Docker Anleitung für Einsteiger   |
-| 🐳 [DOCKER-SETUP-SUMMARY.md](./docs/DOCKER-SETUP-SUMMARY.md)   | Docker Setup Zusammenfassung         |
-| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                   | Backup-Strategie & Anleitung         |
-| 🪟 [SETUP-WINDOWS-WSL.md](./docs/SETUP-WINDOWS-WSL.md)         | Windows (WSL) Setup Guide            |
-| 🐧 [SETUP-UBUNTU-LINUX.md](./docs/SETUP-UBUNTU-LINUX.md)       | Ubuntu/Linux Setup Guide             |
-| 🍎 [SETUP-MACOS.md](./docs/SETUP-MACOS.md)                     | macOS Setup Guide                    |
-| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) | Detaillierte Datenbank-Installation  |
-| 📝 [TODO.md](./TODO.md)                                   | Aktuelle Aufgaben & Roadmap          |
-| 🔧 [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)         | Entwickler-Richtlinien               |
-| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                       | Production Deployment                |
-| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)           | UI/UX Design Standards               |
-| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                             | Entwicklungsfahrplan                 |
+| Dokument                                                         | Beschreibung                         |
+| ---------------------------------------------------------------- | ------------------------------------ |
+| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)               | Vollständige Verzeichnisstruktur     |
+| 📋 [FEATURES.md](./docs/FEATURES.md)                             | Komplette Feature-Übersicht & Preise |
+| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                     | Technische Architektur & Stack       |
+| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                     | Docker Development Environment       |
+| 🐳 [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) | Docker Anleitung für Einsteiger      |
+| 🐳 [DOCKER-SETUP-SUMMARY.md](./docs/DOCKER-SETUP-SUMMARY.md)     | Docker Setup Zusammenfassung         |
+| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                     | Backup-Strategie & Anleitung         |
+| 🪟 [SETUP-WINDOWS-WSL.md](./docs/SETUP-WINDOWS-WSL.md)           | Windows (WSL) Setup Guide            |
+| 🐧 [SETUP-UBUNTU-LINUX.md](./docs/SETUP-UBUNTU-LINUX.md)         | Ubuntu/Linux Setup Guide             |
+| 🍎 [SETUP-MACOS.md](./docs/SETUP-MACOS.md)                       | macOS Setup Guide                    |
+| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)   | Detaillierte Datenbank-Installation  |
+| 📝 [TODO.md](./TODO.md)                                          | Aktuelle Aufgaben & Roadmap          |
+| 🔧 [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)           | Entwickler-Richtlinien               |
+| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                         | Production Deployment                |
+| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)             | UI/UX Design Standards               |
+| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                               | Entwicklungsfahrplan                 |
 
 ## 🎯 Kernfeatures
 
@@ -144,6 +144,7 @@ cd docker && docker-compose down
 ```
 
 Details siehe:
+
 - [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) - Vollständige Anleitung
 - [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) - Für Docker-Einsteiger
 - [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md) - Backup-Strategie

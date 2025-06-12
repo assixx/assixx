@@ -23,6 +23,7 @@ Dieses Dokument definiert verbindliche TypeScript-Standards für das Assixx-Proj
 ### 1.2 Library-Definitionen
 
 **Backend tsconfig.json:**
+
 ```json
 {
   "compilerOptions": {
@@ -33,6 +34,7 @@ Dieses Dokument definiert verbindliche TypeScript-Standards für das Assixx-Proj
 ```
 
 **Frontend tsconfig.json:**
+
 ```json
 {
   "compilerOptions": {
@@ -45,6 +47,7 @@ Dieses Dokument definiert verbindliche TypeScript-Standards für das Assixx-Proj
 ### 1.3 Strict Mode Settings
 
 **Pflicht für alle tsconfig.json:**
+
 ```json
 {
   "compilerOptions": {
@@ -65,6 +68,7 @@ Dieses Dokument definiert verbindliche TypeScript-Standards für das Assixx-Proj
 ### 2.1 Niemals `any` ohne Begründung
 
 ❌ **Falsch:**
+
 ```typescript
 function processData(data: any) {
   return data.value;
@@ -72,6 +76,7 @@ function processData(data: any) {
 ```
 
 ✅ **Richtig:**
+
 ```typescript
 function processData(data: unknown): string {
   if (typeof data === 'object' && data !== null && 'value' in data) {
@@ -84,6 +89,7 @@ function processData(data: unknown): string {
 ### 2.2 Explizite Return Types
 
 ❌ **Falsch:**
+
 ```typescript
 function calculateTotal(items: Item[]) {
   return items.reduce((sum, item) => sum + item.price, 0);
@@ -91,6 +97,7 @@ function calculateTotal(items: Item[]) {
 ```
 
 ✅ **Richtig:**
+
 ```typescript
 function calculateTotal(items: Item[]): number {
   return items.reduce((sum, item) => sum + item.price, 0);
@@ -100,6 +107,7 @@ function calculateTotal(items: Item[]): number {
 ### 2.3 Ungenutzte Variablen
 
 ❌ **Falsch:**
+
 ```typescript
 function handleClick(event: MouseEvent, index: number): void {
   // index wird nicht verwendet
@@ -108,6 +116,7 @@ function handleClick(event: MouseEvent, index: number): void {
 ```
 
 ✅ **Richtig:**
+
 ```typescript
 function handleClick(event: MouseEvent, _index: number): void {
   // Prefix mit _ für bewusst ungenutzte Parameter
@@ -129,12 +138,15 @@ declare global {
     viewEntry?: (entryId: number) => void;
     editEntry?: (entryId: number) => void;
     deleteEntry?: (entryId: number) => Promise<void>;
-    
+
     // Dashboard UI
     DashboardUI?: {
       openModal: (modalId: string) => void;
       closeModal: (modalId: string) => void;
-      showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+      showToast: (
+        message: string,
+        type?: 'success' | 'error' | 'warning' | 'info'
+      ) => void;
     };
   }
 }
@@ -168,6 +180,7 @@ export {};
 ### 4.1 Zentrale Type-Definitionen
 
 **Struktur:**
+
 ```
 /types/
   ├── api.types.ts      # API Request/Response Types
@@ -196,13 +209,14 @@ type UserRole = 'admin' | 'employee' | 'root';
 enum Status {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
-  PENDING = 'PENDING'
+  PENDING = 'PENDING',
 }
 ```
 
 ### 4.3 Vermeidung von Duplikaten
 
 ❌ **Falsch:**
+
 ```typescript
 // admin.ts
 interface Admin {
@@ -219,6 +233,7 @@ interface Admin {
 ```
 
 ✅ **Richtig:**
+
 ```typescript
 // types/models.types.ts
 export interface Admin {
@@ -238,6 +253,7 @@ import { Admin } from '@/types/models.types';
 ### 5.1 Async Function Return Types
 
 ❌ **Falsch:**
+
 ```typescript
 async function loadData() {
   const data = await fetch('/api/data');
@@ -246,6 +262,7 @@ async function loadData() {
 ```
 
 ✅ **Richtig:**
+
 ```typescript
 async function loadData(): Promise<DataType> {
   const response = await fetch('/api/data');
@@ -256,6 +273,7 @@ async function loadData(): Promise<DataType> {
 ### 5.2 Void vs Promise<void>
 
 ❌ **Falsch (inkonsistent):**
+
 ```typescript
 interface Actions {
   syncAction: () => void;
@@ -264,6 +282,7 @@ interface Actions {
 ```
 
 ✅ **Richtig:**
+
 ```typescript
 interface Actions {
   syncAction: () => void;
@@ -312,14 +331,20 @@ npm run format:check
 {
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/explicit-function-return-type": ["warn", {
-      "allowExpressions": true,
-      "allowTypedFunctionExpressions": true
-    }],
-    "@typescript-eslint/no-unused-vars": ["error", {
-      "argsIgnorePattern": "^_",
-      "varsIgnorePattern": "^_"
-    }],
+    "@typescript-eslint/explicit-function-return-type": [
+      "warn",
+      {
+        "allowExpressions": true,
+        "allowTypedFunctionExpressions": true
+      }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
     "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
     "@typescript-eslint/no-non-null-assertion": "error",
     "@typescript-eslint/strict-boolean-expressions": "error"
@@ -377,13 +402,13 @@ export async function loadUser(userId: number): Promise<User> {
 export interface User {
   /** Eindeutige Benutzer-ID */
   id: number;
-  
+
   /** Benutzername (3-50 Zeichen) */
   username: string;
-  
+
   /** Benutzerrolle */
   role: UserRole;
-  
+
   /** Zeitstempel der Erstellung */
   created_at: Date;
 }

@@ -11,6 +11,7 @@ Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit m
 ## 🎯 Neue Entwicklungsstrategie
 
 ### Version 0.1.0: Stabile Entwicklungsversion (2-3 Wochen)
+
 **Fokus:** Stabilität, Qualität und Testing aller bestehenden Features
 
 - [ ] Systematisches Testing & Debugging aller 7 Live-Features
@@ -21,11 +22,14 @@ Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit m
 - [ ] Database Optimization
 - [ ] Error Handling Verbesserung
 
-### Version 1.0.0: Beta-Test Version (4-5 Wochen) 
+### Version 1.0.0: Beta-Test Version (4-5 Wochen)
+
 **Fokus:** Deal-Breaker Features für erste Kunden
 
 #### Deal-Breaker Features
+
 - [ ] **Urlaubsantrag-System** - Kritisch für HR-Prozesse
+
   - [ ] Antragsformular mit Kalender-Integration
   - [ ] Mehrstufiger Genehmigungsworkflow
   - [ ] Resturlaubsberechnung
@@ -33,6 +37,7 @@ Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit m
   - [ ] Mobile-optimierte Ansicht
 
 - [ ] **Gehaltsabrechnung Upload** - Kritisch für Payroll
+
   - [ ] Sichere PDF-Upload Funktion
   - [ ] Verschlüsselte Speicherung
   - [ ] Mitarbeiter-Portal für Abruf
@@ -46,6 +51,7 @@ Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit m
   - [ ] QR-Code Integration
 
 #### Infrastruktur & Deployment
+
 - [x] **Docker Setup** ✅ - Für einfaches Beta-Deployment
 - [x] **Backup System** ✅ - Automatisierte Datensicherung
 - [ ] **Monitoring & Logging** - Für Produktionsumgebung
@@ -74,6 +80,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 📱 Q2 2025 (April - Juni) - AKTUALISIERT
 
 ### Phase 1: Systematisches Testing & Debugging (Version 0.1.0)
+
 **Zeitraum:** Juni 2025 (2-3 Wochen)
 
 - [ ] Umfassende Tests aller 7 Live-Features
@@ -83,6 +90,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 - [ ] Dokumentation vervollständigen
 
 ### Phase 2: Deal-Breaker Features (Version 1.0.0)
+
 **Zeitraum:** Juni-Juli 2025 (4-5 Wochen)
 
 - [ ] Urlaubsantrag-System (siehe oben)
@@ -100,6 +108,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 🌍 Q3 2025 (Juli - September) - Beta-Test Phase
 
 ### Beta-Testing & Stabilisierung
+
 **Fokus:** Erste Kunden onboarden und Feedback sammeln
 
 - [ ] Beta-Test mit 5-10 Pilotkunden

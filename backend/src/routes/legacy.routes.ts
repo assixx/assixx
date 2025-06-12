@@ -3,15 +3,15 @@
  * Handles old API endpoints for backward compatibility
  */
 
-import express, { Router } from "express";
-import { authenticateToken } from "../middleware/auth";
-import { logger } from "../utils/logger";
+import express, { Router } from 'express';
+import { authenticateToken } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 // Import models (now ES modules)
-import User from "../models/user";
-import Document from "../models/document";
-import Department from "../models/department";
-import Team from "../models/team";
+import User from '../models/user';
+import Document from '../models/document';
+import Department from '../models/department';
+import Team from '../models/team';
 
 const router: Router = express.Router();
 
@@ -54,7 +54,7 @@ interface CreateAdminResponse {
 
 // Auth check endpoint (legacy location)
 router.get(
-  "/api/auth/check",
+  '/api/auth/check',
   [authenticateToken] as any[],
   (req: any, res: any) => {
     const authReq = req as any;
@@ -67,12 +67,12 @@ router.get(
       },
     };
     res.json(response);
-  },
+  }
 );
 
 // User profile endpoint
 router.get(
-  "/api/user/profile",
+  '/api/user/profile',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
@@ -80,45 +80,45 @@ router.get(
       const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
       if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: 'User not found' });
         return;
       }
 
       const { password: _password, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error: any) {
-      console.error("Error fetching user profile:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error('Error fetching user profile:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Test DB endpoints (for admin dashboard)
 router.get(
-  "/test/db/employees",
+  '/test/db/employees',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
       const employees = await User.findAll({
-        role: "employee",
+        role: 'employee',
         tenant_id: authReq.user.tenant_id,
       });
       res.json(employees);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 router.get(
-  "/test/db/counts",
+  '/test/db/counts',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
       const employees = await User.count({
-        role: "employee",
+        role: 'employee',
         tenant_id: authReq.user.tenant_id,
       });
       const documents = await Document.countByTenant(authReq.user.tenant_id);
@@ -132,13 +132,13 @@ router.get(
 
       res.json(response);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 router.get(
-  "/test/db/documents",
+  '/test/db/documents',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
@@ -148,13 +148,13 @@ router.get(
       });
       res.json(documents);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 router.get(
-  "/test/db/departments",
+  '/test/db/departments',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
@@ -162,14 +162,14 @@ router.get(
       const departments = await Department.findAll(authReq.user.tenant_id);
       res.json(departments || []);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Teams endpoint
 router.get(
-  "/teams",
+  '/teams',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
@@ -177,14 +177,14 @@ router.get(
       const teams = await Team.findAll(authReq.user.tenant_id);
       res.json(teams || []);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Admin employees endpoint
 router.get(
-  "/admin/employees",
+  '/admin/employees',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
@@ -194,44 +194,44 @@ router.get(
       });
       res.json(employees);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Root admins endpoint - legacy location
 router.get(
-  "/root/admins",
+  '/root/admins',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      if (authReq.user.role !== "root") {
-        res.status(403).json({ message: "Access denied" });
+      if (authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Access denied' });
         return;
       }
 
       const admins = await User.findAll({
-        role: "admin",
+        role: 'admin',
         tenant_id: authReq.user.tenant_id,
       });
       res.json(admins || []);
     } catch (error: any) {
-      console.error("Error fetching admins:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error('Error fetching admins:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Root dashboard data endpoint
 router.get(
-  "/api/root-dashboard-data",
+  '/api/root-dashboard-data',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      if (authReq.user.role !== "root") {
-        res.status(403).json({ message: "Access denied" });
+      if (authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Access denied' });
         return;
       }
 
@@ -247,21 +247,21 @@ router.get(
 
       res.json(response);
     } catch (error: any) {
-      console.error("Error fetching root dashboard data:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error('Error fetching root dashboard data:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Root create admin endpoint
 router.post(
-  "/root/create-admin",
+  '/root/create-admin',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      if (authReq.user.role !== "root") {
-        res.status(403).json({ message: "Access denied" });
+      if (authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Access denied' });
         return;
       }
 
@@ -273,14 +273,14 @@ router.post(
         password,
         email,
         company,
-        role: "admin",
+        role: 'admin',
         tenant_id: authReq.user.tenant_id,
-        first_name: "",
-        last_name: "",
+        first_name: '',
+        last_name: '',
       });
 
       const response: CreateAdminResponse = {
-        message: "Admin created successfully",
+        message: 'Admin created successfully',
         admin: {
           id: newAdminId,
           username,
@@ -291,38 +291,38 @@ router.post(
 
       res.json(response);
     } catch (error: any) {
-      console.error("Error creating admin:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error('Error creating admin:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Root delete admin endpoint
 router.delete(
-  "/root/delete-admin/:id",
+  '/root/delete-admin/:id',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      if (authReq.user.role !== "root") {
-        res.status(403).json({ message: "Access denied" });
+      if (authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Access denied' });
         return;
       }
 
       const adminId = parseInt(req.params.id, 10);
       await User.delete(adminId);
 
-      res.json({ message: "Admin deleted successfully" });
+      res.json({ message: 'Admin deleted successfully' });
     } catch (error: any) {
-      console.error("Error deleting admin:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error('Error deleting admin:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Documents endpoint
 router.get(
-  "/documents",
+  '/documents',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
@@ -330,22 +330,22 @@ router.get(
       const documents = await Document.findByUserId(authReq.user.id);
       res.json(documents || []);
     } catch {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Admin employees endpoint
 router.get(
-  "/admin/employees",
+  '/admin/employees',
   [authenticateToken] as any[],
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
 
       // Check if user is admin or root
-      if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
-        return res.status(403).json({ message: "Access denied" });
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        return res.status(403).json({ message: 'Access denied' });
       }
 
       const employees = await User.findAllByTenant(authReq.user.tenant_id);
@@ -367,15 +367,15 @@ router.get(
 
       res.json(sanitizedEmployees);
     } catch (error: any) {
-      logger.error("Error fetching employees:", error);
-      res.status(500).json({ message: "Server error" });
+      logger.error('Error fetching employees:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 // Teams endpoint
 router.get(
-  "/teams",
+  '/teams',
   [authenticateToken] as any[],
   async (_req: any, res: any) => {
     try {
@@ -383,10 +383,10 @@ router.get(
       // This will prevent JSON parse errors
       res.json([]);
     } catch (error: any) {
-      logger.error("Error fetching teams:", error);
-      res.status(500).json({ message: "Server error" });
+      logger.error('Error fetching teams:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-  },
+  }
 );
 
 export default router;

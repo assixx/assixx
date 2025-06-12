@@ -1,9 +1,9 @@
-import { WebSocket, WebSocketServer, Data as WebSocketData } from "ws";
-import jwt from "jsonwebtoken";
-import { URL } from "url";
-import { Server } from "http";
-import db from "./database.js";
-import { logger } from "./utils/logger.js";
+import { WebSocket, WebSocketServer, Data as WebSocketData } from 'ws';
+import jwt from 'jsonwebtoken';
+import { URL } from 'url';
+import { Server } from 'http';
+import db from './database.js';
+import { logger } from './utils/logger.js';
 interface ExtendedWebSocket extends WebSocket {
   userId?: number;
   tenantId?: number;
@@ -42,7 +42,7 @@ export class ChatWebSocketServer {
   constructor(server: Server) {
     this.wss = new WebSocketServer({
       server,
-      path: "/chat-ws",
+      path: '/chat-ws',
     });
 
     this.clients = new Map();
@@ -50,24 +50,24 @@ export class ChatWebSocketServer {
   }
 
   private init(): void {
-    this.wss.on("connection", (ws: ExtendedWebSocket, request) => {
+    this.wss.on('connection', (ws: ExtendedWebSocket, request) => {
       this.handleConnection(ws, request);
     });
   }
 
   private async handleConnection(
     ws: ExtendedWebSocket,
-    request: any,
+    request: any
   ): Promise<void> {
     try {
       // Token aus Query-Parameter oder Header extrahieren
       const url = new URL(request.url, `http://${request.headers.host}`);
       const token =
-        url.searchParams.get("token") ||
-        request.headers.authorization?.replace("Bearer ", "");
+        url.searchParams.get('token') ||
+        request.headers.authorization?.replace('Bearer ', '');
 
       if (!token) {
-        ws.close(1008, "Token erforderlich");
+        ws.close(1008, 'Token erforderlich');
         return;
       }
 
@@ -86,53 +86,53 @@ export class ChatWebSocketServer {
       this.clients.set(userId, ws);
 
       // Event-Handler registrieren
-      ws.on("message", (data) => this.handleMessage(ws, data));
-      ws.on("close", () => this.handleDisconnection(ws));
-      ws.on("error", (error) => this.handleError(ws, error));
-      ws.on("pong", () => {
+      ws.on('message', (data) => this.handleMessage(ws, data));
+      ws.on('close', () => this.handleDisconnection(ws));
+      ws.on('error', (error) => this.handleError(ws, error));
+      ws.on('pong', () => {
         ws.isAlive = true;
       });
 
       // Willkommensnachricht senden
       this.sendMessage(ws, {
-        type: "connection_established",
+        type: 'connection_established',
         data: { userId, timestamp: new Date().toISOString() },
       });
 
       // Online-Status an andere Benutzer senden
-      await this.broadcastUserStatus(userId, tenantId, "online");
+      await this.broadcastUserStatus(userId, tenantId, 'online');
     } catch (error) {
-      logger.error("WebSocket Authentifizierung fehlgeschlagen:", error);
-      ws.close(1008, "Authentifizierung fehlgeschlagen");
+      logger.error('WebSocket Authentifizierung fehlgeschlagen:', error);
+      ws.close(1008, 'Authentifizierung fehlgeschlagen');
     }
   }
 
   private async handleMessage(
     ws: ExtendedWebSocket,
-    data: WebSocketData,
+    data: WebSocketData
   ): Promise<void> {
     try {
       const message: WebSocketMessage = JSON.parse(data.toString());
 
       switch (message.type) {
-        case "send_message":
+        case 'send_message':
           await this.handleSendMessage(ws, message.data);
           break;
-        case "typing_start":
+        case 'typing_start':
           await this.handleTyping(ws, message.data, true);
           break;
-        case "typing_stop":
+        case 'typing_stop':
           await this.handleTyping(ws, message.data, false);
           break;
-        case "mark_read":
+        case 'mark_read':
           await this.handleMarkRead(ws, message.data);
           break;
-        case "join_conversation":
+        case 'join_conversation':
           await this.handleJoinConversation(ws, message.data);
           break;
-        case "ping":
+        case 'ping':
           this.sendMessage(ws, {
-            type: "pong",
+            type: 'pong',
             data: { timestamp: new Date().toISOString() },
           });
           break;
@@ -140,17 +140,17 @@ export class ChatWebSocketServer {
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
       }
     } catch (error) {
-      logger.error("Fehler beim Verarbeiten der WebSocket Nachricht:", error);
+      logger.error('Fehler beim Verarbeiten der WebSocket Nachricht:', error);
       this.sendMessage(ws, {
-        type: "error",
-        data: { message: "Fehler beim Verarbeiten der Nachricht" },
+        type: 'error',
+        data: { message: 'Fehler beim Verarbeiten der Nachricht' },
       });
     }
   }
 
   private async handleSendMessage(
     ws: ExtendedWebSocket,
-    data: SendMessageData,
+    data: SendMessageData
   ): Promise<void> {
     const { conversationId, content, attachments = [] } = data;
 
@@ -179,8 +179,8 @@ export class ChatWebSocketServer {
       const participantIdsStr = participantIds.map((id: number) => String(id));
       if (!participantIdsStr.includes(String(ws.userId))) {
         this.sendMessage(ws, {
-          type: "error",
-          data: { message: "Keine Berechtigung für diese Unterhaltung" },
+          type: 'error',
+          data: { message: 'Keine Berechtigung für diese Unterhaltung' },
         });
         return;
       }
@@ -216,16 +216,16 @@ export class ChatWebSocketServer {
         sender_name: sender
           ? [sender.first_name, sender.last_name]
               .filter((n: string) => n)
-              .join(" ") ||
+              .join(' ') ||
             sender.username ||
-            "Unbekannter Benutzer"
-          : "Unbekannter Benutzer",
-        first_name: sender?.first_name || "",
-        last_name: sender?.last_name || "",
-        username: sender?.username || "",
+            'Unbekannter Benutzer'
+          : 'Unbekannter Benutzer',
+        first_name: sender?.first_name || '',
+        last_name: sender?.last_name || '',
+        username: sender?.username || '',
         profile_picture_url: sender?.profile_picture_url || null,
         created_at: new Date().toISOString(),
-        delivery_status: "sent",
+        delivery_status: 'sent',
         is_read: false,
         attachments: attachments || [],
       };
@@ -235,7 +235,7 @@ export class ChatWebSocketServer {
         const clientWs = this.clients.get(participantId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: "new_message",
+            type: 'new_message',
             data: messageData,
           });
         }
@@ -243,14 +243,14 @@ export class ChatWebSocketServer {
 
       // Bestätigung an Sender
       this.sendMessage(ws, {
-        type: "message_sent",
+        type: 'message_sent',
         data: { messageId, timestamp: new Date().toISOString() },
       });
     } catch (error) {
-      logger.error("Fehler beim Senden der Nachricht:", error);
+      logger.error('Fehler beim Senden der Nachricht:', error);
       this.sendMessage(ws, {
-        type: "error",
-        data: { message: "Fehler beim Senden der Nachricht" },
+        type: 'error',
+        data: { message: 'Fehler beim Senden der Nachricht' },
       });
     }
   }
@@ -258,7 +258,7 @@ export class ChatWebSocketServer {
   private async handleTyping(
     ws: ExtendedWebSocket,
     data: TypingData,
-    isTyping: boolean,
+    isTyping: boolean
   ): Promise<void> {
     const { conversationId } = data;
 
@@ -279,7 +279,7 @@ export class ChatWebSocketServer {
         const clientWs = this.clients.get(participant.user_id);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: isTyping ? "user_typing" : "user_stopped_typing",
+            type: isTyping ? 'user_typing' : 'user_stopped_typing',
             data: {
               conversationId,
               userId: ws.userId,
@@ -289,13 +289,13 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error) {
-      logger.error("Fehler beim Typing-Event:", error);
+      logger.error('Fehler beim Typing-Event:', error);
     }
   }
 
   private async handleMarkRead(
     ws: ExtendedWebSocket,
-    data: MarkReadData,
+    data: MarkReadData
   ): Promise<void> {
     const { messageId } = data;
 
@@ -313,7 +313,7 @@ export class ChatWebSocketServer {
           AND cp.user_id = ?
         )
       `,
-        [messageId, ws.tenantId, ws.userId],
+        [messageId, ws.tenantId, ws.userId]
       );
 
       // Sender über Lesebestätigung informieren
@@ -328,7 +328,7 @@ export class ChatWebSocketServer {
 
         if (senderWs && senderWs.readyState === WebSocket.OPEN) {
           this.sendMessage(senderWs, {
-            type: "message_read",
+            type: 'message_read',
             data: {
               messageId,
               readBy: ws.userId,
@@ -338,13 +338,13 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error) {
-      logger.error("Fehler beim Markieren als gelesen:", error);
+      logger.error('Fehler beim Markieren als gelesen:', error);
     }
   }
 
   private async handleJoinConversation(
     ws: ExtendedWebSocket,
-    data: JoinConversationData,
+    data: JoinConversationData
   ): Promise<void> {
     const { conversationId } = data;
 
@@ -370,7 +370,7 @@ export class ChatWebSocketServer {
         const clientWs = this.clients.get(participant.user_id);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: "user_joined_conversation",
+            type: 'user_joined_conversation',
             data: {
               conversationId,
               userId: ws.userId,
@@ -380,7 +380,7 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error) {
-      logger.error("Fehler beim Beitreten zur Unterhaltung:", error);
+      logger.error('Fehler beim Beitreten zur Unterhaltung:', error);
     }
   }
 
@@ -389,18 +389,18 @@ export class ChatWebSocketServer {
       this.clients.delete(ws.userId);
 
       // Offline-Status senden
-      await this.broadcastUserStatus(ws.userId, ws.tenantId!, "offline");
+      await this.broadcastUserStatus(ws.userId, ws.tenantId!, 'offline');
     }
   }
 
   private handleError(_ws: ExtendedWebSocket, error: Error): void {
-    logger.error("WebSocket Fehler:", error);
+    logger.error('WebSocket Fehler:', error);
   }
 
   private async broadcastUserStatus(
     userId: number,
     tenantId: number,
-    status: string,
+    status: string
   ): Promise<void> {
     try {
       // Alle Unterhaltungen des Benutzers ermitteln
@@ -421,7 +421,7 @@ export class ChatWebSocketServer {
         const clientWs = this.clients.get(user.user_id);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: "user_status_changed",
+            type: 'user_status_changed',
             data: {
               userId,
               status,
@@ -431,7 +431,7 @@ export class ChatWebSocketServer {
         }
       }
     } catch (error) {
-      logger.error("Fehler beim Senden des User-Status:", error);
+      logger.error('Fehler beim Senden des User-Status:', error);
     }
   }
 
@@ -474,7 +474,7 @@ export class ChatWebSocketServer {
         // Nachricht als zugestellt markieren
         await (db as any).query(
           'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
-          [message.id],
+          [message.id]
         );
 
         // Nachricht an alle Teilnehmer senden
@@ -502,15 +502,15 @@ export class ChatWebSocketServer {
           content: message.content,
           sender_id: message.sender_id,
           sender_name: sender
-            ? [sender.first_name || "", sender.last_name || ""]
+            ? [sender.first_name || '', sender.last_name || '']
                 .filter((n: string) => n)
-                .join(" ") || "Unbekannter Benutzer"
-            : "Unbekannter Benutzer",
-          first_name: sender?.first_name || "",
-          last_name: sender?.last_name || "",
+                .join(' ') || 'Unbekannter Benutzer'
+            : 'Unbekannter Benutzer',
+          first_name: sender?.first_name || '',
+          last_name: sender?.last_name || '',
           profile_picture_url: sender?.profile_picture_url || null,
           created_at: message.created_at,
-          delivery_status: "delivered",
+          delivery_status: 'delivered',
           is_read: false,
           is_scheduled: true,
           attachments: [],
@@ -520,14 +520,14 @@ export class ChatWebSocketServer {
           const clientWs = this.clients.get(participant.user_id);
           if (clientWs && clientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(clientWs, {
-              type: "scheduled_message_delivered",
+              type: 'scheduled_message_delivered',
               data: messageData,
             });
           }
         }
       }
     } catch (error) {
-      logger.error("Fehler beim Verarbeiten geplanter Nachrichten:", error);
+      logger.error('Fehler beim Verarbeiten geplanter Nachrichten:', error);
     }
   }
 
@@ -569,7 +569,7 @@ export class ChatWebSocketServer {
           // Update status to processing
           await (db as any).query(
             'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
-            [message.queue_id],
+            [message.queue_id]
           );
 
           // Nachricht-Objekt erstellen
@@ -579,13 +579,13 @@ export class ChatWebSocketServer {
             content: message.content,
             sender_id: message.sender_id,
             sender_name:
-              `${message.first_name || ""} ${message.last_name || ""}`.trim() ||
-              "Unbekannter Benutzer",
-            first_name: message.first_name || "",
-            last_name: message.last_name || "",
+              `${message.first_name || ''} ${message.last_name || ''}`.trim() ||
+              'Unbekannter Benutzer',
+            first_name: message.first_name || '',
+            last_name: message.last_name || '',
             profile_picture_url: message.profile_picture_url || null,
             created_at: message.created_at,
-            delivery_status: "delivered",
+            delivery_status: 'delivered',
             is_read: false,
             attachments: [],
           };
@@ -594,7 +594,7 @@ export class ChatWebSocketServer {
           const recipientWs = this.clients.get(message.recipient_id);
           if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(recipientWs, {
-              type: "new_message",
+              type: 'new_message',
               data: messageData,
             });
           }
@@ -602,48 +602,48 @@ export class ChatWebSocketServer {
           // Als zugestellt markieren
           await (db as any).query(
             'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
-            [message.queue_id],
+            [message.queue_id]
           );
 
           // Delivery status in messages table aktualisieren
           await (db as any).query(
             'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
-            [message.message_id],
+            [message.message_id]
           );
         } catch (error) {
           logger.error(
             `Fehler beim Zustellen der Nachricht ${message.message_id}:`,
-            error,
+            error
           );
 
           // Bei Fehler als failed markieren wenn max attempts erreicht
           const [result] = await (db as any).query(
-            "SELECT attempts FROM message_delivery_queue WHERE id = ?",
-            [message.queue_id],
+            'SELECT attempts FROM message_delivery_queue WHERE id = ?',
+            [message.queue_id]
           );
 
           if (result[0]?.attempts >= 3) {
             await (db as any).query(
               'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
-              [message.queue_id],
+              [message.queue_id]
             );
             await (db as any).query(
               'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
-              [message.message_id],
+              [message.message_id]
             );
           } else {
             // Zurück auf pending setzen für erneuten Versuch
             await (db as any).query(
               'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
-              [message.queue_id],
+              [message.queue_id]
             );
           }
         }
       }
     } catch (error) {
       logger.error(
-        "Fehler beim Verarbeiten der Message Delivery Queue:",
-        error,
+        'Fehler beim Verarbeiten der Message Delivery Queue:',
+        error
       );
     }
   }

@@ -53,11 +53,11 @@ DROP TABLE IF EXISTS plans;
 -- RICHTIG ✅ (prüft und entfernt Foreign Keys zuerst)
 -- Drop foreign key constraint if exists
 SET @fk_exists = (
-    SELECT COUNT(*) 
-    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-    WHERE TABLE_SCHEMA = DATABASE() 
-    AND TABLE_NAME = 'tenants' 
-    AND COLUMN_NAME = 'current_plan_id' 
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'tenants'
+    AND COLUMN_NAME = 'current_plan_id'
     AND REFERENCED_TABLE_NAME = 'plans'
 );
 
@@ -123,7 +123,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 -- Error: Cannot drop table 'X' referenced by a foreign key constraint
 
 -- Lösung: Erst Constraints finden
-SELECT 
+SELECT
     TABLE_NAME,
     CONSTRAINT_NAME,
     REFERENCED_TABLE_NAME,
@@ -189,9 +189,9 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 
 echo "=== Checking Foreign Keys ==="
 docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! assixx -e "
-SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME 
-FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-WHERE REFERENCED_TABLE_NAME IS NOT NULL 
+SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
+FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE REFERENCED_TABLE_NAME IS NOT NULL
 AND TABLE_SCHEMA = DATABASE();"'
 ```
 

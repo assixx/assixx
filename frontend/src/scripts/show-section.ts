@@ -39,10 +39,10 @@ export function showSection(sectionName: string): void {
       }
     });
 
-    // Update URL without page reload
+    // Update URL with query parameter
     const url = new URL(window.location.href);
-    url.searchParams.set('section', sectionId);
-    window.history.pushState({ section: sectionId }, '', url);
+    url.searchParams.set('section', sectionName);
+    window.history.replaceState({ section: sectionId }, '', url.toString());
 
     console.info(`[ShowSection] Section ${sectionId} displayed`);
 
@@ -90,14 +90,12 @@ export function showSection(sectionName: string): void {
 
 // Check URL on page load and show appropriate section
 export function initSectionFromURL(): void {
+  // Check query parameters
   const urlParams = new URLSearchParams(window.location.search);
   const section = urlParams.get('section');
 
   if (section) {
-    // Use setTimeout to ensure all other scripts have initialized
-    setTimeout(() => {
-      showSection(section);
-    }, 100);
+    showSection(section);
   }
 }
 
@@ -106,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Wait a bit to ensure all dynamic content is loaded
   setTimeout(() => {
     initSectionFromURL();
-  }, 200);
+  }, 50);
 });
 
 // Extend window for show section functions

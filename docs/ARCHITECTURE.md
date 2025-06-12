@@ -73,12 +73,14 @@ Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklun
 #### Container-Übersicht
 
 1. **MySQL Container** (`assixx-db`)
+
    - MySQL 8.0 Server
    - Persistente Volumes für Datenspeicherung
    - Automatisches Schema-Setup beim ersten Start
    - Health-Checks für Verfügbarkeit
 
 2. **Backend Container** (`assixx-backend`)
+
    - Node.js 18 Alpine Linux
    - Express.js TypeScript Anwendung
    - Abhängig vom MySQL Container
@@ -93,6 +95,7 @@ Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklun
 #### Entwicklung vs. Produktion
 
 **Entwicklungsumgebung** (`docker-compose.dev.yml`):
+
 - Volume-Mounts für Hot-Reload
 - Nodemon für automatische Backend-Neustarts
 - Vite Dev-Server für Frontend
@@ -100,6 +103,7 @@ Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklun
 - Ports: 3000 (Frontend), 3001 (Backend), 3306 (MySQL)
 
 **Produktionsumgebung** (`docker-compose.yml`):
+
 - Optimierte Multi-Stage Builds
 - Minimale Alpine Images
 - Production-optimierte Konfigurationen
@@ -110,10 +114,10 @@ Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklun
 
 ```yaml
 volumes:
-  mysql_data:          # Persistente MySQL-Daten
-  mysql_config:        # MySQL-Konfiguration
-  uploads:             # Benutzer-Uploads
-  logs:                # Anwendungs-Logs
+  mysql_data: # Persistente MySQL-Daten
+  mysql_config: # MySQL-Konfiguration
+  uploads: # Benutzer-Uploads
+  logs: # Anwendungs-Logs
 ```
 
 #### Netzwerk-Konfiguration

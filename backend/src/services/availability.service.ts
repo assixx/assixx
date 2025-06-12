@@ -5,13 +5,16 @@
 
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import pool from '../database';
-import { EmployeeAvailability, DatabaseEmployeeAvailability } from '../types/models';
+import {
+  EmployeeAvailability,
+  DatabaseEmployeeAvailability,
+} from '../types/models';
 import { snakeToCamel, camelToSnake } from '../utils/typeHelpers';
 
 // Helper function to handle both real pool and mock database
 async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: any[],
+  params?: any[]
 ): Promise<[T, any]> {
   // Use any to bypass TypeScript union type issues
   const result = await (pool as any).query(sql, params);
@@ -62,14 +65,22 @@ class AvailabilityService {
       }
 
       if (filter.startDate && filter.endDate) {
-        query += ' AND ((ea.start_date BETWEEN ? AND ?) OR (ea.end_date BETWEEN ? AND ?) OR (ea.start_date <= ? AND ea.end_date >= ?))';
-        params.push(filter.startDate, filter.endDate, filter.startDate, filter.endDate, filter.startDate, filter.endDate);
+        query +=
+          ' AND ((ea.start_date BETWEEN ? AND ?) OR (ea.end_date BETWEEN ? AND ?) OR (ea.start_date <= ? AND ea.end_date >= ?))';
+        params.push(
+          filter.startDate,
+          filter.endDate,
+          filter.startDate,
+          filter.endDate,
+          filter.startDate,
+          filter.endDate
+        );
       }
 
       query += ' ORDER BY ea.start_date DESC';
 
       const [rows] = await executeQuery<RowDataPacket[]>(query, params);
-      return rows.map(row => snakeToCamel(row) as EmployeeAvailability);
+      return rows.map((row) => snakeToCamel(row) as EmployeeAvailability);
     } catch (error) {
       console.error('Error in AvailabilityService.getAll:', error);
       throw error;
@@ -99,7 +110,7 @@ class AvailabilityService {
       `;
 
       const [rows] = await executeQuery<RowDataPacket[]>(query, [tenantId]);
-      return rows.map(row => snakeToCamel(row));
+      return rows.map((row) => snakeToCamel(row));
     } catch (error) {
       console.error('Error in AvailabilityService.getCurrentStatus:', error);
       throw error;
@@ -109,18 +120,21 @@ class AvailabilityService {
   /**
    * Get availability record by ID
    */
-  async getById(id: number, tenantId: number): Promise<EmployeeAvailability | null> {
+  async getById(
+    id: number,
+    tenantId: number
+  ): Promise<EmployeeAvailability | null> {
     try {
       const query = `
         SELECT * FROM employee_availability 
         WHERE id = ? AND tenant_id = ?
       `;
       const [rows] = await executeQuery<RowDataPacket[]>(query, [id, tenantId]);
-      
+
       if (rows.length === 0) {
         return null;
       }
-      
+
       return snakeToCamel(rows[0]) as EmployeeAvailability;
     } catch (error) {
       console.error('Error in AvailabilityService.getById:', error);
@@ -134,13 +148,13 @@ class AvailabilityService {
   async create(data: Partial<EmployeeAvailability>): Promise<number> {
     try {
       const dbData = camelToSnake(data) as DatabaseEmployeeAvailability;
-      
+
       const query = `
         INSERT INTO employee_availability 
         (employee_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
-      
+
       const [result] = await executeQuery<ResultSetHeader>(query, [
         dbData.employee_id,
         dbData.tenant_id,
@@ -149,12 +163,12 @@ class AvailabilityService {
         dbData.end_date,
         dbData.reason || null,
         dbData.notes || null,
-        dbData.created_by || null
+        dbData.created_by || null,
       ]);
-      
+
       // Update user's availability status
       await this.updateUserAvailabilityStatus();
-      
+
       return result.insertId;
     } catch (error) {
       console.error('Error in AvailabilityService.create:', error);
@@ -165,13 +179,17 @@ class AvailabilityService {
   /**
    * Update availability record
    */
-  async update(id: number, tenantId: number, data: Partial<EmployeeAvailability>): Promise<boolean> {
+  async update(
+    id: number,
+    tenantId: number,
+    data: Partial<EmployeeAvailability>
+  ): Promise<boolean> {
     try {
       const dbData = camelToSnake(data) as DatabaseEmployeeAvailability;
-      
+
       const fields = [];
       const values = [];
-      
+
       if (dbData.status !== undefined) {
         fields.push('status = ?');
         values.push(dbData.status);
@@ -192,27 +210,27 @@ class AvailabilityService {
         fields.push('notes = ?');
         values.push(dbData.notes);
       }
-      
+
       if (fields.length === 0) {
         return false;
       }
-      
+
       values.push(id, tenantId);
-      
+
       const query = `
         UPDATE employee_availability 
         SET ${fields.join(', ')}
         WHERE id = ? AND tenant_id = ?
       `;
-      
+
       const [result] = await executeQuery<ResultSetHeader>(query, values);
-      
+
       if (result.affectedRows > 0) {
         // Update user's availability status
         await this.updateUserAvailabilityStatus();
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Error in AvailabilityService.update:', error);
@@ -229,14 +247,17 @@ class AvailabilityService {
         DELETE FROM employee_availability 
         WHERE id = ? AND tenant_id = ?
       `;
-      const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
-      
+      const [result] = await executeQuery<ResultSetHeader>(query, [
+        id,
+        tenantId,
+      ]);
+
       if (result.affectedRows > 0) {
         // Update user's availability status
         await this.updateUserAvailabilityStatus();
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Error in AvailabilityService.delete:', error);
@@ -249,7 +270,9 @@ class AvailabilityService {
    */
   private async updateUserAvailabilityStatus(): Promise<void> {
     try {
-      await executeQuery<ResultSetHeader>('CALL UpdateUserAvailabilityStatus()');
+      await executeQuery<ResultSetHeader>(
+        'CALL UpdateUserAvailabilityStatus()'
+      );
     } catch (error) {
       console.error('Error updating user availability status:', error);
       // Don't throw, just log - this is a background update
@@ -259,7 +282,11 @@ class AvailabilityService {
   /**
    * Get availability summary for a date range
    */
-  async getAvailabilitySummary(tenantId: number, startDate: string, endDate: string): Promise<any> {
+  async getAvailabilitySummary(
+    tenantId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<any> {
     try {
       const query = `
         SELECT 
@@ -273,14 +300,23 @@ class AvailabilityService {
                OR (ea.start_date <= ? AND ea.end_date >= ?))
         GROUP BY ea.status
       `;
-      
+
       const [rows] = await executeQuery<RowDataPacket[]>(query, [
-        tenantId, startDate, endDate, startDate, endDate, startDate, endDate
+        tenantId,
+        startDate,
+        endDate,
+        startDate,
+        endDate,
+        startDate,
+        endDate,
       ]);
-      
-      return rows.map(row => snakeToCamel(row));
+
+      return rows.map((row) => snakeToCamel(row));
     } catch (error) {
-      console.error('Error in AvailabilityService.getAvailabilitySummary:', error);
+      console.error(
+        'Error in AvailabilityService.getAvailabilitySummary:',
+        error
+      );
       throw error;
     }
   }

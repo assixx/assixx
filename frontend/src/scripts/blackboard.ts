@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         loadHeaderUserInfo();
       }, 100);
-      
+
       // Load user data
       fetchUserData()
         .then((userData: UserData) => {
@@ -678,7 +678,7 @@ async function loadHeaderUserInfo(): Promise<void> {
     if (response.ok) {
       const userData: User = await response.json();
       console.log('[Blackboard] User data loaded:', userData);
-      
+
       // First check if user-info div exists and restore structure if needed
       const userInfoDiv = document.getElementById('user-info');
       if (userInfoDiv) {
@@ -692,7 +692,7 @@ async function loadHeaderUserInfo(): Promise<void> {
           `;
         }
       }
-      
+
       // Now get the elements
       const userNameElement = document.getElementById('user-name') as HTMLElement;
       const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
@@ -701,7 +701,7 @@ async function loadHeaderUserInfo(): Promise<void> {
       console.log('[Blackboard] Elements found after restore:', {
         userNameElement: !!userNameElement,
         userAvatar: !!userAvatar,
-        roleIndicator: !!roleIndicator
+        roleIndicator: !!roleIndicator,
       });
 
       if (userNameElement) {
@@ -716,7 +716,7 @@ async function loadHeaderUserInfo(): Promise<void> {
       if (userAvatar) {
         // Always set a default avatar first
         userAvatar.src = '/assets/images/default-avatar.svg';
-        
+
         if (userData.profile_picture) {
           userAvatar.src = userData.profile_picture;
           userAvatar.onerror = function () {
@@ -728,9 +728,8 @@ async function loadHeaderUserInfo(): Promise<void> {
 
       // Update role indicator
       if (roleIndicator && userData.role) {
-        roleIndicator.textContent = userData.role === 'admin' ? 'Admin' : 
-                                    userData.role === 'root' ? 'Root' : 
-                                    'Mitarbeiter';
+        roleIndicator.textContent =
+          userData.role === 'admin' ? 'Admin' : userData.role === 'root' ? 'Root' : 'Mitarbeiter';
         roleIndicator.className = `role-badge ${userData.role}`;
         console.log('[Blackboard] Set role to:', roleIndicator.textContent);
       }
@@ -832,7 +831,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   // Check if this is a direct attachment
   const isDirectAttachment = entry.content.startsWith('[Attachment:');
   let attachmentSize = 'medium';
-  
+
   if (isDirectAttachment) {
     const sizeMatch = entry.content.match(/\[Attachment:(small|medium|large)\]/);
     if (sizeMatch) {
@@ -846,7 +845,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     const attachment = entry.attachments[0];
     const isImage = attachment.mime_type.startsWith('image/');
     const isPDF = attachment.mime_type === 'application/pdf';
-    
+
     // Set size class
     let sizeStyle = '';
     let pdfHeight = '300px';
@@ -860,7 +859,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       sizeStyle = 'max-width: 400px; max-height: 400px;';
       pdfHeight = '400px';
     }
-    
+
     if (isImage) {
       contentHtml = `
         <div class="pinboard-image" style="${sizeStyle} margin: 0 auto;">
@@ -880,7 +879,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       } else if (attachmentSize === 'large') {
         pdfHeightStyle = 'height: 440px;'; // 400 + 40 for toolbar
       }
-      
+
       contentHtml = `
         <div class="pinboard-pdf-preview" style="${sizeStyle} ${pdfHeightStyle} margin: 0 auto; position: relative;">
           <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0" 
@@ -903,7 +902,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         </div>
       `;
     }
-    
+
     // Override card class for attachments
     cardClass = 'pinboard-attachment';
     cardColor = 'white';
@@ -1892,7 +1891,7 @@ function openDirectAttachModal(): void {
 
   // Show modal first
   openModal('directAttachModal');
-  
+
   // Setup file upload handlers after modal is shown
   setTimeout(() => {
     setupDirectAttachHandlers();
@@ -1975,13 +1974,13 @@ function setupDirectAttachHandlers(): void {
 
   // Size selection buttons - use event delegation
   document.querySelectorAll('.size-option').forEach((btn) => {
-    btn.onclick = function(this: HTMLElement) {
+    btn.onclick = function (this: HTMLElement) {
       console.log('[DirectAttach] Size button clicked:', this.getAttribute('data-size'));
       document.querySelectorAll('.size-option').forEach((b) => b.classList.remove('active'));
       this.classList.add('active');
     };
   });
-  
+
   // Save button handler
   if (saveBtn) {
     saveBtn.onclick = async () => {
@@ -1996,7 +1995,7 @@ function setupDirectAttachHandlers(): void {
  */
 function handleDirectAttachFile(file: File): void {
   console.log('[DirectAttach] handleDirectAttachFile called with:', file.name, file.type, file.size);
-  
+
   // Validate file type
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
   if (!allowedTypes.includes(file.type)) {
@@ -2051,10 +2050,10 @@ function clearDirectAttachment(): void {
   console.log('[DirectAttach] Clearing attachment');
   const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
   const preview = document.getElementById('directAttachPreview');
-  
+
   if (fileInput) fileInput.value = '';
   if (preview) preview.classList.add('d-none');
-  
+
   // Clear global file
   directAttachmentFile = null;
 }
@@ -2065,7 +2064,7 @@ function clearDirectAttachment(): void {
 async function saveDirectAttachment(): Promise<void> {
   console.log('[DirectAttach] saveDirectAttachment called');
   console.log('[DirectAttach] Global file:', directAttachmentFile?.name || 'none');
-  
+
   const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement;
   const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement;
   const prioritySelect = document.getElementById('directAttachPriority') as HTMLSelectElement;
@@ -2076,7 +2075,7 @@ async function saveDirectAttachment(): Promise<void> {
     titleInput: !!titleInput,
     orgLevelSelect: !!orgLevelSelect,
     prioritySelect: !!prioritySelect,
-    sizeOption: sizeOption?.getAttribute('data-size') || 'none'
+    sizeOption: sizeOption?.getAttribute('data-size') || 'none',
   });
 
   if (!directAttachmentFile) {
@@ -2110,9 +2109,9 @@ async function saveDirectAttachment(): Promise<void> {
     const response = await fetch('/api/blackboard', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: formData
+      body: formData,
     });
 
     if (!response.ok) {
@@ -2122,20 +2121,20 @@ async function saveDirectAttachment(): Promise<void> {
 
     showSuccess('Datei erfolgreich angeheftet!');
     closeModal('directAttachModal');
-    
+
     // Clear global file after successful upload
     directAttachmentFile = null;
-    
+
     // Reset the form and file input for next use
     const form = document.getElementById('directAttachForm') as HTMLFormElement;
     if (form) form.reset();
-    
+
     const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
-    
+
     const preview = document.getElementById('directAttachPreview');
     if (preview) preview.classList.add('d-none');
-    
+
     // Reload entries
     entriesLoadingEnabled = true;
     loadEntries();

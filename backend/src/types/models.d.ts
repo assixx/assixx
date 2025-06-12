@@ -6,7 +6,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: "admin" | "employee" | "root";
+  role: 'admin' | 'employee' | 'root';
   tenantId: number | null;
   departmentId: number | null;
   isActive: boolean;
@@ -65,7 +65,7 @@ export interface DatabaseTenant {
   phone: string | null;
   address: string | null;
   is_active: boolean;
-  status: "active" | "trial" | "suspended" | "cancelled";
+  status: 'active' | 'trial' | 'suspended' | 'cancelled';
   current_plan: string | null;
   features: string;
   created_at: Date;
@@ -176,7 +176,7 @@ export interface ChatMessage {
   roomId: string;
   senderId: number;
   content: string;
-  type: "text" | "file" | "image" | "system";
+  type: 'text' | 'file' | 'image' | 'system';
   attachmentUrl: string | null;
   isEdited: boolean;
   isDeleted: boolean;
@@ -192,8 +192,8 @@ export interface KvpSuggestion {
   category: string;
   submittedBy: number;
   tenantId: number;
-  status: "pending" | "in_review" | "approved" | "rejected" | "implemented";
-  priority: "low" | "medium" | "high";
+  status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'implemented';
+  priority: 'low' | 'medium' | 'high';
   attachments: string | null;
   reviewedBy: number | null;
   reviewNotes: string | null;
@@ -247,7 +247,13 @@ export interface EmployeeAvailability {
   id: number;
   employeeId: number;
   tenantId: number;
-  status: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  status:
+    | 'available'
+    | 'unavailable'
+    | 'vacation'
+    | 'sick'
+    | 'training'
+    | 'other';
   startDate: Date | string;
   endDate: Date | string;
   reason?: string;
@@ -261,7 +267,13 @@ export interface DatabaseEmployeeAvailability {
   id: number;
   employee_id: number;
   tenant_id: number;
-  status: 'available' | 'unavailable' | 'vacation' | 'sick' | 'training' | 'other';
+  status:
+    | 'available'
+    | 'unavailable'
+    | 'vacation'
+    | 'sick'
+    | 'training'
+    | 'other';
   start_date: Date | string;
   end_date: Date | string;
   reason?: string;

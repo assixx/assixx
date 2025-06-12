@@ -10,6 +10,7 @@
 ## 🐳 DOCKER QUICK-CHECK (30 Sekunden)
 
 **IMMER ZUERST ausführen:**
+
 ```bash
 # Working Directory ist WICHTIG!
 cd /home/scs/projects/Assixx/docker
@@ -46,7 +47,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.' && echo "✅ 
 - [ ] ✅ Docker Quick-Check ausgeführt
 - [ ] ✅ TODO.md gelesen (nur "AKTUELLE PHASE" Section)
 - [ ] ✅ CLAUDE.md gelesen
-- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen  
+- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen
 - [ ] ✅ docs/DESIGN-STANDARDS.md gelesen
 - [ ] ✅ docs/TYPESCRIPT-STANDARDS.md gelesen
 - [ ] ✅ README.md gelesen
@@ -202,18 +203,63 @@ function validateSubdomain(value) {
 #### Wenn Simon sagt "weiter machen mit Assixx Projekt":
 
 0. **🤖 AUTOMATISCH:** TodoWrite mit Pflicht-Checkliste erstellen!
-   
+
    ```json
    [
-     {"id": "1", "content": "Docker Quick-Check ausführen", "status": "pending", "priority": "high"},
-     {"id": "2", "content": "TODO.md lesen (nur TL;DR Section)", "status": "pending", "priority": "high"},
-     {"id": "3", "content": "CLAUDE.md lesen", "status": "pending", "priority": "high"},
-     {"id": "4", "content": "docs/PROJEKTSTRUKTUR.md lesen", "status": "pending", "priority": "high"},
-     {"id": "5", "content": "docs/DESIGN-STANDARDS.md lesen", "status": "pending", "priority": "high"},
-     {"id": "6", "content": "README.md lesen", "status": "pending", "priority": "high"},
-     {"id": "7", "content": "docs/DATABASE-MIGRATION-GUIDE.md lesen", "status": "pending", "priority": "high"},
-     {"id": "8", "content": "docs/BEFORE-STARTING-DEV.md AUSFÜHREN", "status": "pending", "priority": "high"},
-     {"id": "9", "content": "Mit Entwicklung beginnen", "status": "pending", "priority": "medium"}
+     {
+       "id": "1",
+       "content": "Docker Quick-Check ausführen",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "2",
+       "content": "TODO.md lesen (nur TL;DR Section)",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "3",
+       "content": "CLAUDE.md lesen",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "4",
+       "content": "docs/PROJEKTSTRUKTUR.md lesen",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "5",
+       "content": "docs/DESIGN-STANDARDS.md lesen",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "6",
+       "content": "README.md lesen",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "7",
+       "content": "docs/DATABASE-MIGRATION-GUIDE.md lesen",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "8",
+       "content": "docs/BEFORE-STARTING-DEV.md AUSFÜHREN",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "9",
+       "content": "Mit Entwicklung beginnen",
+       "status": "pending",
+       "priority": "medium"
+     }
    ]
    ```
 
@@ -265,22 +311,26 @@ function validateSubdomain(value) {
 ### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (06.06.2025)
 
 #### Version 0.1.0 - Stabilität vor Features!
+
 - **Fokus:** Systematisches Testing & Debugging
 - **Verantwortlich:** Simon testet jede Seite einzeln
 - **Ziel:** Alle bestehenden Features zu 100% funktionsfähig machen
 - **Zeitrahmen:** 2-3 Wochen
 
 #### Version 1.0.0 - Beta-Features
+
 - **Erst NACH Version 0.1.0**
 - **Deal-Breaker Features:** Urlaub, Gehalt, TPM
 - **Zeitrahmen:** 4-5 Wochen
 
 #### Docker ist Standard!
+
 - **Entwicklung:** docker-compose up
 - **Keine lokale Installation mehr nötig**
 - **Backup-System läuft automatisch**
 
 ### 📌 WICHTIGE UPDATES (06.06.2025)
+
 - ✅ Docker Setup komplett (01.06.2025)
 - ✅ Multi-Tenant Isolation behoben (01.06.2025)
 - ✅ Automatisches Backup-System aktiv (01.06.2025)
@@ -291,13 +341,13 @@ function validateSubdomain(value) {
 
 ### 📊 PROJEKT-ÜBERSICHT
 
-| Kategorie      | Information                           |
-| -------------- | ------------------------------------- |
-| **Projekt**    | Multi-Tenant SaaS für Industriefirmen |
-| **Tech Stack** | [ARCHITECTURE.md](./docs/ARCHITECTURE.md)  |
-| **Features**   | [FEATURES.md](./docs/FEATURES.md)          |
-| **GitHub**     | https://github.com/SCS-Technik/Assixx |
-| **Lokale Dev** | http://localhost:3000                 |
+| Kategorie      | Information                               |
+| -------------- | ----------------------------------------- |
+| **Projekt**    | Multi-Tenant SaaS für Industriefirmen     |
+| **Tech Stack** | [ARCHITECTURE.md](./docs/ARCHITECTURE.md) |
+| **Features**   | [FEATURES.md](./docs/FEATURES.md)         |
+| **GitHub**     | https://github.com/SCS-Technik/Assixx     |
+| **Lokale Dev** | http://localhost:3000                     |
 
 ### 📌 AKTUELLE SCHWERPUNKTE
 

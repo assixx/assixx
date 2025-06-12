@@ -82,14 +82,21 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
   --success-color: #4caf50; /* Grün für Erfolg */
   --error-color: #f44336; /* Rot für Fehler */
   --warning-color: #ff9800; /* Orange für Warnungen */
-  
+
   /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
   --accent-color: rgba(255, 255, 255, 0.1); /* Elegante transparente Basis */
-  --accent-gradient: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15), 
-    rgba(255, 255, 255, 0.05), 
-    rgba(255, 255, 255, 0.1)); /* Subtiler Glassmorphismus Gradient */
-  --accent-glow: rgba(255, 255, 255, 0.6); /* Glow-Effekt für Premium Elements */
+  --accent-gradient: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.1)
+  ); /* Subtiler Glassmorphismus Gradient */
+  --accent-glow: rgba(
+    255,
+    255,
+    255,
+    0.6
+  ); /* Glow-Effekt für Premium Elements */
 
   /* Abstände */
   --spacing-xs: 4px;
@@ -193,30 +200,35 @@ body::after {
 Das Navigation Container System ist der moderne Standard für konsistente Navigation in Assixx. Alle neuen Seiten MÜSSEN dieses System verwenden.
 
 **HTML-Struktur (Minimal):**
+
 ```html
 <!DOCTYPE html>
 <html lang="de">
-<head>
-  <!-- Imports... -->
-</head>
-<body>
-  <!-- Navigation Container - EINZIGE Navigation-Struktur -->
-  <div id="navigation-container"></div>
-  
-  <!-- Main Layout -->
-  <div class="layout-container">
-    <main class="main-content">
-      <!-- Seiten-Content hier -->
-    </main>
-  </div>
-  
-  <!-- Scripts am Ende -->
-  <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-</body>
+  <head>
+    <!-- Imports... -->
+  </head>
+  <body>
+    <!-- Navigation Container - EINZIGE Navigation-Struktur -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout -->
+    <div class="layout-container">
+      <main class="main-content">
+        <!-- Seiten-Content hier -->
+      </main>
+    </div>
+
+    <!-- Scripts am Ende -->
+    <script
+      type="module"
+      src="/scripts/components/unified-navigation.ts"
+    ></script>
+  </body>
 </html>
 ```
 
 **TypeScript Import:**
+
 ```javascript
 // unified-navigation.ts generiert automatisch:
 // - Header mit Logo, User-Info, Role-Switch, Logout
@@ -226,6 +238,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ```
 
 **Vorteile:**
+
 - ✅ Single Source of Truth für Navigation
 - ✅ Keine Duplikation über Seiten
 - ✅ Automatische Rolle-basierte Menüs
@@ -233,12 +246,14 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 - ✅ Zentrale Wartung
 
 **Migration von alten Seiten:**
+
 1. Entfernen: Kompletten `<header>` und `<aside class="sidebar">` HTML
 2. Entfernen: Scripts wie `header-user-info.ts`, `role-switch.ts`
 3. Hinzufügen: `<div id="navigation-container"></div>`
 4. Hinzufügen: `<script type="module" src="/scripts/components/unified-navigation.ts"></script>`
 
 **CSS für Header (automatisch von unified-navigation.ts generiert):**
+
 ```css
 .header {
   position: fixed;
@@ -250,7 +265,8 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
@@ -1394,9 +1410,11 @@ document.addEventListener('click', function (e) {
 ## ⚠️ Wichtige CSS-Konflikte vermeiden
 
 ### Problem: Globale CSS-Selektoren
+
 Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemeinen CSS-Selektoren zu verwenden, da diese die Standard-Styles überschreiben können.
 
 #### ❌ FALSCH - Zu globale Selektoren:
+
 ```css
 /* NIEMALS so allgemein definieren! */
 .btn {
@@ -1411,6 +1429,7 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 ```
 
 #### ✅ RICHTIG - Spezifische Selektoren:
+
 ```css
 /* Immer mit spezifischem Kontext */
 .feature-actions .btn {
@@ -1424,27 +1443,30 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 ```
 
 ### Pflicht-Includes für konsistente Header:
+
 Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
+
 ```html
 <!-- Font Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
 <!-- User Info Styles (entfernt unerwünschte Pseudo-Elemente) -->
 <link rel="stylesheet" href="/styles/user-info-update.css" />
 ```
 
 ### Debugging-Tipps:
+
 1. **Vergleiche mit funktionierenden Seiten** (z.B. root-dashboard.html)
 2. **Prüfe alle CSS-Includes** - fehlende Dateien sind oft die Ursache
 3. **Inspiziere spezifische Selektoren** - zu globale Styles überschreiben oft Standards
 4. **Validiere HTML** - doppelte `class` Attribute werden ignoriert
 
-
-
 Für alle modals gilt bei:
 backdrop-filter: blur(20px) saturate(500%);
 
-  background: #1a1a1a4a;
----
+## background: #1a1a1a4a;
 
 ## 🎯 Checkliste für neue Komponenten
 

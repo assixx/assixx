@@ -37,7 +37,6 @@
         z-index: -1;
       }
 
-
       /* Admin Table Container */
       .admin-table-container {
         margin: 20px;
@@ -412,9 +411,8 @@
         border: 1px solid rgba(255, 152, 0, 0.3);
       }
 
-
       /* Checkbox Styling */
-      input[type="checkbox"] {
+      input[type='checkbox'] {
         width: 18px;
         height: 18px;
         cursor: pointer;
@@ -453,7 +451,6 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-
       <!-- Main Content Area -->
       <main class="main-content">
         <div class="admin-table-container">
@@ -517,14 +514,26 @@
                 </svg>
               </div>
               <div class="dropdown-options" id="positionDropdownDropdown">
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'bereichsleiter', 'Bereichsleiter')">Bereichsleiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'personalleiter', 'Personalleiter')">Personalleiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">Geschäftsführer</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'bereichsleiter', 'Bereichsleiter')">
+                  Bereichsleiter
+                </div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'personalleiter', 'Personalleiter')">
+                  Personalleiter
+                </div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">
+                  Geschäftsführer
+                </div>
                 <div class="dropdown-option" onclick="selectOption('positionDropdown', 'werksleiter', 'Werksleiter')">Werksleiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'produktionsleiter', 'Produktionsleiter')">Produktionsleiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'qualitaetsleiter', 'Qualitätsleiter')">Qualitätsleiter</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'produktionsleiter', 'Produktionsleiter')">
+                  Produktionsleiter
+                </div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'qualitaetsleiter', 'Qualitätsleiter')">
+                  Qualitätsleiter
+                </div>
                 <div class="dropdown-option" onclick="selectOption('positionDropdown', 'it-leiter', 'IT-Leiter')">IT-Leiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'vertriebsleiter', 'Vertriebsleiter')">Vertriebsleiter</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'vertriebsleiter', 'Vertriebsleiter')">
+                  Vertriebsleiter
+                </div>
               </div>
               <input type="hidden" name="position" id="positionDropdownValue" required />
             </div>
@@ -533,12 +542,12 @@
             <label class="form-label">Notizen</label>
             <textarea id="adminNotes" class="form-control" rows="3"></textarea>
           </div>
-          <div class="form-group" id="activeStatusGroup" style="display: none;">
+          <div class="form-group" id="activeStatusGroup" style="display: none">
             <label class="form-label">
               <input type="checkbox" id="adminIsActive" />
-              <span style="margin-left: 8px;">Aktiv</span>
+              <span style="margin-left: 8px">Aktiv</span>
             </label>
-            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px">
               Deaktivierte Administratoren können sich nicht anmelden
             </div>
           </div>
@@ -553,26 +562,26 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-admins.ts"></script>
-    
+
     <!-- Custom Dropdown Functions -->
     <script>
       // Toggle Dropdown
       function toggleDropdown(type) {
         const display = document.getElementById(type + 'Display');
         const dropdown = document.getElementById(type + 'Dropdown');
-        
+
         // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach(d => {
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
           if (d !== display) d.classList.remove('active');
         });
-        document.querySelectorAll('.dropdown-options').forEach(d => {
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
           if (d !== dropdown) d.classList.remove('active');
         });
-        
+
         display.classList.toggle('active');
         dropdown.classList.toggle('active');
       }
-      
+
       // Select Option
       function selectOption(type, value, text) {
         document.getElementById(type + 'Display').querySelector('span').textContent = text;
@@ -580,12 +589,12 @@
         document.getElementById(type + 'Display').classList.remove('active');
         document.getElementById(type + 'Dropdown').classList.remove('active');
       }
-      
+
       // Click outside to close
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
         }
       });
     </script>

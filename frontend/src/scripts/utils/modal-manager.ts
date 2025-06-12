@@ -35,22 +35,22 @@ class ModalManager {
    */
   show(modalId: string, config?: Partial<ModalConfig>): HTMLElement | null {
     console.log(`[ModalManager] show() called for modalId: ${modalId}`);
-    
+
     // Check if modal already exists in activeModals
     let modal = this.activeModals.get(modalId);
     console.log(`[ModalManager] Existing modal in map: ${!!modal}`);
-    
+
     // Also check if it's in the DOM
     const modalInDom = document.getElementById(modalId);
     console.log(`[ModalManager] Modal in DOM: ${!!modalInDom}`);
-    
+
     // If modal exists in map but not in DOM, remove from map
     if (modal && !modalInDom) {
       console.log(`[ModalManager] Modal was removed from DOM, clearing from map`);
       this.activeModals.delete(modalId);
       modal = null;
     }
-    
+
     if (!modal) {
       // Create modal from template or config
       console.log(`[ModalManager] Creating new modal...`);
@@ -68,12 +68,12 @@ class ModalManager {
     if (!modal.parentElement || modal.parentElement !== document.body) {
       console.log(`[ModalManager] Adding modal to DOM...`);
       console.log(`[ModalManager] Current parent:`, modal.parentElement);
-      
+
       // Remove from current parent if it has one
       if (modal.parentElement) {
         modal.parentElement.removeChild(modal);
       }
-      
+
       document.body.appendChild(modal);
       console.log(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
       console.log(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
@@ -84,34 +84,39 @@ class ModalManager {
 
     // Remove active class first to reset animation
     modal.classList.remove('active');
-    
+
     // Show modal with animation
     console.log(`[ModalManager] Showing modal with animation...`);
-    
+
     // Ensure the modal is visible by removing any inline styles that might interfere
     modal.style.removeProperty('display');
     modal.style.removeProperty('visibility');
     modal.style.removeProperty('opacity');
-    
+
     // Force a reflow to ensure the browser processes the state change
     void modal.offsetHeight;
-    
+
     // Use requestAnimationFrame to ensure smooth animation
     requestAnimationFrame(() => {
       modal!.classList.add('active');
       console.log(`[ModalManager] Modal classes after show: ${modal!.className}`);
-      
+
       // Double-check visibility after a frame
       requestAnimationFrame(() => {
         const styles = window.getComputedStyle(modal!);
         console.log(`[ModalManager] Modal computed style visibility:`, styles.visibility);
         console.log(`[ModalManager] Modal computed style opacity:`, styles.opacity);
         console.log(`[ModalManager] Modal computed style display:`, styles.display);
-        
+
         // If still not visible, force it (also check for empty string)
-        if (!styles.opacity || styles.opacity === '0' || styles.opacity === '' || 
-            styles.visibility === 'hidden' || styles.visibility === '' ||
-            styles.display === 'none') {
+        if (
+          !styles.opacity ||
+          styles.opacity === '0' ||
+          styles.opacity === '' ||
+          styles.visibility === 'hidden' ||
+          styles.visibility === '' ||
+          styles.display === 'none'
+        ) {
           console.warn('[ModalManager] Modal not visible, forcing visibility');
           modal!.style.opacity = '1';
           modal!.style.visibility = 'visible';
@@ -166,11 +171,11 @@ class ModalManager {
   private createModal(modalId: string, config?: Partial<ModalConfig>): HTMLElement | null {
     console.log(`[ModalManager] createModal() called for modalId: ${modalId}`);
     console.log(`[ModalManager] Available templates:`, Array.from(this.templates.keys()));
-    
+
     // Try to get template first
     const template = this.templates.get(modalId);
     console.log(`[ModalManager] Template found: ${!!template}`);
-    
+
     if (template) {
       console.log(`[ModalManager] Creating modal from template...`);
       const div = document.createElement('div');
@@ -190,12 +195,16 @@ class ModalManager {
     const modalHtml = `
       <div class="modal-overlay" id="${modalId}">
         <div class="modal-container modal-${config.size || 'md'}">
-          ${config.title ? `
+          ${
+            config.title
+              ? `
             <div class="modal-header">
               <h2 class="modal-title">${config.title}</h2>
               ${config.showCloseButton !== false ? '<button type="button" class="modal-close" data-action="close">&times;</button>' : ''}
             </div>
-          ` : ''}
+          `
+              : ''
+          }
           <div class="modal-body">
             ${config.content || ''}
           </div>
@@ -254,7 +263,7 @@ export function openModal(content: string, config?: Partial<ModalConfig>): void 
   const modalId = config?.id || 'modal-' + Date.now();
   modalManager.show(modalId, {
     ...config,
-    content
+    content,
   });
 }
 

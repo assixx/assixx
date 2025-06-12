@@ -20,7 +20,7 @@ async function activateAllFeatures(tenantId) {
     user: process.env.DB_USER || 'assixx_user',
     password: process.env.DB_PASSWORD || 'AssixxP@ss2025!',
     database: process.env.DB_NAME || 'assixx',
-    port: process.env.DB_PORT || 3307
+    port: process.env.DB_PORT || 3307,
   });
 
   try {

@@ -215,12 +215,7 @@
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s ease;
       }
 
@@ -481,7 +476,6 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      
       <!-- Main Content Area -->
       <main class="main-content">
         <div class="page-header">
@@ -529,7 +523,7 @@
                 </tbody>
               </table>
             </div>
-            <div id="no-documents" class="no-documents-message" style="display: none;">
+            <div id="no-documents" class="no-documents-message" style="display: none">
               <i class="fas fa-folder-open"></i>
               <p>Keine Dokumente gefunden</p>
             </div>
@@ -609,21 +603,20 @@
           } else {
             noDocumentsMessage.style.display = 'none';
             documentTableBody.innerHTML = documents
-              .map(
-                (doc) => {
-                  // Bestimme den Empfänger-Text
-                  let recipientDisplay = 'Mich';
-                  if (doc.recipient_display) {
-                    recipientDisplay = doc.recipient_display;
-                  } else if (doc.recipient_type === 'team') {
-                    recipientDisplay = doc.team_name ? `Team: ${doc.team_name}` : 'Team';
-                  } else if (doc.recipient_type === 'department') {
-                    recipientDisplay = doc.department_name ? `Abteilung: ${doc.department_name}` : 'Abteilung';
-                  } else if (doc.recipient_type === 'company') {
-                    recipientDisplay = 'Gesamte Firma';
-                  }
-                  
-                  return `
+              .map((doc) => {
+                // Bestimme den Empfänger-Text
+                let recipientDisplay = 'Mich';
+                if (doc.recipient_display) {
+                  recipientDisplay = doc.recipient_display;
+                } else if (doc.recipient_type === 'team') {
+                  recipientDisplay = doc.team_name ? `Team: ${doc.team_name}` : 'Team';
+                } else if (doc.recipient_type === 'department') {
+                  recipientDisplay = doc.department_name ? `Abteilung: ${doc.department_name}` : 'Abteilung';
+                } else if (doc.recipient_type === 'company') {
+                  recipientDisplay = 'Gesamte Firma';
+                }
+
+                return `
                         <tr>
                             <td>${doc.file_name || doc.filename || '-'}</td>
                             <td>
@@ -641,7 +634,7 @@
                             </td>
                         </tr>
                     `;
-                })
+              })
               .join('');
 
             // Event-Listener für Dokument-Download-Buttons hinzufügen
@@ -764,9 +757,8 @@
         }
       });
     </script>
-    
+
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    
   </body>
 </html>

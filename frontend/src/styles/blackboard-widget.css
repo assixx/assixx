@@ -1,303 +1,305 @@
 /* Blackboard Widget Styles for Dashboard */
 .blackboard-widget {
-    background: hsla(0,0%,100%,.02);
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+  background: hsla(0, 0%, 100%, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .blackboard-widget-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .blackboard-widget-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .blackboard-widget-title i {
-    font-size: 1rem;
+  font-size: 1rem;
 }
 
 .blackboard-widget-link {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.3s ease;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.3s ease;
 }
 
 .blackboard-widget-link:hover {
-    color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 /* Mini Notes Container */
 .mini-notes-container {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding: 0.5rem 0;
-    justify-content: center;
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  justify-content: center;
 }
 
 /* Mini Note Styles */
 .mini-note {
-    flex: 0 0 250px;
-    min-height: 120px;
-    padding: 1rem;
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
+  flex: 0 0 250px;
+  min-height: 120px;
+  padding: 1rem;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .mini-note:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Mini Note Colors */
 .mini-note.yellow {
-    background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
-    color: #333;
+  background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+  color: #333;
 }
 
 .mini-note.blue {
-    background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
-    color: #0d47a1;
+  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+  color: #0d47a1;
 }
 
 .mini-note.green {
-    background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
-    color: #1b5e20;
+  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+  color: #1b5e20;
 }
 
 .mini-note.red {
-    background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
-    color: #b71c1c;
+  background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%);
+  color: #b71c1c;
 }
 
 .mini-note.orange {
-    background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
-    color: #e65100;
+  background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
+  color: #e65100;
 }
 
 .mini-note.pink {
-    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
-    color: #880e4f;
+  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+  color: #880e4f;
 }
 
 /* Mini Pushpin */
 .mini-pushpin {
-    position: absolute;
-    top: -5px;
-    right: 15px;
-    width: 15px;
-    height: 15px;
-    background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  top: -5px;
+  right: 15px;
+  width: 15px;
+  height: 15px;
+  background: radial-gradient(circle at 30% 30%, #ff4444, #cc0000);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .mini-pushpin::after {
-    content: '';
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
 /* Mini Note Content */
 .mini-note-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mini-note-content {
-    font-size: 0.8rem;
-    line-height: 1.4;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
 .mini-note-meta {
-    position: absolute;
-    bottom: 0.5rem;
-    left: 1rem;
-    right: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.7rem;
-    opacity: 0.7;
+  position: absolute;
+  bottom: 0.5rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 
 .mini-note-priority {
-    /*display: flex;*/
-    align-items: center;
-    gap: 0.25rem;
+  /*display: flex;*/
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .priority-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
 .priority-dot.urgent {
-    background: #f44336;
+  background: #f44336;
 }
 
 .priority-dot.high {
-    background: #ff9800;
+  background: #ff9800;
 }
 
 .priority-dot.normal {
-    background: #2196f3;
+  background: #2196f3;
 }
 
 .priority-dot.low {
-    background: #4caf50;
+  background: #4caf50;
 }
 
 /* Empty State */
 .blackboard-widget-empty {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-muted);
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
 }
 
 .blackboard-widget-empty i {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.5;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
 }
 
 /* Loading State */
 .blackboard-widget-loading {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-muted);
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
 }
 
 .blackboard-widget-loading i {
-    animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .mini-notes-container {
-        gap: 0.75rem;
-    }
-    
-    .mini-note {
-        flex: 0 0 200px;
-        min-height: 100px;
-    }
+  .mini-notes-container {
+    gap: 0.75rem;
+  }
+
+  .mini-note {
+    flex: 0 0 200px;
+    min-height: 100px;
+  }
 }
 
 /* Attachment Styles */
 .mini-note-attachment {
-    margin: 0.5rem 0;
-    overflow: hidden;
-    border-radius: 4px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
 .mini-note-attachment img {
-    display: block;
-    width: 100%;
+  display: block;
+  width: 100%;
 }
 
 .mini-note.has-attachment .mini-note-content {
-    display: none;
+  display: none;
 }
 
 .mini-note-attachments {
-    position: absolute;
-    top: 0.5rem;
-    left: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    opacity: 0.8;
+  position: absolute;
+  top: 0.5rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 
 .mini-note-attachments i {
-    font-size: 0.8rem;
+  font-size: 0.8rem;
 }
 
 /* Adjust spacing for notes with attachments */
 .mini-note.has-attachment {
-    padding-bottom: 2.5rem;
+  padding-bottom: 2.5rem;
 }
 
 /* Scrollbar Styling */
 .mini-notes-container::-webkit-scrollbar {
-    height: 6px;
+  height: 6px;
 }
 
 .mini-notes-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
 }
 
 .mini-notes-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 .mini-notes-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Mini note attachment preview */
 .mini-note-attachment {
-    margin: 8px 0;
-    position: relative;
+  margin: 8px 0;
+  position: relative;
 }
 
 .mini-note-attachment object {
-    pointer-events: none !important;
-    display: block;
+  pointer-events: none !important;
+  display: block;
 }
 
 .mini-note-attachment img,
 .mini-note-attachment object {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Mini note attachments indicator */
 .mini-note-attachments {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-    color: #666;
-    opacity: 0.8;
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #666;
+  opacity: 0.8;
 }
 
 .mini-note-attachments i {
-    font-size: 10px;
+  font-size: 10px;
 }

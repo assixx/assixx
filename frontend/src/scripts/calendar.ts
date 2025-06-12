@@ -201,7 +201,7 @@ function selectOrgId(id: number, name: string): void {
 // Initialize when document is ready
 function initializeApp() {
   console.log('Calendar: Starting initialization...');
-  
+
   // Register modal templates
   registerModalTemplates();
 
@@ -238,10 +238,10 @@ function initializeApp() {
         // Setup event listeners
         console.log('Calendar: Setting up event listeners...');
         setupEventListeners();
-        
+
         // Setup color picker
         setupColorPicker();
-        
+
         console.log('Calendar: Initialization complete');
       })
       .catch((error) => {
@@ -267,21 +267,21 @@ if (document.readyState === 'loading') {
  */
 function registerModalTemplates(): void {
   console.log('Calendar: registerModalTemplates() called');
-  
+
   // Event Form Modal Template
   const eventFormTemplate = getEventFormModalTemplate();
   console.log('Calendar: eventFormTemplate length:', eventFormTemplate.length);
   modalManager.registerTemplate('eventFormModal', eventFormTemplate);
-  
+
   // Event Detail Modal Template
   modalManager.registerTemplate('eventDetailModal', getEventDetailModalTemplate());
-  
+
   // Attendees Modal Template
   modalManager.registerTemplate('attendeesModal', getAttendeesModalTemplate());
-  
+
   // Event Response Modal Template
   modalManager.registerTemplate('eventResponseModal', getEventResponseModalTemplate());
-  
+
   console.log('Calendar: All modal templates registered');
 }
 
@@ -295,9 +295,9 @@ function initializeCalendar(): void {
     console.log('Calendar: Already initialized, skipping...');
     return;
   }
-  
+
   console.log('Calendar: Initializing FullCalendar...');
-  
+
   const calendarEl = document.getElementById('calendar') as HTMLElement;
   console.log('Calendar: Calendar element found:', !!calendarEl);
 
@@ -314,77 +314,77 @@ function initializeCalendar(): void {
     setTimeout(() => initializeCalendar(), 500);
     return;
   }
-  
+
   calendarInitialized = true;
 
   try {
     calendar = new window.FullCalendar.Calendar(calendarEl, {
-    initialView: calendarView,
-    locale: 'de',
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: '',
-    },
-    buttonText: {
-      today: 'Heute',
-      month: 'Monat',
-      week: 'Woche',
-      day: 'Tag',
-      list: 'Liste',
-    },
-    allDayText: 'Ganztägig',
-    firstDay: 1, // Monday as first day
-    slotMinTime: '07:00:00',
-    slotMaxTime: '20:00:00',
-    height: 'auto',
-    nowIndicator: true,
-    dayMaxEvents: true,
-    navLinks: true,
-    selectable: isAdmin, // Only admins can select dates to create events
-    select(info: FullCalendarSelectInfo) {
-      console.log('Calendar: Date selected:', info);
-      if (isAdmin) {
-        console.log('Calendar: User is admin, opening event form');
-        // Bei Klick auf einzelnen Tag: allDay = false
-        // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
-        const allDay = info.allDay && info.view.type === 'dayGridMonth';
-        openEventForm(null, info.start, info.end, allDay);
-      } else {
-        console.log('Calendar: User is not admin, ignoring selection');
-      }
-    },
-    events: loadCalendarEvents,
-    eventClick(info: FullCalendarEventClickInfo) {
-      viewEvent(parseInt(info.event.id, 10));
-    },
-    eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
-      // Show tooltip on hover
-      const tooltip = document.createElement('div');
-      tooltip.className = 'event-tooltip';
-      tooltip.innerHTML = `
+      initialView: calendarView,
+      locale: 'de',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: '',
+      },
+      buttonText: {
+        today: 'Heute',
+        month: 'Monat',
+        week: 'Woche',
+        day: 'Tag',
+        list: 'Liste',
+      },
+      allDayText: 'Ganztägig',
+      firstDay: 1, // Monday as first day
+      slotMinTime: '07:00:00',
+      slotMaxTime: '20:00:00',
+      height: 'auto',
+      nowIndicator: true,
+      dayMaxEvents: true,
+      navLinks: true,
+      selectable: isAdmin, // Only admins can select dates to create events
+      select(info: FullCalendarSelectInfo) {
+        console.log('Calendar: Date selected:', info);
+        if (isAdmin) {
+          console.log('Calendar: User is admin, opening event form');
+          // Bei Klick auf einzelnen Tag: allDay = false
+          // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
+          const allDay = info.allDay && info.view.type === 'dayGridMonth';
+          openEventForm(null, info.start, info.end, allDay);
+        } else {
+          console.log('Calendar: User is not admin, ignoring selection');
+        }
+      },
+      events: loadCalendarEvents,
+      eventClick(info: FullCalendarEventClickInfo) {
+        viewEvent(parseInt(info.event.id, 10));
+      },
+      eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
+        // Show tooltip on hover
+        const tooltip = document.createElement('div');
+        tooltip.className = 'event-tooltip';
+        tooltip.innerHTML = `
         <strong>${info.event.title}</strong><br>
         ${info.event.extendedProps?.description || ''}
         ${info.event.extendedProps?.location ? `<br><i class="fas fa-map-marker-alt"></i> ${info.event.extendedProps.location}` : ''}
       `;
-      document.body.appendChild(tooltip);
+        document.body.appendChild(tooltip);
 
-      const rect = info.el.getBoundingClientRect();
-      tooltip.style.position = 'absolute';
-      tooltip.style.left = `${rect.left}px`;
-      tooltip.style.top = `${rect.bottom + 5}px`;
-      tooltip.style.zIndex = '9999';
+        const rect = info.el.getBoundingClientRect();
+        tooltip.style.position = 'absolute';
+        tooltip.style.left = `${rect.left}px`;
+        tooltip.style.top = `${rect.bottom + 5}px`;
+        tooltip.style.zIndex = '9999';
 
-      (info.el as HTMLElement & { _tooltip?: HTMLElement })._tooltip = tooltip;
-    },
-    eventMouseLeave(info: FullCalendarEventMouseEnterInfo) {
-      const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
-      if (el._tooltip) {
-        el._tooltip.remove();
-        delete el._tooltip;
-      }
-    },
-  });
+        (info.el as HTMLElement & { _tooltip?: HTMLElement })._tooltip = tooltip;
+      },
+      eventMouseLeave(info: FullCalendarEventMouseEnterInfo) {
+        const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
+        if (el._tooltip) {
+          el._tooltip.remove();
+          delete el._tooltip;
+        }
+      },
+    });
 
     calendar.render();
   } catch (error) {
@@ -451,12 +451,12 @@ function setupEventListeners(): void {
     // Remove any existing listeners
     const newButton = newEventBtn.cloneNode(true) as HTMLButtonElement;
     newEventBtn.parentNode?.replaceChild(newButton, newEventBtn);
-    
+
     newButton.addEventListener('click', (e) => {
       console.log('Calendar: New Event button clicked');
       e.preventDefault();
       e.stopPropagation();
-      
+
       // Debug check
       console.log('Calendar: About to call openEventForm...');
       try {
@@ -467,7 +467,7 @@ function setupEventListeners(): void {
       }
     });
   } else {
-    console.error('Calendar: newEventBtn not found!')
+    console.error('Calendar: newEventBtn not found!');
   }
 
   // Save event button
@@ -518,13 +518,13 @@ function setupEventListeners(): void {
       loadEmployeesForAttendees();
     });
   }
-  
+
   // Add selected attendees button
   const addSelectedAttendeesBtn = document.getElementById('addSelectedAttendeesBtn');
   if (addSelectedAttendeesBtn) {
     addSelectedAttendeesBtn.addEventListener('click', () => {
       const checkboxes = document.querySelectorAll<HTMLInputElement>('#attendeesList input[type="checkbox"]:checked');
-      checkboxes.forEach(checkbox => {
+      checkboxes.forEach((checkbox) => {
         const userId = parseInt(checkbox.value);
         if (!selectedAttendees.includes(userId)) {
           selectedAttendees.push(userId);
@@ -542,20 +542,20 @@ function setupEventListeners(): void {
       searchAttendees(this.value);
     });
   }
-  
+
   // Setup custom dropdown event delegation
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', function (e) {
     const target = e.target as HTMLElement;
-    
+
     // Handle dropdown toggles
     if (target.closest('.dropdown-display')) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const display = target.closest('.dropdown-display') as HTMLElement;
       const wrapper = display.closest('.custom-dropdown');
       const dropdown = wrapper?.querySelector('.dropdown-options') as HTMLElement;
-      
+
       if (dropdown) {
         // Check which dropdown was clicked
         if (wrapper?.id === 'orgLevelWrapper') {
@@ -569,16 +569,16 @@ function setupEventListeners(): void {
         }
       }
     }
-    
+
     // Handle dropdown option clicks
     if (target.closest('.dropdown-option')) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const option = target.closest('.dropdown-option') as HTMLElement;
       const dropdown = option.closest('.dropdown-options');
       const wrapper = dropdown?.closest('.custom-dropdown');
-      
+
       if (dropdown?.id === 'orgLevelDropdown') {
         // Extract value and text from the option
         const value = option.dataset.value || '';
@@ -594,7 +594,7 @@ function setupEventListeners(): void {
         selectRecurrence(value, text);
       }
     }
-    
+
     // Close dropdowns when clicking outside
     if (!target.closest('.custom-dropdown')) {
       closeAllDropdowns();
@@ -921,11 +921,15 @@ async function viewEvent(eventId: number): Promise<void> {
           <i class="fas fa-calendar-check"></i>
           <span><strong>Ende:</strong> ${event.all_day ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
         </div>
-        ${event.location ? `
+        ${
+          event.location
+            ? `
         <div class="detail-item">
           <i class="fas fa-map-marker-alt"></i>
           <span><strong>Ort:</strong> ${escapeHtml(event.location)}</span>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
         <div class="detail-item">
           <i class="fas fa-layer-group"></i>
           <span><strong>Ebene:</strong> ${levelText}</span>
@@ -963,9 +967,9 @@ async function viewEvent(eventId: number): Promise<void> {
 
     // Add user response buttons
     if (event.attendees?.some((a) => a.user_id === currentUserId)) {
-      const currentAttendee = event.attendees.find(a => a.user_id === currentUserId);
+      const currentAttendee = event.attendees.find((a) => a.user_id === currentUserId);
       const currentResponse = currentAttendee?.response || 'pending';
-      
+
       modalContent += `
         <div class="response-buttons">
           <h4>Ihre Antwort</h4>
@@ -1018,7 +1022,7 @@ async function viewEvent(eventId: number): Promise<void> {
         if (modalBody) {
           modalBody.innerHTML = modalContent;
         }
-      }
+      },
     });
   } catch (error) {
     console.error('Error viewing event:', error);
@@ -1081,16 +1085,16 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
  */
 function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date, allDay?: boolean): void {
   console.log('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
-  
+
   // Check if modalManager exists
   console.log('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
   console.log('Calendar: modalManager.show exists:', typeof modalManager?.show === 'function');
-  
+
   // Try to show the modal using modalManager
   console.log('Calendar: Calling modalManager.show...');
   const modal = modalManager.show('eventFormModal');
   console.log('Calendar: modalManager.show returned:', !!modal);
-  
+
   if (!modal) {
     console.error('Calendar: Failed to show eventFormModal!');
     return;
@@ -1105,10 +1109,10 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     option.classList.remove('selected');
   });
   document.querySelector('.color-option[data-color="#3498db"]')?.classList.add('selected');
-  
+
   // Setup color picker for this modal instance
   setupModalColorPicker();
-  
+
   // Setup event listeners for modal buttons
   setupModalEventListeners();
 
@@ -1209,7 +1213,7 @@ function updateOrgIdDropdown(level: string): void {
     orgIdContainer.style.display = 'block';
     const label = orgIdContainer.querySelector('label');
     if (label) label.textContent = 'Abteilung';
-    
+
     // Enable the dropdown display
     if (orgIdDisplay) {
       orgIdDisplay.classList.remove('disabled');
@@ -1232,7 +1236,7 @@ function updateOrgIdDropdown(level: string): void {
     orgIdContainer.style.display = 'block';
     const label = orgIdContainer.querySelector('label');
     if (label) label.textContent = 'Team';
-    
+
     // Enable the dropdown display
     if (orgIdDisplay) {
       orgIdDisplay.classList.remove('disabled');
@@ -1259,7 +1263,7 @@ function updateOrgIdDropdown(level: string): void {
  */
 async function saveEvent(): Promise<void> {
   console.log('saveEvent called');
-  
+
   const form = document.getElementById('eventForm') as HTMLFormElement;
   if (!form) {
     console.error('Form not found');
@@ -1286,23 +1290,23 @@ async function saveEvent(): Promise<void> {
   const colorInput = document.getElementById('eventColor') as HTMLInputElement;
   const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement;
   const eventIdInput = document.getElementById('eventId') as HTMLInputElement;
-  
+
   // Validate required fields
   if (!titleInput?.value) {
     showError('Bitte geben Sie einen Titel ein');
     return;
   }
-  
+
   if (!startDateInput?.value) {
     showError('Bitte wählen Sie ein Startdatum');
     return;
   }
-  
+
   if (!endDateInput?.value) {
     showError('Bitte wählen Sie ein Enddatum');
     return;
   }
-  
+
   if (!orgLevelInput?.value) {
     showError('Bitte wählen Sie aus, wer den Termin sehen soll');
     return;
@@ -1318,7 +1322,7 @@ async function saveEvent(): Promise<void> {
   const endDate = endDateInput.value;
   const endTime = endTimeInput.value;
   const allDay = allDayInput.checked;
-  
+
   // Validate time fields for non-all-day events
   if (!allDay) {
     if (!startTime) {
@@ -1345,16 +1349,16 @@ async function saveEvent(): Promise<void> {
   // Get recurrence data
   const recurrenceType = (document.getElementById('eventRecurrence') as HTMLInputElement)?.value;
   let recurrenceRule = '';
-  
+
   if (recurrenceType && recurrenceType !== '') {
     // Build recurrence rule based on selection
     const recurrenceEnd = (document.getElementById('selectedRecurrenceEnd') as HTMLElement)?.textContent;
     const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement)?.value;
     const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement)?.value;
-    
+
     // Build simplified recurrence rule
     recurrenceRule = recurrenceType;
-    
+
     if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount) {
       recurrenceRule += `;COUNT=${recurrenceCount}`;
     } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate) {
@@ -1370,10 +1374,7 @@ async function saveEvent(): Promise<void> {
     all_day: allDay,
     location: locationInput.value,
     org_level: orgLevelInput.value || 'personal',
-    org_id:
-      orgLevelInput.value === 'personal' || orgLevelInput.value === 'company'
-        ? null
-        : parseInt(orgIdInput.value),
+    org_id: orgLevelInput.value === 'personal' || orgLevelInput.value === 'company' ? null : parseInt(orgIdInput.value),
     color,
     reminder_time: reminderTimeInput.value ? parseInt(reminderTimeInput.value) : null,
     attendee_ids: selectedAttendees,
@@ -1437,24 +1438,28 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // Set event ID
       const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement;
       if (eventIdInput) eventIdInput.value = event.id.toString();
-      
+
       // Set basic fields
       const titleInput = form.elements.namedItem('title') as HTMLInputElement;
       if (titleInput) titleInput.value = event.title;
-      
+
       const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
       if (descInput) descInput.value = event.description || '';
-      
+
       const locationInput = form.elements.namedItem('location') as HTMLInputElement;
       if (locationInput) locationInput.value = event.location || '';
-      
+
       // Set org level using custom dropdown
       const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
       if (selectedOrgLevelSpan) {
-        const orgLevelText = event.org_level === 'company' ? 'Alle Mitarbeiter' :
-                           event.org_level === 'department' ? 'Bestimmte Abteilung' :
-                           event.org_level === 'team' ? 'Bestimmtes Team' : 
-                           'Persönlicher Termin';
+        const orgLevelText =
+          event.org_level === 'company'
+            ? 'Alle Mitarbeiter'
+            : event.org_level === 'department'
+              ? 'Bestimmte Abteilung'
+              : event.org_level === 'team'
+                ? 'Bestimmtes Team'
+                : 'Persönlicher Termin';
         selectedOrgLevelSpan.textContent = orgLevelText;
         selectedOrgLevelSpan.dataset.value = event.org_level;
       }
@@ -1466,7 +1471,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // Set date fields
       const startDateInput = form.elements.namedItem('start_date') as HTMLInputElement;
       if (startDateInput) startDateInput.value = formatDateForInput(startDate);
-      
+
       const endDateInput = form.elements.namedItem('end_date') as HTMLInputElement;
       if (endDateInput) endDateInput.value = formatDateForInput(endDate);
 
@@ -1480,7 +1485,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       if (!event.all_day) {
         const startTimeInput = form.elements.namedItem('start_time') as HTMLInputElement;
         if (startTimeInput) startTimeInput.value = formatTimeForInput(startDate);
-        
+
         const endTimeInput = form.elements.namedItem('end_time') as HTMLInputElement;
         if (endTimeInput) endTimeInput.value = formatTimeForInput(endDate);
       }
@@ -1551,12 +1556,12 @@ async function deleteEvent(eventId: number): Promise<void> {
       </div>
     </div>
   `;
-  
+
   // Add modal to body if it doesn't exist
   if (!document.getElementById('confirmationModal')) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   }
-  
+
   // Show modal
   modalManager.show('confirmationModal');
 }
@@ -1808,18 +1813,18 @@ function setupColorPicker(): void {
 function setupModalColorPicker(): void {
   const colorOptions = document.querySelectorAll('.color-option');
   const colorInput = document.getElementById('eventColor') as HTMLInputElement;
-  
-  colorOptions.forEach(option => {
+
+  colorOptions.forEach((option) => {
     // Remove existing listeners by cloning
     const newOption = option.cloneNode(true) as HTMLElement;
     option.parentNode?.replaceChild(newOption, option);
-    
+
     newOption.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       // Remove selected class from all
-      document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+      document.querySelectorAll('.color-option').forEach((opt) => opt.classList.remove('selected'));
       // Add selected class to clicked
       newOption.classList.add('selected');
       // Update hidden input
@@ -1840,7 +1845,7 @@ function setupModalEventListeners(): void {
     // Remove existing listeners by cloning
     const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
     saveEventBtn.parentNode?.replaceChild(newButton, saveEventBtn);
-    
+
     newButton.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -1848,13 +1853,13 @@ function setupModalEventListeners(): void {
       saveEvent();
     });
   }
-  
+
   // Add attendee button
   const addAttendeeBtn = document.getElementById('addAttendeeBtn');
   if (addAttendeeBtn) {
     const newButton = addAttendeeBtn.cloneNode(true) as HTMLButtonElement;
     addAttendeeBtn.parentNode?.replaceChild(newButton, addAttendeeBtn);
-    
+
     newButton.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -1862,14 +1867,14 @@ function setupModalEventListeners(): void {
       loadEmployeesForAttendees();
     });
   }
-  
+
   // All day checkbox
   const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
   if (allDayCheckbox) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
-    
-    newCheckbox.addEventListener('change', function() {
+
+    newCheckbox.addEventListener('change', function () {
       const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
@@ -1879,7 +1884,7 @@ function setupModalEventListeners(): void {
       });
     });
   }
-  
+
   // Organization level change
   const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLInputElement;
   if (eventOrgLevel) {
@@ -1888,12 +1893,11 @@ function setupModalEventListeners(): void {
   }
 }
 
-
 // Custom dropdown functions
 function toggleOrgLevelDropdown(): void {
   const dropdown = document.getElementById('orgLevelDropdown');
   const display = dropdown?.previousElementSibling;
-  
+
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -1909,10 +1913,10 @@ function toggleOrgLevelDropdown(): void {
 function selectOrgLevel(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedOrgLevel');
   const inputElement = document.getElementById('eventOrgLevel') as HTMLInputElement;
-  
+
   if (selectedElement) selectedElement.textContent = text;
   if (inputElement) inputElement.value = value;
-  
+
   // Update org ID dropdown based on selection
   updateOrgIdDropdown(value);
   closeAllDropdowns();
@@ -1921,7 +1925,7 @@ function selectOrgLevel(value: string, text: string): void {
 function toggleOrgIdDropdown(): void {
   const display = document.getElementById('orgIdDisplay');
   if (display?.classList.contains('disabled')) return;
-  
+
   const dropdown = document.getElementById('orgIdDropdown');
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
@@ -1938,7 +1942,7 @@ function toggleOrgIdDropdown(): void {
 function toggleReminderDropdown(): void {
   const dropdown = document.getElementById('reminderDropdown');
   const display = dropdown?.previousElementSibling;
-  
+
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -1954,7 +1958,7 @@ function toggleReminderDropdown(): void {
 function selectReminder(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedReminder');
   const inputElement = document.getElementById('eventReminderTime') as HTMLInputElement;
-  
+
   if (selectedElement) selectedElement.textContent = text;
   if (inputElement) inputElement.value = value;
   closeAllDropdowns();
@@ -1963,7 +1967,7 @@ function selectReminder(value: string, text: string): void {
 function toggleRecurrenceDropdown(): void {
   const dropdown = document.getElementById('recurrenceDropdown');
   const display = dropdown?.previousElementSibling;
-  
+
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -1979,23 +1983,23 @@ function toggleRecurrenceDropdown(): void {
 function selectRecurrence(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedRecurrence');
   const inputElement = document.getElementById('eventRecurrence') as HTMLInputElement;
-  
+
   if (selectedElement) selectedElement.textContent = text;
   if (inputElement) inputElement.value = value;
-  
+
   // Show/hide recurrence end options
   const endWrapper = document.getElementById('recurrenceEndWrapper');
   if (endWrapper) {
     endWrapper.style.display = value && value !== '' ? 'block' : 'none';
   }
-  
+
   closeAllDropdowns();
 }
 
 function toggleRecurrenceEndDropdown(): void {
   const dropdown = document.getElementById('recurrenceEndDropdown');
   const display = dropdown?.previousElementSibling;
-  
+
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -2011,10 +2015,10 @@ function toggleRecurrenceEndDropdown(): void {
 function selectRecurrenceEnd(value: string, text: string): void {
   const selectedElement = document.getElementById('selectedRecurrenceEnd');
   if (selectedElement) selectedElement.textContent = text;
-  
+
   const countWrapper = document.getElementById('recurrenceCountWrapper');
   const dateWrapper = document.getElementById('recurrenceEndDateWrapper');
-  
+
   if (countWrapper && dateWrapper) {
     if (value === 'after') {
       countWrapper.style.display = 'block';
@@ -2027,41 +2031,42 @@ function selectRecurrenceEnd(value: string, text: string): void {
       dateWrapper.style.display = 'none';
     }
   }
-  
+
   closeAllDropdowns();
 }
 
 function closeAllDropdowns(): void {
-  document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+  document.querySelectorAll('.custom-dropdown').forEach((dropdown) => {
     dropdown.classList.remove('active');
   });
-  document.querySelectorAll('.dropdown-display').forEach(display => {
+  document.querySelectorAll('.dropdown-display').forEach((display) => {
     display.classList.remove('active');
   });
-  document.querySelectorAll('.dropdown-options').forEach(options => {
+  document.querySelectorAll('.dropdown-options').forEach((options) => {
     options.classList.remove('active');
   });
 }
-
 
 // Load employees for attendees modal
 async function loadEmployeesForAttendees(): Promise<void> {
   const token = getAuthToken();
   if (!token) return;
-  
+
   try {
     const response = await fetch('/api/users', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    
+
     if (response.ok) {
       const users = await response.json();
       const attendeesList = document.getElementById('attendeesList');
-      
+
       if (attendeesList) {
-        attendeesList.innerHTML = users.map((user: User) => `
+        attendeesList.innerHTML = users
+          .map(
+            (user: User) => `
           <div class="attendee-option">
             <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
             <label for="attendee-${user.id}">
@@ -2069,7 +2074,9 @@ async function loadEmployeesForAttendees(): Promise<void> {
               (${escapeHtml(user.username)})
             </label>
           </div>
-        `).join('');
+        `,
+          )
+          .join('');
       }
     }
   } catch (error) {
@@ -2081,17 +2088,18 @@ async function loadEmployeesForAttendees(): Promise<void> {
 function updateSelectedAttendees(): void {
   const container = document.getElementById('attendeesContainer');
   if (!container) return;
-  
+
   if (selectedAttendees.length === 0) {
     container.innerHTML = '<p class="text-muted">Keine Teilnehmer ausgewählt</p>';
     return;
   }
-  
+
   // Get employee details for selected attendees
-  const attendeeHTML = selectedAttendees.map(userId => {
-    const employee = employees.find(emp => emp.id === userId);
-    if (employee) {
-      return `
+  const attendeeHTML = selectedAttendees
+    .map((userId) => {
+      const employee = employees.find((emp) => emp.id === userId);
+      if (employee) {
+        return `
         <div class="attendee-item">
           <span class="attendee-name">
             ${escapeHtml(employee.first_name || '')} ${escapeHtml(employee.last_name || '')}
@@ -2101,10 +2109,12 @@ function updateSelectedAttendees(): void {
           </button>
         </div>
       `;
-    }
-    return '';
-  }).filter(html => html !== '').join('');
-  
+      }
+      return '';
+    })
+    .filter((html) => html !== '')
+    .join('');
+
   container.innerHTML = attendeeHTML;
 }
 
@@ -2121,7 +2131,7 @@ if (typeof window !== 'undefined') {
   window.addAttendee = addAttendee;
   window.removeAttendee = removeAttendee;
   window.updateOrgIdDropdown = updateOrgIdDropdown;
-  
+
   // Custom dropdown functions
   window.toggleOrgLevelDropdown = toggleOrgLevelDropdown;
   window.selectOrgLevel = selectOrgLevel;
@@ -2133,11 +2143,11 @@ if (typeof window !== 'undefined') {
   window.toggleRecurrenceEndDropdown = toggleRecurrenceEndDropdown;
   window.selectRecurrenceEnd = selectRecurrenceEnd;
   window.closeAllDropdowns = closeAllDropdowns;
-  
+
   // Confirmation modal functions
   window.closeConfirmationModal = closeConfirmationModal;
   window.confirmDeleteEvent = confirmDeleteEvent;
-  
+
   console.log('Calendar: window.openEventForm available:', typeof window.openEventForm);
 }
 
