@@ -243,6 +243,19 @@
         outline: none;
       }
 
+      /* Deaktivierte Form-Controls */
+      .form-control:disabled {
+        background: rgba(255, 255, 255, 0.01);
+        border-color: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.4);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .form-control:disabled::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+
       /* Buttons mit Glassmorphismus und Shine-Effekt */
       .btn {
         position: relative;
@@ -827,6 +840,7 @@
                     <th>Position</th>
                     <th>Abteilung</th>
                     <th>Status</th>
+                    <th>Verfügbarkeit</th>
                     <th>Aktionen</th>
                   </tr>
                 </thead>
@@ -1080,11 +1094,11 @@
           </div>
           <div class="form-group">
             <label class="form-label">Von Datum</label>
-            <input type="date" name="start_date" class="form-control" required />
+            <input type="date" name="start_date" id="availability-start-date" class="form-control" required />
           </div>
           <div class="form-group">
             <label class="form-label">Bis Datum</label>
-            <input type="date" name="end_date" class="form-control" required />
+            <input type="date" name="end_date" id="availability-end-date" class="form-control" required />
           </div>
           <div class="form-group">
             <label class="form-label">Notiz (optional)</label>
@@ -1629,6 +1643,30 @@
           display.querySelector('span').textContent = text;
           dropdown.style.display = 'none';
           display.classList.remove('active');
+          
+          // Spezielle Logik für Employee Status Dropdown
+          if (dropdownId === 'employee-status') {
+            const startDateInput = document.getElementById('availability-start-date');
+            const endDateInput = document.getElementById('availability-end-date');
+            
+            if (startDateInput && endDateInput) {
+              if (value === 'available') {
+                // Bei "Verfügbar" Datumsfelder deaktivieren und leeren
+                startDateInput.disabled = true;
+                endDateInput.disabled = true;
+                startDateInput.value = '';
+                endDateInput.value = '';
+                startDateInput.removeAttribute('required');
+                endDateInput.removeAttribute('required');
+              } else {
+                // Bei anderen Status Datumsfelder aktivieren
+                startDateInput.disabled = false;
+                endDateInput.disabled = false;
+                startDateInput.setAttribute('required', 'required');
+                endDateInput.setAttribute('required', 'required');
+              }
+            }
+          }
         }
       }
     </script>
@@ -1963,10 +2001,14 @@
           });
 
           if (!response.ok) {
+            console.error('Response not OK:', response.status, response.statusText);
+            const errorData = await response.text();
+            console.error('Error data:', errorData);
             throw new Error('Failed to load employee data');
           }
 
           const employee = await response.json();
+          console.log('Employee data loaded:', employee);
 
           // Modal-Felder befüllen
           const employeeIdInput = document.getElementById('status-employee-id');
@@ -1974,8 +2016,23 @@
           const statusDropdown = document.getElementById('employee-status-dropdown');
           const statusDisplay = document.getElementById('employee-status-display');
 
-          if (employeeIdInput) employeeIdInput.value = employeeId;
-          if (employeeName) employeeName.textContent = `${employee.first_name} ${employee.last_name}`;
+          console.log('DOM Elements:', {
+            employeeIdInput: employeeIdInput,
+            employeeName: employeeName,
+            employeeNameType: employeeName ? employeeName.tagName : 'null'
+          });
+
+          if (employeeIdInput) {
+            employeeIdInput.value = employeeId;
+            console.log('Set employee ID:', employeeId);
+          }
+          if (employeeName) {
+            const fullName = `${employee.first_name || ''} ${employee.last_name || ''}`;
+            employeeName.value = fullName;
+            console.log('Set employee name:', fullName);
+          } else {
+            console.error('Employee name input not found!');
+          }
 
           // Aktuellen Status setzen
           const currentStatus = employee.availability_status || 'available';
@@ -1989,17 +2046,57 @@
               }[currentStatus] || 'Verfügbar';
             statusDisplay.querySelector('span').textContent = statusText;
           }
+          
+          // Datumsfelder initial setzen
+          const startDateInput = document.getElementById('availability-start-date');
+          const endDateInput = document.getElementById('availability-end-date');
+          
+          if (startDateInput && endDateInput) {
+            if (currentStatus === 'available') {
+              // Bei "Verfügbar" Datumsfelder deaktivieren
+              startDateInput.disabled = true;
+              endDateInput.disabled = true;
+              startDateInput.value = '';
+              endDateInput.value = '';
+              startDateInput.removeAttribute('required');
+              endDateInput.removeAttribute('required');
+            } else {
+              // Bei anderen Status Datumsfelder aktivieren und vorhandene Werte setzen
+              startDateInput.disabled = false;
+              endDateInput.disabled = false;
+              startDateInput.setAttribute('required', 'required');
+              endDateInput.setAttribute('required', 'required');
+              
+              // Vorhandene Daten setzen falls vorhanden
+              if (employee.availability_start) {
+                startDateInput.value = employee.availability_start.split('T')[0];
+              }
+              if (employee.availability_end) {
+                endDateInput.value = employee.availability_end.split('T')[0];
+              }
+            }
+          }
 
           // Modal öffnen
           const modal = document.getElementById('employee-status-modal');
           if (modal) {
             modal.style.display = 'flex';
+            console.log('Modal opened');
 
-            // Form zurücksetzen
+            // Form zurücksetzen - NACH dem Setzen der Werte!
+            // Das war das Problem - form.reset() löscht alle Werte
             const form = document.getElementById('employee-status-form');
             if (form) {
-              form.reset();
-              // Hidden input für employee_id setzen
+              // Nur die Date-Felder und Notes zurücksetzen, nicht alle Felder
+              const startDate = form.querySelector('input[name="start_date"]');
+              const endDate = form.querySelector('input[name="end_date"]');
+              const notes = form.querySelector('textarea[name="notes"]');
+              
+              if (startDate) startDate.value = '';
+              if (endDate) endDate.value = '';
+              if (notes) notes.value = '';
+              
+              // Hidden input für status setzen
               const hiddenInput = form.querySelector('input[name="status"]');
               if (hiddenInput) hiddenInput.value = currentStatus;
             }
@@ -2009,6 +2106,51 @@
           alert('Fehler beim Laden der Mitarbeiterdaten');
         }
       }
+
+      // Employee Status Form Submit Handler
+      document.addEventListener('DOMContentLoaded', () => {
+        const statusForm = document.getElementById('employee-status-form');
+        if (statusForm) {
+          statusForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(statusForm);
+            const employeeId = document.getElementById('status-employee-id').value;
+            const token = localStorage.getItem('token');
+            
+            const statusData = {
+              availability_status: formData.get('status'),
+              availability_start: formData.get('start_date'),
+              availability_end: formData.get('end_date'),
+              availability_notes: formData.get('notes')
+            };
+            
+            try {
+              const response = await fetch(`/api/users/${employeeId}/availability`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(statusData)
+              });
+              
+              if (response.ok) {
+                alert('Verfügbarkeitsstatus erfolgreich aktualisiert');
+                hideModal('employee-status-modal');
+                // Seite neu laden für vollständige Aktualisierung
+                window.location.reload();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message || 'Status konnte nicht aktualisiert werden'}`);
+              }
+            } catch (error) {
+              console.error('Error updating availability status:', error);
+              alert('Ein Fehler ist aufgetreten beim Aktualisieren des Status');
+            }
+          });
+        }
+      });
 
       // Abteilung löschen
       async function deleteDepartment(departmentId) {
@@ -2494,6 +2636,7 @@
           }
 
           const employees = await response.json();
+          console.log('Loaded employees:', employees); // Debug
           const tableBody = document.getElementById('employees-table-body');
 
           if (!tableBody) {
@@ -2506,7 +2649,7 @@
           if (employees.length === 0) {
             tableBody.innerHTML = `
               <tr>
-                <td colspan="7" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
+                <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
               </tr>
             `;
             return;
@@ -2514,6 +2657,63 @@
 
           employees.forEach((employee) => {
             const row = document.createElement('tr');
+            
+            // Verfügbarkeitsstatus bestimmen - prüfe ob innerhalb des Datumbereichs
+            let effectiveStatus = employee.availability_status || 'available';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zeit auf Mitternacht setzen für korrekten Vergleich
+            
+            // Debug-Ausgabe für ersten Mitarbeiter
+            if (employee.id === 19) {
+              console.log('Employee 19 debug:', {
+                availability_status: employee.availability_status,
+                availability_start: employee.availability_start,
+                availability_end: employee.availability_end,
+                today: today.toISOString()
+              });
+            }
+            
+            // Prüfe ob Verfügbarkeitsdaten vorhanden sind und ob wir im Zeitraum sind
+            if (employee.availability_status !== 'available' && 
+                employee.availability_start && 
+                employee.availability_end) {
+              
+              const startDate = new Date(employee.availability_start);
+              const endDate = new Date(employee.availability_end);
+              startDate.setHours(0, 0, 0, 0);
+              endDate.setHours(23, 59, 59, 999);
+              
+              // Debug für Employee 19
+              if (employee.id === 19) {
+                console.log('Date comparison:', {
+                  startDate: startDate.toISOString(),
+                  endDate: endDate.toISOString(),
+                  todayIsAfterStart: today >= startDate,
+                  todayIsBeforeEnd: today <= endDate,
+                  shouldShowStatus: today >= startDate && today <= endDate
+                });
+              }
+              
+              // Wenn heute außerhalb des Zeitraums liegt, ist der Mitarbeiter verfügbar
+              if (today < startDate || today > endDate) {
+                effectiveStatus = 'available';
+              }
+            }
+            
+            const availabilityBadgeClass = {
+              'available': 'badge-success',
+              'vacation': 'badge-warning',
+              'sick': 'badge-danger',
+              'unavailable': 'badge-secondary'
+            }[effectiveStatus] || 'badge-success';
+            
+            const availabilityText = {
+              'available': 'Verfügbar',
+              'vacation': 'Urlaub',
+              'sick': 'Krank',
+              'unavailable': 'Beurlaubt'
+            }[effectiveStatus] || 'Verfügbar';
+            
             row.innerHTML = `
               <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
               <td>${employee.email || ''}</td>
@@ -2524,6 +2724,14 @@
                 <span class="badge ${employee.is_active ? 'badge-success' : 'badge-danger'}">
                   ${employee.is_active ? 'Aktiv' : 'Inaktiv'}
                 </span>
+              </td>
+              <td>
+                <span class="badge ${availabilityBadgeClass}">
+                  ${availabilityText}
+                </span>
+                ${effectiveStatus !== 'available' && employee.availability_start && employee.availability_end ? 
+                  `<br><small class="text-muted">${new Date(employee.availability_start).toLocaleDateString('de-DE')} - ${new Date(employee.availability_end).toLocaleDateString('de-DE')}</small>` : 
+                  ''}
               </td>
               <td>
                 <button class="btn btn-sm btn-info" onclick="changeEmployeeStatus(${employee.id})">

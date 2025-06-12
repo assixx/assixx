@@ -218,7 +218,8 @@ export class User {
     try {
       const [rows] = await executeQuery<DbUser[]>(
         `
-        SELECT u.*, d.name as department_name, t.company_name, t.subdomain, u.availability_status
+        SELECT u.*, d.name as department_name, t.company_name, t.subdomain, 
+               u.availability_status, u.availability_start, u.availability_end, u.availability_notes
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
         LEFT JOIN tenants t ON u.tenant_id = t.id
@@ -257,6 +258,7 @@ export class User {
         u.first_name, u.last_name, u.created_at, u.department_id, 
         u.position, u.phone, u.profile_picture, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
+        u.availability_start, u.availability_end, u.availability_notes,
         d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
@@ -379,6 +381,7 @@ export class User {
         u.first_name, u.last_name, u.employee_id, u.created_at,
         u.department_id, u.position, u.phone, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
+        u.availability_start, u.availability_end, u.availability_notes,
         d.name as department_name
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
@@ -880,6 +883,42 @@ export class User {
     } catch (error) {
       logger.error(`Error counting active users: ${(error as Error).message}`);
       return 0;
+    }
+  }
+
+  static async updateAvailability(
+    userId: number,
+    tenantId: number,
+    availabilityData: {
+      availability_status: string;
+      availability_start?: string;
+      availability_end?: string;
+      availability_notes?: string;
+    }
+  ): Promise<boolean> {
+    try {
+      const [result] = await executeQuery<ResultSetHeader>(
+        `UPDATE users 
+         SET availability_status = ?,
+             availability_start = ?,
+             availability_end = ?,
+             availability_notes = ?,
+             updated_at = NOW()
+         WHERE id = ? AND tenant_id = ?`,
+        [
+          availabilityData.availability_status,
+          availabilityData.availability_start || null,
+          availabilityData.availability_end || null,
+          availabilityData.availability_notes || null,
+          userId,
+          tenantId
+        ]
+      );
+
+      return result.affectedRows > 0;
+    } catch (error) {
+      logger.error(`Error updating availability: ${(error as Error).message}`);
+      throw error;
     }
   }
 }

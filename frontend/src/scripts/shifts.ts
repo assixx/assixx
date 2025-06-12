@@ -776,19 +776,29 @@ class ShiftPlanningSystem {
   assignEmployeeToShift(shiftCell: HTMLElement): void {
     if (!this.isAdmin || !this.selectedEmployee) return;
 
-    const date = shiftCell.dataset.date;
-    const shift = shiftCell.dataset.shift;
-
-    if (!date || !shift) return;
-
+    // Let assignShift handle the date calculation
     this.assignShift(shiftCell, this.selectedEmployee.id);
   }
 
   assignShift(shiftCell: HTMLElement, employeeId: number): void {
-    const date = shiftCell.dataset.date;
+    let date = shiftCell.dataset.date;
+    const day = shiftCell.dataset.day;
     const shift = shiftCell.dataset.shift;
 
-    console.log('[SHIFTS DEBUG] Assigning shift:', { date, shift, employeeId });
+    // If no date but day exists, calculate date from current week
+    if (!date && day) {
+      const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
+      if (dayIndex !== -1) {
+        const weekStart = this.getWeekStart(this.currentWeek);
+        const cellDate = new Date(weekStart);
+        cellDate.setDate(cellDate.getDate() + dayIndex);
+        date = this.formatDateKey(cellDate);
+        // Also set the data-date attribute for future use
+        shiftCell.dataset.date = date;
+      }
+    }
+
+    console.log('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
 
     if (!date || !shift) {
       console.error('[SHIFTS ERROR] Missing date or shift data on cell');
@@ -824,14 +834,27 @@ class ShiftPlanningSystem {
 
       const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
 
-      showError(`
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span>Mitarbeiter kann nicht zugewiesen werden</span>
-          <strong>${employeeName}</strong>
-          <span class="badge ${statusBadgeClass}">${statusText}</span>
-        </div>
-      `);
+      showError(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
       return;
+    }
+
+    // Check if employee already has a shift on this day
+    const shiftsOnThisDay = this.weeklyShifts[date] || {};
+    const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+    
+    // Check all shifts on this day
+    for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
+      if (shiftType !== shift && employeeIds.includes(employeeId)) {
+        // Employee already has another shift on this day
+        const shiftNames: { [key: string]: string } = {
+          early: 'Frühschicht',
+          late: 'Spätschicht',
+          night: 'Nachtschicht',
+        };
+        
+        showError(`Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames[shiftType]} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`);
+        return;
+      }
     }
 
     // Initialize data structures if needed
@@ -851,48 +874,38 @@ class ShiftPlanningSystem {
       this.weeklyShifts[date][shift].push(employeeId);
     }
 
-    // Update UI
-    this.renderShiftAssignments(date, shift);
+    // Update UI - pass the cell directly
+    this.renderShiftAssignments(shiftCell, date, shift);
     this.updateEmployeeShiftCounts();
   }
 
-  renderShiftAssignments(date: string, shift: string): void {
-    const shiftCell = document.querySelector(`[data-date="${date}"][data-shift="${shift}"]`) as HTMLElement;
-
+  renderShiftAssignments(shiftCell: HTMLElement, date: string, shift: string): void {
     if (!shiftCell) return;
 
-    const assignmentsContainer = shiftCell.querySelector('.shift-assignments') || document.createElement('div');
-    assignmentsContainer.className = 'shift-assignments';
-    assignmentsContainer.innerHTML = '';
+    // Find the employee-assignment div within the cell
+    const assignmentDiv = shiftCell.querySelector('.employee-assignment');
+    if (!assignmentDiv) {
+      console.error('[SHIFTS ERROR] No employee-assignment div found in cell');
+      return;
+    }
+
+    // Clear existing content
+    assignmentDiv.innerHTML = '';
 
     const employeeIds = this.weeklyShifts[date]?.[shift] || [];
 
-    employeeIds.forEach((employeeId) => {
-      const employee = this.employees.find((e) => e.id === employeeId);
-      if (employee) {
-        const tag = document.createElement('div');
-        tag.className = 'employee-tag';
-
-        const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-        tag.innerHTML = `
-          <span>${this.escapeHtml(name)}</span>
-          ${this.isAdmin ? `<i class="fas fa-times remove-btn" data-employee-id="${employeeId}"></i>` : ''}
-        `;
-
-        if (this.isAdmin) {
-          const removeBtn = tag.querySelector('.remove-btn');
-          removeBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.assignShift(shiftCell, employeeId);
-          });
+    if (employeeIds.length === 0) {
+      // Show empty slot
+      assignmentDiv.innerHTML = '<div class="empty-slot">Mitarbeiter zuweisen</div>';
+    } else {
+      // Create employee cards for assigned employees
+      employeeIds.forEach((employeeId) => {
+        const employee = this.employees.find((e) => e.id === employeeId);
+        if (employee) {
+          const card = this.createEmployeeCard(employee);
+          assignmentDiv.appendChild(card);
         }
-
-        assignmentsContainer.appendChild(tag);
-      }
-    });
-
-    if (!shiftCell.contains(assignmentsContainer)) {
-      shiftCell.appendChild(assignmentsContainer);
+      });
     }
   }
 
@@ -940,25 +953,22 @@ class ShiftPlanningSystem {
 
   renderWeekView(): void {
     const weekStart = this.getWeekStart(this.currentWeek);
-    const weekContainer = document.getElementById('weekView');
-
-    console.log('[SHIFTS DEBUG] Rendering week view. Container:', weekContainer);
-
-    if (!weekContainer) {
-      console.error('[SHIFTS ERROR] Week view container not found!');
-      return;
-    }
+    
+    console.log('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
 
     // Update week display
-    const currentWeekElement = document.getElementById('currentWeek');
+    const currentWeekElement = document.getElementById('currentWeekInfo');
     if (currentWeekElement) {
       currentWeekElement.textContent = this.formatWeekRange(weekStart);
     } else {
-      console.warn('[SHIFTS WARN] currentWeek element not found');
+      console.warn('[SHIFTS WARN] currentWeekInfo element not found');
     }
 
-    // Clear existing content
-    weekContainer.innerHTML = '';
+    // Update shift assignments in existing cells
+    this.updateShiftCells(weekStart);
+    return;
+
+    // OLD CODE BELOW - keeping for reference but not executing
 
     // Create header row
     const headerRow = document.createElement('div');
@@ -1082,8 +1092,105 @@ class ShiftPlanningSystem {
     return `${startStr} - ${endStr} ${weekEnd.getFullYear()}`;
   }
 
+  updateShiftCells(weekStart: Date): void {
+    console.log('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
+    
+    // Update day headers with dates
+    const dayHeaders = document.querySelectorAll('.day-header');
+    dayHeaders.forEach((header, index) => {
+      // Skip the first header which is "Schicht"
+      if (index === 0) return;
+      
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + (index - 1));
+      
+      const dateSpan = header.querySelector('span');
+      if (dateSpan) {
+        dateSpan.textContent = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      }
+    });
+    
+    // Update shift cells with assignments
+    const shiftTypes = ['early', 'late', 'night'];
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    
+    shiftTypes.forEach(shiftType => {
+      days.forEach((day, dayIndex) => {
+        const cell = document.querySelector(`.shift-cell[data-day="${day}"][data-shift="${shiftType}"]`);
+        if (!cell) {
+          console.warn(`[SHIFTS WARN] Cell not found for ${day} ${shiftType}`);
+          return;
+        }
+        
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + dayIndex);
+        const dateKey = this.formatDateKey(date);
+        
+        // Clear existing assignments
+        const assignmentDiv = cell.querySelector('.employee-assignment');
+        if (assignmentDiv) {
+          assignmentDiv.innerHTML = '';
+          
+          // Get assignments for this shift
+          const assignments = this.weeklyShifts[dateKey]?.[shiftType] || [];
+          
+          if (assignments.length > 0) {
+            // Add employee cards
+            assignments.forEach(employeeId => {
+              const employee = this.employees.find(e => e.id === employeeId);
+              if (employee) {
+                const employeeCard = this.createEmployeeCard(employee);
+                assignmentDiv.appendChild(employeeCard);
+              }
+            });
+          } else {
+            // Show empty slot
+            assignmentDiv.innerHTML = '<div class="empty-slot">Mitarbeiter zuweisen</div>';
+          }
+        }
+      });
+    });
+  }
+
+  createEmployeeCard(employee: Employee): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'employee-card';
+    card.dataset.employeeId = employee.id.toString();
+    
+    const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+    
+    card.innerHTML = `
+      <div class="employee-name">${this.escapeHtml(name)}</div>
+      <div class="employee-position">${employee.position || 'Mitarbeiter'}</div>
+    `;
+
+    // Add remove button for admins
+    if (this.isAdmin) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        const cell = card.closest('.shift-cell') as HTMLElement;
+        if (cell) {
+          this.assignShift(cell, employee.id);
+        }
+      };
+      card.appendChild(removeBtn);
+    }
+    
+    return card;
+  }
+
   getDayName(date: Date): string {
     return date.toLocaleDateString('de-DE', { weekday: 'short' });
+  }
+
+  formatDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   async saveSchedule(): Promise<void> {

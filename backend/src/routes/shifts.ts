@@ -514,9 +514,12 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
 
     // Check if this is a weekly shift plan save
     if (week_start && week_end && assignments) {
+      // Get a connection for transaction
+      const connection = await (db as any).getConnection();
+      
       try {
         // Start transaction
-        await (db as any).beginTransaction();
+        await connection.beginTransaction();
 
         // Delete existing assignments for this week
         const deleteQuery = `
@@ -525,7 +528,7 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
           WHERE s.tenant_id = ?
             AND s.date BETWEEN ? AND ?
         `;
-        await (db as any).execute(deleteQuery, [
+        await connection.execute(deleteQuery, [
           tenantId,
           week_start,
           week_end,
@@ -537,7 +540,7 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
           WHERE tenant_id = ?
             AND date BETWEEN ? AND ?
         `;
-        await (db as any).execute(deleteShiftsQuery, [
+        await connection.execute(deleteShiftsQuery, [
           tenantId,
           week_start,
           week_end,
@@ -552,7 +555,7 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
             night: { start: '22:00:00', end: '06:00:00' },
           }[assignment.shift_type] || { start: '08:00:00', end: '16:00:00' };
 
-          const [shiftResult] = await (db as any).execute(
+          const [shiftResult] = await connection.execute(
             `INSERT INTO shifts (tenant_id, plan_id, date, start_time, end_time, title, required_employees, department_id, team_id, created_by)
              VALUES (?, 1, ?, ?, ?, ?, 1, ?, ?, ?)`,
             [
@@ -570,7 +573,7 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
           const shiftId = shiftResult.insertId;
 
           // Then create the assignment
-          await (db as any).execute(
+          await connection.execute(
             `INSERT INTO shift_assignments (tenant_id, shift_id, user_id, assignment_type, status, assigned_by)
              VALUES (?, ?, ?, 'assigned', 'accepted', ?)`,
             [tenantId, shiftId, assignment.employee_id, authReq.user.id]
@@ -579,7 +582,7 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
 
         // Save weekly notes if provided
         if (notes) {
-          await (db as any).execute(
+          await connection.execute(
             `INSERT INTO shift_notes (tenant_id, date, notes, created_by)
              VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE notes = VALUES(notes), updated_at = NOW()`,
@@ -588,7 +591,7 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
         }
 
         // Commit transaction
-        await (db as any).commit();
+        await connection.commit();
 
         res.json({
           success: true,
@@ -596,8 +599,11 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
         });
       } catch (error) {
         // Rollback on error
-        await (db as any).rollback();
+        await connection.rollback();
         throw error;
+      } finally {
+        // Always release the connection
+        connection.release();
       }
     } else {
       // Single shift creation (existing logic)

@@ -425,6 +425,71 @@
         font-style: italic;
       }
 
+      /* Employee Card Styles */
+      .employee-card {
+        background: rgba(33, 150, 243, 0.15);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: var(--radius-sm);
+        padding: 6px 8px;
+        margin: 2px 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        transition: all 0.2s ease;
+      }
+
+      .employee-card:hover {
+        background: rgba(33, 150, 243, 0.25);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .employee-card .employee-name {
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      .employee-card .employee-position {
+        font-size: 11px;
+        color: var(--text-secondary);
+        line-height: 1.2;
+      }
+
+      .employee-card .remove-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        color: rgba(244, 67, 54, 0.9);
+        border-radius: 4px;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.2s ease;
+      }
+
+      .employee-card:hover .remove-btn {
+        opacity: 1;
+      }
+
+      .employee-card .remove-btn:hover {
+        background: rgba(244, 67, 54, 0.2);
+        border-color: rgba(244, 67, 54, 0.4);
+        transform: scale(1.1);
+      }
+
+      .employee-card .remove-btn i {
+        font-size: 10px;
+      }
+
       .employee-sidebar {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -520,24 +585,64 @@
         font-size: 14px;
       }
 
-      .availability-status {
+      /* Badge Styles - genau wie in admin-dashboard.html */
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
         font-size: 11px;
-        padding: 2px 6px;
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-weight: 500;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        transition: all 0.2s ease;
       }
 
-      .status-available {
-        background: var(--success-color);
+      .badge-success {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        color: rgba(76, 175, 80, 0.9);
       }
 
-      .status-unavailable {
-        background: var(--error-color);
+      .badge-danger {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        color: rgba(244, 67, 54, 0.9);
       }
 
-      .status-limited {
-        background: var(--warning-color);
+      .badge-warning {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.2);
+        color: rgba(255, 152, 0, 0.9);
+      }
+
+      .badge-secondary {
+        background: rgba(108, 117, 125, 0.1);
+        border: 1px solid rgba(108, 117, 125, 0.2);
+        color: rgba(108, 117, 125, 0.9);
+      }
+
+      .employee-row:hover .badge-success {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+
+      .employee-row:hover .badge-danger {
+        background: rgba(244, 67, 54, 0.15);
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .employee-row:hover .badge-warning {
+        background: rgba(255, 152, 0, 0.15);
+        border-color: rgba(255, 152, 0, 0.3);
+      }
+
+      .employee-row:hover .badge-secondary {
+        background: rgba(108, 117, 125, 0.15);
+        border-color: rgba(108, 117, 125, 0.3);
       }
 
       .employee-details {
@@ -579,11 +684,11 @@
       }
 
       .admin-btn.cancel {
-        background: var(--text-secondary);
+        background: var(--warning-color);
       }
 
       .admin-btn.cancel:hover {
-        background: #8a8a8a;
+        background: #aa7400;
       }
 
       .shift-type-early {

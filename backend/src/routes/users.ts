@@ -78,6 +78,10 @@ router.get(
         is_active: user.is_active,
         position: user.position,
         department: user.department_name,
+        availability_status: user.availability_status,
+        availability_start: user.availability_start,
+        availability_end: user.availability_end,
+        availability_notes: user.availability_notes,
       }));
 
       res.json(sanitizedUsers);
@@ -508,6 +512,59 @@ router.put(
       );
       res.status(500).json({
         message: 'Fehler beim Ändern des Passworts',
+        error: error.message,
+      });
+    }
+  }
+);
+
+// Update employee availability
+router.put(
+  '/:id/availability',
+  authenticateToken as any,
+  async (req: any, res: any): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const employeeId = parseInt(req.params.id);
+      const { availability_status, availability_start, availability_end, availability_notes } = req.body;
+
+      // Check if user is admin or root
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Nur Administratoren können die Verfügbarkeit ändern' });
+        return;
+      }
+
+      // Validate availability status
+      const validStatuses = ['available', 'unavailable', 'vacation', 'sick'];
+      if (!validStatuses.includes(availability_status)) {
+        res.status(400).json({ message: 'Ungültiger Verfügbarkeitsstatus' });
+        return;
+      }
+
+      // Update user availability
+      const success = await User.updateAvailability(
+        employeeId,
+        authReq.user.tenant_id,
+        {
+          availability_status,
+          availability_start,
+          availability_end,
+          availability_notes
+        }
+      );
+
+      if (success) {
+        logger.info(`Admin ${authReq.user.id} updated availability for employee ${employeeId}`);
+        res.json({ message: 'Verfügbarkeit erfolgreich aktualisiert' });
+      } else {
+        res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+      }
+    } catch (error: any) {
+      logger.error(
+        `Error updating availability for employee ${req.params.id}: ${error.message}`
+      );
+      res.status(500).json({
+        message: 'Fehler beim Aktualisieren der Verfügbarkeit',
         error: error.message,
       });
     }
