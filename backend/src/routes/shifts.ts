@@ -378,8 +378,8 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
     const tenantId = authReq.user.tenant_id || 1;
 
     try {
-      // Query shifts for the date range
-      const query = `
+      // Build query based on user role
+      let query = `
         SELECT 
           sa.id,
           sa.shift_id,
@@ -405,14 +405,27 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
         WHERE s.tenant_id = ?
           AND s.date BETWEEN ? AND ?
           AND sa.status = 'accepted'
-        ORDER BY s.date, s.start_time
       `;
 
-      const [rows] = await (db as any).execute(query, [
-        tenantId,
-        startStr,
-        endStr,
-      ]);
+      const queryParams: any[] = [tenantId, startStr, endStr];
+
+      // For employees, filter by their department
+      if (authReq.user.role === 'employee') {
+        // First get the employee's department
+        const [userRows] = await (db as any).execute(
+          'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+          [authReq.user.id, tenantId]
+        );
+        
+        if (userRows.length > 0 && userRows[0].department_id) {
+          query += ' AND s.department_id = ?';
+          queryParams.push(userRows[0].department_id);
+        }
+      }
+
+      query += ' ORDER BY s.date, s.start_time';
+
+      const [rows] = await (db as any).execute(query, queryParams);
 
       res.json({
         success: true,
@@ -441,7 +454,7 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
  */
 router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
   try {
-    const { week } = req.query;
+    const { week, department_id } = req.query;
 
     if (!week) {
       res.status(400).json({
@@ -459,17 +472,62 @@ router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
     const tenantId = authReq.user.tenant_id || 1;
 
     try {
-      // Query shift notes for the week
+      let departmentId: number | null = null;
+      
+      // For employees, get their department
+      if (authReq.user.role === 'employee') {
+        const [userRows] = await (db as any).execute(
+          'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+          [authReq.user.id, tenantId]
+        );
+        if (userRows.length > 0 && userRows[0].department_id) {
+          departmentId = userRows[0].department_id;
+        }
+      } else if (department_id) {
+        // For admins, use the provided department_id
+        departmentId = parseInt(String(department_id), 10);
+      }
+
+      if (!departmentId) {
+        console.log('[SHIFTS NOTES] No department_id available, returning empty notes');
+        res.json({
+          success: true,
+          notes: '',
+        });
+        return;
+      }
+
+      // Query shift notes for the week and department
       const query = `
         SELECT notes
-        FROM shift_notes
+        FROM weekly_shift_notes
         WHERE tenant_id = ?
+          AND department_id = ?
           AND date = ?
         LIMIT 1
       `;
 
-      const [rows] = await (db as any).execute(query, [tenantId, weekStart]);
-      const notes = rows && rows.length > 0 ? rows[0].notes : '';
+      console.log('[SHIFTS NOTES] Querying notes:', { tenantId, departmentId, weekStart });
+      const [rows] = await (db as any).execute(query, [tenantId, departmentId, weekStart]);
+      console.log('[SHIFTS NOTES] Query result rows:', rows);
+      
+      let notes = '';
+      if (rows && rows.length > 0 && rows[0].notes) {
+        // Convert Buffer to string if necessary
+        if (Buffer.isBuffer(rows[0].notes)) {
+          notes = rows[0].notes.toString('utf8');
+          console.log('[SHIFTS NOTES] Converted buffer to string:', notes);
+        } else if (typeof rows[0].notes === 'object' && rows[0].notes.type === 'Buffer') {
+          // Handle the case where it's a plain object with Buffer data
+          notes = Buffer.from(rows[0].notes.data).toString('utf8');
+          console.log('[SHIFTS NOTES] Converted buffer object to string:', notes);
+        } else {
+          notes = rows[0].notes;
+        }
+      }
+      
+      console.log('[SHIFTS NOTES] Found notes:', notes ? `Yes: "${notes}"` : 'No');
+      console.log('[SHIFTS NOTES] Returning notes:', notes);
 
       res.json({
         success: true,
@@ -514,6 +572,15 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
 
     // Check if this is a weekly shift plan save
     if (week_start && week_end && assignments) {
+      // Validate that all assignments have department_id
+      const invalidAssignments = assignments.filter((a: any) => !a.department_id);
+      if (invalidAssignments.length > 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Abteilung muss für alle Schichten ausgewählt werden',
+        });
+        return;
+      }
       // Get a connection for transaction
       const connection = await (db as any).getConnection();
       
@@ -555,17 +622,24 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
             night: { start: '22:00:00', end: '06:00:00' },
           }[assignment.shift_type] || { start: '08:00:00', end: '16:00:00' };
 
+          // Convert date and time to datetime
+          const startDateTime = `${assignment.shift_date} ${shiftTime.start}`;
+          const endDateTime = assignment.shift_type === 'night' 
+            ? `${assignment.shift_date} ${shiftTime.end}` // Night shift ends next day at 6am, handle this later
+            : `${assignment.shift_date} ${shiftTime.end}`;
+
           const [shiftResult] = await connection.execute(
-            `INSERT INTO shifts (tenant_id, plan_id, date, start_time, end_time, title, required_employees, department_id, team_id, created_by)
-             VALUES (?, 1, ?, ?, ?, ?, 1, ?, ?, ?)`,
+            `INSERT INTO shifts (tenant_id, user_id, date, start_time, end_time, title, required_employees, department_id, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               tenantId,
+              assignment.employee_id,
               assignment.shift_date,
-              shiftTime.start,
-              shiftTime.end,
+              startDateTime,
+              endDateTime,
               assignment.shift_type,
+              1, // required_employees
               assignment.department_id || null,
-              assignment.team_leader_id || null,
               authReq.user.id,
             ]
           );
@@ -580,13 +654,22 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
           );
         }
 
-        // Save weekly notes if provided
-        if (notes) {
+        // Save weekly notes if provided and department_id exists
+        if (notes !== undefined && assignments.length > 0 && assignments[0].department_id) {
+          // Ensure notes is a string
+          const notesString = notes || '';
+          console.log('[SHIFTS SAVE] Saving weekly notes:', { 
+            tenantId, 
+            departmentId: assignments[0].department_id, 
+            weekStart: week_start, 
+            notes: notesString ? 'Yes' : 'Empty' 
+          });
+          
           await connection.execute(
-            `INSERT INTO shift_notes (tenant_id, date, notes, created_by)
-             VALUES (?, ?, ?, ?)
+            `INSERT INTO weekly_shift_notes (tenant_id, department_id, date, notes, created_by)
+             VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE notes = VALUES(notes), updated_at = NOW()`,
-            [tenantId, week_start, notes, authReq.user.id]
+            [tenantId, assignments[0].department_id, week_start, notesString, authReq.user.id]
           );
         }
 
@@ -1024,7 +1107,7 @@ router.get(
 router.post('/notes', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { week, notes } = req.body;
+    const { week, notes, department_id } = req.body;
 
     if (!week) {
       res.status(400).json({
@@ -1037,10 +1120,37 @@ router.post('/notes', authenticateToken, async (req, res): Promise<void> => {
     const tenantId = authReq.user.tenant_id || 1;
     const weekDate = new Date(week).toISOString().split('T')[0];
 
+    let departmentId: number | null = null;
+    
+    // For employees, get their department
+    if (authReq.user.role === 'employee') {
+      const [userRows] = await (db as any).execute(
+        'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+        [authReq.user.id, tenantId]
+      );
+      if (userRows.length > 0 && userRows[0].department_id) {
+        departmentId = userRows[0].department_id;
+      }
+    } else if (department_id) {
+      // For admins, use the provided department_id
+      departmentId = parseInt(String(department_id), 10);
+    }
+
+    if (!departmentId) {
+      console.error('[SHIFTS NOTES] No department_id available for saving notes');
+      res.status(400).json({
+        success: false,
+        message: 'Abteilung ist erforderlich',
+      });
+      return;
+    }
+
+    console.log('[SHIFTS NOTES] Saving notes:', { tenantId, departmentId, weekDate, notes: notes ? 'Yes' : 'No' });
+
     // Insert or update notes
     const query = `
-        INSERT INTO shift_notes (tenant_id, date, notes, created_by)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO weekly_shift_notes (tenant_id, department_id, date, notes, created_by)
+        VALUES (?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           notes = VALUES(notes),
           updated_at = NOW()
@@ -1048,6 +1158,7 @@ router.post('/notes', authenticateToken, async (req, res): Promise<void> => {
 
     await (db as any).execute(query, [
       tenantId,
+      departmentId,
       weekDate,
       notes || '',
       authReq.user.id,

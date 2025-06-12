@@ -1422,6 +1422,7 @@
     <script type="module" src="/scripts/show-section.ts"></script>
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
     <script type="module" src="/scripts/employee-deletion.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
 
     <!-- Initialize dashboard on page load -->
@@ -1489,13 +1490,13 @@
         });
         console.log('DOM loaded, setting up debugging handlers');
 
-        // Debug-Funktionen für alle Buttons
-        document.querySelectorAll('button').forEach((button) => {
-          console.log('Found button:', button.textContent || button.innerHTML);
-          button.addEventListener('click', function (e) {
-            console.log('Button clicked:', this.textContent || this.innerHTML);
-          });
-        });
+        // Debug-Funktionen für alle Buttons (ENTFERNT - blockiert role-switch)
+        // document.querySelectorAll('button').forEach((button) => {
+        //   console.log('Found button:', button.textContent || button.innerHTML);
+        //   button.addEventListener('click', function (e) {
+        //     console.log('Button clicked:', this.textContent || this.innerHTML);
+        //   });
+        // });
 
         // Spezieller Listener für den Dokument-Upload-Button
         const docUploadBtn = document.querySelector('button[type="submit"]');

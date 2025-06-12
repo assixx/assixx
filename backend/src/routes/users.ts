@@ -39,16 +39,26 @@ router.get(
     try {
       const authReq = req as AuthenticatedRequest;
 
-      // Check if user is admin or root
-      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-        res.status(403).json({ message: 'Access denied' });
-        return;
-      }
-
       // Get query parameters
       const { role, limit } = req.query;
 
-      let users = await User.findAllByTenant(authReq.user.tenant_id);
+      let users: any[] = [];
+
+      // Different logic based on user role
+      if (authReq.user.role === 'admin' || authReq.user.role === 'root') {
+        // Admins see all users
+        users = await User.findAllByTenant(authReq.user.tenant_id);
+      } else if (authReq.user.role === 'employee') {
+        // Employees only see users from their department
+        const currentUser = await User.findById(authReq.user.id, authReq.user.tenant_id);
+        if (currentUser && currentUser.department_id) {
+          const allUsers = await User.findAllByTenant(authReq.user.tenant_id);
+          users = allUsers.filter(u => u.department_id === currentUser.department_id);
+        }
+      } else {
+        res.status(403).json({ message: 'Access denied' });
+        return;
+      }
 
       // Filter by role if specified
       if (role && typeof role === 'string') {

@@ -49,19 +49,23 @@ router.post(
         return;
       }
 
-      // Prüfen ob Employee-Daten vollständig sind
-      const hasEmployeeData = user.employee_id && user.department_id;
+      // Prüfen ob Employee-Daten vollständig sind (department_id und position)
+      const needsEmployeeData = !user.department_id || !user.position;
 
-      if (!hasEmployeeData) {
-        // Employee-ID generieren falls nicht vorhanden
-        const employeeId = user.employee_id || `EMP${Date.now()}`;
-
-        // Update user with employee data
-        await User.update(authReq.user.id, {
-          employee_id: employeeId,
-          department_id: user.department_id || 1, // Default department wenn nicht gesetzt
-          position: user.position || 'Mitarbeiter',
-        });
+      if (needsEmployeeData) {
+        // Update nur fehlende Employee-Daten (keine neue employee_id!)
+        const updateData: any = {};
+        
+        if (!user.department_id) {
+          updateData.department_id = 1; // Default department
+        }
+        
+        if (!user.position) {
+          updateData.position = 'Mitarbeiter'; // Default position
+        }
+        
+        // Update nur die fehlenden Daten
+        await User.update(authReq.user.id, updateData);
       }
 
       // Neues JWT mit dual role info erstellen
@@ -101,9 +105,9 @@ router.post(
           activeRole: 'employee',
           isRoleSwitched: true,
         },
-        message: hasEmployeeData
-          ? 'Erfolgreich zu Mitarbeiter-Ansicht gewechselt'
-          : 'Mitarbeiter-Profil erstellt und gewechselt',
+        message: needsEmployeeData
+          ? 'Mitarbeiter-Profil erstellt und gewechselt'
+          : 'Erfolgreich zu Mitarbeiter-Ansicht gewechselt',
       });
     } catch (error: any) {
       console.error('Role switch error:', error);

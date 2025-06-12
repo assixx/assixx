@@ -1,6 +1,7 @@
 import pool from '../database';
 import * as bcrypt from 'bcrypt';
 import { logger } from '../utils/logger';
+import { generateEmployeeId, generateTempEmployeeId } from '../utils/employeeIdGenerator';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 console.log('[DEBUG] UserModel loading, pool type:', typeof pool);
@@ -145,6 +146,23 @@ export class User {
     const iban = userData.iban || '';
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Generate employee_id if not provided
+    let finalEmployeeId = employee_id;
+    
+    if (!employee_id) {
+      // Get subdomain from tenant
+      const [tenantResult] = await executeQuery<RowDataPacket[]>(
+        'SELECT subdomain FROM tenants WHERE id = ?',
+        [userData.tenant_id]
+      );
+      
+      if (tenantResult.length > 0) {
+        const subdomain = tenantResult[0].subdomain || 'DEFAULT';
+        const { tempId } = generateTempEmployeeId(subdomain, role || 'employee');
+        finalEmployeeId = tempId;
+      }
+    }
 
     const query = `
       INSERT INTO users (
@@ -168,7 +186,7 @@ export class User {
         first_name,
         last_name,
         age,
-        employee_id,
+        finalEmployeeId,
         iban,
         department_id,
         position,
@@ -185,6 +203,25 @@ export class User {
       ]);
 
       logger.info(`User created successfully with ID: ${result.insertId}`);
+      
+      // Update employee_id with actual user ID if it was generated
+      if (!employee_id && finalEmployeeId && finalEmployeeId.includes('TEMP')) {
+        const [tenantResult] = await executeQuery<RowDataPacket[]>(
+          'SELECT subdomain FROM tenants WHERE id = ?',
+          [userData.tenant_id]
+        );
+        
+        if (tenantResult.length > 0) {
+          const subdomain = tenantResult[0].subdomain || 'DEFAULT';
+          const newEmployeeId = generateEmployeeId(subdomain, role || 'employee', result.insertId);
+          
+          await executeQuery(
+            'UPDATE users SET employee_id = ? WHERE id = ?',
+            [newEmployeeId, result.insertId]
+          );
+        }
+      }
+      
       return result.insertId;
     } catch (error) {
       logger.error(`Error creating user: ${(error as Error).message}`);

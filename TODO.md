@@ -342,6 +342,17 @@
 - [ ] Automatisches Setup-Script verbessern
 - [x] .env.example mit allen Variablen dokumentieren ✅ Vollständig
 
+## 🔒 SICHERHEITS-UPDATES (NEU - 12.06.2025)
+
+### Wichtige Sicherheitslücke identifiziert:
+
+- [ ] **User.update() Method ohne tenant_id Check**
+  - Problem: Die `User.update()` Methode in `/backend/src/models/user.ts` verwendet nur `WHERE id = ?` ohne tenant_id Überprüfung
+  - Risiko: Theoretisch könnte jemand User aus anderen Tenants updaten
+  - Lösung: WHERE-Klausel sollte `WHERE id = ? AND tenant_id = ?` verwenden
+  - Priorität: HOCH - sollte vor Beta-Test behoben werden
+  - Hinweis: Role-Switch ist aktuell sicher, da vorher mit tenant_id geprüft wird
+
 ## 🚨 PHASE 4: DEAL-BREAKER Features (NACH Version 0.1.0!)
 
 > **⚠️ KRITISCH**: Ohne diese Features ist das System für Industriefirmen NICHT nutzbar!

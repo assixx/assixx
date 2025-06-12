@@ -5,7 +5,7 @@
 
 // Check if user is admin
 const userRole = localStorage.getItem('userRole');
-const currentView = localStorage.getItem('activeRole') || userRole;
+let currentView = localStorage.getItem('activeRole') || userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
@@ -21,8 +21,12 @@ async function switchRole(): Promise<void> {
   try {
     const token = localStorage.getItem('token');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    const isCurrentlyAdmin = currentView === 'admin';
-    const endpoint = isCurrentlyAdmin ? '/api/role-switch/to-employee' : '/api/role-switch/to-admin';
+    
+    // Update currentView from localStorage in case it changed
+    currentView = localStorage.getItem('activeRole') || userRole;
+    
+    const isCurrentlyEmployee = currentView === 'employee';
+    const endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -43,9 +47,15 @@ async function switchRole(): Promise<void> {
     // Update token and storage
     localStorage.setItem('token', data.token);
     localStorage.setItem('activeRole', data.user.activeRole);
+    
+    // Update currentView immediately
+    currentView = data.user.activeRole;
+    
+    // Update UI immediately before redirect
+    updateRoleUI();
 
     // Show success message
-    const message = isCurrentlyAdmin ? 'Wechsel zur Mitarbeiter-Ansicht...' : 'Wechsel zur Admin-Ansicht...';
+    const message = isCurrentlyEmployee ? 'Wechsel zur Admin-Ansicht...' : 'Wechsel zur Mitarbeiter-Ansicht...';
 
     // Create toast notification
     showToast(message, 'success');
@@ -76,6 +86,9 @@ function updateRoleUI(): void {
 
   if (!roleIndicator || !switchBtn) return;
 
+  // Update currentView from localStorage
+  currentView = localStorage.getItem('activeRole') || userRole;
+
   if (currentView === 'employee' && userRole === 'admin') {
     // Admin is viewing as employee
     roleIndicator.textContent = 'Mitarbeiter';
@@ -86,7 +99,7 @@ function updateRoleUI(): void {
       switchText.textContent = 'Als Admin';
     }
     switchBtn.title = 'Zurück zur Admin-Ansicht';
-  } else {
+  } else if (userRole === 'admin') {
     // Normal admin view
     roleIndicator.textContent = 'Admin';
     roleIndicator.classList.remove('employee');
