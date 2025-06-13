@@ -3,20 +3,23 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: {
-        module: 'commonjs',
-        target: 'es2020',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-        strict: false,
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          module: 'commonjs',
+          target: 'es2020',
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
+          strict: false,
+        },
       },
-    }],
+    ],
   },
   roots: ['<rootDir>/backend'],
   testMatch: [
     '**/__tests__/**/*.+(ts|tsx|js)',
-    '**/?(*.)+(spec|test).+(ts|tsx|js)'
+    '**/?(*.)+(spec|test).+(ts|tsx|js)',
   ],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',

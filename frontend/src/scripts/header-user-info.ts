@@ -26,9 +26,7 @@ async function loadHeaderUserInfo(): Promise<void> {
     // Update role badge based on user role
     const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
     if (roleIndicator && payload.role) {
-      roleIndicator.textContent = payload.role === 'admin' ? 'Admin' : 
-                                  payload.role === 'root' ? 'Root' : 
-                                  'Mitarbeiter';
+      roleIndicator.textContent = payload.role === 'admin' ? 'Admin' : payload.role === 'root' ? 'Root' : 'Mitarbeiter';
       roleIndicator.className = `role-badge ${payload.role}`;
     }
 

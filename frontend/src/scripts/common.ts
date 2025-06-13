@@ -11,7 +11,7 @@ import { initPageProtection } from './pageProtection';
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize page protection first
   initPageProtection();
-  
+
   loadNavigation();
   setupEventListeners();
   checkTokenExpiry();

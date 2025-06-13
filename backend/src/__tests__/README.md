@@ -7,18 +7,21 @@ Diese Test-Suite stellt sicher, dass das Blackboard-Feature vollständig funktio
 ## Test-Struktur
 
 ### 1. Unit Tests für Routes (`routes/__tests__/blackboard.test.ts`)
+
 - Testet alle API-Endpunkte isoliert
 - Mockt Datenbank-Zugriffe
 - Validiert Request/Response-Formate
 - Prüft Berechtigungen und Validierungen
 
 ### 2. Unit Tests für Models (`models/__tests__/blackboard.test.ts`)
+
 - Testet Datenbank-Operationen
 - Validiert Business-Logik
 - Prüft Datenkonvertierungen (z.B. Buffer zu String)
 - Testet Error-Handling
 
 ### 3. Integration Tests (`__tests__/blackboard.integration.test.ts`)
+
 - Testet den kompletten Flow von API bis Datenbank
 - Prüft realistische Szenarien
 - Validiert Multi-Tenant-Isolation
@@ -27,27 +30,32 @@ Diese Test-Suite stellt sicher, dass das Blackboard-Feature vollständig funktio
 ## Getestete Szenarien
 
 ### ✅ Verschiedene org_level Einträge
+
 - Company-level (org_id = null)
 - Department-level (org_id = department_id)
 - Team-level (org_id = team_id)
 
 ### ✅ Prioritäts-Handling
+
 - Mapping von `priority_level` zu `priority`
 - Default-Werte
 - Sortierung nach Priorität
 
 ### ✅ Berechtigungen
+
 - Admins können alle Einträge erstellen
 - Mitarbeiter können keine company-wide Einträge erstellen
 - Department Heads können Department-Einträge erstellen
 - Team Leaders können Team-Einträge erstellen
 
 ### ✅ Validierungen
+
 - Pflichtfelder werden geprüft
 - org_id ist nur für company-level optional
 - Ungültige Werte werden abgelehnt
 
 ### ✅ Spezialfälle
+
 - Buffer-Konvertierung für content
 - Sehr lange Inhalte
 - Leere Tags-Arrays
@@ -78,6 +86,7 @@ npm test -- routes/__tests__/blackboard.test.ts
 ## Test-Datenbank
 
 Die Integration-Tests verwenden eine separate Test-Datenbank. Stelle sicher, dass:
+
 1. Eine Test-Datenbank verfügbar ist
 2. Die Umgebungsvariablen für Tests gesetzt sind
 3. Die Test-Datenbank nach den Tests bereinigt wird
@@ -112,6 +121,7 @@ Tests:       45 passed, 45 total
 ## Wartung
 
 Bei Änderungen am Blackboard-Feature:
+
 1. Führe alle Tests aus
 2. Aktualisiere Tests bei neuen Features
 3. Stelle sicher, dass Coverage > 80% bleibt

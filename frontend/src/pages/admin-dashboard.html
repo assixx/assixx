@@ -58,25 +58,6 @@
         z-index: -1;
       }
 
-      /* Glassmorphismus für Header */
-      .header {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      /* Glassmorphismus für Sidebar */
-      .sidebar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          8px 0 32px rgba(0, 0, 0, 0.3),
-          inset -1px 0 0 rgba(255, 255, 255, 0.1);
-      }
-
       /* Glassmorphismus für Stat-Cards */
       .stat-card {
         background: rgba(255, 255, 255, 0.02);
@@ -262,6 +243,19 @@
         outline: none;
       }
 
+      /* Deaktivierte Form-Controls */
+      .form-control:disabled {
+        background: rgba(255, 255, 255, 0.01);
+        border-color: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.4);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .form-control:disabled::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+
       /* Buttons mit Glassmorphismus und Shine-Effekt */
       .btn {
         position: relative;
@@ -379,15 +373,15 @@
       }
 
       .stat-card:hover {
-        animation: subtle-pulse 2s infinite;
+        /*animation: subtle-pulse 2s infinite;*/
       }
-      
+
       /* Action buttons in tables - equal width */
       .table td:last-child .btn {
         min-width: 110px;
         margin: 2px;
       }
-      
+
       /* Status buttons - Outline style like Secondary buttons */
       .btn-status-active {
         background: transparent;
@@ -399,7 +393,7 @@
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
       }
-      
+
       .btn-status-active:hover {
         background: rgba(255, 107, 53, 0.1);
         border-color: #ff5722;
@@ -407,7 +401,7 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
       }
-      
+
       .btn-status-inactive {
         background: transparent;
         border: 1px solid #28a745;
@@ -418,7 +412,7 @@
         transition: all 0.3s ease;
         backdrop-filter: blur(10px);
       }
-      
+
       .btn-status-inactive:hover {
         background: rgba(40, 167, 69, 0.1);
         border-color: #218838;
@@ -426,12 +420,12 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
       }
-      
+
       /* Blackboard Preview Styles */
       .blackboard-preview {
         min-height: 200px;
       }
-      
+
       .blackboard-preview .list-item {
         padding: 12px;
         border-radius: 8px;
@@ -442,13 +436,13 @@
         position: relative;
         overflow: hidden;
       }
-      
+
       .blackboard-preview .list-item:hover {
         background: rgba(255, 255, 255, 0.04);
         border-color: rgba(255, 255, 255, 0.1);
         transform: translateX(4px);
       }
-      
+
       .blackboard-preview .list-item::before {
         content: '📌';
         position: absolute;
@@ -457,11 +451,11 @@
         font-size: 14px;
         opacity: 0.8;
       }
-      
+
       .blackboard-preview .list-item-content {
         margin-left: 24px;
       }
-      
+
       .blackboard-preview .list-item-title {
         font-weight: 600;
         color: var(--text-primary);
@@ -472,7 +466,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      
+
       .blackboard-preview .list-item-meta {
         font-size: 0.85rem;
         color: var(--text-secondary);
@@ -480,7 +474,7 @@
         align-items: center;
         gap: 12px;
       }
-      
+
       .blackboard-preview .priority-badge {
         display: inline-flex;
         align-items: center;
@@ -489,53 +483,49 @@
         border-radius: 12px;
         font-weight: 500;
       }
-      
+
       .blackboard-preview .priority-urgent {
         background: rgba(244, 67, 54, 0.2);
         color: #f44336;
         border: 1px solid rgba(244, 67, 54, 0.3);
       }
-      
+
       .blackboard-preview .priority-high {
         background: rgba(255, 152, 0, 0.2);
         color: #ff9800;
         border: 1px solid rgba(255, 152, 0, 0.3);
       }
-      
+
       .blackboard-preview .priority-normal {
         background: rgba(33, 150, 243, 0.2);
         color: #2196f3;
         border: 1px solid rgba(33, 150, 243, 0.3);
       }
-      
+
       .blackboard-preview .priority-low {
         background: rgba(76, 175, 80, 0.2);
         color: #4caf50;
         border: 1px solid rgba(76, 175, 80, 0.3);
       }
-      
+
       /* Skeleton Loading */
       .loading-placeholder {
         padding: 8px 0;
       }
-      
+
       .skeleton {
-        background: linear-gradient(90deg, 
-          rgba(255, 255, 255, 0.05) 25%, 
-          rgba(255, 255, 255, 0.1) 50%, 
-          rgba(255, 255, 255, 0.05) 75%
-        );
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s infinite;
         border-radius: 4px;
         margin-bottom: 8px;
       }
-      
+
       .skeleton-text {
         height: 48px;
         width: 100%;
       }
-      
+
       @keyframes skeleton-loading {
         0% {
           background-position: 200% 0;
@@ -544,18 +534,43 @@
           background-position: -200% 0;
         }
       }
-      
+
       /* Empty State */
       .blackboard-empty-state {
         text-align: center;
         padding: 40px 20px;
         color: var(--text-secondary);
       }
-      
+
       .blackboard-empty-state i {
         font-size: 48px;
         opacity: 0.3;
         margin-bottom: 16px;
+      }
+
+      /* Additional Badge Styles */
+      .badge-warning {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+      }
+
+      .badge-secondary {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+      }
+
+      /* Info Button Style */
+      .btn-info {
+        background: rgba(23, 162, 184, 0.2);
+        border: 1px solid rgba(23, 162, 184, 0.3);
+        color: #17a2b8;
+        transition: all 0.3s ease;
+      }
+
+      .btn-info:hover {
+        background: rgba(23, 162, 184, 0.3);
+        border-color: #17a2b8;
+        transform: translateY(-1px);
       }
     </style>
     <!-- Font Awesome -->
@@ -564,37 +579,11 @@
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/pages/admin-dashboard.html" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
-      </a>
-      <div class="header-actions">
-        <!-- Role Switch Button -->
-        <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
-          <i class="fas fa-exchange-alt"></i>
-          <span class="role-switch-text">Als Mitarbeiter</span>
-        </button>
-        
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Lade...</span>
-          <span id="role-indicator" class="role-badge admin">Admin</span>
-        </div>
-        <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
-          <i class="fas fa-sign-out-alt"></i>
-          Abmelden
-        </button>
-      </div>
-    </header>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Unified Sidebar Navigation -->
-      <aside class="sidebar">
-        <!-- Navigation wird durch unified-navigation.js injiziert -->
-      </aside>
-
       <!-- Main Content Area -->
       <main class="main-content">
         <!-- Dashboard Section -->
@@ -622,7 +611,7 @@
           </div>
 
           <!-- Blackboard Widget -->
-          <div id="blackboard-widget-container" style="margin-top: 2rem;"></div>
+          <div id="blackboard-widget-container" style="margin-top: 2rem"></div>
 
           <!-- Main Grid Container -->
           <div class="admin-grid">
@@ -851,6 +840,7 @@
                     <th>Position</th>
                     <th>Abteilung</th>
                     <th>Status</th>
+                    <th>Verfügbarkeit</th>
                     <th>Aktionen</th>
                   </tr>
                 </thead>
@@ -868,7 +858,8 @@
           <div class="flex-between mb-3">
             <div>
               <button class="btn btn-primary" onclick="window.location.href='/pages/document-upload.html'">
-                <i class="fas fa-upload me-2"></i>Dokument hochladen
+                <i class="fas fa-upload me-2"></i>
+                Dokument hochladen
               </button>
               <a href="/pages/documents.html" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
             </div>
@@ -965,7 +956,6 @@
           </div>
         </section>
 
-
         <!-- Settings Section -->
         <section id="settings-section" class="content-section" style="display: none">
           <h1>Einstellungen</h1>
@@ -1022,7 +1012,9 @@
                 </svg>
               </div>
               <div class="dropdown-options" id="department-visibility-dropdown" style="display: none">
-                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'public', 'Öffentlich')">Öffentlich</div>
+                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'public', 'Öffentlich')">
+                  Öffentlich
+                </div>
                 <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'private', 'Privat')">Privat</div>
               </div>
               <input type="hidden" name="visibility" id="department-visibility-select" value="public" />
@@ -1057,6 +1049,65 @@
             </select>
           </div>
           <button type="submit" class="btn btn-primary">Team erstellen</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Employee Status Modal -->
+    <div id="employee-status-modal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Mitarbeiter-Status ändern</h3>
+          <button class="modal-close" onclick="hideModal('employee-status-modal')">&times;</button>
+        </div>
+        <form id="employee-status-form">
+          <input type="hidden" id="status-employee-id" />
+          <div class="form-group">
+            <label class="form-label">Mitarbeiter</label>
+            <input type="text" id="status-employee-name" class="form-control" readonly />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="employee-status-display" onclick="toggleDropdown('employee-status')">
+                <span>Verfügbar</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="dropdown-options" id="employee-status-dropdown" style="display: none">
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'available', 'Verfügbar')">
+                  <span class="badge badge-success">Verfügbar</span>
+                </div>
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'vacation', 'Urlaub')">
+                  <span class="badge badge-warning">Urlaub</span>
+                </div>
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'sick', 'Krank')">
+                  <span class="badge badge-danger">Krank</span>
+                </div>
+                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'unavailable', 'Beurlaubt')">
+                  <span class="badge badge-secondary">Beurlaubt</span>
+                </div>
+              </div>
+              <input type="hidden" name="status" id="employee-status-select" value="available" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Von Datum</label>
+            <input type="date" name="start_date" id="availability-start-date" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bis Datum</label>
+            <input type="date" name="end_date" id="availability-end-date" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notiz (optional)</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="z.B. Familienurlaub, Krankmeldung bis..."></textarea>
+          </div>
+          <div class="button-group">
+            <button type="submit" class="btn btn-primary">Status speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="hideModal('employee-status-modal')">Abbrechen</button>
+          </div>
         </form>
       </div>
     </div>
@@ -1266,7 +1317,7 @@
         border-radius: var(--radius-sm);
       }
     </style>
-    
+
     <!-- Custom Dropdown Styles -->
     <style>
       .custom-dropdown {
@@ -1371,8 +1422,9 @@
     <script type="module" src="/scripts/show-section.ts"></script>
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
     <script type="module" src="/scripts/employee-deletion.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
-    
+
     <!-- Initialize dashboard on page load -->
     <script type="module">
       // Ensure dashboard section is shown on page load
@@ -1382,7 +1434,7 @@
           // Check if a specific section was requested in URL
           const urlParams = new URLSearchParams(window.location.search);
           const requestedSection = urlParams.get('section');
-          
+
           // If no specific section or 'dashboard-section' requested, show dashboard
           if (!requestedSection || requestedSection === 'dashboard-section' || requestedSection === 'dashboard') {
             // Use showSection directly (it's already imported statically)
@@ -1393,7 +1445,7 @@
               const dashboardSection = document.getElementById('dashboard-section');
               if (dashboardSection) {
                 // Hide all sections
-                document.querySelectorAll('.content-section').forEach(section => {
+                document.querySelectorAll('.content-section').forEach((section) => {
                   section.style.display = 'none';
                 });
                 // Show dashboard
@@ -1438,13 +1490,13 @@
         });
         console.log('DOM loaded, setting up debugging handlers');
 
-        // Debug-Funktionen für alle Buttons
-        document.querySelectorAll('button').forEach((button) => {
-          console.log('Found button:', button.textContent || button.innerHTML);
-          button.addEventListener('click', function (e) {
-            console.log('Button clicked:', this.textContent || this.innerHTML);
-          });
-        });
+        // Debug-Funktionen für alle Buttons (ENTFERNT - blockiert role-switch)
+        // document.querySelectorAll('button').forEach((button) => {
+        //   console.log('Found button:', button.textContent || button.innerHTML);
+        //   button.addEventListener('click', function (e) {
+        //     console.log('Button clicked:', this.textContent || this.innerHTML);
+        //   });
+        // });
 
         // Spezieller Listener für den Dokument-Upload-Button
         const docUploadBtn = document.querySelector('button[type="submit"]');
@@ -1562,11 +1614,11 @@
       function toggleDropdown(dropdownId) {
         const dropdown = document.getElementById(dropdownId + '-dropdown');
         const display = document.getElementById(dropdownId + '-display');
-        
+
         if (dropdown && display) {
           dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
           display.classList.toggle('active');
-          
+
           // Optional: Close when clicking outside
           if (dropdown.style.display === 'block') {
             setTimeout(() => {
@@ -1581,17 +1633,41 @@
           }
         }
       }
-      
+
       function selectDropdownOption(dropdownId, value, text) {
         const hiddenInput = document.getElementById(dropdownId + '-select');
         const display = document.getElementById(dropdownId + '-display');
         const dropdown = document.getElementById(dropdownId + '-dropdown');
-        
+
         if (hiddenInput && display && dropdown) {
           hiddenInput.value = value;
           display.querySelector('span').textContent = text;
           dropdown.style.display = 'none';
           display.classList.remove('active');
+          
+          // Spezielle Logik für Employee Status Dropdown
+          if (dropdownId === 'employee-status') {
+            const startDateInput = document.getElementById('availability-start-date');
+            const endDateInput = document.getElementById('availability-end-date');
+            
+            if (startDateInput && endDateInput) {
+              if (value === 'available') {
+                // Bei "Verfügbar" Datumsfelder deaktivieren und leeren
+                startDateInput.disabled = true;
+                endDateInput.disabled = true;
+                startDateInput.value = '';
+                endDateInput.value = '';
+                startDateInput.removeAttribute('required');
+                endDateInput.removeAttribute('required');
+              } else {
+                // Bei anderen Status Datumsfelder aktivieren
+                startDateInput.disabled = false;
+                endDateInput.disabled = false;
+                startDateInput.setAttribute('required', 'required');
+                endDateInput.setAttribute('required', 'required');
+              }
+            }
+          }
         }
       }
     </script>
@@ -1619,19 +1695,18 @@
             const tbody = document.getElementById('departments-table-body');
             if (tbody) {
               tbody.innerHTML = departments
-                .map(
-                  (dept) => {
-                    // Convert Buffer to String if needed
-                    let description = '-';
-                    if (dept.description) {
-                      if (dept.description.type === 'Buffer' && dept.description.data) {
-                        description = String.fromCharCode(...dept.description.data);
-                      } else if (typeof dept.description === 'string') {
-                        description = dept.description;
-                      }
+                .map((dept) => {
+                  // Convert Buffer to String if needed
+                  let description = '-';
+                  if (dept.description) {
+                    if (dept.description.type === 'Buffer' && dept.description.data) {
+                      description = String.fromCharCode(...dept.description.data);
+                    } else if (typeof dept.description === 'string') {
+                      description = dept.description;
                     }
-                    
-                    return `
+                  }
+
+                  return `
                             <tr>
                                 <td>${dept.name}</td>
                                 <td>${description}</td>
@@ -1657,7 +1732,7 @@
                                 </td>
                             </tr>
                         `;
-                  })
+                })
                 .join('');
             } else {
               console.error('Departments table body not found');
@@ -1712,7 +1787,7 @@
           if (response.ok) {
             const department = await response.json();
             console.log('Department data:', department);
-            
+
             // Convert Buffer to String if needed
             let description = '';
             if (department.description) {
@@ -1841,38 +1916,37 @@
       async function loadDocumentsTable() {
         console.log('Loading documents table');
         const token = localStorage.getItem('token');
-        
+
         try {
           const response = await fetch('/api/documents', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           if (response.ok) {
             const data = await response.json();
             const documents = data.documents || data;
             console.log(`Loaded ${documents.length} documents`);
-            
+
             const tbody = document.getElementById('documents-table-body');
             if (tbody) {
               tbody.innerHTML = documents
-                .map(
-                  (doc) => {
-                    // Bestimme den Empfänger-Text basierend auf recipient_type
-                    let recipientDisplay = '-';
-                    if (doc.recipient_type === 'user' && doc.employee_name) {
-                      recipientDisplay = doc.employee_name;
-                    } else if (doc.recipient_type === 'team' && doc.team_name) {
-                      recipientDisplay = `Team: ${doc.team_name}`;
-                    } else if (doc.recipient_type === 'department' && doc.department_name) {
-                      recipientDisplay = `Abteilung: ${doc.department_name}`;
-                    } else if (doc.recipient_type === 'company') {
-                      recipientDisplay = 'Gesamte Firma';
-                    } else if (doc.employee_name) {
-                      // Fallback für alte Dokumente
-                      recipientDisplay = doc.employee_name;
-                    }
-                    
-                    return `
+                .map((doc) => {
+                  // Bestimme den Empfänger-Text basierend auf recipient_type
+                  let recipientDisplay = '-';
+                  if (doc.recipient_type === 'user' && doc.employee_name) {
+                    recipientDisplay = doc.employee_name;
+                  } else if (doc.recipient_type === 'team' && doc.team_name) {
+                    recipientDisplay = `Team: ${doc.team_name}`;
+                  } else if (doc.recipient_type === 'department' && doc.department_name) {
+                    recipientDisplay = `Abteilung: ${doc.department_name}`;
+                  } else if (doc.recipient_type === 'company') {
+                    recipientDisplay = 'Gesamte Firma';
+                  } else if (doc.employee_name) {
+                    // Fallback für alte Dokumente
+                    recipientDisplay = doc.employee_name;
+                  }
+
+                  return `
                     <tr>
                       <td>${doc.file_name || doc.filename || '-'}</td>
                       <td>${recipientDisplay}</td>
@@ -1889,12 +1963,16 @@
                             <i class="fas fa-download me-1"></i>
                             Download
                           </button>
-                          ${!doc.is_archived ? `
+                          ${
+                            !doc.is_archived
+                              ? `
                             <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archivieren">
                               <i class="fas fa-archive me-1"></i>
                               Archiv
                             </button>
-                          ` : ''}
+                          `
+                              : ''
+                          }
                           <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})" title="Löschen">
                             <i class="fas fa-trash me-1"></i>
                             Löschen
@@ -1911,6 +1989,169 @@
           console.error('Error loading documents:', error);
         }
       }
+
+      // Mitarbeiter-Status ändern
+      async function changeEmployeeStatus(employeeId) {
+        console.log(`Changing status for employee ${employeeId}`);
+        const token = localStorage.getItem('token');
+
+        try {
+          // Mitarbeiter-Daten laden
+          const response = await fetch(`/api/users/${employeeId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!response.ok) {
+            console.error('Response not OK:', response.status, response.statusText);
+            const errorData = await response.text();
+            console.error('Error data:', errorData);
+            throw new Error('Failed to load employee data');
+          }
+
+          const employee = await response.json();
+          console.log('Employee data loaded:', employee);
+
+          // Modal-Felder befüllen
+          const employeeIdInput = document.getElementById('status-employee-id');
+          const employeeName = document.getElementById('status-employee-name');
+          const statusDropdown = document.getElementById('employee-status-dropdown');
+          const statusDisplay = document.getElementById('employee-status-display');
+
+          console.log('DOM Elements:', {
+            employeeIdInput: employeeIdInput,
+            employeeName: employeeName,
+            employeeNameType: employeeName ? employeeName.tagName : 'null'
+          });
+
+          if (employeeIdInput) {
+            employeeIdInput.value = employeeId;
+            console.log('Set employee ID:', employeeId);
+          }
+          if (employeeName) {
+            const fullName = `${employee.first_name || ''} ${employee.last_name || ''}`;
+            employeeName.value = fullName;
+            console.log('Set employee name:', fullName);
+          } else {
+            console.error('Employee name input not found!');
+          }
+
+          // Aktuellen Status setzen
+          const currentStatus = employee.availability_status || 'available';
+          if (statusDisplay) {
+            const statusText =
+              {
+                available: 'Verfügbar',
+                vacation: 'Urlaub',
+                sick: 'Krank',
+                unavailable: 'Nicht verfügbar',
+              }[currentStatus] || 'Verfügbar';
+            statusDisplay.querySelector('span').textContent = statusText;
+          }
+          
+          // Datumsfelder initial setzen
+          const startDateInput = document.getElementById('availability-start-date');
+          const endDateInput = document.getElementById('availability-end-date');
+          
+          if (startDateInput && endDateInput) {
+            if (currentStatus === 'available') {
+              // Bei "Verfügbar" Datumsfelder deaktivieren
+              startDateInput.disabled = true;
+              endDateInput.disabled = true;
+              startDateInput.value = '';
+              endDateInput.value = '';
+              startDateInput.removeAttribute('required');
+              endDateInput.removeAttribute('required');
+            } else {
+              // Bei anderen Status Datumsfelder aktivieren und vorhandene Werte setzen
+              startDateInput.disabled = false;
+              endDateInput.disabled = false;
+              startDateInput.setAttribute('required', 'required');
+              endDateInput.setAttribute('required', 'required');
+              
+              // Vorhandene Daten setzen falls vorhanden
+              if (employee.availability_start) {
+                startDateInput.value = employee.availability_start.split('T')[0];
+              }
+              if (employee.availability_end) {
+                endDateInput.value = employee.availability_end.split('T')[0];
+              }
+            }
+          }
+
+          // Modal öffnen
+          const modal = document.getElementById('employee-status-modal');
+          if (modal) {
+            modal.style.display = 'flex';
+            console.log('Modal opened');
+
+            // Form zurücksetzen - NACH dem Setzen der Werte!
+            // Das war das Problem - form.reset() löscht alle Werte
+            const form = document.getElementById('employee-status-form');
+            if (form) {
+              // Nur die Date-Felder und Notes zurücksetzen, nicht alle Felder
+              const startDate = form.querySelector('input[name="start_date"]');
+              const endDate = form.querySelector('input[name="end_date"]');
+              const notes = form.querySelector('textarea[name="notes"]');
+              
+              if (startDate) startDate.value = '';
+              if (endDate) endDate.value = '';
+              if (notes) notes.value = '';
+              
+              // Hidden input für status setzen
+              const hiddenInput = form.querySelector('input[name="status"]');
+              if (hiddenInput) hiddenInput.value = currentStatus;
+            }
+          }
+        } catch (error) {
+          console.error('Error loading employee for status change:', error);
+          alert('Fehler beim Laden der Mitarbeiterdaten');
+        }
+      }
+
+      // Employee Status Form Submit Handler
+      document.addEventListener('DOMContentLoaded', () => {
+        const statusForm = document.getElementById('employee-status-form');
+        if (statusForm) {
+          statusForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(statusForm);
+            const employeeId = document.getElementById('status-employee-id').value;
+            const token = localStorage.getItem('token');
+            
+            const statusData = {
+              availability_status: formData.get('status'),
+              availability_start: formData.get('start_date'),
+              availability_end: formData.get('end_date'),
+              availability_notes: formData.get('notes')
+            };
+            
+            try {
+              const response = await fetch(`/api/users/${employeeId}/availability`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(statusData)
+              });
+              
+              if (response.ok) {
+                alert('Verfügbarkeitsstatus erfolgreich aktualisiert');
+                hideModal('employee-status-modal');
+                // Seite neu laden für vollständige Aktualisierung
+                window.location.reload();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message || 'Status konnte nicht aktualisiert werden'}`);
+              }
+            } catch (error) {
+              console.error('Error updating availability status:', error);
+              alert('Ein Fehler ist aufgetreten beim Aktualisieren des Status');
+            }
+          });
+        }
+      });
 
       // Abteilung löschen
       async function deleteDepartment(departmentId) {
@@ -2130,7 +2371,7 @@
         data.status = data.is_active ? 'active' : 'inactive';
 
         // Clean up empty values but keep is_active and status even if false
-        Object.keys(data).forEach(key => {
+        Object.keys(data).forEach((key) => {
           if (key !== 'is_active' && key !== 'status' && (data[key] === '' || data[key] === null)) {
             delete data[key];
           }
@@ -2383,7 +2624,7 @@
       async function loadEmployeesTable() {
         console.log('Loading employees table...');
         const token = localStorage.getItem('token');
-        
+
         try {
           const response = await fetch('/api/users?role=employee', {
             headers: {
@@ -2396,8 +2637,9 @@
           }
 
           const employees = await response.json();
+          console.log('Loaded employees:', employees); // Debug
           const tableBody = document.getElementById('employees-table-body');
-          
+
           if (!tableBody) {
             console.error('employees-table-body not found');
             return;
@@ -2408,7 +2650,7 @@
           if (employees.length === 0) {
             tableBody.innerHTML = `
               <tr>
-                <td colspan="7" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
+                <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
               </tr>
             `;
             return;
@@ -2416,6 +2658,63 @@
 
           employees.forEach((employee) => {
             const row = document.createElement('tr');
+            
+            // Verfügbarkeitsstatus bestimmen - prüfe ob innerhalb des Datumbereichs
+            let effectiveStatus = employee.availability_status || 'available';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Zeit auf Mitternacht setzen für korrekten Vergleich
+            
+            // Debug-Ausgabe für ersten Mitarbeiter
+            if (employee.id === 19) {
+              console.log('Employee 19 debug:', {
+                availability_status: employee.availability_status,
+                availability_start: employee.availability_start,
+                availability_end: employee.availability_end,
+                today: today.toISOString()
+              });
+            }
+            
+            // Prüfe ob Verfügbarkeitsdaten vorhanden sind und ob wir im Zeitraum sind
+            if (employee.availability_status !== 'available' && 
+                employee.availability_start && 
+                employee.availability_end) {
+              
+              const startDate = new Date(employee.availability_start);
+              const endDate = new Date(employee.availability_end);
+              startDate.setHours(0, 0, 0, 0);
+              endDate.setHours(23, 59, 59, 999);
+              
+              // Debug für Employee 19
+              if (employee.id === 19) {
+                console.log('Date comparison:', {
+                  startDate: startDate.toISOString(),
+                  endDate: endDate.toISOString(),
+                  todayIsAfterStart: today >= startDate,
+                  todayIsBeforeEnd: today <= endDate,
+                  shouldShowStatus: today >= startDate && today <= endDate
+                });
+              }
+              
+              // Wenn heute außerhalb des Zeitraums liegt, ist der Mitarbeiter verfügbar
+              if (today < startDate || today > endDate) {
+                effectiveStatus = 'available';
+              }
+            }
+            
+            const availabilityBadgeClass = {
+              'available': 'badge-success',
+              'vacation': 'badge-warning',
+              'sick': 'badge-danger',
+              'unavailable': 'badge-secondary'
+            }[effectiveStatus] || 'badge-success';
+            
+            const availabilityText = {
+              'available': 'Verfügbar',
+              'vacation': 'Urlaub',
+              'sick': 'Krank',
+              'unavailable': 'Beurlaubt'
+            }[effectiveStatus] || 'Verfügbar';
+            
             row.innerHTML = `
               <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
               <td>${employee.email || ''}</td>
@@ -2428,11 +2727,22 @@
                 </span>
               </td>
               <td>
+                <span class="badge ${availabilityBadgeClass}">
+                  ${availabilityText}
+                </span>
+                ${effectiveStatus !== 'available' && employee.availability_start && employee.availability_end ? 
+                  `<br><small class="text-muted">${new Date(employee.availability_start).toLocaleDateString('de-DE')} - ${new Date(employee.availability_end).toLocaleDateString('de-DE')}</small>` : 
+                  ''}
+              </td>
+              <td>
+                <button class="btn btn-sm btn-info" onclick="changeEmployeeStatus(${employee.id})">
+                  <i class="fas fa-user-clock"></i> Status ändern
+                </button>
                 <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
-                  <i class="fas fa-edit"></i>
+                  <i class="fas fa-edit"></i> Bearbeiten
                 </button>
                 <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})">
-                  <i class="fas fa-trash"></i>
+                  <i class="fas fa-trash"></i> Löschen
                 </button>
               </td>
             `;
@@ -2460,7 +2770,8 @@
         window.deleteEmployee = deleteEmployee;
         window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
         window.loadPayslipsTable = loadPayslipsTable || (() => console.log('loadPayslipsTable not implemented'));
-        window.loadEmployeesForPayslipSelect = loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
+        window.loadEmployeesForPayslipSelect =
+          loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
         window.loadDepartmentsTable = loadDepartmentsTable;
         window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
         window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
@@ -2515,7 +2826,7 @@
       function showAllTeams() {
         console.log('Show all teams');
       }
-      
+
       // Dokument herunterladen
       async function downloadDocument(documentId) {
         const token = localStorage.getItem('token');
@@ -2526,23 +2837,23 @@
           alert('Fehler beim Herunterladen des Dokuments');
         }
       }
-      
+
       // Dokument archivieren
       async function archiveDocument(documentId) {
         if (!confirm('Möchten Sie dieses Dokument archivieren?')) {
           return;
         }
-        
+
         const token = localStorage.getItem('token');
         try {
           const response = await fetch(`/api/documents/archive/${documentId}`, {
             method: 'PUT',
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
           });
-          
+
           if (response.ok) {
             alert('Dokument erfolgreich archiviert');
             loadDocumentsTable();
@@ -2555,20 +2866,24 @@
           alert('Fehler beim Archivieren des Dokuments');
         }
       }
-      
+
       // Dokument löschen
       async function deleteDocument(documentId) {
-        if (!confirm('Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        if (
+          !confirm(
+            'Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
+          )
+        ) {
           return;
         }
-        
+
         const token = localStorage.getItem('token');
         try {
           const response = await fetch(`/api/documents/${documentId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           if (response.ok) {
             alert('Dokument erfolgreich gelöscht');
             loadDocumentsTable();
@@ -2751,12 +3066,12 @@
         width: fit-content;
         transition: all 0.2s ease;
       }
-      
+
       tr:hover .badge-success {
         background: rgba(76, 175, 80, 0.15);
         border-color: rgba(76, 175, 80, 0.3);
       }
-      
+
       tr:hover .badge-danger {
         background: rgba(244, 67, 54, 0.15);
         border-color: rgba(244, 67, 54, 0.3);
@@ -2777,7 +3092,7 @@
         width: fit-content;
         transition: all 0.2s ease;
       }
-      
+
       tr:hover .badge-warning {
         background: rgba(255, 152, 0, 0.15);
         border-color: rgba(255, 152, 0, 0.3);
@@ -2800,8 +3115,5 @@
         align-items: center;
       }
     </style>
-    
-    <!-- Role Switch Script -->
-    <script type="module" src="/scripts/role-switch.ts"></script>
   </body>
 </html>

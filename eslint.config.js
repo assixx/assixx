@@ -49,10 +49,10 @@ export default [
       'prettier/prettier': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { 
+        {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_' 
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
@@ -107,10 +107,10 @@ export default [
       'prettier/prettier': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { 
+        {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_' 
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',

@@ -3,11 +3,11 @@
  * API endpoints for tenant registration and subdomain validation
  */
 
-import express, { Router } from "express";
-import { logger } from "../utils/logger";
+import express, { Router } from 'express';
+import { logger } from '../utils/logger';
 
 // Import models (keeping require pattern for compatibility)
-import Tenant from "../models/tenant";
+import Tenant from '../models/tenant';
 
 const router: Router = express.Router();
 
@@ -49,18 +49,18 @@ interface SubdomainAvailabilityResponse {
 }
 
 // Öffentliche Signup-Route
-router.post("/signup", async (req, res): Promise<void> => {
-  console.log("[SIGNUP DEBUG] Request received!");
+router.post('/signup', async (req, res): Promise<void> => {
+  console.log('[SIGNUP DEBUG] Request received!');
   try {
     logger.info(
-      "[DEBUG] Signup request received at " + new Date().toISOString(),
-      { body: req.body },
+      '[DEBUG] Signup request received at ' + new Date().toISOString(),
+      { body: req.body }
     );
 
     // Debug DB connection
-    const pool = (await import("../database")).default;
-    logger.info("[DEBUG] Pool type:", typeof pool);
-    logger.info("[DEBUG] Pool config:", (pool as any).config?.connectionConfig);
+    const pool = (await import('../database')).default;
+    logger.info('[DEBUG] Pool type:', typeof pool);
+    logger.info('[DEBUG] Pool config:', (pool as any).config?.connectionConfig);
 
     const {
       company_name,
@@ -78,7 +78,7 @@ router.post("/signup", async (req, res): Promise<void> => {
     if (!company_name || !subdomain || !email || !admin_password) {
       res
         .status(400)
-        .json({ message: "Alle Pflichtfelder müssen ausgefüllt werden" });
+        .json({ message: 'Alle Pflichtfelder müssen ausgefüllt werden' });
       return;
     }
 
@@ -93,7 +93,7 @@ router.post("/signup", async (req, res): Promise<void> => {
     // Prüfe ob Subdomain verfügbar
     const isAvailable: boolean = await Tenant.isSubdomainAvailable(subdomain);
     if (!isAvailable) {
-      res.status(400).json({ message: "Diese Subdomain ist bereits vergeben" });
+      res.status(400).json({ message: 'Diese Subdomain ist bereits vergeben' });
       return;
     }
 
@@ -118,21 +118,21 @@ router.post("/signup", async (req, res): Promise<void> => {
       success: true,
       subdomain,
       trialEndsAt: result.trialEndsAt,
-      message: "Registrierung erfolgreich! Sie können sich jetzt anmelden.",
+      message: 'Registrierung erfolgreich! Sie können sich jetzt anmelden.',
     };
 
     res.json(response);
   } catch (error: any) {
     logger.error(`Signup-Fehler: ${error.message}`);
     res.status(500).json({
-      message: "Fehler bei der Registrierung",
+      message: 'Fehler bei der Registrierung',
       error: error.message,
     });
   }
 });
 
 // Subdomain-Verfügbarkeit prüfen
-router.get("/check-subdomain/:subdomain", async (req, res): Promise<void> => {
+router.get('/check-subdomain/:subdomain', async (req, res): Promise<void> => {
   try {
     const { subdomain } = req.params;
 
@@ -151,7 +151,7 @@ router.get("/check-subdomain/:subdomain", async (req, res): Promise<void> => {
     res.json(response);
   } catch (error: any) {
     logger.error(`Subdomain-Check-Fehler: ${error.message}`);
-    res.status(500).json({ error: "Fehler bei der Überprüfung" });
+    res.status(500).json({ error: 'Fehler bei der Überprüfung' });
   }
 });
 

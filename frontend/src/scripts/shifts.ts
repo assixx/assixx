@@ -1,1134 +1,1708 @@
 /**
- * Shift Planning TypeScript
- * Handles all client-side functionality for the shift planning system
+ * New Shift Planning System - TypeScript Implementation
+ * Interactive weekly shift planning with drag & drop functionality
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken, showSuccess, showError } from './auth';
+import { getAuthToken, removeAuthToken, showSuccess, showError, showInfo } from './auth';
+import { openModal, closeModal } from './utils/modal-manager';
 
-interface ShiftPlan {
-  id: number;
-  name: string;
+interface Employee extends User {
   department_id?: number;
   team_id?: number;
-  start_date: string;
-  end_date: string;
-  status: 'draft' | 'published' | 'archived';
-  created_by: number;
-  created_at: string;
-  updated_at: string;
-  assignments?: ShiftAssignment[];
-  shift_count?: number;
+  shift_assignments?: ShiftAssignment[];
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
 }
 
 interface ShiftAssignment {
   id: number;
-  shift_plan_id: number;
   employee_id: number;
   date: string;
-  shift_date?: string; // Alternative property name
   shift_type: 'early' | 'late' | 'night';
-  start_time: string;
-  end_time: string;
-  status: 'assigned' | 'confirmed' | 'completed' | 'pending';
+  department_id?: number;
+  machine_id?: number;
+  team_leader_id?: number;
+  notes?: string;
   created_at: string;
-  employee?: User;
-  employee_name?: string;
-}
-
-interface ExchangeRequest {
-  id: number;
-  requester_id: number;
-  target_id: number;
-  shift_assignment_id: number;
-  reason?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-  employee_name?: string;
-  type?: 'exchange' | 'request' | 'swap' | 'cancel';
-  shift_date?: string;
-  shift_time?: string;
-}
-
-interface ShiftReport {
-  id: number;
-  shift_assignment_id: number;
-  employee_id: number;
-  title?: string;
-  start_date?: string;
-  end_date?: string;
-  content?: string;
-  created_at: string;
-  employee?: User;
+  updated_at: string;
 }
 
 interface Department {
   id: number;
   name: string;
+  description?: string;
 }
 
-interface Team {
+interface Machine {
   id: number;
   name: string;
   department_id: number;
+  description?: string;
 }
 
-interface DashboardStats {
-  totalShifts: number;
-  upcomingShifts: number;
-  openRequests: number;
-  employeesOnShift: number;
+interface TeamLeader {
+  id: number;
+  name: string;
+  username: string;
 }
 
-// Global variables
-let shiftPlans: ShiftPlan[] = [];
-let userDepartments: Department[] = [];
-let userTeams: Team[] = [];
-let currentUser: User | null = null;
-let isAdmin: boolean = false;
-
-// Initialize the shift planning interface
-document.addEventListener('DOMContentLoaded', () => {
-  initializeShiftPlanning();
-  setupEventListeners();
-});
-
-/**
- * Setup event listeners
- */
-function setupEventListeners(): void {
-  // Logout button
-  const logoutBtn = document.getElementById('logoutBtn') as HTMLButtonElement;
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', logout);
-  }
-
-  // Tab buttons
-  document.querySelectorAll<HTMLButtonElement>('.tab-button').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const tabName = (e.currentTarget as HTMLElement).dataset.tab;
-      if (tabName) {
-        showTab(tabName);
-      }
-    });
-  });
-
-  // Action buttons
-  const createShiftPlanBtn = document.getElementById('createShiftPlanBtn') as HTMLButtonElement;
-  if (createShiftPlanBtn) {
-    createShiftPlanBtn.addEventListener('click', createShiftPlan);
-  }
-
-  const createShiftTemplateBtn = document.getElementById('createShiftTemplateBtn') as HTMLButtonElement;
-  if (createShiftTemplateBtn) {
-    createShiftTemplateBtn.addEventListener('click', createShiftTemplate);
-  }
-
-  const createExchangeRequestBtn = document.getElementById('createExchangeRequestBtn') as HTMLButtonElement;
-  if (createExchangeRequestBtn) {
-    createExchangeRequestBtn.addEventListener('click', createExchangeRequest);
-  }
-
-  const setAvailabilityBtn = document.getElementById('setAvailabilityBtn') as HTMLButtonElement;
-  if (setAvailabilityBtn) {
-    setAvailabilityBtn.addEventListener('click', setAvailability);
-  }
-
-  // Filter elements
-  document.querySelectorAll<HTMLSelectElement | HTMLInputElement>('.filter-select, .filter-date').forEach((element) => {
-    element.addEventListener('change', function (this: HTMLSelectElement | HTMLInputElement) {
-      const elementId = (this as HTMLElement).id;
-      if (elementId.includes('plan')) {
-        filterPlans();
-      } else if (elementId.includes('assignment')) {
-        filterAssignments();
-      }
-    });
-  });
-
-  // Modal close buttons
-  document.querySelectorAll<HTMLButtonElement>('.modal-close, .modal-cancel').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const modalId = (e.currentTarget as HTMLElement).dataset.modal;
-      if (modalId) {
-        closeModal(modalId);
-      }
-    });
-  });
-
-  // Modal background click to close
-  document.querySelectorAll<HTMLElement>('.modal').forEach((modal) => {
-    modal.addEventListener('click', (e: MouseEvent) => {
-      if (e.target === e.currentTarget) {
-        closeModal((e.currentTarget as HTMLElement).id);
-      }
-    });
-  });
+interface SelectedContext {
+  departmentId: number | null;
+  machineId: number | null;
+  teamLeaderId: number | null;
 }
 
-/**
- * Open modal
- */
-function openModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
-  if (modal) {
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
-}
-
-/**
- * Close modal
- */
-function closeModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
-  if (modal) {
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  }
-}
-
-/**
- * Initialize the shift planning interface
- */
-async function initializeShiftPlanning(): Promise<void> {
-  try {
-    // Check authentication first
-    const token = getAuthToken();
-    if (!token) {
-      window.location.href = '/pages/login.html';
-      return;
-    }
-
-    // Load user info and permissions
-    await loadUserInfo();
-
-    // Load dashboard stats
-    await loadDashboardStats();
-
-    // Load initial data
-    await loadShiftTemplates();
-    await loadDepartmentsAndTeams();
-
-    // Load overview tab data
-    await loadOverviewData();
-
-    // Set up date filters with default values
-    setupDateFilters();
-  } catch (error) {
-    console.error('Error initializing shift planning:', error);
-    showError('Fehler beim Laden der Schichtplanung');
-  }
-}
-
-/**
- * Load user info
- */
-async function loadUserInfo(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      currentUser = await response.json();
-      isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'root';
-
-      // Update UI based on role
-      updateUIForRole();
-
-      // Update user display
-      const userNameElement = document.getElementById('userName') as HTMLElement;
-      if (userNameElement && currentUser) {
-        userNameElement.textContent = currentUser.username;
-      }
-    } else {
-      throw new Error('Failed to load user info');
-    }
-  } catch (error) {
-    console.error('Error loading user info:', error);
-    throw error;
-  }
-}
-
-/**
- * Load dashboard statistics
- */
-async function loadDashboardStats(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch('/api/shifts/stats', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      const stats: DashboardStats = await response.json();
-      updateDashboardStats(stats);
-    }
-  } catch (error) {
-    console.error('Error loading dashboard stats:', error);
-  }
-}
-
-/**
- * Update dashboard stats display
- */
-function updateDashboardStats(stats: DashboardStats): void {
-  const elements = {
-    totalShifts: document.getElementById('totalShifts'),
-    upcomingShifts: document.getElementById('upcomingShifts'),
-    openRequests: document.getElementById('openRequests'),
-    employeesOnShift: document.getElementById('employeesOnShift'),
+interface WeeklyShifts {
+  [key: string]: {
+    [key: string]: number[];
   };
-
-  if (elements.totalShifts) elements.totalShifts.textContent = stats.totalShifts.toString();
-  if (elements.upcomingShifts) elements.upcomingShifts.textContent = stats.upcomingShifts.toString();
-  if (elements.openRequests) elements.openRequests.textContent = stats.openRequests.toString();
-  if (elements.employeesOnShift) elements.employeesOnShift.textContent = stats.employeesOnShift.toString();
 }
 
-/**
- * Load shift templates
- */
-async function loadShiftTemplates(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
+class ShiftPlanningSystem {
+  private currentWeek: Date;
+  private selectedEmployee: Employee | null;
+  private employees: Employee[];
+  private weeklyShifts: WeeklyShifts;
+  private shiftDetails: { [key: string]: any };
+  private isAdmin: boolean;
+  private userRole: string;
+  private currentUserId: number | null;
+  private isDragging: boolean;
 
-  try {
-    const response = await fetch('/api/shifts/templates', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  // Context data for shift planning
+  private departments: Department[];
+  private machines: Machine[];
+  private teamLeaders: TeamLeader[];
+  private selectedContext: SelectedContext;
 
-    if (response.ok) {
-      // Templates loaded successfully - implementation pending
-    }
-  } catch (error) {
-    console.error('Error loading shift templates:', error);
-  }
-}
+  private weeklyNotes: string;
 
-/**
- * Load departments and teams
- */
-async function loadDepartmentsAndTeams(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
+  constructor() {
+    this.currentWeek = new Date();
+    this.selectedEmployee = null;
+    this.employees = [];
+    this.weeklyShifts = {};
+    this.shiftDetails = {};
+    this.isAdmin = false;
+    this.userRole = '';
+    this.currentUserId = null;
+    this.isDragging = false;
 
-  try {
-    // Load departments
-    const deptResponse = await fetch('/api/departments', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Context data for shift planning
+    this.departments = [];
+    this.machines = [];
+    this.teamLeaders = [];
+    this.selectedContext = {
+      departmentId: null,
+      machineId: null,
+      teamLeaderId: null,
+    };
 
-    if (deptResponse.ok) {
-      userDepartments = await deptResponse.json();
-      populateDepartmentSelects();
-    }
+    this.weeklyNotes = '';
 
-    // Load teams
-    const teamResponse = await fetch('/api/teams', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (teamResponse.ok) {
-      userTeams = await teamResponse.json();
-      populateTeamSelects();
-    }
-  } catch (error) {
-    console.error('Error loading departments and teams:', error);
-  }
-}
-
-/**
- * Populate department select elements
- */
-function populateDepartmentSelects(): void {
-  const selects = document.querySelectorAll<HTMLSelectElement>('.department-select');
-
-  selects.forEach((select) => {
-    select.innerHTML = '<option value="">Alle Abteilungen</option>';
-
-    userDepartments.forEach((dept) => {
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
-      option.textContent = dept.name;
-      select.appendChild(option);
-    });
-  });
-}
-
-/**
- * Populate team select elements
- */
-function populateTeamSelects(): void {
-  const selects = document.querySelectorAll<HTMLSelectElement>('.team-select');
-
-  selects.forEach((select) => {
-    select.innerHTML = '<option value="">Alle Teams</option>';
-
-    userTeams.forEach((team) => {
-      const option = document.createElement('option');
-      option.value = team.id.toString();
-      option.textContent = team.name;
-      select.appendChild(option);
-    });
-  });
-}
-
-/**
- * Load overview data
- */
-async function loadOverviewData(): Promise<void> {
-  await Promise.all([loadShiftPlans(), loadMyAssignments(), loadExchangeRequests()]);
-}
-
-/**
- * Load shift plans
- */
-async function loadShiftPlans(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch('/api/shifts/plans', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      shiftPlans = await response.json();
-      displayShiftPlans();
-    }
-  } catch (error) {
-    console.error('Error loading shift plans:', error);
-  }
-}
-
-/**
- * Display shift plans
- */
-function displayShiftPlans(): void {
-  const container = document.getElementById('shiftPlansList') as HTMLElement;
-  if (!container) return;
-
-  if (shiftPlans.length === 0) {
-    container.innerHTML = '<p class="no-data">Keine Schichtpläne vorhanden</p>';
-    return;
+    this.init();
   }
 
-  container.innerHTML = shiftPlans
-    .map(
-      (plan) => `
-    <div class="shift-plan-card">
-      <h3>${escapeHtml(plan.name)}</h3>
-      <div class="plan-details">
-        <span class="date-range">
-          ${formatDate(plan.start_date)} - ${formatDate(plan.end_date)}
-        </span>
-        <span class="status status-${plan.status}">${getStatusText(plan.status)}</span>
-      </div>
-      <div class="plan-actions">
-        <button class="btn btn-primary" onclick="viewShiftPlan(${plan.id})">
-          <i class="fas fa-eye"></i> Ansehen
-        </button>
-        ${
-          isAdmin
-            ? `
-          <button class="btn btn-secondary" onclick="editShiftPlan(${plan.id})">
-            <i class="fas fa-edit"></i> Bearbeiten
-          </button>
-        `
-            : ''
+  async init(): Promise<void> {
+    console.info('[SHIFTS] Initializing Shift Planning System...');
+
+    try {
+      // Check user authentication and role
+      console.log('[SHIFTS DEBUG] Checking user role...');
+      await this.checkUserRole();
+      console.log('[SHIFTS DEBUG] User role:', this.userRole, 'Is admin:', this.isAdmin);
+
+      // Initialize event listeners
+      console.log('[SHIFTS DEBUG] Setting up event listeners...');
+      this.setupEventListeners();
+
+      // Load context data
+      console.log('[SHIFTS DEBUG] Loading context data...');
+      await this.loadContextData();
+
+      // Load initial data
+      console.log('[SHIFTS DEBUG] Loading employees...');
+      await this.loadEmployees();
+      console.log('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
+
+      console.log('[SHIFTS DEBUG] Loading current week data...');
+      await this.loadCurrentWeekData();
+
+      console.log('[SHIFTS DEBUG] Loading weekly notes...');
+      try {
+        await this.loadWeeklyNotes();
+      } catch (error) {
+        console.error('[SHIFTS ERROR] Failed to load weekly notes:', error);
+      }
+
+      // Update UI based on user role
+      console.log('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
+      this.updateUIForRole();
+
+      // Check if department is selected and toggle visibility
+      this.togglePlanningAreaVisibility();
+      
+      // For employees, load department info
+      if (!this.isAdmin && this.selectedContext.departmentId) {
+        await this.loadDepartments();
+      }
+      
+      // Load notes again after department is properly set
+      if (this.selectedContext.departmentId) {
+        console.log('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
+        await this.loadWeeklyNotes();
+      }
+
+      // Highlight employee's own shifts
+      this.highlightEmployeeShifts();
+
+      console.info('[SHIFTS] Shift Planning System initialized successfully');
+    } catch (error) {
+      console.error('[SHIFTS ERROR] Failed to initialize:', error);
+    }
+  }
+
+  async checkUserRole(): Promise<void> {
+    try {
+      const user = await this.getStoredUserData();
+      if (user) {
+        this.userRole = user.role || 'employee';
+        this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
+        this.currentUserId = user.id;
+
+        const userNameElement = document.getElementById('userName');
+        if (userNameElement) {
+          userNameElement.textContent = user.username || 'User';
         }
-      </div>
-    </div>
-  `,
-    )
-    .join('');
-}
 
-/**
- * Load my assignments
- */
-async function loadMyAssignments(): Promise<void> {
-  if (!currentUser) return;
+        // For employees, set their department as selected
+        if (!this.isAdmin && user.department_id) {
+          this.selectedContext.departmentId = user.department_id;
+          console.log('[SHIFTS DEBUG] Employee department auto-selected:', user.department_id);
+        }
 
-  const token = getAuthToken();
-  if (!token) return;
+        // Update info row with user's department/team info
+        const currentDeptElement = document.getElementById('currentDepartment');
+        if (currentDeptElement && user.department_id) {
+          currentDeptElement.textContent = `Department ${user.department_id}`;
+        }
 
-  try {
-    const response = await fetch('/api/shifts/my-assignments', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      const assignments: ShiftAssignment[] = await response.json();
-      displayMyAssignments(assignments);
-    }
-  } catch (error) {
-    console.error('Error loading assignments:', error);
-  }
-}
-
-/**
- * Display my assignments
- */
-function displayMyAssignments(assignments: ShiftAssignment[]): void {
-  const container = document.getElementById('myAssignmentsList') as HTMLElement;
-  if (!container) return;
-
-  if (assignments.length === 0) {
-    container.innerHTML = '<p class="no-data">Keine Schichtzuweisungen vorhanden</p>';
-    return;
-  }
-
-  container.innerHTML = assignments
-    .map(
-      (assignment) => `
-    <div class="assignment-card">
-      <div class="assignment-date">
-        <i class="fas fa-calendar"></i> ${formatDate(assignment.date)}
-      </div>
-      <div class="assignment-time">
-        <i class="fas fa-clock"></i> ${assignment.start_time} - ${assignment.end_time}
-      </div>
-      <div class="assignment-type">
-        <span class="shift-type shift-${assignment.shift_type}">${getShiftTypeText(assignment.shift_type)}</span>
-      </div>
-      ${
-        assignment.status === 'assigned'
-          ? `
-        <button class="btn btn-sm btn-success" onclick="confirmAssignment(${assignment.id})">
-          Bestätigen
-        </button>
-      `
-          : ''
+        const currentTeamLeaderElement = document.getElementById('currentTeamLeader');
+        if (currentTeamLeaderElement && user.position) {
+          currentTeamLeaderElement.textContent = user.username || '';
+        }
       }
-    </div>
-  `,
-    )
-    .join('');
-}
-
-/**
- * Load exchange requests
- */
-async function loadExchangeRequests(): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch('/api/shifts/exchange-requests', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      const requests: ExchangeRequest[] = await response.json();
-      displayExchangeRequests(requests);
+    } catch (error) {
+      console.error('Error checking user role:', error);
     }
-  } catch (error) {
-    console.error('Error loading exchange requests:', error);
-  }
-}
-
-/**
- * Display exchange requests
- */
-function displayExchangeRequests(requests: ExchangeRequest[]): void {
-  const container = document.getElementById('exchangeRequestsList') as HTMLElement;
-  if (!container) return;
-
-  if (requests.length === 0) {
-    container.innerHTML = '<p class="no-data">Keine Tauschanfragen vorhanden</p>';
-    return;
   }
 
-  container.innerHTML = requests
-    .map(
-      (request) => `
-    <div class="request-card">
-      <div class="request-info">
-        <p>Anfrage von Mitarbeiter ${request.requester_id}</p>
-        ${request.reason ? `<p class="request-reason">${escapeHtml(request.reason)}</p>` : ''}
-      </div>
-      <div class="request-status">
-        <span class="status status-${request.status}">${getRequestStatusText(request.status)}</span>
-      </div>
-      ${
-        request.status === 'pending' && request.target_id === currentUser?.id
-          ? `
-        <div class="request-actions">
-          <button class="btn btn-sm btn-success" onclick="approveRequest(${request.id})">
-            Annehmen
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="rejectRequest(${request.id})">
-            Ablehnen
-          </button>
-        </div>
-      `
-          : ''
-      }
-    </div>
-  `,
-    )
-    .join('');
-}
-
-/**
- * Show tab
- */
-function showTab(tabName: string): void {
-  // Update tab buttons
-  document.querySelectorAll('.tab-button').forEach((btn) => {
-    const buttonElement = btn as HTMLElement;
-    buttonElement.classList.toggle('active', buttonElement.dataset.tab === tabName);
-  });
-
-  // Update tab content
-  document.querySelectorAll('.tab-content').forEach((content) => {
-    const element = content as HTMLElement;
-    element.style.display = element.id === `${tabName}Tab` ? 'block' : 'none';
-  });
-
-  // Load tab-specific data
-  switch (tabName) {
-    case 'overview':
-      loadOverviewData();
-      break;
-    case 'planning':
-      if (isAdmin) loadPlanningData();
-      break;
-    case 'assignments':
-      loadAssignmentsData();
-      break;
-    case 'requests':
-      loadRequestsData();
-      break;
-    case 'reports':
-      if (isAdmin) loadReportsData();
-      break;
-  }
-}
-
-/**
- * Setup date filters
- */
-function setupDateFilters(): void {
-  const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-
-  // Set default dates for filters
-  const startDateInputs = document.querySelectorAll<HTMLInputElement>('input[type="date"][id*="Start"]');
-  const endDateInputs = document.querySelectorAll<HTMLInputElement>('input[type="date"][id*="End"]');
-
-  startDateInputs.forEach((input) => {
-    input.value = formatDateForInput(today);
-  });
-
-  endDateInputs.forEach((input) => {
-    input.value = formatDateForInput(nextMonth);
-  });
-}
-
-/**
- * Update UI based on user role
- */
-function updateUIForRole(): void {
-  const adminElements = document.querySelectorAll<HTMLElement>('.admin-only');
-  const employeeElements = document.querySelectorAll<HTMLElement>('.employee-only');
-
-  if (isAdmin) {
-    adminElements.forEach((el) => (el.style.display = 'block'));
-    employeeElements.forEach((el) => (el.style.display = 'none'));
-  } else {
-    adminElements.forEach((el) => (el.style.display = 'none'));
-    employeeElements.forEach((el) => (el.style.display = 'block'));
-  }
-}
-
-/**
- * Create shift plan
- */
-function createShiftPlan(): void {
-  openModal('shiftPlanModal');
-  // Implementation for creating shift plan
-}
-
-/**
- * Create shift template
- */
-function createShiftTemplate(): void {
-  openModal('templateModal');
-  // Implementation for creating shift template
-}
-
-/**
- * Create exchange request
- */
-function createExchangeRequest(): void {
-  openModal('exchangeModal');
-  // Implementation for creating exchange request
-}
-
-/**
- * Set availability
- */
-function setAvailability(): void {
-  openModal('availabilityModal');
-  // Implementation for setting availability
-}
-
-/**
- * Filter plans
- */
-function filterPlans(): void {
-  // Implementation for filtering plans
-}
-
-/**
- * Filter assignments
- */
-function filterAssignments(): void {
-  // Implementation for filtering assignments
-}
-
-/**
- * Logout
- */
-function logout(): void {
-  localStorage.removeItem('token');
-  window.location.href = '/pages/login.html';
-}
-
-// Placeholder functions for additional features
-async function loadPlanningData(): Promise<void> {
-  try {
+  private async getStoredUserData(): Promise<User | null> {
     const token = getAuthToken();
-    const response = await fetch('/api/shifts/plans', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    if (!token) return null;
 
-    if (!response.ok) {
-      throw new Error('Failed to load planning data');
+    try {
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
     }
 
-    const plans = await response.json();
-    const plansList = document.getElementById('plans-list');
+    return null;
+  }
 
-    if (!plansList) return;
+  setupEventListeners(): void {
+    console.log('[SHIFTS DEBUG] Setting up event listeners');
 
-    plansList.innerHTML = '';
+    // Week navigation
+    const prevBtn = document.getElementById('prevWeekBtn');
+    const nextBtn = document.getElementById('nextWeekBtn');
 
-    if (plans.length === 0) {
-      plansList.innerHTML = '<p class="no-data">Keine Schichtpläne vorhanden</p>';
+    console.log('[SHIFTS DEBUG] Previous week button:', prevBtn);
+    console.log('[SHIFTS DEBUG] Next week button:', nextBtn);
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        console.log('[SHIFTS DEBUG] Previous week button clicked');
+        this.navigateWeek(-1);
+      });
+    } else {
+      console.error('[SHIFTS ERROR] Previous week button not found!');
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        console.log('[SHIFTS DEBUG] Next week button clicked');
+        this.navigateWeek(1);
+      });
+    } else {
+      console.error('[SHIFTS ERROR] Next week button not found!');
+    }
+
+    // Employee selection (fallback for non-drag interaction)
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const employeeItem = target.closest('.employee-item') as HTMLElement;
+      if (employeeItem && !this.isDragging) {
+        this.selectEmployee(employeeItem);
+      }
+    });
+
+    // Shift cell assignment (fallback for non-drag interaction)
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+      if (shiftCell && this.isAdmin && !this.isDragging) {
+        this.assignEmployeeToShift(shiftCell);
+      } else if (shiftCell && !this.isAdmin && !this.isDragging) {
+        // Show shift details modal for employees
+        this.showShiftDetailsModal(shiftCell);
+      }
+    });
+
+    // Drag & Drop Events
+    this.setupDragAndDrop();
+
+    // Context selection events
+    this.setupContextEvents();
+
+    // Weekly notes functionality
+    this.setupNotesEvents();
+
+    // Admin actions
+    document.getElementById('saveScheduleBtn')?.addEventListener('click', () => this.saveSchedule());
+    document.getElementById('resetScheduleBtn')?.addEventListener('click', () => this.resetSchedule());
+
+    // Remove logout functionality - handled by unified navigation
+  }
+
+  setupDragAndDrop(): void {
+    console.log('[SHIFTS DEBUG] Setting up drag and drop. Is admin:', this.isAdmin);
+    if (!this.isAdmin) {
+      console.log('[SHIFTS DEBUG] User is not admin, drag & drop disabled');
       return;
     }
 
-    (plans as ShiftPlan[]).forEach((plan) => {
+    // Drag start on employee items
+    document.addEventListener('dragstart', (e) => {
+      const target = e.target as HTMLElement;
+      const employeeItem = target.closest('.employee-item') as HTMLElement;
+
+      if (employeeItem) {
+        console.log('[SHIFTS DEBUG] Drag start on employee:', employeeItem.dataset.employeeId);
+
+        // Check if employee is available for dragging
+        if (employeeItem.getAttribute('draggable') === 'false') {
+          console.log('[SHIFTS DEBUG] Employee not draggable, preventing drag');
+          e.preventDefault();
+          return;
+        }
+
+        this.isDragging = true;
+        employeeItem.classList.add('dragging');
+
+        const employeeId = employeeItem.dataset.employeeId;
+        if (employeeId && e.dataTransfer) {
+          console.log('[SHIFTS DEBUG] Setting drag data:', employeeId);
+          e.dataTransfer.effectAllowed = 'copy';
+          e.dataTransfer.setData('text/plain', employeeId);
+        }
+      }
+    });
+
+    // Drag end
+    document.addEventListener('dragend', (e) => {
+      const target = e.target as HTMLElement;
+      const employeeItem = target.closest('.employee-item') as HTMLElement;
+
+      if (employeeItem) {
+        this.isDragging = false;
+        employeeItem.classList.remove('dragging');
+      }
+    });
+
+    // Drag over shift cells
+    document.addEventListener('dragover', (e) => {
+      const target = e.target as HTMLElement;
+      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+
+      if (shiftCell) {
+        e.preventDefault();
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'copy';
+        }
+        shiftCell.classList.add('drag-over');
+      }
+    });
+
+    // Drag leave
+    document.addEventListener('dragleave', (e) => {
+      const target = e.target as HTMLElement;
+      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+
+      if (shiftCell) {
+        shiftCell.classList.remove('drag-over');
+      }
+    });
+
+    // Drop on shift cells
+    document.addEventListener('drop', (e) => {
+      const target = e.target as HTMLElement;
+      const shiftCell = target.closest('.shift-cell') as HTMLElement;
+
+      console.log('[SHIFTS DEBUG] Drop event on:', target);
+
+      if (shiftCell) {
+        e.preventDefault();
+        shiftCell.classList.remove('drag-over');
+
+        const employeeId = e.dataTransfer?.getData('text/plain');
+        console.log('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
+
+        if (employeeId) {
+          this.assignShift(shiftCell, parseInt(employeeId));
+        } else {
+          console.error('[SHIFTS ERROR] No employee ID in drop data');
+        }
+      }
+    });
+  }
+
+  setupContextEvents(): void {
+    // Department selection
+    const departmentSelect = document.getElementById('departmentSelect') as HTMLSelectElement;
+    departmentSelect?.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      this.selectedContext.departmentId = target.value ? parseInt(target.value) : null;
+      this.onContextChange();
+      this.togglePlanningAreaVisibility();
+    });
+
+    // Machine selection
+    const machineSelect = document.getElementById('machineSelect') as HTMLSelectElement;
+    machineSelect?.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      this.selectedContext.machineId = target.value ? parseInt(target.value) : null;
+    });
+  }
+
+  setupNotesEvents(): void {
+    const notesToggle = document.getElementById('notesToggle') as HTMLElement;
+    const notesPanel = document.getElementById('notesPanel') as HTMLElement;
+    const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+
+    notesToggle?.addEventListener('click', () => {
+      notesPanel?.classList.toggle('show');
+      if (notesPanel?.classList.contains('show')) {
+        notesTextarea?.focus();
+      }
+    });
+  }
+
+  async loadContextData(): Promise<void> {
+    await Promise.all([this.loadDepartments(), this.loadMachines()]);
+  }
+
+  async loadDepartments(): Promise<void> {
+    try {
+      const response = await fetch('/api/departments', {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.info('Departments API response:', data);
+        // API returns array directly
+        this.departments = Array.isArray(data) ? data : [];
+      } else {
+        throw new Error('Failed to load departments');
+      }
+    } catch (error) {
+      console.error('Error loading departments:', error);
+      // Fallback data
+      this.departments = [
+        { id: 1, name: 'Produktion' },
+        { id: 2, name: 'Logistik' },
+        { id: 3, name: 'Qualitätssicherung' },
+        { id: 4, name: 'Wartung' },
+      ];
+    }
+    this.populateDepartmentSelect();
+  }
+
+  async loadMachines(): Promise<void> {
+    try {
+      let url = '/api/machines';
+      if (this.selectedContext.departmentId) {
+        url += `?department_id=${this.selectedContext.departmentId}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this.machines = data.machines || [];
+      } else {
+        throw new Error('Failed to load machines');
+      }
+    } catch (error) {
+      console.error('Error loading machines:', error);
+      // Fallback data
+      this.machines = [
+        { id: 1, name: 'Anlage 01', department_id: 1 },
+        { id: 2, name: 'Anlage 02', department_id: 1 },
+        { id: 3, name: 'Förderband A', department_id: 2 },
+        { id: 4, name: 'Förderband B', department_id: 2 },
+        { id: 5, name: 'Prüfstand 01', department_id: 3 },
+      ];
+    }
+    this.populateMachineSelect();
+  }
+
+  async loadTeamLeaders(): Promise<void> {
+    // Skip loading team leaders for non-admins
+    // Team leaders are not used anymore
+    this.teamLeaders = [];
+    return;
+    
+    try {
+      const response = await fetch('/api/users', {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Filter for team leaders and admins
+        const users = Array.isArray(data) ? data : data.users || [];
+        this.teamLeaders = users
+          .filter((user: User) => ['admin', 'root', 'manager', 'team_lead'].includes(user.role))
+          .map((user: User) => ({
+            id: user.id,
+            name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username,
+            username: user.username,
+          }));
+      } else {
+        throw new Error('Failed to load team leaders');
+      }
+    } catch (error) {
+      console.error('Error loading team leaders:', error);
+      // Fallback data
+      this.teamLeaders = [];
+    }
+    this.populateTeamLeaderSelect();
+  }
+
+  populateDepartmentSelect(): void {
+    const dropdown = document.getElementById('departmentDropdown');
+    if (!dropdown) {
+      console.error('Department dropdown element not found');
+      return;
+    }
+
+    dropdown.innerHTML = '';
+
+    console.info('Populating departments:', this.departments);
+    this.departments.forEach((dept) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.textContent = dept.name;
+      option.onclick = () => {
+        (window as any).selectOption('department', dept.id.toString(), dept.name);
+      };
+      dropdown.appendChild(option);
+    });
+
+    console.info('Department dropdown populated with', this.departments.length, 'departments');
+  }
+
+  populateMachineSelect(): void {
+    const dropdown = document.getElementById('machineDropdown');
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '';
+
+    // Filter machines by selected department if any
+    let filteredMachines = this.machines;
+    if (this.selectedContext.departmentId) {
+      filteredMachines = this.machines.filter((machine) => machine.department_id === this.selectedContext.departmentId);
+    }
+
+    filteredMachines.forEach((machine) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.textContent = machine.name;
+      option.onclick = () => {
+        (window as any).selectOption('machine', machine.id.toString(), machine.name);
+      };
+      dropdown.appendChild(option);
+    });
+  }
+
+  populateTeamLeaderSelect(): void {
+    const dropdown = document.getElementById('teamLeaderDropdown');
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '';
+
+    this.teamLeaders.forEach((leader) => {
+      const option = document.createElement('div');
+      option.className = 'dropdown-option';
+      option.textContent = leader.name || leader.username;
+      option.onclick = () => {
+        (window as any).selectOption('teamLeader', leader.id.toString(), leader.name || leader.username);
+      };
+      dropdown.appendChild(option);
+    });
+  }
+
+  async onContextChange(): Promise<void> {
+    // Reload machines when department changes
+    if (this.selectedContext.departmentId) {
+      await this.loadMachines();
+    }
+
+    // Reload employees based on context
+    await this.loadEmployees();
+    
+    // Reload weekly notes for new department
+    await this.loadWeeklyNotes();
+  }
+
+  togglePlanningAreaVisibility(): void {
+    const departmentNotice = document.getElementById('departmentNotice');
+    const mainPlanningArea = document.getElementById('mainPlanningArea');
+    const adminActions = document.getElementById('adminActions');
+    const weekNavigation = document.querySelector('.week-navigation') as HTMLElement;
+
+    if (this.selectedContext.departmentId || !this.isAdmin) {
+      // Department selected (or employee with auto-selected dept) - show planning area
+      if (departmentNotice) departmentNotice.style.display = 'none';
+      if (mainPlanningArea) mainPlanningArea.style.display = '';
+      if (adminActions && this.isAdmin) adminActions.style.display = 'block';
+      if (weekNavigation) weekNavigation.style.display = 'flex';
+      
+      // Load data for the selected department
+      this.loadCurrentWeekData().then(() => {
+        // Load notes after shift data is loaded
+        if (this.selectedContext.departmentId) {
+          console.log('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
+          this.loadWeeklyNotes();
+        }
+      });
+    } else {
+      // No department selected (only for admins) - show notice
+      if (departmentNotice) departmentNotice.style.display = 'block';
+      if (mainPlanningArea) mainPlanningArea.style.display = 'none';
+      if (adminActions) adminActions.style.display = 'none';
+      if (weekNavigation) weekNavigation.style.display = 'none';
+    }
+  }
+
+  async loadEmployees(): Promise<void> {
+    // For non-admins, we need to load employees from their department only
+    if (!this.isAdmin && !this.selectedContext.departmentId) {
+      console.log('[SHIFTS DEBUG] No department selected for employee');
+      this.employees = [];
+      return;
+    }
+    
+    try {
+      // First load users
+      let url = '/api/users';
+      const params = new URLSearchParams();
+
+      if (this.selectedContext.departmentId) {
+        params.append('department_id', this.selectedContext.departmentId.toString());
+      }
+      if (this.selectedContext.teamLeaderId) {
+        params.append('team_leader_id', this.selectedContext.teamLeaderId.toString());
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const users = Array.isArray(data) ? data : data.users || [];
+        this.employees = users.filter((user: User) => user.role === 'employee');
+        
+        console.log('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
+        console.log('[SHIFTS DEBUG] Employee data:', this.employees);
+
+        // Now load current availability status
+        await this.loadAvailabilityStatus();
+
+        this.renderEmployeeList();
+      } else {
+        console.error('[SHIFTS ERROR] Failed to load employees, status:', response.status);
+        throw new Error('Failed to load employees');
+      }
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      // Fallback data
+      this.employees = [];
+      this.renderEmployeeList();
+    }
+  }
+
+  async loadAvailabilityStatus(): Promise<void> {
+    try {
+      const response = await fetch('/api/availability/current', {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const availabilityData = data.employees || [];
+
+        // Update employees with availability status
+        this.employees = this.employees.map((emp) => {
+          const availability = availabilityData.find((a: any) => a.employeeId === emp.id);
+          if (availability) {
+            emp.availability_status = availability.availabilityStatus || 'available';
+          }
+          return emp;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading availability status:', error);
+      // Continue without availability status
+    }
+  }
+
+  renderEmployeeList(): void {
+    // Don't render if no employees loaded
+    if (this.employees.length === 0) {
+      console.log('[SHIFTS DEBUG] No employees to render');
+      return;
+    }
+    
+    const container = document.getElementById('employeeList');
+    console.log('[SHIFTS DEBUG] Employee list container:', container);
+
+    if (!container) {
+      console.error('[SHIFTS ERROR] Employee list container not found!');
+      return;
+    }
+
+    container.innerHTML = '';
+    console.log('[SHIFTS DEBUG] Rendering employees:', this.employees.length);
+
+    this.employees.forEach((employee) => {
       const item = document.createElement('div');
-      item.className = 'plan-item';
+      item.className = 'employee-item';
+      item.dataset.employeeId = employee.id.toString();
+
+      // Only available employees can be dragged
+      const isDraggable =
+        this.isAdmin && (employee.availability_status === 'available' || !employee.availability_status);
+      item.setAttribute('draggable', isDraggable.toString());
+
+      console.log(
+        '[SHIFTS DEBUG] Employee:',
+        employee.username,
+        'Draggable:',
+        isDraggable,
+        'Status:',
+        employee.availability_status,
+      );
+
+      // Add visual indicators for unavailable employees
+      if (employee.availability_status && employee.availability_status !== 'available') {
+        item.classList.add('unavailable', `status-${employee.availability_status}`);
+      }
+
+      const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+      const statusIcon = this.getAvailabilityIcon(employee.availability_status);
+      const statusBadge = this.getAvailabilityBadge(employee.availability_status);
+
       item.innerHTML = `
-        <div class="plan-header">
-          <h3>${plan.name}</h3>
-          <span class="plan-status ${plan.status}">${plan.status}</span>
+        <div class="employee-info">
+          <span class="employee-name">${this.escapeHtml(name)}</span>
+          ${statusIcon}
+          ${statusBadge}
         </div>
-        <div class="plan-info">
-          <span>Zeitraum: ${new Date(plan.start_date).toLocaleDateString('de-DE')} - ${new Date(plan.end_date).toLocaleDateString('de-DE')}</span>
-          <span>Schichten: ${plan.shift_count || 0}</span>
-        </div>
-        <div class="plan-actions">
-          <button class="btn btn-sm btn-primary" onclick="viewShiftPlan(${plan.id})">Anzeigen</button>
-          <button class="btn btn-sm btn-secondary" onclick="editShiftPlan(${plan.id})">Bearbeiten</button>
+        <div class="employee-stats">
+          <span class="shift-count">0</span>
         </div>
       `;
-      plansList.appendChild(item);
+
+      container.appendChild(item);
     });
-  } catch (error) {
-    console.error('Error loading planning data:', error);
-    showError('Fehler beim Laden der Schichtpläne');
+
+    console.log('[SHIFTS DEBUG] Employee list rendered');
+    // Update shift counts
+    this.updateEmployeeShiftCounts();
   }
-}
 
-async function loadAssignmentsData(): Promise<void> {
-  try {
-    const token = getAuthToken();
-    const response = await fetch('/api/shifts/assignments', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  getAvailabilityIcon(status?: string): string {
+    switch (status) {
+      case 'vacation':
+        return '<i class="fas fa-plane status-icon vacation" title="Im Urlaub"></i>';
+      case 'sick':
+        return '<i class="fas fa-notes-medical status-icon sick" title="Krank"></i>';
+      case 'unavailable':
+        return '<i class="fas fa-ban status-icon unavailable" title="Nicht verfügbar"></i>';
+      default:
+        return '';
+    }
+  }
+
+  getAvailabilityBadge(status?: string): string {
+    switch (status) {
+      case 'available':
+        return '<span class="badge badge-success">Verfügbar</span>';
+      case 'vacation':
+        return '<span class="badge badge-warning">Urlaub</span>';
+      case 'sick':
+        return '<span class="badge badge-danger">Krank</span>';
+      case 'unavailable':
+        return '<span class="badge badge-secondary">Nicht verfügbar</span>';
+      default:
+        // Default to available if no status is set
+        return '<span class="badge badge-success">Verfügbar</span>';
+    }
+  }
+
+  updateEmployeeShiftCounts(): void {
+    // Reset all counts
+    document.querySelectorAll('.shift-count').forEach((el) => {
+      el.textContent = '0';
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to load assignments data');
+    // Count shifts for each employee
+    const shiftCounts: { [key: number]: number } = {};
+
+    Object.values(this.weeklyShifts).forEach((dayShifts) => {
+      Object.values(dayShifts).forEach((employeeIds) => {
+        employeeIds.forEach((employeeId) => {
+          shiftCounts[employeeId] = (shiftCounts[employeeId] || 0) + 1;
+        });
+      });
+    });
+
+    // Update UI
+    Object.entries(shiftCounts).forEach(([employeeId, count]) => {
+      const item = document.querySelector(`[data-employee-id="${employeeId}"] .shift-count`);
+      if (item) {
+        item.textContent = count.toString();
+      }
+    });
+  }
+
+  selectEmployee(employeeItem: HTMLElement): void {
+    if (!this.isAdmin) return;
+
+    // Remove previous selection
+    document.querySelectorAll('.employee-item').forEach((item) => {
+      item.classList.remove('selected');
+    });
+
+    // Add selection to clicked item
+    employeeItem.classList.add('selected');
+
+    const employeeId = parseInt(employeeItem.dataset.employeeId || '0');
+    this.selectedEmployee = this.employees.find((e) => e.id === employeeId) || null;
+  }
+
+  assignEmployeeToShift(shiftCell: HTMLElement): void {
+    if (!this.isAdmin || !this.selectedEmployee) return;
+
+    // Let assignShift handle the date calculation
+    this.assignShift(shiftCell, this.selectedEmployee.id);
+  }
+
+  assignShift(shiftCell: HTMLElement, employeeId: number): void {
+    let date = shiftCell.dataset.date;
+    const day = shiftCell.dataset.day;
+    const shift = shiftCell.dataset.shift;
+
+    // If no date but day exists, calculate date from current week
+    if (!date && day) {
+      const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
+      if (dayIndex !== -1) {
+        const weekStart = this.getWeekStart(this.currentWeek);
+        const cellDate = new Date(weekStart);
+        cellDate.setDate(cellDate.getDate() + dayIndex);
+        date = this.formatDateKey(cellDate);
+        // Also set the data-date attribute for future use
+        shiftCell.dataset.date = date;
+      }
     }
 
-    const assignments = await response.json();
-    const assignmentsList = document.getElementById('assignments-list');
+    console.log('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
 
-    if (!assignmentsList) return;
-
-    assignmentsList.innerHTML = '';
-
-    if (assignments.length === 0) {
-      assignmentsList.innerHTML = '<p class="no-data">Keine Schichtzuweisungen vorhanden</p>';
+    if (!date || !shift) {
+      console.error('[SHIFTS ERROR] Missing date or shift data on cell');
       return;
     }
 
-    (assignments as ShiftAssignment[]).forEach((assignment) => {
-      const item = document.createElement('div');
-      item.className = 'assignment-item';
-      const shiftDate = new Date(assignment.shift_date || assignment.date).toLocaleDateString('de-DE');
-      item.innerHTML = `
-        <div class="assignment-header">
-          <h4>${assignment.employee_name || (assignment.employee ? `${assignment.employee.first_name} ${assignment.employee.last_name}` : 'Unknown Employee')}</h4>
-          <span class="assignment-date">${shiftDate}</span>
-        </div>
-        <div class="assignment-info">
-          <span class="shift-time">${assignment.start_time} - ${assignment.end_time}</span>
-          <span class="shift-type">${assignment.shift_type}</span>
-        </div>
-        <div class="assignment-status ${assignment.status}">
+    const employee = this.employees.find((e) => e.id === employeeId);
+    if (!employee) {
+      console.error('[SHIFTS ERROR] Employee not found:', employeeId);
+      return;
+    }
+
+    console.log('[SHIFTS DEBUG] Found employee:', employee);
+
+    // Check if employee is available
+    if (employee.availability_status && employee.availability_status !== 'available') {
+      console.log('[SHIFTS DEBUG] Employee not available:', employee.availability_status);
+
+      // Get status text and badge color
+      const statusText =
+        {
+          vacation: 'Urlaub',
+          sick: 'Krank',
+          unavailable: 'Beurlaubt',
+        }[employee.availability_status] || employee.availability_status;
+
+      const statusBadgeClass =
+        {
+          vacation: 'badge-warning',
+          sick: 'badge-danger',
+          unavailable: 'badge-secondary',
+        }[employee.availability_status] || 'badge-secondary';
+
+      const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+
+      showError(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
+      return;
+    }
+
+    // Check if employee already has a shift on this day
+    const shiftsOnThisDay = this.weeklyShifts[date] || {};
+    const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+    
+    // Check all shifts on this day
+    for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
+      if (shiftType !== shift && employeeIds.includes(employeeId)) {
+        // Employee already has another shift on this day
+        const shiftNames: { [key: string]: string } = {
+          early: 'Frühschicht',
+          late: 'Spätschicht',
+          night: 'Nachtschicht',
+        };
+        
+        showError(`Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames[shiftType]} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`);
+        return;
+      }
+    }
+
+    // Initialize data structures if needed
+    if (!this.weeklyShifts[date]) {
+      this.weeklyShifts[date] = {};
+    }
+    if (!this.weeklyShifts[date][shift]) {
+      this.weeklyShifts[date][shift] = [];
+    }
+
+    // Check if employee is already assigned to this shift
+    if (this.weeklyShifts[date][shift].includes(employeeId)) {
+      // Remove assignment
+      this.weeklyShifts[date][shift] = this.weeklyShifts[date][shift].filter((id) => id !== employeeId);
+    } else {
+      // Add assignment
+      this.weeklyShifts[date][shift].push(employeeId);
+    }
+
+    // Update UI - pass the cell directly
+    this.renderShiftAssignments(shiftCell, date, shift);
+    this.updateEmployeeShiftCounts();
+  }
+
+  renderShiftAssignments(shiftCell: HTMLElement, date: string, shift: string): void {
+    if (!shiftCell) return;
+
+    // Find the employee-assignment div within the cell
+    const assignmentDiv = shiftCell.querySelector('.employee-assignment');
+    if (!assignmentDiv) {
+      console.error('[SHIFTS ERROR] No employee-assignment div found in cell');
+      return;
+    }
+
+    // Clear existing content
+    assignmentDiv.innerHTML = '';
+
+    const employeeIds = this.weeklyShifts[date]?.[shift] || [];
+
+    if (employeeIds.length === 0) {
+      // Show empty slot
+      assignmentDiv.innerHTML = '<div class="empty-slot">Mitarbeiter zuweisen</div>';
+    } else {
+      // Create employee cards for assigned employees
+      employeeIds.forEach((employeeId) => {
+        const employee = this.employees.find((e) => e.id === employeeId);
+        if (employee) {
+          const card = this.createEmployeeCard(employee);
+          assignmentDiv.appendChild(card);
+        }
+      });
+    }
+  }
+
+  async loadCurrentWeekData(): Promise<void> {
+    try {
+      const weekStart = this.getWeekStart(this.currentWeek);
+      const weekEnd = this.getWeekEnd(this.currentWeek);
+      
+      // Format dates for API
+      const startStr = this.formatDate(weekStart);
+      const endStr = this.formatDate(weekEnd);
+      
+      console.log('[SHIFTS DEBUG] Loading shifts for range:', startStr, 'to', endStr);
+
+      const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[SHIFTS DEBUG] API Response:', data);
+        console.log('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length || 0);
+        if (data.shifts && data.shifts.length > 0) {
+          console.log('[SHIFTS DEBUG] First shift:', data.shifts[0]);
+        }
+        this.processShiftData(data.shifts || []);
+        this.renderWeekView();
+      } else {
+        throw new Error('Failed to load shift data');
+      }
+    } catch (error) {
+      console.error('Error loading shift data:', error);
+      this.renderWeekView();
+    }
+  }
+
+  processShiftData(shifts: any[]): void {
+    this.weeklyShifts = {};
+    this.shiftDetails = {}; // Store full shift details including names
+    console.log('[SHIFTS DEBUG] Processing shifts:', shifts);
+
+    shifts.forEach((shift) => {
+      // Extract date part only (YYYY-MM-DD) from potentially full datetime string
+      const dateString = shift.date;
+      const date = dateString.split('T')[0]; // Get only YYYY-MM-DD part
+      let shiftType = shift.shift_type;
+      
+      // Skip custom shifts or convert them based on time
+      if (shiftType === 'custom') {
+        console.log('[SHIFTS DEBUG] Skipping custom shift type');
+        return; // Skip this shift for now
+      }
+      
+      console.log('[SHIFTS DEBUG] Processing shift:', { 
+        originalDate: dateString, 
+        extractedDate: date, 
+        shiftType, 
+        employee_id: shift.employee_id,
+        employee_name: `${shift.first_name} ${shift.last_name}`
+      });
+
+      if (!this.weeklyShifts[date]) {
+        this.weeklyShifts[date] = {};
+      }
+      if (!this.weeklyShifts[date][shiftType]) {
+        this.weeklyShifts[date][shiftType] = [];
+      }
+
+      this.weeklyShifts[date][shiftType].push(shift.employee_id);
+      
+      // Store the full shift details including names
+      if (!this.shiftDetails[`${date}_${shiftType}_${shift.employee_id}`]) {
+        this.shiftDetails[`${date}_${shiftType}_${shift.employee_id}`] = {
+          employee_id: shift.employee_id,
+          first_name: shift.first_name,
+          last_name: shift.last_name,
+          username: shift.username
+        };
+      }
+    });
+    
+    console.log('[SHIFTS DEBUG] Final weeklyShifts:', this.weeklyShifts);
+    console.log('[SHIFTS DEBUG] Shift details:', this.shiftDetails);
+  }
+
+  renderWeekView(): void {
+    const weekStart = this.getWeekStart(this.currentWeek);
+    
+    console.log('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
+
+    // Update week display
+    const currentWeekElement = document.getElementById('currentWeekInfo');
+    if (currentWeekElement) {
+      currentWeekElement.textContent = this.formatWeekRange(weekStart);
+    } else {
+      console.warn('[SHIFTS WARN] currentWeekInfo element not found');
+    }
+
+    // Update shift assignments in existing cells
+    this.updateShiftCells(weekStart);
+    return;
+
+    // OLD CODE BELOW - keeping for reference but not executing
+
+    // Create header row
+    const headerRow = document.createElement('div');
+    headerRow.className = 'week-header';
+    headerRow.innerHTML = '<div class="time-header">Schicht</div>';
+
+    // Add day headers
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + i);
+      const dayHeader = document.createElement('div');
+      dayHeader.className = 'day-header';
+      dayHeader.innerHTML = `
+        <div class="day-name">${this.getDayName(date)}</div>
+        <div class="day-date">${date.getDate()}.${date.getMonth() + 1}.</div>
+      `;
+      headerRow.appendChild(dayHeader);
+    }
+
+    weekContainer.appendChild(headerRow);
+
+    // Create shift rows
+    const shifts = [
+      { key: 'early', name: 'Frühschicht', time: '06:00 - 14:00' },
+      { key: 'late', name: 'Spätschicht', time: '14:00 - 22:00' },
+      { key: 'night', name: 'Nachtschicht', time: '22:00 - 06:00' },
+    ];
+
+    shifts.forEach((shift) => {
+      const shiftRow = document.createElement('div');
+      shiftRow.className = 'shift-row';
+
+      // Shift info
+      const shiftInfo = document.createElement('div');
+      shiftInfo.className = 'shift-info';
+      shiftInfo.innerHTML = `
+        <div class="shift-name">${shift.name}</div>
+        <div class="shift-time">${shift.time}</div>
+      `;
+      shiftRow.appendChild(shiftInfo);
+
+      // Shift cells for each day
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + i);
+        const dateStr = this.formatDate(date);
+
+        const shiftCell = document.createElement('div');
+        shiftCell.className = 'shift-cell';
+        shiftCell.dataset.date = dateStr;
+        shiftCell.dataset.shift = shift.key;
+
+        // Render existing assignments
+        this.renderShiftAssignments(dateStr, shift.key);
+
+        shiftRow.appendChild(shiftCell);
+      }
+
+      weekContainer.appendChild(shiftRow);
+    });
+
+    // Render all assignments
+    Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
+      Object.entries(shifts).forEach(([shiftType, _employeeIds]) => {
+        this.renderShiftAssignments(date, shiftType);
+      });
+    });
+  }
+
+  navigateWeek(direction: number): void {
+    console.log('[SHIFTS DEBUG] Navigating week. Direction:', direction);
+    console.log('[SHIFTS DEBUG] Current week before:', this.currentWeek);
+
+    const newDate = new Date(this.currentWeek);
+    newDate.setDate(newDate.getDate() + direction * 7);
+    this.currentWeek = newDate;
+
+    console.log('[SHIFTS DEBUG] New week after:', this.currentWeek);
+
+    // Load both shift data and notes for the new week
+    Promise.all([
+      this.loadCurrentWeekData(),
+      this.loadWeeklyNotes()
+    ])
+      .then(() => {
+        console.log('[SHIFTS DEBUG] Week data and notes loaded successfully');
+      })
+      .catch((error) => {
+        console.error('[SHIFTS ERROR] Failed to load week data:', error);
+      });
+  }
+
+  getWeekStart(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+    return new Date(d.setDate(diff));
+  }
+
+  getWeekEnd(date: Date): Date {
+    const weekStart = this.getWeekStart(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    return weekEnd;
+  }
+
+  formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatWeekRange(weekStart: Date): string {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const options: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'short',
+    };
+    const startStr = weekStart.toLocaleDateString('de-DE', options);
+    const endStr = weekEnd.toLocaleDateString('de-DE', options);
+
+    return `${startStr} - ${endStr} ${weekEnd.getFullYear()}`;
+  }
+
+  updateShiftCells(weekStart: Date): void {
+    console.log('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
+    
+    // Update day headers with dates
+    const dayHeaders = document.querySelectorAll('.day-header');
+    dayHeaders.forEach((header, index) => {
+      // Skip the first header which is "Schicht"
+      if (index === 0) return;
+      
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + (index - 1));
+      
+      const dateSpan = header.querySelector('span');
+      if (dateSpan) {
+        dateSpan.textContent = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      }
+    });
+    
+    // Update shift cells with assignments
+    const shiftTypes = ['early', 'late', 'night'];
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    
+    shiftTypes.forEach(shiftType => {
+      days.forEach((day, dayIndex) => {
+        const cell = document.querySelector(`.shift-cell[data-day="${day}"][data-shift="${shiftType}"]`);
+        if (!cell) {
+          console.warn(`[SHIFTS WARN] Cell not found for ${day} ${shiftType}`);
+          return;
+        }
+        
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + dayIndex);
+        const dateKey = this.formatDateKey(date);
+        
+        // Clear existing assignments
+        const assignmentDiv = cell.querySelector('.employee-assignment');
+        if (assignmentDiv) {
+          assignmentDiv.innerHTML = '';
+          
+          // Get assignments for this shift
+          const assignments = this.weeklyShifts[dateKey]?.[shiftType] || [];
+          
+          console.log('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
+          
+          if (assignments.length > 0) {
+            // Add employee cards
+            assignments.forEach(employeeId => {
+              // First try to find in loaded employees (for admins)
+              const employee = this.employees.find(e => e.id === employeeId);
+              
+              // If not found, try shift details (for employees who can't load all users)
+              const shiftDetailKey = `${dateKey}_${shiftType}_${employeeId}`;
+              const shiftDetail = this.shiftDetails[shiftDetailKey];
+              
+              console.log('[SHIFTS DEBUG] Looking for employee:', employeeId, 'Found in employees:', !!employee, 'Found in shiftDetails:', !!shiftDetail);
+              
+              if (employee) {
+                const employeeCard = this.createEmployeeCard(employee);
+                assignmentDiv.appendChild(employeeCard);
+              } else if (shiftDetail) {
+                // Create a temporary employee object from shift details
+                const tempEmployee: any = {
+                  id: shiftDetail.employee_id,
+                  first_name: shiftDetail.first_name,
+                  last_name: shiftDetail.last_name,
+                  username: shiftDetail.username,
+                  position: 'Mitarbeiter'
+                };
+                const employeeCard = this.createEmployeeCard(tempEmployee);
+                assignmentDiv.appendChild(employeeCard);
+              } else {
+                console.error('[SHIFTS ERROR] Employee not found:', employeeId);
+                // Show at least the ID if employee data not found
+                const tempCard = document.createElement('div');
+                tempCard.className = 'employee-card';
+                tempCard.innerHTML = `<div class="employee-name">Mitarbeiter #${employeeId}</div>`;
+                assignmentDiv.appendChild(tempCard);
+              }
+            });
+          } else {
+            // Show empty slot - different text for employees vs admins
+            if (this.isAdmin) {
+              assignmentDiv.innerHTML = '<div class="empty-slot">Mitarbeiter zuweisen</div>';
+            } else {
+              assignmentDiv.innerHTML = '<div class="empty-slot">-</div>';
+            }
+          }
+        }
+      });
+    });
+  }
+
+  createEmployeeCard(employee: Employee): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'employee-card';
+    card.dataset.employeeId = employee.id.toString();
+    
+    const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+    
+    card.innerHTML = `
+      <div class="employee-name">${this.escapeHtml(name)}</div>
+      <div class="employee-position">${employee.position || 'Mitarbeiter'}</div>
+    `;
+
+    // Add remove button for admins
+    if (this.isAdmin) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        const cell = card.closest('.shift-cell') as HTMLElement;
+        if (cell) {
+          this.assignShift(cell, employee.id);
+        }
+      };
+      card.appendChild(removeBtn);
+    }
+    
+    return card;
+  }
+
+  getDayName(date: Date): string {
+    return date.toLocaleDateString('de-DE', { weekday: 'short' });
+  }
+
+  formatDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  async saveSchedule(): Promise<void> {
+    if (!this.isAdmin) return;
+
+    // Validate department selection
+    if (!this.selectedContext.departmentId) {
+      showError('Bitte wählen Sie zuerst eine Abteilung aus');
+      return;
+    }
+
+    try {
+      const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
+      const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
+
+      // Get notes from textarea
+      const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+      const notes = notesTextarea?.value || '';
+
+      // Prepare shift assignments
+      const assignments: Array<{
+        employee_id: number;
+        shift_date: string;
+        shift_type: string;
+        week_start: string;
+        week_end: string;
+        department_id?: number;
+        machine_id?: number;
+        team_leader_id?: number;
+      }> = [];
+
+      Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
+        Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
+          employeeIds.forEach((employeeId) => {
+            assignments.push({
+              employee_id: employeeId,
+              shift_date: date,
+              shift_type: shiftType,
+              week_start: weekStart,
+              week_end: weekEnd,
+              department_id: this.selectedContext.departmentId || undefined,
+              machine_id: this.selectedContext.machineId || undefined,
+            });
+          });
+        });
+      });
+
+      const response = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({
+          week_start: weekStart,
+          week_end: weekEnd,
+          assignments,
+          notes: notes,
+        }),
+      });
+
+      if (response.ok) {
+        showSuccess('Schichtplan erfolgreich gespeichert!');
+        await this.loadCurrentWeekData();
+      } else {
+        const error = await response.json();
+        showError(error.message || 'Fehler beim Speichern des Schichtplans');
+      }
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+    }
+  }
+
+  resetSchedule(): void {
+    if (!this.isAdmin) return;
+
+    if (!confirm('Möchten Sie den aktuellen Schichtplan wirklich zurücksetzen?')) {
+      return;
+    }
+
+    this.weeklyShifts = {};
+    this.renderWeekView();
+    this.updateEmployeeShiftCounts();
+    showInfo('Schichtplan wurde zurückgesetzt');
+  }
+
+  async loadWeeklyNotes(): Promise<void> {
+    try {
+      const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
+      console.log('[SHIFTS DEBUG] Loading notes for week:', weekStart);
+      console.log('[SHIFTS DEBUG] Current week:', this.currentWeek);
+      console.log('[SHIFTS DEBUG] Week start date:', this.getWeekStart(this.currentWeek));
+      console.log('[SHIFTS DEBUG] Selected department ID:', this.selectedContext.departmentId);
+
+      let url = `/api/shifts/notes?week=${weekStart}`;
+      if (this.selectedContext.departmentId) {
+        url += `&department_id=${this.selectedContext.departmentId}`;
+      }
+      console.log('[SHIFTS DEBUG] Notes API URL:', url);
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+
+      console.log('[SHIFTS DEBUG] Notes API response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[SHIFTS DEBUG] Notes API response data:', data);
+        console.log('[SHIFTS DEBUG] Type of notes:', typeof data.notes);
+        console.log('[SHIFTS DEBUG] Notes value:', data.notes);
+        
+        // Make sure we're getting a string, not an object
+        if (typeof data.notes === 'object' && data.notes !== null) {
+          console.error('[SHIFTS ERROR] Notes is an object, not a string:', data.notes);
+          this.weeklyNotes = '';
+        } else {
+          this.weeklyNotes = data.notes || '';
+        }
+
+        const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+        if (notesTextarea) {
+          // If notes are empty, show placeholder by clearing value
+          notesTextarea.value = this.weeklyNotes;
+          console.log('[SHIFTS DEBUG] Set textarea value to:', this.weeklyNotes);
+        }
+      } else {
+        console.log('[SHIFTS DEBUG] Notes API error response');
+        // If error, clear the notes
+        const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+        if (notesTextarea) {
+          notesTextarea.value = '';
+        }
+        this.weeklyNotes = '';
+      }
+    } catch (error) {
+      console.error('[SHIFTS ERROR] Error loading weekly notes:', error);
+      // Clear notes on error
+      const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+      if (notesTextarea) {
+        notesTextarea.value = '';
+      }
+      this.weeklyNotes = '';
+    }
+  }
+
+  async saveWeeklyNotes(): Promise<void> {
+    if (!this.isAdmin) return;
+
+    try {
+      const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+      if (!notesTextarea) return;
+      
+      const newNotes = notesTextarea.value || '';
+      
+      // Only save if notes have actually changed
+      if (newNotes === this.weeklyNotes) {
+        return;
+      }
+      
+      this.weeklyNotes = newNotes;
+
+      const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
+
+      const response = await fetch('/api/shifts/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({
+          week: weekStart,
+          notes: this.weeklyNotes,
+          department_id: this.selectedContext.departmentId,
+        }),
+      });
+
+      if (response.ok) {
+        showSuccess('Notizen gespeichert');
+      } else {
+        showError('Fehler beim Speichern der Notizen');
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      showError('Ein Fehler ist aufgetreten');
+    }
+  }
+
+  updateUIForRole(): void {
+    const adminControls = document.querySelectorAll('.admin-controls');
+    const employeeInfo = document.querySelectorAll('.employee-info-section');
+    const adminActions = document.getElementById('adminActions');
+    const employeeSidebar = document.querySelector('.employee-sidebar');
+    const mainPlanningArea = document.querySelector('.main-planning-area');
+    const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
+    const infoRow = document.querySelector('.shift-info-row');
+
+    if (this.isAdmin) {
+      // Admin view - show everything (but respect department selection)
+      adminControls.forEach((el) => el.classList.remove('hidden'));
+      employeeInfo.forEach((el) => el.classList.add('hidden'));
+      // adminActions visibility is controlled by togglePlanningAreaVisibility
+      if (employeeSidebar) employeeSidebar.style.display = 'block';
+      if (notesTextarea) notesTextarea.removeAttribute('readonly');
+    } else {
+      // Employee view - hide admin controls and sidebar
+      adminControls.forEach((el) => el.classList.add('hidden'));
+      employeeInfo.forEach((el) => el.classList.remove('hidden'));
+      if (adminActions) adminActions.style.display = 'none';
+      if (employeeSidebar) employeeSidebar.style.display = 'none';
+      
+      // Hide the info row (department, machine, team leader dropdowns) for employees
+      if (infoRow) {
+        (infoRow as HTMLElement).style.display = 'none';
+      }
+      
+      // Make the main planning area full width when sidebar is hidden
+      if (mainPlanningArea) {
+        mainPlanningArea.classList.add('full-width');
+      }
+      
+      // Make notes textarea readonly for employees
+      if (notesTextarea) {
+        notesTextarea.setAttribute('readonly', 'readonly');
+        notesTextarea.parentElement?.classList.add('readonly');
+      }
+    }
+
+    // Update instructions
+    const instructions = document.getElementById('instructions');
+    if (instructions) {
+      if (this.isAdmin) {
+        instructions.innerHTML = `
+          <p>Ziehen Sie Mitarbeiter auf die gewünschten Schichten oder klicken Sie erst auf einen Mitarbeiter und dann auf eine Schicht.</p>
+        `;
+      } else {
+        instructions.innerHTML = `
+          <p>Hier sehen Sie Ihren aktuellen Schichtplan. Ihre Schichten sind hervorgehoben.</p>
+        `;
+      }
+    }
+  }
+
+  highlightEmployeeShifts(): void {
+    if (this.isAdmin || !this.currentUserId) return;
+
+    // Remove existing highlights
+    document.querySelectorAll('.employee-shift').forEach((el) => {
+      el.classList.remove('employee-shift');
+    });
+
+    // Highlight current employee's shifts
+    Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
+      Object.entries(shifts).forEach(([shiftType, employeeIds]) => {
+        if (this.currentUserId !== null && employeeIds.includes(this.currentUserId)) {
+          const shiftCell = document.querySelector(`[data-date="${date}"][data-shift="${shiftType}"]`);
+          shiftCell?.classList.add('employee-shift');
+        }
+      });
+    });
+  }
+
+  private escapeHtml(text: string): string {
+    const map: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  }
+
+  private showShiftDetailsModal(shiftCell: HTMLElement): void {
+    const date = shiftCell.dataset.date;
+    const shift = shiftCell.dataset.shift;
+
+    if (!date || !shift) return;
+
+    // Find shift details
+    const shiftDate = new Date(date);
+    const dayName = shiftDate.toLocaleDateString('de-DE', { weekday: 'long' });
+    const dateStr = shiftDate.toLocaleDateString('de-DE');
+
+    // Get shift time based on type
+    const shiftTimes: { [key: string]: string } = {
+      early: '06:00 - 14:00',
+      late: '14:00 - 22:00',
+      night: '22:00 - 06:00',
+    };
+
+    const shiftNames: { [key: string]: string } = {
+      early: 'Frühschicht',
+      late: 'Spätschicht',
+      night: 'Nachtschicht',
+    };
+
+    // Get assigned employees for this shift
+    const employeeIds = this.weeklyShifts[date]?.[shift] || [];
+    const assignedEmployees = employeeIds
+      .map((id) => {
+        const employee = this.employees.find((e) => e.id === id);
+        if (employee) {
+          const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+          return this.escapeHtml(name);
+        }
+        return '';
+      })
+      .filter((name) => name)
+      .join(', ');
+
+    const modalContent = `
+      <div class="shift-detail-modal">
+        <h3>${shiftNames[shift]} - ${dayName}</h3>
+        <div class="shift-detail-info">
+          <div class="detail-row">
+            <span class="detail-label">Datum:</span>
+            <span class="detail-value">${dateStr}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Zeit:</span>
+            <span class="detail-value">${shiftTimes[shift]}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Zugewiesene Mitarbeiter:</span>
+            <span class="detail-value">${assignedEmployees || 'Keine Mitarbeiter zugewiesen'}</span>
+          </div>
           ${
-            assignment.status === 'confirmed'
-              ? 'Bestätigt'
-              : assignment.status === 'pending'
-                ? 'Ausstehend'
-                : 'Abgelehnt'
+            this.selectedContext.departmentId
+              ? `
+          <div class="detail-row">
+            <span class="detail-label">Abteilung:</span>
+            <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name || '-'}</span>
+          </div>`
+              : ''
+          }
+          ${
+            this.selectedContext.machineId
+              ? `
+          <div class="detail-row">
+            <span class="detail-label">Maschine:</span>
+            <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name || '-'}</span>
+          </div>`
+              : ''
           }
         </div>
-      `;
-      assignmentsList.appendChild(item);
-    });
-  } catch (error) {
-    console.error('Error loading assignments data:', error);
-    showError('Fehler beim Laden der Schichtzuweisungen');
-  }
-}
-
-async function loadRequestsData(): Promise<void> {
-  try {
-    const token = getAuthToken();
-    const response = await fetch('/api/shifts/requests', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to load requests data');
-    }
-
-    const requests = await response.json();
-    const requestsList = document.getElementById('requests-list');
-
-    if (!requestsList) return;
-
-    requestsList.innerHTML = '';
-
-    if (requests.length === 0) {
-      requestsList.innerHTML = '<p class="no-data">Keine Schichtanfragen vorhanden</p>';
-      return;
-    }
-
-    (requests as ExchangeRequest[]).forEach((request) => {
-      const item = document.createElement('div');
-      item.className = 'request-item';
-      const requestDate = new Date(request.created_at).toLocaleDateString('de-DE');
-      item.innerHTML = `
-        <div class="request-header">
-          <h4>${request.employee_name || 'Unknown Employee'}</h4>
-          <span class="request-type ${request.type || 'exchange'}">${
-            request.type === 'swap' ? 'Tausch' : request.type === 'cancel' ? 'Stornierung' : 'Änderung'
-          }</span>
-        </div>
-        <div class="request-info">
-          <p><strong>Schicht:</strong> ${request.shift_date ? new Date(request.shift_date).toLocaleDateString('de-DE') : 'N/A'} | ${request.shift_time || 'N/A'}</p>
-          <p><strong>Grund:</strong> ${request.reason}</p>
-        </div>
-        <div class="request-actions">
-          <button class="btn btn-sm btn-success" onclick="approveRequest(${request.id})">Genehmigen</button>
-          <button class="btn btn-sm btn-danger" onclick="rejectRequest(${request.id})">Ablehnen</button>
-        </div>
-        <div class="request-date">
-          Angefragt am: ${requestDate}
-        </div>
-      `;
-      requestsList.appendChild(item);
-    });
-  } catch (error) {
-    console.error('Error loading requests data:', error);
-    showError('Fehler beim Laden der Schichtanfragen');
-  }
-}
-
-async function loadReportsData(): Promise<void> {
-  try {
-    const token = getAuthToken();
-    const response = await fetch('/api/shifts/reports', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to load reports data');
-    }
-
-    const reports = await response.json();
-    const reportsContainer = document.getElementById('reports-container');
-
-    if (!reportsContainer) return;
-
-    reportsContainer.innerHTML = '';
-
-    // Summary statistics
-    const summarySection = document.createElement('div');
-    summarySection.className = 'reports-summary';
-    summarySection.innerHTML = `
-      <h3>Zusammenfassung</h3>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value">${reports.totalShifts || 0}</div>
-          <div class="stat-label">Gesamte Schichten</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${reports.totalHours || 0}h</div>
-          <div class="stat-label">Arbeitsstunden</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${reports.coverageRate || 0}%</div>
-          <div class="stat-label">Abdeckungsrate</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${reports.overtimeHours || 0}h</div>
-          <div class="stat-label">Überstunden</div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="window.modalManager.closeModal()">Schließen</button>
         </div>
       </div>
     `;
-    reportsContainer.appendChild(summarySection);
 
-    // Recent reports list
-    if (reports.recentReports && reports.recentReports.length > 0) {
-      const reportsSection = document.createElement('div');
-      reportsSection.className = 'reports-list';
-      reportsSection.innerHTML = '<h3>Letzte Berichte</h3>';
-
-      reports.recentReports.forEach((report: ShiftReport) => {
-        const reportItem = document.createElement('div');
-        reportItem.className = 'report-item';
-        const reportDate = new Date(report.created_at).toLocaleDateString('de-DE');
-        reportItem.innerHTML = `
-          <div class="report-header">
-            <h4>${report.title || 'Shift Report'}</h4>
-            <span class="report-date">${reportDate}</span>
-          </div>
-          <p class="report-period">Zeitraum: ${report.start_date ? new Date(report.start_date).toLocaleDateString('de-DE') : 'N/A'} - ${report.end_date ? new Date(report.end_date).toLocaleDateString('de-DE') : 'N/A'}</p>
-          <div class="report-actions">
-            <button class="btn btn-sm btn-primary" onclick="downloadReport(${report.id})">
-              <i class="fas fa-download"></i> Download
-            </button>
-            <button class="btn btn-sm btn-secondary" onclick="viewReport(${report.id})">
-              <i class="fas fa-eye"></i> Anzeigen
-            </button>
-          </div>
-        `;
-        reportsSection.appendChild(reportItem);
-      });
-
-      reportsContainer.appendChild(reportsSection);
-    }
-  } catch (error) {
-    console.error('Error loading reports data:', error);
-    showError('Fehler beim Laden der Berichte');
-  }
-}
-
-/**
- * View shift plan
- */
-function viewShiftPlan(planId: number): void {
-  // Implementation
-  console.info('View shift plan:', planId);
-}
-
-/**
- * Edit shift plan
- */
-function editShiftPlan(planId: number): void {
-  // Implementation
-  console.info('Edit shift plan:', planId);
-}
-
-/**
- * Confirm assignment
- */
-async function confirmAssignment(assignmentId: number): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch(`/api/shifts/assignments/${assignmentId}/confirm`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    openModal(modalContent, {
+      title: 'Schichtdetails',
+      size: 'medium',
     });
-
-    if (response.ok) {
-      showSuccess('Schichtzuweisung bestätigt');
-      loadMyAssignments();
-    } else {
-      showError('Fehler beim Bestätigen der Schichtzuweisung');
-    }
-  } catch (error) {
-    console.error('Error confirming assignment:', error);
-    showError('Ein Fehler ist aufgetreten');
   }
 }
 
-/**
- * Approve exchange request
- */
-async function approveRequest(requestId: number): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
+// Initialize the system when the page loads
+// let shiftPlanningSystem: ShiftPlanningSystem;
 
-  try {
-    const response = await fetch(`/api/shifts/exchange-requests/${requestId}/approve`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+document.addEventListener('DOMContentLoaded', () => {
+  new ShiftPlanningSystem();
+});
 
-    if (response.ok) {
-      showSuccess('Tauschanfrage angenommen');
-      loadExchangeRequests();
-    } else {
-      showError('Fehler beim Annehmen der Tauschanfrage');
-    }
-  } catch (error) {
-    console.error('Error approving request:', error);
-    showError('Ein Fehler ist aufgetreten');
-  }
-}
-
-/**
- * Reject exchange request
- */
-async function rejectRequest(requestId: number): Promise<void> {
-  const token = getAuthToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch(`/api/shifts/exchange-requests/${requestId}/reject`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      showSuccess('Tauschanfrage abgelehnt');
-      loadExchangeRequests();
-    } else {
-      showError('Fehler beim Ablehnen der Tauschanfrage');
-    }
-  } catch (error) {
-    console.error('Error rejecting request:', error);
-    showError('Ein Fehler ist aufgetreten');
-  }
-}
-
-// Utility functions
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('de-DE');
-}
-
-function formatDateForInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function getStatusText(status: string): string {
-  const statusMap: { [key: string]: string } = {
-    draft: 'Entwurf',
-    published: 'Veröffentlicht',
-    archived: 'Archiviert',
-  };
-  return statusMap[status] || status;
-}
-
-function getShiftTypeText(type: string): string {
-  const typeMap: { [key: string]: string } = {
-    early: 'Frühschicht',
-    late: 'Spätschicht',
-    night: 'Nachtschicht',
-  };
-  return typeMap[type] || type;
-}
-
-function getRequestStatusText(status: string): string {
-  const statusMap: { [key: string]: string } = {
-    pending: 'Ausstehend',
-    approved: 'Genehmigt',
-    rejected: 'Abgelehnt',
-  };
-  return statusMap[status] || status;
-}
-
-function escapeHtml(text: string): string {
-  const map: { [key: string]: string } = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
-}
-
-// Extend window for shift functions
-declare global {
-  interface Window {
-    viewShiftPlan: typeof viewShiftPlan;
-    editShiftPlan: typeof editShiftPlan;
-    confirmAssignment: typeof confirmAssignment;
-    approveRequest: typeof approveRequest;
-    rejectRequest: typeof rejectRequest;
-  }
-}
-
-// Export functions to window for backwards compatibility
+// Export to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  window.viewShiftPlan = viewShiftPlan;
-  window.editShiftPlan = editShiftPlan;
-  window.confirmAssignment = confirmAssignment;
-  window.approveRequest = approveRequest;
-  window.rejectRequest = rejectRequest;
+  interface WindowWithShiftPlanning extends Window {
+    ShiftPlanningSystem: typeof ShiftPlanningSystem;
+  }
+  (window as unknown as WindowWithShiftPlanning).ShiftPlanningSystem = ShiftPlanningSystem;
 }

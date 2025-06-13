@@ -3,11 +3,11 @@
  * Handles all operations related to the company calendar system
  */
 
-import express, { Router, Request, Response, NextFunction } from "express";
-import { authenticateToken } from "../middleware/auth";
+import express, { Router, Request, Response, NextFunction } from 'express';
+import { authenticateToken } from '../middleware/auth';
 
 // Import calendar model (keeping require pattern for compatibility)
-import calendarModel from "../models/calendar";
+import calendarModel from '../models/calendar';
 
 const router: Router = express.Router();
 
@@ -27,7 +27,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Helper function to get tenant ID from user object
-function getTenantId(user: AuthenticatedRequest["user"]): number {
+function getTenantId(user: AuthenticatedRequest['user']): number {
   return user.tenant_id || user.tenantId || 1;
 }
 
@@ -35,7 +35,7 @@ function getTenantId(user: AuthenticatedRequest["user"]): number {
 async function canManageEvent(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> {
   try {
     const eventId = req.params.id;
@@ -52,12 +52,12 @@ async function canManageEvent(
     const canManage = await calendarModel.canManageEvent(
       parseInt(eventId, 10),
       req.user.id,
-      userInfo,
+      userInfo
     );
 
     if (!canManage) {
       res.status(403).json({
-        message: "You do not have permission to manage this event",
+        message: 'You do not have permission to manage this event',
       });
       return;
     }
@@ -66,11 +66,11 @@ async function canManageEvent(
     const event = await calendarModel.getEventById(
       parseInt(eventId, 10),
       tenantId,
-      req.user.id,
+      req.user.id
     );
 
     if (!event) {
-      res.status(404).json({ message: "Event not found" });
+      res.status(404).json({ message: 'Event not found' });
       return;
     }
 
@@ -78,8 +78,8 @@ async function canManageEvent(
     req.event = event;
     next();
   } catch (error: any) {
-    console.error("Error in canManageEvent middleware:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error in canManageEvent middleware:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 }
 
@@ -87,35 +87,35 @@ async function canManageEvent(
  * @route GET /api/calendar
  * @desc Get all calendar events visible to the user
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const tenantId = getTenantId(req.user);
 
     const options = {
-      status: req.query.status ? String(req.query.status) : "active",
-      filter: req.query.filter ? String(req.query.filter) : "all",
-      search: req.query.search ? String(req.query.search) : "",
+      status: req.query.status ? String(req.query.status) : 'active',
+      filter: req.query.filter ? String(req.query.filter) : 'all',
+      search: req.query.search ? String(req.query.search) : '',
       start_date: (req.query.start || req.query.start_date) as
         | string
         | undefined,
       end_date: (req.query.end || req.query.end_date) as string | undefined,
-      page: parseInt(req.query.page ? String(req.query.page) : "1", 10),
-      limit: parseInt(req.query.limit ? String(req.query.limit) : "50", 10),
-      sortBy: req.query.sortBy ? String(req.query.sortBy) : "start_date",
-      sortDir: req.query.sortDir ? String(req.query.sortDir) : "ASC",
+      page: parseInt(req.query.page ? String(req.query.page) : '1', 10),
+      limit: parseInt(req.query.limit ? String(req.query.limit) : '50', 10),
+      sortBy: req.query.sortBy ? String(req.query.sortBy) : 'start_date',
+      sortDir: req.query.sortDir ? String(req.query.sortDir) : 'ASC',
     } as any;
 
     const result = await calendarModel.getAllEvents(
       tenantId,
       authReq.user.id,
-      options,
+      options
     );
 
     res.json(result);
   } catch (error: any) {
-    console.error("Error in GET /api/calendar:", error);
-    res.status(500).json({ message: "Error retrieving calendar events" });
+    console.error('Error in GET /api/calendar:', error);
+    res.status(500).json({ message: 'Error retrieving calendar events' });
   }
 });
 
@@ -123,7 +123,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * @route GET /api/calendar/dashboard
  * @desc Get upcoming events for dashboard widget
  */
-router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
+router.get('/dashboard', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const tenantId = getTenantId(authReq.user);
@@ -150,13 +150,13 @@ router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
       tenantId,
       authReq.user.id,
       days,
-      limit,
+      limit
     );
 
     res.json(events);
   } catch (error: any) {
-    console.error("Error in GET /api/calendar/dashboard:", error);
-    res.status(500).json({ message: "Error retrieving dashboard events" });
+    console.error('Error in GET /api/calendar/dashboard:', error);
+    res.status(500).json({ message: 'Error retrieving dashboard events' });
   }
 });
 
@@ -164,7 +164,7 @@ router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
  * @route GET /api/calendar/:id
  * @desc Get a specific calendar event
  */
-router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
+router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const tenantId = getTenantId(req.user);
@@ -172,18 +172,18 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
     const event = await calendarModel.getEventById(
       parseInt(req.params.id, 10),
       tenantId,
-      authReq.user.id,
+      authReq.user.id
     );
 
     if (!event) {
-      res.status(404).json({ message: "Event not found" });
+      res.status(404).json({ message: 'Event not found' });
       return;
     }
 
     res.json(event);
   } catch (error: any) {
-    console.error("Error in GET /api/calendar/:id:", error);
-    res.status(500).json({ message: "Error retrieving calendar event" });
+    console.error('Error in GET /api/calendar/:id:', error);
+    res.status(500).json({ message: 'Error retrieving calendar event' });
   }
 });
 
@@ -191,14 +191,14 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
  * @route POST /api/calendar
  * @desc Create a new calendar event
  */
-router.post("/", authenticateToken, async (req, res): Promise<void> => {
+router.post('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const tenantId = getTenantId(req.user);
 
     // Convert org_id to number if it's a string
     let org_id = req.body.org_id;
-    if (typeof org_id === "string") {
+    if (typeof org_id === 'string') {
       org_id = parseInt(org_id, 10);
     }
 
@@ -221,9 +221,9 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
     const event = await calendarModel.createEvent(eventData);
     res.status(201).json(event);
   } catch (error: any) {
-    console.error("Error in POST /api/calendar:", error);
+    console.error('Error in POST /api/calendar:', error);
     res.status(500).json({
-      message: "Error creating calendar event",
+      message: 'Error creating calendar event',
       error: error.message,
     });
   }
@@ -234,7 +234,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
  * @desc Update a calendar event
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateToken,
   canManageEvent as any,
   async (req, res): Promise<void> => {
@@ -259,15 +259,15 @@ router.put(
       const updatedEvent = await calendarModel.updateEvent(
         parseInt(req.params.id, 10),
         eventData,
-        tenantId,
+        tenantId
       );
 
       res.json(updatedEvent);
     } catch (error: any) {
-      console.error("Error in PUT /api/calendar/:id:", error);
-      res.status(500).json({ message: "Error updating calendar event" });
+      console.error('Error in PUT /api/calendar/:id:', error);
+      res.status(500).json({ message: 'Error updating calendar event' });
     }
-  },
+  }
 );
 
 /**
@@ -275,7 +275,7 @@ router.put(
  * @desc Delete a calendar event
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateToken,
   canManageEvent as any,
   async (req, res): Promise<void> => {
@@ -283,20 +283,20 @@ router.delete(
       const tenantId = getTenantId(req.user);
       const success = await calendarModel.deleteEvent(
         parseInt(req.params.id, 10),
-        tenantId,
+        tenantId
       );
 
       if (!success) {
-        res.status(404).json({ message: "Event not found" });
+        res.status(404).json({ message: 'Event not found' });
         return;
       }
 
-      res.json({ message: "Event deleted successfully" });
+      res.json({ message: 'Event deleted successfully' });
     } catch (error: any) {
-      console.error("Error in DELETE /api/calendar/:id:", error);
-      res.status(500).json({ message: "Error deleting calendar event" });
+      console.error('Error in DELETE /api/calendar/:id:', error);
+      res.status(500).json({ message: 'Error deleting calendar event' });
     }
-  },
+  }
 );
 
 export default router;

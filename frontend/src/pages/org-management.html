@@ -297,7 +297,14 @@
     </style>
   </head>
   <body>
-    <div class="container">
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout mit Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="container">
       <h1>Abteilungen & Teams</h1>
 
       <div class="tab-container">
@@ -1279,5 +1286,9 @@
         window.location.href = '/admin-dashboard';
       }
     </script>
+      </main>
+    </div>
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

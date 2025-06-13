@@ -11,9 +11,11 @@ Dieses Dokument beschreibt die empfohlene Unit-Test-Strategie für das Assixx-Pr
 Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 
 #### 1. Auth-System Tests (`auth.test.ts`)
+
 **Warum kritisch:** JWT-Tokens und Passwort-Sicherheit sind fundamentale Sicherheitsbausteine.
 
 **Was testen:**
+
 - Passwort-Hashing mit bcrypt
 - Passwort-Verifikation
 - JWT Token-Generierung
@@ -23,6 +25,7 @@ Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 - Token-Refresh-Logik
 
 **Beispiel-Testfälle:**
+
 ```typescript
 - sollte Passwörter sicher hashen
 - sollte gehashte Passwörter verifizieren können
@@ -32,9 +35,11 @@ Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 ```
 
 #### 2. Multi-Tenant Middleware Tests (`middleware/tenant.test.ts`)
+
 **Warum kritisch:** Verhindert Datenlecks zwischen Mandanten.
 
 **Was testen:**
+
 - Tenant-Isolation bei Datenbankzugriffen
 - Subdomain-Parsing (z.B. "firma1.assixx.de" → tenant_id: 1)
 - Cross-Tenant Access Prevention
@@ -42,6 +47,7 @@ Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 - Fehlerbehandlung bei ungültigen Tenants
 
 **Beispiel-Testfälle:**
+
 ```typescript
 - sollte Tenant aus Subdomain extrahieren
 - sollte Requests ohne gültige Subdomain ablehnen
@@ -50,9 +56,11 @@ Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 ```
 
 #### 3. Zugriffskontrolle Tests (RBAC) (`middleware/auth.test.ts`)
+
 **Warum kritisch:** Stellt sicher, dass nur berechtigte Benutzer auf Ressourcen zugreifen.
 
 **Was testen:**
+
 - Role-Based Access Control (root, admin, employee)
 - Admin vs Employee Berechtigungen
 - Root-User Spezialrechte
@@ -60,6 +68,7 @@ Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 - Cascading Permissions (Firma → Abteilung → Team)
 
 **Beispiel-Testfälle:**
+
 ```typescript
 - Employee sollte keine Admin-Endpoints aufrufen können
 - Admin sollte nur eigene Tenant-Daten sehen
@@ -72,9 +81,11 @@ Diese Tests sind ESSENTIELL für die Sicherheit der Multi-Tenant-Architektur.
 Diese Tests sichern wichtige Geschäftsfunktionen ab.
 
 #### 4. Input Validation Tests (`utils/validators.test.ts`)
+
 **Warum wichtig:** Verhindert Sicherheitslücken und Datenkorruption.
 
 **Was testen:**
+
 - Email-Format Validierung
 - Subdomain-Format (nur alphanumerisch + bindestrich)
 - XSS-Prevention (HTML-Tags erkennen)
@@ -83,6 +94,7 @@ Diese Tests sichern wichtige Geschäftsfunktionen ab.
 - Datenlängen-Limits
 
 **Beispiel-Testfälle:**
+
 ```typescript
 - sollte gültige Email-Adressen akzeptieren
 - sollte XSS-Versuche in Input-Feldern erkennen
@@ -91,9 +103,11 @@ Diese Tests sichern wichtige Geschäftsfunktionen ab.
 ```
 
 #### 5. Document Service Tests (`services/document.service.test.ts`)
+
 **Warum wichtig:** Dokumente enthalten sensible Daten (Gehalt, Verträge).
 
 **Was testen:**
+
 - File-Upload Validierung
 - Erlaubte Dateitypen (PDF, DOC, etc.)
 - Dateigrößen-Limits
@@ -102,6 +116,7 @@ Diese Tests sichern wichtige Geschäftsfunktionen ab.
 - Speicherpfad-Isolation pro Tenant
 
 **Beispiel-Testfälle:**
+
 ```typescript
 - sollte nur erlaubte Dateitypen akzeptieren
 - sollte Dateien über 10MB ablehnen
@@ -110,9 +125,11 @@ Diese Tests sichern wichtige Geschäftsfunktionen ab.
 ```
 
 #### 6. Survey Tool Tests (`services/survey.service.test.ts`)
+
 **Warum wichtig:** Umfragen müssen anonym und manipulationssicher sein.
 
 **Was testen:**
+
 - Umfrage-Erstellung mit Validierung
 - Anonyme Antwort-Sammlung
 - Ergebnis-Aggregation
@@ -120,6 +137,7 @@ Diese Tests sichern wichtige Geschäftsfunktionen ab.
 - Deadline-Enforcement
 
 **Beispiel-Testfälle:**
+
 ```typescript
 - sollte anonyme Antworten speichern
 - sollte Mehrfach-Teilnahme verhindern
@@ -132,9 +150,11 @@ Diese Tests sichern wichtige Geschäftsfunktionen ab.
 Diese Tests verbessern die Zuverlässigkeit von Features.
 
 #### 7. Email Service Tests (`utils/emailService.test.ts`)
+
 **Warum nützlich:** Email-Fehler frustrieren Benutzer.
 
 **Was testen:**
+
 - Template-Rendering
 - SMTP-Fehlerbehandlung
 - Retry-Logik bei Fehlern
@@ -142,9 +162,11 @@ Diese Tests verbessern die Zuverlässigkeit von Features.
 - Email-Queue-Verarbeitung
 
 #### 8. Calendar Tests (`services/calendar.service.test.ts`)
+
 **Warum nützlich:** Kalender-Bugs können zu verpassten Terminen führen.
 
 **Was testen:**
+
 - Event-Erstellung und Validierung
 - Termin-Überschneidungen
 - Recurring Events (täglich, wöchentlich, etc.)
@@ -152,9 +174,11 @@ Diese Tests verbessern die Zuverlässigkeit von Features.
 - iCal-Export
 
 #### 9. Shift Planning Tests (`services/shift.service.test.ts`)
+
 **Warum nützlich:** Schichtplanung ist kritisch für Produktion.
 
 **Was testen:**
+
 - Schicht-Zuordnung
 - Konflikt-Erkennung
 - Verfügbarkeits-Prüfung
@@ -229,6 +253,7 @@ backend/src/__tests__/
 ## 🎯 Nächste Schritte
 
 Nach Simon's Tests mit dem aktuellen System:
+
 1. Feedback zu gefundenen Bugs sammeln
 2. Auth-System Tests als erstes implementieren
 3. Schrittweise weitere Tests nach Priorität hinzufügen

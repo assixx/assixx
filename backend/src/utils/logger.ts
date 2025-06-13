@@ -3,16 +3,16 @@
  * Winston-based logging system with file rotation and console output
  */
 
-import winston from "winston";
-import path from "path";
-import { fileURLToPath } from "url";
+import winston from 'winston';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Define log directory
-const logDir = path.join(__dirname, "../../../backend/logs");
+const logDir = path.join(__dirname, '../../../backend/logs');
 
 // Log levels interface - Unused
 // interface LogLevel {
@@ -43,7 +43,7 @@ const customFormat = winston.format.printf(
       msg += ` ${JSON.stringify(metadata)}`;
     }
     return msg;
-  },
+  }
 );
 
 // Logger configuration interface
@@ -56,25 +56,25 @@ interface LoggerConfig {
 
 // Create logger instance
 const logger: winston.Logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
+  level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
-    winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
-    customFormat,
+    customFormat
   ),
-  defaultMeta: { service: "assixx-backend" },
+  defaultMeta: { service: 'assixx-backend' },
   transports: [
     // Error logs
     new winston.transports.File({
-      filename: path.join(logDir, "error.log"),
-      level: "error",
+      filename: path.join(logDir, 'error.log'),
+      level: 'error',
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
     // Combined logs
     new winston.transports.File({
-      filename: path.join(logDir, "combined.log"),
+      filename: path.join(logDir, 'combined.log'),
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
@@ -82,14 +82,14 @@ const logger: winston.Logger = winston.createLogger({
 } as LoggerConfig);
 
 // Console logging for development
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.simple(),
+        winston.format.simple()
       ),
-    }),
+    })
   );
 }
 

@@ -98,11 +98,13 @@ docker-compose logs mysql
 ### Schema-Details
 
 Das komplette Datenbankschema wird automatisch aus folgender Datei geladen:
+
 - **[database/complete-schema.sql](../database/complete-schema.sql)** - Zentrale Schema-Datei mit allen Tabellen
 
 ### Docker-Volumes
 
 Die Datenbank wird persistent in Docker Volumes gespeichert:
+
 - **mysql_data** - Enthält alle Datenbankdaten
 - Überlebt Container-Neustarts
 - Kann mit `docker volume inspect mysql_data` inspiziert werden

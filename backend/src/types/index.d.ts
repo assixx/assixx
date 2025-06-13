@@ -1,8 +1,8 @@
 // Central export for all type definitions
 
-export * from "./models";
-export * from "./api";
-export * from "./express";
+export * from './models';
+export * from './api';
+export * from './express';
 
 // Additional utility types
 export type Nullable<T> = T | null;
@@ -31,29 +31,29 @@ export interface ErrorResponse {
 }
 
 // Role types
-export type UserRole = "admin" | "employee" | "root";
+export type UserRole = 'admin' | 'employee' | 'root';
 export type FeatureCategory =
-  | "basic"
-  | "communication"
-  | "productivity"
-  | "management"
-  | "analytics";
+  | 'basic'
+  | 'communication'
+  | 'productivity'
+  | 'management'
+  | 'analytics';
 
 // Status types
 export type DocumentCategory =
-  | "general"
-  | "hr"
-  | "finance"
-  | "technical"
-  | "legal"
-  | "other";
+  | 'general'
+  | 'hr'
+  | 'finance'
+  | 'technical'
+  | 'legal'
+  | 'other';
 export type KvpStatus =
-  | "pending"
-  | "in_review"
-  | "approved"
-  | "rejected"
-  | "implemented";
-export type MessageType = "text" | "file" | "image" | "system";
+  | 'pending'
+  | 'in_review'
+  | 'approved'
+  | 'rejected'
+  | 'implemented';
+export type MessageType = 'text' | 'file' | 'image' | 'system';
 
 // Helper types for strict typing
 export type StringKeys<T> = Extract<keyof T, string>;

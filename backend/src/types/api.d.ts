@@ -76,7 +76,7 @@ export interface CreateUserRequest {
   password: string;
   firstName: string;
   lastName: string;
-  role: "admin" | "employee";
+  role: 'admin' | 'employee';
   departmentId?: number;
   position?: string;
   phoneNumber?: string;
@@ -161,7 +161,7 @@ export interface CreateCalendarEventRequest {
 export interface SendMessageRequest {
   roomId: string;
   content: string;
-  type?: "text" | "file" | "image";
+  type?: 'text' | 'file' | 'image';
   attachmentUrl?: string;
 }
 
@@ -170,12 +170,12 @@ export interface CreateKvpSuggestionRequest {
   title: string;
   description: string;
   category: string;
-  priority?: "low" | "medium" | "high";
+  priority?: 'low' | 'medium' | 'high';
   attachments?: string[];
 }
 
 export interface ReviewKvpSuggestionRequest {
-  status: "approved" | "rejected" | "in_review";
+  status: 'approved' | 'rejected' | 'in_review';
   reviewNotes?: string;
 }
 
@@ -204,7 +204,7 @@ export interface CreateSurveyRequest {
   startsAt: string;
   endsAt?: string;
   questions: Array<{
-    type: "text" | "radio" | "checkbox" | "rating" | "scale";
+    type: 'text' | 'radio' | 'checkbox' | 'rating' | 'scale';
     question: string;
     required?: boolean;
     options?: string[];
@@ -227,7 +227,7 @@ export interface SearchParams {
   page?: number;
   limit?: number;
   sort?: string;
-  order?: "asc" | "desc";
+  order?: 'asc' | 'desc';
 }
 
 export interface DateRangeParams {

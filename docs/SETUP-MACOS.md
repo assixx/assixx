@@ -14,6 +14,7 @@ Dieser Guide führt dich Schritt für Schritt durch die Einrichtung des Assixx-P
 ## 🔍 Überblick der Installationsmethoden
 
 ### 1. 🐳 Docker (Empfohlen - 15 Minuten)
+
 - ✅ Schnellste Einrichtung
 - ✅ Keine Systemkonfiguration nötig
 - ✅ Isolierte Umgebung
@@ -21,6 +22,7 @@ Dieser Guide führt dich Schritt für Schritt durch die Einrichtung des Assixx-P
 - ✅ Ideal für: Alle Benutzer
 
 ### 2. 🛠 Manuelle Installation (1-2 Stunden)
+
 - ⚙️ Vollständige Kontrolle
 - ⚙️ Native Performance
 - ⚙️ Direkter Systemzugriff
@@ -52,6 +54,7 @@ Dieser Guide führt dich Schritt für Schritt durch die Einrichtung des Assixx-P
 ### Schritt 1: Docker Desktop installieren
 
 1. **Docker Desktop herunterladen**:
+
    - Gehe zu [Docker Desktop für Mac](https://www.docker.com/products/docker-desktop/)
    - Wähle die richtige Version:
      - **Apple Silicon** (M1/M2/M3): "Mac with Apple Chip"
@@ -59,6 +62,7 @@ Dieser Guide führt dich Schritt für Schritt durch die Einrichtung des Assixx-P
    - Lade die .dmg Datei herunter
 
 2. **Installation**:
+
    - Öffne die heruntergeladene .dmg Datei
    - Ziehe Docker.app in den Applications Ordner
    - Starte Docker aus dem Applications Ordner

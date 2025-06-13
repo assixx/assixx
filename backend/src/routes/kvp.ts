@@ -3,15 +3,15 @@
  * Handles all operations related to the KVP system
  */
 
-import express, { Router, Request, Response, NextFunction } from "express";
-import multer from "multer";
-import path from "path";
-import { promises as fs } from "fs";
-import * as fsSync from "fs";
-import { authenticateToken } from "../auth";
+import express, { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
+import path from 'path';
+import { promises as fs } from 'fs';
+import * as fsSync from 'fs';
+import { authenticateToken } from '../auth';
 
 // Import models (now ES modules)
-import kvpModel from "../models/kvp";
+import kvpModel from '../models/kvp';
 
 const router: Router = express.Router();
 
@@ -26,9 +26,9 @@ const storage = multer.diskStorage({
     _req: Request,
     // eslint-disable-next-line no-undef
     _file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void,
+    cb: (error: Error | null, destination: string) => void
   ): void {
-    const uploadPath = path.join(__dirname, "../uploads/kvp");
+    const uploadPath = path.join(__dirname, '../uploads/kvp');
     fs.mkdir(uploadPath, { recursive: true })
       .then(() => cb(null, uploadPath))
       .catch((error) => cb(error as Error, uploadPath));
@@ -37,12 +37,12 @@ const storage = multer.diskStorage({
     _req: Request,
     // eslint-disable-next-line no-undef
     file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void,
+    cb: (error: Error | null, filename: string) => void
   ): void {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(
       null,
-      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`,
+      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`
     );
   },
 });
@@ -56,19 +56,19 @@ const upload = multer({
     _req: Request,
     // eslint-disable-next-line no-undef
     file: Express.Multer.File,
-    cb: multer.FileFilterCallback,
+    cb: multer.FileFilterCallback
   ): void {
     // Allow images and PDFs
     const allowedTypes = /jpeg|jpg|png|gif|pdf/;
     const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase(),
+      path.extname(file.originalname).toLowerCase()
     );
     const mimetype = allowedTypes.test(file.mimetype);
 
     if (mimetype && extname) {
       cb(null, true);
     } else {
-      cb(new Error("Nur Bilder (JPEG, PNG, GIF) und PDF-Dateien sind erlaubt"));
+      cb(new Error('Nur Bilder (JPEG, PNG, GIF) und PDF-Dateien sind erlaubt'));
     }
   },
 });
@@ -76,10 +76,10 @@ const upload = multer({
 // Helper function to check admin permissions
 function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   const authReq = req as any;
-  if (authReq.user.role !== "admin" && authReq.user.role !== "root") {
+  if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
     res.status(403).json({
       success: false,
-      message: "Admin-Berechtigung erforderlich",
+      message: 'Admin-Berechtigung erforderlich',
     });
     return;
   }
@@ -88,7 +88,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
 
 // GET /api/kvp/categories - Get all categories
 router.get(
-  "/categories",
+  '/categories',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -103,19 +103,19 @@ router.get(
         data: categories,
       });
     } catch (error: any) {
-      console.error("Error fetching KVP categories:", error);
+      console.error('Error fetching KVP categories:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Kategorien",
+        message: 'Fehler beim Laden der Kategorien',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // GET /api/kvp/suggestions - Get suggestions with filters
 router.get(
-  "/suggestions",
+  '/suggestions',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -135,7 +135,7 @@ router.get(
         tenantId,
         authReq.user.id,
         authReq.user.role,
-        filters,
+        filters
       );
 
       res.json({
@@ -143,19 +143,19 @@ router.get(
         data: suggestions,
       });
     } catch (error: any) {
-      console.error("Error fetching KVP suggestions:", error);
+      console.error('Error fetching KVP suggestions:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Verbesserungsvorschläge",
+        message: 'Fehler beim Laden der Verbesserungsvorschläge',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // GET /api/kvp/suggestions/:id - Get single suggestion
 router.get(
-  "/suggestions/:id",
+  '/suggestions/:id',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -167,13 +167,13 @@ router.get(
         parseInt(req.params.id, 10),
         tenantId,
         authReq.user.id,
-        authReq.user.role,
+        authReq.user.role
       );
 
       if (!suggestion) {
         res.status(404).json({
           success: false,
-          message: "Verbesserungsvorschlag nicht gefunden",
+          message: 'Verbesserungsvorschlag nicht gefunden',
         });
         return;
       }
@@ -192,22 +192,22 @@ router.get(
         data: suggestion,
       });
     } catch (error: any) {
-      console.error("Error fetching KVP suggestion:", error);
+      console.error('Error fetching KVP suggestion:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden des Verbesserungsvorschlags",
+        message: 'Fehler beim Laden des Verbesserungsvorschlags',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // POST /api/kvp/suggestions - Create new suggestion
 router.post(
-  "/suggestions",
+  '/suggestions',
   [
     authenticateToken,
-    upload.array("attachments", 5),
+    upload.array('attachments', 5),
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
   async (req: any, res: any) => {
     try {
@@ -229,7 +229,7 @@ router.post(
         res.status(400).json({
           success: false,
           message:
-            "Titel, Beschreibung, Organisationsebene und Organisations-ID sind erforderlich",
+            'Titel, Beschreibung, Organisationsebene und Organisations-ID sind erforderlich',
         });
         return;
       }
@@ -242,7 +242,7 @@ router.post(
         org_level,
         org_id: parseInt(org_id),
         submitted_by: authReq.user.id,
-        priority: priority || "normal",
+        priority: priority || 'normal',
         expected_benefit,
         estimated_cost: estimated_cost ? parseFloat(estimated_cost) : undefined,
       };
@@ -264,23 +264,23 @@ router.post(
 
       res.status(201).json({
         success: true,
-        message: "Verbesserungsvorschlag erfolgreich eingereicht",
+        message: 'Verbesserungsvorschlag erfolgreich eingereicht',
         data: suggestion,
       });
     } catch (error: any) {
-      console.error("Error creating KVP suggestion:", error);
+      console.error('Error creating KVP suggestion:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Erstellen des Verbesserungsvorschlags",
+        message: 'Fehler beim Erstellen des Verbesserungsvorschlags',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // PUT /api/kvp/suggestions/:id/status - Update suggestion status (Admin only)
 router.put(
-  "/suggestions/:id/status",
+  '/suggestions/:id/status',
   [
     authenticateToken,
     requireAdmin,
@@ -292,18 +292,18 @@ router.put(
       const { status, reason } = req.body;
 
       const validStatuses = [
-        "new",
-        "pending",
-        "in_review",
-        "approved",
-        "implemented",
-        "rejected",
-        "archived",
+        'new',
+        'pending',
+        'in_review',
+        'approved',
+        'implemented',
+        'rejected',
+        'archived',
       ];
       if (!validStatuses.includes(status)) {
         res.status(400).json({
           success: false,
-          message: "Ungültiger Status",
+          message: 'Ungültiger Status',
         });
         return;
       }
@@ -313,35 +313,35 @@ router.put(
         tenantId,
         status,
         authReq.user.id,
-        reason,
+        reason
       );
 
       if (!updated) {
         res.status(404).json({
           success: false,
-          message: "Verbesserungsvorschlag nicht gefunden",
+          message: 'Verbesserungsvorschlag nicht gefunden',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Status erfolgreich aktualisiert",
+        message: 'Status erfolgreich aktualisiert',
       });
     } catch (error: any) {
-      console.error("Error updating KVP suggestion status:", error);
+      console.error('Error updating KVP suggestion status:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Aktualisieren des Status",
+        message: 'Fehler beim Aktualisieren des Status',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // POST /api/kvp/suggestions/:id/comments - Add comment
 router.post(
-  "/suggestions/:id/comments",
+  '/suggestions/:id/comments',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -350,10 +350,10 @@ router.post(
       const authReq = req as any;
       const { comment, is_internal } = req.body;
 
-      if (!comment || comment.trim() === "") {
+      if (!comment || comment.trim() === '') {
         res.status(400).json({
           success: false,
-          message: "Kommentar darf nicht leer sein",
+          message: 'Kommentar darf nicht leer sein',
         });
         return;
       }
@@ -361,34 +361,34 @@ router.post(
       // Only admins can add internal comments
       const isInternal =
         is_internal &&
-        (authReq.user.role === "admin" || authReq.user.role === "root");
+        (authReq.user.role === 'admin' || authReq.user.role === 'root');
 
       const commentId = await kvpModel.addComment(
         parseInt(req.params.id, 10),
         authReq.user.id,
         comment.trim(),
-        isInternal,
+        isInternal
       );
 
       res.status(201).json({
         success: true,
-        message: "Kommentar erfolgreich hinzugefügt",
+        message: 'Kommentar erfolgreich hinzugefügt',
         data: { id: commentId },
       });
     } catch (error: any) {
-      console.error("Error adding KVP comment:", error);
+      console.error('Error adding KVP comment:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Hinzufügen des Kommentars",
+        message: 'Fehler beim Hinzufügen des Kommentars',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // GET /api/kvp/dashboard - Get dashboard statistics (Admin only)
 router.get(
-  "/dashboard",
+  '/dashboard',
   [
     authenticateToken,
     requireAdmin,
@@ -404,19 +404,19 @@ router.get(
         data: stats,
       });
     } catch (error: any) {
-      console.error("Error fetching KVP dashboard stats:", error);
+      console.error('Error fetching KVP dashboard stats:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Dashboard-Statistiken",
+        message: 'Fehler beim Laden der Dashboard-Statistiken',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // GET /api/kvp/my-points - Get user's points
 router.get(
-  "/my-points",
+  '/my-points',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -431,19 +431,19 @@ router.get(
         data: points,
       });
     } catch (error: any) {
-      console.error("Error fetching user points:", error);
+      console.error('Error fetching user points:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Punkte",
+        message: 'Fehler beim Laden der Punkte',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // POST /api/kvp/award-points - Award points to user (Admin only)
 router.post(
-  "/award-points",
+  '/award-points',
   [
     authenticateToken,
     requireAdmin,
@@ -457,7 +457,7 @@ router.post(
       if (!user_id || !suggestion_id || !points || !reason) {
         res.status(400).json({
           success: false,
-          message: "Alle Felder sind erforderlich",
+          message: 'Alle Felder sind erforderlich',
         });
         return;
       }
@@ -468,28 +468,28 @@ router.post(
         suggestion_id,
         parseInt(points.toString()),
         reason,
-        authReq.user.id,
+        authReq.user.id
       );
 
       res.status(201).json({
         success: true,
-        message: "Punkte erfolgreich vergeben",
+        message: 'Punkte erfolgreich vergeben',
         data: { id: pointsId },
       });
     } catch (error: any) {
-      console.error("Error awarding points:", error);
+      console.error('Error awarding points:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Vergeben der Punkte",
+        message: 'Fehler beim Vergeben der Punkte',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // GET /api/kvp/attachments/:id/download - Download attachment
 router.get(
-  "/attachments/:id/download",
+  '/attachments/:id/download',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -504,13 +504,13 @@ router.get(
         attachmentId,
         tenantId,
         authReq.user.id,
-        authReq.user.role,
+        authReq.user.role
       );
 
       if (!attachment) {
         res.status(404).json({
           success: false,
-          message: "Anhang nicht gefunden oder kein Zugriff",
+          message: 'Anhang nicht gefunden oder kein Zugriff',
         });
         return;
       }
@@ -522,35 +522,35 @@ router.get(
       if (!fsSync.existsSync(filePath)) {
         res.status(404).json({
           success: false,
-          message: "Datei nicht gefunden",
+          message: 'Datei nicht gefunden',
         });
         return;
       }
 
       // Set appropriate headers
-      res.setHeader("Content-Type", attachment.file_type);
+      res.setHeader('Content-Type', attachment.file_type);
       res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${attachment.file_name}"`,
+        'Content-Disposition',
+        `inline; filename="${attachment.file_name}"`
       );
 
       // Stream the file
       const fileStream = fsSync.createReadStream(filePath);
       fileStream.pipe(res);
     } catch (error: any) {
-      console.error("Error downloading attachment:", error);
+      console.error('Error downloading attachment:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Download",
+        message: 'Fehler beim Download',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 // DELETE /api/kvp/suggestions/:id - Delete suggestion (only by owner)
 router.delete(
-  "/suggestions/:id",
+  '/suggestions/:id',
   [
     authenticateToken,
   ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
@@ -565,13 +565,13 @@ router.delete(
         suggestionId,
         tenantId,
         authReq.user.id,
-        authReq.user.role,
+        authReq.user.role
       );
 
       if (!suggestion) {
         res.status(404).json({
           success: false,
-          message: "Verbesserungsvorschlag nicht gefunden",
+          message: 'Verbesserungsvorschlag nicht gefunden',
         });
         return;
       }
@@ -580,7 +580,7 @@ router.delete(
       if (suggestion.submitted_by !== authReq.user.id) {
         res.status(403).json({
           success: false,
-          message: "Sie können nur Ihre eigenen Vorschläge löschen",
+          message: 'Sie können nur Ihre eigenen Vorschläge löschen',
         });
         return;
       }
@@ -590,17 +590,17 @@ router.delete(
 
       res.json({
         success: true,
-        message: "Verbesserungsvorschlag wurde erfolgreich gelöscht",
+        message: 'Verbesserungsvorschlag wurde erfolgreich gelöscht',
       });
     } catch (error: any) {
-      console.error("Error deleting KVP suggestion:", error);
+      console.error('Error deleting KVP suggestion:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Löschen des Verbesserungsvorschlags",
+        message: 'Fehler beim Löschen des Verbesserungsvorschlags',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 export default router;

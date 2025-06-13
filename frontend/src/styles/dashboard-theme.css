@@ -41,7 +41,7 @@
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
-  
+
   /* Role Colors */
   --admin-color: #ff6b6b;
   --employee-color: #4ecdc4;
@@ -101,7 +101,7 @@ body {
 
 /* Container */
 .container {
- /*max-width: 1200px;*/
+  /*max-width: 1200px;*/
   margin: 0 auto;
   padding: var(--spacing-lg);
 }
@@ -660,14 +660,12 @@ body {
 }
 
 .sidebar-item.active .sidebar-link::before {
-  
-  
   left: 0;
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
   height: 70%;
-  
+
   border-radius: 0 2px 2px 0;
 }
 
@@ -729,12 +727,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.021);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;

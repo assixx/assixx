@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schichtplanung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/fontawesome-Ba-zWN2J.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -46,16 +46,6 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
-      /* Glassmorphismus für Sidebar */
-      .sidebar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          8px 0 32px rgba(0, 0, 0, 0.3),
-          inset -1px 0 0 rgba(255, 255, 255, 0.1);
-      }
-
       /* Main content area - wie calendar? */
       .main-content {
         padding: var(--spacing-lg);
@@ -77,6 +67,7 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
         animation: fadeInUp 0.6s ease-out;
+        overflow: visible;
       }
 
       .shift-title {
@@ -89,7 +80,7 @@
 
       .shift-info-row {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: var(--spacing-lg);
         padding: var(--spacing-lg);
         background: rgba(255, 255, 255, 0.03);
@@ -100,6 +91,8 @@
         box-shadow:
           0 4px 16px rgba(0, 0, 0, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        position: relative;
+        z-index: 1;
       }
 
       .info-item {
@@ -107,6 +100,8 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
+        position: relative;
+        z-index: 10;
       }
 
       .info-label {
@@ -124,34 +119,90 @@
         color: var(--text-primary);
       }
 
-      .info-select {
+      /* Custom Dropdown Styles */
+      .custom-dropdown {
+        position: relative;
         width: 100%;
-        padding: var(--spacing-sm);
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-size: 14px;
-        font-weight: 600;
+        color: #fff;
         cursor: pointer;
         transition: all 0.3s ease;
+        min-height: 46px;
       }
 
-      .info-select:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
-      .info-select:hover {
-        border-color: var(--primary-color);
+      .dropdown-display.active {
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
       }
 
-      .info-select option {
-        background: rgba(18, 18, 18, 0.95);
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.98);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 9999;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
         color: var(--text-primary);
-        padding: var(--spacing-sm);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
       }
 
       .week-navigation {
@@ -279,6 +330,46 @@
         align-items: center;
         gap: var(--spacing-xs);
       }
+      
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+      
+      /* Department Notice */
+      .department-notice {
+        text-align: center;
+        padding: var(--spacing-xl) var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        margin: var(--spacing-xl) auto;
+        max-width: 600px;
+        animation: fadeInUp 0.6s ease-out;
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      
+      .department-notice .notice-icon {
+        font-size: 48px;
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-lg);
+        opacity: 0.8;
+      }
+      
+      .department-notice h3 {
+        color: var(--text-primary);
+        font-size: 24px;
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .department-notice p {
+        color: var(--text-secondary);
+        font-size: 16px;
+        line-height: 1.5;
+      }
 
       .shift-info-textarea {
         flex: 1;
@@ -374,6 +465,71 @@
         font-style: italic;
       }
 
+      /* Employee Card Styles */
+      .employee-card {
+        background: rgba(33, 150, 243, 0.15);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: var(--radius-sm);
+        padding: 6px 8px;
+        margin: 2px 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        transition: all 0.2s ease;
+      }
+
+      .employee-card:hover {
+        background: rgba(33, 150, 243, 0.25);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .employee-card .employee-name {
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      .employee-card .employee-position {
+        font-size: 11px;
+        color: var(--text-secondary);
+        line-height: 1.2;
+      }
+
+      .employee-card .remove-btn {
+        position: absolute;
+        top: -17px;
+        right: -18px;
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        color: rgb(244, 67, 54);
+        border-radius: 4px;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.2s ease;
+      }
+
+      .employee-card:hover .remove-btn {
+        opacity: 1;
+      }
+
+      .employee-card .remove-btn:hover {
+        background: rgba(244, 67, 54, 0.37);
+        border-color: rgb(244, 67, 54);
+        transform: scale(1.2);
+      }
+
+      .employee-card .remove-btn i {
+        font-size: 10px;
+      }
+
       .employee-sidebar {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -385,12 +541,21 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
-      .sidebar-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--primary-color);
+      .shift-sidebar-title {
+        font-size: 17px;
+        font-weight: 500;
+        color: rgb(255, 255, 255);
         margin-bottom: var(--spacing-lg);
         text-align: center;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        padding: var(--spacing-md) var(--spacing-lg);
+        backdrop-filter: blur(40px) saturate(180%);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        border-radius: 14px;
+        box-shadow:
+          0 2px 6px rgb(0, 0, 0),
+          inset 0 1px 0 hsla(0, 0%, 100%, 0.18);
       }
 
       .employee-list {
@@ -460,24 +625,64 @@
         font-size: 14px;
       }
 
-      .availability-status {
+      /* Badge Styles - genau wie in admin-dashboard.html */
+      .badge {
+        display: inline-block;
+        padding: 3px 8px;
         font-size: 11px;
-        padding: 2px 6px;
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-weight: 500;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        transition: all 0.2s ease;
       }
 
-      .status-available {
-        background: var(--success-color);
+      .badge-success {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        color: rgba(76, 175, 80, 0.9);
       }
 
-      .status-unavailable {
-        background: var(--error-color);
+      .badge-danger {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        color: rgba(244, 67, 54, 0.9);
       }
 
-      .status-limited {
-        background: var(--warning-color);
+      .badge-warning {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.2);
+        color: rgba(255, 152, 0, 0.9);
+      }
+
+      .badge-secondary {
+        background: rgba(108, 117, 125, 0.1);
+        border: 1px solid rgba(108, 117, 125, 0.2);
+        color: rgba(108, 117, 125, 0.9);
+      }
+
+      .employee-row:hover .badge-success {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+
+      .employee-row:hover .badge-danger {
+        background: rgba(244, 67, 54, 0.15);
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .employee-row:hover .badge-warning {
+        background: rgba(255, 152, 0, 0.15);
+        border-color: rgba(255, 152, 0, 0.3);
+      }
+
+      .employee-row:hover .badge-secondary {
+        background: rgba(108, 117, 125, 0.15);
+        border-color: rgba(108, 117, 125, 0.3);
       }
 
       .employee-details {
@@ -519,11 +724,11 @@
       }
 
       .admin-btn.cancel {
-        background: var(--text-secondary);
+        background: var(--warning-color);
       }
 
       .admin-btn.cancel:hover {
-        background: #8a8a8a;
+        background: #aa7400;
       }
 
       .shift-type-early {
@@ -547,6 +752,15 @@
         }
       }
 
+      /* Full width for employees (when sidebar is hidden) */
+      .main-planning-area.full-width {
+        grid-template-columns: 1fr;
+      }
+      
+      .main-planning-area.full-width .week-schedule {
+        max-width: 100%;
+      }
+
       @media (max-width: 768px) {
         .schedule-header,
         .shift-row {
@@ -567,73 +781,11 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/admin-dashboard" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
-      </a>
-      <div class="header-actions">
-        <span id="userName" class="text-secondary">Admin</span>
-        <button id="logoutBtn" class="btn btn-secondary">Ausloggen</button>
-      </div>
-    </header>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <!-- Sidebar Navigation -->
-      <aside class="sidebar">
-        <nav class="sidebar-nav">
-          <h3 class="sidebar-title">Navigation</h3>
-          <ul class="sidebar-menu">
-            <li class="sidebar-item">
-              <a href="/admin-dashboard" class="sidebar-link">
-                <span class="icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                  </svg>
-                </span>
-                <span>Übersicht</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="/blackboard" class="sidebar-link">
-                <span class="icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"
-                    />
-                  </svg>
-                </span>
-                <span>Blackboard</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
-              <a href="/calendar" class="sidebar-link">
-                <span class="icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"
-                    />
-                  </svg>
-                </span>
-                <span>Kalender</span>
-              </a>
-            </li>
-            <li class="sidebar-item active">
-              <a href="/shifts" class="sidebar-link">
-                <span class="icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12,6 12,12 16,14" />
-                  </svg>
-                </span>
-                <span>Schichtplanung</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
       <!-- Main Content -->
       <main class="main-content">
         <div class="shift-planning-container">
@@ -644,36 +796,38 @@
           <div class="shift-info-row">
             <div class="info-item">
               <div class="info-label">Abteilung</div>
-              <select class="info-select" id="departmentSelect">
-                <option value="">Abteilung wählen...</option>
-              </select>
-              <div class="info-value" id="currentDepartment" style="display: none">Produktion</div>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+                  <span>Abteilung wählen...</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="departmentDropdown">
+                  <!-- Options will be populated dynamically -->
+                </div>
+              </div>
+              <input type="hidden" id="departmentSelect" />
             </div>
             <div class="info-item">
               <div class="info-label">Maschine</div>
-              <select class="info-select" id="machineSelect">
-                <option value="">Maschine wählen...</option>
-              </select>
-              <div class="info-value" id="currentMachine" style="display: none">Anlage 01</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Teamleiter</div>
-              <select class="info-select" id="teamLeaderSelect">
-                <option value="">Teamleiter wählen...</option>
-              </select>
-              <div class="info-value" id="currentTeamLeader" style="display: none">Max Mustermann</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Bereich</div>
-              <select class="info-select" id="areaSelect">
-                <option value="">Bereich wählen...</option>
-              </select>
-              <div class="info-value" id="currentArea" style="display: none">Halle A</div>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="machineDisplay" onclick="toggleDropdown('machine')">
+                  <span>Maschine wählen...</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="machineDropdown">
+                  <!-- Options will be populated dynamically -->
+                </div>
+              </div>
+              <input type="hidden" id="machineSelect" />
             </div>
           </div>
 
           <!-- Week Navigation -->
-          <div class="week-navigation">
+          <div class="week-navigation" style="display: none;">
             <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
             <div class="week-info">
               <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
@@ -681,8 +835,17 @@
             <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
           </div>
 
+          <!-- Department Selection Notice -->
+          <div id="departmentNotice" class="department-notice">
+            <div class="notice-icon">
+              <i class="fas fa-building"></i>
+            </div>
+            <h3>Abteilung auswählen</h3>
+            <p>Bitte wählen Sie zuerst eine Abteilung aus, um den Schichtplan zu sehen und zu bearbeiten.</p>
+          </div>
+
           <!-- Main Planning Area -->
-          <div class="main-planning-area">
+          <div class="main-planning-area" id="mainPlanningArea" style="display: none;">
             <!-- Week Schedule -->
             <div class="week-schedule">
               <!-- Header -->
@@ -865,85 +1028,15 @@
 
             <!-- Employee Sidebar -->
             <div class="employee-sidebar">
-              <h3 class="sidebar-title">Verfügbare Mitarbeiter</h3>
+              <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
               <div class="employee-list" id="employeeList">
-                <!-- Employee items will be loaded here -->
-                <div
-                  class="employee-item"
-                  data-employee-id="1"
-                  data-employee-name="Johann Müller"
-                  data-employee-status="available"
-                  draggable="true"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Johann Müller</div>
-                    <div class="availability-status status-available">Verfügbar</div>
-                  </div>
-                  <div class="employee-details">Erfahrung: 5 Jahre</div>
-                </div>
-
-                <div
-                  class="employee-item"
-                  data-employee-id="2"
-                  data-employee-name="Anna Schmidt"
-                  data-employee-status="limited"
-                  data-employee-restrictions="early"
-                  draggable="true"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Anna Schmidt</div>
-                    <div class="availability-status status-limited">Begrenzt</div>
-                  </div>
-                  <div class="employee-details">Nur Frühschicht</div>
-                </div>
-
-                <div
-                  class="employee-item unavailable"
-                  data-employee-id="3"
-                  data-employee-name="Peter Weber"
-                  data-employee-status="unavailable"
-                  draggable="false"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Peter Weber</div>
-                    <div class="availability-status status-unavailable">Urlaub</div>
-                  </div>
-                  <div class="employee-details">Bis 26.05.2025</div>
-                </div>
-
-                <div
-                  class="employee-item"
-                  data-employee-id="4"
-                  data-employee-name="Lisa Wagner"
-                  data-employee-status="available"
-                  draggable="true"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Lisa Wagner</div>
-                    <div class="availability-status status-available">Verfügbar</div>
-                  </div>
-                  <div class="employee-details">Erfahrung: 3 Jahre</div>
-                </div>
-
-                <div
-                  class="employee-item unavailable"
-                  data-employee-id="5"
-                  data-employee-name="Tom Fischer"
-                  data-employee-status="unavailable"
-                  draggable="false"
-                >
-                  <div class="employee-header">
-                    <div class="employee-name-sidebar">Tom Fischer</div>
-                    <div class="availability-status status-unavailable">Krank</div>
-                  </div>
-                  <div class="employee-details">Seit 20.05.2025</div>
-                </div>
+                <!-- Employee items will be loaded here dynamically -->
               </div>
             </div>
           </div>
 
           <!-- Admin Actions -->
-          <div class="admin-actions" id="adminActions">
+          <div class="admin-actions" id="adminActions" style="display: none;">
             <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
             <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
           </div>
@@ -951,10 +1044,57 @@
       </main>
     </div>
 
+    <script>
+      // Dropdown Functions
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      function selectOption(type, value, text) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+        const hiddenInput = document.getElementById(type + 'Select');
+
+        display.querySelector('span').textContent = text;
+        display.classList.remove('active');
+        dropdown.classList.remove('active');
+
+        // Set the hidden input value
+        if (hiddenInput) {
+          hiddenInput.value = value;
+          // Trigger change event
+          const event = new Event('change');
+          hiddenInput.dispatchEvent(event);
+        }
+      }
+
+      // Click outside to close
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Make functions globally available
+      window.toggleDropdown = toggleDropdown;
+      window.selectOption = selectOption;
+    </script>
     <script type="module" src="/scripts/auth.ts"></script>
-    <script type="module" src="/scripts/dashboard-scripts.ts"></script>
-    <script type="module" src="/scripts/shifts-new.ts"></script>
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
+    <script type="module" src="/scripts/shifts.ts"></script>
+    <script type="module" src="/scripts/utils/modal-manager.ts"></script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

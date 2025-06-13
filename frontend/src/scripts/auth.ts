@@ -94,7 +94,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   if (response.status === 403) {
     const userRole = localStorage.getItem('userRole');
     let redirectUrl = '/pages/login.html';
-    
+
     // Redirect to appropriate dashboard based on role
     switch (userRole) {
       case 'employee':
@@ -107,7 +107,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
         redirectUrl = '/pages/root-dashboard.html';
         break;
     }
-    
+
     console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
     window.location.href = redirectUrl;
     throw new Error('Forbidden - insufficient permissions');
@@ -209,13 +209,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const token = getAuthToken();
   const userRole = localStorage.getItem('userRole');
   const activeRole = localStorage.getItem('activeRole');
-  
+
   console.info('[AUTH] Initialization:', {
     token: !!token,
     userRole,
     activeRole,
     path: window.location.pathname,
-    isEmployeeDashboard: window.location.pathname.includes('employee-dashboard')
+    isEmployeeDashboard: window.location.pathname.includes('employee-dashboard'),
   });
 
   // Check if user is authenticated

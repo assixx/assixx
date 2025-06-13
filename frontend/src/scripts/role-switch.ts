@@ -5,53 +5,61 @@
 
 // Check if user is admin
 const userRole = localStorage.getItem('userRole');
-const currentView = localStorage.getItem('activeRole') || userRole;
+let currentView = localStorage.getItem('activeRole') || userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
   const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
-  
+
   if (!switchBtn || !roleIndicator) return;
-  
+
   // Disable button during switch
   switchBtn.disabled = true;
   switchBtn.style.opacity = '0.5';
-  
+
   try {
     const token = localStorage.getItem('token');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    const isCurrentlyAdmin = currentView === 'admin';
-    const endpoint = isCurrentlyAdmin ? '/api/role-switch/to-employee' : '/api/role-switch/to-admin';
     
+    // Update currentView from localStorage in case it changed
+    currentView = localStorage.getItem('activeRole') || userRole;
+    
+    const isCurrentlyEmployee = currentView === 'employee';
+    const endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken
+        'X-CSRF-Token': csrfToken,
       },
-      credentials: 'include'
+      credentials: 'include',
     });
-    
+
     if (!response.ok) {
       throw new Error('Rollenwechsel fehlgeschlagen');
     }
-    
+
     const data = await response.json();
-    
+
     // Update token and storage
     localStorage.setItem('token', data.token);
     localStorage.setItem('activeRole', data.user.activeRole);
     
-    // Show success message
-    const message = isCurrentlyAdmin 
-      ? 'Wechsel zur Mitarbeiter-Ansicht...' 
-      : 'Wechsel zur Admin-Ansicht...';
+    // Update currentView immediately
+    currentView = data.user.activeRole;
     
+    // Update UI immediately before redirect
+    updateRoleUI();
+
+    // Show success message
+    const message = isCurrentlyEmployee ? 'Wechsel zur Admin-Ansicht...' : 'Wechsel zur Mitarbeiter-Ansicht...';
+
     // Create toast notification
     showToast(message, 'success');
-    
+
     // Redirect after short delay
     setTimeout(() => {
       if (data.user.activeRole === 'employee') {
@@ -60,11 +68,10 @@ async function switchRole(): Promise<void> {
         window.location.href = '/pages/admin-dashboard.html';
       }
     }, 1000);
-    
   } catch (error) {
     console.error('Role switch error:', error);
     showToast('Fehler beim Rollenwechsel', 'error');
-    
+
     // Re-enable button
     switchBtn.disabled = false;
     switchBtn.style.opacity = '1';
@@ -76,25 +83,28 @@ function updateRoleUI(): void {
   const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
   const switchText = switchBtn?.querySelector('.role-switch-text') as HTMLElement;
-  
+
   if (!roleIndicator || !switchBtn) return;
-  
+
+  // Update currentView from localStorage
+  currentView = localStorage.getItem('activeRole') || userRole;
+
   if (currentView === 'employee' && userRole === 'admin') {
     // Admin is viewing as employee
     roleIndicator.textContent = 'Mitarbeiter';
     roleIndicator.classList.remove('admin');
     roleIndicator.classList.add('employee');
-    
+
     if (switchText) {
       switchText.textContent = 'Als Admin';
     }
     switchBtn.title = 'Zurück zur Admin-Ansicht';
-  } else {
+  } else if (userRole === 'admin') {
     // Normal admin view
     roleIndicator.textContent = 'Admin';
     roleIndicator.classList.remove('employee');
     roleIndicator.classList.add('admin');
-    
+
     if (switchText) {
       switchText.textContent = 'Als Mitarbeiter';
     }
@@ -109,7 +119,7 @@ function showToast(message: string, type: 'success' | 'error' = 'success'): void
     (window as any).DashboardUI.showToast(message, type);
     return;
   }
-  
+
   // Fallback toast implementation
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
@@ -126,9 +136,9 @@ function showToast(message: string, type: 'success' | 'error' = 'success'): void
     z-index: 10000;
     animation: slideIn 0.3s ease;
   `;
-  
+
   document.body.appendChild(toast);
-  
+
   setTimeout(() => {
     toast.style.animation = 'slideOut 0.3s ease';
     setTimeout(() => toast.remove(), 300);
@@ -153,7 +163,7 @@ document.head.appendChild(style);
 document.addEventListener('DOMContentLoaded', () => {
   // Only show switch button for admins
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-  
+
   if (userRole === 'admin' && switchBtn) {
     switchBtn.style.display = 'flex';
     switchBtn.addEventListener('click', switchRole);

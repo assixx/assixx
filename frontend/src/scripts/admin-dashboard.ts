@@ -249,6 +249,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBlackboardPreview(); // Laden der Blackboard-Einträge
   }, 100);
 
+  // Handle section parameter on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const section = urlParams.get('section');
+  if (section) {
+    console.log('[Admin Dashboard] Section parameter found:', section);
+    showSection(section);
+  } else {
+    console.log('[Admin Dashboard] No section parameter, showing dashboard');
+    // Default to dashboard if no section specified
+    showSection('dashboard');
+  }
+
   // Setup manage links
   const manageEmployeesLink = document.getElementById('manage-employees-link');
   if (manageEmployeesLink) {
@@ -257,6 +269,9 @@ document.addEventListener('DOMContentLoaded', () => {
       showSection('employees');
     });
   }
+
+  // Employee Status Modal is now handled in admin-dashboard.html
+  // Removed duplicate event listener to prevent conflicts
 
   const manageDocumentsLink = document.getElementById('manage-documents-link');
   if (manageDocumentsLink) {
@@ -932,6 +947,8 @@ declare global {
     showSection: typeof showSection;
     loadRecentEmployees?: () => Promise<void>;
     loadDashboardStats?: () => Promise<void>;
+    loadEmployeesTable?: () => Promise<void>;
+    hideModal?: (modalId: string) => void;
   }
 }
 

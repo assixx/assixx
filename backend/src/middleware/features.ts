@@ -1,9 +1,9 @@
-import { Response, NextFunction } from "express";
-import Feature from "../models/feature.js";
-import { logger } from "../utils/logger.js";
-import db from "../database.js";
-import { AuthenticatedRequest } from "../types/request.types.js";
-import { RowDataPacket } from "mysql2/promise";
+import { Response, NextFunction } from 'express';
+import Feature from '../models/feature.js';
+import { logger } from '../utils/logger.js';
+import db from '../database.js';
+import { AuthenticatedRequest } from '../types/request.types.js';
+import { RowDataPacket } from 'mysql2/promise';
 
 export interface FeatureCheckOptions {
   sendUpgradeHint?: boolean;
@@ -22,13 +22,13 @@ export const checkFeature =
       if (req.tenantId) {
         // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
         const [tenantRows] = (await (db as any).query(
-          "SELECT id FROM tenants WHERE subdomain = ?",
-          [req.tenantId],
+          'SELECT id FROM tenants WHERE subdomain = ?',
+          [req.tenantId]
         )) as [RowDataPacket[], any];
 
         if (tenantRows.length === 0) {
           return res.status(404).json({
-            error: "Tenant nicht gefunden",
+            error: 'Tenant nicht gefunden',
             upgrade_required: true,
           });
         }
@@ -39,18 +39,18 @@ export const checkFeature =
         numericTenantId = req.user.tenantId;
       } else {
         return res.status(400).json({
-          error: "Keine Tenant-ID gefunden",
+          error: 'Keine Tenant-ID gefunden',
         });
       }
 
       logger.info(
-        `Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`,
+        `Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`
       );
 
       // Prüfe ob Feature aktiv ist
       const hasFeature = await Feature.checkTenantAccess(
         numericTenantId,
-        featureCode,
+        featureCode
       );
 
       if (!hasFeature) {
@@ -59,7 +59,7 @@ export const checkFeature =
           `Diese Funktion (${featureCode}) ist für Ihren Tarif nicht verfügbar.`;
 
         logger.warn(
-          `Feature '${featureCode}' not available for tenant ${numericTenantId}`,
+          `Feature '${featureCode}' not available for tenant ${numericTenantId}`
         );
 
         const response: any = {
@@ -75,13 +75,13 @@ export const checkFeature =
       }
 
       logger.info(
-        `Feature '${featureCode}' is active for tenant ${numericTenantId}`,
+        `Feature '${featureCode}' is active for tenant ${numericTenantId}`
       );
       return next();
     } catch (error) {
       logger.error(`Error checking feature '${featureCode}':`, error);
       return res.status(500).json({
-        error: "Fehler bei der Feature-Überprüfung",
+        error: 'Fehler bei der Feature-Überprüfung',
       });
     }
   };
@@ -95,13 +95,13 @@ export const checkAnyFeature =
 
       if (req.tenantId) {
         const [tenantRows] = (await (db as any).query(
-          "SELECT id FROM tenants WHERE subdomain = ?",
-          [req.tenantId],
+          'SELECT id FROM tenants WHERE subdomain = ?',
+          [req.tenantId]
         )) as [RowDataPacket[], any];
 
         if (tenantRows.length === 0) {
           return res.status(404).json({
-            error: "Tenant nicht gefunden",
+            error: 'Tenant nicht gefunden',
             upgrade_required: true,
           });
         }
@@ -111,7 +111,7 @@ export const checkAnyFeature =
         numericTenantId = req.user.tenantId;
       } else {
         return res.status(400).json({
-          error: "Keine Tenant-ID gefunden",
+          error: 'Keine Tenant-ID gefunden',
         });
       }
 
@@ -119,11 +119,11 @@ export const checkAnyFeature =
       for (const featureCode of featureCodes) {
         const hasFeature = await Feature.checkTenantAccess(
           numericTenantId,
-          featureCode,
+          featureCode
         );
         if (hasFeature) {
           logger.info(
-            `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`,
+            `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`
           );
           return next();
         }
@@ -133,13 +133,13 @@ export const checkAnyFeature =
       const errorMessage =
         options.customErrorMessage ||
         `Keine der erforderlichen Funktionen (${featureCodes.join(
-          ", ",
+          ', '
         )}) ist für Ihren Tarif verfügbar.`;
 
       logger.warn(
         `None of the features [${featureCodes.join(
-          ", ",
-        )}] are available for tenant ${numericTenantId}`,
+          ', '
+        )}] are available for tenant ${numericTenantId}`
       );
 
       return res.status(403).json({
@@ -148,9 +148,9 @@ export const checkAnyFeature =
         upgrade_required: options.sendUpgradeHint !== false,
       });
     } catch (error) {
-      logger.error("Error checking features:", error);
+      logger.error('Error checking features:', error);
       return res.status(500).json({
-        error: "Fehler bei der Feature-Überprüfung",
+        error: 'Fehler bei der Feature-Überprüfung',
       });
     }
   };
@@ -164,13 +164,13 @@ export const checkAllFeatures =
 
       if (req.tenantId) {
         const [tenantRows] = (await (db as any).query(
-          "SELECT id FROM tenants WHERE subdomain = ?",
-          [req.tenantId],
+          'SELECT id FROM tenants WHERE subdomain = ?',
+          [req.tenantId]
         )) as [RowDataPacket[], any];
 
         if (tenantRows.length === 0) {
           return res.status(404).json({
-            error: "Tenant nicht gefunden",
+            error: 'Tenant nicht gefunden',
             upgrade_required: true,
           });
         }
@@ -180,7 +180,7 @@ export const checkAllFeatures =
         numericTenantId = req.user.tenantId;
       } else {
         return res.status(400).json({
-          error: "Keine Tenant-ID gefunden",
+          error: 'Keine Tenant-ID gefunden',
         });
       }
 
@@ -189,7 +189,7 @@ export const checkAllFeatures =
       for (const featureCode of featureCodes) {
         const hasFeature = await Feature.checkTenantAccess(
           numericTenantId,
-          featureCode,
+          featureCode
         );
         if (!hasFeature) {
           missingFeatures.push(featureCode);
@@ -200,13 +200,13 @@ export const checkAllFeatures =
         const errorMessage =
           options.customErrorMessage ||
           `Die folgenden Funktionen sind für Ihren Tarif nicht verfügbar: ${missingFeatures.join(
-            ", ",
+            ', '
           )}`;
 
         logger.warn(
           `Features [${missingFeatures.join(
-            ", ",
-          )}] are not available for tenant ${numericTenantId}`,
+            ', '
+          )}] are not available for tenant ${numericTenantId}`
         );
 
         return res.status(403).json({
@@ -219,14 +219,14 @@ export const checkAllFeatures =
 
       logger.info(
         `All features [${featureCodes.join(
-          ", ",
-        )}] are active for tenant ${numericTenantId}`,
+          ', '
+        )}] are active for tenant ${numericTenantId}`
       );
       return next();
     } catch (error) {
-      logger.error("Error checking all features:", error);
+      logger.error('Error checking all features:', error);
       return res.status(500).json({
-        error: "Fehler bei der Feature-Überprüfung",
+        error: 'Fehler bei der Feature-Überprüfung',
       });
     }
   };

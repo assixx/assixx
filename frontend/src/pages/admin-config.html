@@ -10,22 +10,14 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <a href="/pages/root-dashboard.html" class="logo-container">
-        <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" style="height: 40px; width: auto; filter: none" />
-      </a>
-      <div class="header-actions">
-        <div id="user-info">
-          <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
-          <span id="user-name">Lade...</span>
-        </div>
-        <button onclick="window.location.href='/root-dashboard'" class="btn btn-secondary">Zurück zum Dashboard</button>
-      </div>
-    </header>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
 
-    <!-- Main Container -->
-    <div class="container mt-5">
+    <!-- Main Layout mit Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="container">
       <h1 class="text-center mb-4">Admin Konfiguration</h1>
       <p class="text-center mb-4" id="admin-name"></p>
 
@@ -172,7 +164,9 @@
     </div>
 
     <script type="module" src="/scripts/admin-config.ts"></script>
-    <!-- Header User Info Loading -->
-    <script type="module" src="/scripts/header-user-info.ts"></script>
+      </main>
+    </div>
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

@@ -1,12 +1,12 @@
 // Enhanced Security Middleware für Assixx
-import helmet from "helmet";
-import * as cors from "cors";
-import rateLimit, { RateLimitRequestHandler } from "express-rate-limit";
+import helmet from 'helmet';
+import * as cors from 'cors';
+import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 // import mongoSanitize from 'express-mongo-sanitize'; // Disabled - not compatible with Express 5.x
 // import xss from 'xss-clean'; // Disabled - not compatible with Express 5.x
-import hpp from "hpp";
-import { Request, Response, NextFunction } from "express";
-import { doubleCsrf } from "csrf-csrf";
+import hpp from 'hpp';
+import { Request, Response, NextFunction } from 'express';
+import { doubleCsrf } from 'csrf-csrf';
 
 // Type definitions
 interface AuditEntry {
@@ -26,7 +26,7 @@ interface AuditEntry {
 
 // CSRF Protection Configuration
 const csrfSecret =
-  process.env.CSRF_SECRET || "assixx-csrf-secret-change-in-production";
+  process.env.CSRF_SECRET || 'assixx-csrf-secret-change-in-production';
 const csrfProtection = doubleCsrf({
   getSecret: () => csrfSecret,
   getSessionIdentifier: (req) => {
@@ -34,17 +34,17 @@ const csrfProtection = doubleCsrf({
     if (req.user && req.user.id) {
       return `user-${req.user.id}`;
     }
-    return req.ip || "anonymous";
+    return req.ip || 'anonymous';
   },
-  cookieName: "__CSRF-Token__",
+  cookieName: '__CSRF-Token__',
   cookieOptions: {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60, // 1 hour
   },
   size: 64,
-  ignoredMethods: ["GET", "HEAD", "OPTIONS"],
+  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
 });
 
 // Extract the functions from csrfProtection
@@ -54,15 +54,15 @@ const { generateCsrfToken, doubleCsrfProtection } = csrfProtection;
 export const generateCSRFTokenMiddleware = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   try {
     const token = generateCsrfToken(req as any, res as any);
     res.locals.csrfToken = token;
     next();
   } catch (error) {
-    console.error("Error generating CSRF token:", error);
-    res.status(500).json({ error: "Could not generate CSRF token" });
+    console.error('Error generating CSRF token:', error);
+    res.status(500).json({ error: 'Could not generate CSRF token' });
   }
 };
 
@@ -70,24 +70,24 @@ export const generateCSRFTokenMiddleware = (
 export const validateCSRFToken = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   // Skip CSRF validation for API endpoints that use Bearer token authentication
   if (
     req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer ")
+    req.headers.authorization.startsWith('Bearer ')
   ) {
     return next();
   }
 
   // Skip CSRF validation for public endpoints
   const publicEndpoints = [
-    "/api/signup",
-    "/api/check-subdomain",
-    "/api/auth/login",
-    "/api/auth/register",
-    "/login",
-    "/signup",
+    '/api/signup',
+    '/api/check-subdomain',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/login',
+    '/signup',
   ];
 
   if (publicEndpoints.some((endpoint) => req.path.startsWith(endpoint))) {
@@ -102,10 +102,10 @@ export const validateCSRFToken = (
 export const attachCSRFToken = (
   _req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   if (res.locals.csrfToken) {
-    res.setHeader("X-CSRF-Token", res.locals.csrfToken);
+    res.setHeader('X-CSRF-Token', res.locals.csrfToken);
   }
   next();
 };
@@ -114,13 +114,13 @@ export const attachCSRFToken = (
 export const enforceHTTPS = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   if (
-    req.header("x-forwarded-proto") !== "https" &&
-    process.env.NODE_ENV === "production"
+    req.header('x-forwarded-proto') !== 'https' &&
+    process.env.NODE_ENV === 'production'
   ) {
-    res.redirect(`https://${req.header("host")}${req.url}`);
+    res.redirect(`https://${req.header('host')}${req.url}`);
     return;
   }
   next();
@@ -134,34 +134,34 @@ export const securityHeaders = helmet({
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
+        'https://fonts.googleapis.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
       ],
       styleSrcElem: [
         "'self'",
         "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
+        'https://fonts.googleapis.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
       ],
       scriptSrc: [
         "'self'",
         "'unsafe-inline'",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
       ],
       scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
       fontSrc: [
         "'self'",
-        "data:",
-        "https://fonts.gstatic.com",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
+        'data:',
+        'https://fonts.gstatic.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
       ],
       connectSrc: ["'self'"],
-      frameSrc: ["'self'", "blob:"],
+      frameSrc: ["'self'", 'blob:'],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       manifestSrc: ["'self'"],
@@ -174,9 +174,9 @@ export const securityHeaders = helmet({
   },
   noSniff: true,
   xssFilter: true,
-  referrerPolicy: { policy: "same-origin" },
+  referrerPolicy: { policy: 'same-origin' },
   ieNoOpen: true,
-  frameguard: { action: "deny" },
+  frameguard: { action: 'deny' },
 });
 
 // CORS with Subdomain Whitelist
@@ -198,28 +198,28 @@ export const corsOptions: cors.CorsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
-  exposedHeaders: ["X-CSRF-Token"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['X-CSRF-Token'],
   maxAge: 86400, // 24 hours
 };
 
 // Enhanced Rate Limiting per Tenant
 const createTenantRateLimiter = (
   windowMs: number,
-  max: number,
+  max: number
 ): RateLimitRequestHandler =>
   rateLimit({
     windowMs,
     max,
     keyGenerator: (req: Request) =>
       // Rate limit per tenant + IP combination
-      `${req.tenant?.id || "public"}_${req.ip}`,
-    message: "Too many requests from this tenant/IP, please try again later.",
+      `${req.tenant?.id || 'public'}_${req.ip}`,
+    message: 'Too many requests from this tenant/IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
   });
@@ -228,14 +228,14 @@ const createTenantRateLimiter = (
 export const generalLimiter = createTenantRateLimiter(15 * 60 * 1000, 1000); // 1000 requests per 15 minutes
 export const authLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 100 : 5,
+  process.env.NODE_ENV === 'development' ? 100 : 5
 ); // 100 auth attempts in dev, 5 in prod
 export const uploadLimiter = createTenantRateLimiter(15 * 60 * 1000, 10); // 10 uploads per 15 minutes
 
 // Specific API endpoint rate limiters
 export const strictAuthLimiter = createTenantRateLimiter(
   5 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 50 : 3,
+  process.env.NODE_ENV === 'development' ? 50 : 3
 ); // 50 login attempts in dev, 3 in prod
 export const apiLimiter = createTenantRateLimiter(60 * 1000, 100); // 100 API requests per minute
 export const searchLimiter = createTenantRateLimiter(60 * 1000, 30); // 30 search requests per minute
@@ -245,33 +245,33 @@ export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 20); // 20 
 // Progressive Rate Limiting - increases delay based on violations
 const createProgressiveRateLimiter = (
   windowMs: number,
-  max: number,
+  max: number
 ): RateLimitRequestHandler =>
   rateLimit({
     windowMs,
     max,
-    keyGenerator: (req: Request) => `${req.tenant?.id || "public"}_${req.ip}`,
+    keyGenerator: (req: Request) => `${req.tenant?.id || 'public'}_${req.ip}`,
     message: {
-      error: "Rate limit exceeded",
+      error: 'Rate limit exceeded',
       retryAfter: Math.ceil(windowMs / 1000),
-      message: "Too many requests. Please slow down and try again later.",
+      message: 'Too many requests. Please slow down and try again later.',
     },
     standardHeaders: true,
     legacyHeaders: false,
     // Log rate limit violations using a handler function
     handler: (req: Request, res: Response) => {
-      console.warn("Rate limit exceeded:", {
+      console.warn('Rate limit exceeded:', {
         ip: req.ip,
         tenant: req.tenant?.id,
         path: req.path,
-        userAgent: req.get("User-Agent"),
+        userAgent: req.get('User-Agent'),
         timestamp: new Date().toISOString(),
       });
 
       res.status(429).json({
-        error: "Rate limit exceeded",
+        error: 'Rate limit exceeded',
         retryAfter: Math.ceil(windowMs / 1000),
-        message: "Too many requests. Please slow down and try again later.",
+        message: 'Too many requests. Please slow down and try again later.',
       });
     },
   });
@@ -280,11 +280,11 @@ const createProgressiveRateLimiter = (
 export const suspiciousActivityLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // 10 requests per hour for suspicious IPs
-  keyGenerator: (req: Request) => req.ip || "unknown",
+  keyGenerator: (req: Request) => req.ip || 'unknown',
   message: {
-    error: "Suspicious activity detected",
+    error: 'Suspicious activity detected',
     message:
-      "Your IP has been temporarily restricted due to unusual activity patterns.",
+      'Your IP has been temporarily restricted due to unusual activity patterns.',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -297,32 +297,32 @@ export const suspiciousActivityLimiter = rateLimit({
 // Enhanced progressive limiters
 export const progressiveApiLimiter = createProgressiveRateLimiter(
   60 * 1000,
-  200,
+  200
 ); // 200 requests per minute
 export const progressiveAuthLimiter = createProgressiveRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === "development" ? 100 : 10,
+  process.env.NODE_ENV === 'development' ? 100 : 10
 ); // 100 auth attempts in dev, 10 in prod
 
 // Tenant Context Validation
 export const validateTenantContext = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   if (req.user && req.tenant) {
     const userTenant = req.user.tenantId;
     const requestTenant = req.tenant.id;
 
     if (userTenant && requestTenant && userTenant !== requestTenant) {
-      console.error("Tenant access violation:", {
+      console.error('Tenant access violation:', {
         user: req.user.id,
         userTenant,
         requestTenant,
         ip: req.ip,
       });
       res.status(403).json({
-        error: "Access denied: Tenant context mismatch",
+        error: 'Access denied: Tenant context mismatch',
       });
       return;
     }
@@ -348,21 +348,21 @@ export const auditLogger =
       const duration = Date.now() - startTime;
       const auditEntry: AuditEntry = {
         timestamp: new Date().toISOString(),
-        tenantId: req.tenant?.id || "public",
-        userId: req.user?.id ? req.user.id.toString() : "anonymous",
+        tenantId: req.tenant?.id || 'public',
+        userId: req.user?.id ? req.user.id.toString() : 'anonymous',
         action,
         resource,
         method: req.method,
         path: req.path,
         statusCode: res.statusCode,
         duration,
-        ip: req.ip || "unknown",
-        userAgent: req.get("user-agent"),
+        ip: req.ip || 'unknown',
+        userAgent: req.get('user-agent'),
         success: res.statusCode < 400,
       };
 
       // Log to console (in production, send to SIEM)
-      console.log("AUDIT:", JSON.stringify(auditEntry));
+      console.log('AUDIT:', JSON.stringify(auditEntry));
 
       // TODO: Save to database or send to SIEM system
 
@@ -379,21 +379,21 @@ export const sanitizeInputs = hpp(); // Prevent HTTP Parameter Pollution
 export const apiSecurityHeaders = (
   _req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader(
-    "Strict-Transport-Security",
-    "max-age=31536000; includeSubDomains",
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains'
   );
   res.setHeader(
-    "Cache-Control",
-    "no-store, no-cache, must-revalidate, private",
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, private'
   );
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   next();
 };
 
@@ -401,7 +401,7 @@ export const apiSecurityHeaders = (
 export const validateContentType =
   (expectedType: string) =>
   (req: Request, res: Response, next: NextFunction): void => {
-    if (req.is(expectedType) || !req.get("content-type")) {
+    if (req.is(expectedType) || !req.get('content-type')) {
       next();
     } else {
       res.status(400).json({
@@ -414,24 +414,24 @@ export const validateContentType =
 export const fileUploadSecurity = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   if (!req.files || Object.keys(req.files).length === 0) {
     return next();
   }
 
   const allowedMimeTypes = [
-    "image/jpeg",
-    "image/png",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    'image/jpeg',
+    'image/png',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
 
   const files = Array.isArray(req.files) ? req.files : Object.values(req.files);
 
   for (const file of files) {
-    if ("mimetype" in file && !allowedMimeTypes.includes(file.mimetype)) {
+    if ('mimetype' in file && !allowedMimeTypes.includes(file.mimetype)) {
       res.status(400).json({
         error: `File type not allowed: ${file.mimetype}`,
       });
@@ -439,9 +439,9 @@ export const fileUploadSecurity = (
     }
 
     // Additional file size check (10MB max)
-    if ("size" in file && file.size > 10 * 1024 * 1024) {
+    if ('size' in file && file.size > 10 * 1024 * 1024) {
       res.status(400).json({
-        error: "File size exceeds maximum allowed (10MB)",
+        error: 'File size exceeds maximum allowed (10MB)',
       });
       return;
     }

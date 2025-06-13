@@ -1,3 +1,9 @@
+/**
+ * ACHTUNG: Dieses Script ist primär für Test-Zwecke!
+ * Employee_id wird automatisch vom User Model generiert im Format:
+ * DOMAINROLEIDDDMMYYYYHHMM (z.B. SCSEMP21120620251758)
+ */
+
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
@@ -27,8 +33,9 @@ async function createEmployee() {
       first_name: 'Max',
       last_name: 'Mustermann',
       age: 30,
-      employee_id: `EMP${Date.now().toString().slice(-6)}`,
+      // employee_id wird automatisch vom User Model generiert!
       position: 'Entwickler',
+      tenant_id: 8, // SCS tenant
     };
 
     // SQL-Abfrage erstellen

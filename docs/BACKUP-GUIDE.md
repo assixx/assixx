@@ -3,6 +3,7 @@
 ## 📋 Übersicht
 
 Dieses Backup-System schützt Ihre Assixx-Datenbank vor Datenverlust durch:
+
 - ✅ Automatische tägliche Backups
 - ✅ Wöchentliche und monatliche Archivierung
 - ✅ Einfache Wiederherstellung
@@ -11,6 +12,7 @@ Dieses Backup-System schützt Ihre Assixx-Datenbank vor Datenverlust durch:
 ## 🚀 Quick Start
 
 ### Sofort-Backup erstellen
+
 ```bash
 # Schnelles Backup mit optionalem Kommentar
 ./quick-backup.sh "vor_wichtiger_aenderung"
@@ -20,6 +22,7 @@ Dieses Backup-System schützt Ihre Assixx-Datenbank vor Datenverlust durch:
 ```
 
 ### Automatische Backups einrichten
+
 ```bash
 # Interaktives Setup für Cron-Jobs
 ./setup-backup-cron.sh
@@ -40,24 +43,30 @@ backups/
 ## 🔧 Scripts im Detail
 
 ### 1. `backup-database.sh`
+
 Hauptscript für automatische Backups:
+
 - Erstellt komprimierte SQL-Dumps
 - Verwaltet tägliche/wöchentliche/monatliche Rotation
 - Löscht automatisch alte Backups
 - Zeigt Statistiken
 
 **Manuell ausführen:**
+
 ```bash
 ./backup-database.sh
 ```
 
 ### 2. `restore-database.sh`
+
 Interaktives Wiederherstellungs-Tool:
+
 - Zeigt alle verfügbaren Backups
 - Erstellt Sicherheits-Backup vor Wiederherstellung
 - Validiert die Wiederherstellung
 
 **Verwendung:**
+
 ```bash
 # Interaktiv (zeigt Menü)
 ./restore-database.sh
@@ -67,7 +76,9 @@ Interaktives Wiederherstellungs-Tool:
 ```
 
 ### 3. `quick-backup.sh`
+
 Für schnelle manuelle Backups:
+
 ```bash
 # Mit Beschreibung
 ./quick-backup.sh "vor_migration"
@@ -76,7 +87,9 @@ Für schnelle manuelle Backups:
 ```
 
 ### 4. `setup-backup-cron.sh`
+
 Richtet automatische Backups ein:
+
 - Verschiedene Zeitpläne wählbar
 - Verwaltet Cron-Jobs
 - Zeigt aktuelle Einstellungen
@@ -84,12 +97,14 @@ Richtet automatische Backups ein:
 ## 📊 Backup-Strategie
 
 ### Aufbewahrung
+
 - **Tägliche Backups**: 7 Tage
-- **Wöchentliche Backups**: 30 Tage  
+- **Wöchentliche Backups**: 30 Tage
 - **Monatliche Backups**: 365 Tage
 - **Quick Backups**: Manuell löschen
 
 ### Empfohlene Praxis
+
 1. **Automatische Backups**: Täglich um 02:00 Uhr
 2. **Vor großen Änderungen**: Quick-Backup erstellen
 3. **Regelmäßig prüfen**: Backup-Statistiken kontrollieren
@@ -97,6 +112,7 @@ Richtet automatische Backups ein:
 ## 🚨 Notfall-Wiederherstellung
 
 ### Fall 1: Datenbank komplett verloren
+
 ```bash
 # Docker neu starten
 docker-compose down
@@ -113,6 +129,7 @@ mysql -u root -pStrongP@ssw0rd!123 assixx < database/docker-init.sql
 ```
 
 ### Fall 2: Fehlerhafte Daten korrigieren
+
 ```bash
 # Quick-Backup vor Änderung
 ./quick-backup.sh "vor_korrektur"
@@ -124,6 +141,7 @@ mysql -u root -pStrongP@ssw0rd!123 assixx < database/docker-init.sql
 ```
 
 ### Fall 3: Docker Volume defekt
+
 ```bash
 # Neues Volume erstellen
 docker-compose down -v
@@ -136,12 +154,14 @@ bash setup-docker-db.sh
 
 ## 🔐 Sicherheitshinweise
 
-1. **Backup-Dateien schützen**: 
+1. **Backup-Dateien schützen**:
+
    - Enthalten sensible Daten
    - Verschlüsseln für externe Speicherung
    - Zugriff beschränken
 
 2. **Passwörter**:
+
    - In Scripts hartcodiert (ändern in Produktion!)
    - Umgebungsvariablen verwenden
 
@@ -154,6 +174,7 @@ bash setup-docker-db.sh
 ## 📈 Monitoring
 
 ### Backup-Status prüfen
+
 ```bash
 # Zeige Backup-Statistik
 ls -la backups/*/ | wc -l
@@ -166,6 +187,7 @@ ls -la backups/latest_backup.sql.gz
 ```
 
 ### Cron-Logs prüfen
+
 ```bash
 # Live-Log verfolgen
 tail -f backups/cron.log
@@ -177,18 +199,21 @@ grep "abgeschlossen" backups/cron.log | tail -10
 ## 🆘 Troubleshooting
 
 ### Problem: "MySQL Container läuft nicht"
+
 ```bash
 docker-compose up -d
 docker ps | grep mysql
 ```
 
 ### Problem: "Backup zu groß"
+
 ```bash
 # Nur Struktur ohne Daten
 docker exec assixx-mysql mysqldump -u root -p'StrongP@ssw0rd!123' --no-data assixx > structure_only.sql
 ```
 
 ### Problem: "Restore schlägt fehl"
+
 ```bash
 # Prüfe MySQL Logs
 docker logs assixx-mysql --tail 50
@@ -201,10 +226,12 @@ zcat backup.sql.gz | split -l 1000 - partial_
 ## 💡 Best Practices
 
 1. **Testen Sie Backups regelmäßig**
+
    - Monatlich eine Test-Wiederherstellung
    - Dokumentieren Sie den Prozess
 
 2. **3-2-1 Regel**
+
    - 3 Kopien Ihrer Daten
    - 2 verschiedene Medien
    - 1 externe Kopie
@@ -217,6 +244,7 @@ zcat backup.sql.gz | split -l 1000 - partial_
 ## 📞 Support
 
 Bei Problemen:
+
 1. Prüfen Sie die Logs: `backups/cron.log`
 2. Führen Sie manuelles Backup aus
 3. Kontaktieren Sie den Administrator

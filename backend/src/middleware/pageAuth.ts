@@ -26,116 +26,116 @@ const pagePermissions: Record<string, PageConfig> = {
   // Admin pages
   '/pages/admin-dashboard.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html'
+    redirectOnFail: '/pages/employee-dashboard.html',
   },
   '/pages/admin-profile.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-profile.html'
+    redirectOnFail: '/pages/employee-profile.html',
   },
   '/pages/admin-config.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html'
+    redirectOnFail: '/pages/employee-dashboard.html',
   },
   '/pages/feature-management.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html'
+    redirectOnFail: '/pages/employee-dashboard.html',
   },
   '/pages/documents.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/survey-admin.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/survey-employee.html'
+    redirectOnFail: '/pages/survey-employee.html',
   },
   '/pages/org-management.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html'
+    redirectOnFail: '/pages/employee-dashboard.html',
   },
   '/pages/archived-employees.html': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html'
+    redirectOnFail: '/pages/employee-dashboard.html',
   },
-  
+
   // Employee pages
   '/pages/employee-dashboard.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/employee-profile.html': {
     allowedRoles: ['employee'],
-    redirectOnFail: '/pages/admin-profile.html'
+    redirectOnFail: '/pages/admin-profile.html',
   },
   '/pages/profile.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/salary-documents.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/survey-employee.html': {
     allowedRoles: ['employee'],
-    redirectOnFail: '/pages/survey-admin.html'
+    redirectOnFail: '/pages/survey-admin.html',
   },
-  
+
   // Root pages
   '/pages/root-dashboard.html': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-dashboard.html'
+    redirectOnFail: '/pages/admin-dashboard.html',
   },
   '/pages/root-profile.html': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-profile.html'
+    redirectOnFail: '/pages/admin-profile.html',
   },
   '/pages/root-features.html': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/feature-management.html'
+    redirectOnFail: '/pages/feature-management.html',
   },
   '/pages/manage-admins.html': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-dashboard.html'
+    redirectOnFail: '/pages/admin-dashboard.html',
   },
   '/pages/storage-upgrade.html': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-dashboard.html'
+    redirectOnFail: '/pages/admin-dashboard.html',
   },
-  
+
   // Shared pages (all authenticated users)
   '/pages/blackboard.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/calendar.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/chat.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/shifts.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/kvp.html': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
-  
+
   // Public pages (no auth required)
   '/pages/login.html': {
     allowedRoles: ['*'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/signup.html': {
     allowedRoles: ['*'],
-    redirectOnFail: '/pages/login.html'
+    redirectOnFail: '/pages/login.html',
   },
   '/pages/index.html': {
     allowedRoles: ['*'],
-    redirectOnFail: '/pages/login.html'
-  }
+    redirectOnFail: '/pages/login.html',
+  },
 };
 
 /**
@@ -145,13 +145,13 @@ function getTokenFromRequest(req: Request): string | null {
   // Try cookie first
   const cookieToken = req.cookies?.token;
   if (cookieToken) return cookieToken;
-  
+
   // Try Authorization header
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
-  
+
   return null;
 }
 
@@ -174,41 +174,50 @@ function getDashboardForRole(role: string): string {
 /**
  * Middleware to protect HTML pages based on user role
  */
-export function protectPage(req: Request, res: Response, next: NextFunction): void {
+export function protectPage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   const pagePath = req.path;
   const pageConfig = pagePermissions[pagePath];
-  
+
   // If page is not in our config, allow it (static assets, etc.)
   if (!pageConfig) {
     return next();
   }
-  
+
   // Public pages
   if (pageConfig.allowedRoles.includes('*')) {
     return next();
   }
-  
+
   // Get token
   const token = getTokenFromRequest(req);
-  
+
   if (!token) {
     logger.warn(`No token for protected page: ${pagePath}`);
     return res.redirect('/pages/login.html');
   }
-  
+
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as DecodedToken;
-    
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your-secret-key'
+    ) as DecodedToken;
+
     // Check if user's role is allowed
     if (!pageConfig.allowedRoles.includes(decoded.role)) {
-      logger.warn(`User ${decoded.username} (${decoded.role}) tried to access ${pagePath}`);
-      
+      logger.warn(
+        `User ${decoded.username} (${decoded.role}) tried to access ${pagePath}`
+      );
+
       // Redirect to appropriate page based on role
       const redirectUrl = getDashboardForRole(decoded.role);
       return res.redirect(redirectUrl);
     }
-    
+
     // User is authorized, continue
     next();
   } catch (error) {
@@ -222,13 +231,16 @@ export function protectPage(req: Request, res: Response, next: NextFunction): vo
  */
 export function redirectToDashboard(req: Request, res: Response): void {
   const token = getTokenFromRequest(req);
-  
+
   if (!token) {
     return res.redirect('/pages/login.html');
   }
-  
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as DecodedToken;
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your-secret-key'
+    ) as DecodedToken;
     const dashboardUrl = getDashboardForRole(decoded.role);
     res.redirect(dashboardUrl);
   } catch (error) {
@@ -240,32 +252,36 @@ export function redirectToDashboard(req: Request, res: Response): void {
 /**
  * Content Security Policy middleware
  */
-export function contentSecurityPolicy(_req: Request, res: Response, next: NextFunction): void {
+export function contentSecurityPolicy(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: blob:; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self' ws: wss:; " +
-    "frame-src 'self' blob:; " +
-    "object-src 'self' blob:; " +
-    "base-uri 'self'; " +
-    "form-action 'self';"
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: blob:; " +
+      "font-src 'self' data:; " +
+      "connect-src 'self' ws: wss:; " +
+      "frame-src 'self' blob:; " +
+      "object-src 'self' blob:; " +
+      "base-uri 'self'; " +
+      "form-action 'self';"
   );
-  
+
   // Additional security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+
   next();
 }
 
 export default {
   protectPage,
   redirectToDashboard,
-  contentSecurityPolicy
+  contentSecurityPolicy,
 };

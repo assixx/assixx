@@ -77,31 +77,35 @@ docker-compose exec mysql mysql -u root -p
 ### 🛠️ Docker-spezifische Debugging Tipps
 
 1. **Container neu bauen nach Dependency-Änderungen**:
+
    ```bash
    docker-compose build --no-cache backend
    docker-compose up
    ```
 
 2. **Volumes prüfen**:
+
    ```bash
    docker volume ls
    docker volume inspect assixx_mysql_data
    ```
 
 3. **Netzwerk-Debugging**:
+
    ```bash
    # Container IPs anzeigen
    docker network inspect assixx_default
-   
+
    # Verbindung zwischen Containern testen
    docker-compose exec backend ping mysql
    ```
 
 4. **Performance-Probleme**:
+
    ```bash
    # Resource-Nutzung anzeigen
    docker stats
-   
+
    # Container-Prozesse
    docker-compose top
    ```
@@ -148,6 +152,7 @@ npm run dev  # Vite Dev Server
 ```
 
 **Hinweis**: Die lokale Entwicklung erfordert:
+
 - Node.js 18+
 - MySQL 8.0+
 - Korrekte .env Konfiguration
@@ -533,12 +538,14 @@ docker-compose logs > full-debug.log 2>&1
 ### Docker-spezifische Probleme lösen
 
 1. **"Cannot connect to MySQL"**:
+
    ```bash
    # Warten bis MySQL bereit ist
    docker-compose exec backend nc -zv mysql 3306
    ```
 
 2. **"EADDRINUSE: Port already in use"**:
+
    ```bash
    # Prozess auf Port finden
    lsof -i :3000

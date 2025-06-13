@@ -82,14 +82,21 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
   --success-color: #4caf50; /* Grün für Erfolg */
   --error-color: #f44336; /* Rot für Fehler */
   --warning-color: #ff9800; /* Orange für Warnungen */
-  
+
   /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
   --accent-color: rgba(255, 255, 255, 0.1); /* Elegante transparente Basis */
-  --accent-gradient: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15), 
-    rgba(255, 255, 255, 0.05), 
-    rgba(255, 255, 255, 0.1)); /* Subtiler Glassmorphismus Gradient */
-  --accent-glow: rgba(255, 255, 255, 0.6); /* Glow-Effekt für Premium Elements */
+  --accent-gradient: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.1)
+  ); /* Subtiler Glassmorphismus Gradient */
+  --accent-glow: rgba(
+    255,
+    255,
+    255,
+    0.6
+  ); /* Glow-Effekt für Premium Elements */
 
   /* Abstände */
   --spacing-xs: 4px;
@@ -186,16 +193,85 @@ body::after {
 
 ## 📦 Komponenten-Standards
 
-### 1. Header Navigation
+### 1. Header Navigation & Navigation Container System
+
+#### Navigation Container System (STANDARD ab v0.1.0)
+
+Das Navigation Container System ist der moderne Standard für konsistente Navigation in Assixx. Alle neuen Seiten MÜSSEN dieses System verwenden.
+
+**HTML-Struktur (Minimal):**
+
+```html
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <!-- Imports... -->
+  </head>
+  <body>
+    <!-- Navigation Container - EINZIGE Navigation-Struktur -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout -->
+    <div class="layout-container">
+      <main class="main-content">
+        <!-- Seiten-Content hier -->
+      </main>
+    </div>
+
+    <!-- Scripts am Ende -->
+    <script
+      type="module"
+      src="/scripts/components/unified-navigation.ts"
+    ></script>
+  </body>
+</html>
+```
+
+**TypeScript Import:**
+
+```javascript
+// unified-navigation.ts generiert automatisch:
+// - Header mit Logo, User-Info, Role-Switch, Logout
+// - Sidebar mit rolle-basierten Menüpunkten
+// - Responsive Toggle-Funktionalität
+// - Konsistente Glassmorphismus-Styles
+```
+
+**Vorteile:**
+
+- ✅ Single Source of Truth für Navigation
+- ✅ Keine Duplikation über Seiten
+- ✅ Automatische Rolle-basierte Menüs
+- ✅ Einheitliches Responsive-Verhalten
+- ✅ Zentrale Wartung
+
+**Migration von alten Seiten:**
+
+1. Entfernen: Kompletten `<header>` und `<aside class="sidebar">` HTML
+2. Entfernen: Scripts wie `header-user-info.ts`, `role-switch.ts`
+3. Hinzufügen: `<div id="navigation-container"></div>`
+4. Hinzufügen: `<script type="module" src="/scripts/components/unified-navigation.ts"></script>`
+
+**CSS für Header (automatisch von unified-navigation.ts generiert):**
 
 ```css
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
-  /* WICHTIG: Kein border-bottom, nur box-shadow! */
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+  z-index: 1000;
 }
 ```
 
@@ -958,30 +1034,32 @@ transition: all 0.6s ease-out;
 
 ### DO's ✓ (IMMER befolgen!)
 
-1. **IMMER** Custom Dropdowns statt native HTML `<select>` verwenden
-2. **IMMER** Glassmorphismus auf alle Container anwenden
-3. **IMMER** Nur Dark Theme - keine Light Theme Variationen
-4. **IMMER** Subtile Transparenzen zwischen 0.02-0.08 halten
-5. **IMMER** Konsistente Blur-Werte: 20px für Container, 10px für Buttons, 5px für Inputs
-6. **IMMER** Inset Shadow für Tiefe hinzufügen
-7. **IMMER** fadeInUp Animation auf alle Haupt-Container anwenden
-8. **IMMER** subtle-pulse Animation auf alle Logo-Elemente anwenden
-9. **IMMER** Webkit-Präfixe für Safari-Kompatibilität verwenden
-10. **IMMER** CSS-Variablen für Konsistenz und einfache Wartung nutzen
+1. **IMMER** Navigation Container System für neue Seiten verwenden
+2. **IMMER** Custom Dropdowns statt native HTML `<select>` verwenden
+3. **IMMER** Glassmorphismus auf alle Container anwenden
+4. **IMMER** Nur Dark Theme - keine Light Theme Variationen
+5. **IMMER** Subtile Transparenzen zwischen 0.02-0.08 halten
+6. **IMMER** Konsistente Blur-Werte: 20px für Container, 10px für Buttons, 5px für Inputs
+7. **IMMER** Inset Shadow für Tiefe hinzufügen
+8. **IMMER** fadeInUp Animation auf alle Haupt-Container anwenden
+9. **IMMER** subtle-pulse Animation auf alle Logo-Elemente anwenden
+10. **IMMER** Webkit-Präfixe für Safari-Kompatibilität verwenden
+11. **IMMER** CSS-Variablen für Konsistenz und einfache Wartung nutzen
 
 ### DON'Ts ✗ (NIEMALS tun!)
 
-1. **NIEMALS** native HTML `<select>` Elemente verwenden
-2. **NIEMALS** feste Pixel-Werte für Farben (immer CSS-Variablen)
-3. **NIEMALS** inline styles (außer display: none)
-4. **NIEMALS** border-bottom auf Header (nur box-shadow verwenden)
-5. **NIEMALS** unterschiedliche Hover-Effekte für gleiche Komponenten
-6. **NIEMALS** wichtige Animationen ohne GPU-Beschleunigung
-7. **NIEMALS** Blur-Werte über 20px (Performance!)
-8. **NIEMALS** vergessen die Logo-Animation anzuwenden
-9. **NIEMALS** verschiedene Dropdown-Implementierungen mischen
-10. **NIEMALS** das Dark Theme aufhellen oder Light Theme Elemente einführen
-11. **NIEMALS** backdrop-filter auf .card-header anwenden (nur auf Container/Cards selbst)
+1. **NIEMALS** alte hardcoded Navigation bei neuen Seiten verwenden
+2. **NIEMALS** native HTML `<select>` Elemente verwenden
+3. **NIEMALS** feste Pixel-Werte für Farben (immer CSS-Variablen)
+4. **NIEMALS** inline styles (außer display: none)
+5. **NIEMALS** border-bottom auf Header (nur box-shadow verwenden)
+6. **NIEMALS** unterschiedliche Hover-Effekte für gleiche Komponenten
+7. **NIEMALS** wichtige Animationen ohne GPU-Beschleunigung
+8. **NIEMALS** Blur-Werte über 20px (Performance!)
+9. **NIEMALS** vergessen die Logo-Animation anzuwenden
+10. **NIEMALS** verschiedene Dropdown-Implementierungen mischen
+11. **NIEMALS** das Dark Theme aufhellen oder Light Theme Elemente einführen
+12. **NIEMALS** backdrop-filter auf .card-header anwenden (nur auf Container/Cards selbst)
 
 ### Z-Index Hierarchie
 
@@ -1332,9 +1410,11 @@ document.addEventListener('click', function (e) {
 ## ⚠️ Wichtige CSS-Konflikte vermeiden
 
 ### Problem: Globale CSS-Selektoren
+
 Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemeinen CSS-Selektoren zu verwenden, da diese die Standard-Styles überschreiben können.
 
 #### ❌ FALSCH - Zu globale Selektoren:
+
 ```css
 /* NIEMALS so allgemein definieren! */
 .btn {
@@ -1349,6 +1429,7 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 ```
 
 #### ✅ RICHTIG - Spezifische Selektoren:
+
 ```css
 /* Immer mit spezifischem Kontext */
 .feature-actions .btn {
@@ -1362,30 +1443,34 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 ```
 
 ### Pflicht-Includes für konsistente Header:
+
 Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
+
 ```html
 <!-- Font Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
 <!-- User Info Styles (entfernt unerwünschte Pseudo-Elemente) -->
 <link rel="stylesheet" href="/styles/user-info-update.css" />
 ```
 
 ### Debugging-Tipps:
+
 1. **Vergleiche mit funktionierenden Seiten** (z.B. root-dashboard.html)
 2. **Prüfe alle CSS-Includes** - fehlende Dateien sind oft die Ursache
 3. **Inspiziere spezifische Selektoren** - zu globale Styles überschreiben oft Standards
 4. **Validiere HTML** - doppelte `class` Attribute werden ignoriert
 
-
-
 Für alle modals gilt bei:
 backdrop-filter: blur(20px) saturate(500%);
 
-  background: #1a1a1a4a;
----
+## background: #1a1a1a4a;
 
 ## 🎯 Checkliste für neue Komponenten
 
+- [ ] Navigation Container System verwendet?
 - [ ] Glassmorphismus-Effekt angewendet?
 - [ ] Webkit-Präfixe hinzugefügt?
 - [ ] CSS-Variablen verwendet?
@@ -1399,17 +1484,21 @@ backdrop-filter: blur(20px) saturate(500%);
 - [ ] **Keine globalen CSS-Selektoren verwendet?**
 - [ ] **Alle notwendigen CSS-Dateien eingebunden?**
 - [ ] **HTML-Validität geprüft (keine doppelten Attribute)?**
+- [ ] **design-standards.html als Referenz konsultiert?**
 
 ---
 
 ## 📚 Referenzen
 
 - [CLAUDE.md](./CLAUDE.md) - Originale Design-Anweisungen
+- [NAVIGATION-CONTAINER.md](./NAVIGATION-CONTAINER.md) - Navigation Container System Dokumentation
 - [signup.html](./server/public/signup.html) - Referenz für Form-Design
 - [login.html](./server/public/login.html) - Referenz für Login-Design
 - [dashboard-theme.css](./server/public/css/dashboard-theme.css) - Haupt-CSS-Variablen
 - [blackboard.css](./server/public/css/blackboard.css) - Spezielle Komponenten
 - [admin-dashboard.html](./server/public/admin-dashboard.html) - Referenz für Card-Design
+- [design-standards.html](./frontend/src/pages/design-standards.html) - Live Demo aller Design-Standards
+- [unified-navigation.ts](./frontend/src/scripts/components/unified-navigation.ts) - Navigation Container Implementation
 
 ---
 

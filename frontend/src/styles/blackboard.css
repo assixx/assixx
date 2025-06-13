@@ -32,12 +32,18 @@ main.container.main-content.sidebar-collapsed {
 .blackboard-container {
   width: 99%;
   min-height: calc(100vh - 120px);
-  background: linear-gradient(45deg,#0000 25%,transparent 0),linear-gradient(-45deg,#1f1f1f 25%,transparent 0),linear-gradient(45deg,transparent 75%,#b08d5700 0),linear-gradient(-45deg,#0000 75%,#2e2e2ee3 0);
+  background:
+    linear-gradient(45deg, #0000 25%, transparent 0), linear-gradient(-45deg, #1f1f1f 25%, transparent 0),
+    linear-gradient(45deg, transparent 75%, #b08d5700 0), linear-gradient(-45deg, #0000 75%, #2e2e2ee3 0);
   background-size: 30px 30px;
-  background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
-  
+  background-position:
+    0 0,
+    0 15px,
+    15px -15px,
+    -15px 0px;
+
   border-radius: 12px;
-  box-shadow: 
+  box-shadow:
     inset 0 2px 8px rgba(0, 0, 0, 0.3),
     0 4px 16px rgba(0, 0, 0, 0.4);
   padding: 40px;
@@ -47,13 +53,13 @@ main.container.main-content.sidebar-collapsed {
 
 /* Cork texture overlay for more realism */
 .blackboard-container::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px),
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
   pointer-events: none;
@@ -71,7 +77,9 @@ main.container.main-content.sidebar-collapsed {
 /* Base Pinboard Item */
 .pinboard-item {
   position: relative;
-  transition: transform 0.2s ease, z-index 0s;
+  transition:
+    transform 0.2s ease,
+    z-index 0s;
   z-index: 1;
 }
 
@@ -86,10 +94,10 @@ main.container.main-content.sidebar-collapsed {
   padding: 20px;
   min-height: 200px;
   position: relative;
-  box-shadow: 
+  box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.2),
     inset 0 -2px 5px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', sans-serif;
+  font-family: "Segoe UI", sans-serif;
   transform: rotate(var(--rotation, -2deg));
 }
 
@@ -120,7 +128,7 @@ main.container.main-content.sidebar-collapsed {
   padding: 30px;
   min-height: 300px;
   position: relative;
-  box-shadow: 
+  box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   border: 1px solid #e5e7eb;
@@ -129,18 +137,13 @@ main.container.main-content.sidebar-collapsed {
 
 /* Paper lines for notes */
 .pinboard-note::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 60px;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: repeating-linear-gradient(
-    transparent,
-    transparent 27px,
-    #e5e7eb 27px,
-    #e5e7eb 28px
-  );
+  background-image: repeating-linear-gradient(transparent, transparent 27px, #e5e7eb 27px, #e5e7eb 28px);
   pointer-events: none;
 }
 
@@ -151,7 +154,7 @@ main.container.main-content.sidebar-collapsed {
   padding: 20px;
   min-height: 150px;
   position: relative;
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transform: rotate(var(--rotation, -1deg));
@@ -163,7 +166,7 @@ main.container.main-content.sidebar-collapsed {
   border: 1px solid #d1d5db;
   padding: 0;
   position: relative;
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.08);
   transform: rotate(var(--rotation, 2deg));
@@ -182,24 +185,19 @@ main.container.main-content.sidebar-collapsed {
 .pinboard-document .document-preview {
   padding: 20px;
   min-height: 200px;
-  background: 
-    repeating-linear-gradient(
-      transparent,
-      transparent 20px,
-      #f9fafb 20px,
-      #f9fafb 21px
-    );
+  background: repeating-linear-gradient(transparent, transparent 20px, #f9fafb 20px, #f9fafb 21px);
 }
 
 /* Image Style */
 .pinboard-image {
-  background: #fff;
+  background: #17171700;
   padding: 10px;
   position: relative;
-  box-shadow: 
+  /*box-shadow: 
     0 6px 20px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);*/
   transform: rotate(var(--rotation, -3deg));
+  border-radius: 15px;
 }
 
 .pinboard-image img {
@@ -226,21 +224,23 @@ main.container.main-content.sidebar-collapsed {
 
 /* Pinboard Attachment Style */
 .pinboard-attachment {
-  background: #ffffff;
+  background: #646464;
   padding: 15px;
-  border-radius: 4px;
-  box-shadow: 
+  border-radius: 15px;
+  box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.15),
     0 6px 20px rgba(0, 0, 0, 0.1);
   transform: rotate(var(--rotation, -2deg));
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   position: relative;
   /*overflow: hidden;*/
 }
 
 .pinboard-attachment:hover {
   transform: rotate(0deg) scale(1.02);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.2),
     0 8px 24px rgba(0, 0, 0, 0.15);
 }
@@ -260,7 +260,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 .pinboard-attachment .pinboard-image:hover img {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
 .pinboard-attachment .pinboard-pdf {
@@ -335,7 +335,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 .pushpin-red::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 20px;
   height: 20px;
@@ -344,13 +344,13 @@ main.container.main-content.sidebar-collapsed {
   transform: rotate(45deg);
   top: 0;
   left: 5px;
-  box-shadow: 
+  box-shadow:
     inset -2px -2px 4px rgba(0, 0, 0, 0.3),
     inset 2px 2px 4px rgba(255, 255, 255, 0.3);
 }
 
 .pushpin-red::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 2px;
   height: 20px;
@@ -367,7 +367,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 .pushpin-blue::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 20px;
   height: 20px;
@@ -375,7 +375,7 @@ main.container.main-content.sidebar-collapsed {
   border-radius: 50%;
   top: 0;
   left: 5px;
-  box-shadow: 
+  box-shadow:
     inset -2px -2px 4px rgba(0, 0, 0, 0.3),
     inset 2px 2px 4px rgba(255, 255, 255, 0.4);
 }
@@ -387,7 +387,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 .pushpin-yellow::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 16px;
   height: 16px;
@@ -395,7 +395,7 @@ main.container.main-content.sidebar-collapsed {
   border-radius: 50%;
   top: 0;
   left: 4px;
-  box-shadow: 
+  box-shadow:
     inset -1px -1px 3px rgba(0, 0, 0, 0.3),
     inset 1px 1px 3px rgba(255, 255, 255, 0.5);
 }
@@ -407,23 +407,22 @@ main.container.main-content.sidebar-collapsed {
 }
 
 .pushpin-metal::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 18px;
   height: 18px;
-  background: 
-    radial-gradient(circle at 30% 30%, #e9ecef, #868e96);
+  background: radial-gradient(circle at 30% 30%, #e9ecef, #868e96);
   border-radius: 50%;
   top: 0;
   left: 6px;
-  box-shadow: 
+  box-shadow:
     inset -2px -2px 3px rgba(0, 0, 0, 0.4),
     inset 2px 2px 3px rgba(255, 255, 255, 0.6),
     0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .pushpin-metal::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 8px;
   height: 8px;
@@ -434,12 +433,24 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Random rotation classes */
-.rotate-1 { --rotation: 1deg; }
-.rotate-2 { --rotation: 2deg; }
-.rotate-3 { --rotation: 3deg; }
-.rotate-n1 { --rotation: -1deg; }
-.rotate-n2 { --rotation: -2deg; }
-.rotate-n3 { --rotation: -3deg; }
+.rotate-1 {
+  --rotation: 1deg;
+}
+.rotate-2 {
+  --rotation: 2deg;
+}
+.rotate-3 {
+  --rotation: 3deg;
+}
+.rotate-n1 {
+  --rotation: -1deg;
+}
+.rotate-n2 {
+  --rotation: -2deg;
+}
+.rotate-n3 {
+  --rotation: -3deg;
+}
 
 /* Overlay für Modals */
 .modal-overlay {
@@ -711,7 +722,7 @@ main.container.main-content.sidebar-collapsed {
 .entry-detail-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #000;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1374,183 +1385,191 @@ main.container.main-content.sidebar-collapsed {
 
 /* Highlight Effect for linked entries */
 .highlight-entry {
-    animation: highlightPulse 3s ease-in-out;
+  animation: highlightPulse 3s ease-in-out;
 }
 
 @keyframes highlightPulse {
-    0%, 100% {
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    25%, 75% {
-        box-shadow: 0 5px 20px rgba(0, 142, 255, 0.6), 0 0 30px rgba(0, 142, 255, 0.3);
-        transform: scale(1.02);
-    }
-    50% {
-        box-shadow: 0 5px 25px rgba(0, 142, 255, 0.8), 0 0 40px rgba(0, 142, 255, 0.4);
-        transform: scale(1.03);
-    }
+  0%,
+  100% {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  25%,
+  75% {
+    box-shadow:
+      0 5px 20px rgba(0, 142, 255, 0.6),
+      0 0 30px rgba(0, 142, 255, 0.3);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow:
+      0 5px 25px rgba(0, 142, 255, 0.8),
+      0 0 40px rgba(0, 142, 255, 0.4);
+    transform: scale(1.03);
+  }
 }
 
 /* Attachment Preview Modal - Updated Glassmorphismus Design */
 #attachmentPreviewModal {
-    z-index: 10000;
+  z-index: 10000;
 }
 
 #attachmentPreviewModal .modal-container {
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    max-width: 30%;
-    max-height: 90vh;
-    width: auto;
-    height: auto;
-    animation: fadeInUp 0.3s ease-out;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-width: 30%;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 #attachmentPreviewModal .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-lg);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #attachmentPreviewModal .modal-header h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0;
 }
 
 #attachmentPreviewModal .modal-body {
-    padding: var(--spacing-lg);
-    background: transparent;
-    max-height: calc(90vh - 200px);
-    overflow: auto;
+  padding: var(--spacing-lg);
+  background: transparent;
+  max-height: calc(90vh - 200px);
+  overflow: auto;
 }
 
 #attachmentPreviewModal img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 #attachmentPreviewModal object {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: var(--radius-sm);
-    width: 100%;
-    min-height: 500px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  min-height: 500px;
 }
 
 #attachmentPreviewModal .modal-footer {
-    padding: var(--spacing-lg);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: transparent;
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
 }
 
 /* Entry Form Modal - Glassmorphismus Design Standards */
 #entryFormModal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #entryFormModal .modal-content {
-    background: #1a1a1a4a;
-    backdrop-filter: blur(20px) saturate(500%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: fadeInUp 0.3s ease-out;
+  background: #1a1a1a4a;
+  backdrop-filter: blur(20px) saturate(500%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 #entryFormModal .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-lg);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #entryFormModal .modal-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0;
 }
 
 #entryFormModal .modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s ease;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
 }
 
 #entryFormModal .modal-close:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--primary-color);
 }
 
 /* Entry Detail Modal - Glassmorphismus Design Standards */
 #entryDetailModal {
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  position: fixed;
+  z-index: 1001;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #entryDetailModal .modal-container {
-  animation: fadeInUp .3s ease-out;
+  animation: fadeInUp 0.3s ease-out;
   backdrop-filter: blur(20px) saturate(500%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   background: #1a1a1a4a;
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 32px #0006,inset 0 1px #ffffff1a;
+  box-shadow:
+    0 8px 32px #0006,
+    inset 0 1px #ffffff1a;
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -1561,68 +1580,68 @@ main.container.main-content.sidebar-collapsed {
 }
 
 #entryDetailModal .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-lg);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #entryDetailModal .modal-header h2 {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0;
 }
 
 #entryDetailModal .modal-close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-sm);
-    transition: all 0.3s ease;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
 }
 
 #entryDetailModal .modal-close:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--error-color);
-    transform: rotate(90deg);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--error-color);
+  transform: rotate(90deg);
 }
 
 #entryDetailModal .modal-body {
-    flex: 1;
-    padding: var(--spacing-lg);
-    overflow-y: auto;
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
 }
 
 #entryDetailModal .modal-footer {
-    padding: var(--spacing-lg);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: end;
-    align-items: center;
-    gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 /* Modal Animation */
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Size option buttons for direct attachment */

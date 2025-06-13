@@ -3,9 +3,9 @@
  * Handles KVP (Kontinuierlicher Verbesserungsprozess / Continuous Improvement Process) operations
  */
 
-import { Request, Response } from "express";
-import { Pool } from "mysql2/promise";
-import kvpService from "../services/kvp.service";
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
+import kvpService from '../services/kvp.service';
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -19,13 +19,13 @@ interface KvpCreateRequest extends TenantRequest {
     title: string;
     description: string;
     category_id?: number;
-    priority?: "low" | "medium" | "high" | "critical";
+    priority?: 'low' | 'medium' | 'high' | 'critical';
     status?:
-      | "submitted"
-      | "in_review"
-      | "approved"
-      | "rejected"
-      | "implemented";
+      | 'submitted'
+      | 'in_review'
+      | 'approved'
+      | 'rejected'
+      | 'implemented';
     submitted_by: number;
     department_id?: number;
     estimated_cost?: number;
@@ -42,13 +42,13 @@ interface KvpUpdateRequest extends TenantRequest {
     title?: string;
     description?: string;
     category_id?: number;
-    priority?: "low" | "medium" | "high" | "critical";
+    priority?: 'low' | 'medium' | 'high' | 'critical';
     status?:
-      | "submitted"
-      | "in_review"
-      | "approved"
-      | "rejected"
-      | "implemented";
+      | 'submitted'
+      | 'in_review'
+      | 'approved'
+      | 'rejected'
+      | 'implemented';
     department_id?: number;
     estimated_cost?: number;
     estimated_savings?: number;
@@ -74,19 +74,19 @@ interface KvpQueryRequest extends TenantRequest {
   query: {
     search?: string;
     category_id?: string;
-    priority?: "low" | "medium" | "high" | "critical";
+    priority?: 'low' | 'medium' | 'high' | 'critical';
     status?:
-      | "submitted"
-      | "in_review"
-      | "approved"
-      | "rejected"
-      | "implemented";
+      | 'submitted'
+      | 'in_review'
+      | 'approved'
+      | 'rejected'
+      | 'implemented';
     submitted_by?: string;
     department_id?: string;
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
@@ -98,7 +98,7 @@ class KvpController {
   async getAll(req: KvpQueryRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
@@ -113,10 +113,10 @@ class KvpController {
       const result = await kvpService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error) {
-      console.error("Error in KvpController.getAll:", error);
+      console.error('Error in KvpController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -128,27 +128,27 @@ class KvpController {
   async getById(req: KvpGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const result = await kvpService.getById(req.tenantDb, id);
       if (!result) {
-        res.status(404).json({ error: "Nicht gefunden" });
+        res.status(404).json({ error: 'Nicht gefunden' });
         return;
       }
       res.json(result);
     } catch (error) {
-      console.error("Error in KvpController.getById:", error);
+      console.error('Error in KvpController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -160,17 +160,17 @@ class KvpController {
   async create(req: KvpCreateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const result = await kvpService.create(req.tenantDb, req.body);
       res.status(201).json(result);
     } catch (error) {
-      console.error("Error in KvpController.create:", error);
+      console.error('Error in KvpController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -182,23 +182,23 @@ class KvpController {
   async update(req: KvpUpdateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const result = await kvpService.update(req.tenantDb, id, req.body);
       res.json(result);
     } catch (error) {
-      console.error("Error in KvpController.update:", error);
+      console.error('Error in KvpController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -210,23 +210,23 @@ class KvpController {
   async delete(req: KvpGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       await kvpService.delete(req.tenantDb, id);
       res.status(204).send();
     } catch (error) {
-      console.error("Error in KvpController.delete:", error);
+      console.error('Error in KvpController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

@@ -56,6 +56,8 @@ class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
   private currentRole: 'admin' | 'employee' | 'root' | null = null;
   private navigationItems: NavigationItems;
+  private isCollapsed: boolean = false;
+  private userProfileData: UserProfileResponse | null = null;
 
   constructor() {
     this.navigationItems = this.getNavigationItems();
@@ -63,10 +65,16 @@ class UnifiedNavigation {
   }
 
   private init(): void {
+    // Inject CSS styles first
+    this.injectCSS();
+
+    // Load collapsed state from localStorage
+    this.isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
     this.loadUserInfo();
     this.injectNavigationHTML();
-    this.attachEventListeners();
-    
+    // Don't attach event listeners here - they will be attached after navigation is injected
+
     // Fix logo navigation after DOM is ready
     setTimeout(() => {
       this.fixLogoNavigation();
@@ -101,6 +109,19 @@ class UnifiedNavigation {
       } catch (error) {
         console.error('Error parsing token:', error);
       }
+    }
+  }
+
+  private getSectionUrl(section: string): string {
+    // Check if we're on admin-dashboard page
+    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard.html');
+    
+    if (isOnAdminDashboard) {
+      // If we're already on admin dashboard, use simple query parameter
+      return `?section=${section}`;
+    } else {
+      // If we're on another page, navigate to admin dashboard with section parameter
+      return `/pages/admin-dashboard.html?section=${section}`;
     }
   }
 
@@ -156,6 +177,18 @@ class UnifiedNavigation {
             sidebarAvatar.src = profilePic;
           }
         }
+
+        // Also update header avatar
+        const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+        if (headerAvatar) {
+          const profilePic = userData.profile_picture || userData.profilePicture || (user as User).profilePicture;
+          if (profilePic) {
+            headerAvatar.src = profilePic;
+          }
+        }
+
+        // Store profile data
+        this.userProfileData = userData;
       }
     } catch (error) {
       console.error('Error loading full user profile:', error);
@@ -170,20 +203,20 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Übersicht',
-          url: '/pages/admin-dashboard.html',
+          url: this.getSectionUrl('dashboard'),
           section: 'dashboard',
         },
         {
           id: 'employees',
           icon: this.getSVGIcon('users'),
           label: 'Mitarbeiter',
-          url: '#employees',
+          url: this.getSectionUrl('employees'),
           section: 'employees',
           children: [
             {
               id: 'employees-list',
               label: 'Mitarbeiterliste',
-              url: '#employees',
+              url: this.getSectionUrl('employees'),
               section: 'employees',
             },
           ],
@@ -192,22 +225,29 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '#departments',
+          url: this.getSectionUrl('departments'),
           section: 'departments',
           children: [
             {
               id: 'departments-all',
               label: 'Alle Abteilungen',
-              url: '#departments',
+              url: this.getSectionUrl('departments'),
               section: 'departments',
             },
           ],
         },
         {
+          id: 'teams',
+          icon: this.getSVGIcon('team'),
+          label: 'Teams',
+          url: this.getSectionUrl('teams'),
+          section: 'teams',
+        },
+        {
           id: 'documents',
           icon: this.getSVGIcon('document'),
           label: 'Dokumente',
-          url: '#documents',
+          url: this.getSectionUrl('documents'),
           section: 'documents',
         },
         {
@@ -215,6 +255,47 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
           url: '/pages/calendar.html',
+        },
+        {
+          id: 'lean-management',
+          icon: this.getSVGIcon('lean'),
+          label: 'LEAN-Management',
+          hasSubmenu: true,
+          submenu: [
+            {
+              id: 'kvp',
+              icon: this.getSVGIcon('lightbulb'),
+              label: 'KVP System',
+              url: '/pages/kvp.html',
+            },
+            {
+              id: 'surveys',
+              icon: this.getSVGIcon('poll'),
+              label: 'Umfragen',
+              url: '/pages/survey-admin.html',
+            },
+            {
+              id: 'tpm',
+              icon: this.getSVGIcon('wrench'),
+              label: 'TPM',
+              url: this.getSectionUrl('tpm'),
+              section: 'tpm',
+            },
+            {
+              id: '5s',
+              icon: this.getSVGIcon('star'),
+              label: '5S',
+              url: this.getSectionUrl('5s'),
+              section: '5s',
+            },
+            {
+              id: 'standards',
+              icon: this.getSVGIcon('checklist'),
+              label: 'Standards',
+              url: this.getSectionUrl('standards'),
+              section: 'standards',
+            },
+          ],
         },
         {
           id: 'shifts',
@@ -230,30 +311,11 @@ class UnifiedNavigation {
           badge: 'unread-messages',
         },
         {
-          id: 'kvp',
-          icon: this.getSVGIcon('lightbulb'),
-          label: 'KVP System',
-          url: '/pages/kvp.html',
-        },
-        {
-          id: 'surveys',
-          icon: this.getSVGIcon('poll'),
-          label: 'Umfragen',
-          url: '/pages/survey-admin.html',
-        },
-        {
           id: 'payslips',
           icon: this.getSVGIcon('money'),
           label: 'Gehaltsabrechnungen',
           url: '#payslips',
           section: 'payslips',
-        },
-        {
-          id: 'teams',
-          icon: this.getSVGIcon('team'),
-          label: 'Teams',
-          url: '#teams',
-          section: 'teams',
         },
         {
           id: 'settings',
@@ -276,7 +338,7 @@ class UnifiedNavigation {
         },
       ],
 
-      // Employee Navigation (9 Items)
+      // Employee Navigation (7 Items with LEAN submenu)
       employee: [
         {
           id: 'dashboard',
@@ -298,6 +360,48 @@ class UnifiedNavigation {
           url: '/pages/calendar.html',
         },
         {
+          id: 'lean-management',
+          icon: this.getSVGIcon('lean'),
+          label: 'LEAN-Management',
+          hasSubmenu: true,
+          submenu: [
+            {
+              id: 'kvp',
+              icon: this.getSVGIcon('lightbulb'),
+              label: 'KVP System',
+              url: '/pages/kvp.html',
+            },
+            {
+              id: 'surveys',
+              icon: this.getSVGIcon('poll'),
+              label: 'Umfragen',
+              url: '/pages/survey-employee.html',
+              badge: 'pending-surveys',
+            },
+            {
+              id: 'tpm',
+              icon: this.getSVGIcon('wrench'),
+              label: 'TPM',
+              url: this.getSectionUrl('tpm'),
+              section: 'tpm',
+            },
+            {
+              id: '5s',
+              icon: this.getSVGIcon('star'),
+              label: '5S',
+              url: this.getSectionUrl('5s'),
+              section: '5s',
+            },
+            {
+              id: 'standards',
+              icon: this.getSVGIcon('checklist'),
+              label: 'Standards',
+              url: this.getSectionUrl('standards'),
+              section: 'standards',
+            },
+          ],
+        },
+        {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
@@ -309,19 +413,6 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
           url: '/pages/shifts.html',
-        },
-        {
-          id: 'kvp',
-          icon: this.getSVGIcon('lightbulb'),
-          label: 'KVP System',
-          url: '/pages/kvp.html',
-        },
-        {
-          id: 'surveys',
-          icon: this.getSVGIcon('poll'),
-          label: 'Umfragen',
-          url: '/pages/survey-employee.html',
-          badge: 'pending-surveys',
         },
         {
           id: 'profile',
@@ -397,6 +488,12 @@ class UnifiedNavigation {
       admin:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
       poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
+      lean: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
+      wrench:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></svg>',
+      star: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>',
+      checklist:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -409,6 +506,25 @@ class UnifiedNavigation {
   private injectNavigationHTML(): void {
     const navigation = this.createNavigationHTML();
 
+    // Check for navigation-container first (new approach)
+    const navigationContainer = document.getElementById('navigation-container');
+    if (navigationContainer) {
+      // Create full navigation structure with header and sidebar
+      const fullNavigation = this.createFullNavigationStructure();
+      navigationContainer.innerHTML = fullNavigation;
+
+      // Re-attach event listeners after inserting HTML
+      setTimeout(() => {
+        console.log('[UnifiedNav] Re-attaching event listeners for navigation-container');
+        this.attachEventListeners();
+        this.updateUnreadMessages();
+        this.updatePendingSurveys();
+        this.updateUnreadDocuments();
+      }, 100);
+
+      return;
+    }
+
     // Suche nach bestehender Sidebar und ersetze sie
     const existingSidebar = document.querySelector('.sidebar');
     if (existingSidebar) {
@@ -417,6 +533,69 @@ class UnifiedNavigation {
       // Erstelle neue Sidebar falls keine existiert
       this.createSidebarStructure();
     }
+  }
+
+  private createFullNavigationStructure(): string {
+    const userRole = this.currentRole || 'employee';
+    const userName = this.userProfileData?.username || this.currentUser?.username || 'User';
+    const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
+    const lastName = this.userProfileData?.last_name || this.userProfileData?.lastName || '';
+    const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
+    const profilePicture =
+      this.userProfileData?.profile_picture ||
+      this.userProfileData?.profilePicture ||
+      '/assets/images/default-avatar.svg';
+
+    return `
+      <!-- Header -->
+      <header class="header">
+        <a href="/${userRole === 'admin' ? 'admin' : userRole === 'root' ? 'root' : 'employee'}-dashboard" class="logo-container">
+          <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" />
+        </a>
+        <div class="header-content">
+          <div class="header-actions">
+            ${
+              userRole === 'admin' || userRole === 'root'
+                ? `
+              <!-- Role Switch Button -->
+              <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="role-switch-text">Als Mitarbeiter</span>
+              </button>
+            `
+                : ''
+            }
+            
+            <div id="user-info">
+              <img id="user-avatar" src="${profilePicture}" alt="Avatar" />
+              <span id="user-name">${this.escapeHtml(displayName)}</span>
+              <span id="role-indicator" class="role-badge ${userRole}">${userRole === 'admin' ? 'Admin' : userRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
+            </div>
+            
+            <button id="logout-btn" class="btn-logout btn btn-secondary">
+              <i class="fas fa-sign-out-alt"></i>
+              Abmelden
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Sidebar -->
+      <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
+        ${this.createNavigationHTML()}
+      </aside>
+    `;
+  }
+
+  private escapeHtml(text: string): string {
+    const map: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   private createSidebarStructure(): void {
@@ -497,7 +676,9 @@ class UnifiedNavigation {
   private createMenuItem(item: NavItem, isActive: boolean = false): string {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
-    const clickHandler = item.section && !hasChildren ? `onclick="showSection('${item.section}')"` : '';
+    const hasSubmenu = item.hasSubmenu && item.submenu && item.submenu.length > 0;
+    // Remove onclick handler - use normal navigation instead
+    const clickHandler = '';
 
     // Badge für ungelesene Nachrichten oder offene Umfragen
     let badgeHtml = '';
@@ -509,13 +690,47 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
-    // If has children, create a dropdown
+    // If has submenu, create a dropdown
+    if (hasSubmenu) {
+      const submenuItems = item
+        .submenu!.map(
+          (child) => `
+        <li class="submenu-item">
+          <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
+            <span class="submenu-label">${child.label}</span>
+          </a>
+        </li>
+      `,
+        )
+        .join('');
+
+      return `
+        <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
+          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+            <span class="icon">${item.icon}</span>
+            <span class="label">${item.label}</span>
+            <span class="nav-indicator"></span>
+            <span class="submenu-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            </span>
+            ${badgeHtml}
+          </a>
+          <ul class="submenu" id="submenu-${item.id}" style="display: none;">
+            ${submenuItems}
+          </ul>
+        </li>
+      `;
+    }
+
+    // If has children, create a dropdown (old style)
     if (hasChildren) {
       const submenuItems = item
         .children!.map(
           (child) => `
         <li class="submenu-item">
-          <a href="${child.url}" class="submenu-link" ${child.section ? `onclick="showSection('${child.section}')"` : ''} data-nav-id="${child.id}">
+          <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
@@ -589,32 +804,88 @@ class UnifiedNavigation {
 
   private attachSidebarToggle(): void {
     const toggleBtn = document.getElementById('sidebar-toggle');
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
 
-    if (!toggleBtn || !sidebar) return;
+    // Debug: Check how many sidebars exist
+    const allSidebars = document.querySelectorAll('.sidebar');
+    console.log('[UnifiedNav] Number of sidebars found:', allSidebars.length);
+    allSidebars.forEach((sb, index) => {
+      console.log(`[UnifiedNav] Sidebar ${index}:`, sb);
+      console.log(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
+    });
+
+    // Try to find the navigation sidebar specifically
+    const navContainer = document.getElementById('navigation-container');
+    const sidebar = navContainer
+      ? (navContainer.querySelector('.sidebar') as HTMLElement)
+      : (document.querySelector('.sidebar') as HTMLElement);
+    const mainContent = document.querySelector('.main-content') as HTMLElement;
+
+    console.log('[UnifiedNav] Toggle button:', toggleBtn);
+    console.log('[UnifiedNav] Sidebar:', sidebar);
+    console.log('[UnifiedNav] Sidebar ID:', sidebar?.id);
+    console.log('[UnifiedNav] Sidebar class:', sidebar?.className);
+    console.log('[UnifiedNav] Main content:', mainContent);
+
+    if (!toggleBtn || !sidebar) {
+      console.error('[UnifiedNav] Toggle button or sidebar not found!');
+      return;
+    }
 
     // Check localStorage for saved state
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
       mainContent?.classList.add('sidebar-collapsed');
+      sidebar.style.setProperty('width', '70px', 'important');
       this.updateToggleIcon();
+    } else {
+      sidebar.style.setProperty('width', '280px', 'important');
     }
 
     // Toggle click handler
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      console.log('[UnifiedNav] Toggle clicked!');
+      console.log('[UnifiedNav] Sidebar classes before:', sidebar.className);
+      console.log('[UnifiedNav] Sidebar computed width:', window.getComputedStyle(sidebar).width);
+
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle('sidebar-collapsed');
 
+      // Set width directly as inline style to override any CSS
+      console.log('[UnifiedNav] Setting width for collapsed state:', newState);
+      if (newState) {
+        sidebar.style.width = '70px';
+        sidebar.style.setProperty('width', '70px', 'important');
+        console.log('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
+
+        // Check if there's a CSS rule overriding
+        const computedStyle = window.getComputedStyle(sidebar);
+        console.log('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
+      } else {
+        sidebar.style.width = '280px';
+        sidebar.style.setProperty('width', '280px', 'important');
+        console.log('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
+      }
+
+      // Force browser to recalculate styles
+      sidebar.offsetWidth;
+
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
+      this.isCollapsed = newState;
 
       // Update icon
       this.updateToggleIcon();
+
+      console.log('[UnifiedNav] Sidebar collapsed state:', newState);
+      console.log('[UnifiedNav] Sidebar classes after:', sidebar.className);
+      console.log('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
     });
 
     // Hover effect for toggle button
@@ -723,15 +994,26 @@ class UnifiedNavigation {
       currentPath.includes('employee-dashboard') ||
       currentPath.includes('root-dashboard');
 
-    // If on dashboard page and no specific section is active, default to overview
-    if (isMainDashboard && (!activeNav || activeNav === 'dashboard')) {
-      // Force "Übersicht" to be active
-      const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
-      if (dashboardLink) {
-        dashboardLink.closest('.sidebar-item')?.classList.add('active');
+    // Check if we have a hash in URL (for section navigation)
+    const currentHash = window.location.hash.substring(1); // Remove #
+    
+    // If on dashboard page
+    if (isMainDashboard) {
+      if (currentHash && currentHash !== 'dashboard') {
+        // Use hash to determine active section
+        const hashLink = document.querySelector(`[data-nav-id="${currentHash}"]`);
+        if (hashLink) {
+          hashLink.closest('.sidebar-item')?.classList.add('active');
+        }
+      } else if (!activeNav || activeNav === 'dashboard') {
+        // Default to overview only if no hash and no stored nav
+        const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
+        if (dashboardLink) {
+          dashboardLink.closest('.sidebar-item')?.classList.add('active');
+        }
+        // Clear any stored navigation to prevent last selected from being active
+        localStorage.removeItem('activeNavigation');
       }
-      // Clear any stored navigation to prevent last selected from being active
-      localStorage.removeItem('activeNavigation');
     } else if (activeNav && activeNav !== 'dashboard') {
       // Only use stored navigation if it's not the dashboard
       const activeLink = document.querySelector(`[data-nav-id="${activeNav}"]`);
@@ -939,7 +1221,7 @@ class UnifiedNavigation {
 
     // Find all logo containers - expanded selector to catch all cases
     const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
-    
+
     logoContainers.forEach((container) => {
       // Determine the dashboard URL based on role
       let dashboardUrl = '/pages/employee-dashboard.html'; // default
@@ -992,6 +1274,22 @@ class UnifiedNavigation {
   }
 
   private visibilityListenerAdded = false;
+
+  // CSS injection method
+  private injectCSS(): void {
+    if (!document.querySelector('#unified-navigation-styles')) {
+      console.log('[UnifiedNav] Injecting CSS styles in init');
+      const styleSheet = document.createElement('style');
+      styleSheet.id = 'unified-navigation-styles';
+      styleSheet.textContent = unifiedNavigationCSS;
+      document.head.appendChild(styleSheet);
+
+      // Force style recalculation
+      document.body.offsetHeight;
+    } else {
+      console.log('[UnifiedNav] CSS styles already present');
+    }
+  }
 
   // Storage Widget erstellen (nur für Root User)
   private createStorageWidget(): string {
@@ -1080,6 +1378,42 @@ class UnifiedNavigation {
 
 // CSS Styles für die Unified Navigation
 const unifiedNavigationCSS = `
+    /* Header Base Styles */
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 var(--spacing-lg);
+        z-index: 1000;
+    }
+    
+    .header .header-content {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .header .logo-container {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        margin-right: var(--spacing-lg);
+    }
+    
+    .header .logo {
+        height: 40px;
+        width: auto;
+    }
+
     .header .header-actions {
         display: flex;
         align-items: center;
@@ -1090,7 +1424,7 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        background: rgba(255, 255, 255, 0.1);
+        /*background: rgba(255, 255, 255, 0.1);*/
         padding: var(--spacing-xs) var(--spacing-sm);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1101,7 +1435,7 @@ const unifiedNavigationCSS = `
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        /*background: linear-gradient(135deg, var(--primary-color), var(--primary-light));*/
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1111,7 +1445,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar {
-        width: 280px;
+        width: 280px !important;
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(20px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -1119,7 +1453,7 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        transition: all 0.3s ease;
+        transition: width 0.3s ease !important;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -1155,15 +1489,14 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.875rem;
+        font-size: 0.825rem;
         font-weight: 600;
-        color: #333;
+        color: #ffd83e;
         margin: 30px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
-        background: #e6b800;
-        
-        border-radius: 0px;
-        border: none;
+        background: #eabb0017;
+        border-radius: 5px;
+        border: 1.3px solid rgb(200, 149, 0);
         transition: all 0.3s ease;
         cursor: pointer;
         width: 98%;
@@ -1192,12 +1525,12 @@ const unifiedNavigationCSS = `
     .sidebar-title::before {
         content: '';
         position: absolute;
-        bottom: -4px;
-        right: -0.6px;
+        bottom: -5px;
+        right: -2px;
         width: 0;
         height: 0;
         border-style: solid;
-        border-width: 10px 10px 4px 3px;
+        border-width: 13px 10px 4px 3px;
         border-color: #fff #0c0d0e #0000 transparent;
         z-index: 1;
     }
@@ -1254,7 +1587,6 @@ const unifiedNavigationCSS = `
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.7);
     }
 
     /* Pin needle (appears on hover - full pushpin) */
@@ -1350,7 +1682,7 @@ const unifiedNavigationCSS = `
 
     /* Collapsed Sidebar Styles */
     .sidebar.collapsed {
-        width: 70px;
+        width: 70px !important;
     }
 
     .sidebar.collapsed .sidebar-title {
@@ -1835,8 +2167,8 @@ const unifiedNavigationCSS = `
     /* Layout adjustments */
     .layout-container {
         display: flex;
-        min-height: calc(100vh - 60px);
-        margin-top: 10px;
+        min-height: 100vh;
+        padding-top: 60px; /* Space for fixed header */
     }
 
     .main-content {
@@ -2014,10 +2346,13 @@ const unifiedNavigationCSS = `
 
 // CSS automatisch einbinden
 if (!document.querySelector('#unified-navigation-styles')) {
+  console.log('[UnifiedNav] Injecting CSS styles');
   const styleSheet = document.createElement('style');
   styleSheet.id = 'unified-navigation-styles';
   styleSheet.textContent = unifiedNavigationCSS;
   document.head.appendChild(styleSheet);
+} else {
+  console.log('[UnifiedNav] CSS styles already present');
 }
 
 // Export to window for backwards compatibility
@@ -2046,9 +2381,18 @@ if (!document.querySelector('#unified-navigation-styles')) {
 };
 
 // Navigation automatisch initialisieren
-document.addEventListener('DOMContentLoaded', () => {
+// Prüfe ob DOM bereits geladen ist
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.unifiedNav = new UnifiedNavigation();
+  });
+} else {
+  // DOM ist bereits geladen, initialisiere sofort
   window.unifiedNav = new UnifiedNavigation();
+}
 
+// Setup periodic updates
+const setupPeriodicUpdates = () => {
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
     window.unifiedNav.updateUnreadMessages();
@@ -2066,7 +2410,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.unifiedNav.updateStorageInfo();
     setInterval(() => window.unifiedNav.updateStorageInfo(), 60000); // Alle 60 Sekunden
   }
-});
+};
+
+// Call setup after initialization
+setTimeout(setupPeriodicUpdates, 100);
 
 // Export to window for legacy support
 window.UnifiedNavigation = UnifiedNavigation;

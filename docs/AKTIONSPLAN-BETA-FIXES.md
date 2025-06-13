@@ -5,7 +5,8 @@
 > **Neue Strategie:** Fokus auf Version 0.1.0 - Stabilität vor Features  
 > **Ziel:** Stabiles System für ersten Beta-Test
 
-## 📅 Zeitplan: 
+## 📅 Zeitplan:
+
 - **Version 0.1.0:** 2-3 Wochen (Stabilisierung)
 - **Version 1.0.0:** 4-5 Wochen (Features)
 
@@ -14,12 +15,14 @@
 #### Erledigte Aufgaben ✅
 
 1. **✅ BEHOBEN: Multi-Tenant Isolation**
+
    - Alle API-Endpoints mit tenant_id Filter versehen
    - Security-Audit durchgeführt
    - Tests für Multi-Tenant Isolation implementiert
    - **Status:** Vollständig behoben
 
 2. **✅ ERLEDIGT: Docker Setup**
+
    - Docker-Compose für Entwicklung und Produktion
    - Automatisierte DB-Initialisierung
    - Health Checks implementiert
@@ -34,12 +37,14 @@
 #### Noch zu beheben: Kritische Bugs
 
 1. **🔴 TypeScript Build-Prozess reparieren**
+
    - [ ] Frontend Build-Prozess prüfen (`npm run build`)
    - [ ] HTML-Imports von .ts auf kompilierte .js ändern
    - [ ] Vite-Konfiguration optimieren
    - **Geschätzt:** 4-6 Stunden
 
 2. **🔴 Mitarbeiter-Erstellung API**
+
    - [ ] POST `/api/admin/employees` Route implementieren
    - [ ] Validierung & Error Handling
    - [ ] Integration mit Auth-System
@@ -47,6 +52,7 @@
    - **Geschätzt:** 6-8 Stunden
 
 3. **🔴 Fehlende API-Endpoints**
+
    - [ ] Schwarzes Brett API (`/api/blackboard`)
    - [ ] Dokumenten-Upload API (`/documents/upload`)
    - [ ] Multi-Tenant Endpoints (`/api/tenants`, `/api/features/status`)
@@ -62,6 +68,7 @@
 #### Systematisches Testing & Bug-Fixing
 
 5. **🧪 Funktionstest durchführen**
+
    - [ ] FUNKTIONSTEST.md systematisch durcharbeiten
    - [ ] Jeden gefundenen Bug dokumentieren in BUGS-GEFUNDEN.md
    - [ ] Bugs nach Priorität beheben
@@ -79,17 +86,20 @@
 
 #### Deal-Breaker Features (Verschoben auf Phase 2)
 
-1. **🌴 Urlaubsantrag-System** 
+1. **🌴 Urlaubsantrag-System**
+
    - Komplettes Feature mit Genehmigungsworkflow
    - Mobile-optimiert für Mitarbeiter
    - **Zeitrahmen:** Woche 1 nach v0.1.0
 
 2. **💰 Gehaltsabrechnung Upload**
+
    - Sichere Dokumentenverwaltung
    - Mitarbeiter-spezifische Zugriffsrechte
    - **Zeitrahmen:** Woche 1-2 nach v0.1.0
 
 3. **🔧 TPM-System (Total Productive Maintenance)**
+
    - Wartungsplanung und -verfolgung
    - Maschinenverwaltung
    - **Zeitrahmen:** Woche 2-3 nach v0.1.0

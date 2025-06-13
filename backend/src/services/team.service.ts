@@ -3,15 +3,15 @@
  * Handles team-related business logic
  */
 
-import Team from "../models/team";
-import { Pool } from "mysql2/promise";
+import Team from '../models/team';
+import { Pool } from 'mysql2/promise';
 
 // Import types from Team model
 import type {
   DbTeam,
   TeamCreateData as ModelTeamCreateData,
   TeamUpdateData as ModelTeamUpdateData,
-} from "../models/team";
+} from '../models/team';
 
 // Service-specific interfaces
 interface TeamData extends DbTeam {
@@ -43,7 +43,7 @@ class TeamService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: TeamFilters = {},
+    _filters: TeamFilters = {}
   ): Promise<TeamData[]> {
     try {
       // Get tenant_id from filters or extract from tenantDb
@@ -55,7 +55,7 @@ class TeamService {
         member_count: 0,
       }));
     } catch (error) {
-      console.error("Error in TeamService.getAll:", error);
+      console.error('Error in TeamService.getAll:', error);
       throw error;
     }
   }
@@ -75,7 +75,7 @@ class TeamService {
         member_count: 0,
       };
     } catch (error) {
-      console.error("Error in TeamService.getById:", error);
+      console.error('Error in TeamService.getById:', error);
       throw error;
     }
   }
@@ -92,7 +92,7 @@ class TeamService {
       const id = await Team.create(modelData);
       const created = await Team.findById(id);
       if (!created) {
-        throw new Error("Failed to retrieve created team");
+        throw new Error('Failed to retrieve created team');
       }
       return {
         ...created,
@@ -101,7 +101,7 @@ class TeamService {
         member_count: 0,
       };
     } catch (error) {
-      console.error("Error in TeamService.create:", error);
+      console.error('Error in TeamService.create:', error);
       throw error;
     }
   }
@@ -112,7 +112,7 @@ class TeamService {
   async update(
     tenantDb: Pool,
     id: number,
-    data: TeamUpdateData,
+    data: TeamUpdateData
   ): Promise<TeamData | null> {
     try {
       const modelData: ModelTeamUpdateData = {
@@ -125,7 +125,7 @@ class TeamService {
       }
       return null;
     } catch (error) {
-      console.error("Error in TeamService.update:", error);
+      console.error('Error in TeamService.update:', error);
       throw error;
     }
   }
@@ -138,7 +138,7 @@ class TeamService {
       // TODO: Team.delete expects different parameters
       return await Team.delete(id);
     } catch (error) {
-      console.error("Error in TeamService.delete:", error);
+      console.error('Error in TeamService.delete:', error);
       throw error;
     }
   }
