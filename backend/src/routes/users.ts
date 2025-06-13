@@ -87,7 +87,7 @@ router.get(
         created_at: user.created_at,
         is_active: user.is_active,
         position: user.position,
-        department: user.department_name,
+        department: user.department,
         availability_status: user.availability_status,
         availability_start: user.availability_start,
         availability_end: user.availability_end,

@@ -16,6 +16,9 @@ declare global {
 interface ChatUser extends User {
   status?: 'online' | 'offline' | 'away';
   last_seen?: string;
+  department_id?: number;
+  department?: string;
+  position?: string;
 }
 
 interface Message {
@@ -50,6 +53,7 @@ interface Conversation {
   participants: ChatUser[];
   unread_count?: number;
   typing_users?: number[];
+  display_name?: string;
 }
 
 interface WebSocketMessage {
@@ -77,6 +81,7 @@ class ChatClient {
   private messageQueue: Message[];
   private typingTimer: NodeJS.Timeout | null;
   private emojiCategories: EmojiCategories;
+  private isCreatingConversation: boolean = false;
 
   constructor() {
     this.ws = null;
@@ -386,10 +391,18 @@ class ChatClient {
       ],
     };
 
-    this.init();
+    // init() will be called from DOMContentLoaded
   }
 
+  private initialized = false;
+
   async init(): Promise<void> {
+    // Prevent multiple initializations
+    if (this.initialized) {
+      console.warn('⚠️ ChatClient already initialized');
+      return;
+    }
+    
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
@@ -397,6 +410,7 @@ class ChatClient {
       return;
     }
 
+    this.initialized = true;
     await this.loadInitialData();
     this.connectWebSocket();
     this.initializeEventListeners();
@@ -430,7 +444,12 @@ class ChatClient {
       });
 
       if (response.ok) {
-        this.conversations = await response.json();
+        const conversations = await response.json();
+        // Stelle sicher, dass jede Konversation ein participants Array hat
+        this.conversations = conversations.map((conv: any) => ({
+          ...conv,
+          participants: conv.participants || []
+        }));
         this.renderConversationList();
       } else {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -443,7 +462,7 @@ class ChatClient {
 
   async loadAvailableUsers(): Promise<void> {
     try {
-      const response = await fetch('/api/chat/available-users', {
+      const response = await fetch('/api/chat/users', {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },
@@ -460,8 +479,16 @@ class ChatClient {
   }
 
   connectWebSocket(): void {
+    // Close existing connection if any
+    if (this.ws) {
+      this.ws.onclose = null; // Prevent reconnect attempts
+      this.ws.close();
+      this.ws = null;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    // Include token as query parameter for authentication
+    const wsUrl = `${protocol}//${window.location.host}/chat-ws?token=${encodeURIComponent(this.token || '')}`;
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -472,16 +499,7 @@ class ChatClient {
         this.reconnectAttempts = 0;
         this.updateConnectionStatus(true);
 
-        // Authenticate
-        if (this.ws) {
-          this.ws.send(
-            JSON.stringify({
-              type: 'auth',
-              data: { token: this.token },
-            }),
-          );
-        }
-
+        // No need to send auth message since token is in query params
         // Process message queue
         this.processMessageQueue();
       };
@@ -516,8 +534,8 @@ class ChatClient {
 
   handleWebSocketMessage(message: WebSocketMessage): void {
     switch (message.type) {
-      case 'auth_success':
-        console.info('✅ Authentication successful');
+      case 'connection_established':
+        console.info('✅ Connection established');
         // Join conversations
         this.conversations.forEach((conv) => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -538,18 +556,26 @@ class ChatClient {
         break;
 
       case 'new_message':
-        this.handleNewMessage(message.data as { message: Message; conversationId: number });
+        // Backend sends message data directly, not wrapped in { message, conversationId }
+        const messageData = message.data as Message & { conversation_id: number };
+        this.handleNewMessage({ 
+          message: messageData, 
+          conversationId: messageData.conversation_id 
+        });
         break;
 
       case 'typing_start':
+      case 'user_typing':
         this.handleTypingStart(message.data as { userId: number; conversationId: number });
         break;
 
       case 'typing_stop':
+      case 'user_stopped_typing':
         this.handleTypingStop(message.data as { userId: number; conversationId: number });
         break;
 
       case 'user_status':
+      case 'user_status_changed':
         this.handleUserStatus(message.data as { userId: number; status: string });
         break;
 
@@ -568,6 +594,22 @@ class ChatClient {
 
   handleNewMessage(data: { message: Message; conversationId: number }): void {
     const { message, conversationId } = data;
+    
+    // Ensure message has proper sender object structure
+    if (!message.sender && (message as any).sender_id) {
+      message.sender = {
+        id: (message as any).sender_id,
+        username: (message as any).username || (message as any).sender_name || 'Unknown',
+        first_name: (message as any).first_name,
+        last_name: (message as any).last_name,
+        profile_picture_url: (message as any).profile_picture_url,
+        role: 'employee', // Default role
+        tenant_id: 0, // Will be set by backend
+        email: '',
+        created_at: '',
+        updated_at: ''
+      };
+    }
 
     // Update conversation in list
     const conversation = this.conversations.find((c) => c.id === conversationId);
@@ -588,16 +630,31 @@ class ChatClient {
 
     // Display message if in current conversation
     if (conversationId === this.currentConversationId) {
-      this.displayMessage(message);
-
-      // Mark as read if from another user
-      if (message.sender_id !== this.currentUserId) {
+      if (message.sender_id === this.currentUserId) {
+        // For our own messages, we need to replace the temporary message
+        // Find and remove the temporary message with matching content
+        const messagesContainer = document.getElementById('messagesContainer');
+        if (messagesContainer) {
+          const tempMessages = messagesContainer.querySelectorAll('.message.sent');
+          tempMessages.forEach(msg => {
+            const msgText = msg.querySelector('.message-text')?.textContent;
+            if (msgText === message.content && msg.getAttribute('data-message-id')?.length > 10) {
+              // Remove temporary message (IDs > 10 chars are timestamps)
+              msg.remove();
+            }
+          });
+        }
+        // Display the real message from server
+        this.displayMessage(message);
+      } else {
+        // Display messages from other users
+        this.displayMessage(message);
         this.markMessageAsRead(message.id);
-      }
-
-      // Show notification if window is not focused
-      if (!document.hasFocus() && message.sender_id !== this.currentUserId) {
-        this.showDesktopNotification(message);
+        
+        // Show notification if window is not focused
+        if (!document.hasFocus()) {
+          this.showDesktopNotification(message);
+        }
       }
     }
 
@@ -718,6 +775,15 @@ class ChatClient {
     // Update header
     this.renderChatHeader();
 
+    // Show chat elements
+    const chatHeader = document.getElementById('chat-header');
+    const chatArea = document.getElementById('chatArea');
+    const noChatSelected = document.getElementById('noChatSelected');
+    
+    if (chatHeader) chatHeader.style.display = 'flex';
+    if (chatArea) chatArea.style.display = 'block';
+    if (noChatSelected) noChatSelected.style.display = 'none';
+
     // Show chat view on mobile
     const chatContainer = document.querySelector('.chat-container');
     if (chatContainer) {
@@ -826,10 +892,19 @@ class ChatClient {
   }
 
   async sendMessage(content?: string): Promise<void> {
+    console.log('sendMessage called');
     const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement;
     const messageContent = content || messageInput?.value.trim();
+    
+    console.log('Message content:', messageContent);
+    console.log('Current conversation ID:', this.currentConversationId);
+    console.log('Is connected:', this.isConnected);
+    console.log('WebSocket state:', this.ws?.readyState);
 
-    if (!messageContent || !this.currentConversationId) return;
+    if (!messageContent || !this.currentConversationId) {
+      console.warn('No message content or conversation ID');
+      return;
+    }
 
     // Clear input
     if (messageInput && !content) {
@@ -848,6 +923,7 @@ class ChatClient {
       created_at: new Date().toISOString(),
       is_read: false,
       type: 'text',
+      sender: this.currentUser as ChatUser,
     };
 
     if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -863,14 +939,15 @@ class ChatClient {
         }),
       );
       this.pendingFiles = [];
+      // Display the message immediately with temporary ID
+      this.displayMessage(tempMessage);
     } else {
       // Queue message
       this.messageQueue.push(tempMessage);
       this.showNotification('Nachricht wird gesendet, sobald die Verbindung wiederhergestellt ist', 'info');
+      // Display message immediately when offline
+      this.displayMessage(tempMessage);
     }
-
-    // Display message immediately
-    this.displayMessage(tempMessage);
   }
 
   async uploadFiles(): Promise<number[]> {
@@ -1030,9 +1107,6 @@ class ChatClient {
       conversationsList.innerHTML = `
         <div class="no-conversations">
           <p>Keine Unterhaltungen vorhanden</p>
-          <button class="btn btn-primary" onclick="chatClient.showNewConversationModal()">
-            Neue Unterhaltung starten
-          </button>
         </div>
       `;
       return;
@@ -1064,11 +1138,11 @@ class ChatClient {
           ${conversation.is_group ? '<i class="fas fa-users"></i>' : '<i class="fas fa-user"></i>'}
         </div>
         <div class="conversation-info">
-          <div class="conversation-name">${this.escapeHtml(displayName)}</div>
-          <div class="conversation-last-message">${this.escapeHtml(lastMessageText)}</div>
+          <div class="conversation-name">${this.escapeHtml(displayName || 'Unbekannt')}</div>
+          <div class="conversation-last-message">${this.escapeHtml(lastMessageText || 'Keine Nachrichten')}</div>
         </div>
         <div class="conversation-meta">
-          <div class="conversation-time">${lastMessageTime}</div>
+          <div class="conversation-time">${lastMessageTime || ''}</div>
           ${unreadBadge}
         </div>
       `;
@@ -1082,7 +1156,7 @@ class ChatClient {
   }
 
   renderChatHeader(): void {
-    const chatHeader = document.getElementById('chatHeader');
+    const chatHeader = document.getElementById('chat-header');
     if (!chatHeader || !this.currentConversationId) return;
 
     const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
@@ -1093,7 +1167,7 @@ class ChatClient {
       : this.getConversationDisplayName(conversation);
 
     const statusHtml = conversation.is_group
-      ? `<span class="user-count">${conversation.participants.length} Teilnehmer</span>`
+      ? `<span class="user-count">${conversation.participants ? conversation.participants.length : 0} Teilnehmer</span>`
       : this.getParticipantStatus(conversation);
 
     chatHeader.innerHTML = `
@@ -1129,13 +1203,31 @@ class ChatClient {
   }
 
   getConversationDisplayName(conversation: Conversation): string {
-    const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
-    return otherParticipant
-      ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username
-      : 'Unknown';
+    // Für Gruppenchats
+    if (conversation.is_group) {
+      return conversation.name || 'Gruppenchat';
+    }
+    
+    // Für 1:1 Chats - nutze display_name wenn verfügbar
+    if (conversation.display_name) {
+      return conversation.display_name;
+    }
+    
+    // Fallback auf participants array
+    if (conversation.participants && conversation.participants.length > 0) {
+      const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
+      if (otherParticipant) {
+        return `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username;
+      }
+    }
+    
+    return 'Unbekannt';
   }
 
   getParticipantStatus(conversation: Conversation): string {
+    if (!conversation.participants || conversation.participants.length === 0) {
+      return '';
+    }
     const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
 
     if (!otherParticipant) return '';
@@ -1154,33 +1246,183 @@ class ChatClient {
     const modal = document.getElementById('newConversationModal');
     if (!modal) return;
 
-    // Populate user list
-    const userList = document.getElementById('userList');
-    if (userList) {
-      userList.innerHTML = '';
+    // Reset modal state
+    this.resetModalState();
 
-      this.availableUsers.forEach((user) => {
-        if (user.id === this.currentUserId) return;
+    // Load departments
+    this.loadDepartments();
 
-        const userItem = document.createElement('div');
-        userItem.className = 'user-item';
-        userItem.innerHTML = `
-          <input type="checkbox" id="user-${user.id}" value="${user.id}" />
-          <label for="user-${user.id}">
-            <div class="user-avatar">
-              <i class="fas fa-user"></i>
-            </div>
-            <div class="user-info">
-              <div class="user-name">${this.escapeHtml(`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username)}</div>
-              <div class="user-role">${this.escapeHtml(user.role)}</div>
-            </div>
-          </label>
-        `;
-        userList.appendChild(userItem);
-      });
-    }
+    // Load admins
+    this.loadAdmins();
+
+    // Set up tab listeners
+    this.setupTabListeners();
 
     modal.style.display = 'flex';
+  }
+
+  private resetModalState(): void {
+    // Reset tabs
+    document.querySelectorAll('.chat-type-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('employeeTab')?.classList.add('active');
+
+    // Reset selections
+    document.querySelectorAll('.recipient-selection').forEach(section => {
+      (section as HTMLElement).style.display = 'none';
+    });
+    const employeeSection = document.getElementById('employeeSelection');
+    if (employeeSection) employeeSection.style.display = 'block';
+
+    // Reset dropdowns
+    const deptDisplay = document.getElementById('departmentDisplay')?.querySelector('span');
+    if (deptDisplay) deptDisplay.textContent = 'Abteilung wählen';
+    
+    const empDisplay = document.getElementById('employeeDisplay')?.querySelector('span');
+    if (empDisplay) empDisplay.textContent = 'Mitarbeiter wählen';
+    
+    const adminDisplayElem = document.getElementById('adminDisplay')?.querySelector('span');
+    if (adminDisplayElem) adminDisplayElem.textContent = 'Administrator wählen';
+    
+    // Hide employee dropdown initially
+    const employeeGroup = document.getElementById('employeeDropdownGroup');
+    if (employeeGroup) employeeGroup.style.display = 'none';
+
+    // Clear selected recipients
+    const selectedList = document.getElementById('selectedRecipientsList');
+    if (selectedList) selectedList.innerHTML = '';
+    
+    // Hide group options
+    const groupOptions = document.getElementById('groupChatOptions');
+    if (groupOptions) groupOptions.style.display = 'none';
+  }
+
+  private setupTabListeners(): void {
+    const tabs = document.querySelectorAll('.chat-type-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const type = target.dataset.type;
+
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        target.classList.add('active');
+
+        // Show corresponding section
+        document.querySelectorAll('.recipient-selection').forEach(section => {
+          (section as HTMLElement).style.display = 'none';
+        });
+
+        if (type === 'employee') {
+          const section = document.getElementById('employeeSelection');
+          if (section) section.style.display = 'block';
+        } else if (type === 'admin') {
+          const section = document.getElementById('adminSelection');
+          if (section) section.style.display = 'block';
+        }
+      });
+    });
+  }
+
+  private async loadDepartments(): Promise<void> {
+    try {
+      const response = await fetch('/api/departments', {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (response.ok) {
+        const departments = await response.json();
+        const dropdown = document.getElementById('departmentDropdown');
+        
+        if (dropdown) {
+          dropdown.innerHTML = '';
+          
+          departments.forEach((dept: any) => {
+            const option = document.createElement('div');
+            option.className = 'dropdown-option';
+            option.onclick = () => {
+              (window as any).selectChatDropdownOption('department', dept.id, dept.name);
+            };
+            option.innerHTML = `
+              <div class="option-info">
+                <div class="option-name">${this.escapeHtml(dept.name)}</div>
+              </div>
+            `;
+            dropdown.appendChild(option);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading departments:', error);
+    }
+  }
+
+  async loadEmployeesForDepartment(departmentId: string): Promise<void> {
+    try {
+      // Filter employees by department
+      const employees = this.availableUsers.filter(user => {
+        return user.role === 'employee' && 
+               user.department_id?.toString() === departmentId.toString();
+      });
+
+      const dropdown = document.getElementById('employeeDropdown');
+      
+      if (dropdown) {
+        dropdown.innerHTML = '';
+        
+        if (employees.length === 0) {
+          dropdown.innerHTML = '<div class="dropdown-option disabled">Keine Mitarbeiter in dieser Abteilung</div>';
+          return;
+        }
+        
+        employees.forEach((employee) => {
+          const option = document.createElement('div');
+          option.className = 'dropdown-option';
+          option.onclick = () => {
+            const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+            (window as any).selectChatDropdownOption('employee', employee.id, name, employee.department || '');
+          };
+          option.innerHTML = `
+            <div class="option-info">
+              <div class="option-name">${this.escapeHtml(`${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username)}</div>
+              <div class="option-meta">${this.escapeHtml(employee.position || 'Mitarbeiter')}</div>
+            </div>
+          `;
+          dropdown.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading employees:', error);
+    }
+  }
+
+  private loadAdmins(): void {
+    const admins = this.availableUsers.filter(user => 
+      user.role === 'admin' || user.role === 'root'
+    );
+
+    const dropdown = document.getElementById('adminDropdown');
+    
+    if (dropdown) {
+      dropdown.innerHTML = '';
+      
+      admins.forEach((admin) => {
+        const option = document.createElement('div');
+        option.className = 'dropdown-option';
+        option.onclick = () => {
+          const name = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || admin.username;
+          (window as any).selectChatDropdownOption('admin', admin.id, name, admin.role);
+        };
+        option.innerHTML = `
+          <div class="option-info">
+            <div class="option-name">${this.escapeHtml(`${admin.first_name || ''} ${admin.last_name || ''}`.trim() || admin.username)}</div>
+            <div class="option-meta">${this.escapeHtml(admin.role === 'root' ? 'Root Administrator' : 'Administrator')}</div>
+          </div>
+        `;
+        dropdown.appendChild(option);
+      });
+    }
   }
 
   closeModal(modalId: string): void {
@@ -1191,20 +1433,39 @@ class ChatClient {
   }
 
   async createConversation(): Promise<void> {
-    const selectedUsers = Array.from(
-      document.querySelectorAll<HTMLInputElement>('#userList input[type="checkbox"]:checked'),
-    ).map((input) => parseInt(input.value));
+    // Prevent duplicate calls
+    if (this.isCreatingConversation) {
+      console.log('Already creating conversation, ignoring duplicate call');
+      return;
+    }
+    
+    this.isCreatingConversation = true;
+    
+    try {
+      // Get selected recipient based on active tab
+      const activeTab = document.querySelector('.chat-type-tab.active') as HTMLElement;
+      const tabType = activeTab?.dataset.type;
+      
+      let selectedUserId: number | null = null;
+    
+    if (tabType === 'employee') {
+      const employeeInput = document.getElementById('selectedEmployee') as HTMLInputElement;
+      selectedUserId = employeeInput?.value ? parseInt(employeeInput.value) : null;
+    } else if (tabType === 'admin') {
+      const adminInput = document.getElementById('selectedAdmin') as HTMLInputElement;
+      selectedUserId = adminInput?.value ? parseInt(adminInput.value) : null;
+    }
 
-    if (selectedUsers.length === 0) {
-      this.showNotification('Bitte mindestens einen Benutzer auswählen', 'warning');
+    if (!selectedUserId) {
+      this.showNotification('Bitte wählen Sie einen Empfänger aus', 'warning');
+      this.isCreatingConversation = false;
       return;
     }
 
-    const isGroup = selectedUsers.length > 1;
+    // For now, we only support 1:1 chats
+    const isGroup = false;
     const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement;
     const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
-
-    try {
       const response = await fetch('/api/chat/conversations', {
         method: 'POST',
         headers: {
@@ -1212,7 +1473,7 @@ class ChatClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          participant_ids: selectedUsers,
+          participant_ids: [selectedUserId],
           is_group: isGroup,
           name: groupName || null,
         }),
@@ -1222,7 +1483,7 @@ class ChatClient {
         const result = await response.json();
 
         this.showNotification(
-          isGroup ? 'Gruppenchat erfolgreich erstellt' : 'Unterhaltung erfolgreich erstellt',
+          'Unterhaltung erfolgreich erstellt',
           'success',
         );
         this.closeModal('newConversationModal');
@@ -1233,11 +1494,17 @@ class ChatClient {
         // Select new conversation
         this.selectConversation(result.id);
       } else {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const error = await response.json();
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error('❌ Error creating conversation:', error);
-      this.showNotification('Fehler beim Erstellen der Unterhaltung', 'error');
+      this.showNotification(
+        error instanceof Error ? error.message : 'Fehler beim Erstellen der Unterhaltung', 
+        'error'
+      );
+    } finally {
+      this.isCreatingConversation = false;
     }
   }
 
@@ -1309,11 +1576,14 @@ class ChatClient {
     }
 
     // Send button
-    const sendBtn = document.getElementById('sendBtn');
+    const sendBtn = document.getElementById('sendButton');
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
+        console.log('Send button clicked');
         this.sendMessage();
       });
+    } else {
+      console.warn('Send button not found');
     }
 
     // File upload handler
@@ -1394,14 +1664,20 @@ class ChatClient {
     }
 
     // Modal close buttons
-    document.querySelectorAll('.modal-close').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const modal = (e.target as HTMLElement).closest('.modal') as HTMLElement;
-        if (modal) {
-          modal.style.display = 'none';
-        }
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    
+    if (closeModalBtn) {
+      closeModalBtn.addEventListener('click', () => {
+        this.closeModal('newConversationModal');
       });
-    });
+    }
+    
+    if (cancelModalBtn) {
+      cancelModalBtn.addEventListener('click', () => {
+        this.closeModal('newConversationModal');
+      });
+    }
 
     // Periodic connection check
     setInterval(() => {
@@ -1474,8 +1750,11 @@ class ChatClient {
 
     const typingUsers = conversation.typing_users
       .map((userId) => {
-        const participant = conversation.participants.find((p) => p.id === userId);
-        return participant ? participant.username : 'Unknown';
+        if (conversation.participants && Array.isArray(conversation.participants)) {
+          const participant = conversation.participants.find((p) => p.id === userId);
+          return participant ? participant.username : 'Unknown';
+        }
+        return 'Unknown';
       })
       .filter((name) => name !== 'Unknown');
 
@@ -1601,8 +1880,35 @@ class ChatClient {
     console.info('Search functionality not yet implemented');
   }
 
+  // Transform WebSocket message to ensure proper structure
+  transformWebSocketMessage(data: any): Message {
+    return {
+      id: data.id,
+      conversation_id: data.conversation_id,
+      sender_id: data.sender_id,
+      content: data.content,
+      created_at: data.created_at,
+      is_read: data.is_read || false,
+      type: data.type || 'text',
+      attachments: data.attachments || [],
+      sender: data.sender || {
+        id: data.sender_id,
+        username: data.username || data.sender_name || 'Unknown',
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: '',
+        role: 'employee',
+        tenant_id: 0,
+        created_at: '',
+        updated_at: ''
+      }
+    };
+  }
+
   // Utility methods
-  escapeHtml(text: string): string {
+  escapeHtml(text: string | null | undefined): string {
+    if (!text) return '';
+    
     const map: { [key: string]: string } = {
       '&': '&amp;',
       '<': '&lt;',
@@ -1610,7 +1916,7 @@ class ChatClient {
       '"': '&quot;',
       "'": '&#039;',
     };
-    return text.replace(/[&<>"']/g, (m) => map[m]);
+    return String(text).replace(/[&<>"']/g, (m) => map[m]);
   }
 
   parseEmojis(text: string): string {
@@ -1656,10 +1962,16 @@ class ChatClient {
 let chatClient: ChatClient | null = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  chatClient = new ChatClient();
+  // Only create if not already created
+  if (!window.chatClient) {
+    chatClient = new ChatClient();
+    
+    // Initialize the chat client
+    chatClient.init();
 
-  // Export to window for backwards compatibility
-  if (typeof window !== 'undefined') {
-    window.chatClient = chatClient;
+    // Export to window for backwards compatibility
+    if (typeof window !== 'undefined') {
+      window.chatClient = chatClient;
+    }
   }
 });

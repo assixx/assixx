@@ -165,8 +165,10 @@ export class ChatWebSocketServer {
     try {
       // Berechtigung prüfen
       const participantQuery = `
-        SELECT user_id FROM conversation_participants 
-        WHERE conversation_id = ? AND tenant_id = ?
+        SELECT cp.user_id 
+        FROM conversation_participants cp
+        JOIN conversations c ON cp.conversation_id = c.id
+        WHERE cp.conversation_id = ? AND c.tenant_id = ?
       `;
       const [participants] = await (db as any).query(participantQuery, [
         conversationId,
@@ -265,8 +267,10 @@ export class ChatWebSocketServer {
     try {
       // Teilnehmer der Unterhaltung ermitteln
       const participantQuery = `
-        SELECT user_id FROM conversation_participants 
-        WHERE conversation_id = ? AND tenant_id = ? AND user_id != ?
+        SELECT cp.user_id 
+        FROM conversation_participants cp
+        JOIN conversations c ON cp.conversation_id = c.id
+        WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
       `;
       const [participants] = await (db as any).query(participantQuery, [
         conversationId,
@@ -357,8 +361,10 @@ export class ChatWebSocketServer {
     // Anderen Teilnehmern mitteilen, dass Benutzer online ist
     try {
       const participantQuery = `
-        SELECT user_id FROM conversation_participants 
-        WHERE conversation_id = ? AND tenant_id = ? AND user_id != ?
+        SELECT cp.user_id 
+        FROM conversation_participants cp
+        JOIN conversations c ON cp.conversation_id = c.id
+        WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
       `;
       const [participants] = await (db as any).query(participantQuery, [
         conversationId,
@@ -408,7 +414,8 @@ export class ChatWebSocketServer {
         SELECT DISTINCT cp2.user_id
         FROM conversation_participants cp1
         JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
-        WHERE cp1.user_id = ? AND cp1.tenant_id = ? AND cp2.user_id != ?
+        JOIN conversations c ON cp1.conversation_id = c.id
+        WHERE cp1.user_id = ? AND c.tenant_id = ? AND cp2.user_id != ?
       `;
       const [relatedUsers] = await (db as any).query(conversationsQuery, [
         userId,

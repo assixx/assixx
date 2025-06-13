@@ -2231,10 +2231,21 @@
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Abteilung</label>
-                                            <select name="department_id" class="form-control" id="edit-employee-department-select">
-                                                <option value="">Keine Abteilung</option>
-                                                <!-- Wird dynamisch gefüllt -->
-                                            </select>
+                                            <div class="custom-dropdown">
+                                                <div class="dropdown-display" id="edit-employee-department-display" onclick="toggleDropdown('edit-employee-department')">
+                                                    <span>${employee.department || 'Keine Abteilung'}</span>
+                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                                    </svg>
+                                                </div>
+                                                <div class="dropdown-options" id="edit-employee-department-dropdown" style="display: none">
+                                                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
+                                                        Keine Abteilung
+                                                    </div>
+                                                    <!-- Wird dynamisch gefüllt -->
+                                                </div>
+                                                <input type="hidden" name="department_id" id="edit-employee-department-select" value="${employee.department_id || ''}" />
+                                            </div>
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Geburtsdatum</label>
@@ -2289,9 +2300,9 @@
             // Modal zum Body hinzufügen
             document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-            // Lade Abteilungen für das Select-Feld
-            const departmentSelect = document.getElementById('edit-employee-department-select');
-            if (departmentSelect) {
+            // Lade Abteilungen für das Custom Dropdown
+            const departmentDropdown = document.getElementById('edit-employee-department-dropdown');
+            if (departmentDropdown) {
               // Hilfsfunktion zum Laden der Abteilungen
               const loadDepts = async () => {
                 try {
@@ -2301,17 +2312,30 @@
 
                   if (deptResponse.ok) {
                     const departments = await deptResponse.json();
-                    departmentSelect.innerHTML =
-                      '<option value="">Keine Abteilung</option>' +
-                      departments
-                        .map(
-                          (dept) => `
-                                            <option value="${dept.id}" ${dept.id == employee.department_id ? 'selected' : ''}>
-                                                ${dept.name}
-                                            </option>
-                                        `,
-                        )
-                        .join('');
+                    
+                    // Clear existing options and add placeholder
+                    departmentDropdown.innerHTML = `
+                      <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
+                        Keine Abteilung
+                      </div>
+                    `;
+                    
+                    // Add department options
+                    departments.forEach((dept) => {
+                      const optionDiv = document.createElement('div');
+                      optionDiv.className = 'dropdown-option';
+                      optionDiv.setAttribute('data-value', dept.id.toString());
+                      optionDiv.textContent = dept.name;
+                      optionDiv.onclick = () => {
+                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
+                      };
+                      departmentDropdown.appendChild(optionDiv);
+                      
+                      // If this is the current department, select it
+                      if (dept.id == employee.department_id) {
+                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
+                      }
+                    });
                   }
                 } catch (err) {
                   console.error('Error loading departments:', err);

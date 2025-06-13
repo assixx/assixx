@@ -581,6 +581,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Listen neu laden
         loadRecentEmployees();
         loadDashboardStats();
+        
+        // Seite neu laden für komplette Aktualisierung
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000); // Kurze Verzögerung damit die Erfolgsmeldung noch sichtbar ist
       } else {
         const error = await response.json();
         showError(error.message || 'Fehler beim Erstellen des Mitarbeiters');
