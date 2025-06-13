@@ -194,7 +194,7 @@
     - [ ] Benachrichtigungen
     - [ ] Sprache/Theme
 
-### Fortschritt: 5/12 Bereiche getestet ✅
+### Fortschritt: 7/12 Bereiche getestet ✅
 
 ## 🧪 PHASE 0: Funktionstests ✅ ABGESCHLOSSEN
 
