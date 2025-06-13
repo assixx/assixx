@@ -156,17 +156,17 @@
 
 7. **Kalender**
 
-   - [ ] Events erstellen
-   - [ ] Drag & Drop
-   - [ ] Verschiedene Ansichten
-   - [ ] Erinnerungen
+   - [x] Events erstellen
+   - [x] Drag & Drop
+   - [x] Verschiedene Ansichten
+   - [x] Erinnerungen
 
 8. **Schichtplanung**
 
-   - [ ] Schichten zuweisen
-   - [ ] Wochenansicht
-   - [ ] Konflikte erkennen
-   - [ ] Export-Funktion
+   - [x] Schichten zuweisen
+   - [x] Wochenansicht
+   - [x] Konflikte erkennen
+   - [x] Export-Funktion
 
 9. **KVP-System**
 
