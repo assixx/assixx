@@ -1,5 +1,22 @@
 # 📖 Assixx Project Instructions for Claude AI
 
+## 🎯 START-TRIGGER (WICHTIGSTE SEKTION!)
+
+### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
+- **Aktion:** Vollständige Pflicht-Checkliste durchführen
+- **Prozess:** Alle Starttasks, TodoWrite mit 9 Punkten, komplette Checks
+- **Ziel:** Sicherstellen, dass alles korrekt läuft
+
+### Trigger 2: "weitermachen mit Assixx und skip" (Quick-Start-Modus)
+- **Aktion:** Minimale Vorbereitung für sofortige Arbeit
+- **Prozess:** 
+  1. TODO.md lesen (nur TL;DR Section)
+  2. README.md lesen (kurz)
+  3. CLAUDE.md + CLAUDE.local.md (bereits automatisch geladen)
+  4. Letzten Commit lesen und zusammenfassen
+  5. Direkt startbereit und auf Anweisungen warten
+- **Ziel:** Schneller Start für erfahrene Entwicklung
+
 ## ⛔ KRITISCH: PFLICHT-REIHENFOLGE BEACHTEN!
 
 > **WARNUNG:** Die folgenden 5 Schritte MÜSSEN in EXAKTER Reihenfolge ausgeführt werden!
