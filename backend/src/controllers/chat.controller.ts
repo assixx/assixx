@@ -400,6 +400,30 @@ class ChatController {
       res.status(500).json({ error: (error as Error).message });
     }
   }
+
+  // Delete conversation
+  async deleteConversation(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const conversationId = parseInt(req.params.id);
+      
+      await chatService.deleteConversation(
+        conversationId,
+        req.user.userId || req.user.id
+      );
+
+      res.json({ message: 'Conversation deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
 }
 
 export default new ChatController();

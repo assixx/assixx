@@ -819,6 +819,8 @@ class UnifiedNavigation {
       ? (navContainer.querySelector('.sidebar') as HTMLElement)
       : (document.querySelector('.sidebar') as HTMLElement);
     const mainContent = document.querySelector('.main-content') as HTMLElement;
+    const chatMain = document.querySelector('.chat-main') as HTMLElement;
+    const chatSidebar = document.querySelector('.chat-sidebar') as HTMLElement;
 
     console.log('[UnifiedNav] Toggle button:', toggleBtn);
     console.log('[UnifiedNav] Sidebar:', sidebar);
@@ -836,6 +838,8 @@ class UnifiedNavigation {
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
       mainContent?.classList.add('sidebar-collapsed');
+      chatMain?.classList.add('sidebar-collapsed');
+      chatSidebar?.classList.add('sidebar-collapsed');
       sidebar.style.setProperty('width', '70px', 'important');
       this.updateToggleIcon();
     } else {
@@ -856,6 +860,8 @@ class UnifiedNavigation {
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle('sidebar-collapsed');
+      chatMain?.classList.toggle('sidebar-collapsed');
+      chatSidebar?.classList.toggle('sidebar-collapsed');
 
       // Set width directly as inline style to override any CSS
       console.log('[UnifiedNav] Setting width for collapsed state:', newState);

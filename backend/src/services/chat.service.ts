@@ -49,12 +49,23 @@ interface Conversation extends RowDataPacket {
   name?: string | null;
   is_group: boolean | number;
   created_at: Date;
-  display_name: string;
-  last_message?: string | null;
-  last_message_time?: Date | null;
-  last_message_sender?: string | null;
+  updated_at?: Date;
+  display_name?: string;
+  last_message?: {
+    id: number;
+    content: string;
+    created_at: Date;
+    sender_id: number;
+    conversation_id: number;
+    is_read: boolean;
+    sender?: {
+      id: number;
+      username: string;
+    };
+  } | null;
   profile_image_url?: string | null;
   unread_count: number;
+  participants?: any[];
 }
 
 interface Message extends RowDataPacket {
@@ -179,7 +190,7 @@ class ChatService {
             d.name as department,
             NULL as employee_number,
             NULL as position,
-            NULL as profile_image_url,
+            u.profile_picture as profile_image_url,
             0 AS is_online,
             NULL as shift_type,
             NULL as start_time,
@@ -206,7 +217,7 @@ class ChatService {
             d.name as department,
             NULL as employee_number,
             NULL as position,
-            NULL as profile_image_url,
+            u.profile_picture as profile_image_url,
             0 AS is_online,
             NULL as shift_type,
             NULL as start_time,
@@ -266,6 +277,7 @@ class ChatService {
         c.name,
         c.is_group,
         c.created_at,
+        c.updated_at,
         CASE 
           WHEN c.is_group = 1 THEN c.name
           ELSE CONCAT(
@@ -274,10 +286,12 @@ class ChatService {
             COALESCE(u.last_name, '')
           )
         END AS display_name,
-        m.content AS last_message,
-        m.created_at AS last_message_time,
-        sender.username AS last_message_sender,
-        NULL as profile_image_url,
+        m.id AS last_message_id,
+        m.content AS last_message_content,
+        m.created_at AS last_message_created_at,
+        m.sender_id AS last_message_sender_id,
+        sender.username AS last_message_sender_username,
+        u.profile_picture as profile_image_url,
         COALESCE(unread.count, 0) AS unread_count
       FROM conversations c
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
@@ -302,8 +316,8 @@ class ChatService {
         GROUP BY m.conversation_id
       ) unread ON c.id = unread.conversation_id
       WHERE cp.user_id = ? AND c.tenant_id = ?
-      GROUP BY c.id, c.name, c.is_group, c.created_at, u.first_name, u.last_name, 
-               m.content, m.created_at, sender.username, unread.count
+      GROUP BY c.id, c.name, c.is_group, c.created_at, c.updated_at, u.first_name, u.last_name, 
+               m.id, m.content, m.created_at, m.sender_id, sender.username, unread.count
       ORDER BY COALESCE(m.created_at, c.created_at) DESC
     `;
 
@@ -313,14 +327,42 @@ class ChatService {
           Conversation[]
         >(query, [numericUserId, numericTenantId, numericTenantId, numericUserId, numericUserId, numericTenantId]);
 
-      // Ensure each conversation has participants array
+      // Transform the results to match the expected format
       const conversationsWithParticipants = await Promise.all(
-        conversations.map(async (conv) => {
+        conversations.map(async (conv: any) => {
           const participants = await this.getConversationParticipants(conv.id, numericTenantId);
-          return {
-            ...conv,
-            participants: participants || []
-          };
+          
+          // Transform last_message fields into proper object
+          const lastMessage = conv.last_message_id ? {
+            id: conv.last_message_id,
+            content: conv.last_message_content,
+            created_at: conv.last_message_created_at,
+            sender_id: conv.last_message_sender_id,
+            conversation_id: conv.id,
+            is_read: false,
+            sender: {
+              id: conv.last_message_sender_id,
+              username: conv.last_message_sender_username
+            }
+          } : null;
+          
+          // Create new conversation object that extends RowDataPacket
+          const transformedConv: Conversation = Object.assign(
+            Object.create(Object.getPrototypeOf(conv)),
+            {
+              id: conv.id,
+              name: conv.name,
+              is_group: conv.is_group,
+              created_at: conv.created_at,
+              updated_at: conv.updated_at || conv.created_at,
+              display_name: conv.display_name,
+              last_message: lastMessage,
+              unread_count: conv.unread_count,
+              participants: participants || []
+            }
+          );
+          
+          return transformedConv;
         })
       );
 
@@ -463,7 +505,7 @@ class ChatService {
           WHEN c.is_group = 1 THEN c.name
           ELSE CONCAT(u.first_name, ' ', u.last_name)
         END AS display_name,
-        NULL as profile_image_url
+        u.profile_picture as profile_image_url
       FROM conversations c
       LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id 
         AND cp.user_id != ? AND c.is_group = 0
@@ -479,7 +521,7 @@ class ChatService {
         u.username,
         u.first_name,
         u.last_name,
-        NULL as profile_image_url,
+        u.profile_picture as profile_image_url,
         0 AS is_read
       FROM messages m
       LEFT JOIN users u ON m.sender_id = u.id
@@ -493,7 +535,7 @@ class ChatService {
     let participants: Participant[] = [];
     if (conversationData[0]?.is_group) {
       const [participantData] = await db.promise().query<Participant[]>(
-        `SELECT u.id, u.username, u.first_name, u.last_name, NULL as profile_image_url
+        `SELECT u.id, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url
          FROM conversation_participants cp
          JOIN users u ON cp.user_id = u.id
          WHERE cp.conversation_id = ?`,
@@ -576,9 +618,15 @@ class ChatService {
       ]
     );
 
+    // Update conversation updated_at timestamp
+    await db.promise().query(
+      'UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [conversationId]
+    );
+
     // Hole die erstellte Nachricht mit Benutzerdetails
     const [message] = await db.promise().query<Message[]>(
-      `SELECT m.*, u.username, u.first_name, u.last_name, NULL as profile_image_url
+      `SELECT m.*, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url
        FROM messages m
        LEFT JOIN users u ON m.sender_id = u.id
        WHERE m.id = ?`,
@@ -670,26 +718,68 @@ class ChatService {
     try {
       await connection.beginTransaction();
 
-      // Markiere alle Nachrichten als archiviert für diesen Benutzer
-      await connection.query(
-        `INSERT INTO message_status (message_id, user_id, is_archived, archived_at)
-         SELECT m.id, ?, 1, NOW()
-         FROM messages m
-         WHERE m.conversation_id = ?
-         ON DUPLICATE KEY UPDATE is_archived = 1, archived_at = NOW()`,
-        [userId, conversationId]
-      );
-
-      // Optional: Entferne Benutzer aus Konversation wenn es eine Gruppe ist
+      // Check if conversation exists and if user is participant
       const [conversation] = await connection.query<RowDataPacket[]>(
-        'SELECT is_group FROM conversations WHERE id = ?',
-        [conversationId]
+        `SELECT c.is_group, 
+                COUNT(DISTINCT cp.user_id) as participant_count
+         FROM conversations c
+         JOIN conversation_participants cp ON c.id = cp.conversation_id
+         WHERE c.id = ? AND EXISTS (
+           SELECT 1 FROM conversation_participants 
+           WHERE conversation_id = ? AND user_id = ?
+         )
+         GROUP BY c.id`,
+        [conversationId, conversationId, userId]
       );
 
-      if (conversation[0]?.is_group) {
+      if (!conversation[0]) {
+        throw new Error('Conversation not found or access denied');
+      }
+
+      const isGroup = conversation[0].is_group;
+      const participantCount = conversation[0].participant_count;
+
+      if (!isGroup || participantCount <= 2) {
+        // For 1:1 chats or groups with only 2 participants left, delete everything
+        
+        // Delete message status entries
+        await connection.query(
+          'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE conversation_id = ?)',
+          [conversationId]
+        );
+        
+        // Delete messages
+        await connection.query(
+          'DELETE FROM messages WHERE conversation_id = ?',
+          [conversationId]
+        );
+        
+        // Delete participants
+        await connection.query(
+          'DELETE FROM conversation_participants WHERE conversation_id = ?',
+          [conversationId]
+        );
+        
+        // Delete conversation
+        await connection.query(
+          'DELETE FROM conversations WHERE id = ?',
+          [conversationId]
+        );
+      } else {
+        // For groups with more than 2 participants, just remove the user
         await connection.query(
           'DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
           [conversationId, userId]
+        );
+        
+        // Archive messages for this user
+        await connection.query(
+          `INSERT INTO message_status (message_id, user_id, is_archived, archived_at)
+           SELECT m.id, ?, 1, NOW()
+           FROM messages m
+           WHERE m.conversation_id = ?
+           ON DUPLICATE KEY UPDATE is_archived = 1, archived_at = NOW()`,
+          [userId, conversationId]
         );
       }
 
@@ -710,7 +800,7 @@ class ChatService {
   ): Promise<any[]> {
     const query = `
       SELECT u.id, u.username, u.first_name, u.last_name, u.email,
-             cp.joined_at, cp.is_admin
+             u.profile_picture as profile_image_url, cp.joined_at, cp.is_admin
       FROM conversation_participants cp
       JOIN users u ON cp.user_id = u.id
       WHERE cp.conversation_id = ? AND u.tenant_id = ?

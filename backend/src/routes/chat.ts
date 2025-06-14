@@ -103,11 +103,11 @@ router.get('/unread-count', authenticateToken, (req, res) =>
 //   authenticateToken,
 //   chatController.archiveMessage as any
 // );
-// router.delete(
-//   '/conversations/:id',
-//   authenticateToken,
-//   chatController.deleteConversation as any
-// );
+router.delete(
+  '/conversations/:id',
+  authenticateToken,
+  (req, res) => chatController.deleteConversation(req as AuthenticatedRequest, res)
+);
 
 export default router;
 
