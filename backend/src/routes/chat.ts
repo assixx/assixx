@@ -98,6 +98,9 @@ router.get('/attachments/:filename', authenticateToken, (req, res) =>
 router.get('/unread-count', authenticateToken, (req, res) =>
   chatController.getUnreadCount(req as AuthenticatedRequest, res)
 );
+router.post('/conversations/:id/read', authenticateToken, (req, res) =>
+  chatController.markConversationAsRead(req as AuthenticatedRequest, res)
+);
 // router.put(
 //   '/messages/:id/archive',
 //   authenticateToken,

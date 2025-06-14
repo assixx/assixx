@@ -671,24 +671,55 @@ class ChatService {
     userId: number
   ): Promise<number> {
     try {
-      // Chat-Daten sind in der Hauptdatenbank, nicht in der Tenant-DB
-      // Temporarily return 0 since message_status table doesn't exist
-      // TODO: Create message_status table and restore proper unread counting
+      // Count messages that don't have a read status for this user
       const [result] = await db.promise().query<CountResult[]>(
         `SELECT COUNT(DISTINCT m.id) as count
-       FROM messages m
-       INNER JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
-       WHERE cp.user_id = ? 
-         AND m.tenant_id = ?
-         AND m.sender_id != ?
-         AND m.deleted_at IS NULL`,
-        [userId, tenantId, userId]
+         FROM messages m
+         INNER JOIN conversation_participants cp ON m.conversation_id = cp.conversation_id
+         LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
+         WHERE cp.user_id = ? 
+           AND m.tenant_id = ?
+           AND m.sender_id != ?
+           AND m.deleted_at IS NULL
+           AND (ms.id IS NULL OR ms.is_read = 0)`,
+        [userId, userId, tenantId, userId]
       );
 
       return result[0].count;
     } catch (error) {
       console.error('Error in getUnreadCount:', error);
       return 0;
+    }
+  }
+
+  /**
+   * Mark all messages in a conversation as read for a user
+   */
+  async markConversationAsRead(conversationId: number, userId: number): Promise<void> {
+    try {
+      // First, get all unread messages in this conversation for this user
+      const [messages] = await db.promise().query<RowDataPacket[]>(
+        `SELECT m.id 
+         FROM messages m
+         LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
+         WHERE m.conversation_id = ? 
+           AND m.sender_id != ?
+           AND (ms.id IS NULL OR ms.is_read = 0)`,
+        [userId, conversationId, userId]
+      );
+
+      // Insert or update message_status for each unread message
+      for (const message of messages) {
+        await db.promise().query(
+          `INSERT INTO message_status (message_id, user_id, is_read, read_at)
+           VALUES (?, ?, 1, NOW())
+           ON DUPLICATE KEY UPDATE is_read = 1, read_at = NOW()`,
+          [message.id, userId]
+        );
+      }
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      throw error;
     }
   }
 

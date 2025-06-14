@@ -1242,11 +1242,14 @@ class ChatClient {
       selectedItem.classList.add('active');
     }
 
-    // Clear unread count
+    // Clear unread count and mark messages as read
     const conversation = this.conversations.find((c) => c.id === conversationId);
     if (conversation) {
       conversation.unread_count = 0;
       this.renderConversationList();
+      
+      // Mark all messages in this conversation as read
+      await this.markConversationAsRead(conversationId);
     }
 
     // Load messages
@@ -1268,6 +1271,28 @@ class ChatClient {
     const chatContainer = document.querySelector('.chat-container');
     if (chatContainer) {
       chatContainer.classList.add('show-chat');
+    }
+  }
+
+  async markConversationAsRead(conversationId: number): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      await fetch(`/api/chat/conversations/${conversationId}/read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Update the navigation badge
+      if (window.unifiedNav) {
+        window.unifiedNav.updateUnreadMessages();
+      }
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
     }
   }
 

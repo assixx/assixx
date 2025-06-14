@@ -389,13 +389,44 @@ class ChatController {
 
   // Get unread message count
   async getUnreadCount(
-    _req: AuthenticatedRequest,
+    req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {
     try {
-      // For now, return 0 as placeholder
-      // TODO: Implement actual unread count logic
-      res.json({ count: 0 });
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const unreadCount = await chatService.getUnreadCount(
+        null as any, // tenantDb parameter is not used
+        req.user.tenantId,
+        req.user.userId || req.user.id
+      );
+
+      res.json({ unreadCount });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+
+  // Mark all messages in a conversation as read
+  async markConversationAsRead(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const conversationId = parseInt(req.params.id);
+      const userId = req.user.userId || req.user.id;
+
+      await chatService.markConversationAsRead(conversationId, userId);
+
+      res.json({ message: 'Messages marked as read' });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
