@@ -1082,7 +1082,7 @@ class ChatClient {
         username: (message as any).username || (message as any).sender_name || 'Unknown',
         first_name: (message as any).first_name,
         last_name: (message as any).last_name,
-        profile_picture_url: (message as any).profile_picture_url,
+        profile_picture_url: (message as any).profile_image_url || (message as any).profile_picture_url,
         role: 'employee', // Default role
         tenant_id: 0, // Will be set by backend
         email: '',
@@ -1655,8 +1655,8 @@ class ChatClient {
     let avatarHtml = '<i class="fas fa-users"></i>';
     if (!conversation.is_group && conversation.participants) {
       const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
-      if (otherParticipant && otherParticipant.profile_picture_url) {
-        avatarHtml = `<img src="${otherParticipant.profile_picture_url}" alt="${this.escapeHtml(displayName)}" />`;
+      if (otherParticipant && otherParticipant.profile_image_url) {
+        avatarHtml = `<img src="${otherParticipant.profile_image_url}" alt="${this.escapeHtml(displayName)}" />`;
       } else {
         avatarHtml = '<i class="fas fa-user"></i>';
       }

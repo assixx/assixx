@@ -1151,9 +1151,19 @@ class UnifiedNavigation {
             badge.style.display = 'none';
           }
         }
+      } else if (response.status === 404) {
+        // API endpoint doesn't exist yet - hide badge silently
+        const badge = document.getElementById('surveys-pending-badge');
+        if (badge) {
+          badge.style.display = 'none';
+        }
       }
     } catch (error) {
-      console.error('Error updating pending surveys:', error);
+      // Silently handle errors for pending surveys
+      const badge = document.getElementById('surveys-pending-badge');
+      if (badge) {
+        badge.style.display = 'none';
+      }
     }
   }
 
