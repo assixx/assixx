@@ -1328,31 +1328,48 @@
 
         if (currentUser && currentUser.role === 'employee') {
           // Employee: Show suggestion card, hide admin card
-          newSuggestionCard.style.display = 'block';
-          adminManagementCard.style.display = 'none';
+          if (newSuggestionCard) newSuggestionCard.style.display = 'block';
+          if (adminManagementCard) adminManagementCard.style.display = 'none';
 
           // Initialize new suggestion button
-          document.getElementById('newSuggestionBtn').addEventListener('click', openNewSuggestionModal);
+          const newSuggestionBtn = document.getElementById('newSuggestionBtn');
+          if (newSuggestionBtn) {
+            newSuggestionBtn.addEventListener('click', openNewSuggestionModal);
+          }
         } else if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')) {
           // Admin: Hide suggestion card, show admin card
-          newSuggestionCard.style.display = 'none';
-          adminManagementCard.style.display = 'block';
+          if (newSuggestionCard) newSuggestionCard.style.display = 'none';
+          if (adminManagementCard) adminManagementCard.style.display = 'block';
 
           // Load admin statistics
           loadAdminStats();
         }
 
         // Initialize filter event listeners
-        document.getElementById('statusFilter').addEventListener('change', loadSuggestions);
-        document.getElementById('categoryFilter').addEventListener('change', loadSuggestions);
+        const statusFilter = document.getElementById('statusFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        
+        if (statusFilter) {
+          statusFilter.addEventListener('change', loadSuggestions);
+        }
+        if (categoryFilter) {
+          categoryFilter.addEventListener('change', loadSuggestions);
+        }
 
         // Initialize file upload area
-        document.getElementById('fileUploadArea').addEventListener('click', function () {
-          document.getElementById('attachments').click();
-        });
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        if (fileUploadArea) {
+          fileUploadArea.addEventListener('click', function () {
+            const attachmentsInput = document.getElementById('attachments');
+            if (attachmentsInput) attachmentsInput.click();
+          });
+        }
 
         // Initialize cancel button
-        document.getElementById('cancelBtn').addEventListener('click', closeNewSuggestionModal);
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', closeNewSuggestionModal);
+        }
       }
 
       async function loadAdminStats() {
@@ -1389,7 +1406,7 @@
         if (response.status === 401) {
           localStorage.removeItem('token');
           window.location.href = '/login';
-          return;
+          throw new Error('Unauthorized');
         }
 
         return response;
@@ -1667,10 +1684,19 @@
         e.preventDefault();
 
         const formData = new FormData(this);
-        formData.set('org_id', '1'); // Default org ID for now
-
-        if (selectedCategoryId) {
-          formData.set('category_id', selectedCategoryId);
+        
+        // Set default values if not provided
+        if (!formData.get('org_level') || formData.get('org_level') === '') {
+          formData.set('org_level', 'company'); // Default to company level
+        }
+        formData.set('org_id', '8'); // Use tenant ID as org_id for company level
+        
+        if (!formData.get('category_id') || formData.get('category_id') === '') {
+          formData.set('category_id', '13'); // Default to Sicherheit category
+        }
+        
+        if (!formData.get('priority') || formData.get('priority') === '') {
+          formData.set('priority', 'normal'); // Default priority
         }
 
         try {

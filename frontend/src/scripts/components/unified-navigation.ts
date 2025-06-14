@@ -85,6 +85,7 @@ class UnifiedNavigation {
       this.updateUnreadMessages();
       this.updatePendingSurveys();
       this.updateUnreadDocuments();
+      this.updateNewKvpSuggestions();
     }, 1000);
 
     // Update badges every 30 seconds
@@ -92,6 +93,7 @@ class UnifiedNavigation {
       this.updateUnreadMessages();
       this.updatePendingSurveys();
       this.updateUnreadDocuments();
+      this.updateNewKvpSuggestions();
     }, 30000);
   }
 
@@ -267,6 +269,7 @@ class UnifiedNavigation {
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
               url: '/pages/kvp.html',
+              badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
@@ -324,12 +327,14 @@ class UnifiedNavigation {
           url: '#settings',
           section: 'settings',
         },
+        /*
         {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Feature Management',
           url: '/pages/feature-management.html',
         },
+        */
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
@@ -370,6 +375,7 @@ class UnifiedNavigation {
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
               url: '/pages/kvp.html',
+              badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
@@ -520,6 +526,7 @@ class UnifiedNavigation {
         this.updateUnreadMessages();
         this.updatePendingSurveys();
         this.updateUnreadDocuments();
+        this.updateNewKvpSuggestions();
       }, 100);
 
       return;
@@ -688,6 +695,8 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-documents') {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    } else if (item.badge === 'new-kvp-suggestions') {
+      badgeHtml = `<span class="nav-badge" id="kvp-new-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
     // If has submenu, create a dropdown
@@ -1119,6 +1128,44 @@ class UnifiedNavigation {
       }
     } catch (error) {
       console.error('Error updating unread messages:', error);
+    }
+  }
+
+  // Update KVP new suggestions count (for admin/root only)
+  public async updateNewKvpSuggestions(): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+      
+      // Only show badge for admin/root users
+      if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
+        const badge = document.getElementById('kvp-new-badge');
+        if (badge) badge.style.display = 'none';
+        return;
+      }
+
+      const response = await fetch('/api/kvp/dashboard', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById('kvp-new-badge');
+        if (badge && data.success && data.data) {
+          const count = data.data.new_suggestions || 0;
+          if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count.toString();
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating KVP suggestions count:', error);
     }
   }
 
