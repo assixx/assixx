@@ -215,7 +215,7 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 - `storage-upgrade.html` - Speicher-Upgrade ✅
 - `design-standards.html` - Design Standards (Entwickler-Seite) ✅
 
-**Fortschritt: 29 von 30 Seiten (97%)**
+**Fortschritt: 35 von 36 Seiten (97%)**
 
 ### 📋 Noch zu migrieren
 
@@ -256,9 +256,15 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 
 **Dokument-Seiten:**
 
-- ✅ `salary-documents.html` - Gehaltsabrechnungen
-- ✅ `employee-documents.html` - Mitarbeiter Dokumente
+- ✅ `salary-documents.html` - Gehaltsabrechnungen (veraltet, ersetzt durch documents-payroll.html)
+- ✅ `employee-documents.html` - Mitarbeiter Dokumente (veraltet)
 - ✅ `document-upload.html` - Dokument Upload
+- ✅ `documents-search.html` - Globale Dokumentensuche (NEU)
+- ✅ `documents-company.html` - Firmendokumente (NEU)
+- ✅ `documents-department.html` - Abteilungsdokumente (NEU)
+- ✅ `documents-team.html` - Teamdokumente (NEU)
+- ✅ `documents-personal.html` - Persönliche Dokumente (NEU)
+- ✅ `documents-payroll.html` - Gehaltsabrechnungen (NEU)
 
 **Survey-Seiten:**
 
@@ -305,11 +311,11 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 
 ### Migration Zusammenfassung
 
-**Abgeschlossen:** 29 von 30 Seiten (97%)
+**Abgeschlossen:** 35 von 36 Seiten (97%)
 
-- ✅ 29 Seiten erfolgreich migriert
+- ✅ 35 Seiten erfolgreich migriert (inkl. 6 neue Dokument-Kategorie-Seiten)
 - ⚠️ 1 Seite benötigt komplette Überarbeitung (`employee-profile.html`)
-- ⏰ Gesamtzeit: ~8 Stunden (schneller als geschätzt)
+- ⏰ Gesamtzeit: ~10 Stunden (inkl. neue Dokumentenstruktur)
 
 **Hauptvorteile der Migration:**
 

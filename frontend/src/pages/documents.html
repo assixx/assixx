@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dokumente - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta http-equiv="refresh" content="0; url=/pages/documents-search.html" />
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -872,6 +873,11 @@
                   Persönlich
                   <span class="count" id="countPersonal">0</span>
                 </button>
+                <button class="filter-pill" data-filter="payroll">
+                  <i class="fas fa-money-check me-1"></i>
+                  Gehaltsabrechnungen
+                  <span class="count" id="countPayroll">0</span>
+                </button>
               </div>
             </div>
 
@@ -951,9 +957,10 @@
       });
     </script>
 
-    <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <!-- Documents functionality -->
-    <script type="module" src="/scripts/documents.ts"></script>
+    <!-- Redirect to new documents search page -->
+    <script>
+      // Fallback redirect if meta refresh doesn't work
+      window.location.href = '/pages/documents-search.html';
+    </script>
   </body>
 </html>

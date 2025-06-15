@@ -143,7 +143,7 @@ const pagePermissions: Record<string, PageConfig> = {
  */
 function getTokenFromRequest(req: Request): string | null {
   // Try cookie first
-  const cookieToken = req.cookies?.token;
+  const cookieToken = req.cookies?.['token'];
   if (cookieToken) return cookieToken;
 
   // Try Authorization header
@@ -204,7 +204,7 @@ export function protectPage(
     // Verify token
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'your-secret-key'
+      process.env['JWT_SECRET'] || 'your-secret-key'
     ) as DecodedToken;
 
     // Check if user's role is allowed
@@ -239,7 +239,7 @@ export function redirectToDashboard(req: Request, res: Response): void {
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'your-secret-key'
+      process.env['JWT_SECRET'] || 'your-secret-key'
     ) as DecodedToken;
     const dashboardUrl = getDashboardForRole(decoded.role);
     res.redirect(dashboardUrl);
@@ -261,9 +261,9 @@ export function contentSecurityPolicy(
     'Content-Security-Policy',
     "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-      "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+      "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
       "img-src 'self' data: blob:; " +
-      "font-src 'self' data: https://cdnjs.cloudflare.com; " +
+      "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
       "connect-src 'self' ws: wss:; " +
       "frame-src 'self' blob:; " +
       "object-src 'self' blob:; " +
