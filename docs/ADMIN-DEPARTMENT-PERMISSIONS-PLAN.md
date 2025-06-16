@@ -11,7 +11,7 @@ Dieses Dokument beschreibt den detaillierten Implementierungsplan für das granu
 
 ## 🎯 Kernfunktionen
 
-1. **Root kann Abteilungen erstellen** (wie Admin)
+1. **Root kann Abteilungen erstellen** (wie Admin) siehe sidbar bei admin-dashboard -> im Prinzip gleich.
 2. **Root kann Abteilungsgruppen erstellen und verwalten**:
    - Hierarchische Gruppierung (z.B. "Produktion" → "Gelbe Dosen", "Rote Dosen")
    - Flexible Zuordnung von Abteilungen zu Gruppen
@@ -31,7 +31,7 @@ Dieses Dokument beschreibt den detaillierten Implementierungsplan für das granu
 ### Phase 1: Vorbereitung
 
 - [ ] **Dokumentation lesen**:
-  - `design-standards.md` - UI/UX Richtlinien
+  - `design-standards.md` - UI/UX Richtlinien und design-standards.html (villeicht DESIGN-Standards.html)
   - `development-guide.md` - Entwicklungsstandards
   - `navigation-container.md` - Navigation-Integration
   - `typescript-standards.md` - TypeScript Best Practices

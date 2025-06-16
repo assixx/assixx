@@ -22,6 +22,8 @@ Dieses Dokument definiert die verbindlichen Design-Standards für das Assixx-Pro
 
 ## 🎯 Grundprinzipien
 
+> **WICHTIG:** Die Datei `frontend/src/pages/design-standards.html` dient als Live-Referenz und Muster für alle Styles. Diese Dokumentation spiegelt die dort definierten Standards wider.
+
 ### Design-Philosophie
 
 Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden Kernprinzipien:
@@ -82,6 +84,11 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
   --success-color: #4caf50; /* Grün für Erfolg */
   --error-color: #f44336; /* Rot für Fehler */
   --warning-color: #ff9800; /* Orange für Warnungen */
+  
+  /* Role-spezifische Farben */
+  --admin-color: #ff6b6b;
+  --employee-color: #4ecdc4;
+  --root-color: #667eea;
 
   /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
   --accent-color: rgba(255, 255, 255, 0.1); /* Elegante transparente Basis */
@@ -125,29 +132,24 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
 
 ```css
 /* Dramatischer Hintergrund-Gradient - IMMER dieses Muster verwenden */
-body::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(
-    circle at 50% 50%,
-    #1e1e1e 0%,
-    #121212 50%,
-    #0a0a0a 100%
-  );
-  opacity: 0.9;
-  z-index: -1;
+body {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #000;
 }
 
 body::after {
   content: '';
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  bottom: 0;
+  background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+  pointer-events: none;
+  z-index: -1;
+}
   bottom: 0;
   background: linear-gradient(
     135deg,
@@ -455,50 +457,78 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 **WICHTIG: Es gibt 2 Button-Level mit unterschiedlichen Styles!**
 
-**First-Level Button (Haupt-CTAs wie "Registrieren"):**
+**First-Level Button (.btn-primary-first - Haupt-CTAs):**
 
 ```css
 /* First-Level: KEIN background, nur Shadow-Effekt */
-.btn-primary {
-  background: none; /* WICHTIG: KEIN background! Komplett transparent! */
+.btn-primary-first {
+  background: none !important; /* Explizit kein Background */
   color: white;
-  border: none;
+  position: relative;
+  overflow: hidden;
   padding: 10px 24px;
   border-radius: var(--radius-sm);
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.3s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 5px;
   box-shadow:
     0 1px 4px rgba(33, 150, 243, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
 }
 
-.btn-primary::before {
+/* Second-Level Button (.btn-primary - mit Gradient) */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  position: relative;
+  overflow: hidden;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 5px;
+  box-shadow:
+    0 1px 4px rgba(33, 150, 243, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Gemeinsamer Hover-Effekt */
+.btn-primary::before,
+.btn-primary-first::before {
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s ease;
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-primary-first:hover {
   transform: translateY(-2px);
   box-shadow:
     0 6px 20px rgba(33, 150, 243, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.btn-primary:hover::before {
+.btn-primary:hover::before,
+.btn-primary-first:hover::before {
   left: 100%;
 }
 ```
@@ -573,6 +603,73 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--primary-color);
   transform: translateY(-1px);
+}
+```
+
+**Status Buttons (Outline Style):**
+
+```css
+/* Active Status Button */
+.btn-status-active {
+  background: transparent;
+  border: 1px solid #ff6b35;
+  color: #ff6b35;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.btn-status-active:hover {
+  background: rgba(255, 107, 53, 0.1);
+  border-color: #ff5722;
+  color: #ff5722;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+}
+
+/* Inactive Status Button */
+.btn-status-inactive {
+  background: transparent;
+  border: 1px solid #28a745;
+  color: #28a745;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.btn-status-inactive:hover {
+  background: rgba(40, 167, 69, 0.1);
+  border-color: #218838;
+  color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+```
+
+**Danger Button (Solid Style):**
+
+```css
+.btn-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: 1px solid #bd2130;
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 ```
 
@@ -990,29 +1087,97 @@ transition: all 0.6s ease-out;
 ### Badges
 
 ```css
+/* Base Badge Style - Transparentes Design mit Border */
 .badge {
-  display: inline-block;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  width: fit-content;
+  transition: all 0.2s ease;
 }
 
 .badge-success {
-  background-color: var(--success-color);
-  color: white;
+  color: rgba(76, 175, 80, 0.9);
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
 }
+
+.badge-success:hover {
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
 .badge-warning {
-  background-color: var(--warning-color);
-  color: white;
+  color: rgba(255, 152, 0, 0.9);
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.2);
 }
+
+.badge-warning:hover {
+  background: rgba(255, 152, 0, 0.15);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.badge-danger,
 .badge-error {
-  background-color: var(--error-color);
-  color: white;
+  color: rgba(244, 67, 54, 0.9);
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.2);
 }
+
+.badge-danger:hover,
+.badge-error:hover {
+  background: rgba(244, 67, 54, 0.15);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.badge-primary {
+  color: rgba(33, 150, 243, 0.9);
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.badge-primary:hover {
+  background: rgba(33, 150, 243, 0.15);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
 .badge-secondary {
-  background-color: #6c757d;
-  color: white;
+  color: rgba(158, 158, 158, 0.9);
+  background: rgba(158, 158, 158, 0.1);
+  border: 1px solid rgba(158, 158, 158, 0.2);
+}
+
+.badge-secondary:hover {
+  background: rgba(158, 158, 158, 0.15);
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.badge-info {
+  color: rgba(23, 162, 184, 0.9);
+  background: rgba(23, 162, 184, 0.1);
+  border: 1px solid rgba(23, 162, 184, 0.2);
+}
+
+.badge-info:hover {
+  background: rgba(23, 162, 184, 0.15);
+  border-color: rgba(23, 162, 184, 0.3);
+}
+
+.badge-dark {
+  color: rgba(52, 58, 64, 0.9);
+  background: rgba(52, 58, 64, 0.1);
+  border: 1px solid rgba(52, 58, 64, 0.2);
+}
+
+.badge-dark:hover {
+  background: rgba(52, 58, 64, 0.15);
+  border-color: rgba(52, 58, 64, 0.3);
 }
 ```
 
@@ -1025,6 +1190,42 @@ transition: all 0.6s ease-out;
   border-radius: 10px;
   padding: 2px 6px;
   font-size: 0.75rem;
+}
+```
+
+### Role Switch Button (Multi-Role Users)
+
+```css
+.btn-role-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.021);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-role-switch:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--employee-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+}
+
+.btn-role-switch i {
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.btn-role-switch:hover i {
+  transform: rotate(180deg);
 }
 ```
 
