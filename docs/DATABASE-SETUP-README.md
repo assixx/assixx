@@ -63,6 +63,7 @@ Siehe [ARCHITECTURE.md](../ARCHITECTURE.md) für vollständige technische Detail
 - Express 5 Migration abgeschlossen
 - Chat-System Datenbankschema erstellt
 - **TypeScript Migration** im Backend abgeschlossen (30.05.2025)
+- **KVP System Schema** korrigiert und erweitert (14.06.2025)
 
 ---
 
@@ -538,14 +539,15 @@ CREATE TABLE tenant_features (
 - `calendar_reminders` - Erinnerungen
 - `calendar_recurring_rules` - Wiederholungsregeln
 
-#### 7. **KVP System** (6 Tabellen)
+#### 7. **KVP System** (7 Tabellen) - Updated 14.06.2025
 
-- `kvp_categories` - Verbesserungskategorien
-- `kvp_suggestions` - Verbesserungsvorschläge
-- `kvp_attachments` - Dateianhänge
-- `kvp_comments` - Kommentare
-- `kvp_ratings` - Bewertungen
-- `kvp_points` - Belohnungssystem
+- `kvp_categories` - Verbesserungskategorien (mit Icons und Farben)
+- `kvp_suggestions` - Verbesserungsvorschläge (Status: new, pending, in_review, approved, implemented, rejected, archived)
+- `kvp_attachments` - Dateianhänge für Vorschläge
+- `kvp_comments` - Kommentare (mit internen Admin-Kommentaren)
+- `kvp_ratings` - Bewertungen (1-5 Sterne)
+- `kvp_points` - Belohnungssystem für Mitarbeiter
+- `kvp_status_history` - Audit Trail für Statusänderungen
 
 #### 8. **Chat System** (6 Tabellen)
 

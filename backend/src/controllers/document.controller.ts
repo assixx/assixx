@@ -9,6 +9,7 @@ import { logger } from '../utils/logger';
 import { parsePagination } from '../utils/helpers';
 import { HTTP_STATUS } from '../utils/constants';
 import { AuthenticatedRequest as BaseAuthRequest } from '../types/request.types';
+import Team from '../models/team';
 
 // Extended Request interface for document operations
 interface AuthenticatedRequest extends BaseAuthRequest {
@@ -69,12 +70,24 @@ class DocumentController {
       const { limit, offset } = parsePagination(req.query);
       const { category, userId } = req.query;
 
+      // Get user's teams
+      let userTeamId: number | undefined;
+      try {
+        const userTeams = await Team.getUserTeams(req.user.id);
+        if (userTeams.length > 0) {
+          // Use the first team for now
+          userTeamId = userTeams[0].id;
+        }
+      } catch (error) {
+        logger.warn(`Failed to fetch teams for user ${req.user.id}:`, error);
+      }
+
       const result = await documentService.getDocuments({
         tenantId: req.user.tenantId,
         category,
         userId: userId ? parseInt(userId, 10) : req.user.id,
         departmentId: req.user.department_id || undefined,
-        teamId: undefined, // TODO: Add team_id to user object
+        teamId: userTeamId,
         limit,
         offset,
       });

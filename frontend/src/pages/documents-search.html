@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dokumente suchen - Assixx</title>
+    <!-- Dashboard Theme CSS -->
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/documents.css');
+      @import url('/styles/user-info-update.css');
+      /* Glassmorphismus Design-Standards */
+
+      /* Dramatischer Hintergrund-Gradient */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          135deg,
+          transparent 0%,
+          rgba(0, 142, 255, 0.08) 100%,
+          #01000482 60%,
+          rgba(0, 0, 4, 0.6) 90%,
+          black 100%
+        );
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Glassmorphismus für Stat-Cards */
+      .stat-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow:
+          0 12px 40px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      /* Glassmorphismus für Cards */
+      .card,
+      .compact-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+    </style>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  </head>
+  <body>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="page-title-section">
+            <h1 id="page-title">Dokumente suchen</h1>
+            <p id="page-subtitle">Durchsuchen Sie alle verfügbaren Dokumente</p>
+          </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="documents-section" id="search-container">
+          <div class="search-bar-container">
+            <div class="search-input-wrapper">
+              <i class="fas fa-search search-icon"></i>
+              <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Suchen Sie nach Dokumentname, Beschreibung oder Uploader..."
+                autocomplete="off"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Sort Controls -->
+        <div class="documents-controls">
+          <div class="control-left">
+            <div class="stats-container">
+              <div class="stat-item">
+                <span class="stat-label">Gefundene Dokumente:</span>
+                <span class="stat-value" id="totalDocs">0</span>
+              </div>
+            </div>
+          </div>
+          <div class="control-right">
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
+                <i class="fas fa-sort me-2"></i>
+                <span>Neueste zuerst</span>
+                <i class="fas fa-chevron-down ms-auto"></i>
+              </div>
+              <div class="dropdown-options" id="sortDropdown">
+                <div class="dropdown-option" data-sort="newest">
+                  <i class="fas fa-clock"></i>
+                  <span>Neueste zuerst</span>
+                </div>
+                <div class="dropdown-option" data-sort="oldest">
+                  <i class="fas fa-history"></i>
+                  <span>Älteste zuerst</span>
+                </div>
+                <div class="dropdown-option" data-sort="name">
+                  <i class="fas fa-font"></i>
+                  <span>Nach Name</span>
+                </div>
+                <div class="dropdown-option" data-sort="size">
+                  <i class="fas fa-weight"></i>
+                  <span>Nach Größe</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Documents Container -->
+        <div id="documentsContainer" class="documents-container">
+          <div class="empty-state">
+            <i class="fas fa-search"></i>
+            <h3>Suche starten</h3>
+            <p>Geben Sie einen Suchbegriff ein, um Dokumente zu finden.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Document Preview Modal -->
+    <div id="documentPreviewModal" class="modal" style="display: none">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>
+            <i class="fas fa-file-alt me-2"></i>
+            <span id="modalDocumentTitle">Dokument Vorschau</span>
+          </h2>
+          <button class="close-button" onclick="closeDocumentModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="document-preview-container">
+            <iframe
+              id="documentPreviewFrame"
+              class="document-preview-frame"
+              title="Dokument Vorschau"
+            ></iframe>
+            <div id="previewError" class="preview-error" style="display: none">
+              <i class="fas fa-exclamation-circle"></i>
+              <p>Vorschau nicht verfügbar</p>
+              <small>Das Dokument kann nicht in der Vorschau angezeigt werden.</small>
+            </div>
+          </div>
+          <div class="document-info">
+            <div class="info-grid">
+              <div class="info-item">
+                <i class="fas fa-file"></i>
+                <div>
+                  <label>Dateiname</label>
+                  <span id="modalFileName">-</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-weight"></i>
+                <div>
+                  <label>Größe</label>
+                  <span id="modalFileSize">-</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-user"></i>
+                <div>
+                  <label>Hochgeladen von</label>
+                  <span id="modalUploadedBy">-</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-calendar"></i>
+                <div>
+                  <label>Datum</label>
+                  <span id="modalUploadDate">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeDocumentModal()">
+            <i class="fas fa-times me-2"></i>Schließen
+          </button>
+          <button class="btn btn-primary" id="downloadButton" onclick="downloadDocument()">
+            <i class="fas fa-download me-2"></i>Herunterladen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth.ts"></script>
+    <script type="module" src="/scripts/documents-search.ts"></script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+  </body>
+</html>

@@ -110,14 +110,14 @@ class ChatController {
   // Get list of users available for chat
   async getUsers(req: ChatUsersRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const users = await chatService.getUsers(
         req.user.tenantId,
-        req.user.userId
+        req.user.userId || req.user.id
       );
       res.json(users);
     } catch (error) {
@@ -131,7 +131,7 @@ class ChatController {
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -149,7 +149,7 @@ class ChatController {
 
       const conversation = await chatService.createConversation(
         req.user.tenantId,
-        req.user.userId,
+        req.user.userId || req.user.id,
         participantIds,
         participantIds.length > 1,
         name
@@ -167,14 +167,14 @@ class ChatController {
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const conversations = await chatService.getConversations(
         req.user.tenantId,
-        req.user.userId
+        req.user.userId || req.user.id
       );
 
       res.json(conversations);
@@ -186,7 +186,7 @@ class ChatController {
   // Get messages for a conversation
   async getMessages(req: GetMessagesRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -195,7 +195,7 @@ class ChatController {
       const limit = parseInt(req.query.limit || '50');
       const offset = parseInt(req.query.offset || '0');
 
-      const messages = await chatService.getMessages(
+      const result = await chatService.getMessages(
         req.user.tenantId,
         conversationId,
         req.user.userId,
@@ -203,7 +203,8 @@ class ChatController {
         offset
       );
 
-      res.json(messages);
+      // Frontend expects just the messages array
+      res.json(result.messages);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
@@ -212,7 +213,7 @@ class ChatController {
   // Send a message
   async sendMessage(req: SendMessageRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -262,7 +263,7 @@ class ChatController {
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -271,8 +272,7 @@ class ChatController {
 
       const participants = await chatService.getConversationParticipants(
         conversationId,
-        req.user.tenantId,
-        req.tenantDb
+        req.user.tenantId
       );
 
       res.json(participants);
@@ -287,7 +287,7 @@ class ChatController {
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -298,9 +298,8 @@ class ChatController {
       await chatService.addParticipant(
         conversationId,
         userId,
-        req.user.userId,
-        req.user.tenantId,
-        req.tenantDb
+        req.user.userId || req.user.id,
+        req.user.tenantId
       );
 
       res.json({ message: 'Participant added successfully' });
@@ -315,7 +314,7 @@ class ChatController {
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -326,9 +325,8 @@ class ChatController {
       await chatService.removeParticipant(
         conversationId,
         userId,
-        req.user.userId,
-        req.user.tenantId,
-        req.tenantDb
+        req.user.userId || req.user.id,
+        req.user.tenantId
       );
 
       res.json({ message: 'Participant removed successfully' });
@@ -343,7 +341,7 @@ class ChatController {
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user || !req.tenantDb) {
+      if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -359,9 +357,8 @@ class ChatController {
       await chatService.updateConversationName(
         conversationId,
         name,
-        req.user.userId,
-        req.user.tenantId,
-        req.tenantDb
+        req.user.userId || req.user.id,
+        req.user.tenantId
       );
 
       res.json({ message: 'Conversation name updated successfully' });
@@ -392,13 +389,68 @@ class ChatController {
 
   // Get unread message count
   async getUnreadCount(
-    _req: AuthenticatedRequest,
+    req: AuthenticatedRequest,
     res: Response
   ): Promise<void> {
     try {
-      // For now, return 0 as placeholder
-      // TODO: Implement actual unread count logic
-      res.json({ count: 0 });
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const unreadCount = await chatService.getUnreadCount(
+        null as any, // tenantDb parameter is not used
+        req.user.tenantId,
+        req.user.userId || req.user.id
+      );
+
+      res.json({ unreadCount });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+
+  // Mark all messages in a conversation as read
+  async markConversationAsRead(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const conversationId = parseInt(req.params.id);
+      const userId = req.user.userId || req.user.id;
+
+      await chatService.markConversationAsRead(conversationId, userId);
+
+      res.json({ message: 'Messages marked as read' });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  }
+
+  // Delete conversation
+  async deleteConversation(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const conversationId = parseInt(req.params.id);
+      
+      await chatService.deleteConversation(
+        conversationId,
+        req.user.userId || req.user.id
+      );
+
+      res.json({ message: 'Conversation deleted successfully' });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

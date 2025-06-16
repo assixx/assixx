@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
     _file: Express.Multer.File,
     cb: (error: Error | null, destination: string) => void
   ): void {
-    const uploadPath = path.join(__dirname, '../uploads/kvp');
+    const uploadPath = path.join(process.cwd(), 'backend', 'uploads', 'kvp');
     fs.mkdir(uploadPath, { recursive: true })
       .then(() => cb(null, uploadPath))
       .catch((error) => cb(error as Error, uploadPath));
@@ -238,13 +238,13 @@ router.post(
         tenant_id: tenantId,
         title,
         description,
-        category_id: category_id ? parseInt(category_id) : 1, // Default to 1 if not provided
+        category_id: category_id ? parseInt(category_id) : 13, // Default to Sicherheit if not provided
         org_level,
         org_id: parseInt(org_id),
         submitted_by: authReq.user.id,
         priority: priority || 'normal',
-        expected_benefit,
-        estimated_cost: estimated_cost ? parseFloat(estimated_cost) : undefined,
+        expected_benefit: expected_benefit || null,
+        estimated_cost: estimated_cost ? parseFloat(estimated_cost) : null,
       };
 
       const suggestion = await kvpModel.createSuggestion(suggestionData);

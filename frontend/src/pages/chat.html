@@ -61,6 +61,12 @@
         left: 280px; /* Direkt nach Navigation Sidebar */
         right: 0;
         bottom: 0;
+        transition: left 0.3s ease;
+      }
+
+      /* Main content wenn Sidebar collapsed */
+      .main-content.sidebar-collapsed {
+        left: 70px; /* Anpassen an kollabierte Sidebar */
       }
 
       /* Sidebar mit Conversations - Kompakter */
@@ -73,44 +79,55 @@
         flex-direction: column;
         overflow: hidden;
         flex-shrink: 0; /* Verhindert Größenänderung */
+        position: relative;
+        transition: margin-left 0.3s ease;
       }
+
+      /* Verschiebung wenn Navigation Sidebar collapsed - keine margin mehr nötig */
 
       .chat-sidebar-header {
         padding: var(--spacing-md);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 8px;
         background: rgba(33, 150, 243, 0.1);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
       }
 
       .chat-title {
         font-size: 1.1rem;
         font-weight: 600;
         color: var(--text-primary);
-        margin: 0 0 var(--spacing-xs) 0;
+        margin: 0;
         display: flex;
         align-items: center;
         gap: var(--spacing-xs);
+        flex: 1;
       }
 
       .new-chat-btn {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        border: none;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-weight: 500;
-        font-size: 0.85rem;
+        background: linear-gradient(135deg, #2196f300, #42a5f500);
+        border: 2px solid hsla(205.4, 100%, 50%, 0.87);
+        border-radius: 50%;
+        color: #3f8bff;
         cursor: pointer;
-        transition: all 0.3s ease;
+        flex-shrink: 0;
+        font-weight: 500;
+        font-size: 1.1rem;
+        height: 40px;
+        width: 40px;
         display: flex;
         align-items: center;
-        gap: 6px;
-        width: 100%;
         justify-content: center;
+        margin-left: auto;
+        transition: all 0.3s ease;
       }
 
       .new-chat-btn:hover {
-        transform: translateY(-1px);
+        transform: scale(1.1);
         box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        background: linear-gradient(135deg, #2196f310, #42a5f510);
       }
 
       .conversations-list {
@@ -187,6 +204,15 @@
         text-overflow: ellipsis;
       }
 
+      .conversation-last-message {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+      }
+
       .conversation-meta {
         display: flex;
         flex-direction: column;
@@ -218,7 +244,10 @@
         display: flex;
         flex-direction: column;
         background: rgba(255, 255, 255, 0.02);
+        transition: margin-left 0.3s ease;
       }
+
+      /* Anpassung wenn Navigation Sidebar collapsed - keine margin mehr nötig */
 
       .chat-header {
         padding: 12px 16px;
@@ -258,6 +287,58 @@
       .chat-header-details .status {
         font-size: 0.75rem;
         color: var(--text-secondary);
+      }
+
+      /* Chat User Info Styles */
+      .chat-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: 0; /* Linksbündig ohne Back-Button */
+        flex: 1; /* Nimmt verfügbaren Platz ein */
+      }
+
+      .chat-user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        /*background: linear-gradient(135deg, var(--primary-color), var(--primary-light));*/
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        overflow: hidden;
+      }
+      
+      .chat-user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        padding: 3px;
+      }
+
+      .chat-user-details {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .chat-user-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        margin: 0;
+      }
+
+      .back-btn {
+        display: none; /* Standardmäßig auf Desktop ausblenden */
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        padding: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
       }
 
       .chat-actions {
@@ -301,13 +382,27 @@
       .message {
         display: flex;
         gap: 10px;
-        max-width: 65%;
+        width: 100%;
+        margin-bottom: 12px;
         animation: messageSlideIn 0.3s ease-out;
       }
 
       .message.own {
-        align-self: flex-end;
-        flex-direction: row-reverse;
+        justify-content: flex-end;
+      }
+
+      .message:not(.own) {
+        justify-content: flex-start;
+      }
+
+      .message.own .message-bubble {
+        max-width: 65%;
+        align-items: flex-end;
+      }
+
+      .message:not(.own) .message-bubble {
+        max-width: 65%;
+        align-items: flex-start;
       }
 
       .message-bubble {
@@ -346,7 +441,11 @@
       }
 
       .message.own .message-avatar {
-        background: linear-gradient(135deg, #4caf50, #66bb6a);
+        display: none;
+      }
+
+      .message:not(.own) .message-avatar {
+        display: block;
       }
 
       .message-content {
@@ -363,8 +462,8 @@
       }
 
       .message.own .message-content {
-        background: rgba(33, 150, 243, 0.2);
-        border-color: rgba(33, 150, 243, 0.3);
+        background: hsla(188.6, 100%, 23.3%, 0.36);
+        border-color: hsla(188.6, 100%, 23.3%, 0.5);
       }
 
       .message-content a {
@@ -737,6 +836,16 @@
 
       /* Responsive Design */
       @media (max-width: 768px) {
+        .back-btn {
+          display: flex; /* Zeige Back-Button auf Mobile */
+          align-items: center;
+          justify-content: center;
+        }
+
+        .chat-user-info {
+          margin-left: 8px; /* Abstand zum Back-Button auf Mobile */
+        }
+
         .chat-sidebar {
           width: 100%;
           position: absolute;
@@ -971,7 +1080,6 @@
         bottom: 100px;
         right: 20px;
         width: 320px;
-        height: 350px;
         background: rgba(20, 20, 40, 0.95);
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -981,6 +1089,7 @@
         display: flex;
         flex-direction: column;
         animation: slideUp 0.3s ease-out;
+        max-height: 300px;
       }
 
       @keyframes slideUp {
@@ -1245,6 +1354,188 @@
       .status-indicator.busy {
         background-color: #f44336;
       }
+
+      /* Chat Type Tabs */
+      .chat-type-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 5px;
+        border-radius: var(--radius-md);
+      }
+
+      .chat-type-tab {
+        flex: 1;
+        padding: 10px 15px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-weight: 500;
+      }
+
+      .chat-type-tab:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+      }
+
+      .chat-type-tab.active {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 142, 255, 0.3);
+      }
+
+      /* Custom Dropdown Styles for Chat Modal */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 44px;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-display.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 15px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(0, 142, 255, 0.15);
+        padding-left: 20px;
+      }
+
+      .dropdown-option.selected {
+        background: rgba(0, 142, 255, 0.2);
+        color: var(--primary-color);
+      }
+
+      .dropdown-option .option-info {
+        flex: 1;
+      }
+
+      .dropdown-option .option-name {
+        font-weight: 500;
+      }
+
+      .dropdown-option .option-meta {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+
+      /* Selected Recipients List */
+      .selected-recipients-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        min-height: 50px;
+      }
+
+      .selected-recipient-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 12px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        color: white;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      .selected-recipient-chip button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1rem;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+
+      .selected-recipient-chip button:hover {
+        opacity: 1;
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -1264,9 +1555,8 @@
                 <i class="fas fa-comments"></i>
                 Nachrichten
               </h2>
-              <button class="new-chat-btn" id="newConversationBtn">
+              <button class="new-chat-btn" id="newConversationBtn" title="Neue Unterhaltung starten">
                 <i class="fas fa-plus"></i>
-                Neue Nachricht
               </button>
             </div>
             <div class="conversations-list" id="conversationsList">
@@ -1372,18 +1662,97 @@
     <div id="newConversationModal" class="modal" style="display: none">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Neue Nachricht</h3>
+          <h3>Neue Unterhaltung starten</h3>
           <button class="modal-close close" id="closeModalBtn">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Empfänger auswählen</label>
-            <div id="availableUsersList">
-              <!-- Wird durch JavaScript gefüllt -->
+          <!-- Tab Selection -->
+          <div class="chat-type-tabs">
+            <button class="chat-type-tab active" data-type="employee" id="employeeTab">
+              <i class="fas fa-users"></i>
+              Mitarbeiter
+            </button>
+            <button class="chat-type-tab" data-type="admin" id="adminTab">
+              <i class="fas fa-user-tie"></i>
+              Administratoren
+            </button>
+          </div>
+
+          <!-- Employee Selection -->
+          <div id="employeeSelection" class="recipient-selection active">
+            <!-- Department Dropdown -->
+            <div class="form-group">
+              <label class="form-label">Abteilung auswählen</label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="departmentDisplay" onclick="toggleChatDropdown('department')">
+                  <span>Abteilung wählen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="departmentDropdown">
+                  <!-- Departments werden dynamisch geladen -->
+                </div>
+                <input type="hidden" id="selectedDepartment" />
+              </div>
+            </div>
+
+            <!-- Employee Dropdown -->
+            <div class="form-group" id="employeeDropdownGroup" style="display: none">
+              <label class="form-label">Mitarbeiter auswählen</label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="employeeDisplay" onclick="toggleChatDropdown('employee')">
+                  <span>Mitarbeiter wählen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="employeeDropdown">
+                  <!-- Employees werden dynamisch geladen -->
+                </div>
+                <input type="hidden" id="selectedEmployee" />
+              </div>
             </div>
           </div>
+
+          <!-- Admin Selection -->
+          <div id="adminSelection" class="recipient-selection" style="display: none">
+            <div class="form-group">
+              <label class="form-label">Administrator auswählen</label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="adminDisplay" onclick="toggleChatDropdown('admin')">
+                  <span>Administrator wählen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="adminDropdown">
+                  <!-- Admins werden dynamisch geladen -->
+                </div>
+                <input type="hidden" id="selectedAdmin" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Multiple Selection for Groups -->
+          <div class="form-group" id="multipleSelectionHint" style="display: none; margin-top: 15px">
+            <p class="text-muted" style="font-size: 0.9rem">
+              <i class="fas fa-info-circle"></i>
+              Für Gruppenchats wählen Sie mehrere Empfänger aus
+            </p>
+          </div>
+
+          <!-- Selected Recipients -->
+          <div class="form-group" id="selectedRecipientsGroup" style="display: none; margin-top: 20px">
+            <label class="form-label">Ausgewählte Empfänger</label>
+            <div id="selectedRecipientsList" class="selected-recipients-list">
+              <!-- Selected recipients will be shown here -->
+            </div>
+          </div>
+
+          <!-- Group Name (for group chats) -->
           <div class="form-group" id="groupChatOptions" style="display: none; margin-top: 20px">
             <label class="form-label">Gruppenname (optional)</label>
             <input
@@ -1391,13 +1760,6 @@
               id="groupChatName"
               class="form-control"
               placeholder="z.B. Projekt-Team, Abteilung Marketing..."
-              style="
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                color: var(--text-primary);
-                padding: 10px;
-                border-radius: 8px;
-              "
             />
           </div>
         </div>
@@ -1405,7 +1767,7 @@
           <button class="btn-secondary" id="cancelModalBtn">Abbrechen</button>
           <button class="btn-primary" id="createConversationBtn">
             <i class="fas fa-paper-plane"></i>
-            Erstellen
+            Unterhaltung starten
           </button>
         </div>
       </div>
@@ -1434,7 +1796,7 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/chat.ts"></script>
-    <script>
+    <script type="module">
       document.addEventListener('DOMContentLoaded', function () {
         console.log('🚀 Chat-Seite wird initialisiert...');
 
@@ -1450,93 +1812,8 @@
           }, 100);
         }
 
-        // 2. Event-Listener für Chat-Buttons hinzufügen
-        let attempts = 0;
-        const maxAttempts = 20;
-
-        const setupEventListeners = () => {
-          attempts++;
-          console.log(`🔄 Setup-Versuch ${attempts}: Chat-Client verfügbar:`, !!window.chatClient);
-
-          if (window.chatClient || attempts >= maxAttempts) {
-            console.log('⚡ Event-Listener werden hinzugefügt...');
-
-            // Neue Unterhaltung Button
-            const newConvBtn = document.getElementById('newConversationBtn');
-            if (newConvBtn) {
-              // Alle alten Event-Listener entfernen
-              newConvBtn.replaceWith(newConvBtn.cloneNode(true));
-              const freshBtn = document.getElementById('newConversationBtn');
-
-              freshBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('🆕 Neue Unterhaltung Button geklickt');
-                if (window.chatClient) {
-                  window.chatClient.showNewConversationModal();
-                } else {
-                  alert('Chat-System wird geladen, bitte warten...');
-                }
-              });
-              console.log('✅ Neue Unterhaltung Button Event-Listener hinzugefügt');
-            } else {
-              console.warn('❌ newConversationBtn nicht gefunden');
-            }
-
-            // Send Button
-            const sendBtn = document.getElementById('sendButton');
-            if (sendBtn) {
-              sendBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('📤 Send Button geklickt');
-                if (window.chatClient) {
-                  window.chatClient.sendMessage();
-                }
-              });
-              console.log('✅ Send Button Event-Listener hinzugefügt');
-            }
-
-            // Modal Close/Cancel Buttons
-            const closeBtn = document.getElementById('closeModalBtn');
-            const cancelBtn = document.getElementById('cancelModalBtn');
-            const createBtn = document.getElementById('createConversationBtn');
-
-            if (closeBtn) {
-              closeBtn.addEventListener('click', () => {
-                console.log('❌ Close Modal Button geklickt');
-                if (window.chatClient) {
-                  window.chatClient.closeModal('newConversationModal');
-                }
-              });
-            }
-
-            if (cancelBtn) {
-              cancelBtn.addEventListener('click', () => {
-                console.log('🚫 Cancel Modal Button geklickt');
-                if (window.chatClient) {
-                  window.chatClient.closeModal('newConversationModal');
-                }
-              });
-            }
-
-            if (createBtn) {
-              createBtn.addEventListener('click', () => {
-                console.log('➕ Create Conversation Button geklickt');
-                if (window.chatClient) {
-                  window.chatClient.createNewConversation();
-                }
-              });
-            }
-
-            console.log('🎉 Alle Event-Listener erfolgreich hinzugefügt');
-            return; // Stoppe weitere Versuche
-          } else {
-            // Nochmal versuchen nach 300ms
-            setTimeout(setupEventListeners, 300);
-          }
-        };
-
-        // Sofort versuchen
-        setupEventListeners();
+        // Event-Listener werden bereits in chat.ts hinzugefügt
+        console.log('🎯 Event-Listener werden durch chat.ts verwaltet');
       });
 
       // Custom Delivery Select Functions
@@ -1569,6 +1846,59 @@
         // Log selection
         console.log('📅 Delivery option selected:', value);
       }
+
+      // Toggle Chat Dropdown
+      window.toggleChatDropdown = function(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach(d => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach(d => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+        
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      // Select Chat Dropdown Option
+      window.selectChatDropdownOption = function(type, value, text, meta = '') {
+        const display = document.getElementById(type + 'Display');
+        const input = document.getElementById('selected' + type.charAt(0).toUpperCase() + type.slice(1));
+        
+        // Update display text
+        display.querySelector('span').textContent = text;
+        
+        // Update hidden input
+        input.value = value;
+        
+        // Close dropdown
+        display.classList.remove('active');
+        document.getElementById(type + 'Dropdown').classList.remove('active');
+        
+        console.log(`✅ ${type} selected:`, { value, text, meta });
+        
+        // Handle specific dropdown types
+        if (type === 'department' && value) {
+          // Department selected, show employee dropdown
+          document.getElementById('employeeDropdownGroup').style.display = 'block';
+          // Load employees for this department
+          if (window.chatClient) {
+            window.chatClient.loadEmployeesForDepartment(value);
+          }
+        }
+      }
+
+      // Click outside to close dropdowns
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+        }
+      });
     </script>
   </body>
 </html>

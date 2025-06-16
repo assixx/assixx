@@ -84,6 +84,7 @@ export interface NavItem {
   url?: string;
   section?: string;
   badge?: string;
+  badgeId?: string;
   children?: NavItem[];
   hasSubmenu?: boolean;
   submenu?: NavItem[];

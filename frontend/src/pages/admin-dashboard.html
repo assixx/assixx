@@ -644,7 +644,7 @@
                 <div class="compact-list" id="recent-documents">
                   <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
                 </div>
-                <a href="#" class="view-all-link" id="manage-documents-link">
+                <a href="/pages/documents-search.html" class="view-all-link" id="manage-documents-link">
                   Verwalten
                   <span class="arrow">→</span>
                 </a>
@@ -757,58 +757,7 @@
           </div>
         </section>
 
-        <!-- Payslips Section -->
-        <section id="payslips-section" class="content-section" style="display: none">
-          <h1>Gehaltsabrechnungen</h1>
-          <div class="card mb-4">
-            <div class="card-header">
-              <h2 class="card-title">Gehaltsabrechnung hochladen</h2>
-            </div>
-            <form id="payslip-upload-form" enctype="multipart/form-data">
-              <div class="form-group">
-                <label class="form-label">Mitarbeiter auswählen</label>
-                <select name="employeeId" id="payslip-employee-select" class="form-control" required>
-                  <option value="">Bitte wählen...</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Monat</label>
-                <input type="month" name="month" class="form-control" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Datei auswählen (PDF)</label>
-                <input type="file" name="file" class="form-control" accept="application/pdf" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Beschreibung</label>
-                <textarea name="description" class="form-control" rows="2"></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary">Gehaltsabrechnung hochladen</button>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Aktuelle Gehaltsabrechnungen</h2>
-            </div>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Mitarbeiter</th>
-                    <th>Monat</th>
-                    <th>Hochgeladen am</th>
-                    <th>Datei</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="payslips-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <!-- Payslips Section removed - now using documents-payroll.html -->
 
         <!-- Employees Section -->
         <section id="employees-section" class="content-section" style="display: none">
@@ -1543,11 +1492,6 @@
               e.stopPropagation();
               console.log('Showing teams section');
               showSection('teams');
-            } else if (href === '#payslips') {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Showing payslips section');
-              showSection('payslips');
             } else if (href === '#settings') {
               e.preventDefault();
               e.stopPropagation();
@@ -2231,10 +2175,21 @@
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Abteilung</label>
-                                            <select name="department_id" class="form-control" id="edit-employee-department-select">
-                                                <option value="">Keine Abteilung</option>
-                                                <!-- Wird dynamisch gefüllt -->
-                                            </select>
+                                            <div class="custom-dropdown">
+                                                <div class="dropdown-display" id="edit-employee-department-display" onclick="toggleDropdown('edit-employee-department')">
+                                                    <span>${employee.department || 'Keine Abteilung'}</span>
+                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                                    </svg>
+                                                </div>
+                                                <div class="dropdown-options" id="edit-employee-department-dropdown" style="display: none">
+                                                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
+                                                        Keine Abteilung
+                                                    </div>
+                                                    <!-- Wird dynamisch gefüllt -->
+                                                </div>
+                                                <input type="hidden" name="department_id" id="edit-employee-department-select" value="${employee.department_id || ''}" />
+                                            </div>
                                         </div>
                                         <div class="form-group">
                                             <label class="form-label">Geburtsdatum</label>
@@ -2289,9 +2244,9 @@
             // Modal zum Body hinzufügen
             document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-            // Lade Abteilungen für das Select-Feld
-            const departmentSelect = document.getElementById('edit-employee-department-select');
-            if (departmentSelect) {
+            // Lade Abteilungen für das Custom Dropdown
+            const departmentDropdown = document.getElementById('edit-employee-department-dropdown');
+            if (departmentDropdown) {
               // Hilfsfunktion zum Laden der Abteilungen
               const loadDepts = async () => {
                 try {
@@ -2301,17 +2256,30 @@
 
                   if (deptResponse.ok) {
                     const departments = await deptResponse.json();
-                    departmentSelect.innerHTML =
-                      '<option value="">Keine Abteilung</option>' +
-                      departments
-                        .map(
-                          (dept) => `
-                                            <option value="${dept.id}" ${dept.id == employee.department_id ? 'selected' : ''}>
-                                                ${dept.name}
-                                            </option>
-                                        `,
-                        )
-                        .join('');
+                    
+                    // Clear existing options and add placeholder
+                    departmentDropdown.innerHTML = `
+                      <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
+                        Keine Abteilung
+                      </div>
+                    `;
+                    
+                    // Add department options
+                    departments.forEach((dept) => {
+                      const optionDiv = document.createElement('div');
+                      optionDiv.className = 'dropdown-option';
+                      optionDiv.setAttribute('data-value', dept.id.toString());
+                      optionDiv.textContent = dept.name;
+                      optionDiv.onclick = () => {
+                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
+                      };
+                      departmentDropdown.appendChild(optionDiv);
+                      
+                      // If this is the current department, select it
+                      if (dept.id == employee.department_id) {
+                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
+                      }
+                    });
                   }
                 } catch (err) {
                   console.error('Error loading departments:', err);
@@ -2463,46 +2431,10 @@
 
       // Add event listener for payslip upload form
       document.addEventListener('DOMContentLoaded', () => {
-        const payslipForm = document.getElementById('payslip-upload-form');
-        if (payslipForm) {
-          payslipForm.addEventListener('submit', uploadPayslip);
-        }
+        // Payslip form removed - now using documents-payroll.html
       });
 
-      // Upload payslip function
-      async function uploadPayslip(e) {
-        e.preventDefault();
-        const token = localStorage.getItem('token');
-        const formData = new FormData(e.target);
-
-        // Set category to payslip
-        formData.append('category', 'payslip');
-
-        try {
-          const response = await fetch('/api/documents/upload', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          });
-
-          if (response.ok) {
-            alert('Gehaltsabrechnung erfolgreich hochgeladen');
-            e.target.reset();
-            // TODO: Implement loadPayslipsTable() when payslips table is added
-            if (typeof loadPayslipsTable === 'function') {
-              loadPayslipsTable();
-            }
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
-          }
-        } catch (error) {
-          console.error('Fehler beim Hochladen der Gehaltsabrechnung:', error);
-          alert('Ein Fehler ist aufgetreten.');
-        }
-      }
+      // Upload payslip function removed - now using documents-payroll.html
       // Logo und Übersicht verarbeiten
       document.addEventListener('DOMContentLoaded', () => {
         // Logo-Klick behandeln
@@ -2769,9 +2701,8 @@
         window.updateEmployee = updateEmployee;
         window.deleteEmployee = deleteEmployee;
         window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
-        window.loadPayslipsTable = loadPayslipsTable || (() => console.log('loadPayslipsTable not implemented'));
-        window.loadEmployeesForPayslipSelect =
-          loadEmployeesForPayslipSelect || (() => console.log('loadEmployeesForPayslipSelect not implemented'));
+        // loadPayslipsTable removed - now using documents-payroll.html
+        // loadEmployeesForPayslipSelect removed - now using documents-payroll.html
         window.loadDepartmentsTable = loadDepartmentsTable;
         window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
         window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));

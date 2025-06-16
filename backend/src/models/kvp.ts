@@ -185,8 +185,8 @@ export class KVPModel {
           data.org_id,
           data.submitted_by,
           data.priority || 'normal',
-          data.expected_benefit,
-          data.estimated_cost,
+          data.expected_benefit || null,
+          data.estimated_cost || null,
         ]
       );
 
@@ -343,10 +343,10 @@ export class KVPModel {
       await connection.execute(
         `
         INSERT INTO kvp_status_history 
-        (tenant_id, suggestion_id, old_status, new_status, changed_by, change_reason)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (suggestion_id, old_status, new_status, changed_by, change_reason)
+        VALUES (?, ?, ?, ?, ?)
       `,
-        [tenantId, id, oldStatus, status, userId, changeReason]
+        [id, oldStatus, status, userId, changeReason]
       );
 
       await connection.commit();

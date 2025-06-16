@@ -116,6 +116,7 @@ export interface Document {
   description?: string;
   tags?: string[];
   is_read?: boolean;
+  is_archived?: boolean;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;

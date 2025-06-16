@@ -85,6 +85,7 @@ class UnifiedNavigation {
       this.updateUnreadMessages();
       this.updatePendingSurveys();
       this.updateUnreadDocuments();
+      this.updateNewKvpSuggestions();
     }, 1000);
 
     // Update badges every 30 seconds
@@ -92,6 +93,7 @@ class UnifiedNavigation {
       this.updateUnreadMessages();
       this.updatePendingSurveys();
       this.updateUnreadDocuments();
+      this.updateNewKvpSuggestions();
     }, 30000);
   }
 
@@ -247,8 +249,50 @@ class UnifiedNavigation {
           id: 'documents',
           icon: this.getSVGIcon('document'),
           label: 'Dokumente',
-          url: this.getSectionUrl('documents'),
-          section: 'documents',
+          hasSubmenu: true,
+          submenu: [
+            {
+              id: 'documents-search',
+              icon: this.getSVGIcon('search'),
+              label: 'Dokumente suchen',
+              url: '/pages/documents-search.html',
+            },
+            {
+              id: 'documents-company',
+              icon: this.getSVGIcon('building'),
+              label: 'Firmendokumente',
+              url: '/pages/documents-company.html',
+              badgeId: 'badge-docs-company',
+            },
+            {
+              id: 'documents-department',
+              icon: this.getSVGIcon('sitemap'),
+              label: 'Abteilungsdokumente',
+              url: '/pages/documents-department.html',
+              badgeId: 'badge-docs-department',
+            },
+            {
+              id: 'documents-team',
+              icon: this.getSVGIcon('team'),
+              label: 'Teamdokumente',
+              url: '/pages/documents-team.html',
+              badgeId: 'badge-docs-team',
+            },
+            {
+              id: 'documents-personal',
+              icon: this.getSVGIcon('user'),
+              label: 'Persönliche Dokumente',
+              url: '/pages/documents-personal.html',
+              badgeId: 'badge-docs-personal',
+            },
+            {
+              id: 'documents-payroll',
+              icon: this.getSVGIcon('money'),
+              label: 'Gehaltsabrechnungen',
+              url: '/pages/documents-payroll.html',
+              badgeId: 'badge-docs-payroll',
+            },
+          ],
         },
         {
           id: 'calendar',
@@ -267,6 +311,7 @@ class UnifiedNavigation {
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
               url: '/pages/kvp.html',
+              badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
@@ -311,25 +356,20 @@ class UnifiedNavigation {
           badge: 'unread-messages',
         },
         {
-          id: 'payslips',
-          icon: this.getSVGIcon('money'),
-          label: 'Gehaltsabrechnungen',
-          url: '#payslips',
-          section: 'payslips',
-        },
-        {
           id: 'settings',
           icon: this.getSVGIcon('settings'),
           label: 'Einstellungen',
           url: '#settings',
           section: 'settings',
         },
+        /*
         {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Feature Management',
           url: '/pages/feature-management.html',
         },
+        */
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
@@ -349,9 +389,52 @@ class UnifiedNavigation {
         {
           id: 'documents',
           icon: this.getSVGIcon('document'),
-          label: 'Meine Dokumente',
-          url: '/pages/documents.html',
+          label: 'Dokumente',
+          hasSubmenu: true,
           badge: 'unread-documents',
+          submenu: [
+            {
+              id: 'documents-search',
+              icon: this.getSVGIcon('search'),
+              label: 'Dokumente suchen',
+              url: '/pages/documents-search.html',
+            },
+            {
+              id: 'documents-company',
+              icon: this.getSVGIcon('building'),
+              label: 'Firmendokumente',
+              url: '/pages/documents-company.html',
+              badgeId: 'badge-docs-company',
+            },
+            {
+              id: 'documents-department',
+              icon: this.getSVGIcon('sitemap'),
+              label: 'Abteilungsdokumente',
+              url: '/pages/documents-department.html',
+              badgeId: 'badge-docs-department',
+            },
+            {
+              id: 'documents-team',
+              icon: this.getSVGIcon('team'),
+              label: 'Teamdokumente',
+              url: '/pages/documents-team.html',
+              badgeId: 'badge-docs-team',
+            },
+            {
+              id: 'documents-personal',
+              icon: this.getSVGIcon('user'),
+              label: 'Persönliche Dokumente',
+              url: '/pages/documents-personal.html',
+              badgeId: 'badge-docs-personal',
+            },
+            {
+              id: 'documents-payroll',
+              icon: this.getSVGIcon('money'),
+              label: 'Gehaltsabrechnungen',
+              url: '/pages/documents-payroll.html',
+              badgeId: 'badge-docs-payroll',
+            },
+          ],
         },
         {
           id: 'calendar',
@@ -370,6 +453,7 @@ class UnifiedNavigation {
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
               url: '/pages/kvp.html',
+              badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
@@ -494,6 +578,10 @@ class UnifiedNavigation {
       star: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>',
       checklist:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
+      search:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5 C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-0.59,4.23-1.57l0.27,0.28v0.79l5,4.99L20.49,19L15.5,14z M9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14z"/></svg>',
+      sitemap:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H11C11,19.66 9.66,21 8,21H6C4.34,21 3,19.66 3,18V10H8V12L10,10H13V7H11V3H16C17.66,3 19,4.34 19,6V8C19,9.66 17.66,11 16,11H13V13Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -520,6 +608,7 @@ class UnifiedNavigation {
         this.updateUnreadMessages();
         this.updatePendingSurveys();
         this.updateUnreadDocuments();
+        this.updateNewKvpSuggestions();
       }, 100);
 
       return;
@@ -688,19 +777,28 @@ class UnifiedNavigation {
       badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-documents') {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    } else if (item.badge === 'new-kvp-suggestions') {
+      badgeHtml = `<span class="nav-badge" id="kvp-new-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
     // If has submenu, create a dropdown
     if (hasSubmenu) {
       const submenuItems = item
         .submenu!.map(
-          (child) => `
-        <li class="submenu-item">
-          <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
-            <span class="submenu-label">${child.label}</span>
-          </a>
-        </li>
-      `,
+          (child) => {
+            const childBadgeHtml = child.badgeId 
+              ? `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`
+              : '';
+              
+            return `
+              <li class="submenu-item" style="position: relative;">
+                <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
+                  <span class="submenu-label">${child.label}</span>
+                  ${childBadgeHtml}
+                </a>
+              </li>
+            `;
+          }
         )
         .join('');
 
@@ -819,6 +917,8 @@ class UnifiedNavigation {
       ? (navContainer.querySelector('.sidebar') as HTMLElement)
       : (document.querySelector('.sidebar') as HTMLElement);
     const mainContent = document.querySelector('.main-content') as HTMLElement;
+    const chatMain = document.querySelector('.chat-main') as HTMLElement;
+    const chatSidebar = document.querySelector('.chat-sidebar') as HTMLElement;
 
     console.log('[UnifiedNav] Toggle button:', toggleBtn);
     console.log('[UnifiedNav] Sidebar:', sidebar);
@@ -836,6 +936,8 @@ class UnifiedNavigation {
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
       mainContent?.classList.add('sidebar-collapsed');
+      chatMain?.classList.add('sidebar-collapsed');
+      chatSidebar?.classList.add('sidebar-collapsed');
       sidebar.style.setProperty('width', '70px', 'important');
       this.updateToggleIcon();
     } else {
@@ -856,6 +958,8 @@ class UnifiedNavigation {
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle('sidebar-collapsed');
+      chatMain?.classList.toggle('sidebar-collapsed');
+      chatSidebar?.classList.toggle('sidebar-collapsed');
 
       // Set width directly as inline style to override any CSS
       console.log('[UnifiedNav] Setting width for collapsed state:', newState);
@@ -1116,6 +1220,44 @@ class UnifiedNavigation {
     }
   }
 
+  // Update KVP new suggestions count (for admin/root only)
+  public async updateNewKvpSuggestions(): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || token === 'test-mode') return;
+      
+      // Only show badge for admin/root users
+      if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
+        const badge = document.getElementById('kvp-new-badge');
+        if (badge) badge.style.display = 'none';
+        return;
+      }
+
+      const response = await fetch('/api/kvp/dashboard', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById('kvp-new-badge');
+        if (badge && data.success && data.data) {
+          const count = data.data.new_suggestions || 0;
+          if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count.toString();
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating KVP suggestions count:', error);
+    }
+  }
+
   // Offene Umfragen aktualisieren
   public async updatePendingSurveys(): Promise<void> {
     try {
@@ -1145,9 +1287,19 @@ class UnifiedNavigation {
             badge.style.display = 'none';
           }
         }
+      } else if (response.status === 404) {
+        // API endpoint doesn't exist yet - hide badge silently
+        const badge = document.getElementById('surveys-pending-badge');
+        if (badge) {
+          badge.style.display = 'none';
+        }
       }
     } catch (error) {
-      console.error('Error updating pending surveys:', error);
+      // Silently handle errors for pending surveys
+      const badge = document.getElementById('surveys-pending-badge');
+      if (badge) {
+        badge.style.display = 'none';
+      }
     }
   }
 
@@ -1157,11 +1309,12 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      // Nur für Employees
+      // Für Employees und Admins
       const role = localStorage.getItem('userRole') || this.currentRole;
-      if (role !== 'employee') return;
+      if (role !== 'employee' && role !== 'admin') return;
 
-      const response = await fetch('/api/employee/documents/unread-count', {
+      // Fetch all documents with unread status
+      const response = await fetch('/api/documents/v2', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1169,17 +1322,63 @@ class UnifiedNavigation {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        const badge = document.getElementById('documents-unread-badge');
-        if (badge) {
-          const count = data.unreadCount || 0;
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count.toString();
-            badge.style.display = 'inline-block';
+        const result = await response.json();
+        // Backend returns {data: Document[], pagination: {...}}
+        const documents = result.data || result.documents || [];
+        
+        // Count unread documents by category
+        const unreadCounts = {
+          company: 0,
+          department: 0,
+          team: 0,
+          personal: 0,
+          payroll: 0,
+          total: 0,
+        };
+        
+        documents.forEach((doc: any) => {
+          if (!doc.is_read) {
+            unreadCounts.total++;
+            
+            // Special case for payroll documents
+            if (doc.category === 'salary') {
+              unreadCounts.payroll++;
+            } else if (doc.scope) {
+              // Count by scope
+              unreadCounts[doc.scope as keyof typeof unreadCounts]++;
+            }
+          }
+        });
+        
+        // Update main documents badge
+        const mainBadge = document.getElementById('documents-unread-badge');
+        if (mainBadge) {
+          if (unreadCounts.total > 0) {
+            mainBadge.textContent = unreadCounts.total > 99 ? '99+' : unreadCounts.total.toString();
+            mainBadge.style.display = 'inline-block';
           } else {
-            badge.style.display = 'none';
+            mainBadge.style.display = 'none';
           }
         }
+        
+        // Update individual category badges
+        const updateBadge = (badgeId: string, count: number) => {
+          const badge = document.getElementById(badgeId);
+          if (badge) {
+            if (count > 0) {
+              badge.textContent = count > 99 ? '99+' : count.toString();
+              badge.style.display = 'inline-block';
+            } else {
+              badge.style.display = 'none';
+            }
+          }
+        };
+        
+        updateBadge('badge-docs-company', unreadCounts.company);
+        updateBadge('badge-docs-department', unreadCounts.department);
+        updateBadge('badge-docs-team', unreadCounts.team);
+        updateBadge('badge-docs-personal', unreadCounts.personal);
+        updateBadge('badge-docs-payroll', unreadCounts.payroll);
       }
     } catch (error) {
       console.error('Error updating unread documents:', error);

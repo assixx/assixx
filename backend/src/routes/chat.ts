@@ -98,16 +98,19 @@ router.get('/attachments/:filename', authenticateToken, (req, res) =>
 router.get('/unread-count', authenticateToken, (req, res) =>
   chatController.getUnreadCount(req as AuthenticatedRequest, res)
 );
+router.post('/conversations/:id/read', authenticateToken, (req, res) =>
+  chatController.markConversationAsRead(req as AuthenticatedRequest, res)
+);
 // router.put(
 //   '/messages/:id/archive',
 //   authenticateToken,
 //   chatController.archiveMessage as any
 // );
-// router.delete(
-//   '/conversations/:id',
-//   authenticateToken,
-//   chatController.deleteConversation as any
-// );
+router.delete(
+  '/conversations/:id',
+  authenticateToken,
+  (req, res) => chatController.deleteConversation(req as AuthenticatedRequest, res)
+);
 
 export default router;
 

@@ -189,9 +189,7 @@ router.get(
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
-      const employees = await User.findAll({
-        tenant_id: authReq.user.tenant_id,
-      });
+      const employees = await User.findAllByTenant(authReq.user.tenant_id);
       res.json(employees);
     } catch {
       res.status(500).json({ message: 'Server error' });

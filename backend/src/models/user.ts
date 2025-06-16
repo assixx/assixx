@@ -858,16 +858,33 @@ export class User {
   // Find all users with optional filters
   static async findAll(filters: UserFilter): Promise<DbUser[]> {
     try {
-      let query = 'SELECT * FROM users WHERE tenant_id = ?';
+      let query = `SELECT u.*, d.name as department 
+                   FROM users u 
+                   LEFT JOIN departments d ON u.department_id = d.id 
+                   WHERE u.tenant_id = ?`;
       const params: any[] = [filters.tenant_id];
 
       if (filters.role) {
-        query += ' AND role = ?';
+        query += ' AND u.role = ?';
         params.push(filters.role);
       }
 
       const [rows] = await executeQuery<DbUser[]>(query, params);
-      return rows;
+      
+      // Normalize boolean fields
+      const normalizedRows = rows.map((row) => ({
+        ...row,
+        is_active:
+          (row.is_active as any) === 1 ||
+          (row.is_active as any) === '1' ||
+          row.is_active === true,
+        is_archived:
+          (row.is_archived as any) === 1 ||
+          (row.is_archived as any) === '1' ||
+          row.is_archived === true,
+      }));
+      
+      return normalizedRows;
     } catch (error) {
       logger.error(`Error finding all users: ${(error as Error).message}`);
       throw error;
@@ -878,10 +895,27 @@ export class User {
   static async findAllByTenant(tenantId: number): Promise<DbUser[]> {
     try {
       const [rows] = await executeQuery<DbUser[]>(
-        'SELECT * FROM users WHERE tenant_id = ?',
+        `SELECT u.*, d.name as department 
+         FROM users u 
+         LEFT JOIN departments d ON u.department_id = d.id 
+         WHERE u.tenant_id = ?`,
         [tenantId]
       );
-      return rows;
+      
+      // Normalize boolean fields
+      const normalizedRows = rows.map((row) => ({
+        ...row,
+        is_active:
+          (row.is_active as any) === 1 ||
+          (row.is_active as any) === '1' ||
+          row.is_active === true,
+        is_archived:
+          (row.is_archived as any) === 1 ||
+          (row.is_archived as any) === '1' ||
+          row.is_archived === true,
+      }));
+      
+      return normalizedRows;
     } catch (error) {
       logger.error(
         `Error finding users by tenant: ${(error as Error).message}`

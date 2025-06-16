@@ -7,7 +7,7 @@ import { fetchWithAuth, showError, showSuccess } from './auth';
 import type { Document } from '../types/api.types';
 
 // Document scope type
-type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal';
+type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
 type SortOption = 'newest' | 'oldest' | 'name' | 'size';
 
 // State management
@@ -106,6 +106,7 @@ function updateCounts(): void {
     department: 0,
     team: 0,
     personal: 0,
+    payroll: 0,
   };
 
   allDocuments.forEach((doc) => {
@@ -113,6 +114,9 @@ function updateCounts(): void {
     else if (doc.scope === 'department') counts.department++;
     else if (doc.scope === 'team') counts.team++;
     else if (doc.scope === 'personal') counts.personal++;
+    
+    // Count payroll documents (Gehaltsabrechnungen) based on category
+    if (doc.category === 'salary') counts.payroll++;
   });
 
   // Update UI
@@ -121,6 +125,7 @@ function updateCounts(): void {
   updateCount('countDepartment', counts.department);
   updateCount('countTeam', counts.team);
   updateCount('countPersonal', counts.personal);
+  updateCount('countPayroll', counts.payroll);
 }
 
 /**
@@ -178,7 +183,12 @@ function applyFilters(): void {
 
   // Apply scope filter
   if (currentFilter !== 'all') {
-    filteredDocuments = filteredDocuments.filter((doc) => doc.scope === currentFilter);
+    if (currentFilter === 'payroll') {
+      // Special filter for payroll documents (Gehaltsabrechnungen)
+      filteredDocuments = filteredDocuments.filter((doc) => doc.category === 'salary');
+    } else {
+      filteredDocuments = filteredDocuments.filter((doc) => doc.scope === currentFilter);
+    }
   }
 
   // Apply search filter
