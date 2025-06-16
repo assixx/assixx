@@ -8,7 +8,7 @@
 
 /* Library styles */
 @import "./lib/bootstrap.min.css";
-@import "./lib/fontawesome.min.css";
+/* FontAwesome is loaded separately in HTML files */
 
 /* Theme and core styles */
 @import "./dashboard-theme.css";
