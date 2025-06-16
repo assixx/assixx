@@ -1,4 +1,5 @@
 # 📊 Assixx Database Structure
+
 **Last Updated:** 2025-06-16  
 **Status:** Synchronized with Production
 
@@ -15,7 +16,7 @@ database/
 │   ├── 004-add-document-multi-recipients.sql
 │   └── ... (18 migration files total)
 ├── archive/                     # Old schema versions
-│   └── pre-20250616/           
+│   └── pre-20250616/
 │       ├── docker-init.sql     # Original schema
 │       ├── complete-schema.sql  # Old complete schema
 │       └── docker-init-simple.sql
@@ -33,11 +34,13 @@ database/
 ## 🚀 Usage
 
 ### Fresh Installation
+
 ```bash
 docker exec assixx-mysql sh -c 'mysql -h localhost -u root -p"StrongP@ssw0rd!123" < /docker-entrypoint-initdb.d/01-schema.sql'
 ```
 
 ### Apply Migration
+
 ```bash
 MIGRATION_FILE="database/migrations/XXX-your-migration.sql"
 docker cp $MIGRATION_FILE assixx-mysql:/tmp/
@@ -45,6 +48,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss20
 ```
 
 ### Backup Current State
+
 ```bash
 bash scripts/quick-backup.sh "manual_backup_$(date +%Y%m%d_%H%M%S)"
 ```

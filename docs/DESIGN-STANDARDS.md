@@ -84,7 +84,7 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
   --success-color: #4caf50; /* Grün für Erfolg */
   --error-color: #f44336; /* Rot für Fehler */
   --warning-color: #ff9800; /* Orange für Warnungen */
-  
+
   /* Role-spezifische Farben */
   --admin-color: #ff6b6b;
   --employee-color: #4ecdc4;
@@ -98,12 +98,7 @@ Assixx folgt einem **dark-themed Glassmorphismus Design System** mit folgenden K
     rgba(255, 255, 255, 0.05),
     rgba(255, 255, 255, 0.1)
   ); /* Subtiler Glassmorphismus Gradient */
-  --accent-glow: rgba(
-    255,
-    255,
-    255,
-    0.6
-  ); /* Glow-Effekt für Premium Elements */
+  --accent-glow: rgba(255, 255, 255, 0.6); /* Glow-Effekt für Premium Elements */
 
   /* Abstände */
   --spacing-xs: 4px;
@@ -221,10 +216,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
     </div>
 
     <!-- Scripts am Ende -->
-    <script
-      type="module"
-      src="/scripts/components/unified-navigation.ts"
-    ></script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>
 ```
@@ -352,28 +344,15 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```html
 <div class="custom-dropdown">
-  <div
-    class="dropdown-display"
-    id="myDropdownDisplay"
-    onclick="toggleDropdown('myDropdown')"
-  >
+  <div class="dropdown-display" id="myDropdownDisplay" onclick="toggleDropdown('myDropdown')">
     <span>Bitte wählen</span>
     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-      <path
-        d="M1 1L6 6L11 1"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-      />
+      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     </svg>
   </div>
   <div class="dropdown-options" id="myDropdownDropdown">
-    <div class="dropdown-option" onclick="selectOption('value1', 'Text 1')">
-      Text 1
-    </div>
-    <div class="dropdown-option" onclick="selectOption('value2', 'Text 2')">
-      Text 2
-    </div>
+    <div class="dropdown-option" onclick="selectOption('value1', 'Text 1')">Text 1</div>
+    <div class="dropdown-option" onclick="selectOption('value2', 'Text 2')">Text 2</div>
   </div>
   <input type="hidden" name="fieldName" id="myDropdownValue" required />
 </div>
@@ -539,11 +518,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 /* Second-Level: MIT background-gradient */
 .btn-primary.btn-secondary-action,
 .btn-upload {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--primary-hover)
-  );
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   /* Alle anderen Styles bleiben gleich wie First-Level */
 }
 ```
@@ -682,9 +657,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   <div class="modal-content">
     <div class="modal-header">
       <h3 class="modal-title">Modal Titel</h3>
-      <button class="modal-close" onclick="hideModal('myModal')">
-        &times;
-      </button>
+      <button class="modal-close" onclick="hideModal('myModal')">&times;</button>
     </div>
     <form>
       <div class="form-group">
@@ -693,13 +666,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
       </div>
       <div class="button-group">
         <button type="submit" class="btn btn-primary">Speichern</button>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="hideModal('myModal')"
-        >
-          Abbrechen
-        </button>
+        <button type="button" class="btn btn-secondary" onclick="hideModal('myModal')">Abbrechen</button>
       </div>
     </form>
   </div>
@@ -815,11 +782,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 #logout-btn {
   padding: 0.25rem 0.6rem;
-  background: linear-gradient(
-    135deg,
-    rgba(220, 38, 38, 0.8),
-    rgba(185, 28, 28, 0.8)
-  );
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(185, 28, 28, 0.8));
   color: white;
   border: none;
   border-radius: 4px;
@@ -831,11 +794,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 #logout-btn:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(239, 68, 68, 0.9),
-    rgba(220, 38, 38, 0.9)
-  );
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
   transform: translateY(-1px);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
@@ -861,11 +820,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--primary-color),
-    var(--primary-light)
-  );
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -886,11 +841,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   content: '';
   width: 4px;
   height: 20px;
-  background: linear-gradient(
-    180deg,
-    var(--primary-color),
-    var(--primary-light)
-  );
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
   border-radius: 2px;
 }
 ```
@@ -902,8 +853,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ### Schriftfamilie
 
 ```css
-font-family:
-  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sans-serif;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sans-serif;
 ```
 
 ### Schriftgrößen
@@ -1345,9 +1295,7 @@ function toggleDropdown(type) {
 
 // Option auswählen
 function selectOption(value, text) {
-  document
-    .getElementById('myDropdownDisplay')
-    .querySelector('span').textContent = text;
+  document.getElementById('myDropdownDisplay').querySelector('span').textContent = text;
   document.getElementById('myDropdownValue').value = value;
   document.getElementById('myDropdownDisplay').classList.remove('active');
   document.getElementById('myDropdownDropdown').classList.remove('active');
@@ -1356,12 +1304,8 @@ function selectOption(value, text) {
 // Click-Outside-to-Close
 document.addEventListener('click', function (e) {
   if (!e.target.closest('.custom-dropdown')) {
-    document
-      .querySelectorAll('.dropdown-display')
-      .forEach((d) => d.classList.remove('active'));
-    document
-      .querySelectorAll('.dropdown-options')
-      .forEach((d) => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
   }
 });
 ```
@@ -1409,11 +1353,7 @@ document.addEventListener('click', function (e) {
 
 /* Message Bubbles */
 .message.sent {
-  background: linear-gradient(
-    135deg,
-    rgba(33, 150, 243, 0.15),
-    rgba(33, 150, 243, 0.1)
-  );
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.1));
   margin-left: auto;
 }
 
@@ -1565,11 +1505,7 @@ document.addEventListener('click', function (e) {
   content: '';
   width: 4px;
   height: 20px;
-  background: linear-gradient(
-    180deg,
-    var(--primary-color),
-    var(--primary-light)
-  );
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
   border-radius: 2px;
 }
 ```
@@ -1586,9 +1522,7 @@ document.addEventListener('click', function (e) {
     <label class="form-label">Password</label>
     <input type="password" class="form-control" placeholder="••••••••" />
   </div>
-  <button type="submit" class="btn btn-primary btn-block">
-    Login <span class="btn-icon">→</span>
-  </button>
+  <button type="submit" class="btn btn-primary btn-block">Login <span class="btn-icon">→</span></button>
 </form>
 ```
 
@@ -1649,10 +1583,7 @@ Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 
 ```html
 <!-- Font Icons -->
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <!-- User Info Styles (entfernt unerwünschte Pseudo-Elemente) -->
 <link rel="stylesheet" href="/styles/user-info-update.css" />
 ```

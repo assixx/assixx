@@ -148,10 +148,9 @@
 
 ```typescript
 // Beispiel für tenant_id Filter
-const documents = await db.query(
-  'SELECT * FROM documents WHERE tenant_id = ? AND deleted_at IS NULL',
-  [req.user.tenant_id]
-);
+const documents = await db.query('SELECT * FROM documents WHERE tenant_id = ? AND deleted_at IS NULL', [
+  req.user.tenant_id,
+]);
 ```
 
 ### 2. Build-Fix (frontend/src/pages/\*.html)

@@ -25,13 +25,13 @@ pnpm install
 
 ### 3. Befehle
 
-| npm Befehl | pnpm Äquivalent |
-|------------|-----------------|
-| `npm install` | `pnpm install` |
+| npm Befehl            | pnpm Äquivalent    |
+| --------------------- | ------------------ |
+| `npm install`         | `pnpm install`     |
 | `npm install express` | `pnpm add express` |
 | `npm install -D jest` | `pnpm add -D jest` |
-| `npm run dev` | `pnpm dev` |
-| `npm test` | `pnpm test` |
+| `npm run dev`         | `pnpm dev`         |
+| `npm test`            | `pnpm test`        |
 
 ### 4. Docker
 

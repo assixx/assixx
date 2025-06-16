@@ -1,7 +1,7 @@
-require("dotenv").config();
-const mysql = require("mysql2/promise");
-const path = require("path");
-const fs = require("fs").promises;
+require('dotenv').config();
+const mysql = require('mysql2/promise');
+const path = require('path');
+const fs = require('fs').promises;
 
 async function setupTenants() {
   let connection;
@@ -15,24 +15,24 @@ async function setupTenants() {
       multipleStatements: true,
     });
 
-    console.log("Verbunden mit Datenbank:", process.env.DB_NAME);
+    console.log('Verbunden mit Datenbank:', process.env.DB_NAME);
 
     // Lese SQL-Datei
     const sqlPath = path.join(
       __dirname,
-      "..",
-      "database",
-      "create_tenants_table.sql",
+      '..',
+      'database',
+      'create_tenants_table.sql'
     );
-    const sql = await fs.readFile(sqlPath, "utf8");
+    const sql = await fs.readFile(sqlPath, 'utf8');
 
     // Führe SQL aus
-    console.log("Erstelle Tenant-Tabellen...");
+    console.log('Erstelle Tenant-Tabellen...');
     await connection.query(sql);
 
-    console.log("Tenant-Tabellen erfolgreich erstellt!");
+    console.log('Tenant-Tabellen erfolgreich erstellt!');
   } catch (error) {
-    console.error("Fehler beim Erstellen der Tenant-Tabellen:", error);
+    console.error('Fehler beim Erstellen der Tenant-Tabellen:', error);
     throw error;
   } finally {
     if (connection) {
@@ -44,10 +44,10 @@ async function setupTenants() {
 // Script ausführen
 setupTenants()
   .then(() => {
-    console.log("Tenant-Setup abgeschlossen!");
+    console.log('Tenant-Setup abgeschlossen!');
     process.exit(0);
   })
   .catch((error) => {
-    console.error("Setup fehlgeschlagen:", error);
+    console.error('Setup fehlgeschlagen:', error);
     process.exit(1);
   });

@@ -11,12 +11,15 @@ Dieses Dokument beschreibt das Konzept für Abteilungszuweisungen und die damit 
 ## 📊 Aktuelle Situation (IST-Zustand)
 
 ### Probleme:
+
 1. **Schichtplanung ohne Abteilung möglich** ❌
+
    - Man kann aktuell Schichtpläne erstellen ohne eine Abteilung auszuwählen
    - Dies führt zu "freischwebenden" Schichtplänen ohne Kontext
    - Keine klare Zuordnung wer für welche Schichten verantwortlich ist
 
 2. **Fehlende Validierung** ❌
+
    - Frontend erlaubt Speichern ohne Abteilung
    - Backend akzeptiert NULL-Werte für department_id
    - Datenbank hat department_id als nullable Feld
@@ -30,11 +33,13 @@ Dieses Dokument beschreibt das Konzept für Abteilungszuweisungen und die damit 
 ### Phase 1: Abteilung als Pflichtfeld (SOFORT)
 
 1. **Frontend-Validierung:**
+
    - Schichtplan-Grid wird erst nach Abteilungsauswahl angezeigt
    - Platzhalter/Info-Box: "Bitte wählen Sie zuerst eine Abteilung aus"
    - Save-Button deaktiviert ohne Abteilung
 
 2. **Backend-Validierung:**
+
    - department_id als Pflichtfeld in allen Shift-bezogenen APIs
    - Fehlermeldung: "Abteilung muss ausgewählt werden"
 
@@ -45,11 +50,11 @@ Dieses Dokument beschreibt das Konzept für Abteilungszuweisungen und die damit 
 
 ### Phase 2: Rollen-basierte Sichtbarkeit (AKTUELL)
 
-| Rolle | Abteilungs-Sichtbarkeit | Schichtplan-Zugriff |
-|-------|-------------------------|---------------------|
-| Employee | Nur eigene Abteilung (aus user.department_id) | Nur Lesen |
-| Admin | ALLE Abteilungen | Lesen/Schreiben für ALLE |
-| Root | ALLE Abteilungen | Lesen/Schreiben für ALLE |
+| Rolle    | Abteilungs-Sichtbarkeit                       | Schichtplan-Zugriff      |
+| -------- | --------------------------------------------- | ------------------------ |
+| Employee | Nur eigene Abteilung (aus user.department_id) | Nur Lesen                |
+| Admin    | ALLE Abteilungen                              | Lesen/Schreiben für ALLE |
+| Root     | ALLE Abteilungen                              | Lesen/Schreiben für ALLE |
 
 ### Phase 3: Granulare Admin-Berechtigungen (ZUKUNFT)
 
@@ -79,6 +84,7 @@ CREATE TABLE admin_department_permissions (
 ### Erweiterte Logik:
 
 1. **Root User kann:**
+
    - Admin-Berechtigungen für spezifische Abteilungen vergeben
    - Berechtigungen wieder entziehen
    - Übersicht über alle Berechtigungen
@@ -90,19 +96,21 @@ CREATE TABLE admin_department_permissions (
 ## 🔄 Implementierungs-Roadmap
 
 ### Schritt 1: Abteilung als Pflichtfeld (JETZT)
+
 1. Frontend anpassen:
    - Schichtplan ausblenden bis Abteilung gewählt
    - Validierung beim Speichern
-   
 2. Backend anpassen:
    - department_id Validierung in `/api/shifts`
    - Fehlermeldungen verbessern
 
 ### Schritt 2: Employee-Filterung (JETZT)
+
 1. Employees sehen nur Mitarbeiter ihrer Abteilung
 2. Shift-Anzeige gefiltert nach Abteilung
 
 ### Schritt 3: Admin-Berechtigungs-UI (SPÄTER)
+
 1. Neue Seite unter Root-Bereich
 2. Matrix-Ansicht: Admin × Abteilungen
 3. Checkboxen für Read/Write/Delete
@@ -111,8 +119,8 @@ CREATE TABLE admin_department_permissions (
 
 1. **Tenant-Isolation bleibt bestehen**
    - Alle Queries müssen weiterhin tenant_id berücksichtigen
-   
 2. **Berechtigungs-Hierarchie:**
+
    ```
    Root → kann alles
    Admin (mit Berechtigung) → nur zugewiesene Abteilungen
@@ -127,12 +135,13 @@ CREATE TABLE admin_department_permissions (
 ## 🚀 Migration-Strategie
 
 1. **Bestehende Daten prüfen:**
+
    ```sql
    -- Shifts ohne Abteilung finden
    SELECT COUNT(*) FROM shifts WHERE department_id IS NULL;
-   
+
    -- Diese einer Standard-Abteilung zuweisen
-   UPDATE shifts 
+   UPDATE shifts
    SET department_id = (SELECT id FROM departments WHERE tenant_id = shifts.tenant_id LIMIT 1)
    WHERE department_id IS NULL;
    ```
@@ -145,10 +154,12 @@ CREATE TABLE admin_department_permissions (
 ## ⚠️ Wichtige Hinweise
 
 1. **Rückwärtskompatibilität:**
+
    - Bestehende Admins behalten volle Rechte
    - Erst wenn spezifische Berechtigungen vergeben werden, greifen diese
 
 2. **Performance:**
+
    - Zusätzliche JOINs für Berechtigungsprüfung
    - Caching-Strategie für Berechtigungen entwickeln
 

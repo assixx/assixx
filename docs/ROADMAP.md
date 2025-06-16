@@ -210,12 +210,14 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 ## 🔒 Database Security & Scalability Roadmap
 
 ### Phase 1: Current (Multi-Tenant Single DB) ✅
+
 - **Status:** Implementiert
 - **Row-Level Security:** tenant_id in allen Tabellen
 - **Isolation:** Middleware-basiert
 - **Backup:** Automatisiert täglich
 
 ### Phase 2: Pre-Production Security (Q3 2025)
+
 - [ ] **Encryption at Rest**
   - [ ] MySQL Table Encryption aktivieren
   - [ ] `ALTER DATABASE main ENCRYPTION='Y'`
@@ -228,6 +230,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
   - [ ] Compliance-Reports
 
 ### Phase 3: Regional Sharding (bei 100+ Kunden)
+
 - [ ] **Regional Data Residency**
   - [ ] EU-Datenbank für DSGVO
   - [ ] US-Datenbank für US-Kunden
@@ -237,6 +240,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
   - [ ] Read-Replicas pro Region
 
 ### Phase 4: Enterprise Features (bei 1000+ Kunden)
+
 - [ ] **Tenant-spezifische Encryption Keys**
   - [ ] AWS KMS oder Azure Key Vault Integration
   - [ ] Key-Rotation pro Tenant
@@ -248,6 +252,7 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
   - [ ] Premium-Pricing-Modell
 
 ### Phase 5: Advanced Compliance (2026+)
+
 - [ ] **BYOK (Bring Your Own Key)**
   - [ ] Kunden verwalten eigene Encryption Keys
 - [ ] **Geo-Redundancy**

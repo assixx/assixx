@@ -12,10 +12,11 @@
 ## 🔥 DRINGENDE FIXES (Nr. 1 Priorität!)
 
 ### ✅ 1. **Express-Validator TypeScript Import Problem** (16.06.2025 - GELÖST!)
+
 - **Problem:** Express-validator v7.x hatte ESM Import-Probleme mit TypeScript
 - **Ursache:** Konflikt zwischen eingebauten Types und @types/express-validator Paket
 - **Lösung:** @types/express-validator deinstalliert
-- **Ergebnis:** 
+- **Ergebnis:**
   - ✅ Keine @ts-ignore mehr nötig
   - ✅ Volle TypeScript-Unterstützung wiederhergestellt
   - ✅ Build funktioniert einwandfrei

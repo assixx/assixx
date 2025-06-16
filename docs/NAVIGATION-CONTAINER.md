@@ -34,10 +34,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    ```html
    <script type="module" src="/scripts/auth.ts"></script>
    <script type="module" src="/scripts/shifts.ts"></script>
-   <script
-     type="module"
-     src="/scripts/components/unified-navigation.ts"
-   ></script>
+   <script type="module" src="/scripts/components/unified-navigation.ts"></script>
    ```
 
 ### Vorteile
@@ -127,8 +124,7 @@ sidebar.style.setProperty('width', '70px', 'important');
 
 ```typescript
 // 1. Dynamischer Avatar bei der Erstellung
-const profilePicture =
-  this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
+const profilePicture = this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
 
 // 2. Update nach Profil-Load
 const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;

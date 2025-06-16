@@ -642,9 +642,7 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 router.use(checkFeature('surveys'));
 
 // In Frontend prüfen
-const hasFeature = tenantFeatures.some(
-  (f) => f.code === 'surveys' && f.is_available
-);
+const hasFeature = tenantFeatures.some((f) => f.code === 'surveys' && f.is_available);
 ```
 
 ---
@@ -1096,11 +1094,7 @@ if (survey.is_anonymous) {
 }
 
 // ✅ RICHTIG - explizite Prüfung
-if (
-  survey.is_anonymous === '1' ||
-  survey.is_anonymous === 1 ||
-  survey.is_anonymous === true
-) {
+if (survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true) {
   // Wird nur bei true ausgeführt
 }
 ```

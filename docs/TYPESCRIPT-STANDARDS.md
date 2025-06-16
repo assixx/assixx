@@ -143,10 +143,7 @@ declare global {
     DashboardUI?: {
       openModal: (modalId: string) => void;
       closeModal: (modalId: string) => void;
-      showToast: (
-        message: string,
-        type?: 'success' | 'error' | 'warning' | 'info'
-      ) => void;
+      showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
     };
   }
 }

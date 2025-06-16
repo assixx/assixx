@@ -147,30 +147,26 @@ DELETE /api/department-groups/:id/departments/:deptId // Abteilung aus Gruppe en
 ```typescript
 // backend/src/middleware/departmentAccess.ts
 export const checkDepartmentAccess = async (req, res, next) => {
-    const { user } = req;
-    const { department_id } = req.body || req.query || req.params;
-    
-    // Root und Employees überspringen
-    if (user.role === 'root' || user.role === 'employee') {
-        return next();
+  const { user } = req;
+  const { department_id } = req.body || req.query || req.params;
+
+  // Root und Employees überspringen
+  if (user.role === 'root' || user.role === 'employee') {
+    return next();
+  }
+
+  // Admin: Prüfe Berechtigungen
+  if (user.role === 'admin' && department_id) {
+    const hasAccess = await AdminPermissionService.hasAccess(user.id, department_id, user.tenant_id);
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        error: 'Keine Berechtigung für diese Abteilung',
+      });
     }
-    
-    // Admin: Prüfe Berechtigungen
-    if (user.role === 'admin' && department_id) {
-        const hasAccess = await AdminPermissionService.hasAccess(
-            user.id, 
-            department_id,
-            user.tenant_id
-        );
-        
-        if (!hasAccess) {
-            return res.status(403).json({ 
-                error: 'Keine Berechtigung für diese Abteilung' 
-            });
-        }
-    }
-    
-    next();
+  }
+
+  next();
 };
 ```
 
@@ -179,44 +175,44 @@ export const checkDepartmentAccess = async (req, res, next) => {
 ```typescript
 // backend/src/services/adminPermission.service.ts
 class AdminPermissionService {
-    // Prüft ob Admin Zugriff hat (inkl. Gruppen-Berechtigungen)
-    async hasAccess(adminId, departmentId, tenantId)
-    
-    // Holt alle Abteilungen eines Admins (direkt + über Gruppen)
-    async getAdminDepartments(adminId, tenantId)
-    
-    // Setzt Berechtigungen (überschreibt bestehende)
-    async setPermissions(adminId, departmentIds, assignedBy, tenantId)
-    
-    // Setzt Gruppen-Berechtigungen
-    async setGroupPermissions(adminId, groupIds, assignedBy, tenantId)
-    
-    // Entfernt einzelne Berechtigung
-    async removePermission(adminId, departmentId, tenantId)
-    
-    // Entfernt Gruppen-Berechtigung
-    async removeGroupPermission(adminId, groupId, tenantId)
-    
-    // Audit-Log für Änderungen
-    async logPermissionChange(action, adminId, targetId, targetType, changedBy)
+  // Prüft ob Admin Zugriff hat (inkl. Gruppen-Berechtigungen)
+  async hasAccess(adminId, departmentId, tenantId);
+
+  // Holt alle Abteilungen eines Admins (direkt + über Gruppen)
+  async getAdminDepartments(adminId, tenantId);
+
+  // Setzt Berechtigungen (überschreibt bestehende)
+  async setPermissions(adminId, departmentIds, assignedBy, tenantId);
+
+  // Setzt Gruppen-Berechtigungen
+  async setGroupPermissions(adminId, groupIds, assignedBy, tenantId);
+
+  // Entfernt einzelne Berechtigung
+  async removePermission(adminId, departmentId, tenantId);
+
+  // Entfernt Gruppen-Berechtigung
+  async removeGroupPermission(adminId, groupId, tenantId);
+
+  // Audit-Log für Änderungen
+  async logPermissionChange(action, adminId, targetId, targetType, changedBy);
 }
 
 // backend/src/services/departmentGroup.service.ts
 class DepartmentGroupService {
-    // Erstellt neue Gruppe
-    async createGroup(name, description, parentGroupId, tenantId, createdBy)
-    
-    // Fügt Abteilungen zur Gruppe hinzu
-    async addDepartmentsToGroup(groupId, departmentIds, tenantId, addedBy)
-    
-    // Holt alle Abteilungen einer Gruppe (rekursiv)
-    async getGroupDepartments(groupId, tenantId)
-    
-    // Holt Gruppen-Hierarchie
-    async getGroupHierarchy(tenantId)
-    
-    // Löscht Gruppe (mit Prüfung auf Berechtigungen)
-    async deleteGroup(groupId, tenantId)
+  // Erstellt neue Gruppe
+  async createGroup(name, description, parentGroupId, tenantId, createdBy);
+
+  // Fügt Abteilungen zur Gruppe hinzu
+  async addDepartmentsToGroup(groupId, departmentIds, tenantId, addedBy);
+
+  // Holt alle Abteilungen einer Gruppe (rekursiv)
+  async getGroupDepartments(groupId, tenantId);
+
+  // Holt Gruppen-Hierarchie
+  async getGroupHierarchy(tenantId);
+
+  // Löscht Gruppe (mit Prüfung auf Berechtigungen)
+  async deleteGroup(groupId, tenantId);
 }
 ```
 
@@ -227,47 +223,49 @@ class DepartmentGroupService {
 ```html
 <!-- In signup.html nach Role-Auswahl -->
 <div id="departmentPermissionsSection" class="form-section" style="display:none;">
-    <h4>Abteilungszuweisungen</h4>
-    <div class="info-box warning">
-        <i class="fas fa-info-circle"></i>
-        Aus Sicherheitsgründen haben neue Admins standardmäßig keinen Zugriff auf Abteilungen.
+  <h4>Abteilungszuweisungen</h4>
+  <div class="info-box warning">
+    <i class="fas fa-info-circle"></i>
+    Aus Sicherheitsgründen haben neue Admins standardmäßig keinen Zugriff auf Abteilungen.
+  </div>
+
+  <div class="permission-type-selection">
+    <label class="radio-label">
+      <input type="radio" name="permissionType" value="none" checked />
+      <span>Keine Abteilungen (Standard - Sicher)</span>
+    </label>
+
+    <label class="radio-label">
+      <input type="radio" name="permissionType" value="specific" />
+      <span>Spezifische Abteilungen auswählen</span>
+    </label>
+
+    <label class="radio-label">
+      <input type="radio" name="permissionType" value="groups" />
+      <span>Abteilungsgruppen auswählen</span>
+    </label>
+
+    <label class="radio-label">
+      <input type="radio" name="permissionType" value="all" />
+      <span>Alle Abteilungen (Vollzugriff)</span>
+    </label>
+  </div>
+
+  <div id="departmentSelectContainer" style="display:none;">
+    <select id="departmentSelect" multiple class="form-control">
+      <!-- Dynamisch befüllt -->
+    </select>
+    <small class="form-text">Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl</small>
+  </div>
+
+  <div id="groupSelectContainer" style="display:none;">
+    <div class="group-tree-view">
+      <!-- Hierarchische Darstellung der Gruppen -->
     </div>
-    
-    <div class="permission-type-selection">
-        <label class="radio-label">
-            <input type="radio" name="permissionType" value="none" checked>
-            <span>Keine Abteilungen (Standard - Sicher)</span>
-        </label>
-        
-        <label class="radio-label">
-            <input type="radio" name="permissionType" value="specific">
-            <span>Spezifische Abteilungen auswählen</span>
-        </label>
-        
-        <label class="radio-label">
-            <input type="radio" name="permissionType" value="groups">
-            <span>Abteilungsgruppen auswählen</span>
-        </label>
-        
-        <label class="radio-label">
-            <input type="radio" name="permissionType" value="all">
-            <span>Alle Abteilungen (Vollzugriff)</span>
-        </label>
-    </div>
-    
-    <div id="departmentSelectContainer" style="display:none;">
-        <select id="departmentSelect" multiple class="form-control">
-            <!-- Dynamisch befüllt -->
-        </select>
-        <small class="form-text">Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl</small>
-    </div>
-    
-    <div id="groupSelectContainer" style="display:none;">
-        <div class="group-tree-view">
-            <!-- Hierarchische Darstellung der Gruppen -->
-        </div>
-        <small class="form-text">Wählen Sie Gruppen aus. Alle untergeordneten Abteilungen werden automatisch eingeschlossen.</small>
-    </div>
+    <small class="form-text"
+      >Wählen Sie Gruppen aus. Alle untergeordneten Abteilungen werden automatisch eingeschlossen.</small
+    >
+  </div>
 </div>
 ```
 
@@ -276,43 +274,43 @@ class DepartmentGroupService {
 ```javascript
 // In signup.js
 function handleRoleChange() {
-    const role = document.getElementById('role').value;
-    const permissionsSection = document.getElementById('departmentPermissionsSection');
-    
-    if (role === 'admin' && currentUser.role === 'root') {
-        permissionsSection.style.display = 'block';
-        loadAvailableDepartments();
-    } else {
-        permissionsSection.style.display = 'none';
-    }
+  const role = document.getElementById('role').value;
+  const permissionsSection = document.getElementById('departmentPermissionsSection');
+
+  if (role === 'admin' && currentUser.role === 'root') {
+    permissionsSection.style.display = 'block';
+    loadAvailableDepartments();
+  } else {
+    permissionsSection.style.display = 'none';
+  }
 }
 
 function handlePermissionTypeChange() {
-    const type = document.querySelector('input[name="permissionType"]:checked').value;
-    const departmentContainer = document.getElementById('departmentSelectContainer');
-    const groupContainer = document.getElementById('groupSelectContainer');
-    
-    departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
-    groupContainer.style.display = type === 'groups' ? 'block' : 'none';
-    
-    if (type === 'groups') {
-        loadDepartmentGroups();
-    }
+  const type = document.querySelector('input[name="permissionType"]:checked').value;
+  const departmentContainer = document.getElementById('departmentSelectContainer');
+  const groupContainer = document.getElementById('groupSelectContainer');
+
+  departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
+  groupContainer.style.display = type === 'groups' ? 'block' : 'none';
+
+  if (type === 'groups') {
+    loadDepartmentGroups();
+  }
 }
 
 async function loadDepartmentGroups() {
-    try {
-        const response = await fetch('/api/department-groups/hierarchy');
-        const groups = await response.json();
-        renderGroupTree(groups);
-    } catch (error) {
-        console.error('Fehler beim Laden der Gruppen:', error);
-    }
+  try {
+    const response = await fetch('/api/department-groups/hierarchy');
+    const groups = await response.json();
+    renderGroupTree(groups);
+  } catch (error) {
+    console.error('Fehler beim Laden der Gruppen:', error);
+  }
 }
 
 function renderGroupTree(groups, level = 0) {
-    // Rekursive Darstellung der Gruppen-Hierarchie
-    // mit Checkboxen und visueller Einrückung
+  // Rekursive Darstellung der Gruppen-Hierarchie
+  // mit Checkboxen und visueller Einrückung
 }
 ```
 
@@ -323,18 +321,19 @@ function renderGroupTree(groups, level = 0) {
 ```html
 <!-- In manage-admins.html -->
 <table class="admin-table">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Abteilungen</th> <!-- NEU -->
-            <th>Aktionen</th>
-        </tr>
-    </thead>
-    <tbody id="adminTableBody">
-        <!-- Dynamisch befüllt -->
-    </tbody>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Status</th>
+      <th>Abteilungen</th>
+      <!-- NEU -->
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody id="adminTableBody">
+    <!-- Dynamisch befüllt -->
+  </tbody>
 </table>
 ```
 
@@ -343,28 +342,28 @@ function renderGroupTree(groups, level = 0) {
 ```html
 <!-- Modal für Berechtigungen -->
 <div id="permissionModal" class="modal">
-    <div class="modal-content">
-        <h3>Abteilungsberechtigungen bearbeiten</h3>
-        
-        <div class="admin-info">
-            <p><strong>Admin:</strong> <span id="adminName"></span></p>
-            <p><strong>Email:</strong> <span id="adminEmail"></span></p>
-        </div>
-        
-        <div class="permission-options">
-            <button onclick="selectAllDepartments()">Alle auswählen</button>
-            <button onclick="selectNoDepartments()">Keine auswählen</button>
-        </div>
-        
-        <div class="department-list">
-            <!-- Checkboxen für jede Abteilung -->
-        </div>
-        
-        <div class="modal-actions">
-            <button onclick="savePermissions()" class="btn-primary">Speichern</button>
-            <button onclick="closeModal()" class="btn-secondary">Abbrechen</button>
-        </div>
+  <div class="modal-content">
+    <h3>Abteilungsberechtigungen bearbeiten</h3>
+
+    <div class="admin-info">
+      <p><strong>Admin:</strong> <span id="adminName"></span></p>
+      <p><strong>Email:</strong> <span id="adminEmail"></span></p>
     </div>
+
+    <div class="permission-options">
+      <button onclick="selectAllDepartments()">Alle auswählen</button>
+      <button onclick="selectNoDepartments()">Keine auswählen</button>
+    </div>
+
+    <div class="department-list">
+      <!-- Checkboxen für jede Abteilung -->
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="savePermissions()" class="btn-primary">Speichern</button>
+      <button onclick="closeModal()" class="btn-secondary">Abbrechen</button>
+    </div>
+  </div>
 </div>
 ```
 
@@ -375,16 +374,16 @@ function renderGroupTree(groups, level = 0) {
 ```html
 <!-- In der Sidebar User Info -->
 <div class="user-info-card">
-    <div class="user-details">
-        <span class="user-name">Max Mustermann</span>
-        <span class="user-role">Admin</span>
-    </div>
-    
-    <!-- NEU: Department Badge -->
-    <div class="user-departments-badge" id="departmentBadge">
-        <i class="fas fa-building"></i>
-        <span class="badge loading">Lade...</span>
-    </div>
+  <div class="user-details">
+    <span class="user-name">Max Mustermann</span>
+    <span class="user-role">Admin</span>
+  </div>
+
+  <!-- NEU: Department Badge -->
+  <div class="user-departments-badge" id="departmentBadge">
+    <i class="fas fa-building"></i>
+    <span class="badge loading">Lade...</span>
+  </div>
 </div>
 ```
 
@@ -392,37 +391,37 @@ function renderGroupTree(groups, level = 0) {
 
 ```css
 .user-departments-badge {
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .user-departments-badge .badge {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .badge.badge-warning {
-    background: rgba(255, 193, 7, 0.2);
-    color: #ffc107;
-    border-color: rgba(255, 193, 7, 0.3);
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.3);
 }
 
 .badge.badge-info {
-    background: rgba(0, 123, 255, 0.2);
-    color: #007bff;
-    border-color: rgba(0, 123, 255, 0.3);
+  background: rgba(0, 123, 255, 0.2);
+  color: #007bff;
+  border-color: rgba(0, 123, 255, 0.3);
 }
 
 .badge.badge-success {
-    background: rgba(40, 167, 69, 0.2);
-    color: #28a745;
-    border-color: rgba(40, 167, 69, 0.3);
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.3);
 }
 ```
 
@@ -431,30 +430,30 @@ function renderGroupTree(groups, level = 0) {
 ```javascript
 // In common.js oder sidebar.js
 async function loadDepartmentBadge() {
-    const user = getCurrentUser();
-    if (user.role !== 'admin') return;
-    
-    try {
-        const response = await fetch('/api/admin-permissions/my-departments');
-        const data = await response.json();
-        
-        const badge = document.getElementById('departmentBadge');
-        const badgeSpan = badge.querySelector('.badge');
-        
-        if (data.hasAllAccess) {
-            badgeSpan.className = 'badge badge-success';
-            badgeSpan.textContent = 'Alle Abteilungen';
-        } else if (data.departments.length === 0) {
-            badgeSpan.className = 'badge badge-warning';
-            badgeSpan.textContent = 'Keine Abteilungen';
-        } else {
-            badgeSpan.className = 'badge badge-info';
-            badgeSpan.textContent = `${data.departments.length} Abteilungen`;
-            badgeSpan.title = data.departments.map(d => d.name).join(', ');
-        }
-    } catch (error) {
-        console.error('Fehler beim Laden der Abteilungen:', error);
+  const user = getCurrentUser();
+  if (user.role !== 'admin') return;
+
+  try {
+    const response = await fetch('/api/admin-permissions/my-departments');
+    const data = await response.json();
+
+    const badge = document.getElementById('departmentBadge');
+    const badgeSpan = badge.querySelector('.badge');
+
+    if (data.hasAllAccess) {
+      badgeSpan.className = 'badge badge-success';
+      badgeSpan.textContent = 'Alle Abteilungen';
+    } else if (data.departments.length === 0) {
+      badgeSpan.className = 'badge badge-warning';
+      badgeSpan.textContent = 'Keine Abteilungen';
+    } else {
+      badgeSpan.className = 'badge badge-info';
+      badgeSpan.textContent = `${data.departments.length} Abteilungen`;
+      badgeSpan.title = data.departments.map((d) => d.name).join(', ');
     }
+  } catch (error) {
+    console.error('Fehler beim Laden der Abteilungen:', error);
+  }
 }
 ```
 
@@ -465,27 +464,27 @@ async function loadDepartmentBadge() {
 ```html
 <!-- Neue Seite: manage-department-groups.html -->
 <div class="page-container">
-    <h1>Abteilungsgruppen verwalten</h1>
-    
-    <button onclick="showCreateGroupModal()" class="btn-primary">
-        <i class="fas fa-plus"></i> Neue Gruppe erstellen
-    </button>
-    
-    <div class="group-management-grid">
-        <div class="group-tree-panel">
-            <h3>Gruppenstruktur</h3>
-            <div id="groupTree">
-                <!-- Hierarchische Darstellung -->
-            </div>
-        </div>
-        
-        <div class="group-details-panel">
-            <h3>Gruppendetails</h3>
-            <div id="groupDetails">
-                <!-- Details der ausgewählten Gruppe -->
-            </div>
-        </div>
+  <h1>Abteilungsgruppen verwalten</h1>
+
+  <button onclick="showCreateGroupModal()" class="btn-primary">
+    <i class="fas fa-plus"></i> Neue Gruppe erstellen
+  </button>
+
+  <div class="group-management-grid">
+    <div class="group-tree-panel">
+      <h3>Gruppenstruktur</h3>
+      <div id="groupTree">
+        <!-- Hierarchische Darstellung -->
+      </div>
     </div>
+
+    <div class="group-details-panel">
+      <h3>Gruppendetails</h3>
+      <div id="groupDetails">
+        <!-- Details der ausgewählten Gruppe -->
+      </div>
+    </div>
+  </div>
 </div>
 ```
 
@@ -493,41 +492,41 @@ async function loadDepartmentBadge() {
 
 ```html
 <div id="createGroupModal" class="modal">
-    <div class="modal-content">
-        <h3>Neue Abteilungsgruppe erstellen</h3>
-        
-        <form id="createGroupForm">
-            <div class="form-group">
-                <label>Gruppenname *</label>
-                <input type="text" id="groupName" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Beschreibung</label>
-                <textarea id="groupDescription" rows="3"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Übergeordnete Gruppe (optional)</label>
-                <select id="parentGroup">
-                    <option value="">Keine (Hauptgruppe)</option>
-                    <!-- Dynamisch befüllt -->
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Abteilungen zuordnen</label>
-                <div class="department-checklist">
-                    <!-- Checkbox-Liste aller Abteilungen -->
-                </div>
-            </div>
-            
-            <div class="modal-actions">
-                <button type="submit" class="btn-primary">Erstellen</button>
-                <button type="button" onclick="closeModal()" class="btn-secondary">Abbrechen</button>
-            </div>
-        </form>
-    </div>
+  <div class="modal-content">
+    <h3>Neue Abteilungsgruppe erstellen</h3>
+
+    <form id="createGroupForm">
+      <div class="form-group">
+        <label>Gruppenname *</label>
+        <input type="text" id="groupName" required />
+      </div>
+
+      <div class="form-group">
+        <label>Beschreibung</label>
+        <textarea id="groupDescription" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Übergeordnete Gruppe (optional)</label>
+        <select id="parentGroup">
+          <option value="">Keine (Hauptgruppe)</option>
+          <!-- Dynamisch befüllt -->
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Abteilungen zuordnen</label>
+        <div class="department-checklist">
+          <!-- Checkbox-Liste aller Abteilungen -->
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">Erstellen</button>
+        <button type="button" onclick="closeModal()" class="btn-secondary">Abbrechen</button>
+      </div>
+    </form>
+  </div>
 </div>
 ```
 
@@ -537,27 +536,27 @@ async function loadDepartmentBadge() {
 
 ```javascript
 const permissionTemplates = {
-    production: {
-        name: 'Nur Produktion',
-        departments: ['Produktion', 'Fertigung', 'Qualitätskontrolle'],
-        suggestedGroups: [
-            {
-                name: 'Produktion',
-                subgroups: [
-                    { name: 'Gelbe Dosen', departments: ['Gelbe Dosen - Früh', 'Gelbe Dosen - Spät'] },
-                    { name: 'Rote Dosen', departments: ['Rote Dosen - Früh', 'Rote Dosen - Spät'] }
-                ]
-            }
-        ]
-    },
-    administration: {
-        name: 'Nur Verwaltung',
-        departments: ['HR', 'Buchhaltung', 'IT']
-    },
-    management: {
-        name: 'Management',
-        departments: ['Geschäftsführung', 'Vertrieb', 'Marketing']
-    }
+  production: {
+    name: 'Nur Produktion',
+    departments: ['Produktion', 'Fertigung', 'Qualitätskontrolle'],
+    suggestedGroups: [
+      {
+        name: 'Produktion',
+        subgroups: [
+          { name: 'Gelbe Dosen', departments: ['Gelbe Dosen - Früh', 'Gelbe Dosen - Spät'] },
+          { name: 'Rote Dosen', departments: ['Rote Dosen - Früh', 'Rote Dosen - Spät'] },
+        ],
+      },
+    ],
+  },
+  administration: {
+    name: 'Nur Verwaltung',
+    departments: ['HR', 'Buchhaltung', 'IT'],
+  },
+  management: {
+    name: 'Management',
+    departments: ['Geschäftsführung', 'Vertrieb', 'Marketing'],
+  },
 };
 ```
 
@@ -566,16 +565,16 @@ const permissionTemplates = {
 ```javascript
 // Mehrere Admins gleichzeitig bearbeiten
 async function bulkAssignDepartments(adminIds, departmentIds) {
-    const response = await fetch('/api/admin-permissions/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            adminIds,
-            departmentIds,
-            operation: 'assign' // oder 'remove'
-        })
-    });
-    return response.json();
+  const response = await fetch('/api/admin-permissions/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      adminIds,
+      departmentIds,
+      operation: 'assign', // oder 'remove'
+    }),
+  });
+  return response.json();
 }
 ```
 
@@ -584,12 +583,14 @@ async function bulkAssignDepartments(adminIds, departmentIds) {
 #### Test-Szenarien
 
 1. **Neue Admin-Erstellung**:
+
    - [ ] Default: Keine Abteilungen
    - [ ] Spezifische Auswahl funktioniert
    - [ ] Gruppen-Auswahl funktioniert
    - [ ] Alle Abteilungen funktioniert
 
 2. **Berechtigungen bearbeiten**:
+
    - [ ] Hinzufügen von Abteilungen
    - [ ] Hinzufügen von Gruppen
    - [ ] Entfernen von Abteilungen/Gruppen
@@ -597,12 +598,14 @@ async function bulkAssignDepartments(adminIds, departmentIds) {
    - [ ] Vererbung bei Gruppen funktioniert
 
 3. **Zugriffskontrolle**:
+
    - [ ] Admin ohne Berechtigung kann keine Daten sehen
    - [ ] Admin mit Berechtigung sieht nur seine Abteilungen
    - [ ] Admin mit Gruppen-Berechtigung sieht alle untergeordneten Abteilungen
    - [ ] Root sieht alles
 
 4. **Gruppen-Verwaltung**:
+
    - [ ] Gruppen erstellen/bearbeiten/löschen
    - [ ] Hierarchische Strukturen funktionieren
    - [ ] Abteilungen zu Gruppen hinzufügen/entfernen

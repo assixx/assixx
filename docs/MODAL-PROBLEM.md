@@ -97,18 +97,9 @@ if (!modal.parentElement || modal.parentElement !== document.body) {
   }
 
   document.body.appendChild(modal);
-  console.log(
-    `[ModalManager] Modal added to DOM. Parent:`,
-    modal.parentElement?.tagName
-  );
-  console.log(
-    `[ModalManager] Modal in DOM:`,
-    document.getElementById(modalId) !== null
-  );
-  console.log(
-    `[ModalManager] document.body contains modal:`,
-    document.body.contains(modal)
-  );
+  console.log(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
+  console.log(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
+  console.log(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
 } else {
   console.log(`[ModalManager] Modal already in document.body`);
 }
@@ -123,10 +114,7 @@ Zusätzlicher Fallback für Sichtbarkeit:
 ```typescript
 requestAnimationFrame(() => {
   const styles = window.getComputedStyle(modal!);
-  console.log(
-    `[ModalManager] Modal computed style visibility:`,
-    styles.visibility
-  );
+  console.log(`[ModalManager] Modal computed style visibility:`, styles.visibility);
   console.log(`[ModalManager] Modal computed style opacity:`, styles.opacity);
   console.log(`[ModalManager] Modal computed style display:`, styles.display);
 

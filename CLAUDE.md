@@ -3,13 +3,15 @@
 ## 🎯 START-TRIGGER (WICHTIGSTE SEKTION!)
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
+
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen
 - **Prozess:** Alle Starttasks, TodoWrite mit 9 Punkten, komplette Checks
 - **Ziel:** Sicherstellen, dass alles korrekt läuft
 
 ### Trigger 2: "weitermachen mit Assixx und skip" (Quick-Start-Modus)
+
 - **Aktion:** Minimale Vorbereitung für sofortige Arbeit
-- **Prozess:** 
+- **Prozess:**
   1. TODO.md lesen (nur TL;DR Section)
   2. README.md lesen (kurz)
   3. CLAUDE.md + CLAUDE.local.md (bereits automatisch geladen)

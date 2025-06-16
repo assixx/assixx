@@ -1,17 +1,17 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  preset: "ts-jest",
-  testEnvironment: "node",
+  preset: 'ts-jest',
+  testEnvironment: 'node',
   transform: {
-    "^.+\\.tsx?$": [
-      "ts-jest",
+    '^.+\\.tsx?$': [
+      'ts-jest',
       {
         tsconfig: {
-          module: "commonjs",
-          target: "es2020",
+          module: 'commonjs',
+          target: 'es2020',
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
-          moduleResolution: "node",
+          moduleResolution: 'node',
           resolveJsonModule: true,
           strict: false,
         },
@@ -19,11 +19,11 @@ module.exports = {
     ],
   },
   moduleNameMapper: {
-    "^(\\.{1,2}/.*)\\.js$": "$1",
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  testMatch: ["**/__tests__/**/*.test.ts", "**/__tests__/**/*.test.js"],
-  testPathIgnorePatterns: ["/node_modules/", "/dist/", "/build/"],
-  setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
+  testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.js'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/build/'],
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   maxWorkers: 1,
   testTimeout: 30000,
 };

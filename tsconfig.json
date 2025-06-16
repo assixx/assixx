@@ -45,6 +45,9 @@
     "backend/src/__tests__/**/*",
     "backend/src/**/__tests__/**/*",
     "backend/jest.config.js",
-    "backend/jest.config.cjs"
+    "backend/jest.config.cjs",
+    "frontend/eslint.config.js",
+    "backend/eslint.config.js",
+    "**/eslint.config.js"
   ]
 }

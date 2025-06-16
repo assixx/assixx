@@ -33,10 +33,7 @@ window.addEventListener('DOMContentLoaded', function () {
   if (userInfoDiv) {
     const observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
-        if (
-          mutation.type === 'childList' &&
-          mutation.target.id === 'user-info'
-        ) {
+        if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
           if (userInfoDiv.children.length === 0) {
             console.log('[Blackboard] Restoring user-info elements');
             userInfoDiv.innerHTML = '';
@@ -123,21 +120,13 @@ Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge ko
 ```html
 <div class="header-actions">
   <!-- Role Switch Button -->
-  <button
-    id="role-switch-btn"
-    class="btn-role-switch"
-    title="Als Mitarbeiter anzeigen"
-  >
+  <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
     <i class="fas fa-exchange-alt"></i>
     <span class="role-switch-text">Als Mitarbeiter</span>
   </button>
 
   <div id="user-info">
-    <img
-      id="user-avatar"
-      src="/assets/images/default-avatar.svg"
-      alt="Avatar"
-    />
+    <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" />
     <span id="user-name">Lade...</span>
     <span id="role-indicator" class="role-badge admin">Admin</span>
   </div>
@@ -162,15 +151,11 @@ window.addEventListener('DOMContentLoaded', function () {
 
     const observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
-        if (
-          mutation.type === 'childList' &&
-          mutation.target.id === 'user-info'
-        ) {
+        if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
           // Prüfe ob alle 3 Elemente vorhanden sind
           const currentAvatar = document.getElementById('user-avatar');
           const currentUserName = document.getElementById('user-name');
-          const currentRoleIndicator =
-            document.getElementById('role-indicator');
+          const currentRoleIndicator = document.getElementById('role-indicator');
 
           if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
             console.log('[Calendar] Restoring user-info elements');

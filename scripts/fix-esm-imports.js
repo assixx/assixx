@@ -36,5 +36,7 @@ async function fixImports(dir) {
 
 // Run the fix on the dist directory
 // Check if we're in backend directory or root
-const distPath = process.cwd().endsWith('/backend') ? './dist' : './backend/dist';
+const distPath = process.cwd().endsWith('/backend')
+  ? './dist'
+  : './backend/dist';
 fixImports(distPath).catch(console.error);

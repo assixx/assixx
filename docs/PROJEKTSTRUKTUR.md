@@ -446,7 +446,7 @@ frontend/
 │       │   └── fa-v4compatibility.woff2
 │       ├── blackboard.css
 │       ├── blackboard-update.css   # 🆕 Blackboard Update Styles
-│       ├── blackboard-widget.css   # 🆕 Blackboard Widget Styles  
+│       ├── blackboard-widget.css   # 🆕 Blackboard Widget Styles
 │       ├── calendar.css
 │       ├── chat-icons.css
 │       ├── dashboard-theme.css
