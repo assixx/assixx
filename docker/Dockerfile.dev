@@ -15,6 +15,14 @@ COPY package.json ./
 COPY pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
+# Frontend package files kopieren und installieren
+COPY frontend/package.json ./frontend/
+COPY frontend/pnpm-lock.yaml ./frontend/
+RUN cd frontend && pnpm install --frozen-lockfile
+
+# Scripts directory für ESM support
+COPY scripts/package.json ./scripts/
+
 # Der Rest wird über Volumes gemountet
 
 # Port
