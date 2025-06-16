@@ -90,7 +90,7 @@ docker exec -it assixx-mysql mysql -u root -p
 # Passwort: root_password_here (aus docker-compose.yml)
 
 # Datenbank-Schema anzeigen
-docker exec -it assixx-mysql mysql -u root -p assixx -e "SHOW TABLES;"
+docker exec -it assixx-mysql mysql -u root -p main -e "SHOW TABLES;"
 
 # Logs anzeigen
 docker-compose logs mysql
@@ -250,16 +250,16 @@ mysql -u root -p
 
 ```sql
 -- Datenbank und Benutzer erstellen
-CREATE DATABASE assixx_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE main CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'assixx_user'@'localhost' IDENTIFIED BY 'IhrSicheresPasswort123!';
-GRANT ALL PRIVILEGES ON assixx_db.* TO 'assixx_user'@'localhost';
+GRANT ALL PRIVILEGES ON main.* TO 'assixx_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
 ```bash
 # Datenbankschema importieren
-mysql -u assixx_user -p assixx_db < database-setup.sql
+mysql -u assixx_user -p main < database-setup.sql
 ```
 
 #### 7️⃣ .env-Datei konfigurieren
@@ -279,7 +279,7 @@ nano .env
 DB_HOST=localhost
 DB_USER=assixx_user
 DB_PASSWORD=IhrSicheresPasswort123!
-DB_NAME=assixx_db
+DB_NAME=main
 
 # Security Configuration (neue Secrets generieren!)
 JWT_SECRET=$(openssl rand -base64 64)
@@ -374,16 +374,16 @@ mysql -u root -p
 
 ```sql
 -- Datenbank und Benutzer erstellen
-CREATE DATABASE assixx_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE main CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'assixx_user'@'localhost' IDENTIFIED BY 'IhrSicheresPasswort123!';
-GRANT ALL PRIVILEGES ON assixx_db.* TO 'assixx_user'@'localhost';
+GRANT ALL PRIVILEGES ON main.* TO 'assixx_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
 ```powershell
 # Datenbankschema importieren
-Get-Content database-setup.sql | mysql -u assixx_user -p assixx_db
+Get-Content database-setup.sql | mysql -u assixx_user -p main
 ```
 
 #### 6️⃣ .env-Datei konfigurieren
@@ -721,7 +721,7 @@ PORT=3000
 DB_HOST=localhost
 DB_USER=assixx_user
 DB_PASSWORD=IhrSicheresPasswort123!
-DB_NAME=assixx_db
+DB_NAME=main
 
 # Security Configuration (NEUE SECRETS GENERIEREN!)
 JWT_SECRET=IhrJWTSecret64ZeichenLang...

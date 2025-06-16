@@ -6,7 +6,7 @@
 # Konfiguration
 BACKUP_DIR="/home/scs/projects/Assixx/backups"
 CONTAINER_NAME="assixx-mysql"
-DB_NAME="assixx"
+DB_NAME="main"
 DB_USER="root"
 DB_PASSWORD="StrongP@ssw0rd!123"
 RETENTION_DAYS=30  # Behalte Backups für 30 Tage
@@ -48,7 +48,7 @@ DAY_OF_WEEK=$(date +%u)  # 1=Montag, 7=Sonntag
 DAY_OF_MONTH=$(date +%d)
 
 # Basis-Dateiname
-BASE_FILENAME="assixx_backup_${TIMESTAMP}"
+BASE_FILENAME="main_backup_${TIMESTAMP}"
 
 # Tägliches Backup
 log "Erstelle tägliches Backup..."
@@ -70,14 +70,14 @@ fi
 # Wöchentliches Backup (Sonntags)
 if [ "$DAY_OF_WEEK" -eq 7 ]; then
     log "Erstelle wöchentliches Backup..."
-    cp "${DAILY_FILE}.gz" "$BACKUP_DIR/weekly/assixx_weekly_${TIMESTAMP}.sql.gz"
+    cp "${DAILY_FILE}.gz" "$BACKUP_DIR/weekly/main_weekly_${TIMESTAMP}.sql.gz"
     log "✅ Wöchentliches Backup erstellt"
 fi
 
 # Monatliches Backup (am 1. des Monats)
 if [ "$DAY_OF_MONTH" -eq "01" ]; then
     log "Erstelle monatliches Backup..."
-    cp "${DAILY_FILE}.gz" "$BACKUP_DIR/monthly/assixx_monthly_${TIMESTAMP}.sql.gz"
+    cp "${DAILY_FILE}.gz" "$BACKUP_DIR/monthly/main_monthly_${TIMESTAMP}.sql.gz"
     log "✅ Monatliches Backup erstellt"
 fi
 

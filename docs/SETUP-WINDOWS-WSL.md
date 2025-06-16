@@ -316,10 +316,10 @@ sudo mysql
 CREATE USER 'assixx_user'@'localhost' IDENTIFIED BY 'dein_sicheres_passwort';
 
 -- Datenbank erstellen
-CREATE DATABASE assixx_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE main CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Berechtigungen vergeben
-GRANT ALL PRIVILEGES ON assixx_db.* TO 'assixx_user'@'localhost';
+GRANT ALL PRIVILEGES ON main.* TO 'assixx_user'@'localhost';
 FLUSH PRIVILEGES;
 
 -- MySQL verlassen
@@ -379,7 +379,7 @@ cd ..
 
 ```bash
 # Schema importieren
-mysql -u assixx_user -p assixx_db < database-setup.sql
+mysql -u assixx_user -p main < database-setup.sql
 
 # Passwort eingeben wenn gefragt
 ```
@@ -406,7 +406,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=assixx_user
 DB_PASSWORD=dein_sicheres_passwort
-DB_NAME=assixx_db
+DB_NAME=main
 
 # JWT Secret (zufälligen String generieren)
 JWT_SECRET=hier_einen_sehr_langen_zufaelligen_string_eingeben

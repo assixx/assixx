@@ -3,7 +3,7 @@
 # Quick Backup Script - Für schnelle manuelle Backups
 
 CONTAINER_NAME="assixx-mysql"
-DB_NAME="assixx"
+DB_NAME="main"
 DB_USER="root"
 DB_PASSWORD="StrongP@ssw0rd!123"
 BACKUP_DIR="/home/scs/projects/Assixx/backups/quick"

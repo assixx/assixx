@@ -25,7 +25,7 @@ async function connectToMySQL(user, password) {
     dbs.forEach((db) => console.log(` - ${db.Database}`));
 
     // Optionally connect to a specific database if it exists
-    const assixxExists = dbs.some((db) => db.Database === "assixx");
+    const assixxExists = dbs.some((db) => db.Database === "main");
     if (assixxExists) {
       console.log("\nConnecting to assixx database...");
       await connection.query("USE assixx");

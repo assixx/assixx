@@ -6,7 +6,7 @@
 # Konfiguration
 BACKUP_DIR="/home/scs/projects/Assixx/backups"
 CONTAINER_NAME="assixx-mysql"
-DB_NAME="assixx"
+DB_NAME="main"
 DB_USER="root"
 DB_PASSWORD="StrongP@ssw0rd!123"
 
@@ -70,7 +70,7 @@ else
     for i in "${!DAILY_FILES[@]}"; do
         FILE="${DAILY_FILES[$i]}"
         SIZE=$(ls -lh "$FILE" | awk '{print $5}')
-        DATE=$(basename "$FILE" | sed 's/assixx_backup_\([0-9]\{8\}\)_\([0-9]\{6\}\).*/\1 \2/' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\) \([0-9]\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3 \4:\5:\6/')
+        DATE=$(basename "$FILE" | sed 's/main_backup_\([0-9]\{8\}\)_\([0-9]\{6\}\).*/\1 \2/' | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\) \([0-9]\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3 \4:\5:\6/')
         echo "  [$((i+1))] $(basename "$FILE") - $DATE ($SIZE)"
     done
     

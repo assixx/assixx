@@ -14,4 +14,4 @@ if [ ! -f "../database/migrations/$MIGRATION_FILE" ]; then
 fi
 
 echo "Running migration: $MIGRATION_FILE"
-cat "../database/migrations/$MIGRATION_FILE" | docker-compose exec -T mysql mysql -u root -pStrongP@ssw0rd!123 assixx
+cat "../database/migrations/$MIGRATION_FILE" | docker-compose exec -T mysql mysql -u root -pStrongP@ssw0rd!123 main

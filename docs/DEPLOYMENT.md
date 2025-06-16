@@ -35,7 +35,7 @@ DB_HOST=mysql
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your-secure-password
-DB_NAME=assixx_core
+DB_NAME=main
 
 # Application
 NODE_ENV=production

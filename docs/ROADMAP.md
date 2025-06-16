@@ -207,8 +207,60 @@ Siehe [FEATURES.md](./FEATURES.md) für Details zu allen 7 Live-Features.
 - **Code-Qualität:** 80% Test Coverage
 - **Bug-Rate:** < 5 kritische Bugs pro Monat
 
+## 🔒 Database Security & Scalability Roadmap
+
+### Phase 1: Current (Multi-Tenant Single DB) ✅
+- **Status:** Implementiert
+- **Row-Level Security:** tenant_id in allen Tabellen
+- **Isolation:** Middleware-basiert
+- **Backup:** Automatisiert täglich
+
+### Phase 2: Pre-Production Security (Q3 2025)
+- [ ] **Encryption at Rest**
+  - [ ] MySQL Table Encryption aktivieren
+  - [ ] `ALTER DATABASE main ENCRYPTION='Y'`
+  - [ ] Verschlüsselte Backups
+- [ ] **SSL/TLS für DB-Verbindungen**
+  - [ ] MySQL SSL Zertifikate
+  - [ ] Erzwungene verschlüsselte Verbindungen
+- [ ] **Audit Logging**
+  - [ ] Alle DB-Zugriffe protokollieren
+  - [ ] Compliance-Reports
+
+### Phase 3: Regional Sharding (bei 100+ Kunden)
+- [ ] **Regional Data Residency**
+  - [ ] EU-Datenbank für DSGVO
+  - [ ] US-Datenbank für US-Kunden
+  - [ ] Tenant-Tabelle: `region` Spalte
+- [ ] **Latenz-Optimierung**
+  - [ ] Kunden-nahe Datenbanken
+  - [ ] Read-Replicas pro Region
+
+### Phase 4: Enterprise Features (bei 1000+ Kunden)
+- [ ] **Tenant-spezifische Encryption Keys**
+  - [ ] AWS KMS oder Azure Key Vault Integration
+  - [ ] Key-Rotation pro Tenant
+- [ ] **Resource Stamps Pattern**
+  - [ ] Tenant-Gruppen mit max. 1000 Tenants
+  - [ ] Isolierte DB-Cluster
+- [ ] **Dedicated Instance Option**
+  - [ ] Enterprise-Kunden: Eigene DB
+  - [ ] Premium-Pricing-Modell
+
+### Phase 5: Advanced Compliance (2026+)
+- [ ] **BYOK (Bring Your Own Key)**
+  - [ ] Kunden verwalten eigene Encryption Keys
+- [ ] **Geo-Redundancy**
+  - [ ] Multi-Region Failover
+  - [ ] Zero-Downtime Updates
+- [ ] **Compliance Zertifizierungen**
+  - [ ] SOC 2 Type II
+  - [ ] ISO 27001
+  - [ ] HIPAA (für Gesundheitskunden)
+
 ## 🔗 Verwandte Dokumente
 
 - [TODO.md](./TODO.md) - Aktuelle Aufgaben
 - [FEATURES.md](./FEATURES.md) - Feature-Details
 - [SECURITY-IMPROVEMENTS.md](./server/SECURITY-IMPROVEMENTS.md) - Security Roadmap
+- [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) - DB Migration Guide

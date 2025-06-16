@@ -13,7 +13,7 @@ async function runMigration() {
     host: process.env.DB_HOST || "mysql",
     user: process.env.DB_USER || "assixx_user",
     password: process.env.DB_PASSWORD || "AssixxP@ss2025!",
-    database: process.env.DB_NAME || "assixx",
+    database: process.env.DB_NAME || "main",
     multipleStatements: true,
   });
 

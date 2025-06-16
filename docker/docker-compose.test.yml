@@ -7,7 +7,7 @@ services:
     command: --sql-mode=""
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-assixx}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-main}
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
     ports:
@@ -35,7 +35,7 @@ services:
       DB_PORT: 3306
       DB_USER: ${MYSQL_USER:-assixx_user}
       DB_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
-      DB_NAME: ${MYSQL_DATABASE:-assixx}
+      DB_NAME: ${MYSQL_DATABASE:-main}
       JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
       SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
       SMTP_HOST: ${SMTP_HOST}

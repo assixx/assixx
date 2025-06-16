@@ -16,8 +16,8 @@ cat > "$OUTPUT_FILE" << 'HEADER'
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Create database if not exists
-CREATE DATABASE IF NOT EXISTS assixx CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE assixx;
+CREATE DATABASE IF NOT EXISTS main CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE main;
 
 HEADER
 
