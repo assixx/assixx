@@ -3,14 +3,14 @@
  * Handles document business logic
  */
 
-import * as path from "path";
-import { promises as fs } from "fs";
-import { fileURLToPath } from "url";
-import Document from "../models/document";
-import { logger } from "../utils/logger";
-import { formatPaginationResponse } from "../utils/helpers";
-import pool from "../database";
-import { RowDataPacket } from "mysql2/promise";
+import * as path from 'path';
+import { promises as fs } from 'fs';
+import { fileURLToPath } from 'url';
+import Document from '../models/document';
+import { logger } from '../utils/logger';
+import { formatPaginationResponse } from '../utils/helpers';
+import pool from '../database';
+import { RowDataPacket } from 'mysql2/promise';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 import type {
   DocumentCreateData as ModelDocumentCreateData,
   DocumentUpdateData as ModelDocumentUpdateData,
-} from "../models/document";
+} from '../models/document';
 
 // Service-specific interfaces
 interface DocumentData extends RowDataPacket {
@@ -55,7 +55,7 @@ interface GetDocumentsOptions {
   tenantId: number;
   category?: string;
   userId?: number;
-  scope?: "all" | "company" | "department" | "team" | "personal";
+  scope?: 'all' | 'company' | 'department' | 'team' | 'personal';
   departmentId?: number;
   teamId?: number;
   limit: number;
@@ -108,7 +108,7 @@ class DocumentService {
   private uploadDir: string;
 
   constructor() {
-    this.uploadDir = path.join(__dirname, "../../../uploads/documents");
+    this.uploadDir = path.join(__dirname, '../../../uploads/documents');
   }
 
   /**
@@ -165,20 +165,20 @@ class DocumentService {
       const params: any[] = [userId, userId, tenantId];
 
       // Add scope-based filters
-      if (scope && scope !== "all") {
+      if (scope && scope !== 'all') {
         switch (scope) {
-          case "company":
+          case 'company':
             query += ` AND d.recipient_type = 'company'`;
             break;
-          case "department":
+          case 'department':
             query += ` AND d.recipient_type = 'department' AND d.department_id = ?`;
             params.push(departmentId);
             break;
-          case "team":
+          case 'team':
             query += ` AND d.recipient_type = 'team' AND d.team_id = ?`;
             params.push(teamId);
             break;
-          case "personal":
+          case 'personal':
             query += ` AND d.recipient_type = 'user' AND d.user_id = ?`;
             params.push(userId);
             break;
@@ -196,8 +196,8 @@ class DocumentService {
 
       // Get total count
       const countQuery =
-        query.replace("SELECT", "SELECT COUNT(*) as total FROM (SELECT") +
-        ") as subquery";
+        query.replace('SELECT', 'SELECT COUNT(*) as total FROM (SELECT') +
+        ') as subquery';
       const countResult = await (pool as any).query(countQuery, params);
       const countRows =
         Array.isArray(countResult) && countResult.length === 2
@@ -220,11 +220,11 @@ class DocumentService {
         pagination: formatPaginationResponse(
           total,
           Math.floor(offset / limit) + 1,
-          limit,
+          limit
         ),
       };
     } catch (error) {
-      logger.error("Error in document service getDocuments:", error);
+      logger.error('Error in document service getDocuments:', error);
       throw error;
     }
   }
@@ -234,7 +234,7 @@ class DocumentService {
    */
   async getDocumentById(
     documentId: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<DocumentData | null> {
     try {
       const doc = await Document.findById(documentId);
@@ -246,20 +246,20 @@ class DocumentService {
         name: doc.file_name,
         filename: doc.file_name,
         file_name: doc.file_name,
-        mimetype: "application/pdf", // Default for now
-        mime_type: "application/pdf",
+        mimetype: 'application/pdf', // Default for now
+        mime_type: 'application/pdf',
         size: 0, // Would need to be calculated
         file_size: 0,
         uploaded_by: doc.user_id,
-        category: doc.category || "other",
-        recipient_type: "user", // Default
-        scope: "personal", // Default
+        category: doc.category || 'other',
+        recipient_type: 'user', // Default
+        scope: 'personal', // Default
         created_at: doc.upload_date?.toISOString() || new Date().toISOString(),
         updated_at: doc.upload_date?.toISOString() || new Date().toISOString(),
         is_deleted: doc.is_archived || false,
       } as DocumentData;
     } catch (error) {
-      logger.error("Error in document service getDocumentById:", error);
+      logger.error('Error in document service getDocumentById:', error);
       throw error;
     }
   }
@@ -268,7 +268,7 @@ class DocumentService {
    * Create new document record
    */
   async createDocument(
-    documentData: ServiceDocumentCreateData,
+    documentData: ServiceDocumentCreateData
   ): Promise<DocumentData | null> {
     try {
       const modelData: ModelDocumentCreateData = {
@@ -284,7 +284,7 @@ class DocumentService {
       const documentId = await Document.create(modelData);
       return await this.getDocumentById(documentId, documentData.tenantId);
     } catch (error) {
-      logger.error("Error in document service createDocument:", error);
+      logger.error('Error in document service createDocument:', error);
       throw error;
     }
   }
@@ -295,7 +295,7 @@ class DocumentService {
   async updateDocument(
     documentId: number,
     updateData: ServiceDocumentUpdateData,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       // Check if document exists
@@ -314,7 +314,7 @@ class DocumentService {
       await Document.update(documentId, modelUpdateData);
       return true;
     } catch (error) {
-      logger.error("Error in document service updateDocument:", error);
+      logger.error('Error in document service updateDocument:', error);
       throw error;
     }
   }
@@ -335,14 +335,14 @@ class DocumentService {
         const filePath = path.join(this.uploadDir, document.filename);
         await fs.unlink(filePath);
       } catch (fileError) {
-        logger.warn("Error deleting file:", fileError);
+        logger.warn('Error deleting file:', fileError);
       }
 
       // Delete database record
       await Document.delete(documentId);
       return true;
     } catch (error) {
-      logger.error("Error in document service deleteDocument:", error);
+      logger.error('Error in document service deleteDocument:', error);
       throw error;
     }
   }
@@ -358,7 +358,7 @@ class DocumentService {
       await fs.access(filePath);
       return filePath;
     } catch {
-      throw new Error("File not found");
+      throw new Error('File not found');
     }
   }
 
@@ -367,7 +367,7 @@ class DocumentService {
    */
   async getDocumentsByUser(
     userId: number,
-    _tenantId: number,
+    _tenantId: number
   ): Promise<DocumentData[]> {
     try {
       const dbDocuments = await Document.findByUserId(userId);
@@ -379,22 +379,22 @@ class DocumentService {
             name: doc.file_name,
             filename: doc.file_name,
             file_name: doc.file_name,
-            mimetype: "application/pdf", // Default for now
-            mime_type: "application/pdf",
+            mimetype: 'application/pdf', // Default for now
+            mime_type: 'application/pdf',
             size: 0, // Would need to be calculated
             file_size: 0,
             uploaded_by: doc.user_id,
-            description: doc.description || "",
-            category: doc.category || "other",
-            recipient_type: "user", // Default
-            scope: "personal", // Default
+            description: doc.description || '',
+            category: doc.category || 'other',
+            recipient_type: 'user', // Default
+            scope: 'personal', // Default
             created_at: doc.upload_date.toISOString(),
             updated_at: doc.upload_date.toISOString(),
             is_deleted: doc.is_archived || false,
-          }) as DocumentData,
+          }) as DocumentData
       );
     } catch (error) {
-      logger.error("Error in document service getDocumentsByUser:", error);
+      logger.error('Error in document service getDocumentsByUser:', error);
       throw error;
     }
   }
@@ -421,7 +421,7 @@ class DocumentService {
             : 0,
       };
     } catch (error) {
-      logger.error("Error in document service getDocumentStats:", error);
+      logger.error('Error in document service getDocumentStats:', error);
       throw error;
     }
   }
@@ -432,7 +432,7 @@ class DocumentService {
   async markDocumentAsRead(
     documentId: number,
     userId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       const query = `
@@ -444,7 +444,7 @@ class DocumentService {
       await (pool as any).query(query, [documentId, userId, tenantId]);
       return true;
     } catch (error) {
-      logger.error("Error marking document as read:", error);
+      logger.error('Error marking document as read:', error);
       return false;
     }
   }

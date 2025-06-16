@@ -3,12 +3,12 @@
  * API endpoints for shift planning system
  */
 
-import express, { Router, Request } from "express";
-import { authenticateToken } from "../auth";
+import express, { Router, Request } from 'express';
+import { authenticateToken } from '../auth';
 
 // Import models (now ES modules)
-import Shift, { ShiftPlanFilters, ShiftExchangeFilters } from "../models/shift";
-import db from "../database";
+import Shift, { ShiftPlanFilters, ShiftExchangeFilters } from '../models/shift';
+import db from '../database';
 
 const router: Router = express.Router();
 
@@ -177,7 +177,7 @@ interface ShiftWeeklyNotesSetRequest extends AuthenticatedRequest {
  * Get all shift templates
  * GET /api/shifts/templates
  */
-router.get("/templates", authenticateToken, async (req, res): Promise<void> => {
+router.get('/templates', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     // Use default tenant ID 1 for now (can be improved later)
@@ -185,10 +185,10 @@ router.get("/templates", authenticateToken, async (req, res): Promise<void> => {
     const templates = await Shift.getShiftTemplates(tenantId);
     res.json({ templates });
   } catch (error: any) {
-    console.error("Error fetching shift templates:", error);
+    console.error('Error fetching shift templates:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Schichtvorlagen",
+      message: 'Fehler beim Laden der Schichtvorlagen',
     });
   }
 });
@@ -198,17 +198,17 @@ router.get("/templates", authenticateToken, async (req, res): Promise<void> => {
  * POST /api/shifts/templates
  */
 router.post(
-  "/templates",
+  '/templates',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
       // Check if user has permission to create templates (admin, manager, team_lead)
       const userRole = authReq.user.role;
-      if (!["admin", "root", "manager", "team_lead"].includes(userRole)) {
+      if (!['admin', 'root', 'manager', 'team_lead'].includes(userRole)) {
         res.status(403).json({
           success: false,
-          message: "Keine Berechtigung zum Erstellen von Schichtvorlagen",
+          message: 'Keine Berechtigung zum Erstellen von Schichtvorlagen',
         });
         return;
       }
@@ -222,24 +222,24 @@ router.post(
       const template = await Shift.createShiftTemplate(templateData);
       res.status(201).json({
         success: true,
-        message: "Schichtvorlage erfolgreich erstellt",
+        message: 'Schichtvorlage erfolgreich erstellt',
         template,
       });
     } catch (error: any) {
-      console.error("Error creating shift template:", error);
+      console.error('Error creating shift template:', error);
       res.status(500).json({
         success: false,
-        message: error.message || "Fehler beim Erstellen der Schichtvorlage",
+        message: error.message || 'Fehler beim Erstellen der Schichtvorlage',
       });
     }
-  },
+  }
 );
 
 /**
  * Get all shift plans
  * GET /api/shifts/plans
  */
-router.get("/plans", authenticateToken, async (req, res): Promise<void> => {
+router.get('/plans', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const options: ShiftPlanFilters = {
@@ -254,10 +254,10 @@ router.get("/plans", authenticateToken, async (req, res): Promise<void> => {
         : undefined,
       end_date: req.query.end_date ? String(req.query.end_date) : undefined,
       status: req.query.status
-        ? (String(req.query.status) as "draft" | "published" | "archived")
+        ? (String(req.query.status) as 'draft' | 'published' | 'archived')
         : undefined,
-      page: parseInt(String(req.query.page || "1"), 10),
-      limit: parseInt(String(req.query.limit || "20"), 10),
+      page: parseInt(String(req.query.page || '1'), 10),
+      limit: parseInt(String(req.query.limit || '20'), 10),
     };
 
     // Use the actual model function
@@ -266,10 +266,10 @@ router.get("/plans", authenticateToken, async (req, res): Promise<void> => {
     const result = await Shift.getShiftPlans(tenantId, userId, options);
     res.json(result);
   } catch (error: any) {
-    console.error("Error fetching shift plans:", error);
+    console.error('Error fetching shift plans:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Schichtpläne",
+      message: 'Fehler beim Laden der Schichtpläne',
     });
   }
 });
@@ -278,15 +278,15 @@ router.get("/plans", authenticateToken, async (req, res): Promise<void> => {
  * Create a new shift plan
  * POST /api/shifts/plans
  */
-router.post("/plans", authenticateToken, async (req, res): Promise<void> => {
+router.post('/plans', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     // Check if user has permission to create plans (admin, manager, team_lead)
     const userRole = authReq.user.role;
-    if (!["admin", "root", "manager", "team_lead"].includes(userRole)) {
+    if (!['admin', 'root', 'manager', 'team_lead'].includes(userRole)) {
       res.status(403).json({
         success: false,
-        message: "Keine Berechtigung zum Erstellen von Schichtplänen",
+        message: 'Keine Berechtigung zum Erstellen von Schichtplänen',
       });
       return;
     }
@@ -296,7 +296,7 @@ router.post("/plans", authenticateToken, async (req, res): Promise<void> => {
     if (!name || !start_date || !end_date) {
       res.status(400).json({
         success: false,
-        message: "Name, Startdatum und Enddatum sind erforderlich",
+        message: 'Name, Startdatum und Enddatum sind erforderlich',
       });
       return;
     }
@@ -311,14 +311,14 @@ router.post("/plans", authenticateToken, async (req, res): Promise<void> => {
     const plan = await Shift.createShiftPlan(planData);
     res.status(201).json({
       success: true,
-      message: "Schichtplan erfolgreich erstellt",
+      message: 'Schichtplan erfolgreich erstellt',
       plan,
     });
   } catch (error: any) {
-    console.error("Error creating shift plan:", error);
+    console.error('Error creating shift plan:', error);
     res.status(500).json({
       success: false,
-      message: error.message || "Fehler beim Erstellen des Schichtplans",
+      message: error.message || 'Fehler beim Erstellen des Schichtplans',
     });
   }
 });
@@ -328,7 +328,7 @@ router.post("/plans", authenticateToken, async (req, res): Promise<void> => {
  * GET /api/shifts/plans/:planId/shifts
  */
 router.get(
-  "/plans/:planId/shifts",
+  '/plans/:planId/shifts',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -337,31 +337,31 @@ router.get(
       const shifts = await Shift.getShiftsByPlan(
         planId,
         authReq.user.tenant_id || 1,
-        authReq.user.id,
+        authReq.user.id
       );
       res.json({ shifts });
     } catch (error: any) {
-      console.error("Error fetching shifts for plan:", error);
+      console.error('Error fetching shifts for plan:', error);
       res.status(500).json({
         success: false,
-        message: error.message || "Fehler beim Laden der Schichten",
+        message: error.message || 'Fehler beim Laden der Schichten',
       });
     }
-  },
+  }
 );
 
 /**
  * Get shifts for date range
  * GET /api/shifts?start=...&end=...
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     const { start, end } = req.query;
 
     if (!start || !end) {
       res.status(400).json({
         success: false,
-        message: "Start- und Enddatum sind erforderlich",
+        message: 'Start- und Enddatum sind erforderlich',
       });
       return;
     }
@@ -371,8 +371,8 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
     const endDate = new Date(String(end));
 
     // Format dates for SQL query
-    const startStr = startDate.toISOString().split("T")[0];
-    const endStr = endDate.toISOString().split("T")[0];
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
 
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id || 1;
@@ -410,20 +410,20 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
       const queryParams: any[] = [tenantId, startStr, endStr];
 
       // For employees, filter by their department
-      if (authReq.user.role === "employee") {
+      if (authReq.user.role === 'employee') {
         // First get the employee's department
         const [userRows] = await (db as any).execute(
-          "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
-          [authReq.user.id, tenantId],
+          'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+          [authReq.user.id, tenantId]
         );
 
         if (userRows.length > 0 && userRows[0].department_id) {
-          query += " AND s.department_id = ?";
+          query += ' AND s.department_id = ?';
           queryParams.push(userRows[0].department_id);
         }
       }
 
-      query += " ORDER BY s.date, s.start_time";
+      query += ' ORDER BY s.date, s.start_time';
 
       const [rows] = await (db as any).execute(query, queryParams);
 
@@ -432,7 +432,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
         shifts: rows || [],
       });
     } catch (error) {
-      console.error("Error fetching shifts:", error);
+      console.error('Error fetching shifts:', error);
       // Return empty array on error
       res.json({
         success: true,
@@ -440,10 +440,10 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
       });
     }
   } catch (error: any) {
-    console.error("Error fetching shifts:", error);
+    console.error('Error fetching shifts:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Schichten",
+      message: 'Fehler beim Laden der Schichten',
     });
   }
 });
@@ -452,21 +452,21 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * Get shift notes for a week
  * GET /api/shifts/notes?week=...
  */
-router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
+router.get('/notes', authenticateToken, async (req, res): Promise<void> => {
   try {
     const { week, department_id } = req.query;
 
     if (!week) {
       res.status(400).json({
         success: false,
-        message: "Woche ist erforderlich",
+        message: 'Woche ist erforderlich',
       });
       return;
     }
 
     // Parse week date
     const weekDate = new Date(String(week));
-    const weekStart = weekDate.toISOString().split("T")[0];
+    const weekStart = weekDate.toISOString().split('T')[0];
 
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id || 1;
@@ -475,10 +475,10 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
       let departmentId: number | null = null;
 
       // For employees, get their department
-      if (authReq.user.role === "employee") {
+      if (authReq.user.role === 'employee') {
         const [userRows] = await (db as any).execute(
-          "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
-          [authReq.user.id, tenantId],
+          'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+          [authReq.user.id, tenantId]
         );
         if (userRows.length > 0 && userRows[0].department_id) {
           departmentId = userRows[0].department_id;
@@ -490,11 +490,11 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
 
       if (!departmentId) {
         console.log(
-          "[SHIFTS NOTES] No department_id available, returning empty notes",
+          '[SHIFTS NOTES] No department_id available, returning empty notes'
         );
         res.json({
           success: true,
-          notes: "",
+          notes: '',
         });
         return;
       }
@@ -509,7 +509,7 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
         LIMIT 1
       `;
 
-      console.log("[SHIFTS NOTES] Querying notes:", {
+      console.log('[SHIFTS NOTES] Querying notes:', {
         tenantId,
         departmentId,
         weekStart,
@@ -519,23 +519,23 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
         departmentId,
         weekStart,
       ]);
-      console.log("[SHIFTS NOTES] Query result rows:", rows);
+      console.log('[SHIFTS NOTES] Query result rows:', rows);
 
-      let notes = "";
+      let notes = '';
       if (rows && rows.length > 0 && rows[0].notes) {
         // Convert Buffer to string if necessary
         if (Buffer.isBuffer(rows[0].notes)) {
-          notes = rows[0].notes.toString("utf8");
-          console.log("[SHIFTS NOTES] Converted buffer to string:", notes);
+          notes = rows[0].notes.toString('utf8');
+          console.log('[SHIFTS NOTES] Converted buffer to string:', notes);
         } else if (
-          typeof rows[0].notes === "object" &&
-          rows[0].notes.type === "Buffer"
+          typeof rows[0].notes === 'object' &&
+          rows[0].notes.type === 'Buffer'
         ) {
           // Handle the case where it's a plain object with Buffer data
-          notes = Buffer.from(rows[0].notes.data).toString("utf8");
+          notes = Buffer.from(rows[0].notes.data).toString('utf8');
           console.log(
-            "[SHIFTS NOTES] Converted buffer object to string:",
-            notes,
+            '[SHIFTS NOTES] Converted buffer object to string:',
+            notes
           );
         } else {
           notes = rows[0].notes;
@@ -543,28 +543,28 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
       }
 
       console.log(
-        "[SHIFTS NOTES] Found notes:",
-        notes ? `Yes: "${notes}"` : "No",
+        '[SHIFTS NOTES] Found notes:',
+        notes ? `Yes: "${notes}"` : 'No'
       );
-      console.log("[SHIFTS NOTES] Returning notes:", notes);
+      console.log('[SHIFTS NOTES] Returning notes:', notes);
 
       res.json({
         success: true,
-        notes: notes || "",
+        notes: notes || '',
       });
     } catch (error) {
-      console.error("Error fetching shift notes:", error);
+      console.error('Error fetching shift notes:', error);
       // Return empty notes on error
       res.json({
         success: true,
-        notes: "",
+        notes: '',
       });
     }
   } catch (error: any) {
-    console.error("Error fetching shift notes:", error);
+    console.error('Error fetching shift notes:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Notizen",
+      message: 'Fehler beim Laden der Notizen',
     });
   }
 });
@@ -573,15 +573,15 @@ router.get("/notes", authenticateToken, async (req, res): Promise<void> => {
  * Create a new shift or save weekly shift plan
  * POST /api/shifts
  */
-router.post("/", authenticateToken, async (req, res): Promise<void> => {
+router.post('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     // Check if user has permission to create shifts (admin, manager, team_lead)
     const userRole = authReq.user.role;
-    if (!["admin", "root", "manager", "team_lead"].includes(userRole)) {
+    if (!['admin', 'root', 'manager', 'team_lead'].includes(userRole)) {
       res.status(403).json({
         success: false,
-        message: "Keine Berechtigung zum Erstellen von Schichten",
+        message: 'Keine Berechtigung zum Erstellen von Schichten',
       });
       return;
     }
@@ -593,12 +593,12 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
     if (week_start && week_end && assignments) {
       // Validate that all assignments have department_id
       const invalidAssignments = assignments.filter(
-        (a: any) => !a.department_id,
+        (a: any) => !a.department_id
       );
       if (invalidAssignments.length > 0) {
         res.status(400).json({
           success: false,
-          message: "Abteilung muss für alle Schichten ausgewählt werden",
+          message: 'Abteilung muss für alle Schichten ausgewählt werden',
         });
         return;
       }
@@ -634,18 +634,18 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
         for (const assignment of assignments) {
           // First create the shift
           const shiftTimes = {
-            early: { start: "06:00:00", end: "14:00:00" },
-            late: { start: "14:00:00", end: "22:00:00" },
-            night: { start: "22:00:00", end: "06:00:00" },
+            early: { start: '06:00:00', end: '14:00:00' },
+            late: { start: '14:00:00', end: '22:00:00' },
+            night: { start: '22:00:00', end: '06:00:00' },
           };
           const shiftTime = shiftTimes[
             assignment.shift_type as keyof typeof shiftTimes
-          ] || { start: "08:00:00", end: "16:00:00" };
+          ] || { start: '08:00:00', end: '16:00:00' };
 
           // Convert date and time to datetime
           const startDateTime = `${assignment.shift_date} ${shiftTime.start}`;
           const endDateTime =
-            assignment.shift_type === "night"
+            assignment.shift_type === 'night'
               ? `${assignment.shift_date} ${shiftTime.end}` // Night shift ends next day at 6am, handle this later
               : `${assignment.shift_date} ${shiftTime.end}`;
 
@@ -662,7 +662,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
               1, // required_employees
               assignment.department_id || null,
               authReq.user.id,
-            ],
+            ]
           );
 
           const shiftId = shiftResult.insertId;
@@ -671,7 +671,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
           await connection.execute(
             `INSERT INTO shift_assignments (tenant_id, shift_id, user_id, assignment_type, status, assigned_by)
              VALUES (?, ?, ?, 'assigned', 'accepted', ?)`,
-            [tenantId, shiftId, assignment.employee_id, authReq.user.id],
+            [tenantId, shiftId, assignment.employee_id, authReq.user.id]
           );
         }
 
@@ -682,12 +682,12 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
           assignments[0].department_id
         ) {
           // Ensure notes is a string
-          const notesString = notes || "";
-          console.log("[SHIFTS SAVE] Saving weekly notes:", {
+          const notesString = notes || '';
+          console.log('[SHIFTS SAVE] Saving weekly notes:', {
             tenantId,
             departmentId: assignments[0].department_id,
             weekStart: week_start,
-            notes: notesString ? "Yes" : "Empty",
+            notes: notesString ? 'Yes' : 'Empty',
           });
 
           await connection.execute(
@@ -700,7 +700,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
               week_start,
               notesString,
               authReq.user.id,
-            ],
+            ]
           );
         }
 
@@ -709,7 +709,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
 
         res.json({
           success: true,
-          message: "Schichtplan erfolgreich gespeichert",
+          message: 'Schichtplan erfolgreich gespeichert',
         });
       } catch (error) {
         // Rollback on error
@@ -730,15 +730,15 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       const shift = await Shift.createShift(shiftData);
       res.status(201).json({
         success: true,
-        message: "Schicht erfolgreich erstellt",
+        message: 'Schicht erfolgreich erstellt',
         shift,
       });
     }
   } catch (error: any) {
-    console.error("Error creating shift:", error);
+    console.error('Error creating shift:', error);
     res.status(500).json({
       success: false,
-      message: error.message || "Fehler beim Erstellen der Schicht",
+      message: error.message || 'Fehler beim Erstellen der Schicht',
     });
   }
 });
@@ -748,17 +748,17 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
  * POST /api/shifts/:shiftId/assign
  */
 router.post(
-  "/:shiftId/assign",
+  '/:shiftId/assign',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;
       // Check if user has permission to assign shifts (admin, manager, team_lead)
       const userRole = authReq.user.role;
-      if (!["admin", "root", "manager", "team_lead"].includes(userRole)) {
+      if (!['admin', 'root', 'manager', 'team_lead'].includes(userRole)) {
         res.status(403).json({
           success: false,
-          message: "Keine Berechtigung zum Zuweisen von Schichten",
+          message: 'Keine Berechtigung zum Zuweisen von Schichten',
         });
         return;
       }
@@ -774,17 +774,17 @@ router.post(
       const assignment = await Shift.assignEmployeeToShift(assignmentData);
       res.status(201).json({
         success: true,
-        message: "Mitarbeiter erfolgreich zugewiesen",
+        message: 'Mitarbeiter erfolgreich zugewiesen',
         assignment,
       });
     } catch (error: any) {
-      console.error("Error assigning employee to shift:", error);
+      console.error('Error assigning employee to shift:', error);
       res.status(500).json({
         success: false,
-        message: error.message || "Fehler beim Zuweisen des Mitarbeiters",
+        message: error.message || 'Fehler beim Zuweisen des Mitarbeiters',
       });
     }
-  },
+  }
 );
 
 /**
@@ -792,7 +792,7 @@ router.post(
  * GET /api/shifts/availability
  */
 router.get(
-  "/availability",
+  '/availability',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -802,7 +802,7 @@ router.get(
       if (!start_date || !end_date) {
         res.status(400).json({
           success: false,
-          message: "Start- und Enddatum sind erforderlich",
+          message: 'Start- und Enddatum sind erforderlich',
         });
         return;
       }
@@ -815,10 +815,10 @@ router.get(
       // Check if user can view this availability
       if (targetUserId !== authReq.user.id) {
         const userRole = authReq.user.role;
-        if (!["admin", "root", "manager", "team_lead"].includes(userRole)) {
+        if (!['admin', 'root', 'manager', 'team_lead'].includes(userRole)) {
           res.status(403).json({
             success: false,
-            message: "Keine Berechtigung zum Anzeigen der Verfügbarkeit",
+            message: 'Keine Berechtigung zum Anzeigen der Verfügbarkeit',
           });
           return;
         }
@@ -828,18 +828,18 @@ router.get(
         authReq.user.tenant_id || 1,
         targetUserId,
         String(start_date),
-        String(end_date),
+        String(end_date)
       );
 
       res.json({ availability });
     } catch (error: any) {
-      console.error("Error fetching employee availability:", error);
+      console.error('Error fetching employee availability:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Verfügbarkeit",
+        message: 'Fehler beim Laden der Verfügbarkeit',
       });
     }
-  },
+  }
 );
 
 /**
@@ -847,7 +847,7 @@ router.get(
  * POST /api/shifts/availability
  */
 router.post(
-  "/availability",
+  '/availability',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -861,10 +861,10 @@ router.post(
       // Check if user can set this availability
       if (availabilityData.user_id !== authReq.user.id) {
         const userRole = authReq.user.role;
-        if (!["admin", "root", "manager", "team_lead"].includes(userRole)) {
+        if (!['admin', 'root', 'manager', 'team_lead'].includes(userRole)) {
           res.status(403).json({
             success: false,
-            message: "Keine Berechtigung zum Setzen der Verfügbarkeit",
+            message: 'Keine Berechtigung zum Setzen der Verfügbarkeit',
           });
           return;
         }
@@ -874,17 +874,17 @@ router.post(
         await Shift.setEmployeeAvailability(availabilityData);
       res.json({
         success: true,
-        message: "Verfügbarkeit erfolgreich gesetzt",
+        message: 'Verfügbarkeit erfolgreich gesetzt',
         availability,
       });
     } catch (error: any) {
-      console.error("Error setting employee availability:", error);
+      console.error('Error setting employee availability:', error);
       res.status(500).json({
         success: false,
-        message: error.message || "Fehler beim Setzen der Verfügbarkeit",
+        message: error.message || 'Fehler beim Setzen der Verfügbarkeit',
       });
     }
-  },
+  }
 );
 
 /**
@@ -892,7 +892,7 @@ router.post(
  * GET /api/shifts/exchange-requests
  */
 router.get(
-  "/exchange-requests",
+  '/exchange-requests',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -900,29 +900,29 @@ router.get(
       const options: ShiftExchangeFilters = {
         status: req.query.status
           ? (String(req.query.status) as
-              | "pending"
-              | "approved"
-              | "rejected"
-              | "cancelled")
-          : "pending",
-        limit: parseInt(String(req.query.limit || "50"), 10),
+              | 'pending'
+              | 'approved'
+              | 'rejected'
+              | 'cancelled')
+          : 'pending',
+        limit: parseInt(String(req.query.limit || '50'), 10),
       };
 
       const requests = await Shift.getShiftExchangeRequests(
         authReq.user.tenant_id || 1,
         authReq.user.id,
-        options,
+        options
       );
 
       res.json({ requests });
     } catch (error: any) {
-      console.error("Error fetching shift exchange requests:", error);
+      console.error('Error fetching shift exchange requests:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Tauschbörse",
+        message: 'Fehler beim Laden der Tauschbörse',
       });
     }
-  },
+  }
 );
 
 /**
@@ -930,7 +930,7 @@ router.get(
  * POST /api/shifts/exchange-requests
  */
 router.post(
-  "/exchange-requests",
+  '/exchange-requests',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -944,24 +944,24 @@ router.post(
       const request = await Shift.createShiftExchangeRequest(requestData);
       res.status(201).json({
         success: true,
-        message: "Tauschantrag erfolgreich erstellt",
+        message: 'Tauschantrag erfolgreich erstellt',
         request,
       });
     } catch (error: any) {
-      console.error("Error creating shift exchange request:", error);
+      console.error('Error creating shift exchange request:', error);
       res.status(500).json({
         success: false,
-        message: error.message || "Fehler beim Erstellen des Tauschantrags",
+        message: error.message || 'Fehler beim Erstellen des Tauschantrags',
       });
     }
-  },
+  }
 );
 
 /**
  * Get employee shifts
  * GET /api/shifts/my-shifts
  */
-router.get("/my-shifts", authenticateToken, async (req, res): Promise<void> => {
+router.get('/my-shifts', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { start_date, end_date } = req.query;
@@ -969,7 +969,7 @@ router.get("/my-shifts", authenticateToken, async (req, res): Promise<void> => {
     if (!start_date || !end_date) {
       res.status(400).json({
         success: false,
-        message: "Start- und Enddatum sind erforderlich",
+        message: 'Start- und Enddatum sind erforderlich',
       });
       return;
     }
@@ -978,15 +978,15 @@ router.get("/my-shifts", authenticateToken, async (req, res): Promise<void> => {
       authReq.user.tenant_id || 1,
       authReq.user.id,
       String(start_date),
-      String(end_date),
+      String(end_date)
     );
 
     res.json({ shifts });
   } catch (error: any) {
-    console.error("Error fetching employee shifts:", error);
+    console.error('Error fetching employee shifts:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der eigenen Schichten",
+      message: 'Fehler beim Laden der eigenen Schichten',
     });
   }
 });
@@ -995,7 +995,7 @@ router.get("/my-shifts", authenticateToken, async (req, res): Promise<void> => {
  * Get dashboard summary for shift planning
  * GET /api/shifts/dashboard
  */
-router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
+router.get('/dashboard', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id || 1;
@@ -1009,23 +1009,23 @@ router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
     const upcomingShifts = await Shift.getEmployeeShifts(
       tenantId,
       userId,
-      today.toISOString().split("T")[0],
-      nextWeek.toISOString().split("T")[0],
+      today.toISOString().split('T')[0],
+      nextWeek.toISOString().split('T')[0]
     );
 
     // Get pending exchange requests
     const exchangeRequests = await Shift.getShiftExchangeRequests(
       tenantId,
       userId,
-      { status: "pending", limit: 5 },
+      { status: 'pending', limit: 5 }
     );
 
     // Get availability status for this week
     const availability = await Shift.getEmployeeAvailability(
       tenantId,
       userId,
-      today.toISOString().split("T")[0],
-      nextWeek.toISOString().split("T")[0],
+      today.toISOString().split('T')[0],
+      nextWeek.toISOString().split('T')[0]
     );
 
     res.json({
@@ -1036,15 +1036,15 @@ router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
         totalUpcomingShifts: upcomingShifts.length,
         pendingExchanges: exchangeRequests.length,
         availabilityDays: availability.filter(
-          (a: any) => a.availability_type === "available",
+          (a: any) => a.availability_type === 'available'
         ).length,
       },
     });
   } catch (error: any) {
-    console.error("Error fetching shift dashboard:", error);
+    console.error('Error fetching shift dashboard:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden des Schichtplan-Dashboards",
+      message: 'Fehler beim Laden des Schichtplan-Dashboards',
     });
   }
 });
@@ -1053,7 +1053,7 @@ router.get("/dashboard", authenticateToken, async (req, res): Promise<void> => {
  * Get weekly shifts with assignments
  * GET /api/shifts/weekly
  */
-router.get("/weekly", authenticateToken, async (req, res): Promise<void> => {
+router.get('/weekly', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { start_date, end_date } = req.query;
@@ -1061,7 +1061,7 @@ router.get("/weekly", authenticateToken, async (req, res): Promise<void> => {
     if (!start_date || !end_date) {
       res.status(400).json({
         success: false,
-        message: "Start- und Enddatum sind erforderlich",
+        message: 'Start- und Enddatum sind erforderlich',
       });
       return;
     }
@@ -1091,10 +1091,10 @@ router.get("/weekly", authenticateToken, async (req, res): Promise<void> => {
       shifts,
     });
   } catch (error: any) {
-    console.error("Error fetching weekly shifts:", error);
+    console.error('Error fetching weekly shifts:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Wochenschichten",
+      message: 'Fehler beim Laden der Wochenschichten',
     });
   }
 });
@@ -1104,7 +1104,7 @@ router.get("/weekly", authenticateToken, async (req, res): Promise<void> => {
  * GET /api/shifts/weekly-notes
  */
 router.get(
-  "/weekly-notes",
+  '/weekly-notes',
   authenticateToken as any,
   async (req: any, res: any): Promise<void> => {
     try {
@@ -1114,28 +1114,28 @@ router.get(
       if (!week || !year) {
         res.status(400).json({
           success: false,
-          message: "Week and year are required",
+          message: 'Week and year are required',
         });
         return;
       }
 
       // For now, return empty notes
-      res.json({ notes: "" });
+      res.json({ notes: '' });
     } catch (error: any) {
-      console.error("Error fetching weekly notes:", error);
+      console.error('Error fetching weekly notes:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Laden der Wochennotizen",
+        message: 'Fehler beim Laden der Wochennotizen',
       });
     }
-  },
+  }
 );
 
 /**
  * Save weekly notes
  * POST /api/shifts/notes
  */
-router.post("/notes", authenticateToken, async (req, res): Promise<void> => {
+router.post('/notes', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { week, notes, department_id } = req.body;
@@ -1143,21 +1143,21 @@ router.post("/notes", authenticateToken, async (req, res): Promise<void> => {
     if (!week) {
       res.status(400).json({
         success: false,
-        message: "Week date is required",
+        message: 'Week date is required',
       });
       return;
     }
 
     const tenantId = authReq.user.tenant_id || 1;
-    const weekDate = new Date(week).toISOString().split("T")[0];
+    const weekDate = new Date(week).toISOString().split('T')[0];
 
     let departmentId: number | null = null;
 
     // For employees, get their department
-    if (authReq.user.role === "employee") {
+    if (authReq.user.role === 'employee') {
       const [userRows] = await (db as any).execute(
-        "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
-        [authReq.user.id, tenantId],
+        'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+        [authReq.user.id, tenantId]
       );
       if (userRows.length > 0 && userRows[0].department_id) {
         departmentId = userRows[0].department_id;
@@ -1169,20 +1169,20 @@ router.post("/notes", authenticateToken, async (req, res): Promise<void> => {
 
     if (!departmentId) {
       console.error(
-        "[SHIFTS NOTES] No department_id available for saving notes",
+        '[SHIFTS NOTES] No department_id available for saving notes'
       );
       res.status(400).json({
         success: false,
-        message: "Abteilung ist erforderlich",
+        message: 'Abteilung ist erforderlich',
       });
       return;
     }
 
-    console.log("[SHIFTS NOTES] Saving notes:", {
+    console.log('[SHIFTS NOTES] Saving notes:', {
       tenantId,
       departmentId,
       weekDate,
-      notes: notes ? "Yes" : "No",
+      notes: notes ? 'Yes' : 'No',
     });
 
     // Insert or update notes
@@ -1198,19 +1198,19 @@ router.post("/notes", authenticateToken, async (req, res): Promise<void> => {
       tenantId,
       departmentId,
       weekDate,
-      notes || "",
+      notes || '',
       authReq.user.id,
     ]);
 
     res.json({
       success: true,
-      message: "Notizen gespeichert",
+      message: 'Notizen gespeichert',
     });
   } catch (error: any) {
-    console.error("Error saving weekly notes:", error);
+    console.error('Error saving weekly notes:', error);
     res.status(500).json({
       success: false,
-      message: "Fehler beim Speichern der Wochennotizen",
+      message: 'Fehler beim Speichern der Wochennotizen',
     });
   }
 });
@@ -1220,7 +1220,7 @@ router.post("/notes", authenticateToken, async (req, res): Promise<void> => {
  * POST /api/shifts/weekly-notes
  */
 router.post(
-  "/weekly-notes",
+  '/weekly-notes',
   authenticateToken,
   async (req, res): Promise<void> => {
     try {
@@ -1230,7 +1230,7 @@ router.post(
       if (!week || !year) {
         res.status(400).json({
           success: false,
-          message: "Week and year are required",
+          message: 'Week and year are required',
         });
         return;
       }
@@ -1239,7 +1239,7 @@ router.post(
       const weekDate = new Date();
       weekDate.setFullYear(parseInt(year));
       weekDate.setDate(weekDate.getDate() + (parseInt(week) - 1) * 7);
-      const weekStart = weekDate.toISOString().split("T")[0];
+      const weekStart = weekDate.toISOString().split('T')[0];
 
       const tenantId = authReq.user.tenant_id || 1;
 
@@ -1255,22 +1255,22 @@ router.post(
       await (db as any).execute(query, [
         tenantId,
         weekStart,
-        notes || "",
+        notes || '',
         authReq.user.id,
       ]);
 
       res.json({
         success: true,
-        message: "Notizen gespeichert",
+        message: 'Notizen gespeichert',
       });
     } catch (error: any) {
-      console.error("Error saving weekly notes:", error);
+      console.error('Error saving weekly notes:', error);
       res.status(500).json({
         success: false,
-        message: "Fehler beim Speichern der Wochennotizen",
+        message: 'Fehler beim Speichern der Wochennotizen',
       });
     }
-  },
+  }
 );
 
 export default router;
