@@ -59,7 +59,8 @@
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.3",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

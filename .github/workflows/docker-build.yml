@@ -78,7 +78,7 @@ jobs:
           # Wait for backend to be healthy (max 90 seconds)
           echo "Waiting for backend service to be healthy..."
           for i in {1..90}; do
-            if docker compose -f docker-compose.test.yml ps | grep -q "assixx-backend.*healthy"; then
+            if docker compose -f docker-compose.test.yml ps | grep "assixx-backend" | grep -q "(healthy)"; then
               echo "Backend service is healthy!"
               break
             fi
@@ -96,7 +96,7 @@ jobs:
           docker compose -f docker-compose.test.yml ps
           
           # If not healthy, show full logs
-          if ! docker compose -f docker-compose.test.yml ps | grep -q "assixx-backend.*healthy"; then
+          if ! docker compose -f docker-compose.test.yml ps | grep "assixx-backend" | grep -q "(healthy)"; then
             echo "Backend failed to become healthy. Full logs:"
             docker compose -f docker-compose.test.yml logs backend
           fi
