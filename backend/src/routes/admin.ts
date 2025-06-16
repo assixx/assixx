@@ -30,7 +30,7 @@ interface AuthenticatedAdminRequest extends Request {
     email: string;
     role: string;
   };
-  // eslint-disable-next-line no-undef
+
   file?: Express.Multer.File;
 }
 

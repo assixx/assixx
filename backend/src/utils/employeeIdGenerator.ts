@@ -1,7 +1,7 @@
 /**
  * Employee ID Generator
  * Format: DOMAINROLEIDDDMMYYYYHHMM
- * Example: SCSRT1012062025175​2
+ * Example: SCSRT10120620251752
  */
 
 /**
@@ -9,9 +9,9 @@
  */
 function getRoleAbbreviation(role: string): string {
   const roleMap: { [key: string]: string } = {
-    'root': 'RT',
-    'admin': 'AD',
-    'employee': 'EMP'
+    root: 'RT',
+    admin: 'AD',
+    employee: 'EMP',
   };
   return roleMap[role.toLowerCase()] || 'EMP';
 }
@@ -26,7 +26,7 @@ function getDateTimeString(): string {
   const yyyy = now.getFullYear();
   const hh = String(now.getHours()).padStart(2, '0');
   const min = String(now.getMinutes()).padStart(2, '0');
-  
+
   return `${dd}${mm}${yyyy}${hh}${min}`;
 }
 
@@ -35,7 +35,7 @@ function getDateTimeString(): string {
  * @param subdomain - The tenant subdomain (e.g., 'scs')
  * @param role - User role (root, admin, employee)
  * @param userId - The database user ID
- * @returns Formatted employee ID (e.g., SCSRT1012062025175​2)
+ * @returns Formatted employee ID (e.g., SCSRT10120620251752)
  */
 export function generateEmployeeId(
   subdomain: string,
@@ -45,7 +45,7 @@ export function generateEmployeeId(
   const domain = subdomain.toUpperCase().slice(0, 10);
   const roleCode = getRoleAbbreviation(role);
   const dateTime = getDateTimeString();
-  
+
   return `${domain}${roleCode}${userId}${dateTime}`;
 }
 
@@ -62,9 +62,9 @@ export function generateTempEmployeeId(
   const domain = subdomain.toUpperCase().slice(0, 10);
   const roleCode = getRoleAbbreviation(role);
   const dateTime = getDateTimeString();
-  
+
   return {
     tempId: `${domain}${roleCode}TEMP${dateTime}`,
-    timestamp: dateTime
+    timestamp: dateTime,
   };
 }

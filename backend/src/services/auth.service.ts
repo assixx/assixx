@@ -3,8 +3,8 @@
  * Handles authentication business logic
  */
 
-import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import UserModel from '../models/user';
 import { authenticateUser as authUser, generateToken } from '../auth';
 import { logger } from '../utils/logger';

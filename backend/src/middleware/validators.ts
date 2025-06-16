@@ -1,9 +1,7 @@
-// @ts-ignore
-import expressValidator from 'express-validator';
-// @ts-ignore
-const { body, validationResult } = expressValidator;
-type ValidationChain = any;
 import { Request, Response, NextFunction } from 'express';
+// @ts-expect-error - express-validator v7 ESM/TypeScript compatibility workaround
+import { body, validationResult } from 'express-validator';
+type ValidationChain = any;
 
 // Type for middleware array including validation chains and error handler
 type ValidationMiddleware =

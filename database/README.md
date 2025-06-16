@@ -1,96 +1,64 @@
-# 🗄️ Assixx Database Structure
+# 📊 Assixx Database Structure
+**Last Updated:** 2025-06-16  
+**Status:** Synchronized with Production
 
-## 📁 Verzeichnisstruktur
+## 🗂️ Current Structure
 
 ```
 database/
-├── schema/                      # Modulare Schema-Dateien
-│   ├── 00-core/                # Kern-Tabellen (Reihenfolge wichtig!)
-│   │   ├── 01-database.sql     # Datenbank erstellen
-│   │   ├── 02-tenants.sql      # Tenant-System
-│   │   ├── 03-users.sql        # Benutzer-System
-│   │   └── 04-departments.sql  # Abteilungen & Teams
-│   ├── 01-features/            # Feature-Management
-│   │   ├── 01-features.sql     # Feature-Definitionen
-│   │   └── 02-tenant-features.sql # Feature-Zuordnungen
-│   ├── 02-modules/             # Einzelne Module (unabhängig)
-│   │   ├── blackboard.sql      # Schwarzes Brett
-│   │   ├── calendar.sql        # Kalender-System
-│   │   ├── chat.sql            # Chat-System
-│   │   ├── documents.sql       # Dokumenten-Management
-│   │   ├── kvp.sql             # KVP-System
-│   │   ├── shifts.sql          # Schichtplanung
-│   │   └── surveys.sql         # Umfrage-System
-│   └── 03-views/               # Views (am Ende)
-│       └── views.sql           # Alle Views
-├── migrations/                  # Datenbank-Änderungen
-│   └── YYYY-MM-DD-description.sql
-├── seeds/                       # Test-/Demo-Daten
-│   ├── 01-demo-tenants.sql
-│   └── 02-demo-users.sql
-├── build/                       # Build-Scripts
-│   └── build-schema.js          # Generiert complete-schema.sql
-└── complete-schema.sql          # Generierte Datei (aktuell halten!)
+├── docker-init.sql              # Main schema file (updated 2025-06-16)
+├── current-schema-20250616.sql  # Today's production snapshot
+├── migrations/                  # All applied migrations
+│   ├── 001-tenant-isolation-fixes.sql
+│   ├── 002-add-is-primary-to-tenant-admins.sql
+│   ├── 003-add-plans-system.sql
+│   ├── 004-add-document-multi-recipients.sql
+│   └── ... (18 migration files total)
+├── archive/                     # Old schema versions
+│   └── pre-20250616/           
+│       ├── docker-init.sql     # Original schema
+│       ├── complete-schema.sql  # Old complete schema
+│       └── docker-init-simple.sql
+├── seeds/                       # Test data
+├── schema/                      # Individual table definitions
+└── build/                       # Build scripts
 ```
 
-## 🔧 Verwendung
+## 📋 Database Statistics
 
-### Entwicklung (Modular)
+- **Tables:** 92
+- **Views:** 2
+- **Total Migrations Applied:** 18
 
+## 🚀 Usage
+
+### Fresh Installation
 ```bash
-# Einzelnes Modul testen
-mysql -u root -p assixx < database/schema/02-modules/surveys.sql
+docker exec assixx-mysql sh -c 'mysql -h localhost -u root -p"StrongP@ssw0rd!123" < /docker-entrypoint-initdb.d/01-schema.sql'
 ```
 
-### Deployment (Komplett)
-
+### Apply Migration
 ```bash
-# Schema builden
-cd database/build && node build-schema.js
-
-# Deployment lokal
-mysql -u root -p assixx < database/complete-schema.sql
-
-# Deployment Docker
-docker exec -i assixx-mysql mysql -u root -p assixx < database/complete-schema.sql
+MIGRATION_FILE="database/migrations/XXX-your-migration.sql"
+docker cp $MIGRATION_FILE assixx-mysql:/tmp/
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! assixx < /tmp/'$(basename $MIGRATION_FILE)
 ```
 
-## 📋 Konventionen
-
-1. **Dateinamen**: `nummer-beschreibung.sql` (z.B. `01-tenants.sql`)
-2. **Reihenfolge**: 00-core muss zuerst, dann 01-features, dann 02-modules
-3. **Kommentare**: Jede Datei beginnt mit Beschreibung
-4. **Drops**: Keine DROP Statements in Schema-Dateien (nur in Migrations)
-5. **IF NOT EXISTS**: Immer verwenden für Idempotenz
-
-## 📦 Build-Prozess
-
-Das Build-Script kombiniert alle Module zu einer Datei:
-
+### Backup Current State
 ```bash
-cd database/build
-node build-schema.js
+bash scripts/quick-backup.sh "manual_backup_$(date +%Y%m%d_%H%M%S)"
 ```
 
-Dies erstellt `complete-schema.sql` mit dem aktuellen Stand aller Tabellen.
+## ⚠️ Important Notes
 
-### Build-Output
+1. **Production is Source of Truth**: The `docker-init.sql` is now synchronized with production
+2. **Always Backup First**: Use `scripts/quick-backup.sh` before any changes
+3. **Test Migrations**: Test on development environment first
+4. **Foreign Keys**: Always check foreign key constraints before dropping tables
 
-- **Datei**: `database/complete-schema.sql`
-- **Inhalt**: Alle Tabellen, Views und Daten in korrekter Reihenfolge
-- **Größe**: ~69 KB, ~2000 Zeilen
-- **Verwendung**: Für neue Installationen oder komplette Reinitialisierungen
+## 🔄 Maintenance Schedule
 
-## 📝 Neue Features hinzufügen
-
-1. Neue Datei in `schema/02-modules/` erstellen
-2. Build-Script ausführen
-3. Testen
-4. Migration erstellen wenn nötig
-
-## ⚠️ Wichtig
-
-- **Immer aktuell halten**: Nach Änderungen an Schema-Dateien das Build-Script ausführen
-- **complete-schema.sql** wird committed (zentrale Referenz wie gewünscht)
-- Bei Änderungen an bestehenden Tabellen immer Migration erstellen
-- Neue Module können direkt in `schema/02-modules/` hinzugefügt werden
+- **Daily**: Automatic backups at 02:00 AM
+- **Weekly**: Schema validation check
+- **Monthly**: Archive old backups
+- **On Change**: Update docker-init.sql after major migrations

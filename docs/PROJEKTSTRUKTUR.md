@@ -41,7 +41,7 @@ Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
 ├── LICENSE               # MIT Lizenz
 ├── COPYRIGHT             # Copyright-Informationen
 ├── package.json          # Root-Abhängigkeiten
-├── package-lock.json
+├── pnpm-lock.yaml        # pnpm Lock-Datei
 ├── tsconfig.json         # TypeScript Root-Konfiguration
 ├── eslint.config.js      # ESLint-Konfiguration
 ├── nodemon.json          # Nodemon-Konfiguration

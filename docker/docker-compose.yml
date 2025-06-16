@@ -74,7 +74,7 @@ services:
       timeout: 10s
       retries: 3
     # Development command mit nodemon
-    command: ['npm', 'run', 'dev']
+    command: ['pnpm', 'run', 'dev']
 
   # Optional: Redis für Sessions/Cache
   redis:

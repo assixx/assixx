@@ -316,6 +316,12 @@ nvm alias default 20
 # Versionen prüfen
 node --version  # sollte v20.x.x zeigen
 npm --version   # sollte 10.x.x zeigen
+
+# pnpm installieren
+npm install -g pnpm
+
+# pnpm Version prüfen
+pnpm --version
 ```
 
 ## 6. MySQL Installation (Manuell)
@@ -425,11 +431,11 @@ code .
 
 ```bash
 # Backend Dependencies
-npm install
+pnpm install
 
 # Frontend Dependencies
 cd frontend
-npm install
+pnpm install
 
 # Zurück zum Hauptverzeichnis
 cd ..
@@ -500,7 +506,7 @@ node -e "console.log('SESSION_SECRET=' + require('crypto').randomBytes(64).toStr
 
 ```bash
 # Im Projekthauptverzeichnis
-npm run dev
+pnpm dev
 
 # Server läuft auf http://localhost:3000
 ```
@@ -626,17 +632,18 @@ kill -9 <PID>
 killall node
 ```
 
-### Problem: npm Berechtigungsfehler
+### Problem: pnpm Berechtigungsfehler
 
 ```bash
-# npm Cache löschen
-npm cache clean --force
+# pnpm Cache löschen
+pnpm store prune
 
-# Global npm Verzeichnis prüfen
-npm config get prefix
+# pnpm store Pfad prüfen
+pnpm store path
 
-# Bei Problemen neu setzen
-npm config set prefix /usr/local
+# Bei Problemen pnpm neu installieren
+npm uninstall -g pnpm
+npm install -g pnpm
 ```
 
 ### Problem: nvm command not found
@@ -686,7 +693,7 @@ brew install gh
 
 ```bash
 # Zu ~/.zshrc hinzufügen
-echo 'alias assixx="cd ~/Development/projects/Assixx && npm run dev"' >> ~/.zshrc
+echo 'alias assixx="cd ~/Development/projects/Assixx && pnpm dev"' >> ~/.zshrc
 echo 'alias gs="git status"' >> ~/.zshrc
 echo 'alias gc="git commit"' >> ~/.zshrc
 echo 'alias gp="git push"' >> ~/.zshrc
@@ -720,7 +727,7 @@ git pull
 git checkout -b feature/neue-funktion
 
 # Server starten
-npm run dev
+pnpm dev
 
 # VS Code öffnen
 code .

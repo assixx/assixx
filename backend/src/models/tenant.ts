@@ -1,6 +1,6 @@
 import pool from '../database';
 import { logger } from '../utils/logger';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import { DatabaseTenant } from '../types/models';
 import { TenantTrialStatus } from '../types/tenant.types';
@@ -112,7 +112,7 @@ export class Tenant {
 
       // 3. Erstelle Root-Benutzer (Firmeninhaber)
       const hashedPassword = await bcrypt.hash(admin_password, 10);
-      
+
       // Generate employee_id: domain|role|userid|timestamp
       // We'll add the user ID after insert
       const timestamp = Date.now().toString().slice(-6);
@@ -133,13 +133,13 @@ export class Tenant {
       );
 
       const userId = userResult.insertId;
-      
+
       // Update employee_id with actual user ID
       const finalEmployeeId = `${subdomain.toUpperCase()}|ROOT|${userId}|${timestamp}`;
-      await connection.query(
-        'UPDATE users SET employee_id = ? WHERE id = ?',
-        [finalEmployeeId, userId]
-      );
+      await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [
+        finalEmployeeId,
+        userId,
+      ]);
 
       // 4. Verknüpfe Admin mit Tenant
       await connection.query(

@@ -4,7 +4,7 @@
  */
 
 import express, { Router } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { authenticateToken, authorizeRole } from '../auth';
 import { logger } from '../utils/logger';
 

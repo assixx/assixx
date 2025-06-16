@@ -55,15 +55,15 @@ router.post(
       if (needsEmployeeData) {
         // Update nur fehlende Employee-Daten (keine neue employee_id!)
         const updateData: any = {};
-        
+
         if (!user.department_id) {
           updateData.department_id = 1; // Default department
         }
-        
+
         if (!user.position) {
           updateData.position = 'Mitarbeiter'; // Default position
         }
-        
+
         // Update nur die fehlenden Daten
         await User.update(authReq.user.id, updateData);
       }

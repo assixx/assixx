@@ -6,7 +6,7 @@
 import request from 'supertest';
 import app from '../app';
 import { pool } from '../database';
-import { jest } from '@jest/globals';
+// Jest is available globally
 
 // Test data
 const adminUser = {

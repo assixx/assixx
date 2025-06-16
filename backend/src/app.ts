@@ -58,8 +58,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(sanitizeInputs as any);
 
 // Protect HTML pages based on user role
-app.use('*.html', protectPage as any);
-app.use('/pages/*.html', protectPage as any);
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.endsWith('.html')) {
+    return (protectPage as any)(req, res, next);
+  }
+  next();
+});
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
 const distPath = path.join(__dirname, '../../frontend/dist');
@@ -85,8 +89,12 @@ app.use(
 );
 
 // Development mode: Handle TypeScript files
-app.get(/\/scripts\/(.+)\.ts$/, (req: Request, res: Response): void => {
-  const filename = req.params[0];
+app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.path.endsWith('.ts')) {
+    return next();
+  }
+
+  const filename = req.path.slice(1, -3); // Remove leading / and .ts extension
 
   // In development, check if compiled JS exists first
   const jsPath = path.join(distPath, 'js', `${filename}.js`);

@@ -444,7 +444,7 @@ class ChatController {
       }
 
       const conversationId = parseInt(req.params.id);
-      
+
       await chatService.deleteConversation(
         conversationId,
         req.user.userId || req.user.id

@@ -269,11 +269,11 @@ sudo apt install nodejs -y
 node --version  # sollte v20.x.x zeigen
 npm --version   # sollte 10.x.x zeigen
 
-# npm global Verzeichnis einrichten (vermeidet sudo für npm)
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
+# pnpm installieren
+npm install -g pnpm
+
+# pnpm Version prüfen
+pnpm --version
 ```
 
 ## 5. MySQL Installation
@@ -384,11 +384,11 @@ code .
 
 ```bash
 # Backend Dependencies
-npm install
+pnpm install
 
 # Frontend Dependencies
 cd frontend
-npm install
+pnpm install
 
 # Zurück zum Hauptverzeichnis
 cd ..
@@ -457,7 +457,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ```bash
 # Im Hauptverzeichnis des Projekts
-npm run dev
+pnpm dev
 
 # Server läuft auf http://localhost:3000
 ```
@@ -532,12 +532,12 @@ sudo systemctl status assixx
 
 ## 10. Fehlerbehebung
 
-### Problem: EACCES npm Fehler
+### Problem: EACCES pnpm Fehler
 
 ```bash
-# npm Berechtigungen reparieren
-sudo chown -R $(whoami) ~/.npm
-sudo chown -R $(whoami) /usr/lib/node_modules
+# pnpm Berechtigungen reparieren
+sudo chown -R $(whoami) ~/.local/share/pnpm
+sudo chown -R $(whoami) ~/.config/pnpm
 ```
 
 ### Problem: MySQL Verbindung verweigert
@@ -598,7 +598,7 @@ sudo ufw allow https
 
 ```bash
 # Zu .bashrc hinzufügen
-echo "alias assixx='cd ~/projects/Assixx && npm run dev'" >> ~/.bashrc
+echo "alias assixx='cd ~/projects/Assixx && pnpm dev'" >> ~/.bashrc
 source ~/.bashrc
 
 # Jetzt einfach 'assixx' tippen zum Starten
@@ -635,7 +635,7 @@ Dein Assixx-Entwicklungsumgebung ist bereit!
 ### 🔧 Bei manueller Installation:
 
 - Server läuft auf: http://localhost:3000
-- Starten mit: `npm run dev`
+- Starten mit: `pnpm dev`
 - Stoppen mit: `Ctrl+C`
 
 ### Nächste Schritte:
@@ -679,7 +679,7 @@ git pull
 git checkout -b feature/meine-neue-funktion
 
 # Development Server starten
-npm run dev
+pnpm dev
 
 # VS Code öffnen
 code .

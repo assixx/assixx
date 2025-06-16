@@ -24,7 +24,7 @@ function getTenantId(user: any): number {
 const storage = multer.diskStorage({
   destination(
     _req: Request,
-    // eslint-disable-next-line no-undef
+
     _file: Express.Multer.File,
     cb: (error: Error | null, destination: string) => void
   ): void {
@@ -35,7 +35,7 @@ const storage = multer.diskStorage({
   },
   filename(
     _req: Request,
-    // eslint-disable-next-line no-undef
+
     file: Express.Multer.File,
     cb: (error: Error | null, filename: string) => void
   ): void {
@@ -54,7 +54,7 @@ const upload = multer({
   },
   fileFilter(
     _req: Request,
-    // eslint-disable-next-line no-undef
+
     file: Express.Multer.File,
     cb: multer.FileFilterCallback
   ): void {

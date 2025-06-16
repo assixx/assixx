@@ -51,7 +51,7 @@ class TeamService {
       return teams.map((team) => ({
         ...team,
         team_lead_id: team.leader_id,
-        team_lead_name: null,
+        team_lead_name: null as string | null,
         member_count: 0,
       }));
     } catch (error) {

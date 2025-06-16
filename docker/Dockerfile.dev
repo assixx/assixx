@@ -4,15 +4,16 @@ FROM node:20-alpine
 # Install development tools
 RUN apk add --no-cache curl jq
 
-# Install tsx globally for TypeScript execution
-RUN npm install -g tsx nodemon
+# Install pnpm and development tools globally
+RUN npm install -g pnpm@10.12.1 tsx nodemon
 
 # Arbeitsverzeichnis
 WORKDIR /app
 
 # Package files kopieren und installieren
-COPY package*.json ./
-RUN npm ci
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Der Rest wird über Volumes gemountet
 
@@ -20,4 +21,4 @@ RUN npm ci
 EXPOSE 3000
 
 # Development command
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]

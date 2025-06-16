@@ -159,7 +159,7 @@ cd C:\Assixx
 
 # 4. Anwendung starten
 cd backend
-npm start
+pnpm start
 
 # 5. Browser öffnen
 # http://localhost:3000/signup
@@ -300,10 +300,10 @@ sudo ufw --force enable
 ```bash
 # Entwicklungsmodus
 cd backend
-npm start
+pnpm start
 
 # Oder Produktionsmodus
-NODE_ENV=production npm start
+NODE_ENV=production pnpm start
 ```
 
 ---
@@ -408,7 +408,7 @@ New-NetFirewallRule -DisplayName "Assixx Server" -Direction Inbound -Port 3000 -
 ```powershell
 # Anwendung starten
 cd backend
-npm start
+pnpm start
 ```
 
 ---
@@ -814,7 +814,7 @@ Assixx/
 
    ```bash
    cd backend
-   npm start
+   pnpm start
    ```
 
 2. **Signup-Seite öffnen:**
@@ -962,7 +962,7 @@ sudo lsof -i :3000
 sudo kill -9 <PID>
 
 # Anderen Port verwenden
-PORT=3001 npm start
+PORT=3001 pnpm start
 ```
 
 #### 🔴 NPM-Abhängigkeiten fehlen
@@ -972,12 +972,12 @@ PORT=3001 npm start
 **Lösung:**
 
 ```bash
-# NPM-Cache löschen
-npm cache clean --force
+# pnpm Cache löschen
+pnpm store prune
 
 # node_modules löschen und neu installieren
-rm -rf node_modules package-lock.json
-npm install
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 ```
 
 #### 🔴 MySQL Root-Passwort vergessen
@@ -1007,7 +1007,7 @@ sudo systemctl restart mysql
 
 ```bash
 # Debug-Logging aktivieren
-LOG_LEVEL=debug npm start
+LOG_LEVEL=debug pnpm start
 
 # Datenbankverbindung testen
 node test-db-connection.js
@@ -1049,7 +1049,7 @@ sudo systemctl status mysql
 npm run format
 
 # Tests ausführen
-npm test
+pnpm test
 
 # Code-Qualität prüfen
 npm run lint

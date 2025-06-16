@@ -263,6 +263,12 @@ sudo apt install nodejs -y
 # Versionen prüfen
 node --version  # sollte v20.x.x zeigen
 npm --version   # sollte 10.x.x zeigen
+
+# pnpm installieren
+npm install -g pnpm
+
+# pnpm Version prüfen
+pnpm --version
 ```
 
 ### 3.4. MySQL Installation
@@ -357,11 +363,11 @@ code .
 
 ```bash
 # Backend Dependencies installieren
-npm install
+pnpm install
 
 # Frontend Dependencies installieren
 cd frontend
-npm install
+pnpm install
 
 # Zurück zum Hauptverzeichnis
 cd ..
@@ -423,7 +429,7 @@ Speichern mit `Strg+O`, Enter, dann `Strg+X`
 
 ```bash
 # Im Hauptverzeichnis
-npm run dev
+pnpm dev
 
 # Server läuft jetzt auf http://localhost:3000
 ```
@@ -451,11 +457,9 @@ node create-employee.js
 ### Problem: "Permission denied" Fehler
 
 ```bash
-# Berechtigungen für npm global directory setzen
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
+# Berechtigungen für pnpm setzen
+sudo chown -R $(whoami) ~/.local/share/pnpm
+sudo chown -R $(whoami) ~/.config/pnpm
 ```
 
 ### Problem: MySQL Verbindung schlägt fehl
@@ -513,7 +517,7 @@ git status
 git pull
 
 # Server starten
-npm run dev
+pnpm dev
 
 # VS Code öffnen
 code .

@@ -40,16 +40,16 @@ docker-compose up --follow
 
 ```bash
 # Unit Tests im Backend Container
-docker-compose exec backend npm test
+docker-compose exec backend pnpm test
 
 # Integration Tests
-docker-compose exec backend npm run test:integration
+docker-compose exec backend pnpm run test:integration
 
 # Frontend Tests
-docker-compose exec frontend npm test
+docker-compose exec frontend pnpm test
 
 # Alle Tests auf einmal
-docker-compose run --rm backend npm run test:all
+docker-compose run --rm backend pnpm run test:all
 ```
 
 ### 📊 Logs und Debugging
@@ -144,19 +144,20 @@ Falls Docker nicht verfügbar ist, kann auch lokal entwickelt werden:
 ```bash
 # Backend starten
 cd backend
-npm run dev  # Mit nodemon und TypeScript
+pnpm dev  # Mit nodemon und TypeScript
 
 # Frontend in neuem Terminal
 cd frontend
-npm run dev  # Vite Dev Server
+pnpm dev  # Vite Dev Server
 ```
 
 **Hinweis**: Die lokale Entwicklung erfordert:
 
 - Node.js 18+
 - MySQL 8.0+
+- pnpm installiert (`npm install -g pnpm`)
 - Korrekte .env Konfiguration
-- Alle npm dependencies installiert
+- Alle pnpm dependencies installiert
 
 ## 📝 Code-Kommentierung Standards
 
@@ -352,7 +353,7 @@ curl http://localhost:3000/api/health
 # http://localhost:5173 (Vite Dev Server)
 
 # Tests ausführen
-docker-compose exec backend npm test
+docker-compose exec backend pnpm test
 ```
 
 ### Alternative: Lokales Testen
@@ -360,14 +361,14 @@ docker-compose exec backend npm test
 ```bash
 # Backend starten
 cd backend
-npm start
+pnpm start
 
 # In neuem Terminal - API testen
 curl http://localhost:3000/api/health
 
 # Frontend testen (falls separater Dev-Server)
 cd frontend
-npm run dev
+pnpm dev
 # Browser: http://localhost:5173 (Vite) oder http://localhost:3000 (Express)
 ```
 
@@ -414,11 +415,11 @@ docker-compose logs -f
 
 ```bash
 cd backend
-npm run dev  # Mit nodemon und TypeScript
+pnpm dev  # Mit nodemon und TypeScript
 
 # Frontend in separatem Terminal
 cd frontend
-npm run dev
+pnpm dev
 ```
 
 ### Production mit Docker
@@ -438,11 +439,11 @@ docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 
 ```bash
 cd backend
-npm run build  # TypeScript kompilieren
-npm start      # Production Server
+pnpm build  # TypeScript kompilieren
+pnpm start  # Production Server
 
 cd frontend
-npm run build  # Production Build
+pnpm build  # Production Build
 # Static files werden von Express ausgeliefert
 ```
 

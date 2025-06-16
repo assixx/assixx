@@ -3,7 +3,7 @@
  * Configuration for test environment
  */
 
-import { jest } from '@jest/globals';
+// Jest is available globally in test environment
 
 // Set test environment
 process.env['NODE_ENV'] = 'test';

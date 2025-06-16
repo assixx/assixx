@@ -1,1935 +1,1810 @@
+-- =====================================================
 -- Assixx Complete Database Schema
--- Generated: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
--- 
--- This file contains the complete database schema including all tables,
--- views, procedures, and migrations.
+-- Generated: 2025-06-16
+-- Version: 1.0.0
+-- =====================================================
+-- This file contains the complete database schema
+-- extracted from the production database.
+-- It includes all tables, views, and indexes.
+-- =====================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
 
 -- Create database if not exists
-CREATE DATABASE IF NOT EXISTS assixx CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE assixx;
-
-
--- Core Tables
--- =====================================================
--- 01-database.sql - Datenbank-Erstellung
--- =====================================================
--- Erstellt die Assixx Datenbank mit korrekten Einstellungen
--- Muss als erstes ausgeführt werden
--- =====================================================
-
--- Datenbank erstellen wenn nicht vorhanden
 CREATE DATABASE IF NOT EXISTS assixx 
   CHARACTER SET utf8mb4 
   COLLATE utf8mb4_unicode_ci;
 
--- Datenbank verwenden
 USE assixx;
 
--- Charset sicherstellen
-SET NAMES utf8mb4;
-SET CHARACTER SET utf8mb4;-- =====================================================
--- 02-tenants.sql - Tenant Management System
 -- =====================================================
--- Multi-Tenant Architektur für SaaS-Platform
--- Verwaltet Firmen/Mandanten mit Self-Service Registration
+-- TABLE DEFINITIONS
 -- =====================================================
 
--- Haupt-Tenant-Tabelle
-CREATE TABLE IF NOT EXISTS tenants (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    company_name VARCHAR(255) NOT NULL,
-    subdomain VARCHAR(100) UNIQUE NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(50),
-    address TEXT,
-    status ENUM('trial', 'active', 'suspended', 'cancelled') DEFAULT 'trial',
-    trial_ends_at DATETIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    settings JSON,
-    stripe_customer_id VARCHAR(255),
-    stripe_subscription_id VARCHAR(255),
-    current_plan ENUM('basic', 'premium', 'enterprise') DEFAULT 'basic',
-    billing_email VARCHAR(255),
-    logo_url VARCHAR(500),
-    primary_color VARCHAR(7) DEFAULT '#0066cc',
-    created_by INT,
-    INDEX idx_subdomain (subdomain),
-    INDEX idx_status (status),
-    INDEX idx_trial_ends (trial_ends_at)
-);
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `type` enum('vacation','sick','training','other') NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `reason` text,
+  `status` enum('pending','approved','rejected','cancelled') DEFAULT 'pending',
+  `approved_by` int DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `approved_by` (`approved_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_dates` (`start_date`,`end_date`),
+  KEY `idx_type` (`type`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `absences_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `absences_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `absences_ibfk_3` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
 
--- Tenant-Admin-Zuordnungen
-CREATE TABLE IF NOT EXISTS tenant_admins (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    is_primary BOOLEAN DEFAULT FALSE,
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    assigned_by INT,
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    -- user_id FK wird in users.sql hinzugefügt
-    UNIQUE KEY unique_admin (tenant_id, user_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id)
-);
+-- --------------------------------------------
+;
 
--- Tenant-Subscriptions
-CREATE TABLE IF NOT EXISTS tenant_subscriptions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    plan_id INT,
-    status ENUM('active', 'cancelled', 'expired', 'suspended') DEFAULT 'active',
-    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NULL,
-    cancelled_at TIMESTAMP NULL,
-    stripe_subscription_id VARCHAR(255),
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_status (status),
-    INDEX idx_expires_at (expires_at)
-);
+-- --------------------------------------------
+;
 
--- Subscription Plans
-CREATE TABLE IF NOT EXISTS subscription_plans (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
-    price_monthly DECIMAL(10,2) NOT NULL,
-    price_yearly DECIMAL(10,2),
-    max_users INT,
-    max_storage_gb INT,
-    features JSON,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_code (code),
-    INDEX idx_is_active (is_active)
-);-- =====================================================
--- 03-users.sql - User Management System
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `admin_id` int NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `entity_type` varchar(50) DEFAULT NULL,
+  `entity_id` int DEFAULT NULL,
+  `old_values` json DEFAULT NULL,
+  `new_values` json DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_admin_id` (`admin_id`),
+  KEY `idx_action` (`action`),
+  KEY `idx_entity_type` (`entity_type`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `admin_logs_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `admin_logs_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
+  `method` varchar(10) NOT NULL,
+  `endpoint` varchar(255) NOT NULL,
+  `status_code` int DEFAULT NULL,
+  `request_body` text,
+  `response_time_ms` int DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_endpoint` (`endpoint`),
+  KEY `idx_status_code` (`status_code`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `api_logs_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `api_logs_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `entry_id` int NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `file_size` int NOT NULL,
+  `mime_type` varchar(100) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `uploaded_by` int NOT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_entry_id` (`entry_id`),
+  KEY `idx_uploaded_by` (`uploaded_by`),
+  KEY `idx_mime_type` (`mime_type`),
+  CONSTRAINT `blackboard_attachments_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `blackboard_entries` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `blackboard_attachments_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Stores file attachments for blackboard entries (PDFs, images)'
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `entry_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `confirmed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_confirmation` (`entry_id`,`user_id`),
+  KEY `idx_entry_id` (`entry_id`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `blackboard_confirmations_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `blackboard_entries` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `blackboard_confirmations_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `org_level` enum('company','department','team') DEFAULT 'company',
+  `org_id` int DEFAULT NULL,
+  `author_id` int NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',
+  `color` varchar(20) DEFAULT 'blue',
+  `category` varchar(50) DEFAULT NULL,
+  `valid_from` date DEFAULT NULL,
+  `valid_until` date DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `is_pinned` tinyint(1) DEFAULT '0',
+  `views` int DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
+  `status` enum('active','archived') DEFAULT 'active',
+  `requires_confirmation` tinyint(1) DEFAULT '0',
+  `attachment_count` int DEFAULT '0',
+  `attachment_path` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_author_id` (`author_id`),
+  KEY `idx_priority` (`priority`),
+  KEY `idx_valid_dates` (`valid_from`,`valid_until`),
+  KEY `idx_is_active` (`is_active`),
+  KEY `idx_is_pinned` (`is_pinned`),
+  KEY `idx_org_level` (`org_level`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_expires_at` (`expires_at`),
+  CONSTRAINT `blackboard_entries_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `blackboard_entries_ibfk_2` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `entry_id` int NOT NULL,
+  `tag_id` int NOT NULL,
+  PRIMARY KEY (`entry_id`,`tag_id`),
+  KEY `tag_id` (`tag_id`),
+  CONSTRAINT `blackboard_entry_tags_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `blackboard_entries` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `blackboard_entry_tags_ibfk_2` FOREIGN KEY (`tag_id`) REFERENCES `blackboard_tags` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `color` varchar(7) DEFAULT '#0066cc',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_tag_per_tenant` (`tenant_id`,`name`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  CONSTRAINT `blackboard_tags_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `event_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `response_status` enum('pending','accepted','declined','tentative') DEFAULT 'pending',
+  `responded_at` timestamp NULL DEFAULT NULL,
+  `notification_sent` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `event_id` (`event_id`,`user_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `calendar_attendees_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `calendar_events` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_attendees_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `color` varchar(7) DEFAULT '#3498db',
+  `icon` varchar(50) DEFAULT NULL,
+  `is_system` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_category_per_tenant` (`tenant_id`,`name`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  CONSTRAINT `calendar_categories_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `location` varchar(255) DEFAULT NULL,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime NOT NULL,
+  `all_day` tinyint(1) DEFAULT '0',
+  `type` enum('meeting','training','vacation','sick_leave','other') DEFAULT 'other',
+  `status` enum('tentative','confirmed','cancelled') DEFAULT 'confirmed',
+  `is_private` tinyint(1) DEFAULT '0',
+  `reminder_minutes` int DEFAULT NULL,
+  `color` varchar(7) DEFAULT '#3498db',
+  `recurrence_rule` varchar(500) DEFAULT NULL,
+  `parent_event_id` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `parent_event_id` (`parent_event_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_start_date` (`start_date`),
+  KEY `idx_end_date` (`end_date`),
+  KEY `idx_type` (`type`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `calendar_events_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_events_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_events_ibfk_3` FOREIGN KEY (`parent_event_id`) REFERENCES `calendar_events` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `event_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `response_status` enum('pending','accepted','declined','tentative') DEFAULT 'pending',
+  `is_organizer` tinyint(1) DEFAULT '0',
+  `is_required` tinyint(1) DEFAULT '1',
+  `responded_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_participant` (`event_id`,`user_id`),
+  KEY `idx_event_id` (`event_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_response_status` (`response_status`),
+  CONSTRAINT `calendar_participants_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `calendar_events` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_participants_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `event_id` int NOT NULL,
+  `frequency` enum('daily','weekly','monthly','yearly') NOT NULL,
+  `interval_value` int DEFAULT '1',
+  `weekdays` varchar(20) DEFAULT NULL,
+  `month_day` int DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `count` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `event_id` (`event_id`),
+  CONSTRAINT `calendar_recurring_rules_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `calendar_events` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `event_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `minutes_before` int NOT NULL,
+  `type` enum('email','notification','both') DEFAULT 'notification',
+  `is_sent` tinyint(1) DEFAULT '0',
+  `sent_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_event_id` (`event_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_is_sent` (`is_sent`),
+  CONSTRAINT `calendar_reminders_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_reminders_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `calendar_events` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_reminders_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `calendar_owner_id` int NOT NULL,
+  `shared_with_id` int NOT NULL,
+  `permission_level` enum('view','edit') DEFAULT 'view',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_share` (`calendar_owner_id`,`shared_with_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_calendar_owner_id` (`calendar_owner_id`),
+  KEY `idx_shared_with_id` (`shared_with_id`),
+  CONSTRAINT `calendar_shares_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_shares_ibfk_2` FOREIGN KEY (`calendar_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `calendar_shares_ibfk_3` FOREIGN KEY (`shared_with_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `message_id` int NOT NULL,
+  `type` enum('message','mention','group_invite') DEFAULT 'message',
+  `is_read` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_message_id` (`message_id`),
+  KEY `idx_is_read` (`is_read`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `chat_notifications_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chat_notifications_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chat_notifications_ibfk_3` FOREIGN KEY (`message_id`) REFERENCES `messages_old_backup` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `conversation_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_admin` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_participant` (`conversation_id`,`user_id`),
+  KEY `idx_user` (`user_id`),
+  CONSTRAINT `conversation_participants_ibfk_1` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `conversation_participants_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_group` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant` (`tenant_id`),
+  CONSTRAINT `conversations_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `manager_id` int DEFAULT NULL,
+  `parent_id` int DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `visibility` enum('public','private') DEFAULT 'public',
+  `notes` text,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_dept_name_per_tenant` (`tenant_id`,`name`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_manager_id` (`manager_id`),
+  KEY `idx_parent_id` (`parent_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_visibility` (`visibility`),
+  CONSTRAINT `departments_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `departments_ibfk_2` FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `departments_ibfk_3` FOREIGN KEY (`parent_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `departments_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `document_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `tenant_id` int NOT NULL,
+  `read_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_document_user_read` (`document_id`,`user_id`,`tenant_id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `idx_user_read_status` (`user_id`,`tenant_id`),
+  KEY `idx_document_read_status` (`document_id`,`tenant_id`),
+  CONSTRAINT `document_read_status_ibfk_1` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `document_read_status_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `document_read_status_ibfk_3` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `recipient_type` enum('user','team','department','company') DEFAULT 'user',
+  `team_id` int DEFAULT NULL,
+  `department_id` int DEFAULT NULL,
+  `category` enum('personal','work','training','general','salary') NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_size` int NOT NULL,
+  `file_content` longblob,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `description` text,
+  `year` int DEFAULT NULL,
+  `month` varchar(20) DEFAULT NULL,
+  `tags` json DEFAULT NULL,
+  `is_public` tinyint(1) DEFAULT '0',
+  `is_archived` tinyint(1) DEFAULT '0',
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `archived_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_category` (`category`),
+  KEY `idx_uploaded_at` (`uploaded_at`),
+  KEY `idx_is_archived` (`is_archived`),
+  KEY `idx_documents_recipient_type` (`recipient_type`),
+  KEY `idx_documents_team_id` (`team_id`),
+  KEY `idx_documents_department_id` (`department_id`),
+  CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `documents_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `documents_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_documents_department_id` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_documents_team_id` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int DEFAULT NULL,
+  `template_key` varchar(100) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `body_html` text NOT NULL,
+  `body_text` text,
+  `variables` json DEFAULT NULL,
+  `is_system` tinyint(1) DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_template` (`tenant_id`,`template_key`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_template_key` (`template_key`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `email_templates_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `employee_id` int NOT NULL,
+  `tenant_id` int NOT NULL,
+  `status` enum('available','unavailable','vacation','sick','training','other') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'available',
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_availability_created_by` (`created_by`),
+  KEY `idx_availability_employee` (`employee_id`),
+  KEY `idx_availability_tenant` (`tenant_id`),
+  KEY `idx_availability_dates` (`start_date`,`end_date`),
+  KEY `idx_availability_status` (`status`),
+  CONSTRAINT `fk_availability_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_availability_employee` FOREIGN KEY (`employee_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_availability_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_availability_dates` CHECK ((`end_date` >= `start_date`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `date` date NOT NULL,
+  `availability_type` enum('available','preferred','unavailable','sick','vacation') DEFAULT 'available',
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
+  `notes` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_date` (`user_id`,`date`),
+  KEY `idx_user_availability` (`user_id`,`availability_type`),
+  CONSTRAINT `employee_availability_old_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `feature_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `metadata` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_feature_id` (`feature_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `feature_usage_logs_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `feature_usage_logs_ibfk_2` FOREIGN KEY (`feature_id`) REFERENCES `features` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `feature_usage_logs_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `category` enum('basic','core','premium','enterprise') DEFAULT 'basic',
+  `base_price` decimal(10,2) DEFAULT '0.00',
+  `is_active` tinyint(1) DEFAULT '1',
+  `requires_setup` tinyint(1) DEFAULT '0',
+  `setup_instructions` text,
+  `icon` varchar(100) DEFAULT NULL,
+  `sort_order` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`),
+  KEY `idx_code` (`code`),
+  KEY `idx_category` (`category`),
+  KEY `idx_is_active` (`is_active`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `suggestion_id` int NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_type` varchar(100) NOT NULL,
+  `file_size` int NOT NULL,
+  `uploaded_by` int NOT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `uploaded_by` (`uploaded_by`),
+  KEY `suggestion_id` (`suggestion_id`),
+  CONSTRAINT `kvp_attachments_ibfk_1` FOREIGN KEY (`suggestion_id`) REFERENCES `kvp_suggestions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_attachments_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `color` varchar(20) DEFAULT '#3498db',
+  `icon` varchar(50) DEFAULT '💡',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tenant_id_2` (`tenant_id`,`name`),
+  KEY `tenant_id` (`tenant_id`),
+  CONSTRAINT `kvp_categories_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `suggestion_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `comment` text NOT NULL,
+  `is_internal` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `suggestion_id` (`suggestion_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `kvp_comments_ibfk_1` FOREIGN KEY (`suggestion_id`) REFERENCES `kvp_suggestions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_comments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `suggestion_id` int NOT NULL,
+  `points` int NOT NULL,
+  `reason` enum('submission','implementation','rating','bonus') NOT NULL,
+  `awarded_by` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `awarded_by` (`awarded_by`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `user_id` (`user_id`),
+  KEY `suggestion_id` (`suggestion_id`),
+  CONSTRAINT `kvp_points_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_points_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_points_ibfk_3` FOREIGN KEY (`suggestion_id`) REFERENCES `kvp_suggestions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_points_ibfk_4` FOREIGN KEY (`awarded_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `suggestion_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `rating` int NOT NULL,
+  `comment` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `suggestion_id` (`suggestion_id`,`user_id`),
+  KEY `user_id` (`user_id`),
+  KEY `suggestion_id_2` (`suggestion_id`),
+  CONSTRAINT `kvp_ratings_ibfk_1` FOREIGN KEY (`suggestion_id`) REFERENCES `kvp_suggestions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_ratings_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_ratings_chk_1` CHECK (((`rating` >= 1) and (`rating` <= 5)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `suggestion_id` int NOT NULL,
+  `old_status` enum('new','pending','in_review','approved','implemented','rejected','archived') DEFAULT NULL,
+  `new_status` enum('new','pending','in_review','approved','implemented','rejected','archived') NOT NULL,
+  `changed_by` int NOT NULL,
+  `change_reason` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `changed_by` (`changed_by`),
+  KEY `suggestion_id` (`suggestion_id`),
+  CONSTRAINT `kvp_status_history_ibfk_1` FOREIGN KEY (`suggestion_id`) REFERENCES `kvp_suggestions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_status_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `category_id` int DEFAULT NULL,
+  `org_level` enum('company','department','team') NOT NULL,
+  `org_id` int NOT NULL,
+  `submitted_by` int NOT NULL,
+  `assigned_to` int DEFAULT NULL,
+  `status` enum('new','pending','in_review','approved','implemented','rejected','archived') DEFAULT 'new',
+  `priority` enum('low','normal','high','urgent') DEFAULT 'normal',
+  `expected_benefit` text,
+  `estimated_cost` decimal(10,2) DEFAULT NULL,
+  `actual_savings` decimal(10,2) DEFAULT NULL,
+  `implementation_date` date DEFAULT NULL,
+  `rejection_reason` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `category_id` (`category_id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `org_level` (`org_level`,`org_id`),
+  KEY `status` (`status`),
+  KEY `submitted_by` (`submitted_by`),
+  KEY `assigned_to` (`assigned_to`),
+  CONSTRAINT `kvp_suggestions_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_suggestions_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `kvp_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `kvp_suggestions_ibfk_3` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kvp_suggestions_ibfk_4` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `message_id` int NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `file_url` varchar(500) NOT NULL,
+  `file_size` int NOT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_message_id` (`message_id`),
+  CONSTRAINT `message_attachments_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_attachments_ibfk_2` FOREIGN KEY (`message_id`) REFERENCES `messages_old_backup` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `group_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `role` enum('member','admin') DEFAULT 'member',
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_read_at` timestamp NULL DEFAULT NULL,
+  `notification_enabled` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_group_member` (`group_id`,`user_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_group_id` (`group_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role` (`role`),
+  CONSTRAINT `message_group_members_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_group_members_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `message_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_group_members_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `type` enum('public','private','department','team') DEFAULT 'private',
+  `avatar_url` varchar(500) DEFAULT NULL,
+  `created_by` int NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_created_by` (`created_by`),
+  KEY `idx_type` (`type`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `message_groups_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_groups_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `message_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `read_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_read_receipt` (`message_id`,`user_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_message_id` (`message_id`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `message_read_receipts_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_read_receipts_ibfk_2` FOREIGN KEY (`message_id`) REFERENCES `messages_old_backup` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_read_receipts_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `message_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `is_read` tinyint(1) DEFAULT '0',
+  `read_at` timestamp NULL DEFAULT NULL,
+  `is_archived` tinyint(1) DEFAULT '0',
+  `archived_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_message_user` (`message_id`,`user_id`),
+  KEY `idx_message_id` (`message_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_is_read` (`is_read`),
+  KEY `idx_is_archived` (`is_archived`),
+  CONSTRAINT `fk_message_status_message` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `message_status_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `conversation_id` int NOT NULL,
+  `sender_id` int NOT NULL,
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attachment_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `attachment_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `attachment_type` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_system` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_conversation` (`conversation_id`),
+  KEY `idx_sender` (`sender_id`),
+  KEY `idx_created` (`created_at`),
+  KEY `tenant_id` (`tenant_id`),
+  CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `messages_ibfk_3` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `sender_id` int NOT NULL,
+  `receiver_id` int DEFAULT NULL,
+  `group_id` int DEFAULT NULL,
+  `content` text NOT NULL,
+  `type` enum('text','file','image','system') DEFAULT 'text',
+  `file_url` varchar(500) DEFAULT NULL,
+  `is_edited` tinyint(1) DEFAULT '0',
+  `edited_at` timestamp NULL DEFAULT NULL,
+  `is_deleted` tinyint(1) DEFAULT '0',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_sender_id` (`sender_id`),
+  KEY `idx_receiver_id` (`receiver_id`),
+  KEY `idx_group_id` (`group_id`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_is_deleted` (`is_deleted`),
+  CONSTRAINT `messages_old_backup_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `messages_old_backup_ibfk_2` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `messages_old_backup_ibfk_3` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `messages_old_backup_ibfk_4` FOREIGN KEY (`group_id`) REFERENCES `message_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `messages_old_backup_chk_1` CHECK ((((`receiver_id` is not null) and (`group_id` is null)) or ((`receiver_id` is null) and (`group_id` is not null))))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `notification_type` varchar(50) NOT NULL,
+  `email_enabled` tinyint(1) DEFAULT '1',
+  `push_enabled` tinyint(1) DEFAULT '1',
+  `in_app_enabled` tinyint(1) DEFAULT '1',
+  `frequency` enum('immediate','hourly','daily','weekly') DEFAULT 'immediate',
+  `quiet_hours_start` time DEFAULT NULL,
+  `quiet_hours_end` time DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_notification_pref` (`user_id`,`notification_type`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_notification_type` (`notification_type`),
+  CONSTRAINT `notification_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `subscription_id` int NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `currency` varchar(3) DEFAULT 'EUR',
+  `status` enum('pending','completed','failed','refunded') DEFAULT 'pending',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `transaction_id` varchar(100) DEFAULT NULL,
+  `invoice_number` varchar(50) DEFAULT NULL,
+  `invoice_url` varchar(500) DEFAULT NULL,
+  `failure_reason` text,
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_subscription_id` (`subscription_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_invoice_number` (`invoice_number`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `payment_history_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payment_history_ibfk_2` FOREIGN KEY (`subscription_id`) REFERENCES `tenant_subscriptions` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `plan_id` int NOT NULL,
+  `feature_id` int NOT NULL,
+  `is_included` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_plan_feature` (`plan_id`,`feature_id`),
+  KEY `idx_plan_id` (`plan_id`),
+  KEY `idx_feature_id` (`feature_id`),
+  CONSTRAINT `plan_features_ibfk_1` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `plan_features_ibfk_2` FOREIGN KEY (`feature_id`) REFERENCES `features` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `base_price` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `max_employees` int DEFAULT NULL,
+  `max_admins` int DEFAULT NULL,
+  `max_storage_gb` int DEFAULT '100',
+  `is_active` tinyint(1) DEFAULT '1',
+  `sort_order` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`),
+  KEY `idx_code` (`code`),
+  KEY `idx_is_active` (`is_active`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `conversation_id` int NOT NULL,
+  `sender_id` int NOT NULL,
+  `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `scheduled_for` timestamp NOT NULL,
+  `delivery_type` enum('immediate','break_time','after_work') COLLATE utf8mb4_unicode_ci DEFAULT 'immediate',
+  `is_sent` tinyint(1) DEFAULT '0',
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_scheduled` (`scheduled_for`),
+  KEY `idx_sent_status` (`is_sent`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `conversation_id` (`conversation_id`),
+  KEY `sender_id` (`sender_id`),
+  CONSTRAINT `scheduled_messages_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `scheduled_messages_ibfk_2` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `scheduled_messages_ibfk_3` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int DEFAULT NULL,
+  `user_id` int DEFAULT NULL,
+  `action` enum('login_success','login_failed','logout','password_reset','account_locked','suspicious_activity') NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `details` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_action` (`action`),
+  KEY `idx_ip_address` (`ip_address`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `security_logs_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `security_logs_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `shift_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `assignment_type` enum('assigned','requested','available','unavailable') DEFAULT 'assigned',
+  `status` enum('pending','accepted','declined','cancelled') DEFAULT 'pending',
+  `assigned_by` int DEFAULT NULL,
+  `assigned_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `response_at` timestamp NULL DEFAULT NULL,
+  `notes` text,
+  `overtime_hours` decimal(4,2) DEFAULT '0.00',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_shift_user` (`shift_id`,`user_id`),
+  KEY `idx_user_status` (`user_id`,`status`),
+  KEY `idx_shift_type` (`shift_id`,`assignment_type`),
+  KEY `idx_assigned_by` (`assigned_by`),
+  CONSTRAINT `shift_assignments_ibfk_1` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_assignments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_assignments_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `shift_id` int NOT NULL,
+  `requester_id` int NOT NULL,
+  `target_user_id` int DEFAULT NULL,
+  `exchange_type` enum('give_away','swap','request_coverage') DEFAULT 'give_away',
+  `target_shift_id` int DEFAULT NULL,
+  `message` text,
+  `status` enum('pending','accepted','declined','cancelled','completed') DEFAULT 'pending',
+  `response_message` text,
+  `approved_by` int DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_requester` (`requester_id`),
+  KEY `idx_target_user` (`target_user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_shift` (`shift_id`),
+  KEY `idx_target_shift` (`target_shift_id`),
+  KEY `approved_by` (`approved_by`),
+  CONSTRAINT `shift_exchange_requests_ibfk_1` FOREIGN KEY (`requester_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_exchange_requests_ibfk_2` FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_exchange_requests_ibfk_3` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_exchange_requests_ibfk_4` FOREIGN KEY (`target_shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_exchange_requests_ibfk_5` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `group_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `role` enum('member','lead','substitute') DEFAULT 'member',
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_group_member` (`group_id`,`user_id`),
+  KEY `idx_group_id` (`group_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role` (`role`),
+  CONSTRAINT `shift_group_members_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `shift_groups` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_group_members_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `manager_id` int DEFAULT NULL,
+  `color` varchar(7) DEFAULT '#3498db',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_manager_id` (`manager_id`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `shift_groups_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_groups_ibfk_2` FOREIGN KEY (`manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `shift_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `note` text NOT NULL,
+  `type` enum('info','warning','important') DEFAULT 'info',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_shift_id` (`shift_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_type` (`type`),
+  CONSTRAINT `shift_notes_ibfk_1` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_notes_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pattern_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `idx_pattern_id` (`pattern_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_dates` (`start_date`,`end_date`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `shift_pattern_assignments_ibfk_1` FOREIGN KEY (`pattern_id`) REFERENCES `shift_patterns` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_pattern_assignments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `pattern_data` json NOT NULL,
+  `cycle_days` int NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `shift_patterns_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(200) NOT NULL,
+  `description` text,
+  `department_id` int DEFAULT NULL,
+  `team_id` int DEFAULT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` enum('draft','published','locked','archived') DEFAULT 'draft',
+  `created_by` int NOT NULL,
+  `approved_by` int DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_dates` (`tenant_id`,`start_date`,`end_date`),
+  KEY `idx_department` (`department_id`),
+  KEY `idx_team` (`team_id`),
+  KEY `idx_status` (`status`),
+  KEY `created_by` (`created_by`),
+  KEY `approved_by` (`approved_by`),
+  CONSTRAINT `shift_plans_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_plans_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `shift_plans_ibfk_3` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `shift_plans_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_plans_ibfk_5` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `requester_id` int NOT NULL,
+  `shift_id` int NOT NULL,
+  `target_user_id` int DEFAULT NULL,
+  `target_shift_id` int DEFAULT NULL,
+  `reason` text,
+  `status` enum('pending','accepted','rejected','cancelled') DEFAULT 'pending',
+  `responded_at` timestamp NULL DEFAULT NULL,
+  `approved_by` int DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `target_shift_id` (`target_shift_id`),
+  KEY `approved_by` (`approved_by`),
+  KEY `idx_requester_id` (`requester_id`),
+  KEY `idx_shift_id` (`shift_id`),
+  KEY `idx_target_user_id` (`target_user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `shift_swaps_ibfk_1` FOREIGN KEY (`requester_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swaps_ibfk_2` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swaps_ibfk_3` FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swaps_ibfk_4` FOREIGN KEY (`target_shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swaps_ibfk_5` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `break_minutes` int DEFAULT '0',
+  `color` varchar(7) DEFAULT '#3498db',
+  `is_night_shift` tinyint(1) DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `shift_templates_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `plan_id` int DEFAULT NULL,
+  `user_id` int NOT NULL,
+  `template_id` int DEFAULT NULL,
+  `date` date NOT NULL,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
+  `title` varchar(200) DEFAULT NULL,
+  `required_employees` int DEFAULT '1',
+  `actual_start` datetime DEFAULT NULL,
+  `actual_end` datetime DEFAULT NULL,
+  `break_minutes` int DEFAULT '0',
+  `status` enum('planned','confirmed','in_progress','completed','cancelled') DEFAULT 'planned',
+  `type` enum('regular','overtime','standby','vacation','sick','holiday') DEFAULT 'regular',
+  `notes` text,
+  `department_id` int NOT NULL,
+  `team_id` int DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_shift` (`user_id`,`date`,`start_time`),
+  KEY `template_id` (`template_id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_date` (`date`),
+  KEY `idx_status` (`status`),
+  KEY `idx_type` (`type`),
+  KEY `plan_id` (`plan_id`),
+  KEY `team_id` (`team_id`),
+  KEY `shifts_ibfk_6` (`department_id`),
+  CONSTRAINT `shifts_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shifts_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shifts_ibfk_3` FOREIGN KEY (`template_id`) REFERENCES `shift_templates` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `shifts_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `shifts_ibfk_5` FOREIGN KEY (`plan_id`) REFERENCES `shift_plans` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shifts_ibfk_6` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `shifts_ibfk_7` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `code` varchar(50) NOT NULL,
+  `description` text,
+  `price_monthly` decimal(10,2) NOT NULL,
+  `price_yearly` decimal(10,2) DEFAULT NULL,
+  `max_users` int DEFAULT NULL,
+  `max_storage_gb` int DEFAULT NULL,
+  `features` json DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`),
+  KEY `idx_code` (`code`),
+  KEY `idx_is_active` (`is_active`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `response_id` int NOT NULL,
+  `question_id` int NOT NULL,
+  `answer_text` text,
+  `answer_options` json DEFAULT NULL,
+  `answer_number` decimal(10,2) DEFAULT NULL,
+  `answer_date` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_response_id` (`response_id`),
+  KEY `idx_question_id` (`question_id`),
+  CONSTRAINT `survey_answers_ibfk_1` FOREIGN KEY (`response_id`) REFERENCES `survey_responses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `survey_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `survey_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `comment` text NOT NULL,
+  `is_public` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `survey_comments_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_comments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `survey_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `invited_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `reminder_sent_at` timestamp NULL DEFAULT NULL,
+  `completed` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_participant` (`survey_id`,`user_id`),
+  KEY `idx_survey_id` (`survey_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_completed` (`completed`),
+  CONSTRAINT `survey_participants_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_participants_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `survey_id` int NOT NULL,
+  `question_text` text NOT NULL,
+  `question_type` enum('single_choice','multiple_choice','text','rating','scale','yes_no','date','number') NOT NULL,
+  `is_required` tinyint(1) DEFAULT '1',
+  `options` json DEFAULT NULL,
+  `validation_rules` json DEFAULT NULL,
+  `order_index` int DEFAULT '0',
+  `help_text` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`),
+  KEY `idx_order_index` (`order_index`),
+  CONSTRAINT `survey_questions_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `survey_id` int NOT NULL,
+  `reminder_date` datetime NOT NULL,
+  `message` text,
+  `is_sent` tinyint(1) DEFAULT '0',
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`),
+  KEY `idx_reminder_date` (`reminder_date`),
+  KEY `idx_is_sent` (`is_sent`),
+  CONSTRAINT `survey_reminders_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `survey_id` int NOT NULL,
+  `user_id` int DEFAULT NULL,
+  `session_id` varchar(100) DEFAULT NULL,
+  `status` enum('in_progress','completed','abandoned') DEFAULT 'in_progress',
+  `started_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_session_id` (`session_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_completed_at` (`completed_at`),
+  CONSTRAINT `survey_responses_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_responses_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text,
+  `category` varchar(50) DEFAULT NULL,
+  `template_data` json NOT NULL,
+  `is_public` tinyint(1) DEFAULT '0',
+  `created_by` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_category` (`category`),
+  KEY `idx_is_public` (`is_public`),
+  CONSTRAINT `survey_templates_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_templates_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `type` enum('feedback','satisfaction','poll','assessment','other') DEFAULT 'feedback',
+  `status` enum('draft','active','paused','completed','archived') DEFAULT 'draft',
+  `is_anonymous` tinyint(1) DEFAULT '0',
+  `allow_multiple_responses` tinyint(1) DEFAULT '0',
+  `start_date` datetime DEFAULT NULL,
+  `end_date` datetime DEFAULT NULL,
+  `created_by` int NOT NULL,
+  `target_departments` json DEFAULT NULL,
+  `target_teams` json DEFAULT NULL,
+  `notification_sent` tinyint(1) DEFAULT '0',
+  `reminder_sent` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_type` (`type`),
+  KEY `idx_dates` (`start_date`,`end_date`),
+  KEY `idx_created_by` (`created_by`),
+  CONSTRAINT `surveys_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `surveys_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `level` enum('debug','info','warning','error','critical') NOT NULL,
+  `category` varchar(50) NOT NULL,
+  `message` text NOT NULL,
+  `context` json DEFAULT NULL,
+  `stack_trace` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_level` (`level`),
+  KEY `idx_category` (`category`),
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text,
+  `value_type` enum('string','number','boolean','json') DEFAULT 'string',
+  `category` varchar(50) DEFAULT NULL,
+  `description` text,
+  `is_public` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `setting_key` (`setting_key`),
+  KEY `idx_category` (`category`),
+  KEY `idx_is_public` (`is_public`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `department_id` int DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `team_lead_id` int DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_by` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_team_name_per_dept` (`department_id`,`name`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_department_id` (`department_id`),
+  KEY `idx_team_lead_id` (`team_lead_id`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `teams_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `teams_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `teams_ibfk_3` FOREIGN KEY (`team_lead_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `teams_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `addon_type` enum('employees','admins','storage_gb') NOT NULL,
+  `quantity` int NOT NULL DEFAULT '0',
+  `unit_price` decimal(10,2) NOT NULL,
+  `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `unit_price`)) STORED,
+  `status` enum('active','cancelled') DEFAULT 'active',
+  `started_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_tenant_addon` (`tenant_id`,`addon_type`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_addon_type` (`addon_type`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `tenant_addons_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `is_primary` tinyint(1) DEFAULT '0',
+  `assigned_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `assigned_by` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_admin` (`tenant_id`,`user_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `fk_tenant_admins_assigned_by` (`assigned_by`),
+  CONSTRAINT `fk_tenant_admins_assigned_by` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_tenant_admins_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tenant_admins_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `feature_id` int NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `activated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `activated_by` int DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `custom_config` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_tenant_feature` (`tenant_id`,`feature_id`),
+  KEY `activated_by` (`activated_by`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_feature_id` (`feature_id`),
+  KEY `idx_is_active` (`is_active`),
+  CONSTRAINT `tenant_features_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tenant_features_ibfk_2` FOREIGN KEY (`feature_id`) REFERENCES `features` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tenant_features_ibfk_3` FOREIGN KEY (`activated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=154 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `plan_id` int NOT NULL,
+  `status` enum('active','trial','cancelled','expired') DEFAULT 'active',
+  `started_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `custom_price` decimal(10,2) DEFAULT NULL,
+  `billing_cycle` enum('monthly','yearly') DEFAULT 'monthly',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `plan_id` (`plan_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_expires_at` (`expires_at`),
+  CONSTRAINT `tenant_plans_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tenant_plans_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text,
+  `value_type` enum('string','number','boolean','json') DEFAULT 'string',
+  `category` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_tenant_setting` (`tenant_id`,`setting_key`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_category` (`category`),
+  CONSTRAINT `tenant_settings_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `plan_id` int DEFAULT NULL,
+  `status` enum('active','cancelled','expired','suspended') DEFAULT 'active',
+  `started_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `stripe_subscription_id` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_expires_at` (`expires_at`),
+  CONSTRAINT `tenant_subscriptions_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `company_name` varchar(255) NOT NULL,
+  `subdomain` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `address` text,
+  `status` enum('trial','active','suspended','cancelled') DEFAULT 'trial',
+  `trial_ends_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `settings` json DEFAULT NULL,
+  `stripe_customer_id` varchar(255) DEFAULT NULL,
+  `stripe_subscription_id` varchar(255) DEFAULT NULL,
+  `current_plan` enum('basic','premium','enterprise') DEFAULT 'basic',
+  `billing_email` varchar(255) DEFAULT NULL,
+  `logo_url` varchar(500) DEFAULT NULL,
+  `primary_color` varchar(7) DEFAULT '#0066cc',
+  `created_by` int DEFAULT NULL,
+  `current_plan_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `subdomain` (`subdomain`),
+  KEY `idx_subdomain` (`subdomain`),
+  KEY `idx_status` (`status`),
+  KEY `idx_trial_ends` (`trial_ends_at`),
+  KEY `fk_tenants_created_by` (`created_by`),
+  KEY `idx_current_plan` (`current_plan_id`),
+  CONSTRAINT `fk_tenants_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `tenants_ibfk_1` FOREIGN KEY (`current_plan_id`) REFERENCES `plans` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `resource_type` enum('users','storage','api_calls','documents','messages') NOT NULL,
+  `used_amount` int DEFAULT '0',
+  `limit_amount` int DEFAULT NULL,
+  `reset_period` enum('daily','weekly','monthly','yearly') DEFAULT 'monthly',
+  `last_reset` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_quota` (`tenant_id`,`resource_type`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_resource_type` (`resource_type`),
+  CONSTRAINT `usage_quotas_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `user_id` int NOT NULL,
+  `tenant_id` int NOT NULL,
+  `is_online` tinyint(1) DEFAULT '0',
+  `last_seen` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_typing` tinyint(1) DEFAULT '0',
+  `typing_in_conversation` int DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_is_online` (`is_online`),
+  KEY `idx_last_seen` (`last_seen`),
+  CONSTRAINT `user_chat_status_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_chat_status_ibfk_2` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text,
+  `value_type` enum('string','number','boolean','json') DEFAULT 'string',
+  `category` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_setting` (`user_id`,`setting_key`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_category` (`category`),
+  CONSTRAINT `user_settings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `team_id` int NOT NULL,
+  `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `role` enum('member','lead') DEFAULT 'member',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_team` (`user_id`,`team_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_team_id` (`team_id`),
+  CONSTRAINT `user_teams_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_teams_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_teams_ibfk_3` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int DEFAULT '1',
+  `username` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `profile_picture_url` varchar(255) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('root','admin','employee') NOT NULL DEFAULT 'employee',
+  `first_name` varchar(50) DEFAULT NULL,
+  `last_name` varchar(50) DEFAULT NULL,
+  `age` int DEFAULT NULL,
+  `employee_id` varchar(50) DEFAULT NULL,
+  `iban` varchar(50) DEFAULT NULL,
+  `company` varchar(100) DEFAULT NULL,
+  `notes` text,
+  `department_id` int DEFAULT NULL,
+  `position` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `mobile` varchar(50) DEFAULT NULL,
+  `profile_picture` varchar(255) DEFAULT NULL,
+  `address` text,
+  `birthday` date DEFAULT NULL,
+  `date_of_birth` date DEFAULT NULL,
+  `hire_date` date DEFAULT NULL,
+  `emergency_contact` text,
+  `editable_fields` json DEFAULT NULL,
+  `notification_preferences` json DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `is_archived` tinyint(1) DEFAULT '0',
+  `status` enum('active','inactive') DEFAULT 'active',
+  `last_login` timestamp NULL DEFAULT NULL,
+  `password_reset_token` varchar(255) DEFAULT NULL,
+  `password_reset_expires` timestamp NULL DEFAULT NULL,
+  `two_factor_secret` varchar(255) DEFAULT NULL,
+  `two_factor_enabled` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `archived_at` timestamp NULL DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `availability_status` enum('available','unavailable','vacation','sick') DEFAULT 'available',
+  `availability_start` date DEFAULT NULL,
+  `availability_end` date DEFAULT NULL,
+  `availability_notes` text,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  KEY `idx_tenant_users` (`tenant_id`),
+  KEY `idx_username` (`username`),
+  KEY `idx_email` (`email`),
+  KEY `idx_role` (`role`),
+  KEY `idx_status` (`status`),
+  KEY `idx_is_active` (`is_active`),
+  KEY `idx_archived` (`is_archived`),
+  KEY `fk_users_department` (`department_id`),
+  KEY `idx_users_availability_status` (`availability_status`),
+  CONSTRAINT `fk_users_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- --------------------------------------------
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tenant_id` int NOT NULL,
+  `department_id` int NOT NULL,
+  `date` date NOT NULL,
+  `notes` text,
+  `created_by` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_week_tenant_dept` (`tenant_id`,`department_id`,`date`),
+  KEY `idx_tenant_date` (`tenant_id`,`date`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_weekly_notes_dept` (`tenant_id`,`department_id`,`date`),
+  KEY `fk_weekly_notes_department` (`department_id`),
+  CONSTRAINT `fk_weekly_notes_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `weekly_shift_notes_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`),
+  CONSTRAINT `weekly_shift_notes_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+;
+
+-- ===== VIEWS =====
+-- View: v_documents_with_recipients
+;
+
+-- View: v_tenant_plan_overview
+;
+
+
 -- =====================================================
--- Benutzer-Verwaltung für alle Rollen (root, admin, employee)
--- Mit erweitertem Profil und Archivierungs-Funktionen
+-- VIEWS
 -- =====================================================
+-- Views are created after all tables to avoid dependency issues
 
--- Haupt-Benutzer-Tabelle
-CREATE TABLE IF NOT EXISTS users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT DEFAULT 1,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    profile_picture_url VARCHAR(255),
-    password VARCHAR(255) NOT NULL,
-    role ENUM('root', 'admin', 'employee') NOT NULL DEFAULT 'employee',
-    
-    -- Basis-Profildaten
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
-    age INT,
-    employee_id VARCHAR(50),
-    iban VARCHAR(50),
-    company VARCHAR(100),
-    notes TEXT,
-    
-    -- Erweiterte Profildaten
-    department_id INT,
-    position VARCHAR(100),
-    phone VARCHAR(20),
-    mobile VARCHAR(50),
-    profile_picture VARCHAR(255),
-    address TEXT,
-    birthday DATE,
-    date_of_birth DATE,
-    hire_date DATE,
-    emergency_contact TEXT,
-    editable_fields JSON,
-    notification_preferences JSON,
-    
-    -- Status und Sicherheit
-    is_active BOOLEAN DEFAULT TRUE,
-    is_archived TINYINT(1) DEFAULT 0,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    last_login TIMESTAMP NULL,
-    password_reset_token VARCHAR(255),
-    password_reset_expires TIMESTAMP NULL,
-    two_factor_secret VARCHAR(255),
-    two_factor_enabled BOOLEAN DEFAULT FALSE,
-    
-    -- Timestamps
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    archived_at TIMESTAMP NULL,
-    created_by INT,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    -- department_id FK wird in departments.sql hinzugefügt
-    
-    -- Indexes
-    INDEX idx_tenant_users (tenant_id),
-    INDEX idx_username (username),
-    INDEX idx_email (email),
-    INDEX idx_role (role),
-    INDEX idx_status (status),
-    INDEX idx_is_active (is_active),
-    INDEX idx_archived (is_archived)
-);
-
--- Foreign Keys die users referenzieren (nachträglich)
-ALTER TABLE tenant_admins 
-ADD CONSTRAINT fk_tenant_admins_user 
-FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE tenant_admins 
-ADD CONSTRAINT fk_tenant_admins_assigned_by 
-FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL;
-
-ALTER TABLE tenants 
-ADD CONSTRAINT fk_tenants_created_by 
-FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;-- =====================================================
--- 04-departments.sql - Abteilungen und Teams
--- =====================================================
--- Organisationsstruktur mit Abteilungen und Teams
--- Hierarchische Struktur mit Manager-Zuordnungen
--- =====================================================
-
--- Abteilungen
-CREATE TABLE IF NOT EXISTS departments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT DEFAULT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    manager_id INT,
-    parent_id INT,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    visibility ENUM('public', 'private') DEFAULT 'public',
-    notes TEXT,
-    created_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (parent_id) REFERENCES departments(id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_manager_id (manager_id),
-    INDEX idx_parent_id (parent_id),
-    INDEX idx_status (status),
-    INDEX idx_visibility (visibility),
-    UNIQUE KEY unique_dept_name_per_tenant (tenant_id, name)
-);
-
--- Teams innerhalb von Abteilungen
-CREATE TABLE IF NOT EXISTS teams (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    department_id INT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    team_lead_id INT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by INT,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
-    FOREIGN KEY (team_lead_id) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_department_id (department_id),
-    INDEX idx_team_lead_id (team_lead_id),
-    INDEX idx_is_active (is_active),
-    UNIQUE KEY unique_team_name_per_dept (department_id, name)
-);
-
--- Benutzer-Team-Zuordnungen
-CREATE TABLE IF NOT EXISTS user_teams (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    team_id INT NOT NULL,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    role ENUM('member', 'lead') DEFAULT 'member',
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_user_team (user_id, team_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_team_id (team_id)
-);
-
--- Nachträgliche Foreign Keys für users Tabelle
-ALTER TABLE users 
-ADD CONSTRAINT fk_users_department 
-FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL;-- =====================================================
--- 05-subscriptions.sql - Abonnement-Verwaltung
--- =====================================================
--- Verwaltung von Tarifen und Abonnements
--- Mit Preismodellen und Abrechnungszyklen
--- =====================================================
-
--- Abonnement-Pläne
-CREATE TABLE IF NOT EXISTS subscription_plans (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    price_monthly DECIMAL(10,2) NOT NULL,
-    price_yearly DECIMAL(10,2),
-    max_users INT,
-    max_storage_gb INT,
-    features JSON,
-    is_active BOOLEAN DEFAULT TRUE,
-    is_custom BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_is_active (is_active),
-    INDEX idx_name (name)
-);
-
--- Standard-Pläne einfügen
-INSERT INTO subscription_plans (name, description, price_monthly, price_yearly, max_users, max_storage_gb, features) VALUES
-('Free', 'Kostenloser Basis-Plan', 0.00, 0.00, 5, 1, '["basic_employees", "document_upload", "payslip_management"]'),
-('Starter', 'Für kleine Teams', 29.99, 299.99, 25, 10, '["basic_employees", "document_upload", "payslip_management", "email_notifications", "employee_self_service"]'),
-('Professional', 'Für wachsende Unternehmen', 79.99, 799.99, 100, 50, '["unlimited_employees", "document_upload", "payslip_management", "email_notifications", "employee_self_service", "team_management", "calendar", "chat", "blackboard"]'),
-('Enterprise', 'Für große Organisationen', 199.99, 1999.99, NULL, 500, '["unlimited_employees", "document_upload", "payslip_management", "email_notifications", "advanced_reports", "api_access", "custom_branding", "priority_support", "automation", "employee_self_service", "multi_language", "audit_trail", "data_export", "team_management", "calendar", "blackboard", "shift_planning", "kvp", "chat", "surveys"]')
-ON DUPLICATE KEY UPDATE 
-    description = VALUES(description),
-    price_monthly = VALUES(price_monthly),
-    price_yearly = VALUES(price_yearly),
-    max_users = VALUES(max_users),
-    max_storage_gb = VALUES(max_storage_gb),
-    features = VALUES(features);
-
--- Tenant-Abonnements
-CREATE TABLE IF NOT EXISTS tenant_subscriptions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    plan_id INT NOT NULL,
-    status ENUM('trial', 'active', 'paused', 'cancelled', 'expired') DEFAULT 'trial',
-    billing_cycle ENUM('monthly', 'yearly') DEFAULT 'monthly',
-    start_date DATE NOT NULL,
-    end_date DATE,
-    trial_ends_at DATE,
-    next_billing_date DATE,
-    amount DECIMAL(10,2),
-    currency VARCHAR(3) DEFAULT 'EUR',
-    payment_method VARCHAR(50),
-    auto_renew BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (plan_id) REFERENCES subscription_plans(id),
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_plan_id (plan_id),
-    INDEX idx_status (status),
-    INDEX idx_next_billing_date (next_billing_date)
-);
-
--- Zahlungshistorie
-CREATE TABLE IF NOT EXISTS payment_history (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    subscription_id INT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'EUR',
-    status ENUM('pending', 'completed', 'failed', 'refunded') DEFAULT 'pending',
-    payment_method VARCHAR(50),
-    transaction_id VARCHAR(100),
-    invoice_number VARCHAR(50),
-    invoice_url VARCHAR(500),
-    failure_reason TEXT,
-    paid_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (subscription_id) REFERENCES tenant_subscriptions(id),
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_subscription_id (subscription_id),
-    INDEX idx_status (status),
-    INDEX idx_invoice_number (invoice_number),
-    INDEX idx_created_at (created_at)
-);
-
--- Nutzungslimits und Kontingente
-CREATE TABLE IF NOT EXISTS usage_quotas (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    resource_type ENUM('users', 'storage', 'api_calls', 'documents', 'messages') NOT NULL,
-    used_amount INT DEFAULT 0,
-    limit_amount INT,
-    reset_period ENUM('daily', 'weekly', 'monthly', 'yearly') DEFAULT 'monthly',
-    last_reset TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_quota (tenant_id, resource_type),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_resource_type (resource_type)
-);-- =====================================================
--- 06-settings.sql - Einstellungen
--- =====================================================
--- System-, Tenant- und Benutzer-Einstellungen
--- Mit Default-Werten und Überschreibungen
--- =====================================================
-
--- System-weite Einstellungen
-CREATE TABLE IF NOT EXISTS system_settings (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    setting_key VARCHAR(100) UNIQUE NOT NULL,
-    setting_value TEXT,
-    value_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
-    category VARCHAR(50),
-    description TEXT,
-    is_public BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_category (category),
-    INDEX idx_is_public (is_public)
-);
-
--- Tenant-spezifische Einstellungen
-CREATE TABLE IF NOT EXISTS tenant_settings (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    setting_key VARCHAR(100) NOT NULL,
-    setting_value TEXT,
-    value_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
-    category VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_tenant_setting (tenant_id, setting_key),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_category (category)
-);
-
--- Benutzer-spezifische Einstellungen
-CREATE TABLE IF NOT EXISTS user_settings (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    setting_key VARCHAR(100) NOT NULL,
-    setting_value TEXT,
-    value_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
-    category VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_user_setting (user_id, setting_key),
-    INDEX idx_user_id (user_id),
-    INDEX idx_category (category)
-);
-
--- Email-Templates
-CREATE TABLE IF NOT EXISTS email_templates (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT,
-    template_key VARCHAR(100) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    body_html TEXT NOT NULL,
-    body_text TEXT,
-    variables JSON,
-    is_system BOOLEAN DEFAULT FALSE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_template (tenant_id, template_key),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_template_key (template_key),
-    INDEX idx_is_active (is_active)
-);
-
--- Benachrichtigungs-Einstellungen
-CREATE TABLE IF NOT EXISTS notification_preferences (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    notification_type VARCHAR(50) NOT NULL,
-    email_enabled BOOLEAN DEFAULT TRUE,
-    push_enabled BOOLEAN DEFAULT TRUE,
-    in_app_enabled BOOLEAN DEFAULT TRUE,
-    frequency ENUM('immediate', 'hourly', 'daily', 'weekly') DEFAULT 'immediate',
-    quiet_hours_start TIME,
-    quiet_hours_end TIME,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_notification_pref (user_id, notification_type),
-    INDEX idx_user_id (user_id),
-    INDEX idx_notification_type (notification_type)
-);
-
--- Standard System-Einstellungen einfügen
-INSERT INTO system_settings (setting_key, setting_value, value_type, category, description, is_public) VALUES
-('app_name', 'Assixx', 'string', 'general', 'Name der Anwendung', TRUE),
-('default_language', 'de', 'string', 'localization', 'Standard-Sprache', TRUE),
-('max_upload_size', '10485760', 'number', 'limits', 'Maximale Upload-Größe in Bytes (10MB)', FALSE),
-('session_timeout', '7200', 'number', 'security', 'Session-Timeout in Sekunden (2 Stunden)', FALSE),
-('password_min_length', '8', 'number', 'security', 'Minimale Passwortlänge', TRUE),
-('trial_days', '30', 'number', 'billing', 'Anzahl der Testtage', TRUE),
-('maintenance_mode', 'false', 'boolean', 'system', 'Wartungsmodus aktiviert', FALSE),
-('allow_registration', 'true', 'boolean', 'system', 'Registrierung erlaubt', TRUE)
-ON DUPLICATE KEY UPDATE 
-    setting_value = VALUES(setting_value),
-    value_type = VALUES(value_type),
-    category = VALUES(category),
-    description = VALUES(description),
-    is_public = VALUES(is_public);
--- Feature Tables
--- =====================================================
--- 01-features.sql - Feature Management System
--- =====================================================
--- Verwaltung aller verfügbaren Features/Module
--- Mit Preisen, Kategorien und Aktivierungsstatus
--- =====================================================
-
--- Feature-Definitionen
-CREATE TABLE IF NOT EXISTS features (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    code VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    category ENUM('basic', 'core', 'premium', 'enterprise') DEFAULT 'basic',
-    base_price DECIMAL(10,2) DEFAULT 0.00,
-    is_active BOOLEAN DEFAULT TRUE,
-    requires_setup BOOLEAN DEFAULT FALSE,
-    setup_instructions TEXT,
-    icon VARCHAR(100),
-    sort_order INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_code (code),
-    INDEX idx_category (category),
-    INDEX idx_is_active (is_active)
-);
-
--- Standard-Features einfügen
-INSERT INTO features (code, name, description, category, base_price, icon, sort_order) VALUES
-('basic_employees', 'Basis Mitarbeiterverwaltung', 'Verwaltung von bis zu 50 Mitarbeitern', 'basic', 0.00, 'users', 1),
-('unlimited_employees', 'Unbegrenzte Mitarbeiter', 'Keine Begrenzung der Mitarbeiteranzahl', 'premium', 49.99, 'users-plus', 2),
-('document_upload', 'Dokument Upload', 'Upload und Verwaltung von Dokumenten', 'basic', 0.00, 'file-text', 3),
-('payslip_management', 'Lohnabrechnungsverwaltung', 'Digitale Lohnabrechnungen verwalten', 'basic', 0.00, 'file-invoice-dollar', 4),
-('email_notifications', 'E-Mail Benachrichtigungen', 'Automatische E-Mail Benachrichtigungen', 'premium', 19.99, 'envelope', 5),
-('advanced_reports', 'Erweiterte Berichte', 'Detaillierte Auswertungen und Statistiken', 'premium', 29.99, 'chart-bar', 6),
-('api_access', 'API Zugang', 'Vollständiger API-Zugriff für Integrationen', 'enterprise', 99.99, 'plug', 7),
-('custom_branding', 'Custom Branding', 'Eigenes Logo und Farbschema', 'enterprise', 49.99, 'palette', 8),
-('priority_support', 'Priority Support', '24/7 Priority Support mit SLA', 'enterprise', 149.99, 'headset', 9),
-('automation', 'Automatisierung', 'Workflows und Prozesse automatisieren', 'enterprise', 79.99, 'robot', 10),
-('employee_self_service', 'Mitarbeiter Self-Service', 'Mitarbeiter können eigene Daten verwalten', 'premium', 24.99, 'user-edit', 11),
-('multi_language', 'Mehrsprachigkeit', 'Interface in mehreren Sprachen', 'premium', 19.99, 'language', 12),
-('audit_trail', 'Audit Trail', 'Vollständige Aktivitätsprotokolle', 'enterprise', 39.99, 'history', 13),
-('data_export', 'Daten Export', 'Export in verschiedene Formate', 'premium', 14.99, 'download', 14),
-('team_management', 'Team Verwaltung', 'Teams und Abteilungen verwalten', 'premium', 34.99, 'users-cog', 15),
-('calendar', 'Kalender-System', 'Termine, Events und Erinnerungen verwalten', 'premium', 24.99, 'calendar', 16),
-('blackboard', 'Digitales Schwarzes Brett', 'Ankündigungen und wichtige Informationen teilen', 'premium', 19.99, 'clipboard', 17),
-('shift_planning', 'Schichtplanungs-System', 'Erweiterte Schichtplanung mit Teams und Vorlagen', 'enterprise', 49.99, 'clock', 18),
-('kvp', 'Kontinuierlicher Verbesserungsprozess', 'KVP-Vorschläge sammeln und verwalten', 'enterprise', 39.99, 'trending-up', 19),
-('chat', 'Chat System', 'Interne Kommunikation mit Gruppen-Chats', 'premium', 19.99, 'message-circle', 20),
-('surveys', 'Umfrage-Tool', 'Erstellen und Auswerten von Mitarbeiterumfragen', 'premium', 29.99, 'bar-chart', 21)
-ON DUPLICATE KEY UPDATE 
-    name = VALUES(name),
-    description = VALUES(description),
-    category = VALUES(category),
-    base_price = VALUES(base_price),
-    icon = VALUES(icon),
-    sort_order = VALUES(sort_order);-- =====================================================
--- 02-tenant-features.sql - Feature-Aktivierungen
--- =====================================================
--- Verknüpft Tenants mit ihren aktivierten Features
--- Mit Ablaufdaten und benutzerdefinierten Konfigurationen
--- =====================================================
-
--- Tenant-Feature-Zuordnungen
-CREATE TABLE IF NOT EXISTS tenant_features (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    feature_id INT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    activated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    activated_by INT,
-    expires_at TIMESTAMP NULL,
-    custom_config JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (feature_id) REFERENCES features(id) ON DELETE CASCADE,
-    FOREIGN KEY (activated_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_tenant_feature (tenant_id, feature_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_feature_id (feature_id),
-    INDEX idx_is_active (is_active)
-);
-
--- Plan-Feature-Zuordnungen
-CREATE TABLE IF NOT EXISTS plan_features (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    plan_id INT NOT NULL,
-    feature_id INT NOT NULL,
-    included BOOLEAN DEFAULT TRUE,
-    usage_limit INT,
-    
-    -- Foreign Keys
-    FOREIGN KEY (plan_id) REFERENCES subscription_plans(id) ON DELETE CASCADE,
-    FOREIGN KEY (feature_id) REFERENCES features(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_plan_feature (plan_id, feature_id),
-    INDEX idx_plan_id (plan_id),
-    INDEX idx_feature_id (feature_id)
-);
-
--- Feature-Nutzungs-Logs
-CREATE TABLE IF NOT EXISTS feature_usage_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    feature_id INT NOT NULL,
-    user_id INT NOT NULL,
-    action VARCHAR(100) NOT NULL,
-    metadata JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (feature_id) REFERENCES features(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_feature_id (feature_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_created_at (created_at)
-);
--- Module Tables
--- =====================================================
--- admin-logs.sql - Administrative Logs
--- =====================================================
--- Protokollierung aller administrativen Aktionen
--- Für Audit-Trail und Sicherheitsüberwachung
--- =====================================================
-
--- Admin-Aktivitätslogs
-CREATE TABLE IF NOT EXISTS admin_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    admin_id INT NOT NULL,
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(50),
-    entity_id INT,
-    old_values JSON,
-    new_values JSON,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_admin_id (admin_id),
-    INDEX idx_action (action),
-    INDEX idx_entity_type (entity_type),
-    INDEX idx_created_at (created_at)
-);
-
--- Security Logs (Login-Versuche etc.)
-CREATE TABLE IF NOT EXISTS security_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT,
-    user_id INT,
-    action ENUM('login_success', 'login_failed', 'logout', 'password_reset', 'account_locked', 'suspicious_activity') NOT NULL,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    details JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_action (action),
-    INDEX idx_ip_address (ip_address),
-    INDEX idx_created_at (created_at)
-);
-
--- API Access Logs
-CREATE TABLE IF NOT EXISTS api_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT,
-    user_id INT,
-    method VARCHAR(10) NOT NULL,
-    endpoint VARCHAR(255) NOT NULL,
-    status_code INT,
-    request_body TEXT,
-    response_time_ms INT,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_endpoint (endpoint),
-    INDEX idx_status_code (status_code),
-    INDEX idx_created_at (created_at)
-);
-
--- System Event Logs
-CREATE TABLE IF NOT EXISTS system_logs (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    level ENUM('debug', 'info', 'warning', 'error', 'critical') NOT NULL,
-    category VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
-    context JSON,
-    stack_trace TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_level (level),
-    INDEX idx_category (category),
-    INDEX idx_created_at (created_at)
-);-- =====================================================
--- blackboard.sql - Digitales Schwarzes Brett
--- =====================================================
--- System für Ankündigungen und wichtige Mitteilungen
--- Mit Tags, Prioritäten und Lesebestätigungen
--- =====================================================
-
--- Haupttabelle für Einträge
-CREATE TABLE IF NOT EXISTS blackboard_entries (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    author_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    content TEXT NOT NULL,
-    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-    category VARCHAR(50),
-    valid_from DATE,
-    valid_until DATE,
-    is_pinned BOOLEAN DEFAULT FALSE,
-    views INT DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    requires_confirmation BOOLEAN DEFAULT FALSE,
-    attachment_path VARCHAR(500),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_author_id (author_id),
-    INDEX idx_priority (priority),
-    INDEX idx_valid_dates (valid_from, valid_until),
-    INDEX idx_is_active (is_active),
-    INDEX idx_is_pinned (is_pinned)
-);
-
--- Tags für Kategorisierung
-CREATE TABLE IF NOT EXISTS blackboard_tags (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(50) NOT NULL,
-    color VARCHAR(7) DEFAULT '#0066cc',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_tag_per_tenant (tenant_id, name),
-    INDEX idx_tenant_id (tenant_id)
-);
-
--- Verknüpfung Einträge <-> Tags
-CREATE TABLE IF NOT EXISTS blackboard_entry_tags (
-    entry_id INT NOT NULL,
-    tag_id INT NOT NULL,
-    
-    -- Primary Key
-    PRIMARY KEY (entry_id, tag_id),
-    
-    -- Foreign Keys
-    FOREIGN KEY (entry_id) REFERENCES blackboard_entries(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES blackboard_tags(id) ON DELETE CASCADE
-);
-
--- Lesebestätigungen
-CREATE TABLE IF NOT EXISTS blackboard_confirmations (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    entry_id INT NOT NULL,
-    user_id INT NOT NULL,
-    confirmed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (entry_id) REFERENCES blackboard_entries(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_confirmation (entry_id, user_id),
-    INDEX idx_entry_id (entry_id),
-    INDEX idx_user_id (user_id)
-);-- =====================================================
--- calendar.sql - Kalender-System
--- =====================================================
--- Verwaltung von Terminen, Events und Erinnerungen
--- Mit Einladungen, Wiederholungen und Kategorien
--- =====================================================
-
--- Kalender-Events
-CREATE TABLE IF NOT EXISTS calendar_events (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    location VARCHAR(255),
-    start_date DATETIME NOT NULL,
-    end_date DATETIME NOT NULL,
-    all_day BOOLEAN DEFAULT FALSE,
-    type ENUM('meeting', 'training', 'vacation', 'sick_leave', 'other') DEFAULT 'other',
-    status ENUM('tentative', 'confirmed', 'cancelled') DEFAULT 'confirmed',
-    is_private BOOLEAN DEFAULT FALSE,
-    reminder_minutes INT,
-    color VARCHAR(7) DEFAULT '#3498db',
-    recurrence_rule VARCHAR(500),
-    parent_event_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (parent_event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_start_date (start_date),
-    INDEX idx_end_date (end_date),
-    INDEX idx_type (type),
-    INDEX idx_status (status)
-);
-
--- Event-Teilnehmer
-CREATE TABLE IF NOT EXISTS calendar_participants (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    event_id INT NOT NULL,
-    user_id INT NOT NULL,
-    response_status ENUM('pending', 'accepted', 'declined', 'tentative') DEFAULT 'pending',
-    is_organizer BOOLEAN DEFAULT FALSE,
-    is_required BOOLEAN DEFAULT TRUE,
-    responded_at TIMESTAMP NULL,
-    
-    -- Foreign Keys
-    FOREIGN KEY (event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_participant (event_id, user_id),
-    INDEX idx_event_id (event_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_response_status (response_status)
-);
-
--- Event-Kategorien
-CREATE TABLE IF NOT EXISTS calendar_categories (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    color VARCHAR(7) DEFAULT '#3498db',
-    icon VARCHAR(50),
-    is_system BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_category_per_tenant (tenant_id, name),
-    INDEX idx_tenant_id (tenant_id)
-);
-
--- Event-Erinnerungen
-CREATE TABLE IF NOT EXISTS calendar_reminders (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    event_id INT NOT NULL,
-    user_id INT NOT NULL,
-    minutes_before INT NOT NULL,
-    type ENUM('email', 'notification', 'both') DEFAULT 'notification',
-    is_sent BOOLEAN DEFAULT FALSE,
-    sent_at TIMESTAMP NULL,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (event_id) REFERENCES calendar_events(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_event_id (event_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_is_sent (is_sent)
-);
-
--- Geteilte Kalender
-CREATE TABLE IF NOT EXISTS calendar_shares (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    calendar_owner_id INT NOT NULL,
-    shared_with_id INT NOT NULL,
-    permission_level ENUM('view', 'edit') DEFAULT 'view',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (calendar_owner_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (shared_with_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_share (calendar_owner_id, shared_with_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_calendar_owner_id (calendar_owner_id),
-    INDEX idx_shared_with_id (shared_with_id)
-);-- =====================================================
--- chat.sql - Chat-System
--- =====================================================
--- Interne Kommunikation mit Einzel- und Gruppenchats
--- Mit Lesebestätigungen, Anhängen und Benachrichtigungen
--- =====================================================
-
--- Chat-Gruppen (muss vor messages erstellt werden)
-CREATE TABLE IF NOT EXISTS message_groups (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    type ENUM('public', 'private', 'department', 'team') DEFAULT 'private',
-    avatar_url VARCHAR(500),
-    created_by INT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_created_by (created_by),
-    INDEX idx_type (type),
-    INDEX idx_is_active (is_active)
-);
-
--- Chat-Nachrichten
-CREATE TABLE IF NOT EXISTS messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    sender_id INT NOT NULL,
-    receiver_id INT,
-    group_id INT,
-    content TEXT NOT NULL,
-    type ENUM('text', 'file', 'image', 'system') DEFAULT 'text',
-    file_url VARCHAR(500),
-    is_edited BOOLEAN DEFAULT FALSE,
-    edited_at TIMESTAMP NULL,
-    is_deleted BOOLEAN DEFAULT FALSE,
-    deleted_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES message_groups(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_sender_id (sender_id),
-    INDEX idx_receiver_id (receiver_id),
-    INDEX idx_group_id (group_id),
-    INDEX idx_created_at (created_at),
-    INDEX idx_is_deleted (is_deleted),
-    
-    -- Constraints
-    CHECK ((receiver_id IS NOT NULL AND group_id IS NULL) OR 
-           (receiver_id IS NULL AND group_id IS NOT NULL))
-);
-
--- Gruppenmitglieder
-CREATE TABLE IF NOT EXISTS message_group_members (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    group_id INT NOT NULL,
-    user_id INT NOT NULL,
-    role ENUM('member', 'admin') DEFAULT 'member',
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_read_at TIMESTAMP NULL,
-    notification_enabled BOOLEAN DEFAULT TRUE,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES message_groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_group_member (group_id, user_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_group_id (group_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_role (role)
-);
-
--- Lesebestätigungen für Nachrichten
-CREATE TABLE IF NOT EXISTS message_read_receipts (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    message_id INT NOT NULL,
-    user_id INT NOT NULL,
-    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_read_receipt (message_id, user_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_message_id (message_id),
-    INDEX idx_user_id (user_id)
-);
-
--- Nachrichten-Anhänge
-CREATE TABLE IF NOT EXISTS message_attachments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    message_id INT NOT NULL,
-    filename VARCHAR(255) NOT NULL,
-    file_url VARCHAR(500) NOT NULL,
-    file_size INT NOT NULL,
-    mime_type VARCHAR(100),
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_message_id (message_id)
-);
-
--- Online-Status und Typing-Indicators
-CREATE TABLE IF NOT EXISTS user_chat_status (
-    user_id INT PRIMARY KEY,
-    tenant_id INT NOT NULL,
-    is_online BOOLEAN DEFAULT FALSE,
-    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_typing BOOLEAN DEFAULT FALSE,
-    typing_in_conversation INT,
-    
-    -- Foreign Keys
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_is_online (is_online),
-    INDEX idx_last_seen (last_seen)
-);
-
--- Chat-Benachrichtigungen
-CREATE TABLE IF NOT EXISTS chat_notifications (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    message_id INT NOT NULL,
-    type ENUM('message', 'mention', 'group_invite') DEFAULT 'message',
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_message_id (message_id),
-    INDEX idx_is_read (is_read),
-    INDEX idx_created_at (created_at)
-);-- =====================================================
--- documents.sql - Dokumenten-Management System
--- =====================================================
--- Verwaltung von Mitarbeiter-Dokumenten
--- Mit Kategorisierung, Archivierung und Ablaufdaten
--- =====================================================
-
-CREATE TABLE IF NOT EXISTS documents (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    category ENUM('personal', 'work', 'training', 'general', 'salary') NOT NULL,
-    filename VARCHAR(255) NOT NULL,
-    original_name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(500) NOT NULL,
-    file_size INT NOT NULL,
-    mime_type VARCHAR(100),
-    description TEXT,
-    tags JSON,
-    is_public BOOLEAN DEFAULT FALSE,
-    is_archived BOOLEAN DEFAULT FALSE,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    archived_at TIMESTAMP NULL,
-    expires_at TIMESTAMP NULL,
-    created_by INT,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_category (category),
-    INDEX idx_uploaded_at (uploaded_at),
-    INDEX idx_is_archived (is_archived)
-);-- =====================================================
--- kvp.sql - Kontinuierlicher Verbesserungsprozess
--- =====================================================
--- Verwaltung von Verbesserungsvorschlägen
--- Mit Bewertungen, Umsetzungsstatus und Prämien
--- =====================================================
-
--- KVP-Vorschläge
-CREATE TABLE IF NOT EXISTS kvp_suggestions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    submitter_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    category ENUM('quality', 'efficiency', 'safety', 'cost', 'environment', 'other') DEFAULT 'other',
-    department_id INT,
-    status ENUM('draft', 'submitted', 'review', 'approved', 'rejected', 'implemented', 'archived') DEFAULT 'draft',
-    priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
-    estimated_savings DECIMAL(10,2),
-    actual_savings DECIMAL(10,2),
-    implementation_cost DECIMAL(10,2),
-    reward_amount DECIMAL(10,2),
-    reviewed_by INT,
-    reviewed_at TIMESTAMP NULL,
-    implemented_by INT,
-    implemented_at TIMESTAMP NULL,
-    rejection_reason TEXT,
-    attachments JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (submitter_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
-    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (implemented_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_submitter_id (submitter_id),
-    INDEX idx_department_id (department_id),
-    INDEX idx_status (status),
-    INDEX idx_category (category),
-    INDEX idx_priority (priority),
-    INDEX idx_created_at (created_at)
-);
-
--- KVP-Kommentare
-CREATE TABLE IF NOT EXISTS kvp_comments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    suggestion_id INT NOT NULL,
-    user_id INT NOT NULL,
-    comment TEXT NOT NULL,
-    is_internal BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_suggestion_id (suggestion_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_created_at (created_at)
-);
-
--- KVP-Bewertungen
-CREATE TABLE IF NOT EXISTS kvp_ratings (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    suggestion_id INT NOT NULL,
-    user_id INT NOT NULL,
-    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    comment TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_rating (suggestion_id, user_id),
-    INDEX idx_suggestion_id (suggestion_id),
-    INDEX idx_user_id (user_id)
-);
-
--- KVP-Team-Mitglieder (Bewertungsteam)
-CREATE TABLE IF NOT EXISTS kvp_team_members (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    role ENUM('member', 'lead', 'admin') DEFAULT 'member',
-    department_id INT,
-    is_active BOOLEAN DEFAULT TRUE,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_team_member (tenant_id, user_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_department_id (department_id),
-    INDEX idx_is_active (is_active)
-);
-
--- KVP-Kategorien (Benutzerdefiniert)
-CREATE TABLE IF NOT EXISTS kvp_categories (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    color VARCHAR(7) DEFAULT '#3498db',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_category_per_tenant (tenant_id, name),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_is_active (is_active)
-);
-
--- KVP-Prämien-Historie
-CREATE TABLE IF NOT EXISTS kvp_rewards (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    suggestion_id INT NOT NULL,
-    user_id INT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    status ENUM('pending', 'approved', 'paid', 'cancelled') DEFAULT 'pending',
-    approved_by INT,
-    approved_at TIMESTAMP NULL,
-    paid_at TIMESTAMP NULL,
-    payment_reference VARCHAR(100),
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (suggestion_id) REFERENCES kvp_suggestions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_suggestion_id (suggestion_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
-);
-
--- KVP-Statistiken (Materialized View Alternative)
-CREATE TABLE IF NOT EXISTS kvp_statistics (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    total_suggestions INT DEFAULT 0,
-    approved_suggestions INT DEFAULT 0,
-    implemented_suggestions INT DEFAULT 0,
-    total_savings DECIMAL(10,2) DEFAULT 0.00,
-    total_rewards DECIMAL(10,2) DEFAULT 0.00,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_user_stats (tenant_id, user_id),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id)
-);-- =====================================================
--- shifts.sql - Schichtplanungs-System
--- =====================================================
--- Verwaltung von Schichtplänen, Vorlagen und Tausch
--- Mit Team-Zuordnungen und Urlaubsintegration
--- =====================================================
-
--- Schichtvorlagen
-CREATE TABLE IF NOT EXISTS shift_templates (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    break_minutes INT DEFAULT 0,
-    color VARCHAR(7) DEFAULT '#3498db',
-    is_night_shift BOOLEAN DEFAULT FALSE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_is_active (is_active)
-);
-
--- Schichtpläne
-CREATE TABLE IF NOT EXISTS shifts (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    template_id INT,
-    date DATE NOT NULL,
-    start_time DATETIME NOT NULL,
-    end_time DATETIME NOT NULL,
-    actual_start DATETIME,
-    actual_end DATETIME,
-    break_minutes INT DEFAULT 0,
-    status ENUM('planned', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'planned',
-    type ENUM('regular', 'overtime', 'standby', 'vacation', 'sick', 'holiday') DEFAULT 'regular',
-    notes TEXT,
-    created_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (template_id) REFERENCES shift_templates(id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_date (date),
-    INDEX idx_status (status),
-    INDEX idx_type (type),
-    UNIQUE KEY unique_user_shift (user_id, date, start_time)
-);
-
--- Schicht-Notizen
-CREATE TABLE IF NOT EXISTS shift_notes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    shift_id INT NOT NULL,
-    user_id INT NOT NULL,
-    note TEXT NOT NULL,
-    type ENUM('info', 'warning', 'important') DEFAULT 'info',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (shift_id) REFERENCES shifts(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_shift_id (shift_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_type (type)
-);
-
--- Schichttausch-Anfragen
-CREATE TABLE IF NOT EXISTS shift_swaps (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    requester_id INT NOT NULL,
-    shift_id INT NOT NULL,
-    target_user_id INT,
-    target_shift_id INT,
-    reason TEXT,
-    status ENUM('pending', 'accepted', 'rejected', 'cancelled') DEFAULT 'pending',
-    responded_at TIMESTAMP NULL,
-    approved_by INT,
-    approved_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (shift_id) REFERENCES shifts(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_shift_id) REFERENCES shifts(id) ON DELETE CASCADE,
-    FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_requester_id (requester_id),
-    INDEX idx_shift_id (shift_id),
-    INDEX idx_target_user_id (target_user_id),
-    INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
-);
-
--- Schichtgruppen/Teams
-CREATE TABLE IF NOT EXISTS shift_groups (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    manager_id INT,
-    color VARCHAR(7) DEFAULT '#3498db',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_manager_id (manager_id),
-    INDEX idx_is_active (is_active)
-);
-
--- Schichtgruppen-Mitglieder
-CREATE TABLE IF NOT EXISTS shift_group_members (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    group_id INT NOT NULL,
-    user_id INT NOT NULL,
-    role ENUM('member', 'lead', 'substitute') DEFAULT 'member',
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (group_id) REFERENCES shift_groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_group_member (group_id, user_id),
-    INDEX idx_group_id (group_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_role (role)
-);
-
--- Schichtmuster/Rotationen
-CREATE TABLE IF NOT EXISTS shift_patterns (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    pattern_data JSON NOT NULL,
-    cycle_days INT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_is_active (is_active)
-);
-
--- Schichtmuster-Zuweisungen
-CREATE TABLE IF NOT EXISTS shift_pattern_assignments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    pattern_id INT NOT NULL,
-    user_id INT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    
-    -- Foreign Keys
-    FOREIGN KEY (pattern_id) REFERENCES shift_patterns(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_pattern_id (pattern_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_dates (start_date, end_date),
-    INDEX idx_is_active (is_active)
-);
-
--- Abwesenheiten (Urlaub, Krankheit, etc.)
-CREATE TABLE IF NOT EXISTS absences (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    user_id INT NOT NULL,
-    type ENUM('vacation', 'sick', 'training', 'other') NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    reason TEXT,
-    status ENUM('pending', 'approved', 'rejected', 'cancelled') DEFAULT 'pending',
-    approved_by INT,
-    approved_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_dates (start_date, end_date),
-    INDEX idx_type (type),
-    INDEX idx_status (status)
-);-- =====================================================
--- surveys.sql - Umfrage-System
--- =====================================================
--- Erstellen und Auswerten von Mitarbeiterumfragen
--- Mit verschiedenen Fragetypen und anonymen Optionen
--- =====================================================
-
--- Umfragen
-CREATE TABLE IF NOT EXISTS surveys (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    type ENUM('feedback', 'satisfaction', 'poll', 'assessment', 'other') DEFAULT 'feedback',
-    status ENUM('draft', 'active', 'paused', 'completed', 'archived') DEFAULT 'draft',
-    is_anonymous BOOLEAN DEFAULT FALSE,
-    allow_multiple_responses BOOLEAN DEFAULT FALSE,
-    start_date DATETIME,
-    end_date DATETIME,
-    created_by INT NOT NULL,
-    target_departments JSON,
-    target_teams JSON,
-    notification_sent BOOLEAN DEFAULT FALSE,
-    reminder_sent BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_status (status),
-    INDEX idx_type (type),
-    INDEX idx_dates (start_date, end_date),
-    INDEX idx_created_by (created_by)
-);
-
--- Umfrage-Fragen
-CREATE TABLE IF NOT EXISTS survey_questions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    survey_id INT NOT NULL,
-    question_text TEXT NOT NULL,
-    question_type ENUM('single_choice', 'multiple_choice', 'text', 'rating', 'scale', 'yes_no', 'date', 'number') NOT NULL,
-    is_required BOOLEAN DEFAULT TRUE,
-    options JSON,
-    validation_rules JSON,
-    order_index INT DEFAULT 0,
-    help_text TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_survey_id (survey_id),
-    INDEX idx_order_index (order_index)
-);
-
--- Umfrage-Antworten
-CREATE TABLE IF NOT EXISTS survey_responses (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    survey_id INT NOT NULL,
-    user_id INT,
-    session_id VARCHAR(100),
-    status ENUM('in_progress', 'completed', 'abandoned') DEFAULT 'in_progress',
-    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP NULL,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    
-    -- Foreign Keys
-    FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    
-    -- Indexes
-    INDEX idx_survey_id (survey_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_session_id (session_id),
-    INDEX idx_status (status),
-    INDEX idx_completed_at (completed_at)
-);
-
--- Einzelne Antworten
-CREATE TABLE IF NOT EXISTS survey_answers (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    response_id INT NOT NULL,
-    question_id INT NOT NULL,
-    answer_text TEXT,
-    answer_options JSON,
-    answer_number DECIMAL(10,2),
-    answer_date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (response_id) REFERENCES survey_responses(id) ON DELETE CASCADE,
-    FOREIGN KEY (question_id) REFERENCES survey_questions(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_response_id (response_id),
-    INDEX idx_question_id (question_id)
-);
-
--- Umfrage-Kommentare
-CREATE TABLE IF NOT EXISTS survey_comments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    survey_id INT NOT NULL,
-    user_id INT NOT NULL,
-    comment TEXT NOT NULL,
-    is_public BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_survey_id (survey_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_created_at (created_at)
-);
-
--- Umfrage-Vorlagen
-CREATE TABLE IF NOT EXISTS survey_templates (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    tenant_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    category VARCHAR(50),
-    template_data JSON NOT NULL,
-    is_public BOOLEAN DEFAULT FALSE,
-    created_by INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    
-    -- Indexes
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_category (category),
-    INDEX idx_is_public (is_public)
-);
-
--- Umfrage-Teilnehmer (für gezielte Umfragen)
-CREATE TABLE IF NOT EXISTS survey_participants (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    survey_id INT NOT NULL,
-    user_id INT NOT NULL,
-    invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    reminder_sent_at TIMESTAMP NULL,
-    completed BOOLEAN DEFAULT FALSE,
-    
-    -- Foreign Keys
-    FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    
-    -- Indexes & Constraints
-    UNIQUE KEY unique_participant (survey_id, user_id),
-    INDEX idx_survey_id (survey_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_completed (completed)
-);
-
--- Umfrage-Erinnerungen
-CREATE TABLE IF NOT EXISTS survey_reminders (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    survey_id INT NOT NULL,
-    reminder_date DATETIME NOT NULL,
-    message TEXT,
-    is_sent BOOLEAN DEFAULT FALSE,
-    sent_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Foreign Keys
-    FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
-    
-    -- Indexes
-    INDEX idx_survey_id (survey_id),
-    INDEX idx_reminder_date (reminder_date),
-    INDEX idx_is_sent (is_sent)
-);
--- Views
--- =====================================================
--- views.sql - Datenbank-Views
--- =====================================================
--- Vordefinierte Views für häufige Abfragen
--- Vereinfacht komplexe JOINs und Aggregationen
--- =====================================================
-
--- Mitarbeiter-Übersicht
-CREATE OR REPLACE VIEW employee_overview AS
-SELECT 
-    u.id,
-    u.tenant_id,
-    u.email,
-    u.first_name,
-    u.last_name,
-    u.phone,
-    u.role,
-    u.status,
-    u.created_at,
-    u.last_login,
-    d.name AS department_name,
-    t.name AS team_name,
-    COUNT(DISTINCT doc.id) AS document_count,
-    COUNT(DISTINCT msg.id) AS message_count
-FROM users u
-LEFT JOIN departments d ON u.department_id = d.id AND d.tenant_id = u.tenant_id
-LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-LEFT JOIN teams t ON ut.team_id = t.id AND t.tenant_id = u.tenant_id
-LEFT JOIN documents doc ON u.id = doc.user_id AND doc.tenant_id = u.tenant_id
-LEFT JOIN messages msg ON u.id = msg.sender_id AND msg.tenant_id = u.tenant_id
-WHERE u.role = 'employee'
-GROUP BY u.id;
-
--- Tenant-Statistiken
-CREATE OR REPLACE VIEW tenant_statistics AS
-SELECT 
-    t.id AS tenant_id,
-    t.company_name AS tenant_name,
-    t.subdomain,
-    t.status,
-    t.current_plan AS plan_type,
-    COUNT(DISTINCT u.id) AS total_users,
-    COUNT(DISTINCT CASE WHEN u.role = 'admin' THEN u.id END) AS admin_count,
-    COUNT(DISTINCT CASE WHEN u.role = 'employee' THEN u.id END) AS employee_count,
-    COUNT(DISTINCT d.id) AS department_count,
-    COUNT(DISTINCT tm.id) AS team_count,
-    COUNT(DISTINCT tf.id) AS active_features,
-    t.created_at,
-    t.trial_ends_at AS subscription_end_date
-FROM tenants t
-LEFT JOIN users u ON t.id = u.tenant_id AND u.status = 'active'
-LEFT JOIN departments d ON t.id = d.tenant_id
-LEFT JOIN teams tm ON t.id = tm.tenant_id
-LEFT JOIN tenant_features tf ON t.id = tf.tenant_id AND tf.is_active = TRUE
-GROUP BY t.id;
-
--- Feature-Nutzung
-CREATE OR REPLACE VIEW feature_usage_summary AS
-SELECT 
-    f.id AS feature_id,
-    f.code,
-    f.name,
-    f.category,
-    f.base_price,
-    COUNT(DISTINCT tf.tenant_id) AS tenant_count,
-    COUNT(DISTINCT ful.id) AS usage_count,
-    SUM(CASE WHEN tf.is_active = TRUE THEN 1 ELSE 0 END) AS active_count,
-    AVG(DATEDIFF(NOW(), tf.activated_at)) AS avg_days_active
-FROM features f
-LEFT JOIN tenant_features tf ON f.id = tf.feature_id
-LEFT JOIN feature_usage_logs ful ON f.id = ful.feature_id
-GROUP BY f.id;
-
--- Aktive Schichten heute
-CREATE OR REPLACE VIEW active_shifts_today AS
-SELECT 
-    s.id,
-    s.tenant_id,
-    s.user_id,
-    u.first_name,
-    u.last_name,
-    s.start_time,
-    s.end_time,
-    s.status,
-    s.type,
-    st.name AS template_name,
-    d.name AS department_name
-FROM shifts s
-JOIN users u ON s.user_id = u.id
-LEFT JOIN shift_templates st ON s.template_id = st.id
-LEFT JOIN departments d ON u.department_id = d.id
-WHERE DATE(s.date) = CURDATE()
-AND s.status NOT IN ('cancelled');
-
--- Offene KVP-Vorschläge
-CREATE OR REPLACE VIEW open_kvp_suggestions AS
-SELECT 
-    k.id,
-    k.tenant_id,
-    k.title,
-    k.category,
-    k.status,
-    k.priority,
-    k.estimated_savings,
-    k.created_at,
-    u.first_name AS submitter_first_name,
-    u.last_name AS submitter_last_name,
-    d.name AS department_name,
-    COUNT(DISTINCT kc.id) AS comment_count,
-    AVG(kr.rating) AS avg_rating
-FROM kvp_suggestions k
-JOIN users u ON k.submitter_id = u.id
-LEFT JOIN departments d ON k.department_id = d.id
-LEFT JOIN kvp_comments kc ON k.id = kc.suggestion_id
-LEFT JOIN kvp_ratings kr ON k.id = kr.suggestion_id
-WHERE k.status IN ('submitted', 'review', 'approved')
-GROUP BY k.id;
-
--- Aktuelle Umfragen
-CREATE OR REPLACE VIEW active_surveys AS
-SELECT 
-    s.id,
-    s.tenant_id,
-    s.title,
-    s.type,
-    s.status,
-    s.is_anonymous,
-    s.start_date,
-    s.end_date,
-    u.first_name AS creator_first_name,
-    u.last_name AS creator_last_name,
-    COUNT(DISTINCT sq.id) AS question_count,
-    COUNT(DISTINCT sr.id) AS response_count,
-    COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) AS completed_count
-FROM surveys s
-JOIN users u ON s.created_by = u.id
-LEFT JOIN survey_questions sq ON s.id = sq.survey_id
-LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-WHERE s.status = 'active'
-AND (s.start_date IS NULL OR s.start_date <= NOW())
-AND (s.end_date IS NULL OR s.end_date >= NOW())
-GROUP BY s.id;
-
--- Dokument-Übersicht
-CREATE OR REPLACE VIEW document_summary AS
-SELECT 
-    d.id,
-    d.tenant_id,
-    d.user_id,
-    d.category,
-    d.filename,
-    d.file_size,
-    d.uploaded_at,
-    d.is_archived,
-    u.first_name AS owner_first_name,
-    u.last_name AS owner_last_name,
-    u.email AS owner_email,
-    cu.first_name AS uploader_first_name,
-    cu.last_name AS uploader_last_name
-FROM documents d
-JOIN users u ON d.user_id = u.id
-LEFT JOIN users cu ON d.created_by = cu.id
-WHERE d.is_archived = FALSE;
-
--- Chat-Aktivität
-CREATE OR REPLACE VIEW chat_activity AS
-SELECT 
-    DATE(m.created_at) AS activity_date,
-    m.sender_id,
-    u.first_name,
-    u.last_name,
-    u.tenant_id,
-    COUNT(DISTINCT m.id) AS message_count,
-    COUNT(DISTINCT m.receiver_id) AS unique_recipients,
-    COUNT(DISTINCT m.group_id) AS group_messages
-FROM messages m
-JOIN users u ON m.sender_id = u.id
-WHERE m.is_deleted = FALSE
-AND m.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-GROUP BY DATE(m.created_at), m.sender_id;
-
--- Mitarbeiter ohne Dokumente
-CREATE OR REPLACE VIEW employees_without_documents AS
-SELECT 
-    u.id,
-    u.tenant_id,
-    u.email,
-    u.first_name,
-    u.last_name,
-    u.created_at,
-    d.name AS department_name
-FROM users u
-LEFT JOIN departments d ON u.department_id = d.id
-LEFT JOIN documents doc ON u.id = doc.user_id
-WHERE u.role = 'employee'
-AND u.status = 'active'
-AND doc.id IS NULL
-GROUP BY u.id;
--- Keine Test-Daten - Komplett leere Datenbank
+-- Note: Views extracted from production may need adjustment
+-- Check the CREATE VIEW statements for proper permissions
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- =====================================================
+-- END OF SCHEMA
+-- =====================================================

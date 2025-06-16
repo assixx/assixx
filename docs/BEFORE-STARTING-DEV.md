@@ -24,7 +24,7 @@ docker-compose logs mysql --tail=20
 docker exec docker-backend-1 curl -s http://localhost:3000/health | jq '.'
 
 # TypeScript Build im Docker Container prüfen
-docker exec docker-backend-1 npm run typecheck
+docker exec docker-backend-1 pnpm run typecheck
 
 # ODER nutze das neue Status-Script (empfohlen):
 /home/scs/projects/Assixx/scripts/dev-status.sh
@@ -48,19 +48,19 @@ docker-mysql-1      "docker-entrypoint.s…"   mysql               Up 2 minutes 
 
 ```bash
 # TypeScript Build im Container
-docker exec docker-backend-1 npm run build:ts
+docker exec docker-backend-1 pnpm run build:ts
 
 # Type-Checking im Container
-docker exec assixx-backend npm run type-check
+docker exec assixx-backend pnpm run type-check
 
 # ESLint im Container
-docker exec assixx-backend npm run lint:ts
+docker exec assixx-backend pnpm run lint:ts
 
 # Auto-Fix mit ESLint (EMPFOHLEN nach Errors)
-docker exec assixx-backend npm run lint:fix
+docker exec assixx-backend pnpm run lint:fix
 
 # Code mit Prettier formatieren
-docker exec assixx-backend npm run format
+docker exec assixx-backend pnpm run format
 ```
 
 #### 💻 Lokale Version:
@@ -70,19 +70,19 @@ docker exec assixx-backend npm run format
 cd /home/scs/projects/Assixx
 
 # TypeScript zu JavaScript kompilieren (Frontend & Backend)
-npm run build:ts
+pnpm run build:ts
 
 # TypeScript Type-Checking ohne Kompilierung
-npm run type-check
+pnpm run type-check
 
 # ESLint auf alle .ts Dateien ausführen
-npm run lint:ts
+pnpm run lint:ts
 
 # Auto-Fix mit ESLint (EMPFOHLEN nach Errors)
-npm run lint:fix
+pnpm run lint:fix
 
 # Code-Formatierung mit Prettier
-npm run format
+pnpm run format
 ```
 
 ### 2️⃣ API & System Health Checks (1-2 Min)
@@ -107,7 +107,7 @@ docker logs assixx-backend --tail=20
 
 ```bash
 # Backend starten (falls nicht läuft)
-cd backend && npm run dev &
+cd backend && pnpm dev &
 
 # Warten bis Server ready (3 Sekunden)
 sleep 3
@@ -133,8 +133,8 @@ curl -s -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
 # Node.js Version im Container
 docker exec assixx-backend node --version
 
-# NPM Version im Container
-docker exec assixx-backend npm --version
+# pnpm Version im Container
+docker exec assixx-backend pnpm --version
 
 # TypeScript Version im Container
 docker exec assixx-backend npx tsc --version
@@ -143,7 +143,7 @@ docker exec assixx-backend npx tsc --version
 docker exec assixx-mysql mysql --version
 
 # Security Audit im Container
-docker exec assixx-backend npm audit --audit-level=high
+docker exec assixx-backend pnpm audit --audit-level=high
 ```
 
 #### 💻 Lokale Version:
@@ -152,20 +152,20 @@ docker exec assixx-backend npm audit --audit-level=high
 # Node.js Version prüfen (sollte >= 18.x sein)
 node --version
 
-# NPM Version prüfen
-npm --version
+# pnpm Version prüfen
+pnpm --version
 
 # TypeScript Version prüfen
 npx tsc --version
 
 # Veraltete Dependencies prüfen
-npm outdated
+pnpm outdated
 
 # MySQL Connection Test
 mysql -u root -p -e "SELECT VERSION();" 2>/dev/null || echo "MySQL nicht erreichbar"
 
 # Kritische Security Updates prüfen
-npm audit --audit-level=high
+pnpm audit --audit-level=high
 ```
 
 ### 4️⃣ Projekt-Status Review (1 Min)
@@ -190,7 +190,7 @@ git diff --stat
 
 ```bash
 # Frontend Build im Container
-docker exec assixx-backend sh -c "cd frontend && npm run build"
+docker exec assixx-backend sh -c "cd frontend && pnpm run build"
 
 # Dist-Ordner prüfen
 docker exec assixx-backend ls -la frontend/dist/
@@ -200,7 +200,7 @@ docker exec assixx-backend ls -la frontend/dist/
 
 ```bash
 # Frontend Build erstellen
-cd frontend && npm run build
+cd frontend && pnpm run build
 
 # Dist-Ordner prüfen
 ls -la dist/
@@ -237,7 +237,7 @@ docker-compose up -d
 ```bash
 # Cache löschen und neu builden
 rm -rf node_modules/.cache
-npm run build:ts
+pnpm run build:ts
 ```
 
 ### MySQL Connection Fehler
@@ -299,39 +299,39 @@ docker-compose down
 
 ```bash
 # ESLint Auto-Fix für alle Dateien (EMPFOHLEN)
-docker exec assixx-backend npm run lint:fix
+docker exec assixx-backend pnpm run lint:fix
 
 # Nur TypeScript Dateien mit ESLint fixen
-docker exec assixx-backend npx eslint backend/src/**/*.ts --fix
+docker exec assixx-backend pnpm exec eslint backend/src/**/*.ts --fix
 
 # Prettier für alle Dateien formatieren
-docker exec assixx-backend npm run format
+docker exec assixx-backend pnpm run format
 
 # Prettier nur prüfen (ohne Änderungen)
-docker exec assixx-backend npm run format:check
+docker exec assixx-backend pnpm run format:check
 ```
 
 ### 💻 Lokale Auto-Fix Befehle:
 
 ```bash
 # ESLint Auto-Fix für alle Dateien
-npm run lint:fix
+pnpm run lint:fix
 
 # Nur TypeScript Dateien fixen
-npx eslint backend/src/**/*.ts --fix
+pnpm exec eslint backend/src/**/*.ts --fix
 
 # Prettier formatieren
-npm run format
+pnpm run format
 
 # Prettier Check
-npm run format:check
+pnpm run format:check
 ```
 
 ### ✅ Empfohlene Reihenfolge:
 
-1. Erst `npm run format` für Code-Formatierung
-2. Dann `npm run lint:fix` für ESLint-Regeln
-3. Abschließend `npm run type-check` für TypeScript-Prüfung
+1. Erst `pnpm run format` für Code-Formatierung
+2. Dann `pnpm run lint:fix` für ESLint-Regeln
+3. Abschließend `pnpm run type-check` für TypeScript-Prüfung
 
 ## ⚡ Quick Start (Alle Checks in einem Befehl)
 
@@ -340,8 +340,8 @@ npm run format:check
 ```bash
 # Docker Status und alle wichtigen Checks
 docker-compose ps && \
-docker exec assixx-backend npm run type-check && \
-docker exec assixx-backend npm run lint:ts && \
+docker exec assixx-backend pnpm run type-check && \
+docker exec assixx-backend pnpm run lint:ts && \
 curl -s http://localhost:3000/health | jq '.' && \
 docker logs assixx-backend --tail=10 && \
 git status
@@ -352,11 +352,11 @@ git status
 ```bash
 # One-Liner für alle Checks
 cd /home/scs/projects/Assixx && \
-npm run build:ts && \
-npm run type-check && \
-npm run lint:ts && \
+pnpm run build:ts && \
+pnpm run type-check && \
+pnpm run lint:ts && \
 curl -s http://localhost:3000/health && \
-npm outdated && \
+pnpm outdated && \
 git status
 ```
 

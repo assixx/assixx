@@ -520,7 +520,7 @@ export class ChatWebSocketServer {
           delivery_status: 'delivered',
           is_read: false,
           is_scheduled: true,
-          attachments: [],
+          attachments: [] as any[],
         };
 
         for (const participant of participants) {
@@ -594,7 +594,7 @@ export class ChatWebSocketServer {
             created_at: message.created_at,
             delivery_status: 'delivered',
             is_read: false,
-            attachments: [],
+            attachments: [] as any[],
           };
 
           // An Empfänger senden wenn online

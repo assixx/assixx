@@ -92,7 +92,7 @@ export function snakeToCamel<T = any>(obj: any): T {
 
   const converted: any = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const camelKey = snakeToCamelString(key);
       converted[camelKey] = snakeToCamel(obj[key]);
     }
@@ -118,7 +118,7 @@ export function camelToSnake<T = any>(obj: any): T {
 
   const converted: any = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const snakeKey = camelToSnakeString(key);
       converted[snakeKey] = camelToSnake(obj[key]);
     }

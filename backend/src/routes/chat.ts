@@ -60,25 +60,25 @@ const upload = multer({
 
 // Routes with controller methods
 router.get('/users', authenticateToken, (req, res) =>
-  chatController.getUsers(req as ChatUsersRequest, res)
+  chatController.getUsers(req as unknown as ChatUsersRequest, res)
 );
 router.get('/conversations', authenticateToken, (req, res) =>
-  chatController.getConversations(req as GetConversationsRequest, res)
+  chatController.getConversations(req as unknown as GetConversationsRequest, res)
 );
 router.post('/conversations', authenticateToken, (req, res) =>
-  chatController.createConversation(req as CreateConversationRequest, res)
+  chatController.createConversation(req as unknown as CreateConversationRequest, res)
 );
 router.get('/conversations/:id/messages', authenticateToken, (req, res) =>
-  chatController.getMessages(req as GetMessagesRequest, res)
+  chatController.getMessages(req as unknown as GetMessagesRequest, res)
 );
 router.post(
   '/conversations/:id/messages',
   authenticateToken,
   upload.single('attachment'),
-  (req, res) => chatController.sendMessage(req as SendMessageRequest, res)
+  (req, res) => chatController.sendMessage(req as unknown as SendMessageRequest, res)
 );
 router.get('/attachments/:filename', authenticateToken, (req, res) =>
-  chatController.downloadFile(req as AuthenticatedRequest, res)
+  chatController.downloadFile(req as unknown as AuthenticatedRequest, res)
 );
 // router.put(
 //   '/messages/:id/read',
@@ -96,20 +96,18 @@ router.get('/attachments/:filename', authenticateToken, (req, res) =>
 //   chatController.deleteMessage as any
 // );
 router.get('/unread-count', authenticateToken, (req, res) =>
-  chatController.getUnreadCount(req as AuthenticatedRequest, res)
+  chatController.getUnreadCount(req as unknown as AuthenticatedRequest, res)
 );
 router.post('/conversations/:id/read', authenticateToken, (req, res) =>
-  chatController.markConversationAsRead(req as AuthenticatedRequest, res)
+  chatController.markConversationAsRead(req as unknown as AuthenticatedRequest, res)
 );
 // router.put(
 //   '/messages/:id/archive',
 //   authenticateToken,
 //   chatController.archiveMessage as any
 // );
-router.delete(
-  '/conversations/:id',
-  authenticateToken,
-  (req, res) => chatController.deleteConversation(req as AuthenticatedRequest, res)
+router.delete('/conversations/:id', authenticateToken, (req, res) =>
+  chatController.deleteConversation(req as unknown as AuthenticatedRequest, res)
 );
 
 export default router;

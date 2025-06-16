@@ -7,7 +7,7 @@ import express, { Router, Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { authenticateToken } from '../auth';
 import { logger } from '../utils/logger';
 
@@ -25,7 +25,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
   };
-  // eslint-disable-next-line no-undef
+
   file?: Express.Multer.File;
 }
 
@@ -50,10 +50,15 @@ router.get(
         users = await User.findAllByTenant(authReq.user.tenant_id);
       } else if (authReq.user.role === 'employee') {
         // Employees only see users from their department
-        const currentUser = await User.findById(authReq.user.id, authReq.user.tenant_id);
+        const currentUser = await User.findById(
+          authReq.user.id,
+          authReq.user.tenant_id
+        );
         if (currentUser && currentUser.department_id) {
           const allUsers = await User.findAllByTenant(authReq.user.tenant_id);
-          users = allUsers.filter(u => u.department_id === currentUser.department_id);
+          users = allUsers.filter(
+            (u) => u.department_id === currentUser.department_id
+          );
         }
       } else {
         res.status(403).json({ message: 'Access denied' });
@@ -299,7 +304,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (
   _req: any,
-  // eslint-disable-next-line no-undef
+
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
@@ -536,11 +541,18 @@ router.put(
     try {
       const authReq = req as AuthenticatedRequest;
       const employeeId = parseInt(req.params.id);
-      const { availability_status, availability_start, availability_end, availability_notes } = req.body;
+      const {
+        availability_status,
+        availability_start,
+        availability_end,
+        availability_notes,
+      } = req.body;
 
       // Check if user is admin or root
       if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-        res.status(403).json({ message: 'Nur Administratoren können die Verfügbarkeit ändern' });
+        res.status(403).json({
+          message: 'Nur Administratoren können die Verfügbarkeit ändern',
+        });
         return;
       }
 
@@ -559,12 +571,14 @@ router.put(
           availability_status,
           availability_start,
           availability_end,
-          availability_notes
+          availability_notes,
         }
       );
 
       if (success) {
-        logger.info(`Admin ${authReq.user.id} updated availability for employee ${employeeId}`);
+        logger.info(
+          `Admin ${authReq.user.id} updated availability for employee ${employeeId}`
+        );
         res.json({ message: 'Verfügbarkeit erfolgreich aktualisiert' });
       } else {
         res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });

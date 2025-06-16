@@ -6,15 +6,15 @@
   "scripts": {
     "start": "node dist/backend/src/server.js",
     "start:prod": "node dist/backend/src/server.js",
-    "dev": "concurrently \"npm run dev:backend:ts\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"pnpm run dev:backend:ts\" \"pnpm run dev:frontend\"",
     "dev:backend": "nodemon backend/src/server.js",
     "dev:backend:ts": "nodemon --exec \"tsx\" backend/src/server.ts",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build": "npm run build:ts && npm run build:frontend",
+    "dev:frontend": "cd frontend && pnpm run dev",
+    "build": "pnpm run build:ts && pnpm run build:frontend",
     "build:ts": "cd backend && tsc -p tsconfig.build.json && cd .. && node scripts/fix-esm-imports.js",
-    "build:frontend": "cd frontend && npm run build",
+    "build:frontend": "cd frontend && pnpm run build",
     "watch:ts": "tsc --watch",
-    "install:all": "npm install && cd frontend && npm install",
+    "install:all": "pnpm install && cd frontend && pnpm install",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -24,10 +24,10 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --coverage",
     "type-check": "tsc --noEmit",
-    "type-coverage": "npx type-coverage",
+    "type-coverage": "pnpm exec type-coverage",
     "check": "tsc --noEmit",
     "lint:ts": "eslint backend/src/**/*.ts",
-    "test:all": "npm run check && npm run lint:ts && npm run format:check"
+    "test:all": "pnpm run check && pnpm run lint:ts && pnpm run format:check"
   },
   "keywords": [
     "assixx",
@@ -40,7 +40,8 @@
   "private": true,
   "description": "Assixx SaaS-Plattform für Industriefirmen - Server-Komponente",
   "dependencies": {
-    "bcrypt": "^6.0.0",
+    "@types/express-serve-static-core": "^5.0.6",
+    "@types/qs": "^6.14.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "csrf-csrf": "^4.0.3",
@@ -50,7 +51,7 @@
     "express": "^5.1.0",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
-    "express-validator": "^7.2.1",
+    "express-validator": "^7.2.0",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
@@ -58,8 +59,7 @@
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.3",
-    "winston": "^3.17.0",
-    "ws": "^8.18.2"
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

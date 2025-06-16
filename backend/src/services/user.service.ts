@@ -3,7 +3,7 @@
  * Handles user-related business logic
  */
 
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import User from '../models/user';
 import { logger } from '../utils/logger';
 

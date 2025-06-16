@@ -81,11 +81,14 @@ cd Assixx
 ### Schritt 1: Dependencies installieren
 
 ```bash
+# pnpm installieren (falls noch nicht vorhanden)
+npm install -g pnpm
+
 # Root-Dependencies
-npm install
+pnpm install
 
 # Frontend-Dependencies
-cd frontend && npm install
+cd frontend && pnpm install
 cd ..
 ```
 
@@ -115,10 +118,10 @@ cp .env.example .env
 
 ```bash
 # Entwicklungsmodus (mit Auto-Restart)
-npm run dev
+pnpm dev
 
 # Oder Produktionsmodus
-npm start
+pnpm start
 
 # Server läuft auf http://localhost:3000
 ```
@@ -162,8 +165,8 @@ PORT=3001
 
 ```bash
 # Clean Install
-rm -rf node_modules package-lock.json
-npm install
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 ```
 
 ## 📚 Nächste Schritte
