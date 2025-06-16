@@ -24,6 +24,9 @@ RUN mkdir -p scripts
 COPY scripts/fix-esm-imports.js ./scripts/
 COPY scripts/package.json ./scripts/
 
+# Backend Dependencies installieren
+RUN cd backend && pnpm install --frozen-lockfile
+
 # TypeScript kompilieren
 RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
 
