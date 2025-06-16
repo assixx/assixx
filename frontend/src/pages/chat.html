@@ -25,14 +25,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(
-          0deg,
-          transparent 0%,
-          rgba(0, 142, 255, 0.08) 100%,
-          #01000482 60%,
-          rgba(0, 0, 4, 0.6) 90%,
-          black 100%
-        );
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
@@ -310,7 +303,7 @@
         font-size: 1rem;
         overflow: hidden;
       }
-      
+
       .chat-user-avatar img {
         width: 100%;
         height: 100%;
@@ -1755,12 +1748,7 @@
           <!-- Group Name (for group chats) -->
           <div class="form-group" id="groupChatOptions" style="display: none; margin-top: 20px">
             <label class="form-label">Gruppenname (optional)</label>
-            <input
-              type="text"
-              id="groupChatName"
-              class="form-control"
-              placeholder="z.B. Projekt-Team, Abteilung Marketing..."
-            />
+            <input type="text" id="groupChatName" class="form-control" placeholder="z.B. Projekt-Team, Abteilung Marketing..." />
           </div>
         </div>
         <div class="modal-footer">
@@ -1848,39 +1836,39 @@
       }
 
       // Toggle Chat Dropdown
-      window.toggleChatDropdown = function(type) {
+      window.toggleChatDropdown = function (type) {
         const display = document.getElementById(type + 'Display');
         const dropdown = document.getElementById(type + 'Dropdown');
-        
+
         // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach(d => {
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
           if (d !== display) d.classList.remove('active');
         });
-        document.querySelectorAll('.dropdown-options').forEach(d => {
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
           if (d !== dropdown) d.classList.remove('active');
         });
-        
+
         display.classList.toggle('active');
         dropdown.classList.toggle('active');
-      }
+      };
 
       // Select Chat Dropdown Option
-      window.selectChatDropdownOption = function(type, value, text, meta = '') {
+      window.selectChatDropdownOption = function (type, value, text, meta = '') {
         const display = document.getElementById(type + 'Display');
         const input = document.getElementById('selected' + type.charAt(0).toUpperCase() + type.slice(1));
-        
+
         // Update display text
         display.querySelector('span').textContent = text;
-        
+
         // Update hidden input
         input.value = value;
-        
+
         // Close dropdown
         display.classList.remove('active');
         document.getElementById(type + 'Dropdown').classList.remove('active');
-        
+
         console.log(`✅ ${type} selected:`, { value, text, meta });
-        
+
         // Handle specific dropdown types
         if (type === 'department' && value) {
           // Department selected, show employee dropdown
@@ -1890,13 +1878,13 @@
             window.chatClient.loadEmployeesForDepartment(value);
           }
         }
-      }
+      };
 
       // Click outside to close dropdowns
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
         }
       });
     </script>

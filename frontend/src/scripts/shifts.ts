@@ -4,8 +4,8 @@
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken, removeAuthToken, showSuccess, showError, showInfo } from './auth';
-import { openModal, closeModal } from './utils/modal-manager';
+import { getAuthToken, showSuccess, showError, showInfo } from './auth';
+import { openModal } from './utils/modal-manager';
 
 interface Employee extends User {
   department_id?: number;
@@ -141,12 +141,12 @@ class ShiftPlanningSystem {
 
       // Check if department is selected and toggle visibility
       this.togglePlanningAreaVisibility();
-      
+
       // For employees, load department info
       if (!this.isAdmin && this.selectedContext.departmentId) {
         await this.loadDepartments();
       }
-      
+
       // Load notes again after department is properly set
       if (this.selectedContext.departmentId) {
         console.log('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
@@ -479,7 +479,7 @@ class ShiftPlanningSystem {
     // Team leaders are not used anymore
     this.teamLeaders = [];
     return;
-    
+
     try {
       const response = await fetch('/api/users', {
         headers: {
@@ -581,7 +581,7 @@ class ShiftPlanningSystem {
 
     // Reload employees based on context
     await this.loadEmployees();
-    
+
     // Reload weekly notes for new department
     await this.loadWeeklyNotes();
   }
@@ -598,7 +598,7 @@ class ShiftPlanningSystem {
       if (mainPlanningArea) mainPlanningArea.style.display = '';
       if (adminActions && this.isAdmin) adminActions.style.display = 'block';
       if (weekNavigation) weekNavigation.style.display = 'flex';
-      
+
       // Load data for the selected department
       this.loadCurrentWeekData().then(() => {
         // Load notes after shift data is loaded
@@ -623,7 +623,7 @@ class ShiftPlanningSystem {
       this.employees = [];
       return;
     }
-    
+
     try {
       // First load users
       let url = '/api/users';
@@ -651,7 +651,7 @@ class ShiftPlanningSystem {
         const data = await response.json();
         const users = Array.isArray(data) ? data : data.users || [];
         this.employees = users.filter((user: User) => user.role === 'employee');
-        
+
         console.log('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
         console.log('[SHIFTS DEBUG] Employee data:', this.employees);
 
@@ -705,7 +705,7 @@ class ShiftPlanningSystem {
       console.log('[SHIFTS DEBUG] No employees to render');
       return;
     }
-    
+
     const container = document.getElementById('employeeList');
     console.log('[SHIFTS DEBUG] Employee list container:', container);
 
@@ -886,13 +886,6 @@ class ShiftPlanningSystem {
           unavailable: 'Beurlaubt',
         }[employee.availability_status] || employee.availability_status;
 
-      const statusBadgeClass =
-        {
-          vacation: 'badge-warning',
-          sick: 'badge-danger',
-          unavailable: 'badge-secondary',
-        }[employee.availability_status] || 'badge-secondary';
-
       const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
 
       showError(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
@@ -902,7 +895,7 @@ class ShiftPlanningSystem {
     // Check if employee already has a shift on this day
     const shiftsOnThisDay = this.weeklyShifts[date] || {};
     const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-    
+
     // Check all shifts on this day
     for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
       if (shiftType !== shift && employeeIds.includes(employeeId)) {
@@ -912,8 +905,10 @@ class ShiftPlanningSystem {
           late: 'Spätschicht',
           night: 'Nachtschicht',
         };
-        
-        showError(`Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames[shiftType]} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`);
+
+        showError(
+          `Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames[shiftType]} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`,
+        );
         return;
       }
     }
@@ -974,11 +969,11 @@ class ShiftPlanningSystem {
     try {
       const weekStart = this.getWeekStart(this.currentWeek);
       const weekEnd = this.getWeekEnd(this.currentWeek);
-      
+
       // Format dates for API
       const startStr = this.formatDate(weekStart);
       const endStr = this.formatDate(weekEnd);
-      
+
       console.log('[SHIFTS DEBUG] Loading shifts for range:', startStr, 'to', endStr);
 
       const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
@@ -1015,19 +1010,19 @@ class ShiftPlanningSystem {
       const dateString = shift.date;
       const date = dateString.split('T')[0]; // Get only YYYY-MM-DD part
       let shiftType = shift.shift_type;
-      
+
       // Skip custom shifts or convert them based on time
       if (shiftType === 'custom') {
         console.log('[SHIFTS DEBUG] Skipping custom shift type');
         return; // Skip this shift for now
       }
-      
-      console.log('[SHIFTS DEBUG] Processing shift:', { 
-        originalDate: dateString, 
-        extractedDate: date, 
-        shiftType, 
+
+      console.log('[SHIFTS DEBUG] Processing shift:', {
+        originalDate: dateString,
+        extractedDate: date,
+        shiftType,
         employee_id: shift.employee_id,
-        employee_name: `${shift.first_name} ${shift.last_name}`
+        employee_name: `${shift.first_name} ${shift.last_name}`,
       });
 
       if (!this.weeklyShifts[date]) {
@@ -1038,25 +1033,25 @@ class ShiftPlanningSystem {
       }
 
       this.weeklyShifts[date][shiftType].push(shift.employee_id);
-      
+
       // Store the full shift details including names
       if (!this.shiftDetails[`${date}_${shiftType}_${shift.employee_id}`]) {
         this.shiftDetails[`${date}_${shiftType}_${shift.employee_id}`] = {
           employee_id: shift.employee_id,
           first_name: shift.first_name,
           last_name: shift.last_name,
-          username: shift.username
+          username: shift.username,
         };
       }
     });
-    
+
     console.log('[SHIFTS DEBUG] Final weeklyShifts:', this.weeklyShifts);
     console.log('[SHIFTS DEBUG] Shift details:', this.shiftDetails);
   }
 
   renderWeekView(): void {
     const weekStart = this.getWeekStart(this.currentWeek);
-    
+
     console.log('[SHIFTS DEBUG] Rendering week view for week starting:', weekStart);
 
     // Update week display
@@ -1069,76 +1064,6 @@ class ShiftPlanningSystem {
 
     // Update shift assignments in existing cells
     this.updateShiftCells(weekStart);
-    return;
-
-    // OLD CODE BELOW - keeping for reference but not executing
-
-    // Create header row
-    const headerRow = document.createElement('div');
-    headerRow.className = 'week-header';
-    headerRow.innerHTML = '<div class="time-header">Schicht</div>';
-
-    // Add day headers
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
-      date.setDate(date.getDate() + i);
-      const dayHeader = document.createElement('div');
-      dayHeader.className = 'day-header';
-      dayHeader.innerHTML = `
-        <div class="day-name">${this.getDayName(date)}</div>
-        <div class="day-date">${date.getDate()}.${date.getMonth() + 1}.</div>
-      `;
-      headerRow.appendChild(dayHeader);
-    }
-
-    weekContainer.appendChild(headerRow);
-
-    // Create shift rows
-    const shifts = [
-      { key: 'early', name: 'Frühschicht', time: '06:00 - 14:00' },
-      { key: 'late', name: 'Spätschicht', time: '14:00 - 22:00' },
-      { key: 'night', name: 'Nachtschicht', time: '22:00 - 06:00' },
-    ];
-
-    shifts.forEach((shift) => {
-      const shiftRow = document.createElement('div');
-      shiftRow.className = 'shift-row';
-
-      // Shift info
-      const shiftInfo = document.createElement('div');
-      shiftInfo.className = 'shift-info';
-      shiftInfo.innerHTML = `
-        <div class="shift-name">${shift.name}</div>
-        <div class="shift-time">${shift.time}</div>
-      `;
-      shiftRow.appendChild(shiftInfo);
-
-      // Shift cells for each day
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(weekStart);
-        date.setDate(date.getDate() + i);
-        const dateStr = this.formatDate(date);
-
-        const shiftCell = document.createElement('div');
-        shiftCell.className = 'shift-cell';
-        shiftCell.dataset.date = dateStr;
-        shiftCell.dataset.shift = shift.key;
-
-        // Render existing assignments
-        this.renderShiftAssignments(dateStr, shift.key);
-
-        shiftRow.appendChild(shiftCell);
-      }
-
-      weekContainer.appendChild(shiftRow);
-    });
-
-    // Render all assignments
-    Object.entries(this.weeklyShifts).forEach(([date, shifts]) => {
-      Object.entries(shifts).forEach(([shiftType, _employeeIds]) => {
-        this.renderShiftAssignments(date, shiftType);
-      });
-    });
   }
 
   navigateWeek(direction: number): void {
@@ -1152,10 +1077,7 @@ class ShiftPlanningSystem {
     console.log('[SHIFTS DEBUG] New week after:', this.currentWeek);
 
     // Load both shift data and notes for the new week
-    Promise.all([
-      this.loadCurrentWeekData(),
-      this.loadWeeklyNotes()
-    ])
+    Promise.all([this.loadCurrentWeekData(), this.loadWeeklyNotes()])
       .then(() => {
         console.log('[SHIFTS DEBUG] Week data and notes loaded successfully');
       })
@@ -1201,60 +1123,67 @@ class ShiftPlanningSystem {
 
   updateShiftCells(weekStart: Date): void {
     console.log('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
-    
+
     // Update day headers with dates
     const dayHeaders = document.querySelectorAll('.day-header');
     dayHeaders.forEach((header, index) => {
       // Skip the first header which is "Schicht"
       if (index === 0) return;
-      
+
       const date = new Date(weekStart);
       date.setDate(date.getDate() + (index - 1));
-      
+
       const dateSpan = header.querySelector('span');
       if (dateSpan) {
         dateSpan.textContent = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
       }
     });
-    
+
     // Update shift cells with assignments
     const shiftTypes = ['early', 'late', 'night'];
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    
-    shiftTypes.forEach(shiftType => {
+
+    shiftTypes.forEach((shiftType) => {
       days.forEach((day, dayIndex) => {
         const cell = document.querySelector(`.shift-cell[data-day="${day}"][data-shift="${shiftType}"]`);
         if (!cell) {
           console.warn(`[SHIFTS WARN] Cell not found for ${day} ${shiftType}`);
           return;
         }
-        
+
         const date = new Date(weekStart);
         date.setDate(date.getDate() + dayIndex);
         const dateKey = this.formatDateKey(date);
-        
+
         // Clear existing assignments
         const assignmentDiv = cell.querySelector('.employee-assignment');
         if (assignmentDiv) {
           assignmentDiv.innerHTML = '';
-          
+
           // Get assignments for this shift
           const assignments = this.weeklyShifts[dateKey]?.[shiftType] || [];
-          
+
           console.log('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
-          
+
           if (assignments.length > 0) {
             // Add employee cards
-            assignments.forEach(employeeId => {
+            assignments.forEach((employeeId) => {
               // First try to find in loaded employees (for admins)
-              const employee = this.employees.find(e => e.id === employeeId);
-              
+              const employee = this.employees.find((e) => e.id === employeeId);
+
               // If not found, try shift details (for employees who can't load all users)
               const shiftDetailKey = `${dateKey}_${shiftType}_${employeeId}`;
               const shiftDetail = this.shiftDetails[shiftDetailKey];
-              
-              console.log('[SHIFTS DEBUG] Looking for employee:', employeeId, 'Found in employees:', !!employee, 'Found in shiftDetails:', !!shiftDetail);
-              
+
+              console.log(
+                '[SHIFTS DEBUG] Looking for employee:',
+                employeeId,
+                'Found in employees:',
+                !!employee,
+                'Found in shiftDetails:',
+                !!shiftDetail,
+              );
+
               if (employee) {
                 const employeeCard = this.createEmployeeCard(employee);
                 assignmentDiv.appendChild(employeeCard);
@@ -1265,7 +1194,7 @@ class ShiftPlanningSystem {
                   first_name: shiftDetail.first_name,
                   last_name: shiftDetail.last_name,
                   username: shiftDetail.username,
-                  position: 'Mitarbeiter'
+                  position: 'Mitarbeiter',
                 };
                 const employeeCard = this.createEmployeeCard(tempEmployee);
                 assignmentDiv.appendChild(employeeCard);
@@ -1295,9 +1224,9 @@ class ShiftPlanningSystem {
     const card = document.createElement('div');
     card.className = 'employee-card';
     card.dataset.employeeId = employee.id.toString();
-    
+
     const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-    
+
     card.innerHTML = `
       <div class="employee-name">${this.escapeHtml(name)}</div>
       <div class="employee-position">${employee.position || 'Mitarbeiter'}</div>
@@ -1317,7 +1246,7 @@ class ShiftPlanningSystem {
       };
       card.appendChild(removeBtn);
     }
-    
+
     return card;
   }
 
@@ -1444,7 +1373,7 @@ class ShiftPlanningSystem {
         console.log('[SHIFTS DEBUG] Notes API response data:', data);
         console.log('[SHIFTS DEBUG] Type of notes:', typeof data.notes);
         console.log('[SHIFTS DEBUG] Notes value:', data.notes);
-        
+
         // Make sure we're getting a string, not an object
         if (typeof data.notes === 'object' && data.notes !== null) {
           console.error('[SHIFTS ERROR] Notes is an object, not a string:', data.notes);
@@ -1485,14 +1414,14 @@ class ShiftPlanningSystem {
     try {
       const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
       if (!notesTextarea) return;
-      
+
       const newNotes = notesTextarea.value || '';
-      
+
       // Only save if notes have actually changed
       if (newNotes === this.weeklyNotes) {
         return;
       }
-      
+
       this.weeklyNotes = newNotes;
 
       const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
@@ -1535,25 +1464,25 @@ class ShiftPlanningSystem {
       adminControls.forEach((el) => el.classList.remove('hidden'));
       employeeInfo.forEach((el) => el.classList.add('hidden'));
       // adminActions visibility is controlled by togglePlanningAreaVisibility
-      if (employeeSidebar) employeeSidebar.style.display = 'block';
+      if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'block';
       if (notesTextarea) notesTextarea.removeAttribute('readonly');
     } else {
       // Employee view - hide admin controls and sidebar
       adminControls.forEach((el) => el.classList.add('hidden'));
       employeeInfo.forEach((el) => el.classList.remove('hidden'));
       if (adminActions) adminActions.style.display = 'none';
-      if (employeeSidebar) employeeSidebar.style.display = 'none';
-      
+      if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'none';
+
       // Hide the info row (department, machine, team leader dropdowns) for employees
       if (infoRow) {
         (infoRow as HTMLElement).style.display = 'none';
       }
-      
+
       // Make the main planning area full width when sidebar is hidden
       if (mainPlanningArea) {
         mainPlanningArea.classList.add('full-width');
       }
-      
+
       // Make notes textarea readonly for employees
       if (notesTextarea) {
         notesTextarea.setAttribute('readonly', 'readonly');
@@ -1687,7 +1616,7 @@ class ShiftPlanningSystem {
 
     openModal(modalContent, {
       title: 'Schichtdetails',
-      size: 'medium',
+      size: 'md',
     });
   }
 }

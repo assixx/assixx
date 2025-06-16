@@ -18,152 +18,152 @@
       <!-- Main Content -->
       <main class="main-content">
         <div class="container">
-      <h1 class="text-center mb-4">Admin Konfiguration</h1>
-      <p class="text-center mb-4" id="admin-name"></p>
+          <h1 class="text-center mb-4">Admin Konfiguration</h1>
+          <p class="text-center mb-4" id="admin-name"></p>
 
-      <!-- Passwort zurücksetzen Karte -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h2 class="card-title">Passwort zurücksetzen</h2>
-        </div>
-        <form id="resetPasswordForm">
-          <div class="form-group">
-            <label class="form-label">Neues Passwort</label>
-            <input type="password" id="newPassword" class="form-control" required minlength="6" />
+          <!-- Passwort zurücksetzen Karte -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h2 class="card-title">Passwort zurücksetzen</h2>
+            </div>
+            <form id="resetPasswordForm">
+              <div class="form-group">
+                <label class="form-label">Neues Passwort</label>
+                <input type="password" id="newPassword" class="form-control" required minlength="6" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Passwort bestätigen</label>
+                <input type="password" id="confirmPassword" class="form-control" required minlength="6" />
+              </div>
+              <button type="submit" class="btn btn-primary">Passwort zurücksetzen</button>
+            </form>
           </div>
-          <div class="form-group">
-            <label class="form-label">Passwort bestätigen</label>
-            <input type="password" id="confirmPassword" class="form-control" required minlength="6" />
-          </div>
-          <button type="submit" class="btn btn-primary">Passwort zurücksetzen</button>
-        </form>
-      </div>
 
-      <!-- Admin-Details Karte -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h2 class="card-title">Admin-Details</h2>
-        </div>
-        <form id="updateDetailsForm">
-          <div class="form-group">
-            <label class="form-label">E-Mail-Adresse</label>
-            <input type="email" id="email" class="form-control" required />
+          <!-- Admin-Details Karte -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h2 class="card-title">Admin-Details</h2>
+            </div>
+            <form id="updateDetailsForm">
+              <div class="form-group">
+                <label class="form-label">E-Mail-Adresse</label>
+                <input type="email" id="email" class="form-control" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Firma</label>
+                <input type="text" id="company" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Vorname</label>
+                <input type="text" id="firstName" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nachname</label>
+                <input type="text" id="lastName" class="form-control" />
+              </div>
+              <button type="submit" class="btn btn-success">Details aktualisieren</button>
+            </form>
           </div>
-          <div class="form-group">
-            <label class="form-label">Firma</label>
-            <input type="text" id="company" class="form-control" />
+
+          <!-- Berechtigungen Karte -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h2 class="card-title">Berechtigungen</h2>
+            </div>
+            <div id="permissions-section">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="user-management" checked disabled />
+                <label class="form-check-label">Benutzerverwaltung</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="doc-management" checked disabled />
+                <label class="form-check-label">Dokumentenverwaltung</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="org-management" checked disabled />
+                <label class="form-check-label">Organisationsverwaltung</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="analytics-access" checked disabled />
+                <label class="form-check-label">Analysen und Berichte</label>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Vorname</label>
-            <input type="text" id="firstName" class="form-control" />
+
+          <!-- Login-Logs Karte -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Anmelde-Historie</h2>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+              <button class="tab-btn active" data-tab="logs-3days">Letzte 3 Tage</button>
+              <button class="tab-btn" data-tab="logs-10days">Letzte 10 Tage</button>
+              <button class="tab-btn" data-tab="logs-30days">Letzte 30 Tage</button>
+              <button class="tab-btn" data-tab="logs-all">Alle</button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div id="logs-3days" class="tab-content active">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Zeitstempel</th>
+                    <th>Status</th>
+                    <th>IP-Adresse</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-body-3days"></tbody>
+              </table>
+            </div>
+
+            <div id="logs-10days" class="tab-content">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Zeitstempel</th>
+                    <th>Status</th>
+                    <th>IP-Adresse</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-body-10days"></tbody>
+              </table>
+            </div>
+
+            <div id="logs-30days" class="tab-content">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Zeitstempel</th>
+                    <th>Status</th>
+                    <th>IP-Adresse</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-body-30days"></tbody>
+              </table>
+            </div>
+
+            <div id="logs-all" class="tab-content">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Zeitstempel</th>
+                    <th>Status</th>
+                    <th>IP-Adresse</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-body-all"></tbody>
+              </table>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Nachname</label>
-            <input type="text" id="lastName" class="form-control" />
-          </div>
-          <button type="submit" class="btn btn-success">Details aktualisieren</button>
-        </form>
-      </div>
-
-      <!-- Berechtigungen Karte -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h2 class="card-title">Berechtigungen</h2>
-        </div>
-        <div id="permissions-section">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="user-management" checked disabled />
-            <label class="form-check-label">Benutzerverwaltung</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="doc-management" checked disabled />
-            <label class="form-check-label">Dokumentenverwaltung</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="org-management" checked disabled />
-            <label class="form-check-label">Organisationsverwaltung</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="analytics-access" checked disabled />
-            <label class="form-check-label">Analysen und Berichte</label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Login-Logs Karte -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Anmelde-Historie</h2>
         </div>
 
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-          <button class="tab-btn active" data-tab="logs-3days">Letzte 3 Tage</button>
-          <button class="tab-btn" data-tab="logs-10days">Letzte 10 Tage</button>
-          <button class="tab-btn" data-tab="logs-30days">Letzte 30 Tage</button>
-          <button class="tab-btn" data-tab="logs-all">Alle</button>
-        </div>
-
-        <!-- Tab Contents -->
-        <div id="logs-3days" class="tab-content active">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Zeitstempel</th>
-                <th>Status</th>
-                <th>IP-Adresse</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="logs-body-3days"></tbody>
-          </table>
-        </div>
-
-        <div id="logs-10days" class="tab-content">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Zeitstempel</th>
-                <th>Status</th>
-                <th>IP-Adresse</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="logs-body-10days"></tbody>
-          </table>
-        </div>
-
-        <div id="logs-30days" class="tab-content">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Zeitstempel</th>
-                <th>Status</th>
-                <th>IP-Adresse</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="logs-body-30days"></tbody>
-          </table>
-        </div>
-
-        <div id="logs-all" class="tab-content">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Zeitstempel</th>
-                <th>Status</th>
-                <th>IP-Adresse</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="logs-body-all"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <script type="module" src="/scripts/admin-config.ts"></script>
+        <script type="module" src="/scripts/admin-config.ts"></script>
       </main>
     </div>
     <!-- Unified Navigation -->

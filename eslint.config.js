@@ -122,7 +122,13 @@ export default [
 
   // Test files configuration
   {
-    files: ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**/*.ts', '**/*.test.js', '**/*.spec.js'],
+    files: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      '**/__tests__/**/*.ts',
+      '**/*.test.js',
+      '**/*.spec.js',
+    ],
     languageOptions: {
       parser: typescript,
       parserOptions: {

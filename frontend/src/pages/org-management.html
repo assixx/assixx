@@ -305,302 +305,302 @@
       <!-- Main Content -->
       <main class="main-content">
         <div class="container">
-      <h1>Abteilungen & Teams</h1>
+          <h1>Abteilungen & Teams</h1>
 
-      <div class="tab-container">
-        <button class="tab active" onclick="showTab('departments')">Abteilungen</button>
-        <button class="tab" onclick="showTab('teams')">Teams</button>
-        <button class="tab" onclick="showTab('org-structure')">Organisationsstruktur</button>
-      </div>
-
-      <!-- Abteilungen Tab -->
-      <div id="departments" class="tab-content active">
-        <div class="search-bar">
-          <input type="text" id="department-search" class="form-control" placeholder="Abteilungen durchsuchen..." />
-          <button class="btn btn-primary" onclick="showDepartmentModal()">Neue Abteilung</button>
-        </div>
-
-        <div id="departments-container">
-          <!-- Wird dynamisch gefüllt -->
-        </div>
-      </div>
-
-      <!-- Teams Tab -->
-      <div id="teams" class="tab-content">
-        <div class="search-bar">
-          <input type="text" id="team-search" class="form-control" placeholder="Teams durchsuchen..." />
-          <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
-        </div>
-
-        <div id="teams-container">
-          <!-- Wird dynamisch gefüllt -->
-        </div>
-      </div>
-
-      <!-- Organisationsstruktur Tab -->
-      <div id="org-structure" class="tab-content">
-        <div class="org-chart" id="org-chart-container">
-          <!-- Wird dynamisch gefüllt -->
-        </div>
-      </div>
-
-      <button class="btn btn-secondary back-btn" onclick="goBack()">Zurück zum Dashboard</button>
-    </div>
-
-    <!-- Modal für neue/bearbeiten Abteilung -->
-    <div id="department-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="department-modal-title">Neue Abteilung</h3>
-          <button class="modal-close" onclick="hideDepartmentModal()">&times;</button>
-        </div>
-
-        <form id="department-form">
-          <input type="hidden" id="department-id" name="id" />
-
-          <div class="form-group">
-            <label for="department-name">Name</label>
-            <input type="text" id="department-name" name="name" class="form-control" required />
+          <div class="tab-container">
+            <button class="tab active" onclick="showTab('departments')">Abteilungen</button>
+            <button class="tab" onclick="showTab('teams')">Teams</button>
+            <button class="tab" onclick="showTab('org-structure')">Organisationsstruktur</button>
           </div>
 
-          <div class="form-group">
-            <label for="department-description">Beschreibung</label>
-            <textarea id="department-description" name="description" class="form-control" rows="3"></textarea>
-          </div>
+          <!-- Abteilungen Tab -->
+          <div id="departments" class="tab-content active">
+            <div class="search-bar">
+              <input type="text" id="department-search" class="form-control" placeholder="Abteilungen durchsuchen..." />
+              <button class="btn btn-primary" onclick="showDepartmentModal()">Neue Abteilung</button>
+            </div>
 
-          <div class="form-group">
-            <label for="department-manager">Manager</label>
-            <select id="department-manager" name="manager_id" class="form-control">
-              <option value="">Kein Manager</option>
+            <div id="departments-container">
               <!-- Wird dynamisch gefüllt -->
-            </select>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="department-parent">Übergeordnete Abteilung</label>
-            <select id="department-parent" name="parent_id" class="form-control">
-              <option value="">Keine übergeordnete Abteilung</option>
+          <!-- Teams Tab -->
+          <div id="teams" class="tab-content">
+            <div class="search-bar">
+              <input type="text" id="team-search" class="form-control" placeholder="Teams durchsuchen..." />
+              <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
+            </div>
+
+            <div id="teams-container">
               <!-- Wird dynamisch gefüllt -->
-            </select>
+            </div>
           </div>
 
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="hideDepartmentModal()">Abbrechen</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal für neues/bearbeiten Team -->
-    <div id="team-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="team-modal-title">Neues Team</h3>
-          <button class="modal-close" onclick="hideTeamModal()">&times;</button>
-        </div>
-
-        <form id="team-form">
-          <input type="hidden" id="team-id" name="id" />
-
-          <div class="form-group">
-            <label for="team-name">Name</label>
-            <input type="text" id="team-name" name="name" class="form-control" required />
-          </div>
-
-          <div class="form-group">
-            <label for="team-description">Beschreibung</label>
-            <textarea id="team-description" name="description" class="form-control" rows="3"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="team-department">Abteilung</label>
-            <select id="team-department" name="department_id" class="form-control">
-              <option value="">Keine Abteilung</option>
+          <!-- Organisationsstruktur Tab -->
+          <div id="org-structure" class="tab-content">
+            <div class="org-chart" id="org-chart-container">
               <!-- Wird dynamisch gefüllt -->
-            </select>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="team-leader">Teamleiter</label>
-            <select id="team-leader" name="leader_id" class="form-control">
-              <option value="">Kein Teamleiter</option>
+          <button class="btn btn-secondary back-btn" onclick="goBack()">Zurück zum Dashboard</button>
+        </div>
+
+        <!-- Modal für neue/bearbeiten Abteilung -->
+        <div id="department-modal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title" id="department-modal-title">Neue Abteilung</h3>
+              <button class="modal-close" onclick="hideDepartmentModal()">&times;</button>
+            </div>
+
+            <form id="department-form">
+              <input type="hidden" id="department-id" name="id" />
+
+              <div class="form-group">
+                <label for="department-name">Name</label>
+                <input type="text" id="department-name" name="name" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label for="department-description">Beschreibung</label>
+                <textarea id="department-description" name="description" class="form-control" rows="3"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="department-manager">Manager</label>
+                <select id="department-manager" name="manager_id" class="form-control">
+                  <option value="">Kein Manager</option>
+                  <!-- Wird dynamisch gefüllt -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="department-parent">Übergeordnete Abteilung</label>
+                <select id="department-parent" name="parent_id" class="form-control">
+                  <option value="">Keine übergeordnete Abteilung</option>
+                  <!-- Wird dynamisch gefüllt -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-secondary" onclick="hideDepartmentModal()">Abbrechen</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Modal für neues/bearbeiten Team -->
+        <div id="team-modal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title" id="team-modal-title">Neues Team</h3>
+              <button class="modal-close" onclick="hideTeamModal()">&times;</button>
+            </div>
+
+            <form id="team-form">
+              <input type="hidden" id="team-id" name="id" />
+
+              <div class="form-group">
+                <label for="team-name">Name</label>
+                <input type="text" id="team-name" name="name" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label for="team-description">Beschreibung</label>
+                <textarea id="team-description" name="description" class="form-control" rows="3"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="team-department">Abteilung</label>
+                <select id="team-department" name="department_id" class="form-control">
+                  <option value="">Keine Abteilung</option>
+                  <!-- Wird dynamisch gefüllt -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="team-leader">Teamleiter</label>
+                <select id="team-leader" name="leader_id" class="form-control">
+                  <option value="">Kein Teamleiter</option>
+                  <!-- Wird dynamisch gefüllt -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn btn-secondary" onclick="hideTeamModal()">Abbrechen</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Modal für Team-Mitglieder -->
+        <div id="team-members-modal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title" id="team-members-modal-title">Team-Mitglieder</h3>
+              <button class="modal-close" onclick="hideTeamMembersModal()">&times;</button>
+            </div>
+
+            <div class="form-group">
+              <label for="add-team-member">Mitarbeiter hinzufügen</label>
+              <div class="form-row">
+                <select id="add-team-member" class="form-control">
+                  <option value="">Mitarbeiter auswählen</option>
+                  <!-- Wird dynamisch gefüllt -->
+                </select>
+                <button type="button" class="btn btn-primary" onclick="addTeamMember()">Hinzufügen</button>
+              </div>
+            </div>
+
+            <div id="team-members-container">
               <!-- Wird dynamisch gefüllt -->
-            </select>
-          </div>
+            </div>
 
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="hideTeamModal()">Abbrechen</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal für Team-Mitglieder -->
-    <div id="team-members-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="team-members-modal-title">Team-Mitglieder</h3>
-          <button class="modal-close" onclick="hideTeamMembersModal()">&times;</button>
-        </div>
-
-        <div class="form-group">
-          <label for="add-team-member">Mitarbeiter hinzufügen</label>
-          <div class="form-row">
-            <select id="add-team-member" class="form-control">
-              <option value="">Mitarbeiter auswählen</option>
-              <!-- Wird dynamisch gefüllt -->
-            </select>
-            <button type="button" class="btn btn-primary" onclick="addTeamMember()">Hinzufügen</button>
+            <div class="form-group mt-3">
+              <button type="button" class="btn btn-secondary" onclick="hideTeamMembersModal()">Schließen</button>
+            </div>
           </div>
         </div>
 
-        <div id="team-members-container">
-          <!-- Wird dynamisch gefüllt -->
-        </div>
+        <script>
+          let departments = [];
+          let teams = [];
+          let users = [];
+          let currentTeamId = null;
 
-        <div class="form-group mt-3">
-          <button type="button" class="btn btn-secondary" onclick="hideTeamMembersModal()">Schließen</button>
-        </div>
-      </div>
-    </div>
+          // Tab-Wechsel-Funktionalität
+          function showTab(tabId) {
+            // Alle Tabs und Inhalte deaktivieren
+            document.querySelectorAll('.tab').forEach((tab) => {
+              tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach((content) => {
+              content.classList.remove('active');
+            });
 
-    <script>
-      let departments = [];
-      let teams = [];
-      let users = [];
-      let currentTeamId = null;
+            // Ausgewählten Tab aktivieren
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
 
-      // Tab-Wechsel-Funktionalität
-      function showTab(tabId) {
-        // Alle Tabs und Inhalte deaktivieren
-        document.querySelectorAll('.tab').forEach((tab) => {
-          tab.classList.remove('active');
-        });
-        document.querySelectorAll('.tab-content').forEach((content) => {
-          content.classList.remove('active');
-        });
-
-        // Ausgewählten Tab aktivieren
-        document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-
-        // Wenn Organisationsstruktur-Tab ausgewählt ist, Org-Chart rendern
-        if (tabId === 'org-structure') {
-          renderOrgChart();
-        }
-      }
-
-      // Seite laden
-      document.addEventListener('DOMContentLoaded', () => {
-        loadDepartments();
-        loadTeams();
-        loadUsers();
-
-        // Event-Listener für Formulare
-        document.getElementById('department-form').addEventListener('submit', saveDepartment);
-        document.getElementById('team-form').addEventListener('submit', saveTeam);
-
-        // Event-Listener für Suchfelder
-        document.getElementById('department-search').addEventListener('input', filterDepartments);
-        document.getElementById('team-search').addEventListener('input', filterTeams);
-      });
-
-      // Abteilungen laden
-      async function loadDepartments() {
-        try {
-          const response = await fetch('/departments', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            departments = await response.json();
-            renderDepartments();
-            populateDepartmentDropdowns();
-          } else {
-            console.error('Fehler beim Laden der Abteilungen');
-          }
-        } catch (error) {
-          console.error('Fehler beim Laden der Abteilungen:', error);
-        }
-      }
-
-      // Teams laden
-      async function loadTeams() {
-        try {
-          const response = await fetch('/teams', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            teams = await response.json();
-            renderTeams();
-          } else {
-            console.error('Fehler beim Laden der Teams');
-          }
-        } catch (error) {
-          console.error('Fehler beim Laden der Teams:', error);
-        }
-      }
-
-      // Benutzer laden
-      async function loadUsers() {
-        try {
-          const response = await fetch('/users/search', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            users = data.users;
-            populateUserDropdowns();
-          } else {
-            console.error('Fehler beim Laden der Benutzer');
-          }
-        } catch (error) {
-          console.error('Fehler beim Laden der Benutzer:', error);
-        }
-      }
-
-      // Abteilungen anzeigen
-      function renderDepartments() {
-        const container = document.getElementById('departments-container');
-        container.innerHTML = '';
-
-        if (departments.length === 0) {
-          container.innerHTML = '<p style="text-align: center;">Keine Abteilungen gefunden</p>';
-          return;
-        }
-
-        departments.forEach((dept) => {
-          // Manager-Info
-          let managerInfo = 'Kein Manager';
-          if (dept.manager_id) {
-            const manager = users.find((u) => u.id === dept.manager_id);
-            if (manager) {
-              managerInfo = `${manager.first_name} ${manager.last_name}`;
+            // Wenn Organisationsstruktur-Tab ausgewählt ist, Org-Chart rendern
+            if (tabId === 'org-structure') {
+              renderOrgChart();
             }
           }
 
-          // Übergeordnete Abteilung
-          let parentInfo = '';
-          if (dept.parent_id) {
-            const parent = departments.find((d) => d.id === dept.parent_id);
-            if (parent) {
-              parentInfo = `<span class="badge badge-primary">${parent.name}</span>`;
+          // Seite laden
+          document.addEventListener('DOMContentLoaded', () => {
+            loadDepartments();
+            loadTeams();
+            loadUsers();
+
+            // Event-Listener für Formulare
+            document.getElementById('department-form').addEventListener('submit', saveDepartment);
+            document.getElementById('team-form').addEventListener('submit', saveTeam);
+
+            // Event-Listener für Suchfelder
+            document.getElementById('department-search').addEventListener('input', filterDepartments);
+            document.getElementById('team-search').addEventListener('input', filterTeams);
+          });
+
+          // Abteilungen laden
+          async function loadDepartments() {
+            try {
+              const response = await fetch('/departments', {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                departments = await response.json();
+                renderDepartments();
+                populateDepartmentDropdowns();
+              } else {
+                console.error('Fehler beim Laden der Abteilungen');
+              }
+            } catch (error) {
+              console.error('Fehler beim Laden der Abteilungen:', error);
             }
           }
 
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
+          // Teams laden
+          async function loadTeams() {
+            try {
+              const response = await fetch('/teams', {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                teams = await response.json();
+                renderTeams();
+              } else {
+                console.error('Fehler beim Laden der Teams');
+              }
+            } catch (error) {
+              console.error('Fehler beim Laden der Teams:', error);
+            }
+          }
+
+          // Benutzer laden
+          async function loadUsers() {
+            try {
+              const response = await fetch('/users/search', {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                users = data.users;
+                populateUserDropdowns();
+              } else {
+                console.error('Fehler beim Laden der Benutzer');
+              }
+            } catch (error) {
+              console.error('Fehler beim Laden der Benutzer:', error);
+            }
+          }
+
+          // Abteilungen anzeigen
+          function renderDepartments() {
+            const container = document.getElementById('departments-container');
+            container.innerHTML = '';
+
+            if (departments.length === 0) {
+              container.innerHTML = '<p style="text-align: center;">Keine Abteilungen gefunden</p>';
+              return;
+            }
+
+            departments.forEach((dept) => {
+              // Manager-Info
+              let managerInfo = 'Kein Manager';
+              if (dept.manager_id) {
+                const manager = users.find((u) => u.id === dept.manager_id);
+                if (manager) {
+                  managerInfo = `${manager.first_name} ${manager.last_name}`;
+                }
+              }
+
+              // Übergeordnete Abteilung
+              let parentInfo = '';
+              if (dept.parent_id) {
+                const parent = departments.find((d) => d.id === dept.parent_id);
+                if (parent) {
+                  parentInfo = `<span class="badge badge-primary">${parent.name}</span>`;
+                }
+              }
+
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.innerHTML = `
                     <div class="card-header">
                         <div>
                             <h3 class="card-title">${dept.name}</h3>
@@ -620,39 +620,39 @@
                     </div>
                 `;
 
-          container.appendChild(card);
-        });
-      }
+              container.appendChild(card);
+            });
+          }
 
-      // Teams anzeigen
-      function renderTeams() {
-        const container = document.getElementById('teams-container');
-        container.innerHTML = '';
+          // Teams anzeigen
+          function renderTeams() {
+            const container = document.getElementById('teams-container');
+            container.innerHTML = '';
 
-        if (teams.length === 0) {
-          container.innerHTML = '<p style="text-align: center;">Keine Teams gefunden</p>';
-          return;
-        }
-
-        teams.forEach((team) => {
-          // Teamleiter-Info
-          let leaderInfo = 'Kein Teamleiter';
-          if (team.leader_id) {
-            const leader = users.find((u) => u.id === team.leader_id);
-            if (leader) {
-              leaderInfo = `${leader.first_name} ${leader.last_name}`;
+            if (teams.length === 0) {
+              container.innerHTML = '<p style="text-align: center;">Keine Teams gefunden</p>';
+              return;
             }
-          }
 
-          // Abteilungs-Info
-          let departmentInfo = '';
-          if (team.department_id) {
-            departmentInfo = `<span class="badge badge-primary">${team.department_name}</span>`;
-          }
+            teams.forEach((team) => {
+              // Teamleiter-Info
+              let leaderInfo = 'Kein Teamleiter';
+              if (team.leader_id) {
+                const leader = users.find((u) => u.id === team.leader_id);
+                if (leader) {
+                  leaderInfo = `${leader.first_name} ${leader.last_name}`;
+                }
+              }
 
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
+              // Abteilungs-Info
+              let departmentInfo = '';
+              if (team.department_id) {
+                departmentInfo = `<span class="badge badge-primary">${team.department_name}</span>`;
+              }
+
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.innerHTML = `
                     <div class="card-header">
                         <div>
                             <h3 class="card-title">${team.name}</h3>
@@ -672,620 +672,620 @@
                     </div>
                 `;
 
-          container.appendChild(card);
-        });
-      }
+              container.appendChild(card);
+            });
+          }
 
-      // Organisationsstruktur rendern
-      function renderOrgChart() {
-        const container = document.getElementById('org-chart-container');
-        container.innerHTML = '';
+          // Organisationsstruktur rendern
+          function renderOrgChart() {
+            const container = document.getElementById('org-chart-container');
+            container.innerHTML = '';
 
-        if (departments.length === 0) {
-          container.innerHTML = '<p style="text-align: center;">Keine Abteilungen gefunden</p>';
-          return;
-        }
+            if (departments.length === 0) {
+              container.innerHTML = '<p style="text-align: center;">Keine Abteilungen gefunden</p>';
+              return;
+            }
 
-        // Top-Level-Abteilungen (ohne parent_id)
-        const topLevelDepts = departments.filter((d) => !d.parent_id);
+            // Top-Level-Abteilungen (ohne parent_id)
+            const topLevelDepts = departments.filter((d) => !d.parent_id);
 
-        if (topLevelDepts.length === 0) {
-          container.innerHTML = '<p style="text-align: center;">Keine Top-Level-Abteilungen gefunden</p>';
-          return;
-        }
+            if (topLevelDepts.length === 0) {
+              container.innerHTML = '<p style="text-align: center;">Keine Top-Level-Abteilungen gefunden</p>';
+              return;
+            }
 
-        // Erste Ebene erstellen
-        const levelDiv = document.createElement('div');
-        levelDiv.className = 'org-level';
+            // Erste Ebene erstellen
+            const levelDiv = document.createElement('div');
+            levelDiv.className = 'org-level';
 
-        topLevelDepts.forEach((dept) => {
-          const branchDiv = buildOrgBranch(dept);
-          levelDiv.appendChild(branchDiv);
-        });
+            topLevelDepts.forEach((dept) => {
+              const branchDiv = buildOrgBranch(dept);
+              levelDiv.appendChild(branchDiv);
+            });
 
-        container.appendChild(levelDiv);
-      }
+            container.appendChild(levelDiv);
+          }
 
-      // Rekursive Funktion zum Aufbau der Organisationsstruktur
-      function buildOrgBranch(department) {
-        const branchDiv = document.createElement('div');
-        branchDiv.className = 'org-branch';
+          // Rekursive Funktion zum Aufbau der Organisationsstruktur
+          function buildOrgBranch(department) {
+            const branchDiv = document.createElement('div');
+            branchDiv.className = 'org-branch';
 
-        // Abteilungs-Knoten
-        const nodeDiv = document.createElement('div');
-        nodeDiv.className = 'org-node';
-        nodeDiv.innerHTML = `
+            // Abteilungs-Knoten
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'org-node';
+            nodeDiv.innerHTML = `
                 <strong>${department.name}</strong>
                 <br>
                 <small>${department.manager_name || 'Kein Manager'}</small>
             `;
-        branchDiv.appendChild(nodeDiv);
+            branchDiv.appendChild(nodeDiv);
 
-        // Untergeordnete Abteilungen finden
-        const childDepts = departments.filter((d) => d.parent_id === department.id);
+            // Untergeordnete Abteilungen finden
+            const childDepts = departments.filter((d) => d.parent_id === department.id);
 
-        if (childDepts.length > 0) {
-          // Konnektor erstellen
-          const connectorDiv = document.createElement('div');
-          connectorDiv.className = 'org-connector';
-          branchDiv.appendChild(connectorDiv);
+            if (childDepts.length > 0) {
+              // Konnektor erstellen
+              const connectorDiv = document.createElement('div');
+              connectorDiv.className = 'org-connector';
+              branchDiv.appendChild(connectorDiv);
 
-          // Untergeordnete Ebene erstellen
-          const childLevelDiv = document.createElement('div');
-          childLevelDiv.className = 'org-level';
+              // Untergeordnete Ebene erstellen
+              const childLevelDiv = document.createElement('div');
+              childLevelDiv.className = 'org-level';
 
-          childDepts.forEach((childDept) => {
-            const childBranchDiv = buildOrgBranch(childDept);
-            childLevelDiv.appendChild(childBranchDiv);
-          });
+              childDepts.forEach((childDept) => {
+                const childBranchDiv = buildOrgBranch(childDept);
+                childLevelDiv.appendChild(childBranchDiv);
+              });
 
-          branchDiv.appendChild(childLevelDiv);
-        }
+              branchDiv.appendChild(childLevelDiv);
+            }
 
-        return branchDiv;
-      }
-
-      // Dropdown-Felder befüllen
-      function populateDepartmentDropdowns() {
-        const departmentParentDropdown = document.getElementById('department-parent');
-        const teamDepartmentDropdown = document.getElementById('team-department');
-
-        // Dropdown für übergeordnete Abteilung
-        if (departmentParentDropdown) {
-          departmentParentDropdown.innerHTML = '<option value="">Keine übergeordnete Abteilung</option>';
-          departments.forEach((dept) => {
-            const option = document.createElement('option');
-            option.value = dept.id;
-            option.textContent = dept.name;
-            departmentParentDropdown.appendChild(option);
-          });
-        }
-
-        // Dropdown für Team-Abteilung
-        if (teamDepartmentDropdown) {
-          teamDepartmentDropdown.innerHTML = '<option value="">Keine Abteilung</option>';
-          departments.forEach((dept) => {
-            const option = document.createElement('option');
-            option.value = dept.id;
-            option.textContent = dept.name;
-            teamDepartmentDropdown.appendChild(option);
-          });
-        }
-      }
-
-      // Benutzer-Dropdowns befüllen
-      function populateUserDropdowns() {
-        const departmentManagerDropdown = document.getElementById('department-manager');
-        const teamLeaderDropdown = document.getElementById('team-leader');
-        const addTeamMemberDropdown = document.getElementById('add-team-member');
-
-        // Dropdown für Abteilungsmanager
-        if (departmentManagerDropdown) {
-          departmentManagerDropdown.innerHTML = '<option value="">Kein Manager</option>';
-          users.forEach((user) => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = `${user.first_name} ${user.last_name}`;
-            departmentManagerDropdown.appendChild(option);
-          });
-        }
-
-        // Dropdown für Teamleiter
-        if (teamLeaderDropdown) {
-          teamLeaderDropdown.innerHTML = '<option value="">Kein Teamleiter</option>';
-          users.forEach((user) => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = `${user.first_name} ${user.last_name}`;
-            teamLeaderDropdown.appendChild(option);
-          });
-        }
-
-        // Dropdown für Team-Mitglieder hinzufügen
-        if (addTeamMemberDropdown) {
-          addTeamMemberDropdown.innerHTML = '<option value="">Mitarbeiter auswählen</option>';
-          users
-            .filter((u) => u.role === 'employee')
-            .forEach((user) => {
-              const option = document.createElement('option');
-              option.value = user.id;
-              option.textContent = `${user.first_name} ${user.last_name}`;
-              addTeamMemberDropdown.appendChild(option);
-            });
-        }
-      }
-
-      // Abteilungen filtern
-      function filterDepartments() {
-        const searchTerm = document.getElementById('department-search').value.toLowerCase();
-        const container = document.getElementById('departments-container');
-
-        const cards = container.getElementsByClassName('card');
-
-        for (let i = 0; i < cards.length; i++) {
-          const title = cards[i].querySelector('.card-title').textContent.toLowerCase();
-          const description = cards[i].querySelector('.card-body').textContent.toLowerCase();
-
-          if (title.includes(searchTerm) || description.includes(searchTerm)) {
-            cards[i].style.display = '';
-          } else {
-            cards[i].style.display = 'none';
-          }
-        }
-      }
-
-      // Teams filtern
-      function filterTeams() {
-        const searchTerm = document.getElementById('team-search').value.toLowerCase();
-        const container = document.getElementById('teams-container');
-
-        const cards = container.getElementsByClassName('card');
-
-        for (let i = 0; i < cards.length; i++) {
-          const title = cards[i].querySelector('.card-title').textContent.toLowerCase();
-          const description = cards[i].querySelector('.card-body').textContent.toLowerCase();
-
-          if (title.includes(searchTerm) || description.includes(searchTerm)) {
-            cards[i].style.display = '';
-          } else {
-            cards[i].style.display = 'none';
-          }
-        }
-      }
-
-      // Abteilungs-Modal zeigen/verstecken
-      function showDepartmentModal(departmentId = null) {
-        const modal = document.getElementById('department-modal');
-        const form = document.getElementById('department-form');
-        const title = document.getElementById('department-modal-title');
-
-        // Formular zurücksetzen
-        form.reset();
-        document.getElementById('department-id').value = '';
-
-        if (departmentId) {
-          // Bearbeiten-Modus
-          title.textContent = 'Abteilung bearbeiten';
-          const department = departments.find((d) => d.id === departmentId);
-
-          if (department) {
-            document.getElementById('department-id').value = department.id;
-            document.getElementById('department-name').value = department.name;
-            document.getElementById('department-description').value = department.description || '';
-            document.getElementById('department-manager').value = department.manager_id || '';
-            document.getElementById('department-parent').value = department.parent_id || '';
-          }
-        } else {
-          // Neu-Modus
-          title.textContent = 'Neue Abteilung';
-        }
-
-        modal.style.display = 'flex';
-      }
-
-      function hideDepartmentModal() {
-        document.getElementById('department-modal').style.display = 'none';
-      }
-
-      // Team-Modal zeigen/verstecken
-      function showTeamModal(teamId = null) {
-        const modal = document.getElementById('team-modal');
-        const form = document.getElementById('team-form');
-        const title = document.getElementById('team-modal-title');
-
-        // Formular zurücksetzen
-        form.reset();
-        document.getElementById('team-id').value = '';
-
-        if (teamId) {
-          // Bearbeiten-Modus
-          title.textContent = 'Team bearbeiten';
-          const team = teams.find((t) => t.id === teamId);
-
-          if (team) {
-            document.getElementById('team-id').value = team.id;
-            document.getElementById('team-name').value = team.name;
-            document.getElementById('team-description').value = team.description || '';
-            document.getElementById('team-department').value = team.department_id || '';
-            document.getElementById('team-leader').value = team.leader_id || '';
-          }
-        } else {
-          // Neu-Modus
-          title.textContent = 'Neues Team';
-        }
-
-        modal.style.display = 'flex';
-      }
-
-      function hideTeamModal() {
-        document.getElementById('team-modal').style.display = 'none';
-      }
-
-      // Team-Mitglieder-Modal zeigen/verstecken
-      function showTeamMembersModal(teamId) {
-        const modal = document.getElementById('team-members-modal');
-        const title = document.getElementById('team-members-modal-title');
-
-        currentTeamId = teamId;
-        const team = teams.find((t) => t.id === teamId);
-
-        if (team) {
-          title.textContent = `Mitglieder: ${team.name}`;
-          loadTeamMembers(teamId);
-        }
-
-        modal.style.display = 'flex';
-      }
-
-      function hideTeamMembersModal() {
-        document.getElementById('team-members-modal').style.display = 'none';
-        currentTeamId = null;
-      }
-
-      // Abteilung speichern
-      async function saveDepartment(e) {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const departmentData = Object.fromEntries(formData.entries());
-        const departmentId = departmentData.id;
-
-        try {
-          let url = '/departments';
-          let method = 'POST';
-
-          if (departmentId) {
-            // Bearbeiten-Modus
-            url = `/departments/${departmentId}`;
-            method = 'PUT';
-            delete departmentData.id; // ID aus den Daten entfernen
+            return branchDiv;
           }
 
-          const response = await fetch(url, {
-            method: method,
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify(departmentData),
-          });
+          // Dropdown-Felder befüllen
+          function populateDepartmentDropdowns() {
+            const departmentParentDropdown = document.getElementById('department-parent');
+            const teamDepartmentDropdown = document.getElementById('team-department');
 
-          if (response.ok) {
-            const result = await response.json();
-            alert(result.message);
-            hideDepartmentModal();
+            // Dropdown für übergeordnete Abteilung
+            if (departmentParentDropdown) {
+              departmentParentDropdown.innerHTML = '<option value="">Keine übergeordnete Abteilung</option>';
+              departments.forEach((dept) => {
+                const option = document.createElement('option');
+                option.value = dept.id;
+                option.textContent = dept.name;
+                departmentParentDropdown.appendChild(option);
+              });
+            }
 
-            // Liste neu laden
-            loadDepartments();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
-          }
-        } catch (error) {
-          console.error('Fehler beim Speichern der Abteilung:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
-
-      // Team speichern
-      async function saveTeam(e) {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const teamData = Object.fromEntries(formData.entries());
-        const teamId = teamData.id;
-
-        try {
-          let url = '/teams';
-          let method = 'POST';
-
-          if (teamId) {
-            // Bearbeiten-Modus
-            url = `/teams/${teamId}`;
-            method = 'PUT';
-            delete teamData.id; // ID aus den Daten entfernen
+            // Dropdown für Team-Abteilung
+            if (teamDepartmentDropdown) {
+              teamDepartmentDropdown.innerHTML = '<option value="">Keine Abteilung</option>';
+              departments.forEach((dept) => {
+                const option = document.createElement('option');
+                option.value = dept.id;
+                option.textContent = dept.name;
+                teamDepartmentDropdown.appendChild(option);
+              });
+            }
           }
 
-          const response = await fetch(url, {
-            method: method,
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify(teamData),
-          });
+          // Benutzer-Dropdowns befüllen
+          function populateUserDropdowns() {
+            const departmentManagerDropdown = document.getElementById('department-manager');
+            const teamLeaderDropdown = document.getElementById('team-leader');
+            const addTeamMemberDropdown = document.getElementById('add-team-member');
 
-          if (response.ok) {
-            const result = await response.json();
-            alert(result.message);
-            hideTeamModal();
+            // Dropdown für Abteilungsmanager
+            if (departmentManagerDropdown) {
+              departmentManagerDropdown.innerHTML = '<option value="">Kein Manager</option>';
+              users.forEach((user) => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.first_name} ${user.last_name}`;
+                departmentManagerDropdown.appendChild(option);
+              });
+            }
 
-            // Liste neu laden
-            loadTeams();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            // Dropdown für Teamleiter
+            if (teamLeaderDropdown) {
+              teamLeaderDropdown.innerHTML = '<option value="">Kein Teamleiter</option>';
+              users.forEach((user) => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.first_name} ${user.last_name}`;
+                teamLeaderDropdown.appendChild(option);
+              });
+            }
+
+            // Dropdown für Team-Mitglieder hinzufügen
+            if (addTeamMemberDropdown) {
+              addTeamMemberDropdown.innerHTML = '<option value="">Mitarbeiter auswählen</option>';
+              users
+                .filter((u) => u.role === 'employee')
+                .forEach((user) => {
+                  const option = document.createElement('option');
+                  option.value = user.id;
+                  option.textContent = `${user.first_name} ${user.last_name}`;
+                  addTeamMemberDropdown.appendChild(option);
+                });
+            }
           }
-        } catch (error) {
-          console.error('Fehler beim Speichern des Teams:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
 
-      // Team-Mitglieder laden
-      async function loadTeamMembers(teamId) {
-        if (!teamId) return;
+          // Abteilungen filtern
+          function filterDepartments() {
+            const searchTerm = document.getElementById('department-search').value.toLowerCase();
+            const container = document.getElementById('departments-container');
 
-        try {
-          const response = await fetch(`/teams/${teamId}/members`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
+            const cards = container.getElementsByClassName('card');
 
-          if (response.ok) {
-            const members = await response.json();
-            displayTeamMembers(members);
-          } else {
-            console.error('Fehler beim Laden der Team-Mitglieder');
+            for (let i = 0; i < cards.length; i++) {
+              const title = cards[i].querySelector('.card-title').textContent.toLowerCase();
+              const description = cards[i].querySelector('.card-body').textContent.toLowerCase();
+
+              if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                cards[i].style.display = '';
+              } else {
+                cards[i].style.display = 'none';
+              }
+            }
           }
-        } catch (error) {
-          console.error('Fehler beim Laden der Team-Mitglieder:', error);
-        }
-      }
 
-      // Team-Mitglieder anzeigen
-      function displayTeamMembers(members) {
-        const container = document.getElementById('team-members-container');
-        container.innerHTML = '';
+          // Teams filtern
+          function filterTeams() {
+            const searchTerm = document.getElementById('team-search').value.toLowerCase();
+            const container = document.getElementById('teams-container');
 
-        if (members.length === 0) {
-          container.innerHTML = '<p style="text-align: center;">Keine Mitglieder in diesem Team</p>';
-          return;
-        }
+            const cards = container.getElementsByClassName('card');
 
-        members.forEach((member) => {
-          const memberDiv = document.createElement('div');
-          memberDiv.className = 'team-member';
+            for (let i = 0; i < cards.length; i++) {
+              const title = cards[i].querySelector('.card-title').textContent.toLowerCase();
+              const description = cards[i].querySelector('.card-body').textContent.toLowerCase();
 
-          // Initialen für Profilbild
-          const initials = member.first_name.charAt(0) + member.last_name.charAt(0);
-
-          // Bild-Element
-          const imgElem = document.createElement('div');
-          if (member.profile_picture) {
-            imgElem.innerHTML = `<img src="/${member.profile_picture}" alt="${member.first_name}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">`;
-          } else {
-            imgElem.className = 'team-member-img';
-            imgElem.textContent = initials;
+              if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                cards[i].style.display = '';
+              } else {
+                cards[i].style.display = 'none';
+              }
+            }
           }
-          memberDiv.appendChild(imgElem);
 
-          // Info-Element
-          const infoElem = document.createElement('div');
-          infoElem.className = 'team-member-info';
-          infoElem.innerHTML = `
-                    <div>${member.first_name} ${member.last_name}</div>
-                    <div style="font-size: 12px; color: #666;">${member.position || 'Keine Position'}</div>
-                `;
-          memberDiv.appendChild(infoElem);
+          // Abteilungs-Modal zeigen/verstecken
+          function showDepartmentModal(departmentId = null) {
+            const modal = document.getElementById('department-modal');
+            const form = document.getElementById('department-form');
+            const title = document.getElementById('department-modal-title');
 
-          // Aktions-Element
-          const actionsElem = document.createElement('div');
-          actionsElem.className = 'team-member-actions';
-          actionsElem.innerHTML = `
-                    <button class="btn btn-danger btn-sm" onclick="removeTeamMember(${member.id})">Entfernen</button>
-                `;
-          memberDiv.appendChild(actionsElem);
+            // Formular zurücksetzen
+            form.reset();
+            document.getElementById('department-id').value = '';
 
-          container.appendChild(memberDiv);
-        });
-      }
+            if (departmentId) {
+              // Bearbeiten-Modus
+              title.textContent = 'Abteilung bearbeiten';
+              const department = departments.find((d) => d.id === departmentId);
 
-      // Mitglied zum Team hinzufügen
-      async function addTeamMember() {
-        if (!currentTeamId) return;
+              if (department) {
+                document.getElementById('department-id').value = department.id;
+                document.getElementById('department-name').value = department.name;
+                document.getElementById('department-description').value = department.description || '';
+                document.getElementById('department-manager').value = department.manager_id || '';
+                document.getElementById('department-parent').value = department.parent_id || '';
+              }
+            } else {
+              // Neu-Modus
+              title.textContent = 'Neue Abteilung';
+            }
 
-        const userId = document.getElementById('add-team-member').value;
-
-        if (!userId) {
-          alert('Bitte wählen Sie einen Mitarbeiter aus');
-          return;
-        }
-
-        try {
-          const response = await fetch(`/teams/${currentTeamId}/members`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify({ userId }),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            // Mitglieder neu laden
-            loadTeamMembers(currentTeamId);
-
-            // Dropdown zurücksetzen
-            document.getElementById('add-team-member').value = '';
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            modal.style.display = 'flex';
           }
-        } catch (error) {
-          console.error('Fehler beim Hinzufügen des Mitglieds:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
 
-      // Mitglied aus Team entfernen
-      async function removeTeamMember(userId) {
-        if (!currentTeamId || !userId) return;
-
-        if (!confirm('Sind Sie sicher, dass Sie dieses Mitglied aus dem Team entfernen möchten?')) {
-          return;
-        }
-
-        try {
-          const response = await fetch(`/teams/${currentTeamId}/members/${userId}`, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            // Mitglieder neu laden
-            loadTeamMembers(currentTeamId);
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+          function hideDepartmentModal() {
+            document.getElementById('department-modal').style.display = 'none';
           }
-        } catch (error) {
-          console.error('Fehler beim Entfernen des Mitglieds:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
 
-      // Abteilung bearbeiten
-      function editDepartment(departmentId) {
-        showDepartmentModal(departmentId);
-      }
+          // Team-Modal zeigen/verstecken
+          function showTeamModal(teamId = null) {
+            const modal = document.getElementById('team-modal');
+            const form = document.getElementById('team-form');
+            const title = document.getElementById('team-modal-title');
 
-      // Abteilung löschen
-      async function deleteDepartment(departmentId) {
-        if (!confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')) {
-          return;
-        }
+            // Formular zurücksetzen
+            form.reset();
+            document.getElementById('team-id').value = '';
 
-        try {
-          const response = await fetch(`/departments/${departmentId}`, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
+            if (teamId) {
+              // Bearbeiten-Modus
+              title.textContent = 'Team bearbeiten';
+              const team = teams.find((t) => t.id === teamId);
 
-          if (response.ok) {
-            const result = await response.json();
-            alert(result.message);
+              if (team) {
+                document.getElementById('team-id').value = team.id;
+                document.getElementById('team-name').value = team.name;
+                document.getElementById('team-description').value = team.description || '';
+                document.getElementById('team-department').value = team.department_id || '';
+                document.getElementById('team-leader').value = team.leader_id || '';
+              }
+            } else {
+              // Neu-Modus
+              title.textContent = 'Neues Team';
+            }
 
-            // Liste neu laden
-            loadDepartments();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+            modal.style.display = 'flex';
           }
-        } catch (error) {
-          console.error('Fehler beim Löschen der Abteilung:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
 
-      // Abteilungsmitglieder anzeigen
-      async function viewDepartmentMembers(departmentId) {
-        try {
-          const response = await fetch(`/departments/${departmentId}/members`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
+          function hideTeamModal() {
+            document.getElementById('team-modal').style.display = 'none';
+          }
 
-          if (response.ok) {
-            const members = await response.json();
+          // Team-Mitglieder-Modal zeigen/verstecken
+          function showTeamMembersModal(teamId) {
+            const modal = document.getElementById('team-members-modal');
+            const title = document.getElementById('team-members-modal-title');
+
+            currentTeamId = teamId;
+            const team = teams.find((t) => t.id === teamId);
+
+            if (team) {
+              title.textContent = `Mitglieder: ${team.name}`;
+              loadTeamMembers(teamId);
+            }
+
+            modal.style.display = 'flex';
+          }
+
+          function hideTeamMembersModal() {
+            document.getElementById('team-members-modal').style.display = 'none';
+            currentTeamId = null;
+          }
+
+          // Abteilung speichern
+          async function saveDepartment(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const departmentData = Object.fromEntries(formData.entries());
+            const departmentId = departmentData.id;
+
+            try {
+              let url = '/departments';
+              let method = 'POST';
+
+              if (departmentId) {
+                // Bearbeiten-Modus
+                url = `/departments/${departmentId}`;
+                method = 'PUT';
+                delete departmentData.id; // ID aus den Daten entfernen
+              }
+
+              const response = await fetch(url, {
+                method: method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(departmentData),
+              });
+
+              if (response.ok) {
+                const result = await response.json();
+                alert(result.message);
+                hideDepartmentModal();
+
+                // Liste neu laden
+                loadDepartments();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Speichern der Abteilung:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+          }
+
+          // Team speichern
+          async function saveTeam(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const teamData = Object.fromEntries(formData.entries());
+            const teamId = teamData.id;
+
+            try {
+              let url = '/teams';
+              let method = 'POST';
+
+              if (teamId) {
+                // Bearbeiten-Modus
+                url = `/teams/${teamId}`;
+                method = 'PUT';
+                delete teamData.id; // ID aus den Daten entfernen
+              }
+
+              const response = await fetch(url, {
+                method: method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify(teamData),
+              });
+
+              if (response.ok) {
+                const result = await response.json();
+                alert(result.message);
+                hideTeamModal();
+
+                // Liste neu laden
+                loadTeams();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Speichern des Teams:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+          }
+
+          // Team-Mitglieder laden
+          async function loadTeamMembers(teamId) {
+            if (!teamId) return;
+
+            try {
+              const response = await fetch(`/teams/${teamId}/members`, {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                const members = await response.json();
+                displayTeamMembers(members);
+              } else {
+                console.error('Fehler beim Laden der Team-Mitglieder');
+              }
+            } catch (error) {
+              console.error('Fehler beim Laden der Team-Mitglieder:', error);
+            }
+          }
+
+          // Team-Mitglieder anzeigen
+          function displayTeamMembers(members) {
+            const container = document.getElementById('team-members-container');
+            container.innerHTML = '';
 
             if (members.length === 0) {
-              alert('Diese Abteilung hat keine Mitglieder');
+              container.innerHTML = '<p style="text-align: center;">Keine Mitglieder in diesem Team</p>';
               return;
             }
 
-            // Hier könnte ein Modal oder eine separate Ansicht für die Mitglieder geöffnet werden
-            const department = departments.find((d) => d.id === departmentId);
-            let message = `Mitglieder der Abteilung "${department ? department.name : ''}":\n\n`;
-
             members.forEach((member) => {
-              message += `- ${member.first_name} ${member.last_name} (${member.employee_id || 'Keine ID'})\n`;
+              const memberDiv = document.createElement('div');
+              memberDiv.className = 'team-member';
+
+              // Initialen für Profilbild
+              const initials = member.first_name.charAt(0) + member.last_name.charAt(0);
+
+              // Bild-Element
+              const imgElem = document.createElement('div');
+              if (member.profile_picture) {
+                imgElem.innerHTML = `<img src="/${member.profile_picture}" alt="${member.first_name}" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">`;
+              } else {
+                imgElem.className = 'team-member-img';
+                imgElem.textContent = initials;
+              }
+              memberDiv.appendChild(imgElem);
+
+              // Info-Element
+              const infoElem = document.createElement('div');
+              infoElem.className = 'team-member-info';
+              infoElem.innerHTML = `
+                    <div>${member.first_name} ${member.last_name}</div>
+                    <div style="font-size: 12px; color: #666;">${member.position || 'Keine Position'}</div>
+                `;
+              memberDiv.appendChild(infoElem);
+
+              // Aktions-Element
+              const actionsElem = document.createElement('div');
+              actionsElem.className = 'team-member-actions';
+              actionsElem.innerHTML = `
+                    <button class="btn btn-danger btn-sm" onclick="removeTeamMember(${member.id})">Entfernen</button>
+                `;
+              memberDiv.appendChild(actionsElem);
+
+              container.appendChild(memberDiv);
             });
-
-            alert(message);
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
           }
-        } catch (error) {
-          console.error('Fehler beim Abrufen der Abteilungsmitglieder:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
 
-      // Team bearbeiten
-      function editTeam(teamId) {
-        showTeamModal(teamId);
-      }
+          // Mitglied zum Team hinzufügen
+          async function addTeamMember() {
+            if (!currentTeamId) return;
 
-      // Team löschen
-      async function deleteTeam(teamId) {
-        if (!confirm('Sind Sie sicher, dass Sie dieses Team löschen möchten?')) {
-          return;
-        }
+            const userId = document.getElementById('add-team-member').value;
 
-        try {
-          const response = await fetch(`/teams/${teamId}`, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
+            if (!userId) {
+              alert('Bitte wählen Sie einen Mitarbeiter aus');
+              return;
+            }
 
-          if (response.ok) {
-            const result = await response.json();
-            alert(result.message);
+            try {
+              const response = await fetch(`/teams/${currentTeamId}/members`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify({ userId }),
+              });
 
-            // Liste neu laden
-            loadTeams();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+              if (response.ok) {
+                const result = await response.json();
+                // Mitglieder neu laden
+                loadTeamMembers(currentTeamId);
+
+                // Dropdown zurücksetzen
+                document.getElementById('add-team-member').value = '';
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Hinzufügen des Mitglieds:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
           }
-        } catch (error) {
-          console.error('Fehler beim Löschen des Teams:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      }
 
-      // Team-Mitglieder verwalten
-      function manageTeamMembers(teamId) {
-        showTeamMembersModal(teamId);
-      }
+          // Mitglied aus Team entfernen
+          async function removeTeamMember(userId) {
+            if (!currentTeamId || !userId) return;
 
-      // Zurück zum Dashboard
-      function goBack() {
-        window.location.href = '/admin-dashboard';
-      }
-    </script>
+            if (!confirm('Sind Sie sicher, dass Sie dieses Mitglied aus dem Team entfernen möchten?')) {
+              return;
+            }
+
+            try {
+              const response = await fetch(`/teams/${currentTeamId}/members/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                const result = await response.json();
+                // Mitglieder neu laden
+                loadTeamMembers(currentTeamId);
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Entfernen des Mitglieds:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+          }
+
+          // Abteilung bearbeiten
+          function editDepartment(departmentId) {
+            showDepartmentModal(departmentId);
+          }
+
+          // Abteilung löschen
+          async function deleteDepartment(departmentId) {
+            if (!confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')) {
+              return;
+            }
+
+            try {
+              const response = await fetch(`/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                const result = await response.json();
+                alert(result.message);
+
+                // Liste neu laden
+                loadDepartments();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Löschen der Abteilung:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+          }
+
+          // Abteilungsmitglieder anzeigen
+          async function viewDepartmentMembers(departmentId) {
+            try {
+              const response = await fetch(`/departments/${departmentId}/members`, {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                const members = await response.json();
+
+                if (members.length === 0) {
+                  alert('Diese Abteilung hat keine Mitglieder');
+                  return;
+                }
+
+                // Hier könnte ein Modal oder eine separate Ansicht für die Mitglieder geöffnet werden
+                const department = departments.find((d) => d.id === departmentId);
+                let message = `Mitglieder der Abteilung "${department ? department.name : ''}":\n\n`;
+
+                members.forEach((member) => {
+                  message += `- ${member.first_name} ${member.last_name} (${member.employee_id || 'Keine ID'})\n`;
+                });
+
+                alert(message);
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Abrufen der Abteilungsmitglieder:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+          }
+
+          // Team bearbeiten
+          function editTeam(teamId) {
+            showTeamModal(teamId);
+          }
+
+          // Team löschen
+          async function deleteTeam(teamId) {
+            if (!confirm('Sind Sie sicher, dass Sie dieses Team löschen möchten?')) {
+              return;
+            }
+
+            try {
+              const response = await fetch(`/teams/${teamId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (response.ok) {
+                const result = await response.json();
+                alert(result.message);
+
+                // Liste neu laden
+                loadTeams();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.message}`);
+              }
+            } catch (error) {
+              console.error('Fehler beim Löschen des Teams:', error);
+              alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+          }
+
+          // Team-Mitglieder verwalten
+          function manageTeamMembers(teamId) {
+            showTeamMembersModal(teamId);
+          }
+
+          // Zurück zum Dashboard
+          function goBack() {
+            window.location.href = '/admin-dashboard';
+          }
+        </script>
       </main>
     </div>
     <!-- Unified Navigation -->

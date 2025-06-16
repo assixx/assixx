@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
@@ -28,14 +28,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(
-          0deg,
-          transparent 0%,
-          rgba(0, 142, 255, 0.08) 100%,
-          #01000482 60%,
-          rgba(0, 0, 4, 0.6) 90%,
-          black 100%
-        );
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
@@ -168,11 +161,7 @@
         </div>
         <div class="modal-body">
           <div class="document-preview-container">
-            <iframe
-              id="documentPreviewFrame"
-              class="document-preview-frame"
-              title="Dokument Vorschau"
-            ></iframe>
+            <iframe id="documentPreviewFrame" class="document-preview-frame" title="Dokument Vorschau"></iframe>
             <div id="previewError" class="preview-error" style="display: none">
               <i class="fas fa-exclamation-circle"></i>
               <p>Vorschau nicht verfügbar</p>
@@ -214,10 +203,12 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="closeDocumentModal()">
-            <i class="fas fa-times me-2"></i>Schließen
+            <i class="fas fa-times me-2"></i>
+            Schließen
           </button>
           <button class="btn btn-primary" id="downloadButton" onclick="downloadDocument()">
-            <i class="fas fa-download me-2"></i>Herunterladen
+            <i class="fas fa-download me-2"></i>
+            Herunterladen
           </button>
         </div>
       </div>

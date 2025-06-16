@@ -3,9 +3,9 @@
  * Handles HTTP requests for employee availability management
  */
 
-import { Response } from 'express';
-import availabilityService from '../services/availability.service';
-import { AuthRequest } from '../types/request.types';
+import { Response } from "express";
+import availabilityService from "../services/availability.service";
+import { AuthRequest } from "../types/request.types";
 
 class AvailabilityController {
   /**
@@ -16,7 +16,7 @@ class AvailabilityController {
     try {
       const tenantId = req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+        res.status(400).json({ error: "Tenant ID required" });
         return;
       }
 
@@ -33,8 +33,8 @@ class AvailabilityController {
       const records = await availabilityService.getAll(filter);
       res.json({ availability: records });
     } catch (error) {
-      console.error('Error in AvailabilityController.getAll:', error);
-      res.status(500).json({ error: 'Fehler beim Laden der Verfügbarkeiten' });
+      console.error("Error in AvailabilityController.getAll:", error);
+      res.status(500).json({ error: "Fehler beim Laden der Verfügbarkeiten" });
     }
   }
 
@@ -46,17 +46,17 @@ class AvailabilityController {
     try {
       const tenantId = req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+        res.status(400).json({ error: "Tenant ID required" });
         return;
       }
 
       const employees = await availabilityService.getCurrentStatus(tenantId);
       res.json({ employees });
     } catch (error) {
-      console.error('Error in AvailabilityController.getCurrentStatus:', error);
+      console.error("Error in AvailabilityController.getCurrentStatus:", error);
       res
         .status(500)
-        .json({ error: 'Fehler beim Laden der aktuellen Verfügbarkeiten' });
+        .json({ error: "Fehler beim Laden der aktuellen Verfügbarkeiten" });
     }
   }
 
@@ -68,25 +68,25 @@ class AvailabilityController {
     try {
       const tenantId = req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+        res.status(400).json({ error: "Tenant ID required" });
         return;
       }
 
       const { start_date, end_date } = req.query;
       if (!start_date || !end_date) {
-        res.status(400).json({ error: 'Start- und Enddatum erforderlich' });
+        res.status(400).json({ error: "Start- und Enddatum erforderlich" });
         return;
       }
 
       const summary = await availabilityService.getAvailabilitySummary(
         tenantId,
         start_date as string,
-        end_date as string
+        end_date as string,
       );
       res.json({ summary });
     } catch (error) {
-      console.error('Error in AvailabilityController.getSummary:', error);
-      res.status(500).json({ error: 'Fehler beim Laden der Zusammenfassung' });
+      console.error("Error in AvailabilityController.getSummary:", error);
+      res.status(500).json({ error: "Fehler beim Laden der Zusammenfassung" });
     }
   }
 
@@ -98,7 +98,7 @@ class AvailabilityController {
     try {
       const tenantId = req.user?.tenantId;
       if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+        res.status(400).json({ error: "Tenant ID required" });
         return;
       }
 
@@ -106,14 +106,14 @@ class AvailabilityController {
       const record = await availabilityService.getById(id, tenantId);
 
       if (!record) {
-        res.status(404).json({ error: 'Verfügbarkeit nicht gefunden' });
+        res.status(404).json({ error: "Verfügbarkeit nicht gefunden" });
         return;
       }
 
       res.json(record);
     } catch (error) {
-      console.error('Error in AvailabilityController.getById:', error);
-      res.status(500).json({ error: 'Fehler beim Laden der Verfügbarkeit' });
+      console.error("Error in AvailabilityController.getById:", error);
+      res.status(500).json({ error: "Fehler beim Laden der Verfügbarkeit" });
     }
   }
 
@@ -127,7 +127,7 @@ class AvailabilityController {
       const userId = req.user?.id;
 
       if (!tenantId || !userId) {
-        res.status(400).json({ error: 'Authentication required' });
+        res.status(400).json({ error: "Authentication required" });
         return;
       }
 
@@ -137,7 +137,7 @@ class AvailabilityController {
       // Validate required fields
       if (!employee_id || !status || !start_date || !end_date) {
         res.status(400).json({
-          error: 'Mitarbeiter, Status, Start- und Enddatum sind erforderlich',
+          error: "Mitarbeiter, Status, Start- und Enddatum sind erforderlich",
         });
         return;
       }
@@ -147,15 +147,15 @@ class AvailabilityController {
       const end = new Date(end_date);
       if (end < start) {
         res.status(400).json({
-          error: 'Enddatum muss nach oder gleich dem Startdatum sein',
+          error: "Enddatum muss nach oder gleich dem Startdatum sein",
         });
         return;
       }
 
       // Check permission - only admin/root can create for others
-      if (req.user?.role === 'employee' && employee_id !== userId) {
+      if (req.user?.role === "employee" && employee_id !== userId) {
         res.status(403).json({
-          error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit ändern',
+          error: "Mitarbeiter können nur ihre eigene Verfügbarkeit ändern",
         });
         return;
       }
@@ -174,10 +174,10 @@ class AvailabilityController {
       const created = await availabilityService.getById(id, tenantId);
       res.status(201).json(created);
     } catch (error) {
-      console.error('Error in AvailabilityController.create:', error);
+      console.error("Error in AvailabilityController.create:", error);
       res
         .status(500)
-        .json({ error: 'Fehler beim Erstellen der Verfügbarkeit' });
+        .json({ error: "Fehler beim Erstellen der Verfügbarkeit" });
     }
   }
 
@@ -191,7 +191,7 @@ class AvailabilityController {
       const userId = req.user?.id;
 
       if (!tenantId || !userId) {
-        res.status(400).json({ error: 'Authentication required' });
+        res.status(400).json({ error: "Authentication required" });
         return;
       }
 
@@ -201,14 +201,14 @@ class AvailabilityController {
       // Get existing record
       const existing = await availabilityService.getById(id, tenantId);
       if (!existing) {
-        res.status(404).json({ error: 'Verfügbarkeit nicht gefunden' });
+        res.status(404).json({ error: "Verfügbarkeit nicht gefunden" });
         return;
       }
 
       // Check permission
-      if (req.user?.role === 'employee' && existing.employeeId !== userId) {
+      if (req.user?.role === "employee" && existing.employeeId !== userId) {
         res.status(403).json({
-          error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit ändern',
+          error: "Mitarbeiter können nur ihre eigene Verfügbarkeit ändern",
         });
         return;
       }
@@ -219,7 +219,7 @@ class AvailabilityController {
         const end = new Date(end_date);
         if (end < start) {
           res.status(400).json({
-            error: 'Enddatum muss nach oder gleich dem Startdatum sein',
+            error: "Enddatum muss nach oder gleich dem Startdatum sein",
           });
           return;
         }
@@ -236,17 +236,17 @@ class AvailabilityController {
       if (!success) {
         res
           .status(500)
-          .json({ error: 'Fehler beim Aktualisieren der Verfügbarkeit' });
+          .json({ error: "Fehler beim Aktualisieren der Verfügbarkeit" });
         return;
       }
 
       const updated = await availabilityService.getById(id, tenantId);
       res.json(updated);
     } catch (error) {
-      console.error('Error in AvailabilityController.update:', error);
+      console.error("Error in AvailabilityController.update:", error);
       res
         .status(500)
-        .json({ error: 'Fehler beim Aktualisieren der Verfügbarkeit' });
+        .json({ error: "Fehler beim Aktualisieren der Verfügbarkeit" });
     }
   }
 
@@ -260,7 +260,7 @@ class AvailabilityController {
       const userId = req.user?.id;
 
       if (!tenantId || !userId) {
-        res.status(400).json({ error: 'Authentication required' });
+        res.status(400).json({ error: "Authentication required" });
         return;
       }
 
@@ -269,14 +269,14 @@ class AvailabilityController {
       // Get existing record
       const existing = await availabilityService.getById(id, tenantId);
       if (!existing) {
-        res.status(404).json({ error: 'Verfügbarkeit nicht gefunden' });
+        res.status(404).json({ error: "Verfügbarkeit nicht gefunden" });
         return;
       }
 
       // Check permission
-      if (req.user?.role === 'employee' && existing.employeeId !== userId) {
+      if (req.user?.role === "employee" && existing.employeeId !== userId) {
         res.status(403).json({
-          error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit löschen',
+          error: "Mitarbeiter können nur ihre eigene Verfügbarkeit löschen",
         });
         return;
       }
@@ -286,14 +286,14 @@ class AvailabilityController {
       if (!success) {
         res
           .status(500)
-          .json({ error: 'Fehler beim Löschen der Verfügbarkeit' });
+          .json({ error: "Fehler beim Löschen der Verfügbarkeit" });
         return;
       }
 
-      res.json({ message: 'Verfügbarkeit erfolgreich gelöscht' });
+      res.json({ message: "Verfügbarkeit erfolgreich gelöscht" });
     } catch (error) {
-      console.error('Error in AvailabilityController.delete:', error);
-      res.status(500).json({ error: 'Fehler beim Löschen der Verfügbarkeit' });
+      console.error("Error in AvailabilityController.delete:", error);
+      res.status(500).json({ error: "Fehler beim Löschen der Verfügbarkeit" });
     }
   }
 }

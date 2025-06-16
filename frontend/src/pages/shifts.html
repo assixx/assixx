@@ -25,14 +25,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(
-          0deg,
-          transparent 0%,
-          rgba(0, 142, 255, 0.08) 100%,
-          #01000482 60%,
-          rgba(0, 0, 4, 0.6) 90%,
-          black 100%
-        );
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
@@ -330,12 +323,12 @@
         align-items: center;
         gap: var(--spacing-xs);
       }
-      
+
       .btn-sm {
         padding: 6px 12px;
         font-size: 13px;
       }
-      
+
       /* Department Notice */
       .department-notice {
         text-align: center;
@@ -351,20 +344,20 @@
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
-      
+
       .department-notice .notice-icon {
         font-size: 48px;
         color: var(--primary-color);
         margin-bottom: var(--spacing-lg);
         opacity: 0.8;
       }
-      
+
       .department-notice h3 {
         color: var(--text-primary);
         font-size: 24px;
         margin-bottom: var(--spacing-md);
       }
-      
+
       .department-notice p {
         color: var(--text-secondary);
         font-size: 16px;
@@ -756,7 +749,7 @@
       .main-planning-area.full-width {
         grid-template-columns: 1fr;
       }
-      
+
       .main-planning-area.full-width .week-schedule {
         max-width: 100%;
       }
@@ -827,7 +820,7 @@
           </div>
 
           <!-- Week Navigation -->
-          <div class="week-navigation" style="display: none;">
+          <div class="week-navigation" style="display: none">
             <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
             <div class="week-info">
               <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
@@ -845,7 +838,7 @@
           </div>
 
           <!-- Main Planning Area -->
-          <div class="main-planning-area" id="mainPlanningArea" style="display: none;">
+          <div class="main-planning-area" id="mainPlanningArea" style="display: none">
             <!-- Week Schedule -->
             <div class="week-schedule">
               <!-- Header -->
@@ -1036,7 +1029,7 @@
           </div>
 
           <!-- Admin Actions -->
-          <div class="admin-actions" id="adminActions" style="display: none;">
+          <div class="admin-actions" id="adminActions" style="display: none">
             <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
             <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
           </div>

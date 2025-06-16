@@ -117,7 +117,7 @@ class UnifiedNavigation {
   private getSectionUrl(section: string): string {
     // Check if we're on admin-dashboard page
     const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard.html');
-    
+
     if (isOnAdminDashboard) {
       // If we're already on admin dashboard, use simple query parameter
       return `?section=${section}`;
@@ -784,13 +784,12 @@ class UnifiedNavigation {
     // If has submenu, create a dropdown
     if (hasSubmenu) {
       const submenuItems = item
-        .submenu!.map(
-          (child) => {
-            const childBadgeHtml = child.badgeId 
-              ? `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`
-              : '';
-              
-            return `
+        .submenu!.map((child) => {
+          const childBadgeHtml = child.badgeId
+            ? `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`
+            : '';
+
+          return `
               <li class="submenu-item" style="position: relative;">
                 <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
                   <span class="submenu-label">${child.label}</span>
@@ -798,8 +797,7 @@ class UnifiedNavigation {
                 </a>
               </li>
             `;
-          }
-        )
+        })
         .join('');
 
       return `
@@ -1100,7 +1098,7 @@ class UnifiedNavigation {
 
     // Check if we have a hash in URL (for section navigation)
     const currentHash = window.location.hash.substring(1); // Remove #
-    
+
     // If on dashboard page
     if (isMainDashboard) {
       if (currentHash && currentHash !== 'dashboard') {
@@ -1225,7 +1223,7 @@ class UnifiedNavigation {
     try {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
-      
+
       // Only show badge for admin/root users
       if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
         const badge = document.getElementById('kvp-new-badge');
@@ -1325,7 +1323,7 @@ class UnifiedNavigation {
         const result = await response.json();
         // Backend returns {data: Document[], pagination: {...}}
         const documents = result.data || result.documents || [];
-        
+
         // Count unread documents by category
         const unreadCounts = {
           company: 0,
@@ -1335,11 +1333,11 @@ class UnifiedNavigation {
           payroll: 0,
           total: 0,
         };
-        
+
         documents.forEach((doc: any) => {
           if (!doc.is_read) {
             unreadCounts.total++;
-            
+
             // Special case for payroll documents
             if (doc.category === 'salary') {
               unreadCounts.payroll++;
@@ -1349,7 +1347,7 @@ class UnifiedNavigation {
             }
           }
         });
-        
+
         // Update main documents badge
         const mainBadge = document.getElementById('documents-unread-badge');
         if (mainBadge) {
@@ -1360,7 +1358,7 @@ class UnifiedNavigation {
             mainBadge.style.display = 'none';
           }
         }
-        
+
         // Update individual category badges
         const updateBadge = (badgeId: string, count: number) => {
           const badge = document.getElementById(badgeId);
@@ -1373,7 +1371,7 @@ class UnifiedNavigation {
             }
           }
         };
-        
+
         updateBadge('badge-docs-company', unreadCounts.company);
         updateBadge('badge-docs-department', unreadCounts.department);
         updateBadge('badge-docs-team', unreadCounts.team);

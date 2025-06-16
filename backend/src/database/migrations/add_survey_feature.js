@@ -1,7 +1,7 @@
-const mysql = require('mysql2/promise');
-const fs = require('fs').promises;
-const path = require('path');
-require('dotenv').config();
+const mysql = require("mysql2/promise");
+const fs = require("fs").promises;
+const path = require("path");
+require("dotenv").config();
 
 async function runMigration() {
   let connection;
@@ -16,21 +16,21 @@ async function runMigration() {
       multipleStatements: true,
     });
 
-    console.log('📊 Starting survey feature migration...');
+    console.log("📊 Starting survey feature migration...");
 
     // SQL-Datei lesen
-    const sqlPath = path.join(__dirname, 'survey_schema.sql');
-    const sql = await fs.readFile(sqlPath, 'utf8');
+    const sqlPath = path.join(__dirname, "survey_schema.sql");
+    const sql = await fs.readFile(sqlPath, "utf8");
 
     // Migration ausführen
     await connection.query(sql);
 
-    console.log('✅ Survey tables created successfully');
+    console.log("✅ Survey tables created successfully");
 
     // Prüfen ob Feature bereits existiert
     const [features] = await connection.query(
-      'SELECT id FROM features WHERE code = ?',
-      ['surveys']
+      "SELECT id FROM features WHERE code = ?",
+      ["surveys"],
     );
 
     if (features.length === 0) {
@@ -41,63 +41,63 @@ async function runMigration() {
         VALUES (?, ?, ?, ?, ?, ?)
       `,
         [
-          'surveys',
-          'Umfrage-Tool',
-          'Umfrage-Tool für Mitarbeiterbefragungen mit anonymen Optionen',
-          'premium',
+          "surveys",
+          "Umfrage-Tool",
+          "Umfrage-Tool für Mitarbeiterbefragungen mit anonymen Optionen",
+          "premium",
           29.99,
           1,
-        ]
+        ],
       );
-      console.log('✅ Survey feature added to features table');
+      console.log("✅ Survey feature added to features table");
     } else {
-      console.log('ℹ️ Survey feature already exists in features table');
+      console.log("ℹ️ Survey feature already exists in features table");
     }
 
     // Beispiel-Template erstellen
     const [templates] = await connection.query(
-      'SELECT id FROM survey_templates WHERE name = ?',
-      ['Mitarbeiterzufriedenheit']
+      "SELECT id FROM survey_templates WHERE name = ?",
+      ["Mitarbeiterzufriedenheit"],
     );
 
     if (templates.length === 0) {
       const templateData = {
-        title: 'Mitarbeiterzufriedenheit',
-        description: 'Regelmäßige Befragung zur Mitarbeiterzufriedenheit',
+        title: "Mitarbeiterzufriedenheit",
+        description: "Regelmäßige Befragung zur Mitarbeiterzufriedenheit",
         questions: [
           {
-            question_text: 'Wie zufrieden sind Sie insgesamt mit Ihrer Arbeit?',
-            question_type: 'rating',
+            question_text: "Wie zufrieden sind Sie insgesamt mit Ihrer Arbeit?",
+            question_type: "rating",
             is_required: true,
             order_position: 1,
           },
           {
             question_text:
-              'Würden Sie das Unternehmen als Arbeitgeber weiterempfehlen?',
-            question_type: 'yes_no',
+              "Würden Sie das Unternehmen als Arbeitgeber weiterempfehlen?",
+            question_type: "yes_no",
             is_required: true,
             order_position: 2,
           },
           {
-            question_text: 'Was gefällt Ihnen am besten an Ihrer Arbeit?',
-            question_type: 'text',
+            question_text: "Was gefällt Ihnen am besten an Ihrer Arbeit?",
+            question_type: "text",
             is_required: false,
             order_position: 3,
           },
           {
             question_text:
-              'In welchen Bereichen sehen Sie Verbesserungspotenzial?',
-            question_type: 'multiple_choice',
+              "In welchen Bereichen sehen Sie Verbesserungspotenzial?",
+            question_type: "multiple_choice",
             is_required: false,
             order_position: 4,
             options: [
-              'Arbeitsumgebung',
-              'Work-Life-Balance',
-              'Kommunikation',
-              'Weiterbildungsmöglichkeiten',
-              'Vergütung',
-              'Teamarbeit',
-              'Führung',
+              "Arbeitsumgebung",
+              "Work-Life-Balance",
+              "Kommunikation",
+              "Weiterbildungsmöglichkeiten",
+              "Vergütung",
+              "Teamarbeit",
+              "Führung",
             ],
           },
         ],
@@ -105,7 +105,7 @@ async function runMigration() {
 
       // Get first admin user for template creation
       const [adminUsers] = await connection.query(
-        'SELECT id FROM users WHERE role IN ("admin", "root") LIMIT 1'
+        'SELECT id FROM users WHERE role IN ("admin", "root") LIMIT 1',
       );
 
       const adminUserId = adminUsers.length > 0 ? adminUsers[0].id : 16; // Fallback to known admin
@@ -116,19 +116,19 @@ async function runMigration() {
         VALUES (1, ?, ?, ?, ?, true)
       `,
         [
-          'Mitarbeiterzufriedenheit',
-          'Vorlage für regelmäßige Mitarbeiterbefragungen',
+          "Mitarbeiterzufriedenheit",
+          "Vorlage für regelmäßige Mitarbeiterbefragungen",
           JSON.stringify(templateData),
           adminUserId,
-        ]
+        ],
       );
 
-      console.log('✅ Sample survey template created');
+      console.log("✅ Sample survey template created");
     }
 
-    console.log('🎉 Survey feature migration completed successfully!');
+    console.log("🎉 Survey feature migration completed successfully!");
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error("❌ Migration failed:", error);
     process.exit(1);
   } finally {
     if (connection) {

@@ -3,11 +3,11 @@
  * Erkennt die Firma basierend auf der Subdomain und lädt die entsprechende Konfiguration
  */
 
-import { Request, Response, NextFunction } from 'express';
-import TenantModel from '../models/tenant';
-import { logger } from '../utils/logger';
-import { TenantInfo, TenantTrialStatus } from '../types/tenant.types';
-import { DatabaseTenant } from '../types/models';
+import { Request, Response, NextFunction } from "express";
+import TenantModel from "../models/tenant";
+import { logger } from "../utils/logger";
+import { TenantInfo, TenantTrialStatus } from "../types/tenant.types";
+import { DatabaseTenant } from "../types/models";
 
 // Request interface is already extended in types/express.d.ts
 
@@ -16,10 +16,10 @@ import { DatabaseTenant } from '../types/models';
  * Beispiel: bosch.assixx.de -> bosch
  */
 function getTenantFromHost(hostname: string): string | null {
-  const parts = hostname.split('.');
+  const parts = hostname.split(".");
 
   // Lokale Entwicklung: localhost:3000 -> aus Header oder Query
-  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+  if (hostname.includes("localhost") || hostname.includes("127.0.0.1")) {
     return null; // Will be handled by header/query fallback
   }
 
@@ -40,7 +40,7 @@ function getTenantFromHost(hostname: string): string | null {
 export async function tenantMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     // 1. Tenant identifizieren (Priorität: Subdomain > Header > Query)
@@ -48,13 +48,13 @@ export async function tenantMiddleware(
 
     // Fallback für Entwicklung: X-Tenant-ID Header oder Query Parameter
     if (!tenantSubdomain) {
-      const headerTenant = req.headers['x-tenant-id'];
+      const headerTenant = req.headers["x-tenant-id"];
       const queryTenant = req.query.tenant;
 
       tenantSubdomain =
-        typeof headerTenant === 'string'
+        typeof headerTenant === "string"
           ? headerTenant
-          : typeof queryTenant === 'string'
+          : typeof queryTenant === "string"
             ? queryTenant
             : null;
     }
@@ -75,7 +75,7 @@ export async function tenantMiddleware(
     if (!tenantSubdomain) {
       res.status(400).json({
         error:
-          'Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.',
+          "Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.",
       });
       return;
     }
@@ -86,17 +86,17 @@ export async function tenantMiddleware(
 
     if (!tenant) {
       res.status(404).json({
-        error: 'Firma nicht gefunden',
+        error: "Firma nicht gefunden",
         subdomain: tenantSubdomain,
       });
       return;
     }
 
     // 3. Prüfe Tenant-Status
-    if (tenant.status === 'cancelled' || tenant.status === 'suspended') {
+    if (tenant.status === "cancelled" || tenant.status === "suspended") {
       res.status(403).json({
         error:
-          'Dieser Account ist nicht aktiv. Bitte kontaktieren Sie den Support.',
+          "Dieser Account ist nicht aktiv. Bitte kontaktieren Sie den Support.",
       });
       return;
     }
@@ -104,9 +104,9 @@ export async function tenantMiddleware(
     // 4. Trial-Status prüfen
     const trialStatus: TenantTrialStatus | null =
       await TenantModel.checkTrialStatus(tenant.id);
-    if (trialStatus && trialStatus.isExpired && tenant.status === 'trial') {
+    if (trialStatus && trialStatus.isExpired && tenant.status === "trial") {
       res.status(402).json({
-        error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
+        error: "Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.",
         trialEndsAt: trialStatus.trialEndsAt,
       });
       return;
@@ -117,7 +117,7 @@ export async function tenantMiddleware(
       id: tenant.id,
       subdomain: tenant.subdomain,
       name: tenant.company_name,
-      status: tenant.status as TenantInfo['status'],
+      status: tenant.status as TenantInfo["status"],
       plan: tenant.current_plan,
       trialStatus: trialStatus || undefined,
     };
@@ -129,21 +129,21 @@ export async function tenantMiddleware(
     // 6. Wenn User eingeloggt ist, prüfe ob er zu diesem Tenant gehört
     if (req.user && req.user.tenantId && req.user.tenantId !== tenant.id) {
       res.status(403).json({
-        error: 'Sie haben keinen Zugriff auf diese Firma.',
+        error: "Sie haben keinen Zugriff auf diese Firma.",
       });
       return;
     }
 
     logger.info(
-      `Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`
+      `Tenant middleware: ${tenant.company_name} (${tenant.subdomain})`,
     );
 
     next();
   } catch (error) {
-    logger.error('Tenant middleware error:', error);
+    logger.error("Tenant middleware error:", error);
     res.status(500).json({
-      error: 'Fehler beim Laden der Firmenkonfiguration',
-      details: error instanceof Error ? error.message : 'Unknown error',
+      error: "Fehler beim Laden der Firmenkonfiguration",
+      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 }
@@ -154,7 +154,7 @@ export async function tenantMiddleware(
 export function skipTenantCheck(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   // Setze einen Default-Tenant für öffentliche Routen
   req.tenantId = null;

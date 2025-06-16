@@ -22,8 +22,8 @@ import {
   // createShiftExchangeRequest, // Unused
   // canAccessShiftPlan, // Unused
   getEmployeeShifts,
-} from '../models/shift';
-import { Pool } from 'mysql2/promise';
+} from "../models/shift";
+import { Pool } from "mysql2/promise";
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {
@@ -79,7 +79,7 @@ interface ShiftPlan {
   end_date: Date;
   department_id?: number | null;
   team_id?: number | null;
-  status: 'draft' | 'published' | 'archived';
+  status: "draft" | "published" | "archived";
   created_by: number;
   created_at: Date;
   updated_at: Date;
@@ -92,18 +92,18 @@ class ShiftService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: ShiftFilters = {}
+    _filters: ShiftFilters = {},
   ): Promise<ShiftEntry[]> {
     try {
       // The actual Shift model doesn't have a generic getAll method
       console.warn(
-        'ShiftService.getAll: This method should use specific Shift model methods'
+        "ShiftService.getAll: This method should use specific Shift model methods",
       );
       throw new Error(
-        'Method needs refactoring - use getShiftPlans or getShiftTemplates instead'
+        "Method needs refactoring - use getShiftPlans or getShiftTemplates instead",
       );
     } catch (error) {
-      console.error('Error in ShiftService.getAll:', error);
+      console.error("Error in ShiftService.getAll:", error);
       throw error;
     }
   }
@@ -115,13 +115,13 @@ class ShiftService {
   async getById(_tenantDb: Pool, _id: number): Promise<ShiftEntry | null> {
     try {
       console.warn(
-        'ShiftService.getById: This method should use specific Shift model methods'
+        "ShiftService.getById: This method should use specific Shift model methods",
       );
       throw new Error(
-        'Method needs refactoring - use specific getter methods instead'
+        "Method needs refactoring - use specific getter methods instead",
       );
     } catch (error) {
-      console.error('Error in ShiftService.getById:', error);
+      console.error("Error in ShiftService.getById:", error);
       throw error;
     }
   }
@@ -133,13 +133,13 @@ class ShiftService {
   async create(_tenantDb: Pool, _data: ShiftCreateData): Promise<ShiftEntry> {
     try {
       console.warn(
-        'ShiftService.create: This method should use specific Shift model methods'
+        "ShiftService.create: This method should use specific Shift model methods",
       );
       throw new Error(
-        'Method needs refactoring - use createShift, createShiftPlan, or createShiftTemplate instead'
+        "Method needs refactoring - use createShift, createShiftPlan, or createShiftTemplate instead",
       );
     } catch (error) {
-      console.error('Error in ShiftService.create:', error);
+      console.error("Error in ShiftService.create:", error);
       throw error;
     }
   }
@@ -151,17 +151,17 @@ class ShiftService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: ShiftUpdateData
+    _data: ShiftUpdateData,
   ): Promise<ShiftEntry | null> {
     try {
       console.warn(
-        'ShiftService.update: This method should use specific Shift model methods'
+        "ShiftService.update: This method should use specific Shift model methods",
       );
       throw new Error(
-        'Method needs refactoring - Shift model does not have generic update methods'
+        "Method needs refactoring - Shift model does not have generic update methods",
       );
     } catch (error) {
-      console.error('Error in ShiftService.update:', error);
+      console.error("Error in ShiftService.update:", error);
       throw error;
     }
   }
@@ -173,13 +173,13 @@ class ShiftService {
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     try {
       console.warn(
-        'ShiftService.delete: This method should use specific Shift model methods'
+        "ShiftService.delete: This method should use specific Shift model methods",
       );
       throw new Error(
-        'Method needs refactoring - Shift model does not have generic delete methods'
+        "Method needs refactoring - Shift model does not have generic delete methods",
       );
     } catch (error) {
-      console.error('Error in ShiftService.delete:', error);
+      console.error("Error in ShiftService.delete:", error);
       throw error;
     }
   }
@@ -194,7 +194,7 @@ class ShiftService {
     try {
       return await getShiftTemplates(tenantId);
     } catch (error) {
-      console.error('Error in ShiftService.getShiftTemplates:', error);
+      console.error("Error in ShiftService.getShiftTemplates:", error);
       throw error;
     }
   }
@@ -206,7 +206,7 @@ class ShiftService {
     try {
       return await createShiftTemplate(templateData);
     } catch (error) {
-      console.error('Error in ShiftService.createShiftTemplate:', error);
+      console.error("Error in ShiftService.createShiftTemplate:", error);
       throw error;
     }
   }
@@ -217,12 +217,12 @@ class ShiftService {
   async getShiftPlans(
     tenantId: number,
     userId: number,
-    options?: any
+    options?: any,
   ): Promise<any> {
     try {
       return await getShiftPlans(tenantId, userId, options);
     } catch (error) {
-      console.error('Error in ShiftService.getShiftPlans:', error);
+      console.error("Error in ShiftService.getShiftPlans:", error);
       throw error;
     }
   }
@@ -234,7 +234,7 @@ class ShiftService {
     try {
       return await createShiftPlan(planData);
     } catch (error) {
-      console.error('Error in ShiftService.createShiftPlan:', error);
+      console.error("Error in ShiftService.createShiftPlan:", error);
       throw error;
     }
   }
@@ -245,12 +245,12 @@ class ShiftService {
   async getShiftsByPlan(
     planId: number,
     tenantId: number,
-    userId: number
+    userId: number,
   ): Promise<any[]> {
     try {
       return await getShiftsByPlan(planId, tenantId, userId);
     } catch (error) {
-      console.error('Error in ShiftService.getShiftsByPlan:', error);
+      console.error("Error in ShiftService.getShiftsByPlan:", error);
       throw error;
     }
   }
@@ -262,7 +262,7 @@ class ShiftService {
     try {
       return await createShift(shiftData);
     } catch (error) {
-      console.error('Error in ShiftService.createShift:', error);
+      console.error("Error in ShiftService.createShift:", error);
       throw error;
     }
   }
@@ -274,7 +274,7 @@ class ShiftService {
     try {
       return await assignEmployeeToShift(assignmentData);
     } catch (error) {
-      console.error('Error in ShiftService.assignEmployeeToShift:', error);
+      console.error("Error in ShiftService.assignEmployeeToShift:", error);
       throw error;
     }
   }
@@ -286,12 +286,12 @@ class ShiftService {
     tenantId: number,
     userId: number,
     startDate: string | Date,
-    endDate: string | Date
+    endDate: string | Date,
   ): Promise<any[]> {
     try {
       return await getEmployeeShifts(tenantId, userId, startDate, endDate);
     } catch (error) {
-      console.error('Error in ShiftService.getEmployeeShifts:', error);
+      console.error("Error in ShiftService.getEmployeeShifts:", error);
       throw error;
     }
   }

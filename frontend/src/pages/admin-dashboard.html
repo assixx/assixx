@@ -46,14 +46,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(
-          0deg,
-          transparent 0%,
-          rgba(0, 142, 255, 0.08) 100%,
-          #01000482 60%,
-          rgba(0, 0, 4, 0.6) 90%,
-          black 100%
-        );
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
@@ -1588,12 +1581,12 @@
           display.querySelector('span').textContent = text;
           dropdown.style.display = 'none';
           display.classList.remove('active');
-          
+
           // Spezielle Logik für Employee Status Dropdown
           if (dropdownId === 'employee-status') {
             const startDateInput = document.getElementById('availability-start-date');
             const endDateInput = document.getElementById('availability-end-date');
-            
+
             if (startDateInput && endDateInput) {
               if (value === 'available') {
                 // Bei "Verfügbar" Datumsfelder deaktivieren und leeren
@@ -1964,7 +1957,7 @@
           console.log('DOM Elements:', {
             employeeIdInput: employeeIdInput,
             employeeName: employeeName,
-            employeeNameType: employeeName ? employeeName.tagName : 'null'
+            employeeNameType: employeeName ? employeeName.tagName : 'null',
           });
 
           if (employeeIdInput) {
@@ -1991,11 +1984,11 @@
               }[currentStatus] || 'Verfügbar';
             statusDisplay.querySelector('span').textContent = statusText;
           }
-          
+
           // Datumsfelder initial setzen
           const startDateInput = document.getElementById('availability-start-date');
           const endDateInput = document.getElementById('availability-end-date');
-          
+
           if (startDateInput && endDateInput) {
             if (currentStatus === 'available') {
               // Bei "Verfügbar" Datumsfelder deaktivieren
@@ -2011,7 +2004,7 @@
               endDateInput.disabled = false;
               startDateInput.setAttribute('required', 'required');
               endDateInput.setAttribute('required', 'required');
-              
+
               // Vorhandene Daten setzen falls vorhanden
               if (employee.availability_start) {
                 startDateInput.value = employee.availability_start.split('T')[0];
@@ -2036,11 +2029,11 @@
               const startDate = form.querySelector('input[name="start_date"]');
               const endDate = form.querySelector('input[name="end_date"]');
               const notes = form.querySelector('textarea[name="notes"]');
-              
+
               if (startDate) startDate.value = '';
               if (endDate) endDate.value = '';
               if (notes) notes.value = '';
-              
+
               // Hidden input für status setzen
               const hiddenInput = form.querySelector('input[name="status"]');
               if (hiddenInput) hiddenInput.value = currentStatus;
@@ -2058,28 +2051,28 @@
         if (statusForm) {
           statusForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const formData = new FormData(statusForm);
             const employeeId = document.getElementById('status-employee-id').value;
             const token = localStorage.getItem('token');
-            
+
             const statusData = {
               availability_status: formData.get('status'),
               availability_start: formData.get('start_date'),
               availability_end: formData.get('end_date'),
-              availability_notes: formData.get('notes')
+              availability_notes: formData.get('notes'),
             };
-            
+
             try {
               const response = await fetch(`/api/users/${employeeId}/availability`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
+                  Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(statusData)
+                body: JSON.stringify(statusData),
               });
-              
+
               if (response.ok) {
                 alert('Verfügbarkeitsstatus erfolgreich aktualisiert');
                 hideModal('employee-status-modal');
@@ -2256,14 +2249,14 @@
 
                   if (deptResponse.ok) {
                     const departments = await deptResponse.json();
-                    
+
                     // Clear existing options and add placeholder
                     departmentDropdown.innerHTML = `
                       <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
                         Keine Abteilung
                       </div>
                     `;
-                    
+
                     // Add department options
                     departments.forEach((dept) => {
                       const optionDiv = document.createElement('div');
@@ -2274,7 +2267,7 @@
                         selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
                       };
                       departmentDropdown.appendChild(optionDiv);
-                      
+
                       // If this is the current department, select it
                       if (dept.id == employee.department_id) {
                         selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
@@ -2590,32 +2583,29 @@
 
           employees.forEach((employee) => {
             const row = document.createElement('tr');
-            
+
             // Verfügbarkeitsstatus bestimmen - prüfe ob innerhalb des Datumbereichs
             let effectiveStatus = employee.availability_status || 'available';
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Zeit auf Mitternacht setzen für korrekten Vergleich
-            
+
             // Debug-Ausgabe für ersten Mitarbeiter
             if (employee.id === 19) {
               console.log('Employee 19 debug:', {
                 availability_status: employee.availability_status,
                 availability_start: employee.availability_start,
                 availability_end: employee.availability_end,
-                today: today.toISOString()
+                today: today.toISOString(),
               });
             }
-            
+
             // Prüfe ob Verfügbarkeitsdaten vorhanden sind und ob wir im Zeitraum sind
-            if (employee.availability_status !== 'available' && 
-                employee.availability_start && 
-                employee.availability_end) {
-              
+            if (employee.availability_status !== 'available' && employee.availability_start && employee.availability_end) {
               const startDate = new Date(employee.availability_start);
               const endDate = new Date(employee.availability_end);
               startDate.setHours(0, 0, 0, 0);
               endDate.setHours(23, 59, 59, 999);
-              
+
               // Debug für Employee 19
               if (employee.id === 19) {
                 console.log('Date comparison:', {
@@ -2623,30 +2613,32 @@
                   endDate: endDate.toISOString(),
                   todayIsAfterStart: today >= startDate,
                   todayIsBeforeEnd: today <= endDate,
-                  shouldShowStatus: today >= startDate && today <= endDate
+                  shouldShowStatus: today >= startDate && today <= endDate,
                 });
               }
-              
+
               // Wenn heute außerhalb des Zeitraums liegt, ist der Mitarbeiter verfügbar
               if (today < startDate || today > endDate) {
                 effectiveStatus = 'available';
               }
             }
-            
-            const availabilityBadgeClass = {
-              'available': 'badge-success',
-              'vacation': 'badge-warning',
-              'sick': 'badge-danger',
-              'unavailable': 'badge-secondary'
-            }[effectiveStatus] || 'badge-success';
-            
-            const availabilityText = {
-              'available': 'Verfügbar',
-              'vacation': 'Urlaub',
-              'sick': 'Krank',
-              'unavailable': 'Beurlaubt'
-            }[effectiveStatus] || 'Verfügbar';
-            
+
+            const availabilityBadgeClass =
+              {
+                available: 'badge-success',
+                vacation: 'badge-warning',
+                sick: 'badge-danger',
+                unavailable: 'badge-secondary',
+              }[effectiveStatus] || 'badge-success';
+
+            const availabilityText =
+              {
+                available: 'Verfügbar',
+                vacation: 'Urlaub',
+                sick: 'Krank',
+                unavailable: 'Beurlaubt',
+              }[effectiveStatus] || 'Verfügbar';
+
             row.innerHTML = `
               <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
               <td>${employee.email || ''}</td>
@@ -2662,9 +2654,11 @@
                 <span class="badge ${availabilityBadgeClass}">
                   ${availabilityText}
                 </span>
-                ${effectiveStatus !== 'available' && employee.availability_start && employee.availability_end ? 
-                  `<br><small class="text-muted">${new Date(employee.availability_start).toLocaleDateString('de-DE')} - ${new Date(employee.availability_end).toLocaleDateString('de-DE')}</small>` : 
-                  ''}
+                ${
+                  effectiveStatus !== 'available' && employee.availability_start && employee.availability_end
+                    ? `<br><small class="text-muted">${new Date(employee.availability_start).toLocaleDateString('de-DE')} - ${new Date(employee.availability_end).toLocaleDateString('de-DE')}</small>`
+                    : ''
+                }
               </td>
               <td>
                 <button class="btn btn-sm btn-info" onclick="changeEmployeeStatus(${employee.id})">

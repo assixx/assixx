@@ -87,7 +87,7 @@ export default defineConfig({
 
   optimizeDeps: {
     include: ['marked', 'chart.js', 'moment'],
-    exclude: ['fullcalendar', 'fullcalendar-locales']
+    exclude: ['fullcalendar', 'fullcalendar-locales'],
   },
 
   // Custom plugins
@@ -102,8 +102,8 @@ export default defineConfig({
           return html
             .replace(/<script src="\/scripts\/lib\/fullcalendar[^"]*"[^>]*><\/script>/g, '<!-- EXTERNAL_SCRIPT: $& -->')
             .replace(/<link[^>]*href="[^"]*fontawesome[^"]*\.css"[^>]*>/g, '<!-- EXTERNAL_STYLE: $& -->');
-        }
-      }
+        },
+      },
     },
     {
       name: 'restore-external-scripts',
@@ -114,8 +114,8 @@ export default defineConfig({
           return html
             .replace(/<!-- EXTERNAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1')
             .replace(/<!-- EXTERNAL_STYLE: (<link[^>]*>) -->/g, '$1');
-        }
-      }
+        },
+      },
     },
     {
       name: 'copy-static-assets',
@@ -124,18 +124,18 @@ export default defineConfig({
         const scriptsDir = resolve(__dirname, '../dist/scripts/lib');
         const stylesDir = resolve(__dirname, '../dist/styles/lib');
         const fontsDir = resolve(__dirname, '../dist/fonts');
-        
+
         // Create directories if they don't exist
         if (!existsSync(scriptsDir)) mkdirSync(scriptsDir, { recursive: true });
         if (!existsSync(stylesDir)) mkdirSync(stylesDir, { recursive: true });
         if (!existsSync(fontsDir)) mkdirSync(fontsDir, { recursive: true });
-        
+
         // Copy FullCalendar JS files
         const fullcalendarSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar.min.js');
         const fullcalendarLocalesSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar-locales.min.js');
         const fullcalendarCssSrc = resolve(__dirname, 'src/styles/lib/fullcalendar.min.css');
         const fontawesomeCssSrc = resolve(__dirname, 'src/styles/lib/fontawesome.min.css');
-        
+
         if (existsSync(fullcalendarSrc)) {
           copyFileSync(fullcalendarSrc, resolve(scriptsDir, 'fullcalendar.min.js'));
         }
@@ -152,16 +152,13 @@ export default defineConfig({
         // Copy FontAwesome webfonts
         const webfontsDir = resolve(__dirname, 'src/fonts');
         if (existsSync(webfontsDir)) {
-          readdirSync(webfontsDir).forEach(file => {
+          readdirSync(webfontsDir).forEach((file) => {
             if (file.startsWith('fa-')) {
-              copyFileSync(
-                resolve(webfontsDir, file),
-                resolve(fontsDir, file)
-              );
+              copyFileSync(resolve(webfontsDir, file), resolve(fontsDir, file));
             }
           });
         }
-      }
-    }
-  ]
+      },
+    },
+  ],
 });

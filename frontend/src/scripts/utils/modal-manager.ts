@@ -48,13 +48,14 @@ class ModalManager {
     if (modal && !modalInDom) {
       console.log(`[ModalManager] Modal was removed from DOM, clearing from map`);
       this.activeModals.delete(modalId);
-      modal = null;
+      modal = undefined;
     }
 
     if (!modal) {
       // Create modal from template or config
       console.log(`[ModalManager] Creating new modal...`);
-      modal = this.createModal(modalId, config);
+      const createdModal = this.createModal(modalId, config);
+      modal = createdModal || undefined;
       if (!modal) {
         console.error(`[ModalManager] Failed to create modal!`);
         return null;

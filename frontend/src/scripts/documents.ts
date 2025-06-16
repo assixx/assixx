@@ -114,7 +114,7 @@ function updateCounts(): void {
     else if (doc.scope === 'department') counts.department++;
     else if (doc.scope === 'team') counts.team++;
     else if (doc.scope === 'personal') counts.personal++;
-    
+
     // Count payroll documents (Gehaltsabrechnungen) based on category
     if (doc.category === 'salary') counts.payroll++;
   });

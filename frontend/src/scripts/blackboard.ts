@@ -27,6 +27,7 @@ interface BlackboardEntry {
   updated_at: string;
   tags?: string[];
   attachment_count?: number;
+  attachments?: BlackboardAttachment[];
 }
 
 interface BlackboardAttachment {
@@ -848,16 +849,12 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
 
     // Set size class
     let sizeStyle = '';
-    let pdfHeight = '300px';
     if (attachmentSize === 'small') {
       sizeStyle = 'max-width: 200px; max-height: 200px;';
-      pdfHeight = '200px';
     } else if (attachmentSize === 'medium') {
       sizeStyle = 'max-width: 300px; max-height: 300px;';
-      pdfHeight = '300px';
     } else if (attachmentSize === 'large') {
       sizeStyle = 'max-width: 400px; max-height: 400px;';
-      pdfHeight = '400px';
     }
 
     if (isImage) {
@@ -1974,11 +1971,11 @@ function setupDirectAttachHandlers(): void {
 
   // Size selection buttons - use event delegation
   document.querySelectorAll('.size-option').forEach((btn) => {
-    btn.onclick = function (this: HTMLElement) {
+    btn.addEventListener('click', function (this: HTMLElement) {
       console.log('[DirectAttach] Size button clicked:', this.getAttribute('data-size'));
       document.querySelectorAll('.size-option').forEach((b) => b.classList.remove('active'));
       this.classList.add('active');
-    };
+    });
   });
 
   // Save button handler

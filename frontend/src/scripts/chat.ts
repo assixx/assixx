@@ -19,6 +19,8 @@ interface ChatUser extends User {
   department_id?: number;
   department?: string;
   position?: string;
+  profile_picture_url?: string;
+  profile_image_url?: string;
 }
 
 interface Message {
@@ -114,16 +116,48 @@ class ChatClient {
     // Initialize emoji categories with basic emojis only
     this.emojiCategories = {
       smileys: [
-        '😀', '😃', '😄', '😁', '😊', '😉', '🙂', '😂',
-        '😍', '🥰', '😘', '😎', '🤔', '😐', '😑', '😏',
-        '😒', '😔', '😢', '😭', '😤', '😠', '😡', '🤬',
-        '😱', '😨', '😰', '😥', '🤗', '😶', '🙄', '😴',
-        '🤢', '🤮', '😷', '🤒', '🤕', '🤯', '😵', '🥳'
+        '😀',
+        '😃',
+        '😄',
+        '😁',
+        '😊',
+        '😉',
+        '🙂',
+        '😂',
+        '😍',
+        '🥰',
+        '😘',
+        '😎',
+        '🤔',
+        '😐',
+        '😑',
+        '😏',
+        '😒',
+        '😔',
+        '😢',
+        '😭',
+        '😤',
+        '😠',
+        '😡',
+        '🤬',
+        '😱',
+        '😨',
+        '😰',
+        '😥',
+        '🤗',
+        '😶',
+        '🙄',
+        '😴',
+        '🤢',
+        '🤮',
+        '😷',
+        '🤒',
+        '🤕',
+        '🤯',
+        '😵',
+        '🥳',
       ],
-      hearts: [
-        '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
-        '💔', '💕', '💞', '💓', '💗', '💖', '💘', '💝'
-      ],
+      hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '💕', '💞', '💓', '💗', '💖', '💘', '💝'],
       animals: [
         '🐶',
         '🐱',
@@ -242,7 +276,7 @@ class ChatClient {
         '🐁',
         '🐀',
         '🐿️',
-        '🦔'
+        '🦔',
       ],
       food: [
         '🍏',
@@ -366,7 +400,7 @@ class ChatClient {
         '🥣',
         '🥡',
         '🥢',
-        '🧂'
+        '🧂',
       ],
       activities: [
         '⚽',
@@ -485,7 +519,7 @@ class ChatClient {
         '🎳',
         '🎮',
         '🎰',
-        '🧩'
+        '🧩',
       ],
       objects: [
         '💡',
@@ -703,7 +737,7 @@ class ChatClient {
         '🔏',
         '🔐',
         '🔒',
-        '🔓'
+        '🔓',
       ],
       gestures: [
         '👋',
@@ -882,7 +916,7 @@ class ChatClient {
       console.warn('⚠️ ChatClient already initialized');
       return;
     }
-    
+
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
@@ -928,7 +962,7 @@ class ChatClient {
         // Stelle sicher, dass jede Konversation ein participants Array hat
         this.conversations = conversations.map((conv: any) => ({
           ...conv,
-          participants: conv.participants || []
+          participants: conv.participants || [],
         }));
         this.renderConversationList();
       } else {
@@ -1038,9 +1072,9 @@ class ChatClient {
       case 'new_message':
         // Backend sends message data directly, not wrapped in { message, conversationId }
         const messageData = message.data as Message & { conversation_id: number };
-        this.handleNewMessage({ 
-          message: messageData, 
-          conversationId: messageData.conversation_id 
+        this.handleNewMessage({
+          message: messageData,
+          conversationId: messageData.conversation_id,
         });
         break;
 
@@ -1074,7 +1108,7 @@ class ChatClient {
 
   handleNewMessage(data: { message: Message; conversationId: number }): void {
     const { message, conversationId } = data;
-    
+
     // Ensure message has proper sender object structure
     if (!message.sender && (message as any).sender_id) {
       message.sender = {
@@ -1087,7 +1121,9 @@ class ChatClient {
         tenant_id: 0, // Will be set by backend
         email: '',
         created_at: '',
-        updated_at: ''
+        updated_at: '',
+        is_active: true,
+        is_archived: false,
       };
     }
 
@@ -1116,9 +1152,9 @@ class ChatClient {
         const messagesContainer = document.getElementById('messagesContainer');
         if (messagesContainer) {
           const tempMessages = messagesContainer.querySelectorAll('.message.own');
-          tempMessages.forEach(msg => {
+          tempMessages.forEach((msg) => {
             const msgText = msg.querySelector('.message-text')?.textContent;
-            if (msgText === message.content && msg.getAttribute('data-message-id')?.length > 10) {
+            if (msgText === message.content && (msg.getAttribute('data-message-id')?.length ?? 0) > 10) {
               // Remove temporary message (IDs > 10 chars are timestamps)
               msg.remove();
             }
@@ -1130,7 +1166,7 @@ class ChatClient {
         // Display messages from other users
         this.displayMessage(message);
         this.markMessageAsRead(message.id);
-        
+
         // Show notification if window is not focused
         if (!document.hasFocus()) {
           this.showDesktopNotification(message);
@@ -1247,7 +1283,7 @@ class ChatClient {
     if (conversation) {
       conversation.unread_count = 0;
       this.renderConversationList();
-      
+
       // Mark all messages in this conversation as read
       await this.markConversationAsRead(conversationId);
     }
@@ -1262,7 +1298,7 @@ class ChatClient {
     const chatHeader = document.getElementById('chat-header');
     const chatArea = document.getElementById('chatArea');
     const noChatSelected = document.getElementById('noChatSelected');
-    
+
     if (chatHeader) chatHeader.style.display = 'flex';
     if (chatArea) chatArea.style.display = 'block';
     if (noChatSelected) noChatSelected.style.display = 'none';
@@ -1282,9 +1318,9 @@ class ChatClient {
       await fetch(`/api/chat/conversations/${conversationId}/read`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       // Update the navigation badge
@@ -1399,7 +1435,7 @@ class ChatClient {
     console.log('sendMessage called');
     const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement;
     const messageContent = content || messageInput?.value.trim();
-    
+
     console.log('Message content:', messageContent);
     console.log('Current conversation ID:', this.currentConversationId);
     console.log('Is connected:', this.isConnected);
@@ -1675,7 +1711,7 @@ class ChatClient {
       : this.getConversationDisplayName(conversation);
 
     const isAdmin = this.currentUser.role === 'admin';
-    
+
     // Get avatar for 1:1 chats
     let avatarHtml = '<i class="fas fa-users"></i>';
     if (!conversation.is_group && conversation.participants) {
@@ -1686,7 +1722,7 @@ class ChatClient {
         avatarHtml = '<i class="fas fa-user"></i>';
       }
     }
-    
+
     chatHeader.innerHTML = `
       <button class="back-btn" onclick="chatClient.showConversationsList()">
         <i class="fas fa-arrow-left"></i>
@@ -1703,11 +1739,15 @@ class ChatClient {
         <button class="chat-action-btn" title="Suchen">
           <i class="fas fa-search"></i>
         </button>
-        ${isAdmin ? `
+        ${
+          isAdmin
+            ? `
           <button class="chat-action-btn" title="Löschen" id="deleteConversationBtn">
             <i class="fas fa-trash"></i>
           </button>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `;
 
@@ -1727,20 +1767,22 @@ class ChatClient {
     if (conversation.is_group) {
       return conversation.name || 'Gruppenchat';
     }
-    
+
     // Für 1:1 Chats - nutze display_name wenn verfügbar
     if (conversation.display_name) {
       return conversation.display_name;
     }
-    
+
     // Fallback auf participants array
     if (conversation.participants && conversation.participants.length > 0) {
       const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
       if (otherParticipant) {
-        return `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username;
+        return (
+          `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username
+        );
       }
     }
-    
+
     return 'Unbekannt';
   }
 
@@ -1783,11 +1825,11 @@ class ChatClient {
 
   private resetModalState(): void {
     // Reset tabs
-    document.querySelectorAll('.chat-type-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.chat-type-tab').forEach((tab) => tab.classList.remove('active'));
     document.getElementById('employeeTab')?.classList.add('active');
 
     // Reset selections
-    document.querySelectorAll('.recipient-selection').forEach(section => {
+    document.querySelectorAll('.recipient-selection').forEach((section) => {
       (section as HTMLElement).style.display = 'none';
     });
     const employeeSection = document.getElementById('employeeSelection');
@@ -1796,13 +1838,13 @@ class ChatClient {
     // Reset dropdowns
     const deptDisplay = document.getElementById('departmentDisplay')?.querySelector('span');
     if (deptDisplay) deptDisplay.textContent = 'Abteilung wählen';
-    
+
     const empDisplay = document.getElementById('employeeDisplay')?.querySelector('span');
     if (empDisplay) empDisplay.textContent = 'Mitarbeiter wählen';
-    
+
     const adminDisplayElem = document.getElementById('adminDisplay')?.querySelector('span');
     if (adminDisplayElem) adminDisplayElem.textContent = 'Administrator wählen';
-    
+
     // Hide employee dropdown initially
     const employeeGroup = document.getElementById('employeeDropdownGroup');
     if (employeeGroup) employeeGroup.style.display = 'none';
@@ -1810,7 +1852,7 @@ class ChatClient {
     // Clear selected recipients
     const selectedList = document.getElementById('selectedRecipientsList');
     if (selectedList) selectedList.innerHTML = '';
-    
+
     // Hide group options
     const groupOptions = document.getElementById('groupChatOptions');
     if (groupOptions) groupOptions.style.display = 'none';
@@ -1818,17 +1860,17 @@ class ChatClient {
 
   private setupTabListeners(): void {
     const tabs = document.querySelectorAll('.chat-type-tab');
-    tabs.forEach(tab => {
+    tabs.forEach((tab) => {
       tab.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
         const type = target.dataset.type;
 
         // Update active tab
-        tabs.forEach(t => t.classList.remove('active'));
+        tabs.forEach((t) => t.classList.remove('active'));
         target.classList.add('active');
 
         // Show corresponding section
-        document.querySelectorAll('.recipient-selection').forEach(section => {
+        document.querySelectorAll('.recipient-selection').forEach((section) => {
           (section as HTMLElement).style.display = 'none';
         });
 
@@ -1854,10 +1896,10 @@ class ChatClient {
       if (response.ok) {
         const departments = await response.json();
         const dropdown = document.getElementById('departmentDropdown');
-        
+
         if (dropdown) {
           dropdown.innerHTML = '';
-          
+
           departments.forEach((dept: any) => {
             const option = document.createElement('div');
             option.className = 'dropdown-option';
@@ -1881,21 +1923,20 @@ class ChatClient {
   async loadEmployeesForDepartment(departmentId: string): Promise<void> {
     try {
       // Filter employees by department
-      const employees = this.availableUsers.filter(user => {
-        return user.role === 'employee' && 
-               user.department_id?.toString() === departmentId.toString();
+      const employees = this.availableUsers.filter((user) => {
+        return user.role === 'employee' && user.department_id?.toString() === departmentId.toString();
       });
 
       const dropdown = document.getElementById('employeeDropdown');
-      
+
       if (dropdown) {
         dropdown.innerHTML = '';
-        
+
         if (employees.length === 0) {
           dropdown.innerHTML = '<div class="dropdown-option disabled">Keine Mitarbeiter in dieser Abteilung</div>';
           return;
         }
-        
+
         employees.forEach((employee) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
@@ -1918,15 +1959,13 @@ class ChatClient {
   }
 
   private loadAdmins(): void {
-    const admins = this.availableUsers.filter(user => 
-      user.role === 'admin' || user.role === 'root'
-    );
+    const admins = this.availableUsers.filter((user) => user.role === 'admin' || user.role === 'root');
 
     const dropdown = document.getElementById('adminDropdown');
-    
+
     if (dropdown) {
       dropdown.innerHTML = '';
-      
+
       admins.forEach((admin) => {
         const option = document.createElement('div');
         option.className = 'dropdown-option';
@@ -1958,34 +1997,34 @@ class ChatClient {
       console.log('Already creating conversation, ignoring duplicate call');
       return;
     }
-    
+
     this.isCreatingConversation = true;
-    
+
     try {
       // Get selected recipient based on active tab
       const activeTab = document.querySelector('.chat-type-tab.active') as HTMLElement;
       const tabType = activeTab?.dataset.type;
-      
+
       let selectedUserId: number | null = null;
-    
-    if (tabType === 'employee') {
-      const employeeInput = document.getElementById('selectedEmployee') as HTMLInputElement;
-      selectedUserId = employeeInput?.value ? parseInt(employeeInput.value) : null;
-    } else if (tabType === 'admin') {
-      const adminInput = document.getElementById('selectedAdmin') as HTMLInputElement;
-      selectedUserId = adminInput?.value ? parseInt(adminInput.value) : null;
-    }
 
-    if (!selectedUserId) {
-      this.showNotification('Bitte wählen Sie einen Empfänger aus', 'warning');
-      this.isCreatingConversation = false;
-      return;
-    }
+      if (tabType === 'employee') {
+        const employeeInput = document.getElementById('selectedEmployee') as HTMLInputElement;
+        selectedUserId = employeeInput?.value ? parseInt(employeeInput.value) : null;
+      } else if (tabType === 'admin') {
+        const adminInput = document.getElementById('selectedAdmin') as HTMLInputElement;
+        selectedUserId = adminInput?.value ? parseInt(adminInput.value) : null;
+      }
 
-    // For now, we only support 1:1 chats
-    const isGroup = false;
-    const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement;
-    const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
+      if (!selectedUserId) {
+        this.showNotification('Bitte wählen Sie einen Empfänger aus', 'warning');
+        this.isCreatingConversation = false;
+        return;
+      }
+
+      // For now, we only support 1:1 chats
+      const isGroup = false;
+      const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement;
+      const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
       const response = await fetch('/api/chat/conversations', {
         method: 'POST',
         headers: {
@@ -2002,10 +2041,7 @@ class ChatClient {
       if (response.ok) {
         const result = await response.json();
 
-        this.showNotification(
-          'Unterhaltung erfolgreich erstellt',
-          'success',
-        );
+        this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
         this.closeModal('newConversationModal');
 
         // Reload conversations
@@ -2019,10 +2055,7 @@ class ChatClient {
       }
     } catch (error) {
       console.error('❌ Error creating conversation:', error);
-      this.showNotification(
-        error instanceof Error ? error.message : 'Fehler beim Erstellen der Unterhaltung', 
-        'error'
-      );
+      this.showNotification(error instanceof Error ? error.message : 'Fehler beim Erstellen der Unterhaltung', 'error');
     } finally {
       this.isCreatingConversation = false;
     }
@@ -2186,13 +2219,13 @@ class ChatClient {
     // Modal close buttons
     const closeModalBtn = document.getElementById('closeModalBtn');
     const cancelModalBtn = document.getElementById('cancelModalBtn');
-    
+
     if (closeModalBtn) {
       closeModalBtn.addEventListener('click', () => {
         this.closeModal('newConversationModal');
       });
     }
-    
+
     if (cancelModalBtn) {
       cancelModalBtn.addEventListener('click', () => {
         this.closeModal('newConversationModal');
@@ -2420,15 +2453,15 @@ class ChatClient {
         role: 'employee',
         tenant_id: 0,
         created_at: '',
-        updated_at: ''
-      }
+        updated_at: '',
+      },
     };
   }
 
   // Utility methods
   escapeHtml(text: string | null | undefined): string {
     if (!text) return '';
-    
+
     const map: { [key: string]: string } = {
       '&': '&amp;',
       '<': '&lt;',
@@ -2485,7 +2518,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Only create if not already created
   if (!window.chatClient) {
     chatClient = new ChatClient();
-    
+
     // Initialize the chat client
     chatClient.init();
 

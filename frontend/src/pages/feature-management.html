@@ -23,18 +23,10 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(
-          0deg,
-          transparent 0%,
-          rgba(0, 142, 255, 0.08) 100%,
-          #01000482 60%,
-          rgba(0, 0, 4, 0.6) 90%,
-          black 100%
-        );
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
-
 
       /* Glassmorphismus für Cards */
       .card {
@@ -171,192 +163,192 @@
       <!-- Main Content -->
       <main class="main-content">
         <div class="container">
-      <h1>Feature Management</h1>
+          <h1>Feature Management</h1>
 
-      <!-- Tenant Auswahl -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h2>Tenant Auswahl</h2>
-        </div>
-        <div class="card-body">
-          <select id="tenant-select" class="form-control" onchange="loadTenantFeatures()">
-            <option value="">Bitte Tenant wählen...</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Feature Übersicht -->
-      <div id="features-container" style="display: none">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h2>Verfügbare Features</h2>
+          <!-- Tenant Auswahl -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h2>Tenant Auswahl</h2>
+            </div>
+            <div class="card-body">
+              <select id="tenant-select" class="form-control" onchange="loadTenantFeatures()">
+                <option value="">Bitte Tenant wählen...</option>
+              </select>
+            </div>
           </div>
-          <div class="card-body">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Feature</th>
-                  <th>Kategorie</th>
-                  <th>Beschreibung</th>
-                  <th>Basispreis</th>
-                  <th>Status</th>
-                  <th>Gültig bis</th>
-                  <th>Nutzung</th>
-                  <th>Aktionen</th>
-                </tr>
-              </thead>
-              <tbody id="features-table-body">
-                <!-- Features werden hier eingefügt -->
-              </tbody>
-            </table>
+
+          <!-- Feature Übersicht -->
+          <div id="features-container" style="display: none">
+            <div class="card mb-4">
+              <div class="card-header">
+                <h2>Verfügbare Features</h2>
+              </div>
+              <div class="card-body">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>Kategorie</th>
+                      <th>Beschreibung</th>
+                      <th>Basispreis</th>
+                      <th>Status</th>
+                      <th>Gültig bis</th>
+                      <th>Nutzung</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="features-table-body">
+                    <!-- Features werden hier eingefügt -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Feature Aktivierung -->
+            <div class="card">
+              <div class="card-header">
+                <h2>Feature Aktivierung</h2>
+              </div>
+              <div class="card-body">
+                <form id="activate-feature-form">
+                  <div class="form-group">
+                    <label>Feature auswählen</label>
+                    <select id="feature-select" class="form-control">
+                      <option value="">Bitte wählen...</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Gültig ab</label>
+                    <input type="date" id="valid-from" class="form-control" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Gültig bis (optional)</label>
+                    <input type="date" id="valid-until" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label>Testphase (Tage)</label>
+                    <input type="number" id="trial-days" class="form-control" min="0" value="0" />
+                  </div>
+                  <div class="form-group">
+                    <label>Nutzungslimit (optional)</label>
+                    <input type="number" id="usage-limit" class="form-control" min="0" />
+                  </div>
+                  <div class="form-group">
+                    <label>Sonderpreis (optional)</label>
+                    <input type="number" id="custom-price" class="form-control" min="0" step="0.01" />
+                  </div>
+                  <button type="submit" class="btn btn-primary">Feature aktivieren</button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Feature Aktivierung -->
-        <div class="card">
-          <div class="card-header">
-            <h2>Feature Aktivierung</h2>
-          </div>
-          <div class="card-body">
-            <form id="activate-feature-form">
-              <div class="form-group">
-                <label>Feature auswählen</label>
-                <select id="feature-select" class="form-control">
-                  <option value="">Bitte wählen...</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Gültig ab</label>
-                <input type="date" id="valid-from" class="form-control" required />
-              </div>
-              <div class="form-group">
-                <label>Gültig bis (optional)</label>
-                <input type="date" id="valid-until" class="form-control" />
-              </div>
-              <div class="form-group">
-                <label>Testphase (Tage)</label>
-                <input type="number" id="trial-days" class="form-control" min="0" value="0" />
-              </div>
-              <div class="form-group">
-                <label>Nutzungslimit (optional)</label>
-                <input type="number" id="usage-limit" class="form-control" min="0" />
-              </div>
-              <div class="form-group">
-                <label>Sonderpreis (optional)</label>
-                <input type="number" id="custom-price" class="form-control" min="0" step="0.01" />
-              </div>
-              <button type="submit" class="btn btn-primary">Feature aktivieren</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <style>
-      .status-active {
-        color: #28a745;
-        font-weight: bold;
-      }
-      .status-trial {
-        color: #ffc107;
-        font-weight: bold;
-      }
-      .status-expired {
-        color: #dc3545;
-        font-weight: bold;
-      }
-      .status-disabled {
-        color: #6c757d;
-      }
-
-      .category-basic {
-        background-color: #e3f2fd;
-        color: #1976d2;
-        padding: 2px 8px;
-        border-radius: 3px;
-      }
-      .category-premium {
-        background-color: #f3e5f5;
-        color: #7b1fa2;
-        padding: 2px 8px;
-        border-radius: 3px;
-      }
-      .category-enterprise {
-        background-color: #fce4ec;
-        color: #c2185b;
-        padding: 2px 8px;
-        border-radius: 3px;
-      }
-    </style>
-
-    <script>
-      const token = localStorage.getItem('token');
-      let currentTenantId = null;
-      let allFeatures = [];
-
-      // Tenants laden
-      async function loadTenants() {
-        try {
-          const response = await fetch('/admin/tenants', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const tenants = await response.json();
-            const select = document.getElementById('tenant-select');
-
-            tenants.forEach((tenant) => {
-              const option = document.createElement('option');
-              option.value = tenant.id;
-              option.textContent = `${tenant.company_name} (${tenant.subdomain})`;
-              select.appendChild(option);
-            });
+        <style>
+          .status-active {
+            color: #28a745;
+            font-weight: bold;
           }
-        } catch (error) {
-          console.error('Error loading tenants:', error);
-          alert('Fehler beim Laden der Tenants');
-        }
-      }
-
-      // Features für Tenant laden
-      async function loadTenantFeatures() {
-        const tenantId = document.getElementById('tenant-select').value;
-        if (!tenantId) {
-          document.getElementById('features-container').style.display = 'none';
-          return;
-        }
-
-        currentTenantId = tenantId;
-        document.getElementById('features-container').style.display = 'block';
-
-        try {
-          const response = await fetch(`/features/tenant/${tenantId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const features = await response.json();
-            displayFeatures(features);
-            populateFeatureSelect(features);
+          .status-trial {
+            color: #ffc107;
+            font-weight: bold;
           }
-        } catch (error) {
-          console.error('Error loading features:', error);
-          alert('Fehler beim Laden der Features');
-        }
-      }
+          .status-expired {
+            color: #dc3545;
+            font-weight: bold;
+          }
+          .status-disabled {
+            color: #6c757d;
+          }
 
-      // Features anzeigen
-      function displayFeatures(features) {
-        const tbody = document.getElementById('features-table-body');
-        tbody.innerHTML = '';
+          .category-basic {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 3px;
+          }
+          .category-premium {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+            padding: 2px 8px;
+            border-radius: 3px;
+          }
+          .category-enterprise {
+            background-color: #fce4ec;
+            color: #c2185b;
+            padding: 2px 8px;
+            border-radius: 3px;
+          }
+        </style>
 
-        features.forEach((feature) => {
-          const row = document.createElement('tr');
-          const status = feature.status || 'disabled';
-          const statusClass = `status-${status}`;
-          const categoryClass = `category-${feature.category}`;
+        <script>
+          const token = localStorage.getItem('token');
+          let currentTenantId = null;
+          let allFeatures = [];
 
-          row.innerHTML = `
+          // Tenants laden
+          async function loadTenants() {
+            try {
+              const response = await fetch('/admin/tenants', {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              if (response.ok) {
+                const tenants = await response.json();
+                const select = document.getElementById('tenant-select');
+
+                tenants.forEach((tenant) => {
+                  const option = document.createElement('option');
+                  option.value = tenant.id;
+                  option.textContent = `${tenant.company_name} (${tenant.subdomain})`;
+                  select.appendChild(option);
+                });
+              }
+            } catch (error) {
+              console.error('Error loading tenants:', error);
+              alert('Fehler beim Laden der Tenants');
+            }
+          }
+
+          // Features für Tenant laden
+          async function loadTenantFeatures() {
+            const tenantId = document.getElementById('tenant-select').value;
+            if (!tenantId) {
+              document.getElementById('features-container').style.display = 'none';
+              return;
+            }
+
+            currentTenantId = tenantId;
+            document.getElementById('features-container').style.display = 'block';
+
+            try {
+              const response = await fetch(`/features/tenant/${tenantId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              if (response.ok) {
+                const features = await response.json();
+                displayFeatures(features);
+                populateFeatureSelect(features);
+              }
+            } catch (error) {
+              console.error('Error loading features:', error);
+              alert('Fehler beim Laden der Features');
+            }
+          }
+
+          // Features anzeigen
+          function displayFeatures(features) {
+            const tbody = document.getElementById('features-table-body');
+            tbody.innerHTML = '';
+
+            features.forEach((feature) => {
+              const row = document.createElement('tr');
+              const status = feature.status || 'disabled';
+              const statusClass = `status-${status}`;
+              const categoryClass = `category-${feature.category}`;
+
+              row.innerHTML = `
                     <td>${feature.name}</td>
                     <td><span class="${categoryClass}">${feature.category.toUpperCase()}</span></td>
                     <td>${feature.description}</td>
@@ -372,117 +364,117 @@
                         }
                     </td>
                 `;
-          tbody.appendChild(row);
-        });
-      }
+              tbody.appendChild(row);
+            });
+          }
 
-      // Feature-Select befüllen
-      function populateFeatureSelect(features) {
-        const select = document.getElementById('feature-select');
-        select.innerHTML = '<option value="">Bitte wählen...</option>';
+          // Feature-Select befüllen
+          function populateFeatureSelect(features) {
+            const select = document.getElementById('feature-select');
+            select.innerHTML = '<option value="">Bitte wählen...</option>';
 
-        const inactiveFeatures = features.filter((f) => !f.status || f.status === 'disabled' || f.status === 'expired');
+            const inactiveFeatures = features.filter((f) => !f.status || f.status === 'disabled' || f.status === 'expired');
 
-        inactiveFeatures.forEach((feature) => {
-          const option = document.createElement('option');
-          option.value = feature.code;
-          option.textContent = `${feature.name} (€${feature.base_price})`;
-          select.appendChild(option);
-        });
-      }
+            inactiveFeatures.forEach((feature) => {
+              const option = document.createElement('option');
+              option.value = feature.code;
+              option.textContent = `${feature.name} (€${feature.base_price})`;
+              select.appendChild(option);
+            });
+          }
 
-      // Feature aktivieren Form anzeigen
-      function showActivateForm(featureCode) {
-        document.getElementById('feature-select').value = featureCode;
-        document.getElementById('activate-feature-form').scrollIntoView({ behavior: 'smooth' });
-      }
+          // Feature aktivieren Form anzeigen
+          function showActivateForm(featureCode) {
+            document.getElementById('feature-select').value = featureCode;
+            document.getElementById('activate-feature-form').scrollIntoView({ behavior: 'smooth' });
+          }
 
-      // Feature aktivieren
-      document.getElementById('activate-feature-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+          // Feature aktivieren
+          document.getElementById('activate-feature-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        const featureCode = document.getElementById('feature-select').value;
-        if (!featureCode) {
-          alert('Bitte ein Feature auswählen');
-          return;
-        }
+            const featureCode = document.getElementById('feature-select').value;
+            if (!featureCode) {
+              alert('Bitte ein Feature auswählen');
+              return;
+            }
 
-        const options = {
-          validFrom: document.getElementById('valid-from').value,
-          validUntil: document.getElementById('valid-until').value || null,
-          trialDays: parseInt(document.getElementById('trial-days').value) || 0,
-          usageLimit: parseInt(document.getElementById('usage-limit').value) || null,
-          customPrice: parseFloat(document.getElementById('custom-price').value) || null,
-        };
+            const options = {
+              validFrom: document.getElementById('valid-from').value,
+              validUntil: document.getElementById('valid-until').value || null,
+              trialDays: parseInt(document.getElementById('trial-days').value) || 0,
+              usageLimit: parseInt(document.getElementById('usage-limit').value) || null,
+              customPrice: parseFloat(document.getElementById('custom-price').value) || null,
+            };
 
-        try {
-          const response = await fetch('/features/activate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              tenantId: currentTenantId,
-              featureCode,
-              options,
-            }),
+            try {
+              const response = await fetch('/features/activate', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  tenantId: currentTenantId,
+                  featureCode,
+                  options,
+                }),
+              });
+
+              if (response.ok) {
+                alert('Feature erfolgreich aktiviert');
+                loadTenantFeatures();
+                document.getElementById('activate-feature-form').reset();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.error}`);
+              }
+            } catch (error) {
+              console.error('Error activating feature:', error);
+              alert('Fehler beim Aktivieren des Features');
+            }
           });
 
-          if (response.ok) {
-            alert('Feature erfolgreich aktiviert');
-            loadTenantFeatures();
-            document.getElementById('activate-feature-form').reset();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.error}`);
+          // Feature deaktivieren
+          async function deactivateFeature(featureCode) {
+            if (!confirm('Feature wirklich deaktivieren?')) {
+              return;
+            }
+
+            try {
+              const response = await fetch('/features/deactivate', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  tenantId: currentTenantId,
+                  featureCode,
+                }),
+              });
+
+              if (response.ok) {
+                alert('Feature erfolgreich deaktiviert');
+                loadTenantFeatures();
+              } else {
+                const error = await response.json();
+                alert(`Fehler: ${error.error}`);
+              }
+            } catch (error) {
+              console.error('Error deactivating feature:', error);
+              alert('Fehler beim Deaktivieren des Features');
+            }
           }
-        } catch (error) {
-          console.error('Error activating feature:', error);
-          alert('Fehler beim Aktivieren des Features');
-        }
-      });
 
-      // Feature deaktivieren
-      async function deactivateFeature(featureCode) {
-        if (!confirm('Feature wirklich deaktivieren?')) {
-          return;
-        }
+          // Initialisierung
+          document.addEventListener('DOMContentLoaded', () => {
+            // Heute als Standard für "Gültig ab"
+            document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
 
-        try {
-          const response = await fetch('/features/deactivate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              tenantId: currentTenantId,
-              featureCode,
-            }),
+            loadTenants();
           });
-
-          if (response.ok) {
-            alert('Feature erfolgreich deaktiviert');
-            loadTenantFeatures();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.error}`);
-          }
-        } catch (error) {
-          console.error('Error deactivating feature:', error);
-          alert('Fehler beim Deaktivieren des Features');
-        }
-      }
-
-      // Initialisierung
-      document.addEventListener('DOMContentLoaded', () => {
-        // Heute als Standard für "Gültig ab"
-        document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
-
-        loadTenants();
-      });
-    </script>
+        </script>
       </main>
     </div>
     <!-- Unified Navigation -->

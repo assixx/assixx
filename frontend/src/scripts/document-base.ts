@@ -57,7 +57,7 @@ export class DocumentBase {
   protected updatePageHeader(): void {
     const titleElement = document.getElementById('page-title');
     const subtitleElement = document.getElementById('page-subtitle');
-    
+
     if (titleElement) {
       titleElement.textContent = this.pageTitle;
     }
@@ -71,14 +71,14 @@ export class DocumentBase {
       searchContainer.style.display = this.showSearch ? 'block' : 'none';
     }
   }
-  
+
   /**
    * Add view mode toggle buttons
    */
   protected addViewModeToggle(): void {
     const controlLeft = document.querySelector('.control-left');
     if (!controlLeft || this.currentScope === 'all') return;
-    
+
     const toggleContainer = document.createElement('div');
     toggleContainer.className = 'view-mode-toggle';
     toggleContainer.innerHTML = `
@@ -92,9 +92,9 @@ export class DocumentBase {
         <i class="fas fa-folder-open"></i> Alle
       </button>
     `;
-    
+
     controlLeft.appendChild(toggleContainer);
-    
+
     // Make instance available globally for onclick handlers
     (window as any).documentBase = this;
   }
@@ -112,7 +112,7 @@ export class DocumentBase {
           this.currentSearch = target.value.toLowerCase();
           this.performSearch();
         });
-        
+
         // Focus on search input
         searchInput.focus();
       }
@@ -155,7 +155,7 @@ export class DocumentBase {
       }
 
       const result = await response.json();
-      
+
       // Backend returns {data: Document[], pagination: {...}}
       this.allDocuments = result.data || result.documents || [];
 
@@ -172,7 +172,7 @@ export class DocumentBase {
    */
   protected filterDocumentsByScope(): void {
     let filtered = this.allDocuments;
-    
+
     // Filter by scope/category
     if (this.currentScope === 'payroll') {
       // Special filter for payroll documents (Gehaltsabrechnungen)
@@ -180,7 +180,7 @@ export class DocumentBase {
     } else {
       filtered = filtered.filter((doc) => doc.scope === this.currentScope);
     }
-    
+
     // Filter by view mode
     if (this.currentViewMode === 'active') {
       filtered = filtered.filter((doc) => !doc.is_archived);
@@ -188,7 +188,7 @@ export class DocumentBase {
       filtered = filtered.filter((doc) => doc.is_archived);
     }
     // 'all' mode shows everything
-    
+
     this.filteredDocuments = filtered;
   }
 
@@ -213,12 +213,12 @@ export class DocumentBase {
         (doc) =>
           doc.file_name.toLowerCase().includes(this.currentSearch) ||
           (doc.description && doc.description.toLowerCase().includes(this.currentSearch)) ||
-          (doc.uploaded_by_name && doc.uploaded_by_name.toLowerCase().includes(this.currentSearch))
+          (doc.uploaded_by_name && doc.uploaded_by_name.toLowerCase().includes(this.currentSearch)),
       );
 
       // Sort results
       this.sortDocuments();
-      
+
       // Render results
       this.renderDocuments();
     } catch (error) {
@@ -283,10 +283,11 @@ export class DocumentBase {
     if (!container) return;
 
     if (this.filteredDocuments.length === 0) {
-      const emptyMessage = this.currentScope === 'all' && this.currentSearch
-        ? 'Keine Dokumente gefunden. Versuchen Sie eine andere Suche.'
-        : 'Keine Dokumente in dieser Kategorie vorhanden.';
-      
+      const emptyMessage =
+        this.currentScope === 'all' && this.currentSearch
+          ? 'Keine Dokumente gefunden. Versuchen Sie eine andere Suche.'
+          : 'Keine Dokumente in dieser Kategorie vorhanden.';
+
       container.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-folder-open"></i>
@@ -319,7 +320,8 @@ export class DocumentBase {
     const icon = this.getFileIcon(doc.mime_type || doc.file_name);
     const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
     const archivedBadge = doc.is_archived ? '<span class="document-badge archived">ARCHIVIERT</span>' : '';
-    const scopeInfo = this.currentScope === 'all' ? `<div class="document-scope">${this.getScopeLabel(doc.scope)}</div>` : '';
+    const scopeInfo =
+      this.currentScope === 'all' ? `<div class="document-scope">${this.getScopeLabel(doc.scope)}</div>` : '';
     const isFavorite = this.favoriteDocIds.has(doc.id);
 
     card.innerHTML = `
@@ -517,24 +519,24 @@ export class DocumentBase {
     document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
     document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
   }
-  
+
   /**
    * Set view mode
    */
   public setViewMode(mode: ViewMode): void {
     this.currentViewMode = mode;
-    
+
     // Update toggle buttons
     document.querySelectorAll('.view-mode-toggle .toggle-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
     });
-    
+
     // Re-filter and render
     this.filterDocumentsByScope();
     this.updateStats();
     this.renderDocuments();
   }
-  
+
   /**
    * Load favorites from localStorage
    */
@@ -549,14 +551,14 @@ export class DocumentBase {
       }
     }
   }
-  
+
   /**
    * Save favorites to localStorage
    */
   protected saveFavorites(): void {
     localStorage.setItem('favoriteDocuments', JSON.stringify(Array.from(this.favoriteDocIds)));
   }
-  
+
   /**
    * Toggle favorite status
    */

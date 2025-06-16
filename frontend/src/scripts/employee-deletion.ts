@@ -216,12 +216,12 @@ function processEmployeeDeletion(): void {
 
             // Mitarbeiterliste aktualisieren
             interface WindowWithTables2 extends Window {
-              loadEmployeesTable?: (action: string) => void;
+              loadEmployeesTable?: () => Promise<void>;
               loadDashboardStats?: () => Promise<void>;
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
-              windowWithTables2.loadEmployeesTable('reload');
+              windowWithTables2.loadEmployeesTable();
             }
 
             // Dashboard-Statistiken aktualisieren
@@ -269,12 +269,12 @@ function processEmployeeDeletion(): void {
 
             // Mitarbeiterliste aktualisieren
             interface WindowWithTables2 extends Window {
-              loadEmployeesTable?: (action: string) => void;
+              loadEmployeesTable?: () => Promise<void>;
               loadDashboardStats?: () => Promise<void>;
             }
             const windowWithTables2 = window as unknown as WindowWithTables2;
             if (typeof windowWithTables2.loadEmployeesTable === 'function') {
-              windowWithTables2.loadEmployeesTable('reload');
+              windowWithTables2.loadEmployeesTable();
             }
 
             // Dashboard-Statistiken aktualisieren

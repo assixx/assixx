@@ -21,10 +21,10 @@ async function switchRole(): Promise<void> {
   try {
     const token = localStorage.getItem('token');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    
+
     // Update currentView from localStorage in case it changed
     currentView = localStorage.getItem('activeRole') || userRole;
-    
+
     const isCurrentlyEmployee = currentView === 'employee';
     const endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
 
@@ -47,10 +47,10 @@ async function switchRole(): Promise<void> {
     // Update token and storage
     localStorage.setItem('token', data.token);
     localStorage.setItem('activeRole', data.user.activeRole);
-    
+
     // Update currentView immediately
     currentView = data.user.activeRole;
-    
+
     // Update UI immediately before redirect
     updateRoleUI();
 

@@ -581,7 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Listen neu laden
         loadRecentEmployees();
         loadDashboardStats();
-        
+
         // Seite neu laden für komplette Aktualisierung
         setTimeout(() => {
           window.location.reload();

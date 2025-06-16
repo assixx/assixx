@@ -3,13 +3,13 @@
  * Handles document-related requests
  */
 
-import { Response } from 'express';
-import documentService from '../services/document.service';
-import { logger } from '../utils/logger';
-import { parsePagination } from '../utils/helpers';
-import { HTTP_STATUS } from '../utils/constants';
-import { AuthenticatedRequest as BaseAuthRequest } from '../types/request.types';
-import Team from '../models/team';
+import { Response } from "express";
+import documentService from "../services/document.service";
+import { logger } from "../utils/logger";
+import { parsePagination } from "../utils/helpers";
+import { HTTP_STATUS } from "../utils/constants";
+import { AuthenticatedRequest as BaseAuthRequest } from "../types/request.types";
+import Team from "../models/team";
 
 // Extended Request interface for document operations
 interface AuthenticatedRequest extends BaseAuthRequest {
@@ -98,10 +98,10 @@ class DocumentController {
         pagination: result.pagination,
       });
     } catch (error) {
-      logger.error('Error getting documents:', error);
+      logger.error("Error getting documents:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error retrieving documents',
+        message: "Error retrieving documents",
       });
     }
   }
@@ -111,20 +111,20 @@ class DocumentController {
    */
   async getDocumentById(
     req: DocumentByIdRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const { id } = req.params;
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenantId
+        req.user.tenantId,
       );
 
       if (!document) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found',
+          message: "Document not found",
         });
         return;
       }
@@ -134,10 +134,10 @@ class DocumentController {
         data: document,
       });
     } catch (error) {
-      logger.error('Error getting document:', error);
+      logger.error("Error getting document:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error retrieving document',
+        message: "Error retrieving document",
       });
     }
   }
@@ -147,13 +147,13 @@ class DocumentController {
    */
   async uploadDocument(
     req: DocumentUploadRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       if (!req.file) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          message: 'No file uploaded',
+          message: "No file uploaded",
         });
         return;
       }
@@ -164,7 +164,7 @@ class DocumentController {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        category: req.body.category || 'general', // Provide default if undefined
+        category: req.body.category || "general", // Provide default if undefined
         description: req.body.description || null,
         userId: req.body.userId ? parseInt(req.body.userId, 10) : req.user.id,
         uploadedBy: req.user.id,
@@ -175,14 +175,14 @@ class DocumentController {
 
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
-        message: 'Document uploaded successfully',
+        message: "Document uploaded successfully",
         data: result,
       });
     } catch (error) {
-      logger.error('Error uploading document:', error);
+      logger.error("Error uploading document:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error uploading document',
+        message: "Error uploading document",
       });
     }
   }
@@ -192,7 +192,7 @@ class DocumentController {
    */
   async updateDocument(
     req: DocumentUpdateRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const { id } = req.params;
@@ -204,26 +204,26 @@ class DocumentController {
       const result = await documentService.updateDocument(
         parseInt(id, 10),
         updateData,
-        req.user.tenantId
+        req.user.tenantId,
       );
 
       if (!result) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found',
+          message: "Document not found",
         });
         return;
       }
 
       res.json({
         success: true,
-        message: 'Document updated successfully',
+        message: "Document updated successfully",
       });
     } catch (error) {
-      logger.error('Error updating document:', error);
+      logger.error("Error updating document:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error updating document',
+        message: "Error updating document",
       });
     }
   }
@@ -237,26 +237,26 @@ class DocumentController {
 
       const result = await documentService.deleteDocument(
         parseInt(id, 10),
-        req.user.tenantId
+        req.user.tenantId,
       );
 
       if (!result) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found',
+          message: "Document not found",
         });
         return;
       }
 
       res.json({
         success: true,
-        message: 'Document deleted successfully',
+        message: "Document deleted successfully",
       });
     } catch (error) {
-      logger.error('Error deleting document:', error);
+      logger.error("Error deleting document:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error deleting document',
+        message: "Error deleting document",
       });
     }
   }
@@ -266,20 +266,20 @@ class DocumentController {
    */
   async downloadDocument(
     req: DocumentByIdRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const { id } = req.params;
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenantId
+        req.user.tenantId,
       );
 
       if (!document) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: 'Document not found',
+          message: "Document not found",
         });
         return;
       }
@@ -288,10 +288,10 @@ class DocumentController {
       const filePath = await documentService.getDocumentPath(document.filename);
       res.download(filePath, document.name || document.filename);
     } catch (error) {
-      logger.error('Error downloading document:', error);
+      logger.error("Error downloading document:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error downloading document',
+        message: "Error downloading document",
       });
     }
   }
@@ -301,7 +301,7 @@ class DocumentController {
    */
   async markDocumentAsRead(
     req: DocumentByIdRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const { id } = req.params;
@@ -309,26 +309,26 @@ class DocumentController {
       const success = await documentService.markDocumentAsRead(
         parseInt(id, 10),
         req.user.id,
-        req.user.tenantId
+        req.user.tenantId,
       );
 
       if (!success) {
         res.status(HTTP_STATUS.SERVER_ERROR).json({
           success: false,
-          message: 'Failed to mark document as read',
+          message: "Failed to mark document as read",
         });
         return;
       }
 
       res.json({
         success: true,
-        message: 'Document marked as read',
+        message: "Document marked as read",
       });
     } catch (error) {
-      logger.error('Error marking document as read:', error);
+      logger.error("Error marking document as read:", error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: 'Error marking document as read',
+        message: "Error marking document as read",
       });
     }
   }

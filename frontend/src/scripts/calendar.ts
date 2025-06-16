@@ -577,7 +577,6 @@ function setupEventListeners(): void {
 
       const option = target.closest('.dropdown-option') as HTMLElement;
       const dropdown = option.closest('.dropdown-options');
-      const wrapper = dropdown?.closest('.custom-dropdown');
 
       if (dropdown?.id === 'orgLevelDropdown') {
         // Extract value and text from the option

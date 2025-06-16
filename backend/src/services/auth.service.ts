@@ -3,17 +3,17 @@
  * Handles authentication business logic
  */
 
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import UserModel from '../models/user';
-import { authenticateUser as authUser, generateToken } from '../auth';
-import { logger } from '../utils/logger';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import UserModel from "../models/user";
+import { authenticateUser as authUser, generateToken } from "../auth";
+import { logger } from "../utils/logger";
 import {
   AuthResult,
   UserRegistrationData,
   TokenValidationResult,
-} from '../types/auth.types';
-import { DatabaseUser } from '../types/models';
+} from "../types/auth.types";
+import { DatabaseUser } from "../types/models";
 
 class AuthService {
   /**
@@ -24,7 +24,7 @@ class AuthService {
    */
   async authenticateUser(
     username: string,
-    password: string
+    password: string,
   ): Promise<AuthResult> {
     try {
       // Use existing auth function
@@ -32,14 +32,14 @@ class AuthService {
 
       if (!result.user) {
         // Provide specific error messages based on error type
-        let message = 'Invalid username or password';
-        if (result.error === 'USER_INACTIVE') {
+        let message = "Invalid username or password";
+        if (result.error === "USER_INACTIVE") {
           message =
-            'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
-        } else if (result.error === 'USER_NOT_FOUND') {
-          message = 'Benutzer nicht gefunden';
-        } else if (result.error === 'INVALID_PASSWORD') {
-          message = 'Falsches Passwort';
+            "Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.";
+        } else if (result.error === "USER_NOT_FOUND") {
+          message = "Benutzer nicht gefunden";
+        } else if (result.error === "INVALID_PASSWORD") {
+          message = "Falsches Passwort";
         }
 
         return {
@@ -60,11 +60,11 @@ class AuthService {
         success: true,
         token,
         user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(userWithoutPassword)
+          this.dbUserToDatabaseUser(userWithoutPassword),
         ),
       };
     } catch (error) {
-      logger.error('Authentication error:', error);
+      logger.error("Authentication error:", error);
       throw error;
     }
   }
@@ -82,7 +82,7 @@ class AuthService {
         email,
         vorname,
         nachname,
-        role = 'employee',
+        role = "employee",
       } = userData;
 
       // Check if user already exists
@@ -91,7 +91,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: 'Username already exists',
+          message: "Username already exists",
         };
       }
 
@@ -101,7 +101,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: 'Email already exists',
+          message: "Email already exists",
         };
       }
 
@@ -110,7 +110,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: 'Tenant ID is required',
+          message: "Tenant ID is required",
         };
       }
 
@@ -131,7 +131,7 @@ class AuthService {
       // Get created user (without password)
       const user = await UserModel.findById(userId, userData.tenantId);
       if (!user) {
-        throw new Error('Failed to retrieve created user');
+        throw new Error("Failed to retrieve created user");
       }
 
       delete (user as any).password;
@@ -141,7 +141,7 @@ class AuthService {
         user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(user)),
       };
     } catch (error) {
-      logger.error('Registration error:', error);
+      logger.error("Registration error:", error);
       throw error;
     }
   }
@@ -153,16 +153,16 @@ class AuthService {
    */
   async verifyToken(token: string): Promise<TokenValidationResult> {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || '');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "");
       return {
         valid: true,
         user: decoded as any,
       };
     } catch (error) {
-      logger.error('Token verification error:', error);
+      logger.error("Token verification error:", error);
       return {
         valid: false,
-        error: error instanceof Error ? error.message : 'Invalid token',
+        error: error instanceof Error ? error.message : "Invalid token",
       };
     }
   }
@@ -202,7 +202,7 @@ class AuthService {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
-      password_hash: dbUser.password || '',
+      password_hash: dbUser.password || "",
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
       role: dbUser.role,
@@ -211,7 +211,7 @@ class AuthService {
       is_active:
         dbUser.is_active === true ||
         (dbUser.is_active as any) === 1 ||
-        (dbUser.is_active as any) === '1',
+        (dbUser.is_active as any) === "1",
       is_archived: dbUser.is_archived || false,
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone || null,

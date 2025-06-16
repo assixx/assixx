@@ -27,14 +27,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(
-          0deg,
-          transparent 0%,
-          rgba(0, 142, 255, 0.08) 100%,
-          #01000482 60%,
-          rgba(0, 0, 4, 0.6) 90%,
-          black 100%
-        );
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
@@ -1348,7 +1341,7 @@
         // Initialize filter event listeners
         const statusFilter = document.getElementById('statusFilter');
         const categoryFilter = document.getElementById('categoryFilter');
-        
+
         if (statusFilter) {
           statusFilter.addEventListener('change', loadSuggestions);
         }
@@ -1684,17 +1677,17 @@
         e.preventDefault();
 
         const formData = new FormData(this);
-        
+
         // Set default values if not provided
         if (!formData.get('org_level') || formData.get('org_level') === '') {
           formData.set('org_level', 'company'); // Default to company level
         }
         formData.set('org_id', '8'); // Use tenant ID as org_id for company level
-        
+
         if (!formData.get('category_id') || formData.get('category_id') === '') {
           formData.set('category_id', '13'); // Default to Sicherheit category
         }
-        
+
         if (!formData.get('priority') || formData.get('priority') === '') {
           formData.set('priority', 'normal'); // Default priority
         }
