@@ -22,9 +22,10 @@ COPY backend/ ./backend/
 # Fix-Script kopieren (in scripts Ordner)
 RUN mkdir -p scripts
 COPY scripts/fix-esm-imports.js ./scripts/
+COPY scripts/package.json ./scripts/
 
 # TypeScript kompilieren
-RUN pnpm run build:ts
+RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
 
 # Stage 2: Production Runtime
 FROM node:20-alpine
