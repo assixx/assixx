@@ -62,7 +62,7 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.27.0",
+    "@eslint/js": "^9.29.0",
     "@swc/core": "^1.11.29",
     "@swc/helpers": "^0.5.17",
     "@types/bcrypt": "^5.0.2",
