@@ -68,11 +68,12 @@ services:
           'CMD',
           'node',
           '-e',
-          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));",
         ]
-      interval: 30s
+      interval: 5s
       timeout: 10s
-      retries: 3
+      retries: 10
+      start_period: 30s
     # Development command mit nodemon
     command: ['pnpm', 'run', 'dev']
 
