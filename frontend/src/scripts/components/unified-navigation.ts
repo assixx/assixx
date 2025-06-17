@@ -827,7 +827,7 @@ class UnifiedNavigation {
             <span class="label">${item.label}</span>
             <span class="nav-indicator"></span>
             <span class="submenu-arrow">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M7 10l5 5 5-5z"/>
               </svg>
             </span>
@@ -861,7 +861,7 @@ class UnifiedNavigation {
             <span class="label">${item.label}</span>
             <span class="nav-indicator"></span>
             <span class="submenu-arrow">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M7 10l5 5 5-5z"/>
               </svg>
             </span>
@@ -1665,7 +1665,7 @@ const unifiedNavigationCSS = `
         width: 280px !important;
         background: rgba(255, 255, 255, 0);
         backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        /*border-right: 1px solid rgba(255, 255, 255, 0.1);*/
         height: calc(100vh - 60px);
         position: fixed;
         left: 0;
@@ -2279,8 +2279,8 @@ const unifiedNavigationCSS = `
     .sidebar-item.active .sidebar-link {
         background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         color: var(--primary-color);
-        border-color: rgba(33, 150, 243, 0.3);
-        box-shadow: 0 4px 20px rgba(33, 150, 243, 0.2);
+        /*border-color: rgba(33, 150, 243, 0.3);
+        box-shadow: 0 4px 20px rgba(33, 150, 243, 0.2);*/
     }
 
     .sidebar-link .icon {
@@ -2302,10 +2302,10 @@ const unifiedNavigationCSS = `
         transition: all 0.3s ease;
     }
 
-    .sidebar-item.active .nav-indicator {
+    /*.sidebar-item.active .nav-indicator {
         background: var(--primary-color);
         box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
-    }
+    }*/
 
     .nav-ripple {
         position: absolute;

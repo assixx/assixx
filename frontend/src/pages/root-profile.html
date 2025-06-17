@@ -25,7 +25,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.08) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
         pointer-events: none;
         z-index: -1;
       }
@@ -638,8 +638,12 @@
         }
       }
 
-      // Profile form submission
-      document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      // Initialize all event listeners when DOM is ready
+      function initializeEventListeners() {
+        // Profile form submission
+        const profileForm = document.getElementById('profile-form');
+        if (profileForm) {
+          profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData(e.target);
@@ -666,9 +670,12 @@
           showMessage('Fehler beim Aktualisieren des Profils', 'error');
         }
       });
+        }
 
-      // Password form submission
-      document.getElementById('password-form').addEventListener('submit', async (e) => {
+        // Password form submission
+        const passwordForm = document.getElementById('password-form');
+        if (passwordForm) {
+          passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const newPassword = document.getElementById('new_password').value;
@@ -707,9 +714,12 @@
           showMessage('Fehler beim Ändern des Passworts', 'error');
         }
       });
+        }
 
-      // Profile picture upload
-      document.getElementById('profile-picture-input').addEventListener('change', async (e) => {
+        // Profile picture upload
+        const pictureInput = document.getElementById('profile-picture-input');
+        if (pictureInput) {
+          pictureInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -737,16 +747,12 @@
           showMessage('Fehler beim Hochladen des Profilbilds', 'error');
         }
       });
+        }
 
-      // Display profile picture
-      function displayProfilePicture(url) {
-        const container = document.getElementById('profile-picture-display');
-        container.innerHTML = `<img src="${url}" alt="Profilbild" class="profile-picture">`;
-        document.getElementById('remove-picture-btn').style.display = 'block';
-      }
-
-      // Remove profile picture
-      document.getElementById('remove-picture-btn').addEventListener('click', async () => {
+        // Remove profile picture
+        const removePictureBtn = document.getElementById('remove-picture-btn');
+        if (removePictureBtn) {
+          removePictureBtn.addEventListener('click', async () => {
         if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) return;
 
         try {
@@ -769,49 +775,90 @@
           showMessage('Fehler beim Entfernen des Profilbilds', 'error');
         }
       });
+        }
+      }
+
+      // Display profile picture
+      function displayProfilePicture(url) {
+        const container = document.getElementById('profile-picture-display');
+        if (container) {
+          container.innerHTML = `<img src="${url}" alt="Profilbild" class="profile-picture">`;
+          const removeBtn = document.getElementById('remove-picture-btn');
+          if (removeBtn) {
+            removeBtn.style.display = 'block';
+          }
+        }
+      }
 
       // Show success/error messages
       function showMessage(message, type) {
         const container = document.getElementById('message-container');
-        container.innerHTML = `
+        if (container) {
+          container.innerHTML = `
                 <div class="alert alert-${type}">
                     <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
                     ${message}
                 </div>
             `;
 
-        setTimeout(() => {
-          container.innerHTML = '';
-        }, 5000);
+          setTimeout(() => {
+            container.innerHTML = '';
+          }, 5000);
+        }
       }
 
       // Logout
-      document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/login';
-      });
-
-      // Load profile on page load
-      loadProfile();
+      // Wait for navigation to load before attaching logout handler
+      setTimeout(() => {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/login';
+          });
+        }
+      }, 500);
 
       // Delete Modal Functions
       function showDeleteModal() {
-        document.getElementById('deleteModal').classList.add('active');
-        document.getElementById('deleteConfirmation').value = '';
-        document.getElementById('confirmDeleteBtn').disabled = true;
+        const modal = document.getElementById('deleteModal');
+        const confirmInput = document.getElementById('deleteConfirmation');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        
+        if (modal && confirmInput && confirmBtn) {
+          modal.classList.add('active');
+          confirmInput.value = '';
+          confirmBtn.disabled = true;
+        }
       }
 
       function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.remove('active');
-        document.getElementById('deleteConfirmation').value = '';
+        const modal = document.getElementById('deleteModal');
+        const confirmInput = document.getElementById('deleteConfirmation');
+        
+        if (modal && confirmInput) {
+          modal.classList.remove('active');
+          confirmInput.value = '';
+        }
       }
 
-      // Enable delete button only when user types "LÖSCHEN"
-      document.getElementById('deleteConfirmation').addEventListener('input', (e) => {
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
-        confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
-      });
+      // Initialize everything when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          initializeEventListeners();
+          loadProfile();
+          
+          // Enable delete button only when user types "LÖSCHEN"
+          const deleteConfirmInput = document.getElementById('deleteConfirmation');
+          if (deleteConfirmInput) {
+            deleteConfirmInput.addEventListener('input', (e) => {
+              const confirmBtn = document.getElementById('confirmDeleteBtn');
+              if (confirmBtn) {
+                confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
+              }
+            });
+          }
 
       // Delete tenant function
       async function deleteTenant() {
@@ -852,12 +899,42 @@
         }
       }
 
-      // Close modal on overlay click
-      document.getElementById('deleteModal').addEventListener('click', (e) => {
-        if (e.target.id === 'deleteModal') {
-          closeDeleteModal();
+          // Close modal on overlay click
+          const deleteModal = document.getElementById('deleteModal');
+          if (deleteModal) {
+            deleteModal.addEventListener('click', (e) => {
+              if (e.target.id === 'deleteModal') {
+                closeDeleteModal();
+              }
+            });
+          }
+        });
+      } else {
+        // DOM already loaded
+        initializeEventListeners();
+        loadProfile();
+        
+        // Enable delete button only when user types "LÖSCHEN"
+        const deleteConfirmInput = document.getElementById('deleteConfirmation');
+        if (deleteConfirmInput) {
+          deleteConfirmInput.addEventListener('input', (e) => {
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            if (confirmBtn) {
+              confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
+            }
+          });
         }
-      });
+        
+        // Close modal on overlay click
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+          deleteModal.addEventListener('click', (e) => {
+            if (e.target.id === 'deleteModal') {
+              closeDeleteModal();
+            }
+          });
+        }
+      }
     </script>
   </body>
 </html>

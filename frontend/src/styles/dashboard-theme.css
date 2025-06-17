@@ -770,20 +770,20 @@ body {
 
 .role-badge.admin {
   background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
-  color: white;
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  color: rgb(0, 0, 0);
+  font-weight: 800;
 }
 
 .role-badge.employee {
   background: linear-gradient(135deg, #4ecdc4, #44a8b3);
   color: rgb(0, 0, 0);
-  box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4);
+  font-weight: 800;
 }
 
 .role-badge.root {
   background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  color: rgb(0, 0, 0);
+  font-weight:800
 }
 
 /* Header actions adjustment */
