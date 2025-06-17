@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+
+// express-validator v7 with native ESM support
 import { body, validationResult } from 'express-validator';
+
 type ValidationChain = any;
 
 // Type for middleware array including validation chains and error handler
