@@ -70,6 +70,12 @@ class UnifiedNavigation {
 
     // Load collapsed state from localStorage
     this.isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    // Clear any stale submenu state on init if we're on a dashboard
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('dashboard')) {
+      localStorage.removeItem('openSubmenu');
+    }
 
     this.loadUserInfo();
     this.injectNavigationHTML();
@@ -900,9 +906,23 @@ class UnifiedNavigation {
   private attachEventListeners(): void {
     // Navigation Link Clicks
     document.addEventListener('click', (e: MouseEvent) => {
-      const navLink = (e.target as HTMLElement).closest('.sidebar-link') as HTMLElement;
+      const navLink = (e.target as HTMLElement).closest('.sidebar-link:not([onclick])') as HTMLElement;
       if (navLink) {
         this.handleNavigationClick(navLink, e);
+      }
+      
+      // Submenu Link Clicks
+      const submenuLink = (e.target as HTMLElement).closest('.submenu-link') as HTMLElement;
+      if (submenuLink) {
+        // Store the parent submenu state
+        const parentSubmenu = submenuLink.closest('.submenu');
+        const parentItem = parentSubmenu?.closest('.sidebar-item');
+        if (parentItem) {
+          const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
+          if (parentId) {
+            localStorage.setItem('openSubmenu', parentId);
+          }
+        }
       }
 
       // Logout Button Click
@@ -1079,7 +1099,12 @@ class UnifiedNavigation {
     window.location.href = '/pages/login.html';
   }
 
-  private handleNavigationClick(link: HTMLElement, _event: MouseEvent): void {
+  private handleNavigationClick(link: HTMLElement, event: MouseEvent): void {
+    // Don't handle clicks on submenu toggle links
+    if (link.getAttribute('href') === '#') {
+      return;
+    }
+    
     // Update active state
     document.querySelectorAll('.sidebar-item').forEach((item) => {
       item.classList.remove('active');
@@ -1150,6 +1175,129 @@ class UnifiedNavigation {
         const dashboardLink = document.querySelector('[data-nav-id="dashboard"]');
         if (dashboardLink) {
           dashboardLink.closest('.sidebar-item')?.classList.add('active');
+        }
+      }
+    }
+    
+    // Handle submenu states
+    this.updateSubmenuStates();
+  }
+
+  private updateSubmenuStates(): void {
+    const currentPath = window.location.pathname;
+    const currentHash = window.location.hash;
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    let foundActiveSubmenu = false;
+    
+    // First, ensure all submenus are closed and remove all submenu active states
+    document.querySelectorAll('.submenu').forEach((submenu) => {
+      const submenuElement = submenu as HTMLElement;
+      submenuElement.style.display = 'none';
+      submenu.closest('.sidebar-item')?.classList.remove('open');
+    });
+    
+    // Remove active class from all submenu items
+    document.querySelectorAll('.submenu-item').forEach((item) => {
+      item.classList.remove('active');
+    });
+    
+    // Remove active class from all submenu links
+    document.querySelectorAll('.submenu-link').forEach((link) => {
+      link.classList.remove('active');
+    });
+    
+    // Check if we're on a dashboard page with a section that has a submenu
+    const isDashboard = currentPath.includes('dashboard');
+    if (isDashboard && section) {
+      // Check if this section corresponds to a menu item with submenu
+      const menuItems = this.getNavigationForRole(this.currentRole);
+      const menuItem = menuItems.find(item => item.id === section);
+      
+      if (menuItem && (menuItem.hasSubmenu || menuItem.children)) {
+        // Open the submenu for this section
+        const submenu = document.getElementById(`submenu-${section}`);
+        const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+        
+        if (submenu && parentItem) {
+          submenu.style.display = 'block';
+          parentItem.classList.add('open');
+          localStorage.setItem('openSubmenu', section);
+          foundActiveSubmenu = true;
+          
+          // For sections like employees that have children, mark the first child as active
+          if (menuItem.children && menuItem.children.length > 0) {
+            const firstChildLink = submenu.querySelector('.submenu-link');
+            if (firstChildLink) {
+              firstChildLink.classList.add('active');
+              const submenuItem = firstChildLink.closest('.submenu-item');
+              if (submenuItem) {
+                submenuItem.classList.add('active');
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // If not handled by section parameter, check for direct submenu pages
+    if (!foundActiveSubmenu && !isDashboard) {
+      // Check all submenu links to find if we're on a submenu page
+      document.querySelectorAll('.submenu-link').forEach((link) => {
+        const linkElement = link as HTMLAnchorElement;
+        try {
+          const linkPath = new URL(linkElement.href, window.location.origin).pathname;
+          
+          // Check if current path matches this submenu link exactly
+          if (currentPath === linkPath) {
+            foundActiveSubmenu = true;
+            
+            // Mark the submenu item and link as active
+            link.classList.add('active');
+            const submenuItem = link.closest('.submenu-item');
+            if (submenuItem) {
+              submenuItem.classList.add('active');
+            }
+            
+            // Find and open the parent submenu
+            const submenu = link.closest('.submenu') as HTMLElement;
+            const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+            
+            if (submenu && parentItem) {
+              submenu.style.display = 'block';
+              parentItem.classList.add('open');
+              parentItem.classList.add('active');
+              
+              // Store the open submenu state
+              const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
+              if (parentId) {
+                localStorage.setItem('openSubmenu', parentId);
+              }
+            }
+          }
+        } catch (e) {
+          // Skip invalid URLs
+          console.warn('Invalid submenu URL:', linkElement.href);
+        }
+      });
+    }
+    
+    // If we're not on any submenu page and not in a section with submenu, clear the stored state
+    if (!foundActiveSubmenu) {
+      localStorage.removeItem('openSubmenu');
+    }
+    
+    // Restore previously open submenu if we're still on the same parent section
+    const storedSubmenu = localStorage.getItem('openSubmenu');
+    if (storedSubmenu && !foundActiveSubmenu) {
+      const submenu = document.getElementById(`submenu-${storedSubmenu}`);
+      const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+      
+      if (submenu && parentItem) {
+        // Only restore if the parent item is active
+        if (parentItem.classList.contains('active')) {
+          submenu.style.display = 'block';
+          parentItem.classList.add('open');
         }
       }
     }
@@ -2369,16 +2517,17 @@ const unifiedNavigationCSS = `
 
     .submenu-link:hover {
         background: rgba(33, 150, 243, 0.08);
-        
         border-color: rgba(33, 150, 243, 0.15);
         transform: translateX(20px);
     }
 
-    .submenu-link.active {
-        background: rgba(33, 150, 243, 0.12);
+    .submenu-link.active,
+    .submenu-item.active .submenu-link {
+        background: rgba(33, 150, 243, 0.08);
         color: var(--primary-color);
-        border-color: rgba(33, 150, 243, 0.2);
-        font-weight: 500;
+        border-color: rgba(33, 150, 243, 0.15);
+        transform: translateX(20px);
+        font-weight: 600;
     }
 
     /* Layout adjustments */
@@ -2577,22 +2726,33 @@ if (!document.querySelector('#unified-navigation-styles')) {
 // Global function for submenu toggle
 (window as any).toggleSubmenu = function (event: Event, itemId: string) {
   event.preventDefault();
+  event.stopPropagation();
+  
   const submenu = document.getElementById(`submenu-${itemId}`);
   const parentItem = submenu?.closest('.sidebar-item');
 
   if (submenu && parentItem) {
-    const isOpen = submenu.style.display !== 'none';
+    const isOpen = submenu.style.display === 'block';
 
     // Close all other submenus
     document.querySelectorAll('.submenu').forEach((menu) => {
-      (menu as HTMLElement).style.display = 'none';
-      menu.closest('.sidebar-item')?.classList.remove('open');
+      if (menu !== submenu) {
+        (menu as HTMLElement).style.display = 'none';
+        menu.closest('.sidebar-item')?.classList.remove('open');
+      }
     });
 
     // Toggle current submenu
     if (!isOpen) {
       submenu.style.display = 'block';
       parentItem.classList.add('open');
+      // Store the open submenu state
+      localStorage.setItem('openSubmenu', itemId);
+    } else {
+      submenu.style.display = 'none';
+      parentItem.classList.remove('open');
+      // Clear stored submenu state when manually closing
+      localStorage.removeItem('openSubmenu');
     }
   }
 };
