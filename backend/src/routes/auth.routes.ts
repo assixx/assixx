@@ -30,8 +30,8 @@ router.post(
   ...validateSignup,
   authController.register
 );
-router.get('/logout', authController.logout);
-router.post('/logout', authController.logout); // Support both GET and POST
+router.get('/logout', authenticateToken as any, authController.logout as any);
+router.post('/logout', authenticateToken as any, authController.logout as any); // Support both GET and POST
 
 // CSRF Token endpoint
 router.get(

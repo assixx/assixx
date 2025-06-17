@@ -227,14 +227,12 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: this.getSectionUrl('departments'),
-          section: 'departments',
+          url: '/pages/departments.html',
           children: [
             {
               id: 'departments-all',
               label: 'Alle Abteilungen',
-              url: this.getSectionUrl('departments'),
-              section: 'departments',
+              url: '/pages/departments.html',
             },
           ],
         },
@@ -521,10 +519,28 @@ class UnifiedNavigation {
           url: '/pages/manage-admins.html',
         },
         {
+          id: 'departments',
+          icon: this.getSVGIcon('building'),
+          label: 'Abteilungen',
+          url: '/pages/departments.html',
+        },
+        {
+          id: 'department-groups',
+          icon: this.getSVGIcon('folder-tree'),
+          label: 'Abteilungsgruppen',
+          url: '/pages/manage-department-groups.html',
+        },
+        {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Features',
           url: '/pages/root-features.html',
+        },
+        {
+          id: 'logs',
+          icon: this.getSVGIcon('logs'),
+          label: 'System-Logs',
+          url: '/pages/logs.html',
         },
         {
           id: 'profile',
@@ -565,6 +581,8 @@ class UnifiedNavigation {
       building:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
       team: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
+      'folder-tree':
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H13V20H11V21H9V20H7V18H9V11H7V9H9V3H11V9H13V11H15V13H13Z"/></svg>',
       settings:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>',
       feature:
@@ -582,6 +600,8 @@ class UnifiedNavigation {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5 C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-0.59,4.23-1.57l0.27,0.28v0.79l5,4.99L20.49,19L15.5,14z M9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14z"/></svg>',
       sitemap:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H11C11,19.66 9.66,21 8,21H6C4.34,21 3,19.66 3,18V10H8V12L10,10H13V7H11V3H16C17.66,3 19,4.34 19,6V8C19,9.66 17.66,11 16,11H13V13Z"/></svg>',
+      logs:
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.5H16V17H8V15.5M8,11.5H16V13H8V11.5Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -1643,7 +1663,7 @@ const unifiedNavigationCSS = `
 
     .sidebar {
         width: 280px !important;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0);
         backdrop-filter: blur(20px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
         height: calc(100vh - 60px);

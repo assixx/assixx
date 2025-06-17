@@ -31,6 +31,9 @@ import machineRoutes from './machines';
 import areaRoutes from './areas';
 import planRoutes from './plans';
 import availabilityRoutes from './availability';
+import adminPermissionsRoutes from './admin-permissions.js';
+import departmentGroupsRoutes from './department-groups.js';
+import logsRoutes from './logs.js';
 
 // API Version prefix
 const API_PREFIX = '/api';
@@ -60,6 +63,9 @@ router.use(`${API_PREFIX}/employee`, employeeRoutes);
 router.use(`${API_PREFIX}/machines`, machineRoutes);
 router.use(`${API_PREFIX}/areas`, areaRoutes);
 router.use(`${API_PREFIX}/availability`, availabilityRoutes);
+router.use(`${API_PREFIX}/admin-permissions`, adminPermissionsRoutes);
+router.use(`${API_PREFIX}/department-groups`, departmentGroupsRoutes);
+router.use(`${API_PREFIX}/logs`, logsRoutes);
 
 // Health check endpoint
 router.get(`${API_PREFIX}/health`, (_req: Request, res: Response): void => {

@@ -1,5 +1,53 @@
 /* User Info Compact & Transparent Design Update */
 
+/* Department Badge Styles */
+.user-departments-badge {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.user-departments-badge .badge {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.user-departments-badge .badge.loading {
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+.user-departments-badge .badge.badge-warning {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.user-departments-badge .badge.badge-info {
+  background: rgba(0, 123, 255, 0.2);
+  color: #007bff;
+  border-color: rgba(0, 123, 255, 0.3);
+}
+
+.user-departments-badge .badge.badge-success {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.6; }
+}
+
 /* Make user-info section more compact and transparent */
 #user-info,
 .user-info,

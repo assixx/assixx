@@ -650,7 +650,7 @@
                 <h2 class="card-title">Abteilungen</h2>
               </div>
               <div class="compact-content">
-                <button class="btn btn-primary btn-block mb-3" onclick="showDepartmentModal()">Neue Abteilung</button>
+                <a href="/pages/departments.html" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
                 <div class="compact-list" id="department-list">
                   <!-- Wird dynamisch gefüllt -->
                 </div>
@@ -842,34 +842,7 @@
         </section>
 
         <!-- Departments Section -->
-        <section id="departments-section" class="content-section" style="display: none">
-          <h1>Abteilungsverwaltung</h1>
-          <button class="btn btn-primary mb-3" id="direct-department-button">Neue Abteilung</button>
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Abteilungsübersicht</h2>
-            </div>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Beschreibung</th>
-                    <th>Status</th>
-                    <th>Sichtbarkeit</th>
-                    <th>Manager</th>
-                    <th>Mitarbeiter</th>
-                    <th>Teams</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="departments-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <!-- Departments Section wurde nach departments.html verschoben -->
 
         <!-- Teams Section -->
         <section id="teams-section" class="content-section" style="display: none">
@@ -912,60 +885,7 @@
     </div>
 
     <!-- Modals -->
-    <!-- Department Modal -->
-    <div id="department-modal" class="modal" style="display: none">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Neue Abteilung</h3>
-          <button class="modal-close" onclick="hideModal('department-modal')">&times;</button>
-        </div>
-        <form id="department-form">
-          <div class="form-group">
-            <label class="form-label">Name</label>
-            <input type="text" name="name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Beschreibung</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="department-status-display" onclick="toggleDropdown('department-status')">
-                <span>Aktiv</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="department-status-dropdown" style="display: none">
-                <div class="dropdown-option" onclick="selectDropdownOption('department-status', 'active', 'Aktiv')">Aktiv</div>
-                <div class="dropdown-option" onclick="selectDropdownOption('department-status', 'inactive', 'Inaktiv')">Inaktiv</div>
-              </div>
-              <input type="hidden" name="status" id="department-status-select" value="active" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Sichtbarkeit</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="department-visibility-display" onclick="toggleDropdown('department-visibility')">
-                <span>Öffentlich</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="department-visibility-dropdown" style="display: none">
-                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'public', 'Öffentlich')">
-                  Öffentlich
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('department-visibility', 'private', 'Privat')">Privat</div>
-              </div>
-              <input type="hidden" name="visibility" id="department-visibility-select" value="public" />
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary">Abteilung erstellen</button>
-        </form>
-      </div>
-    </div>
+    <!-- Department Modal wurde nach departments.html verschoben -->
 
     <!-- Team Modal -->
     <div id="team-modal" class="modal" style="display: none">
@@ -1458,18 +1378,7 @@
 
             if (href === '#departments') {
               e.preventDefault();
-              e.stopPropagation();
-              console.log('Showing departments section');
-              document.querySelectorAll('.content-section').forEach((section) => {
-                section.style.display = 'none';
-              });
-              document.getElementById('departments-section').style.display = 'block';
-
-              // Update active state
-              document.querySelectorAll('.sidebar-item').forEach((item) => {
-                item.classList.remove('active');
-              });
-              this.parentElement.classList.add('active');
+              window.location.href = '/pages/departments.html';
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
@@ -1513,37 +1422,7 @@
           console.error('Department button NOT found');
         }
 
-        // Listener für "Abteilungen verwalten" Link
-        const manageDepartmentsLink = document.getElementById('manage-departments-link');
-        if (manageDepartmentsLink) {
-          console.log('Manage departments link found');
-          manageDepartmentsLink.addEventListener('click', function (e) {
-            e.preventDefault();
-            console.log('Manage departments link clicked');
-            // Zeige die Abteilungs-Sektion an
-            document.querySelectorAll('.content-section').forEach((section) => {
-              section.style.display = 'none';
-            });
-            document.getElementById('departments-section').style.display = 'block';
-
-            // Update active state in sidebar
-            document.querySelectorAll('.sidebar-item').forEach((item) => {
-              item.classList.remove('active');
-            });
-
-            // Finde und aktiviere die Abteilungen-Sidebar
-            document.querySelectorAll('.sidebar-link').forEach((link) => {
-              if (link.getAttribute('href') === '#departments') {
-                link.parentElement.classList.add('active');
-              }
-            });
-
-            // Lade Abteilungstabelle
-            loadDepartmentsTable();
-          });
-        } else {
-          console.error('Manage departments link NOT found');
-        }
+        // Listener für "Abteilungen verwalten" Link wurde entfernt - Navigation erfolgt jetzt direkt
       });
     </script>
     <script>
@@ -1611,243 +1490,11 @@
     <script>
       // Funktionstabelle direkt definieren
 
-      // Departments-Tabelle laden
-      async function loadDepartmentsTable() {
-        console.log('Loading departments table');
-        const token = localStorage.getItem('token');
+      // Departments-Tabelle wurde nach departments.html verschoben
 
-        try {
-          const response = await fetch('/api/departments', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+      // Department-Funktionen wurden nach departments.html verschoben
 
-          if (response.ok) {
-            const departments = await response.json();
-            console.log(`Loaded ${departments.length} departments`);
-            // Debug: Show first department data
-            if (departments.length > 0) {
-              console.log('Department data:', departments[0]);
-            }
-
-            const tbody = document.getElementById('departments-table-body');
-            if (tbody) {
-              tbody.innerHTML = departments
-                .map((dept) => {
-                  // Convert Buffer to String if needed
-                  let description = '-';
-                  if (dept.description) {
-                    if (dept.description.type === 'Buffer' && dept.description.data) {
-                      description = String.fromCharCode(...dept.description.data);
-                    } else if (typeof dept.description === 'string') {
-                      description = dept.description;
-                    }
-                  }
-
-                  return `
-                            <tr>
-                                <td>${dept.name}</td>
-                                <td>${description}</td>
-                                <td>
-                                    <span class="badge ${dept.status === 'active' ? 'badge-success' : 'badge-warning'}">
-                                        ${dept.status === 'active' ? 'Aktiv' : 'Inaktiv'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge ${dept.visibility === 'public' ? 'badge-primary' : 'badge-secondary'}">
-                                        ${dept.visibility === 'public' ? 'Öffentlich' : 'Privat'}
-                                    </span>
-                                </td>
-                                <td>${dept.manager_name || '-'}</td>
-                                <td>${dept.employee_count || 0}</td>
-                                <td>${dept.team_count || 0}</td>
-                                <td>
-                                    <button class="btn btn-sm ${dept.status === 'active' ? 'btn-status-active' : 'btn-status-inactive'}" onclick="toggleDepartmentStatus(${dept.id}, '${dept.status}')">
-                                        ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
-                                    </button>
-                                    <button class="btn btn-sm btn-primary" onclick="editDepartment(${dept.id})">Bearbeiten</button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${dept.id})">Löschen</button>
-                                </td>
-                            </tr>
-                        `;
-                })
-                .join('');
-            } else {
-              console.error('Departments table body not found');
-            }
-          } else {
-            console.error('Failed to load departments');
-          }
-        } catch (error) {
-          console.error('Error loading departments table:', error);
-        }
-      }
-
-      // Abteilung-Status wechseln
-      async function toggleDepartmentStatus(departmentId, currentStatus) {
-        console.log(`Toggling department ${departmentId} status from ${currentStatus}`);
-        const token = localStorage.getItem('token');
-        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-
-        try {
-          const response = await fetch(`/api/departments/${departmentId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ status: newStatus }),
-          });
-
-          if (response.ok) {
-            alert(`Abteilung wurde ${newStatus === 'active' ? 'aktiviert' : 'deaktiviert'}`);
-            loadDepartmentsTable();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
-          }
-        } catch (error) {
-          console.error('Error toggling department status:', error);
-          alert('Ein Fehler ist aufgetreten.');
-        }
-      }
-
-      // Abteilung bearbeiten
-      async function editDepartment(departmentId) {
-        console.log(`Editing department ${departmentId}`);
-        const token = localStorage.getItem('token');
-
-        try {
-          const response = await fetch(`/api/departments/${departmentId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const department = await response.json();
-            console.log('Department data:', department);
-
-            // Convert Buffer to String if needed
-            let description = '';
-            if (department.description) {
-              if (department.description.type === 'Buffer' && department.description.data) {
-                // Convert Buffer array to string
-                description = String.fromCharCode(...department.description.data);
-              } else if (typeof department.description === 'string') {
-                description = department.description;
-              }
-            }
-
-            // Erstelle ein Modal für die Bearbeitung
-            const modalHTML = `
-                        <div class="modal" id="edit-department-modal" style="display: flex;">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h3 class="modal-title">Abteilung bearbeiten</h3>
-                                    <button class="modal-close" onclick="document.getElementById('edit-department-modal').remove()">&times;</button>
-                                </div>
-                                <form id="edit-department-form">
-                                    <div class="form-group">
-                                        <label class="form-label">Name</label>
-                                        <input type="text" name="name" class="form-control" value="${department.name}" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Beschreibung</label>
-                                        <textarea name="description" class="form-control" rows="3">${description}</textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Status</label>
-                                        <div class="custom-dropdown">
-                                            <div class="dropdown-display" id="edit-department-status-display" onclick="toggleDropdown('edit-department-status')">
-                                                <span>${department.status === 'active' ? 'Aktiv' : 'Inaktiv'}</span>
-                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                                </svg>
-                                            </div>
-                                            <div class="dropdown-options" id="edit-department-status-dropdown" style="display: none">
-                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-status', 'active', 'Aktiv')">Aktiv</div>
-                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-status', 'inactive', 'Inaktiv')">Inaktiv</div>
-                                            </div>
-                                            <input type="hidden" name="status" id="edit-department-status-select" value="${department.status}" />
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Sichtbarkeit</label>
-                                        <div class="custom-dropdown">
-                                            <div class="dropdown-display" id="edit-department-visibility-display" onclick="toggleDropdown('edit-department-visibility')">
-                                                <span>${department.visibility === 'public' ? 'Öffentlich' : 'Privat'}</span>
-                                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                                </svg>
-                                            </div>
-                                            <div class="dropdown-options" id="edit-department-visibility-dropdown" style="display: none">
-                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-visibility', 'public', 'Öffentlich')">Öffentlich</div>
-                                                <div class="dropdown-option" onclick="selectDropdownOption('edit-department-visibility', 'private', 'Privat')">Privat</div>
-                                            </div>
-                                            <input type="hidden" name="visibility" id="edit-department-visibility-select" value="${department.visibility}" />
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-primary" onclick="updateDepartment(${departmentId})">Änderungen speichern</button>
-                                </form>
-                            </div>
-                        </div>
-                    `;
-
-            // Modal zum Body hinzufügen
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-          } else {
-            console.error('Failed to load department data');
-            alert('Fehler beim Laden der Abteilungsdaten.');
-          }
-        } catch (error) {
-          console.error('Error loading department:', error);
-          alert('Ein Fehler ist aufgetreten.');
-        }
-      }
-
-      // Abteilung aktualisieren
-      async function updateDepartment(departmentId) {
-        console.log(`Updating department ${departmentId}`);
-        const token = localStorage.getItem('token');
-        const form = document.getElementById('edit-department-form');
-
-        if (!form) {
-          console.error('Edit department form not found');
-          return;
-        }
-
-        const formData = new FormData(form);
-        const data = {
-          name: formData.get('name'),
-          description: formData.get('description'),
-          status: formData.get('status'),
-          visibility: formData.get('visibility'),
-        };
-
-        try {
-          const response = await fetch(`/api/departments/${departmentId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-          });
-
-          if (response.ok) {
-            alert('Abteilung erfolgreich aktualisiert');
-            // Modal schließen
-            const modal = document.getElementById('edit-department-modal');
-            if (modal) modal.remove();
-            // Tabelle neu laden
-            loadDepartmentsTable();
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
-          }
-        } catch (error) {
-          console.error('Error updating department:', error);
-          alert('Ein Fehler ist aufgetreten.');
-        }
-      }
+      // Department-Funktionen wurden nach departments.html verschoben
 
       // Load documents table
       async function loadDocumentsTable() {
@@ -2514,9 +2161,7 @@
         }
       }
 
-      function showDepartmentModal() {
-        showModal('department-modal');
-      }
+      // showDepartmentModal wurde nach departments.html verschoben
 
       function showTeamModal() {
         showModal('team-modal');
@@ -2530,7 +2175,7 @@
 
       // Modal schließen bei Klick außerhalb
       window.addEventListener('click', function (event) {
-        const modals = ['employee-modal', 'document-modal', 'department-modal', 'team-modal'];
+        const modals = ['employee-modal', 'document-modal', 'team-modal'];
         modals.forEach((modalId) => {
           const modal = document.getElementById(modalId);
           if (event.target == modal) {
@@ -2745,7 +2390,7 @@
       }
 
       function showAllDepartments() {
-        showSection('departments-section');
+        window.location.href = '/pages/departments.html';
       }
 
       function showAllTeams() {

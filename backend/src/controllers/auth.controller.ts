@@ -8,6 +8,7 @@ import authService from '../services/auth.service';
 import userService from '../services/user.service';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../types/request.types';
+import { createLog } from '../routes/logs.js';
 
 // Interfaces for request bodies
 interface LoginRequest extends Request {
@@ -114,6 +115,17 @@ class AuthController {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
+      // Log successful login
+      await createLog(
+        result.user!.id,
+        'login',
+        'user',
+        result.user!.id,
+        `Erfolgreich angemeldet`,
+        req.ip,
+        req.headers['user-agent']
+      );
+
       // Return user data and token (compatible with legacy frontend)
       res.json({
         message: 'Login erfolgreich',
@@ -171,7 +183,20 @@ class AuthController {
   /**
    * Logout user
    */
-  async logout(_req: Request, res: Response): Promise<void> {
+  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
+    // Log logout action if user is authenticated
+    if (req.user) {
+      await createLog(
+        req.user.id,
+        'logout',
+        'user',
+        req.user.id,
+        'Abgemeldet',
+        req.ip,
+        req.headers['user-agent']
+      );
+    }
+
     // Clear the httpOnly cookie
     res.clearCookie('token', {
       httpOnly: true,

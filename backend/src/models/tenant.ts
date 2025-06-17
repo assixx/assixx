@@ -285,7 +285,7 @@ export class Tenant {
   // Alle Tenants abrufen
   static async findAll(): Promise<DatabaseTenant[]> {
     const [tenants] = await executeQuery<DbTenant[]>(
-      'SELECT * FROM tenants WHERE status != "cancelled" ORDER BY name'
+      'SELECT * FROM tenants WHERE status != "cancelled" ORDER BY company_name'
     );
     return tenants;
   }

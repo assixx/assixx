@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDashboardData();
   loadAdmins();
   loadDashboardStats();
+  loadActivityLogs();
 
   // Admin erstellen
   async function createAdmin(e: Event): Promise<void> {
@@ -288,5 +289,79 @@ document.addEventListener('DOMContentLoaded', () => {
         userName.textContent = user.username || 'Root';
       }
     }
+  }
+
+  // Activity Logs laden
+  async function loadActivityLogs(): Promise<void> {
+    try {
+      const response = await fetch('/api/logs?limit=20', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const logsContainer = document.getElementById('activity-logs');
+        
+        if (logsContainer && result.success && result.data) {
+          const logs = result.data.logs;
+          
+          if (logs.length === 0) {
+            logsContainer.innerHTML = '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>';
+            return;
+          }
+
+          logsContainer.innerHTML = logs.map((log: any) => {
+            const date = new Date(log.created_at);
+            const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            const dateString = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            return `
+              <div class="log-entry" onclick="window.location.href='/pages/logs.html'">
+                <div class="log-entry-header">
+                  <div class="log-action">${getActionLabel(log.action)}</div>
+                  <div class="log-timestamp">${dateString} ${timeString}</div>
+                </div>
+                <div class="log-details">
+                  <span class="log-user">${log.user_name}</span>
+                  <span style="color: var(--text-secondary);">(${getRoleLabel(log.user_role)})</span>
+                  ${log.details ? ` - ${log.details}` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading activity logs:', error);
+    }
+  }
+
+  // Helper function to get readable action labels
+  function getActionLabel(action: string): string {
+    const actionLabels: { [key: string]: string } = {
+      'login': 'Anmeldung',
+      'logout': 'Abmeldung',
+      'create': 'Erstellt',
+      'update': 'Aktualisiert',
+      'delete': 'Gelöscht',
+      'upload': 'Hochgeladen',
+      'download': 'Heruntergeladen',
+      'view': 'Angesehen',
+      'assign': 'Zugewiesen',
+      'unassign': 'Entfernt'
+    };
+    return actionLabels[action] || action;
+  }
+
+  // Helper function to get readable role labels
+  function getRoleLabel(role: string): string {
+    const roleLabels: { [key: string]: string } = {
+      'root': 'Root',
+      'admin': 'Admin',
+      'employee': 'Mitarbeiter'
+    };
+    return roleLabels[role] || role;
   }
 });

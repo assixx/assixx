@@ -23,11 +23,32 @@ interface Admin {
   created_at: string;
   last_login?: string;
   is_active: boolean;
+  departments?: Department[];
+  hasAllAccess?: boolean;
+}
+
+interface Department {
+  id: number;
+  name: string;
+  description?: string;
+  can_read?: boolean;
+  can_write?: boolean;
+  can_delete?: boolean;
+}
+
+interface DepartmentGroup {
+  id: number;
+  name: string;
+  description?: string;
+  parent_group_id?: number;
+  departments?: Department[];
+  subgroups?: DepartmentGroup[];
 }
 
 interface Tenant {
   id: number;
-  name: string;
+  name?: string;
+  company_name?: string;
   subdomain: string;
 }
 
@@ -62,6 +83,21 @@ async function loadAdmins() {
     if (response.ok) {
       admins = await response.json();
       console.log('Loaded admins:', admins);
+      
+      // Load permissions for each admin
+      for (const admin of admins) {
+        try {
+          const perms = await loadAdminPermissions(parseInt(admin.id.toString()));
+          console.log(`Permissions for admin ${admin.id}:`, perms);
+          admin.departments = perms.departments;
+          admin.hasAllAccess = perms.hasAllAccess;
+        } catch (error) {
+          console.error(`Error loading permissions for admin ${admin.id}:`, error);
+          admin.departments = [];
+          admin.hasAllAccess = false;
+        }
+      }
+      
       // Log each admin's is_active status
       admins.forEach((admin: any) => {
         console.log(`Admin ${admin.username} (ID: ${admin.id}) - is_active: ${admin.is_active}`);
@@ -90,7 +126,10 @@ async function loadTenants() {
 
     if (response.ok) {
       tenants = await response.json();
+      console.log('Loaded tenants:', tenants);
       updateTenantDropdown();
+    } else {
+      console.error('Error loading tenants - status:', response.status);
     }
   } catch (error) {
     console.error('Fehler beim Laden der Tenants:', error);
@@ -112,15 +151,74 @@ function getPositionDisplay(position: string): string {
   return positionMap[position] || position;
 }
 
+// Helper function to display departments badge
+function getDepartmentsBadge(admin: Admin): string {
+  console.log(`Getting badge for admin ${admin.id}:`, {
+    hasAllAccess: admin.hasAllAccess,
+    departments: admin.departments,
+    departmentCount: admin.departments ? admin.departments.length : 0
+  });
+  
+  if (admin.hasAllAccess) {
+    return '<span class="status-badge active" style="background: rgba(76, 175, 80, 0.2); color: #4caf50; border-color: rgba(76, 175, 80, 0.3);">Alle Abteilungen</span>';
+  } else if (admin.departments && admin.departments.length > 0) {
+    const departmentNames = admin.departments.map(d => d.name).join(', ');
+    const singularPlural = admin.departments.length === 1 ? 'Abteilung' : 'Abteilungen';
+    return `
+      <span class="status-badge department-badge" 
+            style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative;" 
+            data-departments="${departmentNames.replace(/"/g, '&quot;')}">
+        ${admin.departments.length} ${singularPlural}
+        <span class="department-tooltip" style="
+          display: none;
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 8px;
+          padding: 8px 12px;
+          background: rgba(18, 18, 18, 0.95);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          white-space: nowrap;
+          max-width: 300px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: #fff;
+          font-size: 12px;
+          font-weight: normal;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          z-index: 1000;
+          pointer-events: none;
+        ">${departmentNames}</span>
+      </span>
+    `;
+  } else {
+    return '<span class="status-badge inactive" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border-color: rgba(255, 152, 0, 0.3);">Keine Abteilungen</span>';
+  }
+}
+
 // Tenant Dropdown aktualisieren
 function updateTenantDropdown() {
   const select = document.getElementById('adminTenant') as HTMLSelectElement;
+  if (!select) {
+    console.log('Tenant dropdown not found - skipping update');
+    return;
+  }
+  
   select.innerHTML = '<option value="">Firma auswählen...</option>';
 
+  if (!tenants || !Array.isArray(tenants)) {
+    console.error('Tenants is not an array:', tenants);
+    return;
+  }
+
   tenants.forEach((tenant) => {
+    if (!tenant) return;
     const option = document.createElement('option');
     option.value = tenant.id.toString();
-    option.textContent = `${tenant.name} (${tenant.subdomain})`;
+    option.textContent = `${tenant.company_name || tenant.name || 'Unnamed'} (${tenant.subdomain})`;
     select.appendChild(option);
   });
 }
@@ -157,6 +255,7 @@ function renderAdminTable() {
           <th>Name</th>
           <th>E-Mail</th>
           <th>Position</th>
+          <th>Abteilungen</th>
           <th>Status</th>
           <th>Erstellt am</th>
           <th>Letzter Login</th>
@@ -174,6 +273,7 @@ function renderAdminTable() {
             <td>${fullName}</td>
             <td>${admin.email || '-'}</td>
             <td>${admin.position ? getPositionDisplay(admin.position) : '-'}</td>
+            <td>${getDepartmentsBadge(admin)}</td>
             <td>
               <span class="status-badge ${admin.is_active ? 'active' : 'inactive'}">
                 ${admin.is_active ? 'Aktiv' : 'Inaktiv'}
@@ -183,6 +283,7 @@ function renderAdminTable() {
             <td>${admin.last_login ? new Date(admin.last_login).toLocaleDateString('de-DE') : '-'}</td>
             <td>
               <button class="action-btn edit" data-admin-id="${admin.id}">Bearbeiten</button>
+              <button class="action-btn permissions" data-admin-id="${admin.id}" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
               <button class="action-btn delete" data-admin-id="${admin.id}">Löschen</button>
             </td>
           </tr>
@@ -217,6 +318,43 @@ function renderAdminTable() {
       const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') || '0');
       console.log('Admin ID:', adminId);
       if (adminId) deleteAdminHandler(adminId);
+    });
+  });
+
+  const permissionButtons = container.querySelectorAll('.action-btn.permissions');
+  console.log('Found permission buttons:', permissionButtons.length);
+  permissionButtons.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      console.log('🔵 Permission button clicked!');
+      const target = e.target as HTMLElement;
+      const button = target.closest('.action-btn.permissions') as HTMLElement;
+      const adminId = parseInt(button?.getAttribute('data-admin-id') || '0');
+      console.log('Admin ID from button:', adminId);
+      if (adminId) {
+        e.preventDefault();
+        e.stopPropagation();
+        showPermissionsModal(adminId);
+      }
+    });
+  });
+
+  // Add hover event listeners for department badges
+  const departmentBadges = container.querySelectorAll('.department-badge');
+  departmentBadges.forEach((badge) => {
+    badge.addEventListener('mouseenter', (e) => {
+      const tooltip = (e.target as HTMLElement).querySelector('.department-tooltip');
+      if (tooltip) {
+        // Ensure tooltip doesn't go off-screen
+        const rect = tooltip.getBoundingClientRect();
+        if (rect.left < 0) {
+          (tooltip as HTMLElement).style.left = '0';
+          (tooltip as HTMLElement).style.transform = 'translateX(0)';
+        } else if (rect.right > window.innerWidth) {
+          (tooltip as HTMLElement).style.left = 'auto';
+          (tooltip as HTMLElement).style.right = '0';
+          (tooltip as HTMLElement).style.transform = 'translateX(0)';
+        }
+      }
     });
   });
 }
@@ -263,6 +401,67 @@ async function editAdminHandler(adminId: number) {
   const passwordConfirmGroup = document.getElementById('passwordConfirmGroup');
   if (passwordGroup) passwordGroup.style.display = 'none';
   if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'none';
+
+  // Load current department assignments
+  console.log('🔵 Loading department assignments for admin:', adminId);
+  console.log('Admin departments:', admin.departments);
+  console.log('Admin hasAllAccess:', admin.hasAllAccess);
+  
+  // Reset all permission type radio buttons
+  document.querySelectorAll('input[name="permissionType"]').forEach(radio => {
+    (radio as HTMLInputElement).checked = false;
+  });
+  
+  // Hide all containers first
+  const deptContainer = document.getElementById('departmentSelectContainer');
+  const groupContainer = document.getElementById('groupSelectContainer');
+  if (deptContainer) deptContainer.style.display = 'none';
+  if (groupContainer) groupContainer.style.display = 'none';
+  
+  // Set the appropriate permission type based on current assignments
+  if (admin.hasAllAccess) {
+    const allRadio = document.querySelector('input[name="permissionType"][value="all"]') as HTMLInputElement;
+    if (allRadio) {
+      allRadio.checked = true;
+      console.log('✅ Set permission type to: all');
+    }
+  } else if (admin.departments && admin.departments.length > 0) {
+    const specificRadio = document.querySelector('input[name="permissionType"][value="specific"]') as HTMLInputElement;
+    if (specificRadio) {
+      specificRadio.checked = true;
+      console.log('✅ Set permission type to: specific');
+      
+      // Show department container and load departments
+      if (deptContainer) {
+        deptContainer.style.display = 'block';
+        await loadAndPopulateDepartments();
+        
+        // Select current departments
+        const deptSelect = document.getElementById('departmentSelect') as HTMLSelectElement;
+        if (deptSelect) {
+          // Clear all selections first
+          Array.from(deptSelect.options).forEach(option => option.selected = false);
+          
+          // Select assigned departments
+          admin.departments.forEach(dept => {
+            const option = Array.from(deptSelect.options).find(
+              opt => opt.value === dept.id.toString()
+            );
+            if (option) {
+              option.selected = true;
+              console.log('✅ Selected department:', dept.name);
+            }
+          });
+        }
+      }
+    }
+  } else {
+    const noneRadio = document.querySelector('input[name="permissionType"][value="none"]') as HTMLInputElement;
+    if (noneRadio) {
+      noneRadio.checked = true;
+      console.log('✅ Set permission type to: none');
+    }
+  }
 
   // Passwort-Felder als optional setzen beim Bearbeiten
   const passwordField = document.getElementById('adminPassword') as HTMLInputElement;
@@ -360,6 +559,355 @@ async function deleteAdminHandler(adminId: number) {
   currentAdminId = null;
 };
 
+// Permissions Modal schließen
+(window as any).closePermissionsModal = function () {
+  console.log('🔵 closePermissionsModal called');
+  const modal = document.getElementById('permissionsModal');
+  if (modal) {
+    modal.classList.remove('active');
+    currentPermissionAdminId = null;
+  }
+};
+
+// Department Permission Handling Functions
+async function loadDepartments(): Promise<Department[]> {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/departments', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Abteilungen:', error);
+  }
+  return [];
+}
+
+async function loadDepartmentGroups(): Promise<DepartmentGroup[]> {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/department-groups/hierarchy', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      return result.data || [];
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Abteilungsgruppen:', error);
+  }
+  return [];
+}
+
+// Load admin permissions
+async function loadAdminPermissions(adminId: number): Promise<{departments: Department[], hasAllAccess: boolean}> {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/admin-permissions/${adminId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`Raw API response for admin ${adminId}:`, result);
+      
+      // Handle the wrapped response structure
+      if (result.success && result.data) {
+        return result.data;
+      } else if (result.departments !== undefined) {
+        // Fallback for direct structure
+        return result;
+      }
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Admin-Berechtigungen:', error);
+  }
+  return { departments: [], hasAllAccess: false };
+}
+
+// Handle permission type radio change
+function handlePermissionTypeChange() {
+  const type = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)?.value;
+  const departmentContainer = document.getElementById('departmentSelectContainer');
+  const groupContainer = document.getElementById('groupSelectContainer');
+
+  if (departmentContainer) departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
+  if (groupContainer) groupContainer.style.display = type === 'groups' ? 'block' : 'none';
+
+  if (type === 'specific') {
+    loadAndPopulateDepartments();
+  } else if (type === 'groups') {
+    loadAndPopulateGroups();
+  }
+}
+
+// Load and populate departments
+async function loadAndPopulateDepartments() {
+  const departments = await loadDepartments();
+  const select = document.getElementById('departmentSelect') as HTMLSelectElement;
+  
+  if (select) {
+    select.innerHTML = '';
+    departments.forEach(dept => {
+      const option = document.createElement('option');
+      option.value = dept.id.toString();
+      option.textContent = dept.name;
+      select.appendChild(option);
+    });
+  }
+}
+
+// Load and populate groups
+async function loadAndPopulateGroups() {
+  const groups = await loadDepartmentGroups();
+  const container = document.getElementById('groupTreeView');
+  
+  if (container) {
+    container.innerHTML = renderGroupTree(groups);
+  }
+}
+
+// Render group tree
+function renderGroupTree(groups: DepartmentGroup[], level: number = 0): string {
+  return groups.map(group => `
+    <div style="margin-left: ${level * 20}px; margin-bottom: 8px;">
+      <label style="display: flex; align-items: center; cursor: pointer;">
+        <input type="checkbox" name="groupSelect" value="${group.id}" style="margin-right: 8px;" />
+        <span>${group.name}</span>
+        ${group.departments && group.departments.length > 0 ? 
+          `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>` : ''}
+      </label>
+      ${group.subgroups && group.subgroups.length > 0 ? renderGroupTree(group.subgroups, level + 1) : ''}
+    </div>
+  `).join('');
+}
+
+// Current admin ID for permissions modal
+let currentPermissionAdminId: number | null = null;
+
+// Show permissions modal
+async function showPermissionsModal(adminId: number) {
+  console.log('🔵 showPermissionsModal called for admin ID:', adminId);
+  currentPermissionAdminId = adminId;
+  const admin = admins.find(a => parseInt(a.id.toString()) === adminId);
+  
+  if (!admin) {
+    console.error('Admin not found for ID:', adminId);
+    return;
+  }
+  
+  console.log('Found admin:', admin);
+  
+  // Set admin info
+  const nameEl = document.getElementById('permAdminName');
+  const emailEl = document.getElementById('permAdminEmail');
+  
+  if (nameEl) nameEl.textContent = `${admin.first_name || ''} ${admin.last_name || ''} (${admin.username})`.trim();
+  if (emailEl) emailEl.textContent = admin.email || '-';
+  
+  // Load departments and current permissions
+  await loadPermissionsModalData(adminId);
+  
+  // Ensure departments tab is active by default
+  const deptTab = document.querySelector('[data-tab="departments"]') as HTMLElement;
+  const groupTab = document.querySelector('[data-tab="groups"]') as HTMLElement;
+  const deptContent = document.getElementById('departmentsTab') as HTMLElement;
+  const groupContent = document.getElementById('groupsTab') as HTMLElement;
+  
+  if (deptTab && groupTab && deptContent && groupContent) {
+    // Reset all tabs
+    deptTab.classList.add('active');
+    deptTab.style.borderBottomColor = 'var(--primary-color)';
+    deptTab.style.color = 'var(--text-primary)';
+    
+    groupTab.classList.remove('active');
+    groupTab.style.borderBottomColor = 'transparent';
+    groupTab.style.color = 'var(--text-secondary)';
+    
+    // Show departments content, hide groups
+    deptContent.style.display = 'block';
+    groupContent.style.display = 'none';
+  }
+  
+  // Show modal
+  const modal = document.getElementById('permissionsModal');
+  if (modal) {
+    modal.classList.add('active');
+    console.log('✅ Permissions modal opened with departments tab active');
+  } else {
+    console.error('❌ Permissions modal element not found!');
+  }
+}
+
+// Load data for permissions modal
+async function loadPermissionsModalData(adminId: number) {
+  console.log('🔵 loadPermissionsModalData called for admin:', adminId);
+  try {
+    // Load all departments
+    const departments = await loadDepartments();
+    console.log('Available departments:', departments);
+    
+    const groups = await loadDepartmentGroups();
+    
+    // Load current permissions
+    const currentPerms = await loadAdminPermissions(adminId);
+    console.log('Current permissions:', currentPerms);
+    
+    // Render departments
+    const deptList = document.getElementById('permissionDepartmentList');
+    if (deptList) {
+      deptList.innerHTML = departments.map(dept => {
+        const hasPermission = currentPerms.departments.some(d => d.id === dept.id);
+        return `
+          <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" 
+                 onmouseover="this.style.background='rgba(255,255,255,0.02)'" 
+                 onmouseout="this.style.background='transparent'">
+            <input type="checkbox" name="deptPermission" value="${dept.id}" 
+                   ${hasPermission ? 'checked' : ''} 
+                   style="margin-right: 8px;" />
+            <span>${dept.name}</span>
+            ${dept.description ? `<small style="margin-left: 8px; color: var(--text-secondary);">${dept.description}</small>` : ''}
+          </label>
+        `;
+      }).join('');
+    }
+    
+    // Render groups
+    const groupList = document.getElementById('permissionGroupList');
+    if (groupList) {
+      groupList.innerHTML = renderGroupTree(groups);
+    }
+    
+    // Set permission levels
+    if (currentPerms.departments.length > 0) {
+      const firstDept = currentPerms.departments[0];
+      (document.getElementById('permCanWrite') as HTMLInputElement).checked = firstDept.can_write || false;
+      (document.getElementById('permCanDelete') as HTMLInputElement).checked = firstDept.can_delete || false;
+    }
+  } catch (error) {
+    console.error('Error loading permissions modal data:', error);
+  }
+}
+
+// Save permissions handler
+(window as any).savePermissionsHandler = async function() {
+  console.log('🔵 savePermissionsHandler called');
+  console.log('currentPermissionAdminId:', currentPermissionAdminId);
+  
+  if (!currentPermissionAdminId) {
+    console.error('❌ No currentPermissionAdminId set');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('token');
+    console.log('🔵 Saving permissions for admin:', currentPermissionAdminId);
+    
+    // Get selected departments
+    const selectedDepts = Array.from(
+      document.querySelectorAll('#permissionDepartmentList input[name="deptPermission"]:checked')
+    ).map(cb => parseInt((cb as HTMLInputElement).value));
+    
+    console.log('Selected departments:', selectedDepts);
+    
+    // Get selected groups
+    const selectedGroups = Array.from(
+      document.querySelectorAll('#permissionGroupList input[name="groupSelect"]:checked')
+    ).map(cb => parseInt((cb as HTMLInputElement).value));
+    
+    console.log('Selected groups:', selectedGroups);
+    
+    // Get permission levels
+    const permissions = {
+      can_read: true,
+      can_write: (document.getElementById('permCanWrite') as HTMLInputElement).checked,
+      can_delete: (document.getElementById('permCanDelete') as HTMLInputElement).checked
+    };
+    
+    console.log('Permissions:', permissions);
+    
+    // Update department permissions
+    const requestBody = {
+      adminId: currentPermissionAdminId,
+      departmentIds: selectedDepts,
+      permissions
+    };
+    
+    console.log('Request body:', requestBody);
+    console.log('Token exists:', !!token);
+    console.log('Making request to:', '/api/admin-permissions');
+    
+    const deptResponse = await fetch('/api/admin-permissions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    console.log('Department response status:', deptResponse.status);
+    
+    if (!deptResponse.ok) {
+      const errorData = await deptResponse.json();
+      console.error('❌ Department response error:', errorData);
+    } else {
+      const responseData = await deptResponse.json();
+      console.log('✅ Department permissions saved successfully:', responseData);
+    }
+    
+    // Update group permissions if any selected
+    if (selectedGroups.length > 0) {
+      const groupResponse = await fetch('/api/admin-permissions/groups', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          adminId: currentPermissionAdminId,
+          groupIds: selectedGroups,
+          permissions
+        }),
+      });
+      
+      console.log('Group response status:', groupResponse.status);
+      
+      if (!groupResponse.ok) {
+        const errorData = await groupResponse.json();
+        console.error('Group response error:', errorData);
+      }
+    }
+    
+    if (deptResponse.ok) {
+      console.log('✅ Permissions saved successfully, reloading page...');
+      showSuccess('Berechtigungen erfolgreich aktualisiert');
+      (window as any).closePermissionsModal();
+      // Seite neu laden für vollständige Aktualisierung
+      window.location.reload();
+    } else {
+      console.error('❌ Failed to save permissions');
+      showError('Fehler beim Speichern der Berechtigungen');
+    }
+  } catch (error) {
+    console.error('Error saving permissions:', error);
+    showError('Netzwerkfehler beim Speichern');
+  }
+};
+
 // Admin-Formular submit
 document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -424,9 +972,97 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
     });
 
     if (response.ok) {
+      const result = await response.json();
+      const adminId = currentAdminId || result.adminId || result.id;
+      
+      // Set permissions for both new and existing admins
+      const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)?.value;
+      console.log('🔵 Permission type selected:', permissionType);
+      
+      if (adminId && permissionType) {
+        // Always update permissions based on form selection
+        if (permissionType !== 'none') {
+          let departmentIds: number[] = [];
+          let groupIds: number[] = [];
+          
+          if (permissionType === 'specific') {
+            const select = document.getElementById('departmentSelect') as HTMLSelectElement;
+            departmentIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+          } else if (permissionType === 'groups') {
+            const checkboxes = document.querySelectorAll('input[name="groupSelect"]:checked');
+            groupIds = Array.from(checkboxes).map(cb => parseInt((cb as HTMLInputElement).value));
+          } else if (permissionType === 'all') {
+            // Get all departments
+            const allDepts = await loadDepartments();
+            departmentIds = allDepts.map(d => d.id);
+          }
+          
+          // Set permissions
+          console.log('🔵 Setting department permissions for admin:', adminId);
+          console.log('Department IDs:', departmentIds);
+          
+          const permResponse = await fetch('/api/admin-permissions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              adminId: adminId,
+              departmentIds: departmentIds,
+              permissions: { can_read: true, can_write: false, can_delete: false }
+            }),
+          });
+          
+          if (permResponse.ok) {
+            console.log('✅ Department permissions updated successfully');
+          } else {
+            console.error('❌ Failed to update department permissions');
+          }
+          
+          if (groupIds.length > 0) {
+            await fetch('/api/admin-permissions/groups', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                adminId: adminId,
+                groupIds: groupIds,
+                permissions: { can_read: true, can_write: false, can_delete: false }
+              }),
+            });
+          }
+        } else {
+          // Permission type is 'none' - remove all permissions
+          console.log('🔵 Removing all department permissions for admin:', adminId);
+          
+          const permResponse = await fetch('/api/admin-permissions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              adminId: adminId,
+              departmentIds: [], // Empty array removes all permissions
+              permissions: { can_read: true, can_write: false, can_delete: false }
+            }),
+          });
+          
+          if (permResponse.ok) {
+            console.log('✅ All department permissions removed');
+          } else {
+            console.error('❌ Failed to remove department permissions');
+          }
+        }
+      }
+      
       showSuccess(currentAdminId ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
       (window as any).closeAdminModal();
-      await loadAdmins();
+      // Seite neu laden für vollständige Aktualisierung
+      window.location.reload();
     } else {
       const error = await response.json();
       showError(error.message || 'Fehler beim Speichern');
@@ -472,4 +1108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Daten laden
   await loadAdmins();
   await loadTenants();
+  
+  // Add event listeners for permission type radio buttons
+  document.querySelectorAll('input[name="permissionType"]').forEach(radio => {
+    radio.addEventListener('change', handlePermissionTypeChange);
+  });
 });
