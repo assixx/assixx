@@ -223,7 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // if (uploadDocumentForm) uploadDocumentForm.addEventListener('submit', uploadDocument);
   if (departmentForm) departmentForm.addEventListener('submit', createDepartment);
   if (teamForm) teamForm.addEventListener('submit', createTeam);
-  if (logoutBtn) logoutBtn.addEventListener('click', logout);
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      logout().catch(error => {
+        console.error('Logout error:', error);
+        // Fallback
+        window.location.href = '/pages/login.html';
+      });
+    });
+  }
 
   // Event-Listener für Mitarbeiter-Buttons
   if (newEmployeeBtn) {
@@ -634,11 +643,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Logout function
-  function logout(): void {
+  async function logout(): Promise<void> {
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
-      window.location.href = '/pages/login.html';
+      // Import and use the logout function from auth module
+      const { logout: authLogout } = await import('./auth.js');
+      await authLogout();
     }
   }
 

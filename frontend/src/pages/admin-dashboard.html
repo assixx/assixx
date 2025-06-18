@@ -2092,18 +2092,7 @@
           });
         }
 
-        // Logout-Button behandeln
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-          logoutBtn.addEventListener('click', () => {
-            if (confirm('Möchten Sie sich wirklich abmelden?')) {
-              localStorage.removeItem('token');
-              localStorage.removeItem('role');
-              localStorage.removeItem('username');
-              window.location.href = '/';
-            }
-          });
-        }
+        // Logout wird von unified-navigation behandelt
       });
 
       // Modal functions redefined for redundancy

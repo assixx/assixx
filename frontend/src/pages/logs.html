@@ -30,17 +30,38 @@
         z-index: -1;
       }
 
-      /* Logs Container */
-      .logs-container {
-        margin: 20px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.02);
+      /* Container */
+      .container {
+        padding: 24px;
+      }
+
+      /* Card Styles - Genau wie in departments.html */
+      .card {
+        background: hsla(0,0%,100%,.02);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid hsla(0,0%,100%,.1);
+        border-radius: var(--radius-lg, 16px);
         box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 hsla(0,0%,100%,.1);
+        margin-bottom: 24px;
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 10px;
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-md);
+      }
+
+      .card-title {
+        margin: 0;
+        color: var(--primary-color);
+        font-size: 18px;
+        font-weight: 600;
       }
 
       /* Filters */
@@ -73,22 +94,6 @@
         font-weight: 500;
       }
 
-      .filter-input {
-        padding: 8px 12px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-size: 14px;
-        transition: all 0.3s ease;
-      }
-
-      .filter-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.08);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
-      }
 
       /* Table */
       .table {
@@ -264,6 +269,216 @@
         font-size: 14px;
         opacity: 0.7;
       }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      /* Delete Modal Styles */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal-content {
+        /*background: rgba(18, 18, 18, 0.95);*/
+        backdrop-filter: blur(20px) saturate(580%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow:
+          0 24px 48px rgba(0, 0, 0, 0.8),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .modal-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+      }
+
+      .modal-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--error-color);
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      /* Custom Dropdown */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 42px;
+        font-size: 14px;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-display.active {
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
+      }
+
+      .dropdown-option.selected {
+        background: rgba(33, 150, 243, 0.1);
+        color: var(--primary-color);
+      }
+
+      /* Form Control for text inputs */
+      .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .form-control:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+        outline: none;
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -275,48 +490,92 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="logs-container">
-          <h1>System-Logs</h1>
-          <p class="text-secondary">Übersicht aller Systemaktivitäten</p>
-
-          <!-- Filters -->
-          <div class="filters-section">
+        <div class="container">
+          <!-- Card für die gesamte Logs-Seite -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">System-Logs</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px;">Übersicht aller Systemaktivitäten</p>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters-section" style="padding: 0 24px;">
             <div class="filters-grid">
               <div class="filter-group">
                 <label class="filter-label">Benutzer</label>
-                <input type="text" id="filter-user" class="filter-input" placeholder="Name oder ID..." />
+                <input type="text" id="filter-user" class="form-control" placeholder="Name oder ID..." />
               </div>
               <div class="filter-group">
                 <label class="filter-label">Aktion</label>
-                <select id="filter-action" class="filter-input">
-                  <option value="">Alle Aktionen</option>
-                  <option value="login">Anmeldung</option>
-                  <option value="logout">Abmeldung</option>
-                  <option value="create">Erstellt</option>
-                  <option value="update">Aktualisiert</option>
-                  <option value="delete">Gelöscht</option>
-                </select>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="actionDisplay" onclick="toggleDropdown('action')">
+                    <span>Alle Aktionen</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="actionDropdown">
+                    <div class="dropdown-option" onclick="selectOption('action', 'all', 'Alle Aktionen')">Alle Aktionen</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'login', 'Anmeldung')">Anmeldung</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'logout', 'Abmeldung')">Abmeldung</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'create', 'Erstellt')">Erstellt</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'update', 'Aktualisiert')">Aktualisiert</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'delete', 'Gelöscht')">Gelöscht</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'upload', 'Hochgeladen')">Hochgeladen</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'download', 'Heruntergeladen')">Heruntergeladen</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'view', 'Angesehen')">Angesehen</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'assign', 'Zugewiesen')">Zugewiesen</div>
+                    <div class="dropdown-option" onclick="selectOption('action', 'unassign', 'Entfernt')">Entfernt</div>
+                  </div>
+                </div>
+                <input type="hidden" id="filter-action" value="all" />
               </div>
               <div class="filter-group">
                 <label class="filter-label">Entitätstyp</label>
-                <select id="filter-entity" class="filter-input">
-                  <option value="">Alle Typen</option>
-                  <option value="user">Benutzer</option>
-                  <option value="admin">Administrator</option>
-                  <option value="department">Abteilung</option>
-                  <option value="document">Dokument</option>
-                  <option value="blackboard">Schwarzes Brett</option>
-                </select>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="entityDisplay" onclick="toggleDropdown('entity')">
+                    <span>Alle Typen</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="entityDropdown">
+                    <div class="dropdown-option" onclick="selectOption('entity', 'all', 'Alle Typen')">Alle Typen</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'user', 'Benutzer')">Benutzer</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'admin', 'Administrator')">Administrator</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'department', 'Abteilung')">Abteilung</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'document', 'Dokument')">Dokument</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'blackboard', 'Schwarzes Brett')">Schwarzes Brett</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'logs', 'Logs')">Logs</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'tenant', 'Tenant')">Tenant</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'survey', 'Umfrage')">Umfrage</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'team', 'Team')">Team</div>
+                    <div class="dropdown-option" onclick="selectOption('entity', 'task', 'Aufgabe')">Aufgabe</div>
+                  </div>
+                </div>
+                <input type="hidden" id="filter-entity" value="all" />
               </div>
               <div class="filter-group">
                 <label class="filter-label">Zeitraum</label>
-                <select id="filter-timerange" class="filter-input">
-                  <option value="">Alle Zeit</option>
-                  <option value="today">Heute</option>
-                  <option value="yesterday">Gestern</option>
-                  <option value="week">Letzte 7 Tage</option>
-                  <option value="month">Letzter Monat</option>
-                </select>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="timerangeDisplay" onclick="toggleDropdown('timerange')">
+                    <span>Alle Zeit</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="timerangeDropdown">
+                    <div class="dropdown-option" onclick="selectOption('timerange', 'all', 'Alle Zeit')">Alle Zeit</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', 'today', 'Heute')">Heute</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', 'yesterday', 'Gestern')">Gestern</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', 'week', 'Letzte 7 Tage')">Letzte 7 Tage</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', 'month', 'Letzter Monat')">Letzter Monat</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', '3months', 'Letzte 3 Monate')">Letzte 3 Monate</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', '6months', 'Letzte 6 Monate')">Letzte 6 Monate</div>
+                    <div class="dropdown-option" onclick="selectOption('timerange', 'year', 'Letztes Jahr')">Letztes Jahr</div>
+                  </div>
+                </div>
+                <input type="hidden" id="filter-timerange" value="all" />
               </div>
             </div>
             <div style="display: flex; gap: 12px;">
@@ -326,33 +585,208 @@
               <button class="btn btn-secondary" onclick="resetFilters()">
                 <i class="fas fa-undo"></i> Zurücksetzen
               </button>
+              <button class="btn btn-danger" onclick="deleteFilteredLogs()" title="Wählen Sie zuerst spezifische Filter aus">
+                <i class="fas fa-trash"></i> Gefilterte Logs löschen
+              </button>
             </div>
           </div>
 
-          <!-- Logs Table -->
-          <div class="table-responsive" id="logs-table-container">
-            <div class="loading">
-              <div class="loading-spinner"></div>
-              <p>Logs werden geladen...</p>
+            <!-- Logs Table -->
+            <div class="table-responsive" id="logs-table-container" style="padding: 24px;">
+              <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Logs werden geladen...</p>
+              </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination-container" style="display: none; padding: 0 24px 24px;">
+              <button class="pagination-btn" id="prev-btn" onclick="loadPreviousPage()">
+                <i class="fas fa-chevron-left"></i> Zurück
+              </button>
+              <span class="pagination-info" id="pagination-info">Seite 1</span>
+              <button class="pagination-btn" id="next-btn" onclick="loadNextPage()">
+                Weiter <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div> <!-- Ende card -->
+        </div> <!-- Ende container -->
+      </main>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteLogsModal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header" style="text-align: center; padding: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+          <i class="fas fa-exclamation-triangle fa-2x" style="color: #f44336; display: block; margin-bottom: 16px;"></i>
+          <h3 style="color: var(--primary-color); margin: 0; font-size: 24px;">Gefilterte Logs löschen</h3>
+        </div>
+
+        <div class="modal-body" style="padding: 24px;">
+          <div class="warning-box" style="background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <p style="color: #f44336; font-weight: bold; margin-bottom: 12px;">
+              <i class="fas fa-skull-crossbones"></i>
+              WARNUNG!
+            </p>
+            <p style="color: var(--text-primary); margin-bottom: 12px;">Sie sind dabei, alle Logs zu löschen, die den folgenden Filtern entsprechen:</p>
+            <div id="activeFiltersDisplay" style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+              <!-- Aktive Filter werden hier angezeigt -->
+            </div>
+            <p style="color: var(--text-primary); font-weight: bold;">
+              Diese Aktion kann NICHT rückgängig gemacht werden!
+            </p>
+          </div>
+
+          <div class="confirmation-input" style="margin-top: 20px;">
+            <p style="color: var(--text-secondary); margin-bottom: 12px;">
+              Geben Sie zur Bestätigung
+              <strong style="color: #f44336">LÖSCHEN</strong>
+              ein:
+            </p>
+            <input
+              type="text"
+              id="deleteLogsConfirmation"
+              class="form-control"
+              placeholder="Tippen Sie LÖSCHEN ein"
+              style="width: 100%; margin-bottom: 16px;"
+            />
+            
+            <!-- Passwort-Feld nur bei "Alle Aktionen" -->
+            <div id="passwordConfirmSection" style="display: none; margin-bottom: 20px;">
+              <p style="color: #f44336; font-weight: bold; margin-bottom: 8px;">
+                <i class="fas fa-lock"></i> Zusätzliche Sicherheit erforderlich!
+              </p>
+              <p style="color: var(--text-secondary); margin-bottom: 12px;">
+                Da Sie ALLE Aktionen löschen möchten, geben Sie bitte Ihr Root-Passwort ein:
+              </p>
+              <input
+                type="password"
+                id="deleteLogsPassword"
+                class="form-control"
+                placeholder="Root-Passwort"
+                style="width: 100%;"
+              />
             </div>
           </div>
 
-          <!-- Pagination -->
-          <div class="pagination" id="pagination-container" style="display: none;">
-            <button class="pagination-btn" id="prev-btn" onclick="loadPreviousPage()">
-              <i class="fas fa-chevron-left"></i> Zurück
+          <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button
+              class="btn btn-secondary"
+              onclick="closeDeleteLogsModal()"
+            >
+              Abbrechen
             </button>
-            <span class="pagination-info" id="pagination-info">Seite 1</span>
-            <button class="pagination-btn" id="next-btn" onclick="loadNextPage()">
-              Weiter <i class="fas fa-chevron-right"></i>
+            <button
+              id="confirmDeleteLogsBtn"
+              class="btn btn-danger"
+              onclick="confirmDeleteLogs()"
+              disabled
+              style="min-width: 120px;"
+            >
+              <i class="fas fa-trash"></i> Logs löschen
             </button>
           </div>
         </div>
-      </main>
+      </div>
     </div>
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/logs.ts"></script>
+    <script>
+      // Custom Dropdown Functions
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+        
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach(d => {
+          if (d.id !== type + 'Display') d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach(d => {
+          if (d.id !== type + 'Dropdown') d.classList.remove('active');
+        });
+        
+        // Toggle current dropdown
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+      
+      function selectOption(type, value, text) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+        const input = document.getElementById('filter-' + type);
+        
+        // Update display text
+        display.querySelector('span').textContent = text;
+        
+        // Update hidden input value
+        input.value = value;
+        
+        // Close dropdown
+        display.classList.remove('active');
+        dropdown.classList.remove('active');
+        
+        // Mark selected option
+        dropdown.querySelectorAll('.dropdown-option').forEach(option => {
+          option.classList.remove('selected');
+          if (option.textContent === text) {
+            option.classList.add('selected');
+          }
+        });
+      }
+      
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach(d => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach(d => d.classList.remove('active'));
+        }
+      });
+      
+      // Delete Modal Functions
+      function closeDeleteLogsModal() {
+        const modal = document.getElementById('deleteLogsModal');
+        const confirmInput = document.getElementById('deleteLogsConfirmation');
+        
+        if (modal && confirmInput) {
+          modal.classList.remove('active');
+          confirmInput.value = '';
+        }
+      }
+      
+      // Enable delete button validation
+      document.addEventListener('DOMContentLoaded', () => {
+        const deleteConfirmInput = document.getElementById('deleteLogsConfirmation');
+        const passwordInput = document.getElementById('deleteLogsPassword');
+        
+        function updateDeleteButtonState() {
+          const confirmBtn = document.getElementById('confirmDeleteLogsBtn');
+          if (!confirmBtn) return;
+          
+          const confirmValue = deleteConfirmInput?.value || '';
+          const passwordValue = passwordInput?.value || '';
+          
+          // Check if we need password (when deleting all actions)
+          const needsPassword = window.currentFilters && window.currentFilters.action === 'all';
+          
+          if (needsPassword) {
+            // Both "LÖSCHEN" and password required
+            confirmBtn.disabled = confirmValue !== 'LÖSCHEN' || !passwordValue;
+          } else {
+            // Only "LÖSCHEN" required
+            confirmBtn.disabled = confirmValue !== 'LÖSCHEN';
+          }
+        }
+        
+        if (deleteConfirmInput) {
+          deleteConfirmInput.addEventListener('input', updateDeleteButtonState);
+        }
+        
+        if (passwordInput) {
+          passwordInput.addEventListener('input', updateDeleteButtonState);
+        }
+      });
+    </script>
   </body>
 </html>

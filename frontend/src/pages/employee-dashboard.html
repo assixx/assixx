@@ -771,11 +771,7 @@
         loadUserInfo();
         loadDashboardData();
 
-        // Initialize logout button
-        document.getElementById('logout-btn').addEventListener('click', function () {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        });
+        // Logout wird von unified-navigation behandelt
       });
 
       async function loadUserInfo() {

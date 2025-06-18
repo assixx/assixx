@@ -2,7 +2,8 @@ import express from 'express';
 import { authenticateToken, authorizeRole } from '../auth.js';
 import { executeQuery } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { query, validationResult } from 'express-validator';
+import { query, body, validationResult } from 'express-validator';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.get('/',
   query('user_id').optional().isInt({ min: 1 }).withMessage('Ungültige User ID'),
   query('action').optional().isString().withMessage('Action muss ein String sein'),
   query('entity_type').optional().isString().withMessage('Entity Type muss ein String sein'),
+  query('timerange').optional().isString().withMessage('Timerange muss ein String sein'),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -27,6 +29,7 @@ router.get('/',
     const userId = req.query.user_id ? parseInt(req.query.user_id as string) : null;
     const action = req.query.action as string || null;
     const entityType = req.query.entity_type as string || null;
+    const timerange = req.query.timerange as string || null;
 
     try {
       // Build WHERE conditions
@@ -46,6 +49,38 @@ router.get('/',
       if (entityType) {
         conditions.push('al.entity_type = ?');
         params.push(entityType);
+      }
+
+      if (timerange) {
+        let dateCondition = '';
+        
+        switch (timerange) {
+          case 'today':
+            dateCondition = 'DATE(al.created_at) = CURDATE()';
+            break;
+          case 'yesterday':
+            dateCondition = 'DATE(al.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+            break;
+          case 'week':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
+            break;
+          case 'month':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)';
+            break;
+          case '3months':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)';
+            break;
+          case '6months':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)';
+            break;
+          case 'year':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
+            break;
+        }
+        
+        if (dateCondition) {
+          conditions.push(`(${dateCondition})`);
+        }
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -108,6 +143,207 @@ router.get('/',
       res.status(500).json({
         success: false,
         error: 'Fehler beim Abrufen der Logs'
+      });
+    }
+  }
+);
+
+// Logs löschen (nur für Root)
+router.delete('/',
+  authenticateToken,
+  authorizeRole('root'),
+  query('user_id').optional().isInt({ min: 1 }).withMessage('Ungültige User ID'),
+  query('action').optional().isString().withMessage('Action muss ein String sein'),
+  query('entity_type').optional().isString().withMessage('Entity Type muss ein String sein'),
+  query('timerange').optional().isString().withMessage('Timerange muss ein String sein'),
+  body('password').optional().isString().withMessage('Passwort muss ein String sein'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
+    const userId = req.query.user_id ? parseInt(req.query.user_id as string) : null;
+    const action = req.query.action as string || null;
+    const entityType = req.query.entity_type as string || null;
+    const timerange = req.query.timerange as string || null;
+    const password = req.body.password;
+
+    // Check if no specific filters are provided (meaning "all actions" deletion)
+    const noSpecificFilters = !userId && !action && !entityType && !timerange;
+    
+    // If deleting all logs (no filters), require password verification
+    if (noSpecificFilters) {
+      if (!password) {
+        res.status(403).json({
+          success: false,
+          error: 'Root-Passwort erforderlich für das Löschen aller Logs'
+        });
+        return;
+      }
+
+      // Verify root password
+      try {
+        const [rootUser] = await executeQuery<any[]>(
+          'SELECT password FROM users WHERE id = ? AND role = "root"',
+          [req.user.id]
+        );
+
+        if (!rootUser.length) {
+          res.status(403).json({
+            success: false,
+            error: 'Zugriff verweigert'
+          });
+          return;
+        }
+
+        const passwordMatch = await bcrypt.compare(password, rootUser[0].password);
+        if (!passwordMatch) {
+          res.status(403).json({
+            success: false,
+            error: 'Ungültiges Root-Passwort'
+          });
+          return;
+        }
+      } catch (error) {
+        logger.error('Error verifying root password:', error);
+        res.status(500).json({
+          success: false,
+          error: 'Fehler bei der Passwortverifizierung'
+        });
+        return;
+      }
+    }
+
+    try {
+      // Build WHERE conditions
+      const conditions: string[] = [];
+      const params: any[] = [];
+
+      if (userId) {
+        conditions.push('user_id = ?');
+        params.push(userId);
+      }
+
+      if (action) {
+        conditions.push('action = ?');
+        params.push(action);
+      }
+
+      if (entityType) {
+        conditions.push('entity_type = ?');
+        params.push(entityType);
+      }
+
+      if (timerange) {
+        let dateCondition = '';
+        
+        switch (timerange) {
+          case 'today':
+            dateCondition = 'DATE(created_at) = CURDATE()';
+            break;
+          case 'yesterday':
+            dateCondition = 'DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
+            break;
+          case 'week':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
+            break;
+          case 'month':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)';
+            break;
+          case '3months':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)';
+            break;
+          case '6months':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)';
+            break;
+          case 'year':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
+            break;
+        }
+        
+        if (dateCondition) {
+          conditions.push(`(${dateCondition})`);
+        }
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      // Delete logs matching the filters
+      const [result] = await executeQuery<any>(`
+        DELETE FROM activity_logs
+        ${whereClause}
+      `, params);
+
+      const deletedCount = result.affectedRows || 0;
+
+      // Create a human-readable description of what was deleted
+      const filterDescriptions: string[] = [];
+      if (userId) {
+        // Get username for the filter
+        const [userInfo] = await executeQuery<any[]>(
+          'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = ?',
+          [userId]
+        );
+        filterDescriptions.push(`Benutzer: ${userInfo[0]?.name || `ID ${userId}`}`);
+      }
+      if (action) {
+        const actionLabels: { [key: string]: string } = {
+          'login': 'Anmeldungen',
+          'logout': 'Abmeldungen',
+          'create': 'Erstellungen',
+          'update': 'Aktualisierungen',
+          'delete': 'Löschungen',
+          'upload': 'Uploads',
+          'download': 'Downloads',
+          'view': 'Ansichten',
+          'assign': 'Zuweisungen',
+          'unassign': 'Entfernungen'
+        };
+        filterDescriptions.push(`Aktion: ${actionLabels[action] || action}`);
+      }
+      if (entityType) {
+        filterDescriptions.push(`Typ: ${entityType}`);
+      }
+      if (timerange) {
+        const timeLabels: { [key: string]: string } = {
+          'today': 'Heute',
+          'yesterday': 'Gestern',
+          'week': 'Letzte 7 Tage',
+          'month': 'Letzter Monat',
+          '3months': 'Letzte 3 Monate',
+          '6months': 'Letzte 6 Monate',
+          'year': 'Letztes Jahr'
+        };
+        filterDescriptions.push(`Zeitraum: ${timeLabels[timerange] || timerange}`);
+      }
+
+      const detailsText = `${deletedCount} Logs gelöscht. Filter: ${filterDescriptions.join(', ')}`;
+
+      // Log this deletion action with better details
+      await createLog(
+        req.user.id,
+        'delete',
+        'logs',
+        undefined,
+        detailsText,
+        req.ip,
+        req.get('user-agent')
+      );
+
+      logger.info(`User ${req.user.id} deleted ${deletedCount} logs with filters:`, { userId, action, entityType, timerange });
+
+      res.json({
+        success: true,
+        deletedCount,
+        message: `${deletedCount} Logs wurden erfolgreich gelöscht.`
+      });
+    } catch (error) {
+      logger.error('Error deleting logs:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Fehler beim Löschen der Logs'
       });
     }
   }

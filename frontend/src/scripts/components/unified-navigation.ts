@@ -651,7 +651,13 @@ class UnifiedNavigation {
   }
 
   private createFullNavigationStructure(): string {
-    const userRole = this.currentRole || 'employee';
+    // Get the actual user role from localStorage
+    const storedUserRole = localStorage.getItem('userRole');
+    const activeRole = localStorage.getItem('activeRole');
+    
+    // For root users, ALWAYS display as root regardless of activeRole
+    const userRole = storedUserRole === 'root' ? 'root' : (this.currentRole || activeRole || storedUserRole || 'employee');
+    
     const userName = this.userProfileData?.username || this.currentUser?.username || 'User';
     const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
     const lastName = this.userProfileData?.last_name || this.userProfileData?.lastName || '';
@@ -660,11 +666,18 @@ class UnifiedNavigation {
       this.userProfileData?.profile_picture ||
       this.userProfileData?.profilePicture ||
       '/assets/images/default-avatar.svg';
+      
+    // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
+    const dashboardUrl = storedUserRole === 'root' 
+      ? '/pages/root-dashboard.html'
+      : userRole === 'admin' 
+        ? '/pages/admin-dashboard.html?section=dashboard' 
+        : '/pages/employee-dashboard.html';
 
     return `
       <!-- Header -->
       <header class="header">
-        <a href="/${userRole === 'admin' ? 'admin' : userRole === 'root' ? 'root' : 'employee'}-dashboard" class="logo-container">
+        <a href="${dashboardUrl}" class="logo-container">
           <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" />
         </a>
         <div class="header-content">
@@ -772,7 +785,6 @@ class UnifiedNavigation {
                     <div class="user-details">
                         <div class="company-info">
                             <div class="company-name" id="sidebar-company-name">Firmennamen lädt...</div>
-                            <div class="company-domain" id="sidebar-domain">Domain lädt...</div>
                         </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
@@ -915,9 +927,17 @@ class UnifiedNavigation {
         }
       }
 
-      // Logout Button Click
-      if (e.target && (e.target as HTMLElement).id === 'logout-btn') {
-        this.handleLogout();
+      // Logout Button Click - Check both button and its children
+      const target = e.target as HTMLElement;
+      const logoutBtn = target.closest('#logout-btn');
+      if (logoutBtn) {
+        e.preventDefault();
+        e.stopPropagation(); // Stop event from bubbling
+        this.handleLogout().catch(error => {
+          console.error('Logout error:', error);
+          // Fallback: redirect to login even if logout fails
+          window.location.href = '/pages/login.html';
+        });
       }
     });
 
@@ -1077,19 +1097,13 @@ class UnifiedNavigation {
     });
   }
 
-  private handleLogout(): void {
-    // Remove token and redirect to login
-    localStorage.removeItem('token');
-    localStorage.removeItem('activeNavigation');
-
-    // Clear user session
-    sessionStorage.clear();
-
-    // Redirect to login page
-    window.location.href = '/pages/login.html';
+  private async handleLogout(): Promise<void> {
+    // Use the logout function from auth module which logs the action
+    const { logout } = await import('../auth.js');
+    await logout();
   }
 
-  private handleNavigationClick(link: HTMLElement, event: MouseEvent): void {
+  private handleNavigationClick(link: HTMLElement, _event: MouseEvent): void {
     // Don't handle clicks on submenu toggle links
     if (link.getAttribute('href') === '#') {
       return;
@@ -1175,7 +1189,6 @@ class UnifiedNavigation {
 
   private updateSubmenuStates(): void {
     const currentPath = window.location.pathname;
-    const currentHash = window.location.hash;
     const urlParams = new URLSearchParams(window.location.search);
     const section = urlParams.get('section');
     let foundActiveSubmenu = false;
@@ -1569,10 +1582,12 @@ class UnifiedNavigation {
 
   // Fix logo navigation based on user role
   private fixLogoNavigation(): void {
-    // Get user role (consider activeRole for role switching)
+    // Get user role (ROOT users should ALWAYS go to root dashboard)
     const userRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole');
-    const currentRole = activeRole || userRole || this.currentRole;
+    
+    // For root users, ALWAYS use root role regardless of activeRole
+    const currentRole = userRole === 'root' ? 'root' : (activeRole || userRole || this.currentRole);
 
     // Find all logo containers - expanded selector to catch all cases
     const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
@@ -1585,7 +1600,7 @@ class UnifiedNavigation {
           dashboardUrl = '/pages/employee-dashboard.html';
           break;
         case 'admin':
-          dashboardUrl = '/pages/admin-dashboard.html';
+          dashboardUrl = '/pages/admin-dashboard.html?section=dashboard';
           break;
         case 'root':
           dashboardUrl = '/pages/root-dashboard.html';

@@ -122,6 +122,7 @@
 
             // Clear any stored navigation state to ensure dashboard is active
             localStorage.removeItem('activeNavigation');
+            localStorage.removeItem('activeRole'); // Clear role switching state
 
             // Redirect based on role
             switch (data.role) {

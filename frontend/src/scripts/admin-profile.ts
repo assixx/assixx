@@ -166,10 +166,18 @@ function setupFormHandlers(): void {
 
   // Logout button
   const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn?.addEventListener('click', () => {
+  logoutBtn?.addEventListener('click', async (e) => {
+    e.preventDefault();
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      localStorage.clear();
-      window.location.href = '/pages/login.html';
+      try {
+        // Import and use the logout function from auth module
+        const { logout } = await import('./auth.js');
+        await logout();
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Fallback
+        window.location.href = '/pages/login.html';
+      }
     }
   });
 }

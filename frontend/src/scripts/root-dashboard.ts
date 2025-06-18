@@ -63,7 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', logout);
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      logout().catch(error => {
+        console.error('Logout error:', error);
+        // Fallback
+        window.location.href = '/pages/login.html';
+      });
+    });
   }
 
   // Load user info in header
@@ -226,13 +233,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Ausloggen
-  function logout(): void {
+  async function logout(): Promise<void> {
     console.info('Logging out...');
 
     if (confirm('Möchten Sie sich wirklich abmelden?')) {
-      removeAuthToken();
-      localStorage.removeItem('role');
-      window.location.href = '/pages/index.html';
+      try {
+        // Import and use the logout function from auth module
+        const { logout: authLogout } = await import('./auth.js');
+        await authLogout();
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Fallback
+        window.location.href = '/pages/login.html';
+      }
     }
   }
 

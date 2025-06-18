@@ -37,6 +37,7 @@ export function removeAuthToken(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('authToken');
   localStorage.removeItem('role');
+  localStorage.removeItem('activeRole'); // Clear role switching state
 }
 
 // Check if user is authenticated
@@ -178,8 +179,32 @@ export async function loadUserInfo(): Promise<User> {
 }
 
 // Logout function
-export function logout(): void {
+export async function logout(): Promise<void> {
+  const token = getAuthToken();
+  
+  // Call logout API to log the action
+  if (token) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (error) {
+      console.error('Error logging logout:', error);
+      // Continue with logout even if API call fails
+    }
+  }
+  
+  // Clear local storage
   removeAuthToken();
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('activeRole');
+  localStorage.removeItem('tenantId');
+  
+  // Redirect to login
   window.location.href = '/pages/login.html';
 }
 
