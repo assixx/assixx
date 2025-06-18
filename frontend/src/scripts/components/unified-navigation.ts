@@ -684,7 +684,6 @@ class UnifiedNavigation {
             <div id="user-info">
               <img id="user-avatar" src="${profilePicture}" alt="Avatar" />
               <span id="user-name">${this.escapeHtml(displayName)}</span>
-              <span id="role-indicator" class="role-badge ${userRole}">${userRole === 'admin' ? 'Admin' : userRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
             </div>
             
             <button id="logout-btn" class="btn-logout btn btn-secondary">
@@ -777,7 +776,7 @@ class UnifiedNavigation {
                         </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
-                        <div class="user-role-badge">${this.getRoleDisplay()}</div>
+                        <span id="role-indicator" class="role-badge ${this.currentRole || ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
                 <ul class="sidebar-menu">
@@ -893,15 +892,6 @@ class UnifiedNavigation {
   }
 
   // Removed unused method getUserInitials
-
-  private getRoleDisplay(): string {
-    const roleMap: Record<string, string> = {
-      admin: 'Administrator',
-      employee: 'Mitarbeiter',
-      root: 'Root User',
-    };
-    return roleMap[this.currentRole || ''] || this.currentRole || '';
-  }
 
   private attachEventListeners(): void {
     // Navigation Link Clicks
@@ -2320,6 +2310,7 @@ const unifiedNavigationCSS = `
         flex-direction: column;
         gap: 2px;
         min-width: 0;
+        align-items: flex-start;
     }
 
     .company-info {
@@ -2367,26 +2358,58 @@ const unifiedNavigationCSS = `
         text-overflow: ellipsis;
     }
 
-    .user-role-badge {
-        display: inline-flex;
-        align-items: center;
+    .role-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 8px;
         font-size: 11px;
-        color: rgba(251, 191, 36, 0.9);
-        background: rgba(251, 191, 36, 0.1);
-        padding: 3px 8px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(251, 191, 36, 0.2);
-        width: fit-content;
-        margin-top: 4px;
+        font-weight: 500;
         transition: all 0.2s ease;
+        margin: 6px 0 0 0;
+        width: fit-content;
+        text-transform: uppercase;
+        letter-spacing: .5px;
     }
 
-    .user-info-card:hover .user-role-badge {
-        background: rgba(251, 191, 36, 0.15);
-        border-color: rgba(251, 191, 36, 0.3);
+    /* Role-specific badge colors - Exact match from logs.html */
+    .role-badge.root {
+        background: rgba(156, 39, 176, 0.15);
+        color: #9C27B0;
+        border: 1px solid rgba(156, 39, 176, 0.3);
+    }
+
+    .role-badge.admin {
+        background: rgba(3, 169, 244, 0.15);
+        color: #03A9F4;
+        border: 1px solid rgba(3, 169, 244, 0.3);
+    }
+
+    .role-badge.employee {
+        background: rgba(96, 125, 139, 0.15);
+        color: #607D8B;
+        border: 1px solid rgba(96, 125, 139, 0.3);
+    }
+
+    /* Hover effects for role badges */
+    .user-info-card:hover .role-badge.root {
+        background: rgba(156, 39, 176, 0.2);
+        border-color: rgba(156, 39, 176, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.25);
+    }
+
+    .user-info-card:hover .role-badge.admin {
+        background: rgba(3, 169, 244, 0.2);
+        border-color: rgba(3, 169, 244, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(3, 169, 244, 0.25);
+    }
+
+    .user-info-card:hover .role-badge.employee {
+        background: rgba(96, 125, 139, 0.2);
+        border-color: rgba(96, 125, 139, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(96, 125, 139, 0.25);
     }
     
 
@@ -2547,10 +2570,11 @@ const unifiedNavigationCSS = `
 
     /* Storage Widget - Glassmorphismus Style */
     .storage-widget {
-        position: sticky;
+        /*position: sticky;*/
         bottom: 0;
         margin: var(--spacing-md);
-        margin-top: auto;
+        /*margin-top: auto;*/
+        margin-top: 40px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);

@@ -756,6 +756,7 @@ body {
 }
 
 /* Role Badge Indicator */
+/* AUSKOMMENTIERT - Wird jetzt in unified-navigation.ts definiert für konsistentes Design mit logs.html
 .role-badge {
   display: inline-flex;
   align-items: center;
@@ -785,6 +786,7 @@ body {
   color: rgb(0, 0, 0);
   font-weight:800
 }
+*/
 
 /* Header actions adjustment */
 .header-actions {
