@@ -110,7 +110,7 @@
 #user-name,
 .user-name,
 .header .header-actions #user-info #user-name {
-  font-size: 0.7rem !important;
+  font-size: 0.9rem !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.8) !important;
   margin: 0 !important;
@@ -127,7 +127,7 @@
   border: none !important;
   padding: 0.3rem 0.8rem !important;
   border-radius: 6px !important;
-  font-size: 0.7rem !important;
+  font-size: 0.9rem !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
@@ -187,7 +187,7 @@
 .logout-btn i,
 .btn-logout i,
 .header .header-actions #logout-btn i {
-  font-size: 0.65rem !important;
+  font-size: 1rem !important;
 }
 
 /* Responsive adjustments */

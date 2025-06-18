@@ -701,7 +701,7 @@ class UnifiedNavigation {
             
             <button id="logout-btn" class="btn-logout btn btn-secondary">
               <i class="fas fa-sign-out-alt"></i>
-              Abmelden
+              
             </button>
           </div>
         </div>
@@ -1046,11 +1046,11 @@ class UnifiedNavigation {
       const iconPath = toggleBtn.querySelector('.toggle-icon-path');
       if (iconPath) {
         if (isCollapsed) {
-          // Show arrow right when collapsed
-          iconPath.setAttribute('d', 'M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z');
+          // Show menu-close icon (menu with arrow right) when collapsed
+          iconPath.setAttribute('d', 'M3 6H13V8H3V6M3 16H13V18H3V16M3 11H15V13H3V11M16 7L14.58 8.39L18.14 12L14.58 15.61L16 17L21 12L16 7Z');
         } else {
-          // Show sidebar left when expanded
-          iconPath.setAttribute('d', 'M14,7L9,12L14,17V7Z');
+          // Show menu-open icon (menu with arrow left) when expanded
+          iconPath.setAttribute('d', 'M21,15.61L19.59,17L14.58,12L19.59,7L21,8.39L17.44,12L21,15.61M3,6H16V8H3V6M3,13V11H13V13H3M3,18V16H16V18H3Z');
         }
       }
     });
@@ -1864,9 +1864,9 @@ const unifiedNavigationCSS = `
         color: #ffd83e;
         margin: 30px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
-        background: #eabb0017;
+        background:rgba(234, 187, 0, 0);
         border-radius: 5px;
-        border: 1.3px solid rgb(200, 149, 0);
+        border: 1.3px solid rgb(255, 203, 0);
         transition: all 0.3s ease;
         cursor: pointer;
         width: 98%;
@@ -1874,9 +1874,8 @@ const unifiedNavigationCSS = `
         margin-right: 1%;
         text-align: center;
         position: relative;
-        
         overflow: visible;
-        transform: rotate(-3deg);
+        /*transform: rotate(-3deg);*/
     }
 
     /* Sticky Note folded corner - inner fold */
@@ -2036,9 +2035,9 @@ const unifiedNavigationCSS = `
         z-index: 100;
     }
 
-    .sidebar-toggle:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);
+     .sidebar-toggle:hover {
+       /*background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);*/
         transform: scale(1.05);
     }
 
@@ -2377,32 +2376,35 @@ const unifiedNavigationCSS = `
         display: inline-block;
         padding: 2px 8px;
         border-radius: 8px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
         transition: all 0.2s ease;
         margin: 6px 0 0 0;
         width: fit-content;
         text-transform: uppercase;
-        letter-spacing: .5px;
+        letter-spacing: 2px;
     }
 
     /* Role-specific badge colors - Exact match from logs.html */
     .role-badge.root {
         background: rgba(156, 39, 176, 0.15);
         color: #9C27B0;
-        border: 1px solid rgba(156, 39, 176, 0.3);
+        border: 1px solid rgba(156, 39, 176, 0.9);
+        margin-left: -2px;
     }
 
     .role-badge.admin {
         background: rgba(3, 169, 244, 0.15);
         color: #03A9F4;
-        border: 1px solid rgba(3, 169, 244, 0.3);
+        border: 1px solid rgba(3, 169, 244, 0.9);
+        margin-left: -2px;
     }
 
     .role-badge.employee {
         background: rgba(96, 125, 139, 0.15);
         color: #607D8B;
-        border: 1px solid rgba(96, 125, 139, 0.3);
+        border: 1px solid rgba(96, 125, 139, 0.9);
+        margin-left: -2px;
     }
 
     /* Hover effects for role badges */
