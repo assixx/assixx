@@ -755,10 +755,16 @@ body {
   transform: rotate(180deg);
 }
 
+/* Custom Dropdown Base Styles */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
 /* Role Switch Custom Dropdown for Root Users */
 .role-switch-dropdown {
   position: relative;
-  min-width: auto;
+  /* Inherits width: 100% from .custom-dropdown */
 }
 
 .role-switch-dropdown .dropdown-display {
