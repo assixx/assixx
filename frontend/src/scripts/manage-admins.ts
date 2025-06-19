@@ -373,7 +373,6 @@ async function editAdminHandler(adminId: number) {
   if (title) title.textContent = 'Admin bearbeiten';
 
   // Formular mit Admin-Daten füllen
-  (document.getElementById('adminUsername') as HTMLInputElement).value = admin.username;
   (document.getElementById('adminFirstName') as HTMLInputElement).value = admin.first_name || '';
   (document.getElementById('adminLastName') as HTMLInputElement).value = admin.last_name || '';
   (document.getElementById('adminEmail') as HTMLInputElement).value = admin.email || '';
@@ -929,7 +928,6 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
   }
 
   const formData: any = {
-    username: (document.getElementById('adminUsername') as HTMLInputElement).value,
     first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
     last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
     email: email,

@@ -546,12 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (passwordError) passwordError.style.display = 'none';
     }
 
-    // Validierung auf Client-Seite, um bessere Fehlermeldungen zu geben
-    if (!employeeData.username || employeeData.username.length < 3) {
-      alert('Der Benutzername muss mindestens 3 Zeichen lang sein.');
-      return;
-    }
-
     try {
       const response = await fetch('/api/admin/employees', {
         method: 'POST',
@@ -560,7 +554,6 @@ document.addEventListener('DOMContentLoaded', () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          username: employeeData.username,
           email: employeeData.email,
           password: employeeData.password,
           first_name: employeeData.first_name,

@@ -177,6 +177,17 @@ class UnifiedNavigation {
 
         // Birthdate removed as requested
 
+        // Update header user name with full name
+        const headerUserName = document.getElementById('user-name');
+        if (headerUserName) {
+          const firstName = userData.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName = userData.last_name || userData.lastName || (user as User).lastName || '';
+          if (firstName || lastName) {
+            const fullName = `${firstName} ${lastName}`.trim();
+            headerUserName.textContent = fullName;
+          }
+        }
+
         // Update avatar if we have profile picture
         const sidebarAvatar = document.getElementById('sidebar-user-avatar') as HTMLImageElement;
         if (sidebarAvatar) {

@@ -7,7 +7,6 @@ import { getAuthToken } from './auth';
 
 interface UserProfile {
   id: number;
-  username: string;
   email: string;
   first_name?: string;
   last_name?: string;
@@ -96,7 +95,6 @@ async function loadUserProfile(): Promise<void> {
  */
 function populateProfileForm(profile: UserProfile): void {
   // Editable fields
-  (document.getElementById('username') as HTMLInputElement).value = profile.username || '';
   (document.getElementById('first_name') as HTMLInputElement).value = profile.first_name || '';
   (document.getElementById('last_name') as HTMLInputElement).value = profile.last_name || '';
 
@@ -223,7 +221,6 @@ async function handleProfileUpdate(event: Event): Promise<void> {
 
   // Only send editable fields
   const updateData = {
-    username: formData.get('username'),
     first_name: formData.get('first_name'),
     last_name: formData.get('last_name'),
   };

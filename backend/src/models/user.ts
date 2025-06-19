@@ -122,7 +122,6 @@ export class User {
 
   static async create(userData: UserCreateData): Promise<number> {
     const {
-      username,
       email,
       password,
       role,
@@ -144,6 +143,9 @@ export class User {
       is_archived = false,
       is_active = true,
     } = userData;
+
+    // Always use email as username
+    const finalUsername = email;
 
     // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
     const iban = userData.iban || '';
@@ -183,7 +185,7 @@ export class User {
 
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
-        username,
+        finalUsername,
         email,
         hashedPassword,
         role,

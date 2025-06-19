@@ -435,10 +435,6 @@
             <form id="profile-form">
               <div class="form-grid">
                 <div class="form-group">
-                  <label class="form-label">Benutzername</label>
-                  <input type="text" id="username" name="username" class="form-control" readonly />
-                </div>
-                <div class="form-group">
                   <label class="form-label">E-Mail</label>
                   <input type="email" id="email" name="email" class="form-control" required />
                 </div>
@@ -619,7 +615,6 @@
             const user = await response.json();
 
             // Fill form fields
-            document.getElementById('username').value = user.username || '';
             document.getElementById('email').value = user.email || '';
             document.getElementById('first_name').value = user.first_name || '';
             document.getElementById('last_name').value = user.last_name || '';
@@ -661,6 +656,10 @@
 
           if (response.ok) {
             showMessage('Profil erfolgreich aktualisiert', 'success');
+            // Reload page after 1 second to update navigation
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
           } else {
             const error = await response.json();
             showMessage(error.message || 'Fehler beim Aktualisieren', 'error');
