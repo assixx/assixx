@@ -2572,98 +2572,10 @@ const unifiedNavigationCSS = `
         box-shadow: 0 2px 8px rgba(96, 125, 139, 0.25);
     }
     
-    /* Role Switch Custom Dropdown for Root Users */
+    /* Role Switch Dropdown - Using styles from dashboard-theme.css */
+    /* Only adding the specific margin that's different */
     .role-switch-dropdown {
-        position: relative;
-        min-width: auto;
         margin-right: 12px;
-    }
-
-    .role-switch-dropdown .dropdown-display {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 12px;
-        background: rgba(255, 255, 255, 0.021);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-md);
-        color: var(--text-primary);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .role-switch-dropdown .dropdown-display:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-    }
-
-    .role-switch-dropdown .dropdown-display.active svg {
-        transform: rotate(180deg);
-    }
-
-    .role-switch-dropdown .dropdown-display svg {
-        transition: transform 0.3s ease;
-        width: 12px;
-        height: 8px;
-    }
-
-    .role-switch-dropdown .dropdown-options {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
-        background: rgba(18, 18, 18, 0.9);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-md);
-        box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        max-height: 200px;
-        overflow-y: auto;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        z-index: 1001;
-        margin-right: -14px;
-    }
-
-    .role-switch-dropdown .dropdown-options.active {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-        margin-right: -14px;
-    }
-
-    .role-switch-dropdown .dropdown-option {
-        padding: 8px 12px;
-        color: var(--text-primary);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .role-switch-dropdown .dropdown-option:last-child {
-        border-bottom: none;
-    }
-
-    .role-switch-dropdown .dropdown-option:hover {
-        background: rgba(33, 150, 243, 0.2);
-        color: white;
-        padding-left: 16px;
-    }
-
-    .role-switch-dropdown .dropdown-option.active {
-        background: rgba(33, 150, 243, 0.1);
-        color: var(--primary-color);
     }
 
     .sidebar-menu {
@@ -2673,9 +2585,7 @@ const unifiedNavigationCSS = `
         flex: 1;
     }
 
-    .sidebar-item {
-        margin-bottom: var(--spacing-xs);
-    }
+    /* .sidebar-item - Using styles from dashboard-theme.css */
 
     .sidebar-link {
         display: flex;
