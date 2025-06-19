@@ -2632,6 +2632,7 @@ const unifiedNavigationCSS = `
         transform: translateY(-10px);
         transition: all 0.3s ease;
         z-index: 1001;
+        margin-right: -14px;
     }
 
     .role-switch-dropdown .dropdown-options.active {
