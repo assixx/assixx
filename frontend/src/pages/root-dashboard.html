@@ -593,6 +593,9 @@
     <!-- JavaScript -->
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    
+    <!-- Role Switch for Root -->
+    <script type="module" src="/scripts/role-switch.ts"></script>
 
     <!-- Force dashboard to be active on page load -->
     <script type="module">
@@ -604,9 +607,14 @@
     <script type="module" src="/scripts/root-dashboard.ts"></script>
     <script>
       // Dashboard neu laden bei Klick auf Logo
-      document.querySelector('.logo-container').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = '/pages/root-dashboard.html';
+      document.addEventListener('DOMContentLoaded', () => {
+        const logoContainer = document.querySelector('.logo-container');
+        if (logoContainer) {
+          logoContainer.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/pages/root-dashboard.html';
+          });
+        }
       });
 
       // Custom Dropdown Functions

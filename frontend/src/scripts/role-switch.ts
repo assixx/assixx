@@ -3,7 +3,7 @@
  * Ermöglicht Admins zwischen Admin und Employee View zu wechseln
  */
 
-// Check if user is admin
+// Check if user is admin or root
 const userRole = localStorage.getItem('userRole');
 let currentView = localStorage.getItem('activeRole') || userRole;
 
@@ -25,8 +25,24 @@ async function switchRole(): Promise<void> {
     // Update currentView from localStorage in case it changed
     currentView = localStorage.getItem('activeRole') || userRole;
 
-    const isCurrentlyEmployee = currentView === 'employee';
-    const endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
+    // Determine the endpoint based on current view and original role
+    let endpoint = '';
+    
+    if (userRole === 'root') {
+      // Root switching logic
+      if (currentView === 'employee') {
+        endpoint = '/api/role-switch/to-root'; // Employee → Root
+      } else if (currentView === 'admin') {
+        endpoint = '/api/role-switch/to-root'; // Admin → Root
+      } else {
+        // Root can switch to admin or employee (handled by dropdown)
+        endpoint = '/api/role-switch/to-employee'; // Default
+      }
+    } else {
+      // Admin switching logic (existing)
+      const isCurrentlyEmployee = currentView === 'employee';
+      endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
+    }
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -161,9 +177,9 @@ document.head.appendChild(style);
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  // Only show switch button for admins
+  // Handle for admins
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-
+  
   if (userRole === 'admin' && switchBtn) {
     switchBtn.style.display = 'flex';
     switchBtn.addEventListener('click', switchRole);
@@ -172,7 +188,107 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide button for non-admins
     switchBtn.style.display = 'none';
   }
+
+  // Handle for root users with dropdown
+  const switchSelect = document.getElementById('role-switch-select') as HTMLSelectElement;
+  
+  if (userRole === 'root' && switchSelect) {
+    switchSelect.style.display = 'block';
+    
+    // Set current value
+    const activeRole = localStorage.getItem('activeRole') || 'root';
+    switchSelect.value = activeRole;
+    
+    // Add change event listener
+    switchSelect.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      const selectedRole = target.value as 'root' | 'admin' | 'employee';
+      switchRoleForRoot(selectedRole);
+    });
+    
+    updateRoleUI();
+  } else if (switchSelect) {
+    // Hide select for non-root users
+    switchSelect.style.display = 'none';
+  }
 });
+
+// Handle role switch for root with dropdown
+export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee'): Promise<void> {
+  // For custom dropdown, we'll update the display element instead
+  const dropdownDisplay = document.getElementById('roleSwitchDisplay');
+  
+  if (dropdownDisplay) {
+    // Disable dropdown during switch
+    dropdownDisplay.style.pointerEvents = 'none';
+    dropdownDisplay.style.opacity = '0.5';
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    // Update currentView
+    currentView = localStorage.getItem('activeRole') || userRole;
+    
+    // Determine endpoint based on target role
+    let endpoint = '';
+    if (targetRole === 'root') {
+      endpoint = '/api/role-switch/to-root';
+    } else if (targetRole === 'admin') {
+      endpoint = '/api/role-switch/root-to-admin';
+    } else if (targetRole === 'employee') {
+      endpoint = '/api/role-switch/to-employee';
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Rollenwechsel fehlgeschlagen');
+    }
+
+    const data = await response.json();
+
+    // Update token and storage
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('activeRole', data.user.activeRole);
+
+    // Update currentView immediately
+    currentView = data.user.activeRole;
+
+    // Show success message
+    const message = `Wechsel zur ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
+    showToast(message, 'success');
+
+    // Redirect after short delay
+    setTimeout(() => {
+      if (targetRole === 'employee') {
+        window.location.href = '/pages/employee-dashboard.html';
+      } else if (targetRole === 'admin') {
+        window.location.href = '/pages/admin-dashboard.html';
+      } else {
+        window.location.href = '/pages/root-dashboard.html';
+      }
+    }, 1000);
+  } catch (error) {
+    console.error('Role switch error:', error);
+    showToast('Fehler beim Rollenwechsel', 'error');
+
+    // Re-enable dropdown
+    if (dropdownDisplay) {
+      dropdownDisplay.style.pointerEvents = 'auto';
+      dropdownDisplay.style.opacity = '1';
+    }
+  }
+}
 
 // Export for use in other modules
 export { switchRole, updateRoleUI };

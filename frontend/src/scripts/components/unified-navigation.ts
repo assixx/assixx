@@ -6,6 +6,8 @@
 // Import types
 import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
+// Import role switch function
+import { switchRoleForRoot } from '../role-switch';
 
 // Declare global type for window
 declare global {
@@ -32,6 +34,7 @@ interface TokenPayload {
 interface UserProfileResponse {
   user?: User;
   username?: string;
+  email?: string;
   first_name?: string;
   last_name?: string;
   birthdate?: string;
@@ -162,7 +165,7 @@ class UnifiedNavigation {
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          sidebarUserName.textContent = userData.username || user.username || this.currentUser?.username || 'User';
+          sidebarUserName.textContent = userData.email || user.email || this.currentUser?.email || 'User';
         }
 
         const sidebarFullName = document.getElementById('sidebar-user-fullname');
@@ -664,10 +667,10 @@ class UnifiedNavigation {
   private createFullNavigationStructure(): string {
     // Get the actual user role from localStorage
     const storedUserRole = localStorage.getItem('userRole');
-    const activeRole = localStorage.getItem('activeRole');
+    const activeRole = localStorage.getItem('activeRole') || storedUserRole;
     
-    // For root users, ALWAYS display as root regardless of activeRole
-    const userRole = storedUserRole === 'root' ? 'root' : (this.currentRole || activeRole || storedUserRole || 'employee');
+    // Use the actual stored role for determining which UI elements to show
+    const userRole = storedUserRole || 'employee';
     
     const userName = this.userProfileData?.username || this.currentUser?.username || 'User';
     const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
@@ -694,9 +697,27 @@ class UnifiedNavigation {
         <div class="header-content">
           <div class="header-actions">
             ${
-              userRole === 'admin' || userRole === 'root'
+              userRole === 'root'
                 ? `
-              <!-- Role Switch Button -->
+              <!-- Role Switch Custom Dropdown for Root -->
+              <div class="custom-dropdown role-switch-dropdown">
+                <div class="dropdown-display" id="roleSwitchDisplay">
+                  <span>${activeRole === 'root' ? 'Root-Ansicht' : activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht'}</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="roleSwitchDropdown">
+                  <div class="dropdown-option ${activeRole === 'root' ? 'active' : ''}" data-value="root">Root-Ansicht</div>
+                  <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
+                  <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
+                </div>
+                <input type="hidden" id="role-switch-value" value="${activeRole || 'root'}" />
+              </div>
+            `
+                : userRole === 'admin'
+                ? `
+              <!-- Role Switch Button for Admin -->
               <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
                 <i class="fas fa-exchange-alt"></i>
                 <span class="role-switch-text">Als Mitarbeiter</span>
@@ -797,7 +818,7 @@ class UnifiedNavigation {
                         <div class="company-info">
                             <div class="company-name" id="sidebar-company-name">Firmennamen lädt...</div>
                         </div>
-                        <div class="user-name" id="sidebar-user-name">${this.currentUser?.username || 'User'}</div>
+                        <div class="user-name" id="sidebar-user-name">${this.currentUser?.email || 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
                         <span id="role-indicator" class="role-badge ${this.currentRole || ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
@@ -957,6 +978,9 @@ class UnifiedNavigation {
 
     // Update active state on page load
     this.updateActiveNavigation();
+    
+    // Initialize role switch functionality
+    this.initializeRoleSwitch();
   }
 
   private attachSidebarToggle(): void {
@@ -1112,6 +1136,107 @@ class UnifiedNavigation {
     // Use the logout function from auth module which logs the action
     const { logout } = await import('../auth.js');
     await logout();
+  }
+
+  private initializeRoleSwitch(): void {
+    const userRole = localStorage.getItem('userRole');
+    
+    // Handle root users with custom dropdown
+    if (userRole === 'root') {
+      const dropdownDisplay = document.getElementById('roleSwitchDisplay');
+      const dropdownOptions = document.getElementById('roleSwitchDropdown');
+      
+      // Check if already initialized
+      if (dropdownDisplay && dropdownDisplay.hasAttribute('data-initialized')) {
+        console.log('[UnifiedNav] Role switch dropdown already initialized, skipping');
+        return;
+      }
+      
+      console.log('[UnifiedNav] Looking for dropdown elements for root user');
+      console.log('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
+      console.log('[UnifiedNav] dropdownOptions:', dropdownOptions);
+      
+      if (dropdownDisplay && dropdownOptions) {
+        console.log('[UnifiedNav] Initializing role switch dropdown for root user');
+        console.log('[UnifiedNav] Dropdown elements found:', { dropdownDisplay, dropdownOptions });
+        
+        // Mark as initialized
+        dropdownDisplay.setAttribute('data-initialized', 'true');
+        
+        // Toggle dropdown on click
+        dropdownDisplay.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log('[UnifiedNav] Dropdown clicked');
+          console.log('[UnifiedNav] Current classes:', dropdownDisplay.className, dropdownOptions.className);
+          
+          const isActive = dropdownDisplay.classList.contains('active');
+          
+          if (isActive) {
+            dropdownDisplay.classList.remove('active');
+            dropdownOptions.classList.remove('active');
+            console.log('[UnifiedNav] Dropdown closed');
+          } else {
+            dropdownDisplay.classList.add('active');
+            dropdownOptions.classList.add('active');
+            console.log('[UnifiedNav] Dropdown opened');
+          }
+        });
+        
+        // Handle option selection
+        const options = dropdownOptions.querySelectorAll('.dropdown-option');
+        options.forEach(option => {
+          option.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            
+            const selectedRole = (e.target as HTMLElement).getAttribute('data-value') as 'root' | 'admin' | 'employee';
+            console.log('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
+            
+            // Update display text
+            const displayText = dropdownDisplay.querySelector('span');
+            if (displayText) {
+              displayText.textContent = (e.target as HTMLElement).textContent || '';
+            }
+            
+            // Close dropdown
+            dropdownDisplay.classList.remove('active');
+            dropdownOptions.classList.remove('active');
+            
+            // Update hidden input
+            const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement;
+            if (hiddenInput) {
+              hiddenInput.value = selectedRole;
+            }
+            
+            // Call the role switch function
+            await switchRoleForRoot(selectedRole);
+          });
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+          // Don't close if clicking on the dropdown itself
+          if (!dropdownDisplay.contains(e.target as Node) && !dropdownOptions.contains(e.target as Node)) {
+            dropdownDisplay.classList.remove('active');
+            dropdownOptions.classList.remove('active');
+          }
+        });
+      }
+    }
+    
+    // Handle admin users with button (existing functionality)
+    if (userRole === 'admin') {
+      const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
+      
+      if (switchBtn) {
+        console.log('[UnifiedNav] Initializing role switch button for admin user');
+        
+        // Import role-switch module to ensure it's initialized
+        import('../role-switch.js').then(() => {
+          console.log('[UnifiedNav] Role switch module loaded for admin');
+        });
+      }
+    }
   }
 
   private handleNavigationClick(link: HTMLElement, _event: MouseEvent): void {
@@ -1798,7 +1923,7 @@ const unifiedNavigationCSS = `
     .header .header-actions {
         display: flex;
         align-items: center;
-        gap: var(--spacing-md);
+        gap: calc(var(--spacing-lg) + 8px);
     }
 
     .header .header-actions #user-info {
@@ -1809,6 +1934,13 @@ const unifiedNavigationCSS = `
         padding: var(--spacing-xs) var(--spacing-sm);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .header .header-actions #user-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
     }
 
     .header .header-actions #user-info::before {
@@ -2440,6 +2572,98 @@ const unifiedNavigationCSS = `
         box-shadow: 0 2px 8px rgba(96, 125, 139, 0.25);
     }
     
+    /* Role Switch Custom Dropdown for Root Users */
+    .role-switch-dropdown {
+        position: relative;
+        min-width: auto;
+        margin-right: 12px;
+    }
+
+    .role-switch-dropdown .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.021);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .role-switch-dropdown .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    }
+
+    .role-switch-dropdown .dropdown-display.active svg {
+        transform: rotate(180deg);
+    }
+
+    .role-switch-dropdown .dropdown-display svg {
+        transition: transform 0.3s ease;
+        width: 12px;
+        height: 8px;
+    }
+
+    .role-switch-dropdown .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.9);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-md);
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+    }
+
+    .role-switch-dropdown .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        margin-right: -14px;
+    }
+
+    .role-switch-dropdown .dropdown-option {
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .role-switch-dropdown .dropdown-option:last-child {
+        border-bottom: none;
+    }
+
+    .role-switch-dropdown .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
+    }
+
+    .role-switch-dropdown .dropdown-option.active {
+        background: rgba(33, 150, 243, 0.1);
+        color: var(--primary-color);
+    }
 
     .sidebar-menu {
         list-style: none;

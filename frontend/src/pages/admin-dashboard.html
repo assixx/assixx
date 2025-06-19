@@ -1399,24 +1399,7 @@
           });
         });
 
-        // Direkter Listener für den Abteilungs-Button
-        const departmentBtn = document.getElementById('direct-department-button');
-        if (departmentBtn) {
-          console.log('Department button found');
-          departmentBtn.addEventListener('click', function () {
-            console.log('Department button clicked');
-            const deptModal = document.getElementById('department-modal');
-            if (deptModal) {
-              console.log('Department modal found, displaying it');
-              deptModal.style.display = 'flex';
-            } else {
-              console.error('Department modal NOT found');
-              alert('Das Abteilungs-Modal konnte nicht gefunden werden.');
-            }
-          });
-        } else {
-          console.error('Department button NOT found');
-        }
+        // Department button code removed - button doesn't exist in HTML
 
         // Listener für "Abteilungen verwalten" Link wurde entfernt - Navigation erfolgt jetzt direkt
       });
@@ -2327,7 +2310,14 @@
         window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
         // loadPayslipsTable removed - now using documents-payroll.html
         // loadEmployeesForPayslipSelect removed - now using documents-payroll.html
-        window.loadDepartmentsTable = loadDepartmentsTable;
+        // Define loadDepartmentsTable function
+        window.loadDepartmentsTable = function() {
+          console.log('loadDepartmentsTable called - redirecting to departments page');
+          // Since we're using a separate departments page, just reload if needed
+          if (window.location.pathname.includes('departments.html')) {
+            window.location.reload();
+          }
+        };
         window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
         window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
         window.loadDashboardStats = window.loadDashboardStats || (() => console.log('loadDashboardStats not implemented'));
