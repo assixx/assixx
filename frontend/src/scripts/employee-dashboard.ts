@@ -4,7 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
-import { getAuthToken, removeAuthToken, showError } from './auth';
+import { getAuthToken, showError } from './auth';
 import { formatDate, escapeHtml } from './common';
 
 interface EmployeeInfo extends User {

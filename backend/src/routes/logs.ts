@@ -1,11 +1,11 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authenticateToken, authorizeRole } from '../auth.js';
 import { executeQuery } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { query, body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Logs abrufen (nur für Root)
 router.get(

@@ -380,15 +380,6 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
 }
 
 /**
- * Logout function
- */
-function logout(): void {
-  removeAuthToken();
-  localStorage.removeItem('userRole');
-  window.location.href = '/pages/login.html';
-}
-
-/**
  * Check if token is expired
  */
 function checkTokenExpiry(): void {
@@ -470,6 +461,14 @@ export function showSection(sectionId: string): void {
   if (activeLink) {
     activeLink.classList.add('active');
   }
+}
+
+/**
+ * Logout user
+ */
+export async function logout(): Promise<void> {
+  removeAuthToken();
+  window.location.href = '/pages/login.html';
 }
 
 // Extend window for common functions

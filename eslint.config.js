@@ -287,7 +287,12 @@ export default [
 
   // ESLint config files and ESM scripts
   {
-    files: ['eslint.config.js', 'backend/eslint.config.js', 'frontend/eslint.config.js', 'scripts/fix-esm-imports.js'],
+    files: [
+      'eslint.config.js',
+      'backend/eslint.config.js',
+      'frontend/eslint.config.js',
+      'scripts/fix-esm-imports.js',
+    ],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',

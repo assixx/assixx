@@ -35,6 +35,8 @@
   "exclude": [
     "node_modules",
     "dist",
+    "backend/dist",
+    "frontend/dist",
     "uploads",
     "logs",
     "*.test.js",
