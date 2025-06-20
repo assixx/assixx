@@ -325,6 +325,37 @@ function validateSubdomain(value) {
    - Bei UI-Änderungen → docs/DESIGN-STANDARDS.md prüfen
    - Bei Struktur-Änderungen → docs/PROJEKTSTRUKTUR.md aktualisieren
 
+### 🔀 MERGE-STRATEGIE FÜR MASTER BRANCH
+
+**⚠️ WICHTIG: Keine Fast-Forward Merges in master!**
+
+Wenn ein Branch in master gemerged werden soll:
+
+1. **IMMER mit --no-ff mergen:**
+   ```bash
+   git merge --no-ff <branch-name>
+   ```
+
+2. **VOR dem Merge alle Änderungen prüfen:**
+   ```bash
+   # Alle geänderten Dateien anzeigen
+   git diff master..<branch-name> --name-status
+   
+   # Wichtige Dateien einzeln prüfen
+   git diff master..<branch-name> -- CLAUDE.md
+   git diff master..<branch-name> -- TODO.md
+   git diff master..<branch-name> -- README.md
+   ```
+
+3. **Bei Unsicherheiten nachfragen:**
+   - "Soll ich einen Merge-Commit erstellen?"
+   - "Hast du die Änderungen in [Dateiname] gesehen?"
+
+**Warum kein Fast-Forward:**
+- Merge-Historie bleibt sichtbar
+- Einfacheres Rollback bei Problemen
+- Verhindert versehentliche Änderungen (wie bei CLAUDE.md)
+
 ### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (06.06.2025)
 
 #### Version 0.1.0 - Stabilität vor Features!
@@ -412,6 +443,7 @@ function validateSubdomain(value) {
 - Dateien erstellen, die nicht absolut notwendig sind
 - Proaktiv README oder .md Dateien erstellen
 - Mehr tun als explizit angefragt wurde
+- Fast-Forward Merges in master Branch verwenden
 
 ### ✅ IMMER:
 
@@ -419,3 +451,5 @@ function validateSubdomain(value) {
 - Nur das tun, was angefragt wurde
 - Temporäre Dateien aufräumen
 - docs/DATABASE-SETUP-README.md bei DB-Änderungen aktualisieren
+- Bei Merges in master: `git merge --no-ff <branch>` verwenden
+- Vor jedem Merge alle Dateien prüfen mit `git diff master..<branch>`
