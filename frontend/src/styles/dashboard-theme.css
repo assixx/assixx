@@ -680,6 +680,9 @@ body {
 .main-content {
   flex: 1;
   padding: var(--spacing-lg);
+  /* Use CSS custom properties for dynamic layout */
+  margin-left: var(--content-margin, 250px);
+  transition: margin-left 0.3s ease;
 }
 
 /*.content-section {

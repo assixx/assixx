@@ -118,9 +118,32 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 }
 
 // Load user information
+// Cache for user profile to prevent multiple API calls
+let userProfileCache: { data: User | null; timestamp: number } = { data: null, timestamp: 0 };
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Promise cache to prevent concurrent requests
+let profileLoadingPromise: Promise<User> | null = null;
+
 export async function loadUserInfo(): Promise<User> {
   try {
+    // Check if we have cached data that's still fresh
+    const now = Date.now();
+    if (userProfileCache.data && (now - userProfileCache.timestamp) < CACHE_DURATION) {
+      console.info('loadUserInfo: Returning cached profile data');
+      return userProfileCache.data;
+    }
+
+    // If there's already a request in progress, wait for it
+    if (profileLoadingPromise) {
+      console.info('loadUserInfo: Waiting for existing profile request...');
+      return profileLoadingPromise;
+    }
+
     console.info('loadUserInfo: Attempting to fetch user profile...');
+    
+    // Create the promise and store it
+    profileLoadingPromise = (async () => {
     const response = await fetchWithAuth('/api/user/profile');
     console.info('loadUserInfo: Response status:', response.status);
 
@@ -144,12 +167,24 @@ export async function loadUserInfo(): Promise<User> {
         userRole.textContent = user.role || 'Benutzer';
       }
 
+      // Update cache with fresh data
+      userProfileCache = { data: user, timestamp: Date.now() };
+      console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
+
+      // Clear the loading promise
+      profileLoadingPromise = null;
       return user;
     } else {
+      // Clear the loading promise on error
+      profileLoadingPromise = null;
       throw new Error(data.message || 'Fehler beim Laden der Benutzerdaten');
     }
+    })();
+    
+    return profileLoadingPromise;
   } catch (error) {
     console.error('Error loading user info:', error);
+    profileLoadingPromise = null;
 
     // Fallback: Set default values if API fails
     const userName = document.getElementById('userName');
@@ -203,6 +238,10 @@ export async function logout(): Promise<void> {
   localStorage.removeItem('userRole');
   localStorage.removeItem('activeRole');
   localStorage.removeItem('tenantId');
+  
+  // Clear user profile cache
+  userProfileCache = { data: null, timestamp: 0 };
+  profileLoadingPromise = null;
 
   // Redirect to login
   window.location.href = '/pages/login.html';

@@ -4,7 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
-import { getAuthToken, showSuccess, showError } from './auth';
+import { getAuthToken, showSuccess, showError, loadUserInfo } from './auth';
 import { showSection } from './show-section';
 
 interface DashboardStats {
@@ -604,31 +604,26 @@ document.addEventListener('DOMContentLoaded', () => {
       const token = getAuthToken();
       if (!token) return;
 
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Use cached loadUserInfo from auth module
+      console.info('[Admin Dashboard] Using cached loadUserInfo');
+      const userData = await loadUserInfo();
+      
+      const userNameElement = document.getElementById('user-name') as HTMLElement;
+      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
 
-      if (response.ok) {
-        const userData: User = await response.json();
-        const userNameElement = document.getElementById('user-name') as HTMLElement;
-        const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+      if (userNameElement) {
+        const fullName =
+          userData.first_name && userData.last_name
+            ? `${userData.first_name} ${userData.last_name}`
+            : userData.username;
+        userNameElement.textContent = fullName;
+      }
 
-        if (userNameElement) {
-          const fullName =
-            userData.first_name && userData.last_name
-              ? `${userData.first_name} ${userData.last_name}`
-              : userData.username;
-          userNameElement.textContent = fullName;
-        }
-
-        if (userAvatar && userData.profile_picture) {
-          userAvatar.src = userData.profile_picture;
-          userAvatar.onerror = function () {
-            this.src = '/assets/images/default-avatar.svg';
-          };
-        }
+      if (userAvatar && userData.profile_picture) {
+        userAvatar.src = userData.profile_picture;
+        userAvatar.onerror = function () {
+          this.src = '/assets/images/default-avatar.svg';
+        };
       }
     } catch (error) {
       console.error('Error loading user info:', error);

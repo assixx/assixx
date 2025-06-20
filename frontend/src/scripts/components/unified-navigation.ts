@@ -8,6 +8,8 @@ import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { switchRoleForRoot } from '../role-switch';
+// Import loadUserInfo for cached profile loading
+import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
 
 // Declare global type for window
 declare global {
@@ -141,14 +143,10 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData: UserProfileResponse = await response.json();
+      // Use cached loadUserInfo from auth module instead of making a separate call
+      console.info('[UnifiedNav] Using cached loadUserInfo');
+      const userData = await loadUserInfoFromAuth() as any;
+      if (userData) {
         const user = userData.user || userData;
 
         // Update company info (new)
