@@ -53,7 +53,7 @@ async function loadHeaderUserInfo(): Promise<void> {
       if (avatarElement && user.profile_picture) {
         avatarElement.src = user.profile_picture;
       }
-      
+
       // Load department badge for admins
       if (payload.role === 'admin') {
         loadDepartmentBadge();
@@ -81,10 +81,10 @@ async function loadDepartmentBadge(): Promise<void> {
 
     if (response.ok) {
       const data = await response.json();
-      
+
       // Look for department badge element in user info card
       let badgeContainer = document.getElementById('departmentBadge');
-      
+
       // If not found, create it
       if (!badgeContainer && document.querySelector('.user-info-card')) {
         const userCard = document.querySelector('.user-info-card');
@@ -99,7 +99,7 @@ async function loadDepartmentBadge(): Promise<void> {
           userCard.appendChild(badgeContainer);
         }
       }
-      
+
       if (badgeContainer) {
         const badgeSpan = badgeContainer.querySelector('.badge');
         if (badgeSpan) {

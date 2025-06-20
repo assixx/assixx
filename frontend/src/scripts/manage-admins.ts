@@ -83,7 +83,7 @@ async function loadAdmins() {
     if (response.ok) {
       admins = await response.json();
       console.log('Loaded admins:', admins);
-      
+
       // Load permissions for each admin
       for (const admin of admins) {
         try {
@@ -97,7 +97,7 @@ async function loadAdmins() {
           admin.hasAllAccess = false;
         }
       }
-      
+
       // Log each admin's is_active status
       admins.forEach((admin: any) => {
         console.log(`Admin ${admin.username} (ID: ${admin.id}) - is_active: ${admin.is_active}`);
@@ -156,13 +156,13 @@ function getDepartmentsBadge(admin: Admin): string {
   console.log(`Getting badge for admin ${admin.id}:`, {
     hasAllAccess: admin.hasAllAccess,
     departments: admin.departments,
-    departmentCount: admin.departments ? admin.departments.length : 0
+    departmentCount: admin.departments ? admin.departments.length : 0,
   });
-  
+
   if (admin.hasAllAccess) {
     return '<span class="status-badge active" style="background: rgba(76, 175, 80, 0.2); color: #4caf50; border-color: rgba(76, 175, 80, 0.3);">Alle Abteilungen</span>';
   } else if (admin.departments && admin.departments.length > 0) {
-    const departmentNames = admin.departments.map(d => d.name).join(', ');
+    const departmentNames = admin.departments.map((d) => d.name).join(', ');
     const singularPlural = admin.departments.length === 1 ? 'Abteilung' : 'Abteilungen';
     return `
       <span class="status-badge department-badge" 
@@ -206,7 +206,7 @@ function updateTenantDropdown() {
     console.log('Tenant dropdown not found - skipping update');
     return;
   }
-  
+
   select.innerHTML = '<option value="">Firma auswählen...</option>';
 
   if (!tenants || !Array.isArray(tenants)) {
@@ -405,18 +405,18 @@ async function editAdminHandler(adminId: number) {
   console.log('🔵 Loading department assignments for admin:', adminId);
   console.log('Admin departments:', admin.departments);
   console.log('Admin hasAllAccess:', admin.hasAllAccess);
-  
+
   // Reset all permission type radio buttons
-  document.querySelectorAll('input[name="permissionType"]').forEach(radio => {
+  document.querySelectorAll('input[name="permissionType"]').forEach((radio) => {
     (radio as HTMLInputElement).checked = false;
   });
-  
+
   // Hide all containers first
   const deptContainer = document.getElementById('departmentSelectContainer');
   const groupContainer = document.getElementById('groupSelectContainer');
   if (deptContainer) deptContainer.style.display = 'none';
   if (groupContainer) groupContainer.style.display = 'none';
-  
+
   // Set the appropriate permission type based on current assignments
   if (admin.hasAllAccess) {
     const allRadio = document.querySelector('input[name="permissionType"][value="all"]') as HTMLInputElement;
@@ -429,23 +429,21 @@ async function editAdminHandler(adminId: number) {
     if (specificRadio) {
       specificRadio.checked = true;
       console.log('✅ Set permission type to: specific');
-      
+
       // Show department container and load departments
       if (deptContainer) {
         deptContainer.style.display = 'block';
         await loadAndPopulateDepartments();
-        
+
         // Select current departments
         const deptSelect = document.getElementById('departmentSelect') as HTMLSelectElement;
         if (deptSelect) {
           // Clear all selections first
-          Array.from(deptSelect.options).forEach(option => option.selected = false);
-          
+          Array.from(deptSelect.options).forEach((option) => (option.selected = false));
+
           // Select assigned departments
-          admin.departments.forEach(dept => {
-            const option = Array.from(deptSelect.options).find(
-              opt => opt.value === dept.id.toString()
-            );
+          admin.departments.forEach((dept) => {
+            const option = Array.from(deptSelect.options).find((opt) => opt.value === dept.id.toString());
             if (option) {
               option.selected = true;
               console.log('✅ Selected department:', dept.name);
@@ -609,7 +607,7 @@ async function loadDepartmentGroups(): Promise<DepartmentGroup[]> {
 }
 
 // Load admin permissions
-async function loadAdminPermissions(adminId: number): Promise<{departments: Department[], hasAllAccess: boolean}> {
+async function loadAdminPermissions(adminId: number): Promise<{ departments: Department[]; hasAllAccess: boolean }> {
   try {
     const token = localStorage.getItem('token');
     const response = await fetch(`/api/admin-permissions/${adminId}`, {
@@ -622,7 +620,7 @@ async function loadAdminPermissions(adminId: number): Promise<{departments: Depa
     if (response.ok) {
       const result = await response.json();
       console.log(`Raw API response for admin ${adminId}:`, result);
-      
+
       // Handle the wrapped response structure
       if (result.success && result.data) {
         return result.data;
@@ -657,10 +655,10 @@ function handlePermissionTypeChange() {
 async function loadAndPopulateDepartments() {
   const departments = await loadDepartments();
   const select = document.getElementById('departmentSelect') as HTMLSelectElement;
-  
+
   if (select) {
     select.innerHTML = '';
-    departments.forEach(dept => {
+    departments.forEach((dept) => {
       const option = document.createElement('option');
       option.value = dept.id.toString();
       option.textContent = dept.name;
@@ -673,7 +671,7 @@ async function loadAndPopulateDepartments() {
 async function loadAndPopulateGroups() {
   const groups = await loadDepartmentGroups();
   const container = document.getElementById('groupTreeView');
-  
+
   if (container) {
     container.innerHTML = renderGroupTree(groups);
   }
@@ -681,17 +679,24 @@ async function loadAndPopulateGroups() {
 
 // Render group tree
 function renderGroupTree(groups: DepartmentGroup[], level: number = 0): string {
-  return groups.map(group => `
+  return groups
+    .map(
+      (group) => `
     <div style="margin-left: ${level * 20}px; margin-bottom: 8px;">
       <label style="display: flex; align-items: center; cursor: pointer;">
         <input type="checkbox" name="groupSelect" value="${group.id}" style="margin-right: 8px;" />
         <span>${group.name}</span>
-        ${group.departments && group.departments.length > 0 ? 
-          `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>` : ''}
+        ${
+          group.departments && group.departments.length > 0
+            ? `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>`
+            : ''
+        }
       </label>
       ${group.subgroups && group.subgroups.length > 0 ? renderGroupTree(group.subgroups, level + 1) : ''}
     </div>
-  `).join('');
+  `,
+    )
+    .join('');
 }
 
 // Current admin ID for permissions modal
@@ -701,46 +706,46 @@ let currentPermissionAdminId: number | null = null;
 async function showPermissionsModal(adminId: number) {
   console.log('🔵 showPermissionsModal called for admin ID:', adminId);
   currentPermissionAdminId = adminId;
-  const admin = admins.find(a => parseInt(a.id.toString()) === adminId);
-  
+  const admin = admins.find((a) => parseInt(a.id.toString()) === adminId);
+
   if (!admin) {
     console.error('Admin not found for ID:', adminId);
     return;
   }
-  
+
   console.log('Found admin:', admin);
-  
+
   // Set admin info
   const nameEl = document.getElementById('permAdminName');
   const emailEl = document.getElementById('permAdminEmail');
-  
+
   if (nameEl) nameEl.textContent = `${admin.first_name || ''} ${admin.last_name || ''} (${admin.username})`.trim();
   if (emailEl) emailEl.textContent = admin.email || '-';
-  
+
   // Load departments and current permissions
   await loadPermissionsModalData(adminId);
-  
+
   // Ensure departments tab is active by default
   const deptTab = document.querySelector('[data-tab="departments"]') as HTMLElement;
   const groupTab = document.querySelector('[data-tab="groups"]') as HTMLElement;
   const deptContent = document.getElementById('departmentsTab') as HTMLElement;
   const groupContent = document.getElementById('groupsTab') as HTMLElement;
-  
+
   if (deptTab && groupTab && deptContent && groupContent) {
     // Reset all tabs
     deptTab.classList.add('active');
     deptTab.style.borderBottomColor = 'var(--primary-color)';
     deptTab.style.color = 'var(--text-primary)';
-    
+
     groupTab.classList.remove('active');
     groupTab.style.borderBottomColor = 'transparent';
     groupTab.style.color = 'var(--text-secondary)';
-    
+
     // Show departments content, hide groups
     deptContent.style.display = 'block';
     groupContent.style.display = 'none';
   }
-  
+
   // Show modal
   const modal = document.getElementById('permissionsModal');
   if (modal) {
@@ -758,19 +763,20 @@ async function loadPermissionsModalData(adminId: number) {
     // Load all departments
     const departments = await loadDepartments();
     console.log('Available departments:', departments);
-    
+
     const groups = await loadDepartmentGroups();
-    
+
     // Load current permissions
     const currentPerms = await loadAdminPermissions(adminId);
     console.log('Current permissions:', currentPerms);
-    
+
     // Render departments
     const deptList = document.getElementById('permissionDepartmentList');
     if (deptList) {
-      deptList.innerHTML = departments.map(dept => {
-        const hasPermission = currentPerms.departments.some(d => d.id === dept.id);
-        return `
+      deptList.innerHTML = departments
+        .map((dept) => {
+          const hasPermission = currentPerms.departments.some((d) => d.id === dept.id);
+          return `
           <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" 
                  onmouseover="this.style.background='rgba(255,255,255,0.02)'" 
                  onmouseout="this.style.background='transparent'">
@@ -781,15 +787,16 @@ async function loadPermissionsModalData(adminId: number) {
             ${dept.description ? `<small style="margin-left: 8px; color: var(--text-secondary);">${dept.description}</small>` : ''}
           </label>
         `;
-      }).join('');
+        })
+        .join('');
     }
-    
+
     // Render groups
     const groupList = document.getElementById('permissionGroupList');
     if (groupList) {
       groupList.innerHTML = renderGroupTree(groups);
     }
-    
+
     // Set permission levels
     if (currentPerms.departments.length > 0) {
       const firstDept = currentPerms.departments[0];
@@ -802,53 +809,53 @@ async function loadPermissionsModalData(adminId: number) {
 }
 
 // Save permissions handler
-(window as any).savePermissionsHandler = async function() {
+(window as any).savePermissionsHandler = async function () {
   console.log('🔵 savePermissionsHandler called');
   console.log('currentPermissionAdminId:', currentPermissionAdminId);
-  
+
   if (!currentPermissionAdminId) {
     console.error('❌ No currentPermissionAdminId set');
     return;
   }
-  
+
   try {
     const token = localStorage.getItem('token');
     console.log('🔵 Saving permissions for admin:', currentPermissionAdminId);
-    
+
     // Get selected departments
     const selectedDepts = Array.from(
-      document.querySelectorAll('#permissionDepartmentList input[name="deptPermission"]:checked')
-    ).map(cb => parseInt((cb as HTMLInputElement).value));
-    
+      document.querySelectorAll('#permissionDepartmentList input[name="deptPermission"]:checked'),
+    ).map((cb) => parseInt((cb as HTMLInputElement).value));
+
     console.log('Selected departments:', selectedDepts);
-    
+
     // Get selected groups
     const selectedGroups = Array.from(
-      document.querySelectorAll('#permissionGroupList input[name="groupSelect"]:checked')
-    ).map(cb => parseInt((cb as HTMLInputElement).value));
-    
+      document.querySelectorAll('#permissionGroupList input[name="groupSelect"]:checked'),
+    ).map((cb) => parseInt((cb as HTMLInputElement).value));
+
     console.log('Selected groups:', selectedGroups);
-    
+
     // Get permission levels
     const permissions = {
       can_read: true,
       can_write: (document.getElementById('permCanWrite') as HTMLInputElement).checked,
-      can_delete: (document.getElementById('permCanDelete') as HTMLInputElement).checked
+      can_delete: (document.getElementById('permCanDelete') as HTMLInputElement).checked,
     };
-    
+
     console.log('Permissions:', permissions);
-    
+
     // Update department permissions
     const requestBody = {
       adminId: currentPermissionAdminId,
       departmentIds: selectedDepts,
-      permissions
+      permissions,
     };
-    
+
     console.log('Request body:', requestBody);
     console.log('Token exists:', !!token);
     console.log('Making request to:', '/api/admin-permissions');
-    
+
     const deptResponse = await fetch('/api/admin-permissions', {
       method: 'POST',
       headers: {
@@ -857,9 +864,9 @@ async function loadPermissionsModalData(adminId: number) {
       },
       body: JSON.stringify(requestBody),
     });
-    
+
     console.log('Department response status:', deptResponse.status);
-    
+
     if (!deptResponse.ok) {
       const errorData = await deptResponse.json();
       console.error('❌ Department response error:', errorData);
@@ -867,7 +874,7 @@ async function loadPermissionsModalData(adminId: number) {
       const responseData = await deptResponse.json();
       console.log('✅ Department permissions saved successfully:', responseData);
     }
-    
+
     // Update group permissions if any selected
     if (selectedGroups.length > 0) {
       const groupResponse = await fetch('/api/admin-permissions/groups', {
@@ -879,18 +886,18 @@ async function loadPermissionsModalData(adminId: number) {
         body: JSON.stringify({
           adminId: currentPermissionAdminId,
           groupIds: selectedGroups,
-          permissions
+          permissions,
         }),
       });
-      
+
       console.log('Group response status:', groupResponse.status);
-      
+
       if (!groupResponse.ok) {
         const errorData = await groupResponse.json();
         console.error('Group response error:', errorData);
       }
     }
-    
+
     if (deptResponse.ok) {
       console.log('✅ Permissions saved successfully, reloading page...');
       showSuccess('Berechtigungen erfolgreich aktualisiert');
@@ -972,33 +979,34 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
     if (response.ok) {
       const result = await response.json();
       const adminId = currentAdminId || result.adminId || result.id;
-      
+
       // Set permissions for both new and existing admins
-      const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)?.value;
+      const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)
+        ?.value;
       console.log('🔵 Permission type selected:', permissionType);
-      
+
       if (adminId && permissionType) {
         // Always update permissions based on form selection
         if (permissionType !== 'none') {
           let departmentIds: number[] = [];
           let groupIds: number[] = [];
-          
+
           if (permissionType === 'specific') {
             const select = document.getElementById('departmentSelect') as HTMLSelectElement;
-            departmentIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+            departmentIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value));
           } else if (permissionType === 'groups') {
             const checkboxes = document.querySelectorAll('input[name="groupSelect"]:checked');
-            groupIds = Array.from(checkboxes).map(cb => parseInt((cb as HTMLInputElement).value));
+            groupIds = Array.from(checkboxes).map((cb) => parseInt((cb as HTMLInputElement).value));
           } else if (permissionType === 'all') {
             // Get all departments
             const allDepts = await loadDepartments();
-            departmentIds = allDepts.map(d => d.id);
+            departmentIds = allDepts.map((d) => d.id);
           }
-          
+
           // Set permissions
           console.log('🔵 Setting department permissions for admin:', adminId);
           console.log('Department IDs:', departmentIds);
-          
+
           const permResponse = await fetch('/api/admin-permissions', {
             method: 'POST',
             headers: {
@@ -1008,16 +1016,16 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
             body: JSON.stringify({
               adminId: adminId,
               departmentIds: departmentIds,
-              permissions: { can_read: true, can_write: false, can_delete: false }
+              permissions: { can_read: true, can_write: false, can_delete: false },
             }),
           });
-          
+
           if (permResponse.ok) {
             console.log('✅ Department permissions updated successfully');
           } else {
             console.error('❌ Failed to update department permissions');
           }
-          
+
           if (groupIds.length > 0) {
             await fetch('/api/admin-permissions/groups', {
               method: 'POST',
@@ -1028,14 +1036,14 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
               body: JSON.stringify({
                 adminId: adminId,
                 groupIds: groupIds,
-                permissions: { can_read: true, can_write: false, can_delete: false }
+                permissions: { can_read: true, can_write: false, can_delete: false },
               }),
             });
           }
         } else {
           // Permission type is 'none' - remove all permissions
           console.log('🔵 Removing all department permissions for admin:', adminId);
-          
+
           const permResponse = await fetch('/api/admin-permissions', {
             method: 'POST',
             headers: {
@@ -1045,10 +1053,10 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
             body: JSON.stringify({
               adminId: adminId,
               departmentIds: [], // Empty array removes all permissions
-              permissions: { can_read: true, can_write: false, can_delete: false }
+              permissions: { can_read: true, can_write: false, can_delete: false },
             }),
           });
-          
+
           if (permResponse.ok) {
             console.log('✅ All department permissions removed');
           } else {
@@ -1056,7 +1064,7 @@ document.getElementById('adminForm')?.addEventListener('submit', async (e) => {
           }
         }
       }
-      
+
       showSuccess(currentAdminId ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
       (window as any).closeAdminModal();
       // Seite neu laden für vollständige Aktualisierung
@@ -1106,9 +1114,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Daten laden
   await loadAdmins();
   await loadTenants();
-  
+
   // Add event listeners for permission type radio buttons
-  document.querySelectorAll('input[name="permissionType"]').forEach(radio => {
+  document.querySelectorAll('input[name="permissionType"]').forEach((radio) => {
     radio.addEventListener('change', handlePermissionTypeChange);
   });
 });

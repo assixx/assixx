@@ -42,7 +42,7 @@ export const checkDepartmentAccess = async (
   if (user.role === 'admin') {
     // Extract department_id from various sources
     let department_id: number | undefined;
-    
+
     // Check body
     if (req.body && req.body.department_id) {
       department_id = parseInt(req.body.department_id);
@@ -58,11 +58,9 @@ export const checkDepartmentAccess = async (
     // Check for departmentId variant
     else if (req.body && req.body.departmentId) {
       department_id = parseInt(req.body.departmentId);
-    }
-    else if (req.query && req.query.departmentId) {
+    } else if (req.query && req.query.departmentId) {
       department_id = parseInt(req.query.departmentId as string);
-    }
-    else if (req.params && req.params.departmentId) {
+    } else if (req.params && req.params.departmentId) {
       department_id = parseInt(req.params.departmentId);
     }
 
@@ -70,7 +68,7 @@ export const checkDepartmentAccess = async (
     if (department_id && !isNaN(department_id)) {
       // Determine required permission level based on HTTP method
       let requiredPermission: 'read' | 'write' | 'delete' = 'read';
-      
+
       if (req.method === 'DELETE') {
         requiredPermission = 'delete';
       } else if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
@@ -90,7 +88,7 @@ export const checkDepartmentAccess = async (
         );
         res.status(403).json({
           error: 'Keine Berechtigung für diese Abteilung',
-          details: `Sie benötigen ${requiredPermission}-Rechte für diese Abteilung`
+          details: `Sie benötigen ${requiredPermission}-Rechte für diese Abteilung`,
         });
         return;
       }
@@ -123,18 +121,18 @@ export const filterDepartmentResults = async (
   const originalJson = res.json;
 
   // Override the json method to filter results
-  res.json = async function(this: Response, data: any): Promise<any> {
+  res.json = async function (this: Response, data: any): Promise<any> {
     // If data is an array of items with department_id
     if (Array.isArray(data)) {
       const { departments } = await adminPermissionService.getAdminDepartments(
         user.id,
         user.tenant_id
       );
-      
-      const allowedDeptIds = new Set(departments.map(d => d.id));
-      
+
+      const allowedDeptIds = new Set(departments.map((d) => d.id));
+
       // Filter items based on department access
-      data = data.filter(item => {
+      data = data.filter((item) => {
         if (item.department_id) {
           return allowedDeptIds.has(item.department_id);
         }
@@ -145,7 +143,7 @@ export const filterDepartmentResults = async (
         return true;
       });
     }
-    
+
     // Call the original json method with filtered data
     return originalJson.call(this, data);
   } as any;
@@ -164,6 +162,6 @@ export const getAllowedDepartmentIds = async (
     userId,
     tenantId
   );
-  
-  return departments.map(d => d.id);
+
+  return departments.map((d) => d.id);
 };

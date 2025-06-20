@@ -27,7 +27,8 @@ async function switchRole(): Promise<void> {
 
     // Determine the endpoint based on current view and original role
     let endpoint = '';
-    
+    const isCurrentlyEmployee = currentView === 'employee';
+
     if (userRole === 'root') {
       // Root switching logic
       if (currentView === 'employee') {
@@ -40,7 +41,6 @@ async function switchRole(): Promise<void> {
       }
     } else {
       // Admin switching logic (existing)
-      const isCurrentlyEmployee = currentView === 'employee';
       endpoint = isCurrentlyEmployee ? '/api/role-switch/to-admin' : '/api/role-switch/to-employee';
     }
 
@@ -179,7 +179,7 @@ document.head.appendChild(style);
 document.addEventListener('DOMContentLoaded', () => {
   // Handle for admins
   const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-  
+
   if (userRole === 'admin' && switchBtn) {
     switchBtn.style.display = 'flex';
     switchBtn.addEventListener('click', switchRole);
@@ -191,21 +191,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle for root users with dropdown
   const switchSelect = document.getElementById('role-switch-select') as HTMLSelectElement;
-  
+
   if (userRole === 'root' && switchSelect) {
     switchSelect.style.display = 'block';
-    
+
     // Set current value
     const activeRole = localStorage.getItem('activeRole') || 'root';
     switchSelect.value = activeRole;
-    
+
     // Add change event listener
     switchSelect.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
       const selectedRole = target.value as 'root' | 'admin' | 'employee';
       switchRoleForRoot(selectedRole);
     });
-    
+
     updateRoleUI();
   } else if (switchSelect) {
     // Hide select for non-root users
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
 export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee'): Promise<void> {
   // For custom dropdown, we'll update the display element instead
   const dropdownDisplay = document.getElementById('roleSwitchDisplay');
-  
+
   if (dropdownDisplay) {
     // Disable dropdown during switch
     dropdownDisplay.style.pointerEvents = 'none';
@@ -227,10 +227,10 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
   try {
     const token = localStorage.getItem('token');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    
+
     // Update currentView
     currentView = localStorage.getItem('activeRole') || userRole;
-    
+
     // Determine endpoint based on target role
     let endpoint = '';
     if (targetRole === 'root') {

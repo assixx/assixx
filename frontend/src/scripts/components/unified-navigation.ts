@@ -73,7 +73,7 @@ class UnifiedNavigation {
 
     // Load collapsed state from localStorage
     this.isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    
+
     // Clear any stale submenu state on init if we're on a dashboard
     const currentPath = window.location.pathname;
     if (currentPath.includes('dashboard')) {
@@ -620,8 +620,7 @@ class UnifiedNavigation {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5 C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-0.59,4.23-1.57l0.27,0.28v0.79l5,4.99L20.49,19L15.5,14z M9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14z"/></svg>',
       sitemap:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H11C11,19.66 9.66,21 8,21H6C4.34,21 3,19.66 3,18V10H8V12L10,10H13V7H11V3H16C17.66,3 19,4.34 19,6V8C19,9.66 17.66,11 16,11H13V13Z"/></svg>',
-      logs:
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.5H16V17H8V15.5M8,11.5H16V13H8V11.5Z"/></svg>',
+      logs: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.5H16V17H8V15.5M8,11.5H16V13H8V11.5Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -668,10 +667,10 @@ class UnifiedNavigation {
     // Get the actual user role from localStorage
     const storedUserRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole') || storedUserRole;
-    
+
     // Use the actual stored role for determining which UI elements to show
     const userRole = storedUserRole || 'employee';
-    
+
     const userName = this.userProfileData?.username || this.currentUser?.username || 'User';
     const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
     const lastName = this.userProfileData?.last_name || this.userProfileData?.lastName || '';
@@ -680,13 +679,14 @@ class UnifiedNavigation {
       this.userProfileData?.profile_picture ||
       this.userProfileData?.profilePicture ||
       '/assets/images/default-avatar.svg';
-      
+
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
-    const dashboardUrl = storedUserRole === 'root' 
-      ? '/pages/root-dashboard.html'
-      : userRole === 'admin' 
-        ? '/pages/admin-dashboard.html?section=dashboard' 
-        : '/pages/employee-dashboard.html';
+    const dashboardUrl =
+      storedUserRole === 'root'
+        ? '/pages/root-dashboard.html'
+        : userRole === 'admin'
+          ? '/pages/admin-dashboard.html?section=dashboard'
+          : '/pages/employee-dashboard.html';
 
     return `
       <!-- Header -->
@@ -716,14 +716,14 @@ class UnifiedNavigation {
               </div>
             `
                 : userRole === 'admin'
-                ? `
+                  ? `
               <!-- Role Switch Button for Admin -->
               <button id="role-switch-btn" class="btn-role-switch" title="Als Mitarbeiter anzeigen">
                 <i class="fas fa-exchange-alt"></i>
                 <span class="role-switch-text">Als Mitarbeiter</span>
               </button>
             `
-                : ''
+                  : ''
             }
             
             <div id="user-info">
@@ -944,7 +944,7 @@ class UnifiedNavigation {
       if (navLink) {
         this.handleNavigationClick(navLink, e);
       }
-      
+
       // Submenu Link Clicks
       const submenuLink = (e.target as HTMLElement).closest('.submenu-link') as HTMLElement;
       if (submenuLink) {
@@ -965,7 +965,7 @@ class UnifiedNavigation {
       if (logoutBtn) {
         e.preventDefault();
         e.stopPropagation(); // Stop event from bubbling
-        this.handleLogout().catch(error => {
+        this.handleLogout().catch((error) => {
           console.error('Logout error:', error);
           // Fallback: redirect to login even if logout fails
           window.location.href = '/pages/login.html';
@@ -978,7 +978,7 @@ class UnifiedNavigation {
 
     // Update active state on page load
     this.updateActiveNavigation();
-    
+
     // Initialize role switch functionality
     this.initializeRoleSwitch();
   }
@@ -1082,10 +1082,16 @@ class UnifiedNavigation {
       if (iconPath) {
         if (isCollapsed) {
           // Show menu-close icon (menu with arrow right) when collapsed
-          iconPath.setAttribute('d', 'M3 6H13V8H3V6M3 16H13V18H3V16M3 11H15V13H3V11M16 7L14.58 8.39L18.14 12L14.58 15.61L16 17L21 12L16 7Z');
+          iconPath.setAttribute(
+            'd',
+            'M3 6H13V8H3V6M3 16H13V18H3V16M3 11H15V13H3V11M16 7L14.58 8.39L18.14 12L14.58 15.61L16 17L21 12L16 7Z',
+          );
         } else {
           // Show menu-open icon (menu with arrow left) when expanded
-          iconPath.setAttribute('d', 'M21,15.61L19.59,17L14.58,12L19.59,7L21,8.39L17.44,12L21,15.61M3,6H16V8H3V6M3,13V11H13V13H3M3,18V16H16V18H3Z');
+          iconPath.setAttribute(
+            'd',
+            'M21,15.61L19.59,17L14.58,12L19.59,7L21,8.39L17.44,12L21,15.61M3,6H16V8H3V6M3,13V11H13V13H3M3,18V16H16V18H3Z',
+          );
         }
       }
     });
@@ -1140,38 +1146,38 @@ class UnifiedNavigation {
 
   private initializeRoleSwitch(): void {
     const userRole = localStorage.getItem('userRole');
-    
+
     // Handle root users with custom dropdown
     if (userRole === 'root') {
       const dropdownDisplay = document.getElementById('roleSwitchDisplay');
       const dropdownOptions = document.getElementById('roleSwitchDropdown');
-      
+
       // Check if already initialized
       if (dropdownDisplay && dropdownDisplay.hasAttribute('data-initialized')) {
         console.log('[UnifiedNav] Role switch dropdown already initialized, skipping');
         return;
       }
-      
+
       console.log('[UnifiedNav] Looking for dropdown elements for root user');
       console.log('[UnifiedNav] dropdownDisplay:', dropdownDisplay);
       console.log('[UnifiedNav] dropdownOptions:', dropdownOptions);
-      
+
       if (dropdownDisplay && dropdownOptions) {
         console.log('[UnifiedNav] Initializing role switch dropdown for root user');
         console.log('[UnifiedNav] Dropdown elements found:', { dropdownDisplay, dropdownOptions });
-        
+
         // Mark as initialized
         dropdownDisplay.setAttribute('data-initialized', 'true');
-        
+
         // Toggle dropdown on click
         dropdownDisplay.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
           console.log('[UnifiedNav] Dropdown clicked');
           console.log('[UnifiedNav] Current classes:', dropdownDisplay.className, dropdownOptions.className);
-          
+
           const isActive = dropdownDisplay.classList.contains('active');
-          
+
           if (isActive) {
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
@@ -1182,37 +1188,37 @@ class UnifiedNavigation {
             console.log('[UnifiedNav] Dropdown opened');
           }
         });
-        
+
         // Handle option selection
         const options = dropdownOptions.querySelectorAll('.dropdown-option');
-        options.forEach(option => {
+        options.forEach((option) => {
           option.addEventListener('click', async (e) => {
             e.stopPropagation();
-            
+
             const selectedRole = (e.target as HTMLElement).getAttribute('data-value') as 'root' | 'admin' | 'employee';
             console.log('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
-            
+
             // Update display text
             const displayText = dropdownDisplay.querySelector('span');
             if (displayText) {
               displayText.textContent = (e.target as HTMLElement).textContent || '';
             }
-            
+
             // Close dropdown
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
-            
+
             // Update hidden input
             const hiddenInput = document.getElementById('role-switch-value') as HTMLInputElement;
             if (hiddenInput) {
               hiddenInput.value = selectedRole;
             }
-            
+
             // Call the role switch function
             await switchRoleForRoot(selectedRole);
           });
         });
-        
+
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
           // Don't close if clicking on the dropdown itself
@@ -1223,14 +1229,14 @@ class UnifiedNavigation {
         });
       }
     }
-    
+
     // Handle admin users with button (existing functionality)
     if (userRole === 'admin') {
       const switchBtn = document.getElementById('role-switch-btn') as HTMLButtonElement;
-      
+
       if (switchBtn) {
         console.log('[UnifiedNav] Initializing role switch button for admin user');
-        
+
         // Import role-switch module to ensure it's initialized
         import('../role-switch.js').then(() => {
           console.log('[UnifiedNav] Role switch module loaded for admin');
@@ -1244,7 +1250,7 @@ class UnifiedNavigation {
     if (link.getAttribute('href') === '#') {
       return;
     }
-    
+
     // Update active state
     document.querySelectorAll('.sidebar-item').forEach((item) => {
       item.classList.remove('active');
@@ -1318,7 +1324,7 @@ class UnifiedNavigation {
         }
       }
     }
-    
+
     // Handle submenu states
     this.updateSubmenuStates();
   }
@@ -1328,42 +1334,42 @@ class UnifiedNavigation {
     const urlParams = new URLSearchParams(window.location.search);
     const section = urlParams.get('section');
     let foundActiveSubmenu = false;
-    
+
     // First, ensure all submenus are closed and remove all submenu active states
     document.querySelectorAll('.submenu').forEach((submenu) => {
       const submenuElement = submenu as HTMLElement;
       submenuElement.style.display = 'none';
       submenu.closest('.sidebar-item')?.classList.remove('open');
     });
-    
+
     // Remove active class from all submenu items
     document.querySelectorAll('.submenu-item').forEach((item) => {
       item.classList.remove('active');
     });
-    
+
     // Remove active class from all submenu links
     document.querySelectorAll('.submenu-link').forEach((link) => {
       link.classList.remove('active');
     });
-    
+
     // Check if we're on a dashboard page with a section that has a submenu
     const isDashboard = currentPath.includes('dashboard');
     if (isDashboard && section) {
       // Check if this section corresponds to a menu item with submenu
       const menuItems = this.getNavigationForRole(this.currentRole);
-      const menuItem = menuItems.find(item => item.id === section);
-      
+      const menuItem = menuItems.find((item) => item.id === section);
+
       if (menuItem && (menuItem.hasSubmenu || menuItem.children)) {
         // Open the submenu for this section
         const submenu = document.getElementById(`submenu-${section}`);
         const parentItem = submenu?.closest('.sidebar-item.has-submenu');
-        
+
         if (submenu && parentItem) {
           submenu.style.display = 'block';
           parentItem.classList.add('open');
           localStorage.setItem('openSubmenu', section);
           foundActiveSubmenu = true;
-          
+
           // For sections like employees that have children, mark the first child as active
           if (menuItem.children && menuItem.children.length > 0) {
             const firstChildLink = submenu.querySelector('.submenu-link');
@@ -1378,7 +1384,7 @@ class UnifiedNavigation {
         }
       }
     }
-    
+
     // If not handled by section parameter, check for direct submenu pages
     if (!foundActiveSubmenu && !isDashboard) {
       // Check all submenu links to find if we're on a submenu page
@@ -1386,27 +1392,27 @@ class UnifiedNavigation {
         const linkElement = link as HTMLAnchorElement;
         try {
           const linkPath = new URL(linkElement.href, window.location.origin).pathname;
-          
+
           // Check if current path matches this submenu link exactly
           if (currentPath === linkPath) {
             foundActiveSubmenu = true;
-            
+
             // Mark the submenu item and link as active
             link.classList.add('active');
             const submenuItem = link.closest('.submenu-item');
             if (submenuItem) {
               submenuItem.classList.add('active');
             }
-            
+
             // Find and open the parent submenu
             const submenu = link.closest('.submenu') as HTMLElement;
             const parentItem = submenu?.closest('.sidebar-item.has-submenu');
-            
+
             if (submenu && parentItem) {
               submenu.style.display = 'block';
               parentItem.classList.add('open');
               parentItem.classList.add('active');
-              
+
               // Store the open submenu state
               const parentId = parentItem.querySelector('.sidebar-link')?.getAttribute('data-nav-id');
               if (parentId) {
@@ -1420,18 +1426,18 @@ class UnifiedNavigation {
         }
       });
     }
-    
+
     // If we're not on any submenu page and not in a section with submenu, clear the stored state
     if (!foundActiveSubmenu) {
       localStorage.removeItem('openSubmenu');
     }
-    
+
     // Restore previously open submenu if we're still on the same parent section
     const storedSubmenu = localStorage.getItem('openSubmenu');
     if (storedSubmenu && !foundActiveSubmenu) {
       const submenu = document.getElementById(`submenu-${storedSubmenu}`);
       const parentItem = submenu?.closest('.sidebar-item.has-submenu');
-      
+
       if (submenu && parentItem) {
         // Only restore if the parent item is active
         if (parentItem.classList.contains('active')) {
@@ -1721,9 +1727,9 @@ class UnifiedNavigation {
     // Get user role (ROOT users should ALWAYS go to root dashboard)
     const userRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole');
-    
+
     // For root users, ALWAYS use root role regardless of activeRole
-    const currentRole = userRole === 'root' ? 'root' : (activeRole || userRole || this.currentRole);
+    const currentRole = userRole === 'root' ? 'root' : activeRole || userRole || this.currentRole;
 
     // Find all logo containers - expanded selector to catch all cases
     const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
@@ -2914,7 +2920,7 @@ if (!document.querySelector('#unified-navigation-styles')) {
 (window as any).toggleSubmenu = function (event: Event, itemId: string) {
   event.preventDefault();
   event.stopPropagation();
-  
+
   const submenu = document.getElementById(`submenu-${itemId}`);
   const parentItem = submenu?.closest('.sidebar-item');
 

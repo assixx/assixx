@@ -224,13 +224,14 @@
     <div class="layout-container">
       <main class="main-content">
         <div class="page-container">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
             <div>
               <h1>Abteilungsgruppen verwalten</h1>
               <p class="text-secondary">Erstellen und verwalten Sie hierarchische Abteilungsgruppen</p>
             </div>
             <button class="btn btn-primary" onclick="showCreateGroupModal()">
-              <i class="fas fa-plus"></i> Neue Gruppe
+              <i class="fas fa-plus"></i>
+              Neue Gruppe
             </button>
           </div>
 
@@ -273,7 +274,7 @@
           <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
 
-        <form id="createGroupForm" style="padding: 20px;">
+        <form id="createGroupForm" style="padding: 20px">
           <div class="form-group">
             <label class="form-label">Gruppenname *</label>
             <input type="text" id="groupName" class="form-control" required />

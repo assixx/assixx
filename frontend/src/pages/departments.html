@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
-      
+
       /* CSS Variablen */
       :root {
         --primary-color: #2196f3;
@@ -21,7 +21,7 @@
         --radius-lg: 16px;
         --background-light: rgba(255, 255, 255, 0.02);
       }
-      
+
       /* Glassmorphismus Background */
       body {
         position: relative;
@@ -49,22 +49,22 @@
 
       /* Card Styles - Genau wie in admin-dashboard */
       .card {
-        background: hsla(0,0%,100%,.02);
+        background: hsla(0, 0%, 100%, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-lg, 16px);
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 hsla(0,0%,100%,.1);
+          inset 0 1px 0 hsla(0, 0%, 100%, 0.1);
         margin-bottom: 24px;
         overflow: hidden;
       }
 
       .card-header {
-       border-bottom: 1px solid var(--border-color);
-       border-radius: 10px;
-       margin-bottom: var(--spacing-md);
-      padding-bottom: var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 10px;
+        margin-bottom: var(--spacing-md);
+        padding-bottom: var(--spacing-md);
       }
 
       .card-title {
@@ -89,7 +89,7 @@
       }
 
       .table th {
-        background: hsla(0,0%,100%,.03);
+        background: hsla(0, 0%, 100%, 0.03);
         padding: 12px 16px;
         text-align: left;
         font-weight: 600;
@@ -97,12 +97,12 @@
         font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 1px solid hsla(0,0%,100%,.1);
+        border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
       }
 
       .table td {
         padding: 16px;
-        border-bottom: 1px solid hsla(0,0%,100%,.05);
+        border-bottom: 1px solid hsla(0, 0%, 100%, 0.05);
         color: var(--text-primary);
         font-size: 14px;
       }
@@ -112,7 +112,7 @@
       }
 
       .table tbody tr:hover {
-        background: hsla(0,0%,100%,.02);
+        background: hsla(0, 0%, 100%, 0.02);
       }
 
       /* Badge Styles - Exakt aus admin-dashboard.html kopiert */
@@ -206,13 +206,13 @@
       .btn {
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
-        background: hsla(0,0%,100%,.05);
+        background: hsla(0, 0%, 100%, 0.05);
         background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid hsla(0,0%,100%,.2);
+        border: 1px solid hsla(0, 0%, 100%, 0.2);
         cursor: pointer;
         overflow: hidden;
         position: relative;
-        transition: all .3s ease;
+        transition: all 0.3s ease;
       }
 
       .btn-sm {
@@ -350,7 +350,6 @@
         color: var(--error-color);
       }
 
-
       /* Empty State */
       .empty-state {
         text-align: center;
@@ -373,12 +372,12 @@
         font-size: 14px;
         opacity: 0.7;
       }
-      
+
       /* Utility Classes */
       .mb-3 {
         margin-bottom: 1rem;
       }
-      
+
       .text-secondary {
         color: var(--text-secondary);
       }
@@ -396,7 +395,7 @@
         <div class="container">
           <h1>Abteilungsverwaltung</h1>
           <button class="btn btn-primary mb-3" id="direct-department-button" onclick="showDepartmentModal()">Neue Abteilung</button>
-          
+
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Abteilungsübersicht</h2>
@@ -411,7 +410,6 @@
       </main>
     </div>
 
-
     <!-- Department Modal -->
     <div id="department-modal" class="modal">
       <div class="modal-content">
@@ -419,7 +417,7 @@
           <h3 class="modal-title" id="modalTitle">Neue Abteilung</h3>
           <button class="modal-close" onclick="closeDepartmentModal()">&times;</button>
         </div>
-        <form id="department-form" style="padding: 20px;">
+        <form id="department-form" style="padding: 20px">
           <div class="form-group">
             <label class="form-label">Name *</label>
             <input type="text" name="name" class="form-control" required />
@@ -442,7 +440,7 @@
               <option value="private">Privat - Nur Mitglieder können diese Abteilung sehen</option>
             </select>
           </div>
-          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px;">
+          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
             <button type="submit" class="btn btn-primary">Speichern</button>
             <button type="button" class="btn btn-secondary" onclick="closeDepartmentModal()">Abbrechen</button>
           </div>
@@ -479,7 +477,7 @@
 
       function renderDepartments(departments) {
         const container = document.getElementById('departmentTableContent');
-        
+
         if (departments.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
@@ -517,7 +515,7 @@
                       description = dept.description;
                     }
                   }
-                  
+
                   return `
                   <tr>
                     <td>${dept.name || '-'}</td>
@@ -549,22 +547,22 @@
             </tbody>
           </table>
         `;
-        
+
         container.innerHTML = tableHTML;
       }
 
       // Modal functions
-      window.showDepartmentModal = function() {
+      window.showDepartmentModal = function () {
         document.getElementById('modalTitle').textContent = 'Neue Abteilung';
         document.getElementById('department-form').reset();
         document.getElementById('department-modal').classList.add('active');
       };
 
-      window.closeDepartmentModal = function() {
+      window.closeDepartmentModal = function () {
         document.getElementById('department-modal').classList.remove('active');
       };
 
-      window.editDepartment = async function(id) {
+      window.editDepartment = async function (id) {
         try {
           const response = await fetch(`/api/departments/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -573,13 +571,13 @@
           if (response.ok) {
             const dept = await response.json();
             document.getElementById('modalTitle').textContent = 'Abteilung bearbeiten';
-            
+
             const form = document.getElementById('department-form');
             form.name.value = dept.name || '';
             form.description.value = dept.description || '';
             form.status.value = dept.status || 'active';
             form.visibility.value = dept.visibility || 'public';
-            
+
             form.dataset.departmentId = id;
             document.getElementById('department-modal').classList.add('active');
           }
@@ -588,7 +586,7 @@
         }
       };
 
-      window.toggleDepartmentStatus = async function(id, currentStatus) {
+      window.toggleDepartmentStatus = async function (id, currentStatus) {
         console.log(`Toggling department ${id} status from ${currentStatus}`);
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
@@ -615,7 +613,7 @@
         }
       };
 
-      window.deleteDepartment = async function(id) {
+      window.deleteDepartment = async function (id) {
         if (!confirm('Möchten Sie diese Abteilung wirklich löschen?')) {
           return;
         }
@@ -642,15 +640,15 @@
       // Form submit
       document.getElementById('department-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         const departmentId = e.target.dataset.departmentId;
-        
+
         try {
           const url = departmentId ? `/api/departments/${departmentId}` : '/api/departments';
           const method = departmentId ? 'PUT' : 'POST';
-          
+
           const response = await fetch(url, {
             method,
             headers: {

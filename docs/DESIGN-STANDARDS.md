@@ -692,7 +692,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .modal-content {
-  
   backdrop-filter: blur(20px) saturate(580%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);

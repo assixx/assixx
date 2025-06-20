@@ -35,7 +35,11 @@ class DepartmentGroupService {
     try {
       // Check for circular dependencies if parent group is specified
       if (parentGroupId) {
-        const hasCircular = await this.checkCircularDependency(parentGroupId, 0, tenantId);
+        const hasCircular = await this.checkCircularDependency(
+          parentGroupId,
+          0,
+          tenantId
+        );
         if (hasCircular) {
           throw new Error('Circular dependency detected');
         }
@@ -50,7 +54,9 @@ class DepartmentGroupService {
       return result.insertId;
     } catch (error: any) {
       if (error.code === 'ER_DUP_ENTRY') {
-        logger.error(`Group name '${name}' already exists for tenant ${tenantId}`);
+        logger.error(
+          `Group name '${name}' already exists for tenant ${tenantId}`
+        );
         throw new Error('Group name already exists');
       }
       logger.error('Error creating department group:', error);
@@ -70,17 +76,20 @@ class DepartmentGroupService {
     if (departmentIds.length === 0) return true;
 
     const connection = await pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
       // Prepare bulk insert values
-      const values = departmentIds.map(deptId => 
-        [tenantId, groupId, deptId, addedBy]
-      );
+      const values = departmentIds.map((deptId) => [
+        tenantId,
+        groupId,
+        deptId,
+        addedBy,
+      ]);
 
       const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
-      
+
       // Insert with ON DUPLICATE KEY UPDATE to handle existing assignments
       await connection.execute(
         `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
@@ -112,7 +121,7 @@ class DepartmentGroupService {
 
     try {
       const placeholders = departmentIds.map(() => '?').join(', ');
-      
+
       const [result] = await (pool as any).execute(
         `DELETE FROM department_group_members 
          WHERE group_id = ? AND tenant_id = ? AND department_id IN (${placeholders})`,
@@ -150,14 +159,17 @@ class DepartmentGroupService {
         departments.set(dept.id, {
           id: dept.id,
           name: dept.name,
-          description: dept.description
+          description: dept.description,
         });
       });
 
       // Get departments from subgroups if requested
       if (includeSubgroups) {
-        const subgroupDepts = await this.getSubgroupDepartments(groupId, tenantId);
-        subgroupDepts.forEach(dept => {
+        const subgroupDepts = await this.getSubgroupDepartments(
+          groupId,
+          tenantId
+        );
+        subgroupDepts.forEach((dept) => {
           departments.set(dept.id, dept);
         });
       }
@@ -192,8 +204,8 @@ class DepartmentGroupService {
         tenantId,
         true // Include nested subgroups
       );
-      
-      subgroupDepts.forEach(dept => {
+
+      subgroupDepts.forEach((dept) => {
         departments.set(dept.id, dept);
       });
     }
@@ -233,7 +245,7 @@ class DepartmentGroupService {
         assignmentMap.get(row.group_id)!.push({
           id: row.dept_id,
           name: row.dept_name,
-          description: row.dept_desc
+          description: row.dept_desc,
         });
       });
 
@@ -249,7 +261,7 @@ class DepartmentGroupService {
           description: row.description,
           parent_group_id: row.parent_group_id,
           departments: assignmentMap.get(row.id) || [],
-          subgroups: []
+          subgroups: [],
         };
         groupMap.set(row.id, group);
       });
@@ -306,7 +318,7 @@ class DepartmentGroupService {
    */
   async deleteGroup(groupId: number, tenantId: number): Promise<boolean> {
     const connection = await pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 

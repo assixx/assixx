@@ -98,12 +98,12 @@ class ModalManager {
     void modal.offsetHeight;
 
     // Use requestAnimationFrame to ensure smooth animation
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       modal!.classList.add('active');
       console.log(`[ModalManager] Modal classes after show: ${modal!.className}`);
 
       // Double-check visibility after a frame
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         const styles = window.getComputedStyle(modal!);
         console.log(`[ModalManager] Modal computed style visibility:`, styles.visibility);
         console.log(`[ModalManager] Modal computed style opacity:`, styles.opacity);

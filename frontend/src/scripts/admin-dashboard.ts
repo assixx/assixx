@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      logout().catch(error => {
+      logout().catch((error) => {
         console.error('Logout error:', error);
         // Fallback
         window.location.href = '/pages/login.html';

@@ -3,13 +3,15 @@
 ## 🎯 START-TRIGGER (WICHTIGSTE SEKTION!)
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
+
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen
 - **Prozess:** Alle Starttasks, TodoWrite mit 9 Punkten, komplette Checks
 - **Ziel:** Sicherstellen, dass alles korrekt läuft
 
 ### Trigger 2: "weitermachen mit Assixx und skip" (Quick-Start-Modus)
+
 - **Aktion:** Minimale Vorbereitung für sofortige Arbeit
-- **Prozess:** 
+- **Prozess:**
   1. TODO.md lesen (nur TL;DR Section)
   2. README.md lesen (kurz)
   3. CLAUDE.md + CLAUDE.local.md (bereits automatisch geladen)
@@ -332,15 +334,17 @@ function validateSubdomain(value) {
 Wenn ein Branch in master gemerged werden soll:
 
 1. **IMMER mit --no-ff mergen:**
+
    ```bash
    git merge --no-ff <branch-name>
    ```
 
 2. **VOR dem Merge alle Änderungen prüfen:**
+
    ```bash
    # Alle geänderten Dateien anzeigen
    git diff master..<branch-name> --name-status
-   
+
    # Wichtige Dateien einzeln prüfen
    git diff master..<branch-name> -- CLAUDE.md
    git diff master..<branch-name> -- TODO.md
@@ -352,6 +356,7 @@ Wenn ein Branch in master gemerged werden soll:
    - "Hast du die Änderungen in [Dateiname] gesehen?"
 
 **Warum kein Fast-Forward:**
+
 - Merge-Historie bleibt sichtbar
 - Einfacheres Rollback bei Problemen
 - Verhindert versehentliche Änderungen (wie bei CLAUDE.md)

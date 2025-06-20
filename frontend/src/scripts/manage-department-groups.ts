@@ -92,32 +92,42 @@ function renderGroupTree() {
 
 // Render group items recursively
 function renderGroupItems(items: DepartmentGroup[], level: number = 0): string {
-  return items.map(group => `
+  return items
+    .map(
+      (group) => `
     <div style="margin-left: ${level * 20}px;">
       <div class="tree-item ${selectedGroupId === group.id ? 'active' : ''}" 
            onclick="selectGroup(${group.id})"
            data-group-id="${group.id}">
         <i class="fas fa-folder tree-item-icon"></i>
         <span class="tree-item-name">${group.name}</span>
-        ${group.departments && group.departments.length > 0 ? 
-          `<span class="tree-item-count">${group.departments.length}</span>` : ''}
+        ${
+          group.departments && group.departments.length > 0
+            ? `<span class="tree-item-count">${group.departments.length}</span>`
+            : ''
+        }
       </div>
-      ${group.subgroups && group.subgroups.length > 0 ? 
-        `<div class="tree-children">${renderGroupItems(group.subgroups, level + 1)}</div>` : ''}
+      ${
+        group.subgroups && group.subgroups.length > 0
+          ? `<div class="tree-children">${renderGroupItems(group.subgroups, level + 1)}</div>`
+          : ''
+      }
     </div>
-  `).join('');
+  `,
+    )
+    .join('');
 }
 
 // Select a group
-(window as any).selectGroup = function(groupId: number) {
+(window as any).selectGroup = function (groupId: number) {
   selectedGroupId = groupId;
-  
+
   // Update active state
-  document.querySelectorAll('.tree-item').forEach(item => {
+  document.querySelectorAll('.tree-item').forEach((item) => {
     item.classList.remove('active');
   });
   document.querySelector(`[data-group-id="${groupId}"]`)?.classList.add('active');
-  
+
   // Show group details
   showGroupDetails(groupId);
 };
@@ -139,14 +149,20 @@ function showGroupDetails(groupId: number) {
     <div class="detail-section">
       <h4>Zugeordnete Abteilungen (${group.departments?.length || 0})</h4>
       <div>
-        ${group.departments && group.departments.length > 0 ? 
-          group.departments.map(dept => `
+        ${
+          group.departments && group.departments.length > 0
+            ? group.departments
+                .map(
+                  (dept) => `
             <div class="department-item">
               <i class="fas fa-building" style="margin-right: 8px; color: var(--primary-color);"></i>
               <span>${dept.name}</span>
             </div>
-          `).join('') : 
-          '<p class="text-secondary">Keine Abteilungen zugeordnet</p>'}
+          `,
+                )
+                .join('')
+            : '<p class="text-secondary">Keine Abteilungen zugeordnet</p>'
+        }
       </div>
     </div>
 
@@ -176,38 +192,70 @@ function findGroupById(id: number, items: DepartmentGroup[] = groups): Departmen
   return null;
 }
 
+// Close modal
+function closeModal() {
+  const modal = document.getElementById('createGroupModal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// Edit group
+(window as any).editGroup = function (groupId: number) {
+  const group = findGroupById(groupId);
+  if (!group) return;
+
+  editingGroupId = groupId;
+  document.getElementById('modalTitle')!.textContent = 'Abteilungsgruppe bearbeiten';
+
+  const form = document.getElementById('createGroupForm') as HTMLFormElement;
+  if (form) {
+    (form.elements.namedItem('name') as HTMLInputElement).value = group.name;
+    (form.elements.namedItem('description') as HTMLTextAreaElement).value = group.description || '';
+    (form.elements.namedItem('parentGroupId') as HTMLSelectElement).value = group.parentGroupId?.toString() || '';
+
+    // Set selected departments
+    const checkboxes = form.querySelectorAll<HTMLInputElement>('input[name="departments"]');
+    checkboxes.forEach((cb) => {
+      cb.checked = group.departments?.some((d) => d.id === parseInt(cb.value)) || false;
+    });
+  }
+
+  document.getElementById('createGroupModal')?.classList.add('show');
+};
+
 // Show create group modal
-(window as any).showCreateGroupModal = function() {
+(window as any).showCreateGroupModal = function () {
   editingGroupId = null;
   document.getElementById('modalTitle')!.textContent = 'Neue Abteilungsgruppe erstellen';
   document.getElementById('createGroupForm')?.reset();
-  
+
   // Load parent groups
   updateParentGroupSelect();
-  
+
   // Load departments
   updateDepartmentChecklist([]);
-  
+
   document.getElementById('createGroupModal')?.classList.add('active');
 };
 
 // Edit group
-(window as any).editGroup = function(groupId: number) {
+(window as any).editGroup = function (groupId: number) {
   const group = findGroupById(groupId);
   if (!group) return;
 
   editingGroupId = groupId;
   document.getElementById('modalTitle')!.textContent = 'Gruppe bearbeiten';
-  
+
   // Fill form
   (document.getElementById('groupName') as HTMLInputElement).value = group.name;
   (document.getElementById('groupDescription') as HTMLTextAreaElement).value = group.description || '';
   (document.getElementById('parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() || '';
-  
+
   // Update selects
   updateParentGroupSelect(groupId);
-  updateDepartmentChecklist(group.departments?.map(d => d.id) || []);
-  
+  updateDepartmentChecklist(group.departments?.map((d) => d.id) || []);
+
   document.getElementById('createGroupModal')?.classList.add('active');
 };
 
@@ -217,22 +265,22 @@ function updateParentGroupSelect(excludeId?: number) {
   if (!select) return;
 
   select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
-  
+
   function addOptions(items: DepartmentGroup[], level: number = 0) {
-    items.forEach(group => {
+    items.forEach((group) => {
       if (group.id !== excludeId) {
         const option = document.createElement('option');
         option.value = group.id.toString();
         option.textContent = '  '.repeat(level) + group.name;
         select.appendChild(option);
-        
+
         if (group.subgroups) {
           addOptions(group.subgroups, level + 1);
         }
       }
     });
   }
-  
+
   addOptions(groups);
 }
 
@@ -241,17 +289,21 @@ function updateDepartmentChecklist(selectedIds: number[]) {
   const container = document.getElementById('departmentChecklist');
   if (!container) return;
 
-  container.innerHTML = departments.map(dept => `
+  container.innerHTML = departments
+    .map(
+      (dept) => `
     <label class="department-checkbox">
       <input type="checkbox" name="department" value="${dept.id}" 
              ${selectedIds.includes(dept.id) ? 'checked' : ''} />
       <span>${dept.name}</span>
     </label>
-  `).join('');
+  `,
+    )
+    .join('');
 }
 
 // Close modal
-(window as any).closeModal = function() {
+(window as any).closeModal = function () {
   document.getElementById('createGroupModal')?.classList.remove('active');
   editingGroupId = null;
 };
@@ -264,15 +316,14 @@ document.getElementById('createGroupForm')?.addEventListener('submit', async (e)
     name: (document.getElementById('groupName') as HTMLInputElement).value,
     description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
     parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value || null,
-    departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked'))
-      .map(cb => parseInt((cb as HTMLInputElement).value))
+    departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
+      parseInt((cb as HTMLInputElement).value),
+    ),
   };
 
   try {
-    const url = editingGroupId ? 
-      `/api/department-groups/${editingGroupId}` : 
-      '/api/department-groups';
-      
+    const url = editingGroupId ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
+
     const method = editingGroupId ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
@@ -299,7 +350,7 @@ document.getElementById('createGroupForm')?.addEventListener('submit', async (e)
 });
 
 // Delete group
-(window as any).deleteGroup = async function(groupId: number) {
+(window as any).deleteGroup = async function (groupId: number) {
   const group = findGroupById(groupId);
   if (!group) return;
 
@@ -339,9 +390,9 @@ document.getElementById('createGroupForm')?.addEventListener('submit', async (e)
 };
 
 // Add departments to group
-(window as any).addDepartmentsToGroup = async function(groupId: number) {
+(window as any).addDepartmentsToGroup = async function (groupId: number) {
   // For now, just open edit modal
-  editGroup(groupId);
+  (window as any).editGroup(groupId);
 };
 
 // Helper functions

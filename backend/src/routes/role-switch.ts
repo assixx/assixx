@@ -137,7 +137,9 @@ router.post('/to-admin', authenticateToken, async (req, res): Promise<void> => {
 
     // Nur Admins und Root können zurück switchen
     if (user.role !== 'admin' && user.role !== 'root') {
-      res.status(403).json({ message: 'Nur Admins und Root können die Rolle wechseln' });
+      res
+        .status(403)
+        .json({ message: 'Nur Admins und Root können die Rolle wechseln' });
       return;
     }
 
@@ -206,7 +208,9 @@ router.post('/to-root', authenticateToken, async (req, res): Promise<void> => {
 
     // Nur Root kann zu Root zurück switchen
     if (user.role !== 'root') {
-      res.status(403).json({ message: 'Nur Root-User können zu Root wechseln' });
+      res
+        .status(403)
+        .json({ message: 'Nur Root-User können zu Root wechseln' });
       return;
     }
 
@@ -262,68 +266,72 @@ router.post('/to-root', authenticateToken, async (req, res): Promise<void> => {
  * @desc Switch root to admin view
  * @access Private (Root only)
  */
-router.post('/root-to-admin', authenticateToken, async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedRequest;
+router.post(
+  '/root-to-admin',
+  authenticateToken,
+  async (req, res): Promise<void> => {
+    try {
+      const authReq = req as AuthenticatedRequest;
 
-    // Nur Root darf diesen Endpoint nutzen
-    if (authReq.user.role !== 'root') {
-      res.status(403).json({ message: 'Nur Root kann zu Admin wechseln' });
-      return;
+      // Nur Root darf diesen Endpoint nutzen
+      if (authReq.user.role !== 'root') {
+        res.status(403).json({ message: 'Nur Root kann zu Admin wechseln' });
+        return;
+      }
+
+      // User-Daten holen
+      const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
+      if (!user) {
+        res.status(404).json({ message: 'User nicht gefunden' });
+        return;
+      }
+
+      // Neues JWT mit admin activeRole erstellen
+      const adminViewToken = jwt.sign(
+        {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role, // Bleibt 'root'
+          activeRole: 'admin', // Aktive Rolle ist 'admin'
+          tenant_id: user.tenant_id,
+          isRoleSwitched: true,
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+
+      // Log the action
+      await AdminLog.create({
+        tenant_id: authReq.user.tenant_id,
+        user_id: authReq.user.id,
+        action: 'role_switch_root_to_admin',
+        entity_type: 'user',
+        entity_id: authReq.user.id,
+        new_values: JSON.stringify({
+          from_role: 'root',
+          to_role: 'admin',
+          timestamp: new Date(),
+        }),
+      });
+
+      res.json({
+        success: true,
+        token: adminViewToken,
+        user: {
+          ...user,
+          activeRole: 'admin',
+          isRoleSwitched: true,
+        },
+        message: 'Erfolgreich zu Admin-Ansicht gewechselt',
+      });
+    } catch (error: any) {
+      console.error('Role switch root to admin error:', error);
+      res
+        .status(500)
+        .json({ message: 'Fehler beim Rollenwechsel', error: error.message });
     }
-
-    // User-Daten holen
-    const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
-    if (!user) {
-      res.status(404).json({ message: 'User nicht gefunden' });
-      return;
-    }
-
-    // Neues JWT mit admin activeRole erstellen
-    const adminViewToken = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role, // Bleibt 'root'
-        activeRole: 'admin', // Aktive Rolle ist 'admin'
-        tenant_id: user.tenant_id,
-        isRoleSwitched: true,
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    // Log the action
-    await AdminLog.create({
-      tenant_id: authReq.user.tenant_id,
-      user_id: authReq.user.id,
-      action: 'role_switch_root_to_admin',
-      entity_type: 'user',
-      entity_id: authReq.user.id,
-      new_values: JSON.stringify({
-        from_role: 'root',
-        to_role: 'admin',
-        timestamp: new Date(),
-      }),
-    });
-
-    res.json({
-      success: true,
-      token: adminViewToken,
-      user: {
-        ...user,
-        activeRole: 'admin',
-        isRoleSwitched: true,
-      },
-      message: 'Erfolgreich zu Admin-Ansicht gewechselt',
-    });
-  } catch (error: any) {
-    console.error('Role switch root to admin error:', error);
-    res
-      .status(500)
-      .json({ message: 'Fehler beim Rollenwechsel', error: error.message });
   }
-});
+);
 
 export default router;

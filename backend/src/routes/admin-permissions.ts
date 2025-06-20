@@ -11,7 +11,10 @@ import { body, param, validationResult } from 'express-validator';
 import pool from '../config/database.js';
 
 // Helper function to execute queries
-async function executeQuery<T = any>(sql: string, params?: any[]): Promise<[T, any]> {
+async function executeQuery<T = any>(
+  sql: string,
+  params?: any[]
+): Promise<[T, any]> {
   return (pool as any).execute(sql, params);
 }
 
@@ -29,11 +32,26 @@ interface AuthenticatedRequest extends Request {
 
 // Validation middleware
 const validatePermissions = [
-  body('departmentIds').optional().isArray().withMessage('departmentIds muss ein Array sein'),
-  body('departmentIds.*').optional().isInt({ min: 1 }).withMessage('Ungültige Abteilungs-ID'),
-  body('groupIds').optional().isArray().withMessage('groupIds muss ein Array sein'),
-  body('groupIds.*').optional().isInt({ min: 1 }).withMessage('Ungültige Gruppen-ID'),
-  body('permissions').optional().isObject().withMessage('permissions muss ein Objekt sein'),
+  body('departmentIds')
+    .optional()
+    .isArray()
+    .withMessage('departmentIds muss ein Array sein'),
+  body('departmentIds.*')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Ungültige Abteilungs-ID'),
+  body('groupIds')
+    .optional()
+    .isArray()
+    .withMessage('groupIds muss ein Array sein'),
+  body('groupIds.*')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Ungültige Gruppen-ID'),
+  body('permissions')
+    .optional()
+    .isObject()
+    .withMessage('permissions muss ein Objekt sein'),
   body('permissions.can_read').optional().isBoolean(),
   body('permissions.can_write').optional().isBoolean(),
   body('permissions.can_delete').optional().isBoolean(),
@@ -60,17 +78,17 @@ router.get(
         'SELECT tenant_id FROM users WHERE id = ?',
         [adminId]
       );
-      
+
       if (!adminQuery[0] || !adminQuery[0][0]) {
         res.status(404).json({
           success: false,
-          error: 'Admin nicht gefunden'
+          error: 'Admin nicht gefunden',
         });
         return;
       }
-      
+
       const targetTenantId = adminQuery[0][0].tenant_id;
-      
+
       const result = await adminPermissionService.getAdminDepartments(
         adminId,
         targetTenantId
@@ -78,13 +96,13 @@ router.get(
 
       res.json({
         success: true,
-        data: result
+        data: result,
       });
     } catch (error: any) {
       logger.error(`Error getting admin departments: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Abrufen der Abteilungsberechtigungen'
+        error: 'Fehler beim Abrufen der Abteilungsberechtigungen',
       });
     }
   }
@@ -103,8 +121,8 @@ router.get(
         success: true,
         data: {
           departments: [],
-          hasAllAccess: authReq.user.role === 'root'
-        }
+          hasAllAccess: authReq.user.role === 'root',
+        },
       });
       return;
     }
@@ -117,13 +135,13 @@ router.get(
 
       res.json({
         success: true,
-        ...result
+        ...result,
       });
     } catch (error: any) {
       logger.error(`Error getting my departments: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Abrufen der eigenen Abteilungen'
+        error: 'Fehler beim Abrufen der eigenen Abteilungen',
       });
     }
   }
@@ -143,16 +161,16 @@ router.post(
     }
 
     const authReq = req as AuthenticatedRequest;
-    const { 
-      adminId, 
-      departmentIds = [], 
-      permissions = { can_read: true, can_write: false, can_delete: false } 
+    const {
+      adminId,
+      departmentIds = [],
+      permissions = { can_read: true, can_write: false, can_delete: false },
     } = req.body;
 
     if (!adminId) {
       res.status(400).json({
         success: false,
-        error: 'Admin-ID ist erforderlich'
+        error: 'Admin-ID ist erforderlich',
       });
       return;
     }
@@ -163,26 +181,26 @@ router.post(
         departmentIds,
         permissions,
         userId: authReq.user.id,
-        tenantId: authReq.user.tenant_id
+        tenantId: authReq.user.tenant_id,
       });
-      
+
       // Get the tenant_id from the admin being modified
       const adminTenantQuery = await executeQuery<any[]>(
         'SELECT tenant_id FROM users WHERE id = ?',
         [adminId]
       );
-      
+
       if (!adminTenantQuery[0] || !adminTenantQuery[0][0]) {
         res.status(404).json({
           success: false,
-          error: 'Admin nicht gefunden'
+          error: 'Admin nicht gefunden',
         });
         return;
       }
-      
+
       const targetTenantId = adminTenantQuery[0][0].tenant_id;
       logger.info('[DEBUG] Target tenant ID:', targetTenantId);
-      
+
       const success = await adminPermissionService.setPermissions(
         adminId,
         departmentIds,
@@ -197,19 +215,19 @@ router.post(
         );
         res.json({
           success: true,
-          message: 'Berechtigungen erfolgreich gesetzt'
+          message: 'Berechtigungen erfolgreich gesetzt',
         });
       } else {
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Setzen der Berechtigungen'
+          error: 'Fehler beim Setzen der Berechtigungen',
         });
       }
     } catch (error: any) {
       logger.error(`Error setting admin permissions: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Setzen der Berechtigungen'
+        error: 'Fehler beim Setzen der Berechtigungen',
       });
     }
   }
@@ -229,16 +247,16 @@ router.post(
     }
 
     const authReq = req as AuthenticatedRequest;
-    const { 
-      adminId, 
-      groupIds = [], 
-      permissions = { can_read: true, can_write: false, can_delete: false } 
+    const {
+      adminId,
+      groupIds = [],
+      permissions = { can_read: true, can_write: false, can_delete: false },
     } = req.body;
 
     if (!adminId) {
       res.status(400).json({
         success: false,
-        error: 'Admin-ID ist erforderlich'
+        error: 'Admin-ID ist erforderlich',
       });
       return;
     }
@@ -258,19 +276,19 @@ router.post(
         );
         res.json({
           success: true,
-          message: 'Gruppenberechtigungen erfolgreich gesetzt'
+          message: 'Gruppenberechtigungen erfolgreich gesetzt',
         });
       } else {
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Setzen der Gruppenberechtigungen'
+          error: 'Fehler beim Setzen der Gruppenberechtigungen',
         });
       }
     } catch (error: any) {
       logger.error(`Error setting admin group permissions: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Setzen der Gruppenberechtigungen'
+        error: 'Fehler beim Setzen der Gruppenberechtigungen',
       });
     }
   }
@@ -282,7 +300,9 @@ router.delete(
   authenticateToken,
   authorizeRole('root'),
   param('adminId').isInt({ min: 1 }).withMessage('Ungültige Admin-ID'),
-  param('departmentId').isInt({ min: 1 }).withMessage('Ungültige Abteilungs-ID'),
+  param('departmentId')
+    .isInt({ min: 1 })
+    .withMessage('Ungültige Abteilungs-ID'),
   async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -313,19 +333,19 @@ router.delete(
 
         res.json({
           success: true,
-          message: 'Berechtigung erfolgreich entfernt'
+          message: 'Berechtigung erfolgreich entfernt',
         });
       } else {
         res.status(404).json({
           success: false,
-          error: 'Berechtigung nicht gefunden'
+          error: 'Berechtigung nicht gefunden',
         });
       }
     } catch (error: any) {
       logger.error(`Error removing admin permission: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Entfernen der Berechtigung'
+        error: 'Fehler beim Entfernen der Berechtigung',
       });
     }
   }
@@ -368,19 +388,19 @@ router.delete(
 
         res.json({
           success: true,
-          message: 'Gruppenberechtigung erfolgreich entfernt'
+          message: 'Gruppenberechtigung erfolgreich entfernt',
         });
       } else {
         res.status(404).json({
           success: false,
-          error: 'Gruppenberechtigung nicht gefunden'
+          error: 'Gruppenberechtigung nicht gefunden',
         });
       }
     } catch (error: any) {
       logger.error(`Error removing admin group permission: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Entfernen der Gruppenberechtigung'
+        error: 'Fehler beim Entfernen der Gruppenberechtigung',
       });
     }
   }
@@ -391,9 +411,13 @@ router.post(
   '/bulk',
   authenticateToken,
   authorizeRole('root'),
-  body('adminIds').isArray({ min: 1 }).withMessage('adminIds muss ein nicht-leeres Array sein'),
+  body('adminIds')
+    .isArray({ min: 1 })
+    .withMessage('adminIds muss ein nicht-leeres Array sein'),
   body('adminIds.*').isInt({ min: 1 }).withMessage('Ungültige Admin-ID'),
-  body('operation').isIn(['assign', 'remove']).withMessage('Operation muss assign oder remove sein'),
+  body('operation')
+    .isIn(['assign', 'remove'])
+    .withMessage('Operation muss assign oder remove sein'),
   validatePermissions,
   async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
@@ -403,11 +427,11 @@ router.post(
     }
 
     const authReq = req as AuthenticatedRequest;
-    const { 
-      adminIds, 
-      departmentIds = [], 
+    const {
+      adminIds,
+      departmentIds = [],
       operation,
-      permissions = { can_read: true, can_write: false, can_delete: false } 
+      permissions = { can_read: true, can_write: false, can_delete: false },
     } = req.body;
 
     try {
@@ -443,13 +467,13 @@ router.post(
       res.json({
         success: true,
         message: `${successCount} von ${adminIds.length} Admins erfolgreich bearbeitet`,
-        errors: errors.length > 0 ? errors : undefined
+        errors: errors.length > 0 ? errors : undefined,
       });
     } catch (error: any) {
       logger.error(`Error in bulk permission operation: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler bei der Bulk-Operation'
+        error: 'Fehler bei der Bulk-Operation',
       });
     }
   }

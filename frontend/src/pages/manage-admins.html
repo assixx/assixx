@@ -563,54 +563,80 @@
               <input type="hidden" name="position" id="positionDropdownValue" required />
             </div>
           </div>
-          
+
           <!-- Department Permissions Section -->
           <div id="departmentPermissionsSection" class="form-section">
             <h4>Abteilungszuweisungen</h4>
-            <div class="info-box warning" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-              <i class="fas fa-info-circle" style="color: #ffc107; margin-right: 8px;"></i>
-              <span style="color: rgba(255, 255, 255, 0.8); font-size: 14px;">Aus Sicherheitsgründen haben neue Admins standardmäßig keinen Zugriff auf Abteilungen.</span>
+            <div
+              class="info-box warning"
+              style="
+                background: rgba(255, 193, 7, 0.1);
+                border: 1px solid rgba(255, 193, 7, 0.3);
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+              "
+            >
+              <i class="fas fa-info-circle" style="color: #ffc107; margin-right: 8px"></i>
+              <span style="color: rgba(255, 255, 255, 0.8); font-size: 14px">
+                Aus Sicherheitsgründen haben neue Admins standardmäßig keinen Zugriff auf Abteilungen.
+              </span>
             </div>
 
             <div class="permission-type-selection">
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer;">
-                <input type="radio" name="permissionType" value="none" checked style="margin-right: 8px;" />
+              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
+                <input type="radio" name="permissionType" value="none" checked style="margin-right: 8px" />
                 <span>Keine Abteilungen (Standard - Sicher)</span>
               </label>
 
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer;">
-                <input type="radio" name="permissionType" value="specific" style="margin-right: 8px;" />
+              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
+                <input type="radio" name="permissionType" value="specific" style="margin-right: 8px" />
                 <span>Spezifische Abteilungen auswählen</span>
               </label>
 
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer;">
-                <input type="radio" name="permissionType" value="groups" style="margin-right: 8px;" />
+              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
+                <input type="radio" name="permissionType" value="groups" style="margin-right: 8px" />
                 <span>Abteilungsgruppen auswählen</span>
               </label>
 
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer;">
-                <input type="radio" name="permissionType" value="all" style="margin-right: 8px;" />
+              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
+                <input type="radio" name="permissionType" value="all" style="margin-right: 8px" />
                 <span>Alle Abteilungen (Vollzugriff)</span>
               </label>
             </div>
 
-            <div id="departmentSelectContainer" style="display:none; margin-top: 16px;">
+            <div id="departmentSelectContainer" style="display: none; margin-top: 16px">
               <label class="form-label">Abteilungen auswählen</label>
-              <select id="departmentSelect" multiple class="form-control" style="min-height: 120px;">
+              <select id="departmentSelect" multiple class="form-control" style="min-height: 120px">
                 <!-- Dynamisch befüllt -->
               </select>
-              <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl</small>
+              <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block">
+                Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl
+              </small>
             </div>
 
-            <div id="groupSelectContainer" style="display:none; margin-top: 16px;">
+            <div id="groupSelectContainer" style="display: none; margin-top: 16px">
               <label class="form-label">Abteilungsgruppen auswählen</label>
-              <div class="group-tree-view" id="groupTreeView" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; background: rgba(255, 255, 255, 0.02);">
+              <div
+                class="group-tree-view"
+                id="groupTreeView"
+                style="
+                  max-height: 200px;
+                  overflow-y: auto;
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  border-radius: 8px;
+                  padding: 12px;
+                  background: rgba(255, 255, 255, 0.02);
+                "
+              >
                 <!-- Hierarchische Darstellung der Gruppen -->
               </div>
-              <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">Wählen Sie Gruppen aus. Alle untergeordneten Abteilungen werden automatisch eingeschlossen.</small>
+              <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block">
+                Wählen Sie Gruppen aus. Alle untergeordneten Abteilungen werden automatisch eingeschlossen.
+              </small>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label class="form-label">Notizen</label>
             <textarea id="adminNotes" class="form-control" rows="3"></textarea>
@@ -634,73 +660,132 @@
 
     <!-- Permissions Modal -->
     <div class="modal" id="permissionsModal">
-      <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
           <h3 class="modal-title">Abteilungsberechtigungen verwalten</h3>
           <button class="modal-close" onclick="closePermissionsModal()">&times;</button>
         </div>
-        
-        <div class="admin-info" style="padding: 16px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; margin: 16px;">
-          <p style="margin: 0 0 8px 0;"><strong>Admin:</strong> <span id="permAdminName"></span></p>
-          <p style="margin: 0;"><strong>E-Mail:</strong> <span id="permAdminEmail"></span></p>
+
+        <div class="admin-info" style="padding: 16px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; margin: 16px">
+          <p style="margin: 0 0 8px 0">
+            <strong>Admin:</strong>
+            <span id="permAdminName"></span>
+          </p>
+          <p style="margin: 0">
+            <strong>E-Mail:</strong>
+            <span id="permAdminEmail"></span>
+          </p>
         </div>
 
-        <div style="padding: 0 16px;">
-          <div class="permission-options" style="display: flex; gap: 12px; margin-bottom: 20px;">
-            <button onclick="selectAllDepartments()" class="btn btn-secondary" style="flex: 1;">
-              <i class="fas fa-check-square"></i> Alle auswählen
+        <div style="padding: 0 16px">
+          <div class="permission-options" style="display: flex; gap: 12px; margin-bottom: 20px">
+            <button onclick="selectAllDepartments()" class="btn btn-secondary" style="flex: 1">
+              <i class="fas fa-check-square"></i>
+              Alle auswählen
             </button>
-            <button onclick="selectNoDepartments()" class="btn btn-secondary" style="flex: 1;">
-              <i class="fas fa-square"></i> Keine auswählen
+            <button onclick="selectNoDepartments()" class="btn btn-secondary" style="flex: 1">
+              <i class="fas fa-square"></i>
+              Keine auswählen
             </button>
           </div>
 
-          <div class="tabs" style="margin-bottom: 20px;">
-            <div class="tab-headers" style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 16px;">
-              <button class="tab-header active" onclick="switchPermTab('departments')" data-tab="departments" style="padding: 8px 16px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-bottom: 2px solid var(--primary-color);">
+          <div class="tabs" style="margin-bottom: 20px">
+            <div
+              class="tab-headers"
+              style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 16px"
+            >
+              <button
+                class="tab-header active"
+                onclick="switchPermTab('departments')"
+                data-tab="departments"
+                style="
+                  padding: 8px 16px;
+                  background: none;
+                  border: none;
+                  color: var(--text-primary);
+                  cursor: pointer;
+                  border-bottom: 2px solid var(--primary-color);
+                "
+              >
                 Abteilungen
               </button>
-              <button class="tab-header" onclick="switchPermTab('groups')" data-tab="groups" style="padding: 8px 16px; background: none; border: none; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent;">
+              <button
+                class="tab-header"
+                onclick="switchPermTab('groups')"
+                data-tab="groups"
+                style="
+                  padding: 8px 16px;
+                  background: none;
+                  border: none;
+                  color: var(--text-secondary);
+                  cursor: pointer;
+                  border-bottom: 2px solid transparent;
+                "
+              >
                 Gruppen
               </button>
             </div>
 
             <div class="tab-content" id="departmentsTab">
-              <div class="department-list" id="permissionDepartmentList" style="max-height: 300px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; background: rgba(255, 255, 255, 0.02);">
+              <div
+                class="department-list"
+                id="permissionDepartmentList"
+                style="
+                  max-height: 300px;
+                  overflow-y: auto;
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  border-radius: 8px;
+                  padding: 12px;
+                  background: rgba(255, 255, 255, 0.02);
+                "
+              >
                 <!-- Departments will be loaded here -->
               </div>
             </div>
 
-            <div class="tab-content" id="groupsTab" style="display: none;">
-              <div class="group-list" id="permissionGroupList" style="max-height: 300px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; background: rgba(255, 255, 255, 0.02);">
+            <div class="tab-content" id="groupsTab" style="display: none">
+              <div
+                class="group-list"
+                id="permissionGroupList"
+                style="
+                  max-height: 300px;
+                  overflow-y: auto;
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  border-radius: 8px;
+                  padding: 12px;
+                  background: rgba(255, 255, 255, 0.02);
+                "
+              >
                 <!-- Groups will be loaded here -->
               </div>
             </div>
           </div>
 
-          <div class="permission-levels" style="margin-bottom: 20px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px;">
-            <h4 style="margin: 0 0 12px 0; font-size: 14px;">Berechtigungsstufen:</h4>
-            <label style="display: flex; align-items: center; margin-bottom: 8px;">
-              <input type="checkbox" id="permCanRead" checked disabled style="margin-right: 8px;" />
+          <div
+            class="permission-levels"
+            style="margin-bottom: 20px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px"
+          >
+            <h4 style="margin: 0 0 12px 0; font-size: 14px">Berechtigungsstufen:</h4>
+            <label style="display: flex; align-items: center; margin-bottom: 8px">
+              <input type="checkbox" id="permCanRead" checked disabled style="margin-right: 8px" />
               <span>Lesen (Standard)</span>
             </label>
-            <label style="display: flex; align-items: center; margin-bottom: 8px;">
-              <input type="checkbox" id="permCanWrite" style="margin-right: 8px;" />
+            <label style="display: flex; align-items: center; margin-bottom: 8px">
+              <input type="checkbox" id="permCanWrite" style="margin-right: 8px" />
               <span>Schreiben</span>
             </label>
-            <label style="display: flex; align-items: center;">
-              <input type="checkbox" id="permCanDelete" style="margin-right: 8px;" />
+            <label style="display: flex; align-items: center">
+              <input type="checkbox" id="permCanDelete" style="margin-right: 8px" />
               <span>Löschen</span>
             </label>
           </div>
 
-          <div class="modal-actions" style="display: flex; gap: 12px; padding: 16px 0;">
-            <button onclick="savePermissions()" class="btn btn-primary" style="flex: 1;">
-              <i class="fas fa-save"></i> Speichern
+          <div class="modal-actions" style="display: flex; gap: 12px; padding: 16px 0">
+            <button onclick="savePermissions()" class="btn btn-primary" style="flex: 1">
+              <i class="fas fa-save"></i>
+              Speichern
             </button>
-            <button onclick="closePermissionsModal()" class="btn btn-secondary" style="flex: 1;">
-              Abbrechen
-            </button>
+            <button onclick="closePermissionsModal()" class="btn btn-secondary" style="flex: 1">Abbrechen</button>
           </div>
         </div>
       </div>
@@ -752,12 +837,12 @@
 
       function switchPermTab(tab) {
         // Update tab headers
-        document.querySelectorAll('.tab-header').forEach(h => {
+        document.querySelectorAll('.tab-header').forEach((h) => {
           h.classList.remove('active');
           h.style.borderBottomColor = 'transparent';
           h.style.color = 'var(--text-secondary)';
         });
-        
+
         const activeHeader = document.querySelector(`[data-tab="${tab}"]`);
         if (activeHeader) {
           activeHeader.classList.add('active');
@@ -773,11 +858,11 @@
       function selectAllDepartments() {
         const activeTab = document.querySelector('.tab-header.active').getAttribute('data-tab');
         if (activeTab === 'departments') {
-          document.querySelectorAll('#permissionDepartmentList input[type="checkbox"]').forEach(cb => {
+          document.querySelectorAll('#permissionDepartmentList input[type="checkbox"]').forEach((cb) => {
             cb.checked = true;
           });
         } else {
-          document.querySelectorAll('#permissionGroupList input[type="checkbox"]').forEach(cb => {
+          document.querySelectorAll('#permissionGroupList input[type="checkbox"]').forEach((cb) => {
             cb.checked = true;
           });
         }
@@ -786,11 +871,11 @@
       function selectNoDepartments() {
         const activeTab = document.querySelector('.tab-header.active').getAttribute('data-tab');
         if (activeTab === 'departments') {
-          document.querySelectorAll('#permissionDepartmentList input[type="checkbox"]').forEach(cb => {
+          document.querySelectorAll('#permissionDepartmentList input[type="checkbox"]').forEach((cb) => {
             cb.checked = false;
           });
         } else {
-          document.querySelectorAll('#permissionGroupList input[type="checkbox"]').forEach(cb => {
+          document.querySelectorAll('#permissionGroupList input[type="checkbox"]').forEach((cb) => {
             cb.checked = false;
           });
         }

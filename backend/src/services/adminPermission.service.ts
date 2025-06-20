@@ -58,7 +58,7 @@ class AdminPermissionService {
 
       if (groupPermissions.length > 0) {
         // Check if any group grants the required permission
-        return groupPermissions.some((perm: any) => 
+        return groupPermissions.some((perm: any) =>
           this.checkPermissionLevel(perm, requiredPermission)
         );
       }
@@ -92,7 +92,10 @@ class AdminPermissionService {
   async getAdminDepartments(
     adminId: number,
     tenantId: number
-  ): Promise<{ departments: DepartmentWithPermission[]; hasAllAccess: boolean }> {
+  ): Promise<{
+    departments: DepartmentWithPermission[];
+    hasAllAccess: boolean;
+  }> {
     try {
       // Check if admin has access to all departments
       const [adminInfo] = await (pool as any).execute(
@@ -106,8 +109,9 @@ class AdminPermissionService {
         [tenantId]
       );
 
-      const hasAllAccess = adminInfo[0].dept_count === totalDepts[0].total && 
-                          totalDepts[0].total > 0;
+      const hasAllAccess =
+        adminInfo[0].dept_count === totalDepts[0].total &&
+        totalDepts[0].total > 0;
 
       // Get direct department permissions
       const [directDepts] = await (pool as any).execute(
@@ -135,7 +139,7 @@ class AdminPermissionService {
 
       // Merge results, avoiding duplicates
       const departmentMap = new Map<number, DepartmentWithPermission>();
-      
+
       // Add direct permissions
       directDepts.forEach((dept: any) => {
         departmentMap.set(dept.id, {
@@ -144,7 +148,7 @@ class AdminPermissionService {
           description: dept.description,
           can_read: dept.can_read === 1,
           can_write: dept.can_write === 1,
-          can_delete: dept.can_delete === 1
+          can_delete: dept.can_delete === 1,
         });
       });
 
@@ -163,14 +167,14 @@ class AdminPermissionService {
             description: dept.description,
             can_read: dept.can_read === 1,
             can_write: dept.can_write === 1,
-            can_delete: dept.can_delete === 1
+            can_delete: dept.can_delete === 1,
           });
         }
       });
 
       return {
         departments: Array.from(departmentMap.values()),
-        hasAllAccess
+        hasAllAccess,
       };
     } catch (error) {
       logger.error('Error getting admin departments:', error);
@@ -186,19 +190,23 @@ class AdminPermissionService {
     departmentIds: number[],
     assignedBy: number,
     tenantId: number,
-    permissions: Permission = { can_read: true, can_write: false, can_delete: false }
+    permissions: Permission = {
+      can_read: true,
+      can_write: false,
+      can_delete: false,
+    }
   ): Promise<boolean> {
     const connection = await pool.getConnection();
-    
+
     try {
       logger.info(`[DEBUG] setPermissions called:`, {
         adminId,
         departmentIds,
         assignedBy,
         tenantId,
-        permissions
+        permissions,
       });
-      
+
       await connection.beginTransaction();
 
       // Log old permissions for audit
@@ -218,18 +226,25 @@ class AdminPermissionService {
 
       // Add new permissions
       if (departmentIds.length > 0) {
-        const values = departmentIds.map(deptId => 
-          [tenantId, adminId, deptId, permissions.can_read ? 1 : 0, 
-           permissions.can_write ? 1 : 0, permissions.can_delete ? 1 : 0, assignedBy]
-        );
-        
+        const values = departmentIds.map((deptId) => [
+          tenantId,
+          adminId,
+          deptId,
+          permissions.can_read ? 1 : 0,
+          permissions.can_write ? 1 : 0,
+          permissions.can_delete ? 1 : 0,
+          assignedBy,
+        ]);
+
         logger.info(`[DEBUG] Inserting permissions:`, {
           departmentCount: departmentIds.length,
-          sampleValue: values[0]
+          sampleValue: values[0],
         });
 
-        const placeholders = departmentIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
-        
+        const placeholders = departmentIds
+          .map(() => '(?, ?, ?, ?, ?, ?, ?)')
+          .join(', ');
+
         await connection.execute(
           `INSERT INTO admin_department_permissions 
            (tenant_id, admin_user_id, department_id, can_read, can_write, can_delete, assigned_by) 
@@ -251,7 +266,9 @@ class AdminPermissionService {
           'department',
           assignedBy,
           JSON.stringify(oldPerms),
-          JSON.stringify(departmentIds.map(id => ({ department_id: id, ...permissions })))
+          JSON.stringify(
+            departmentIds.map((id) => ({ department_id: id, ...permissions }))
+          ),
         ]
       );
 
@@ -264,7 +281,7 @@ class AdminPermissionService {
       logger.error('[DEBUG] Error details:', {
         message: (error as any).message,
         code: (error as any).code,
-        sqlMessage: (error as any).sqlMessage
+        sqlMessage: (error as any).sqlMessage,
       });
       return false;
     } finally {
@@ -280,10 +297,14 @@ class AdminPermissionService {
     groupIds: number[],
     assignedBy: number,
     tenantId: number,
-    permissions: Permission = { can_read: true, can_write: false, can_delete: false }
+    permissions: Permission = {
+      can_read: true,
+      can_write: false,
+      can_delete: false,
+    }
   ): Promise<boolean> {
     const connection = await pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
 
@@ -296,13 +317,20 @@ class AdminPermissionService {
 
       // Add new permissions
       if (groupIds.length > 0) {
-        const values = groupIds.map(groupId => 
-          [tenantId, adminId, groupId, permissions.can_read, 
-           permissions.can_write, permissions.can_delete, assignedBy]
-        );
+        const values = groupIds.map((groupId) => [
+          tenantId,
+          adminId,
+          groupId,
+          permissions.can_read,
+          permissions.can_write,
+          permissions.can_delete,
+          assignedBy,
+        ]);
 
-        const placeholders = groupIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
-        
+        const placeholders = groupIds
+          .map(() => '(?, ?, ?, ?, ?, ?, ?)')
+          .join(', ');
+
         await connection.execute(
           `INSERT INTO admin_group_permissions 
            (tenant_id, admin_user_id, group_id, can_read, can_write, can_delete, assigned_by) 
@@ -392,7 +420,7 @@ class AdminPermissionService {
           targetType,
           changedBy,
           oldPermissions ? JSON.stringify(oldPermissions) : null,
-          newPermissions ? JSON.stringify(newPermissions) : null
+          newPermissions ? JSON.stringify(newPermissions) : null,
         ]
       );
     } catch (error) {

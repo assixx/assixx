@@ -478,35 +478,6 @@ class ShiftPlanningSystem {
     // Skip loading team leaders for non-admins
     // Team leaders are not used anymore
     this.teamLeaders = [];
-    return;
-
-    try {
-      const response = await fetch('/api/users', {
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Filter for team leaders and admins
-        const users = Array.isArray(data) ? data : data.users || [];
-        this.teamLeaders = users
-          .filter((user: User) => ['admin', 'root', 'manager', 'team_lead'].includes(user.role))
-          .map((user: User) => ({
-            id: user.id,
-            name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username,
-            username: user.username,
-          }));
-      } else {
-        throw new Error('Failed to load team leaders');
-      }
-    } catch (error) {
-      console.error('Error loading team leaders:', error);
-      // Fallback data
-      this.teamLeaders = [];
-    }
     this.populateTeamLeaderSelect();
   }
 

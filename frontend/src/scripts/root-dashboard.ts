@@ -4,7 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
-import { getAuthToken, removeAuthToken } from './auth';
+import { getAuthToken } from './auth';
 
 interface AdminUser extends User {
   company?: string;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      logout().catch(error => {
+      logout().catch((error) => {
         console.error('Logout error:', error);
         // Fallback
         window.location.href = '/pages/login.html';
@@ -316,21 +316,27 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         const result = await response.json();
         const logsContainer = document.getElementById('activity-logs');
-        
+
         if (logsContainer && result.success && result.data) {
           const logs = result.data.logs;
-          
+
           if (logs.length === 0) {
-            logsContainer.innerHTML = '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>';
+            logsContainer.innerHTML =
+              '<div class="log-entry"><div class="log-details">Keine Aktivitäten vorhanden</div></div>';
             return;
           }
 
-          logsContainer.innerHTML = logs.map((log: any) => {
-            const date = new Date(log.created_at);
-            const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            const dateString = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            
-            return `
+          logsContainer.innerHTML = logs
+            .map((log: any) => {
+              const date = new Date(log.created_at);
+              const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+              const dateString = date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
+
+              return `
               <div class="log-entry" onclick="window.location.href='/pages/logs.html'">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
@@ -343,7 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
             `;
-          }).join('');
+            })
+            .join('');
         }
       }
     } catch (error) {
@@ -354,16 +361,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper function to get readable action labels
   function getActionLabel(action: string): string {
     const actionLabels: { [key: string]: string } = {
-      'login': 'Anmeldung',
-      'logout': 'Abmeldung',
-      'create': 'Erstellt',
-      'update': 'Aktualisiert',
-      'delete': 'Gelöscht',
-      'upload': 'Hochgeladen',
-      'download': 'Heruntergeladen',
-      'view': 'Angesehen',
-      'assign': 'Zugewiesen',
-      'unassign': 'Entfernt'
+      login: 'Anmeldung',
+      logout: 'Abmeldung',
+      create: 'Erstellt',
+      update: 'Aktualisiert',
+      delete: 'Gelöscht',
+      upload: 'Hochgeladen',
+      download: 'Heruntergeladen',
+      view: 'Angesehen',
+      assign: 'Zugewiesen',
+      unassign: 'Entfernt',
     };
     return actionLabels[action] || action;
   }
@@ -371,9 +378,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper function to get readable role labels
   function getRoleLabel(role: string): string {
     const roleLabels: { [key: string]: string } = {
-      'root': 'Root',
-      'admin': 'Admin',
-      'employee': 'Mitarbeiter'
+      root: 'Root',
+      admin: 'Admin',
+      employee: 'Mitarbeiter',
     };
     return roleLabels[role] || role;
   }

@@ -25,21 +25,27 @@ interface AuthenticatedRequest extends Request {
 const validateCreateGroup = [
   body('name')
     .trim()
-    .notEmpty().withMessage('Gruppenname ist erforderlich')
-    .isLength({ max: 100 }).withMessage('Gruppenname darf maximal 100 Zeichen lang sein'),
+    .notEmpty()
+    .withMessage('Gruppenname ist erforderlich')
+    .isLength({ max: 100 })
+    .withMessage('Gruppenname darf maximal 100 Zeichen lang sein'),
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Beschreibung darf maximal 500 Zeichen lang sein'),
+    .isLength({ max: 500 })
+    .withMessage('Beschreibung darf maximal 500 Zeichen lang sein'),
   body('parentGroupId')
     .optional()
-    .isInt({ min: 1 }).withMessage('Ungültige übergeordnete Gruppen-ID'),
+    .isInt({ min: 1 })
+    .withMessage('Ungültige übergeordnete Gruppen-ID'),
   body('departmentIds')
     .optional()
-    .isArray().withMessage('departmentIds muss ein Array sein'),
+    .isArray()
+    .withMessage('departmentIds muss ein Array sein'),
   body('departmentIds.*')
     .optional()
-    .isInt({ min: 1 }).withMessage('Ungültige Abteilungs-ID')
+    .isInt({ min: 1 })
+    .withMessage('Ungültige Abteilungs-ID'),
 ];
 
 // Get all groups
@@ -57,13 +63,13 @@ router.get(
 
       res.json({
         success: true,
-        data: groups
+        data: groups,
       });
     } catch (error: any) {
       logger.error(`Error getting department groups: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Abrufen der Abteilungsgruppen'
+        error: 'Fehler beim Abrufen der Abteilungsgruppen',
       });
     }
   }
@@ -84,13 +90,13 @@ router.get(
 
       res.json({
         success: true,
-        data: hierarchy
+        data: hierarchy,
       });
     } catch (error: any) {
       logger.error(`Error getting group hierarchy: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Abrufen der Gruppenhierarchie'
+        error: 'Fehler beim Abrufen der Gruppenhierarchie',
       });
     }
   }
@@ -124,7 +130,7 @@ router.post(
       if (!groupId) {
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Erstellen der Gruppe'
+          error: 'Fehler beim Erstellen der Gruppe',
         });
         return;
       }
@@ -146,24 +152,24 @@ router.post(
       res.status(201).json({
         success: true,
         data: { id: groupId },
-        message: 'Abteilungsgruppe erfolgreich erstellt'
+        message: 'Abteilungsgruppe erfolgreich erstellt',
       });
     } catch (error: any) {
       if (error.message === 'Group name already exists') {
         res.status(409).json({
           success: false,
-          error: 'Eine Gruppe mit diesem Namen existiert bereits'
+          error: 'Eine Gruppe mit diesem Namen existiert bereits',
         });
       } else if (error.message === 'Circular dependency detected') {
         res.status(400).json({
           success: false,
-          error: 'Zirkuläre Abhängigkeit erkannt'
+          error: 'Zirkuläre Abhängigkeit erkannt',
         });
       } else {
         logger.error(`Error creating department group: ${error.message}`);
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Erstellen der Gruppe'
+          error: 'Fehler beim Erstellen der Gruppe',
         });
       }
     }
@@ -178,12 +184,15 @@ router.put(
   param('id').isInt({ min: 1 }).withMessage('Ungültige Gruppen-ID'),
   body('name')
     .trim()
-    .notEmpty().withMessage('Gruppenname ist erforderlich')
-    .isLength({ max: 100 }).withMessage('Gruppenname darf maximal 100 Zeichen lang sein'),
+    .notEmpty()
+    .withMessage('Gruppenname ist erforderlich')
+    .isLength({ max: 100 })
+    .withMessage('Gruppenname darf maximal 100 Zeichen lang sein'),
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 500 }).withMessage('Beschreibung darf maximal 500 Zeichen lang sein'),
+    .isLength({ max: 500 })
+    .withMessage('Beschreibung darf maximal 500 Zeichen lang sein'),
   async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -206,25 +215,25 @@ router.put(
       if (success) {
         res.json({
           success: true,
-          message: 'Gruppe erfolgreich aktualisiert'
+          message: 'Gruppe erfolgreich aktualisiert',
         });
       } else {
         res.status(404).json({
           success: false,
-          error: 'Gruppe nicht gefunden'
+          error: 'Gruppe nicht gefunden',
         });
       }
     } catch (error: any) {
       if (error.message === 'Group name already exists') {
         res.status(409).json({
           success: false,
-          error: 'Eine Gruppe mit diesem Namen existiert bereits'
+          error: 'Eine Gruppe mit diesem Namen existiert bereits',
         });
       } else {
         logger.error(`Error updating department group: ${error.message}`);
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Aktualisieren der Gruppe'
+          error: 'Fehler beim Aktualisieren der Gruppe',
         });
       }
     }
@@ -259,30 +268,34 @@ router.delete(
         );
         res.json({
           success: true,
-          message: 'Gruppe erfolgreich gelöscht'
+          message: 'Gruppe erfolgreich gelöscht',
         });
       } else {
         res.status(404).json({
           success: false,
-          error: 'Gruppe nicht gefunden'
+          error: 'Gruppe nicht gefunden',
         });
       }
     } catch (error: any) {
-      if (error.message === 'Cannot delete group with active admin permissions') {
+      if (
+        error.message === 'Cannot delete group with active admin permissions'
+      ) {
         res.status(409).json({
           success: false,
-          error: 'Gruppe kann nicht gelöscht werden, da noch Admin-Berechtigungen existieren'
+          error:
+            'Gruppe kann nicht gelöscht werden, da noch Admin-Berechtigungen existieren',
         });
       } else if (error.message === 'Cannot delete group with subgroups') {
         res.status(409).json({
           success: false,
-          error: 'Gruppe kann nicht gelöscht werden, da noch Untergruppen existieren'
+          error:
+            'Gruppe kann nicht gelöscht werden, da noch Untergruppen existieren',
         });
       } else {
         logger.error(`Error deleting department group: ${error.message}`);
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Löschen der Gruppe'
+          error: 'Fehler beim Löschen der Gruppe',
         });
       }
     }
@@ -296,9 +309,11 @@ router.post(
   authorizeRole('root'),
   param('id').isInt({ min: 1 }).withMessage('Ungültige Gruppen-ID'),
   body('departmentIds')
-    .isArray({ min: 1 }).withMessage('departmentIds muss ein nicht-leeres Array sein'),
+    .isArray({ min: 1 })
+    .withMessage('departmentIds muss ein nicht-leeres Array sein'),
   body('departmentIds.*')
-    .isInt({ min: 1 }).withMessage('Ungültige Abteilungs-ID'),
+    .isInt({ min: 1 })
+    .withMessage('Ungültige Abteilungs-ID'),
   async (req: Request, res: Response): Promise<void> => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -321,19 +336,19 @@ router.post(
       if (success) {
         res.json({
           success: true,
-          message: 'Abteilungen erfolgreich zur Gruppe hinzugefügt'
+          message: 'Abteilungen erfolgreich zur Gruppe hinzugefügt',
         });
       } else {
         res.status(500).json({
           success: false,
-          error: 'Fehler beim Hinzufügen der Abteilungen'
+          error: 'Fehler beim Hinzufügen der Abteilungen',
         });
       }
     } catch (error: any) {
       logger.error(`Error adding departments to group: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Hinzufügen der Abteilungen'
+        error: 'Fehler beim Hinzufügen der Abteilungen',
       });
     }
   }
@@ -367,19 +382,19 @@ router.delete(
       if (success) {
         res.json({
           success: true,
-          message: 'Abteilung erfolgreich aus der Gruppe entfernt'
+          message: 'Abteilung erfolgreich aus der Gruppe entfernt',
         });
       } else {
         res.status(404).json({
           success: false,
-          error: 'Abteilung oder Gruppe nicht gefunden'
+          error: 'Abteilung oder Gruppe nicht gefunden',
         });
       }
     } catch (error: any) {
       logger.error(`Error removing department from group: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Entfernen der Abteilung'
+        error: 'Fehler beim Entfernen der Abteilung',
       });
     }
   }
@@ -411,13 +426,13 @@ router.get(
 
       res.json({
         success: true,
-        data: departments
+        data: departments,
       });
     } catch (error: any) {
       logger.error(`Error getting group departments: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Fehler beim Abrufen der Abteilungen'
+        error: 'Fehler beim Abrufen der Abteilungen',
       });
     }
   }

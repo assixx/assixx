@@ -177,7 +177,7 @@ export default [
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 2021,
-      sourceType: 'commonjs',
+      sourceType: 'script',
       globals: {
         require: 'readonly',
         module: 'readonly',
@@ -282,6 +282,20 @@ export default [
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
+    },
+  },
+
+  // ESLint config files and ESM scripts
+  {
+    files: ['eslint.config.js', 'backend/eslint.config.js', 'frontend/eslint.config.js', 'scripts/fix-esm-imports.js'],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        import: 'readonly',
+      },
     },
   },
 
