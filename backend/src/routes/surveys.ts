@@ -20,12 +20,11 @@ import db from '../database';
 
 const router: Router = express.Router();
 
-// All routes require authentication and survey feature access
-router.use([authenticateToken] as any[]);
-router.use([checkFeature('surveys')] as any[]);
-
 // Get pending surveys count for employee
-router.get('/pending-count', async (req, res) => {
+router.get('/pending-count', 
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     const userId = authReq.user.id;
@@ -64,7 +63,9 @@ router.get('/pending-count', async (req, res) => {
 // Get all surveys
 router.get(
   '/',
-  [validatePaginationQuery] as any[],
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  validatePaginationQuery as any,
   async (req: any, res: any) => {
     try {
       const authReq = req as any;
@@ -85,7 +86,10 @@ router.get(
 );
 
 // Get survey templates
-router.get('/templates', async (req, res) => {
+router.get('/templates',
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     const templates = await Survey.getTemplates(authReq.user.tenant_id);
@@ -97,7 +101,10 @@ router.get('/templates', async (req, res) => {
 });
 
 // Get single survey
-router.get('/:id', async (req, res) => {
+router.get('/:id',
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     const survey = await Survey.getById(
@@ -136,7 +143,11 @@ router.get('/:id/statistics', async (req, res) => {
 });
 
 // Create survey (admin only)
-router.post('/', ...(validateCreateSurvey as any[]), async (req, res) => {
+router.post('/',
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  ...(validateCreateSurvey as any[]),
+  async (req, res) => {
   try {
     const authReq = req as any;
     if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {

@@ -19,24 +19,32 @@ export const checkFeature =
       // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
       let numericTenantId: number;
 
+      // Debug logging
+      logger.info(`[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenantId: req.user.tenantId, tenant_id: (req.user as any).tenant_id } : null)}`);
+
       if (req.tenantId) {
-        // Wenn tenant middleware gesetzt hat, hole numerische ID aus Datenbank
-        const [tenantRows] = (await (db as any).query(
-          'SELECT id FROM tenants WHERE subdomain = ?',
-          [req.tenantId]
-        )) as [RowDataPacket[], any];
+        // Check if tenantId is already numeric (from auth middleware)
+        if (typeof req.tenantId === 'number' || !isNaN(Number(req.tenantId))) {
+          numericTenantId = Number(req.tenantId);
+        } else {
+          // Otherwise it's a subdomain, look it up
+          const [tenantRows] = (await (db as any).query(
+            'SELECT id FROM tenants WHERE subdomain = ?',
+            [req.tenantId]
+          )) as [RowDataPacket[], any];
 
-        if (tenantRows.length === 0) {
-          return res.status(404).json({
-            error: 'Tenant nicht gefunden',
-            upgrade_required: true,
-          });
+          if (tenantRows.length === 0) {
+            return res.status(404).json({
+              error: 'Tenant nicht gefunden',
+              upgrade_required: true,
+            });
+          }
+
+          numericTenantId = tenantRows[0].id;
         }
-
-        numericTenantId = tenantRows[0].id;
-      } else if (req.user && req.user.tenantId) {
-        // Fallback: Verwende tenantId aus JWT Token
-        numericTenantId = req.user.tenantId;
+      } else if (req.user && (req.user.tenantId || (req.user as any).tenant_id)) {
+        // Fallback: Verwende tenantId aus JWT Token (unterstützt beide Schreibweisen)
+        numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
       } else {
         return res.status(400).json({
           error: 'Keine Tenant-ID gefunden',
@@ -94,21 +102,27 @@ export const checkAnyFeature =
       let numericTenantId: number;
 
       if (req.tenantId) {
-        const [tenantRows] = (await (db as any).query(
-          'SELECT id FROM tenants WHERE subdomain = ?',
-          [req.tenantId]
-        )) as [RowDataPacket[], any];
+        // Check if tenantId is already numeric (from auth middleware)
+        if (typeof req.tenantId === 'number' || !isNaN(Number(req.tenantId))) {
+          numericTenantId = Number(req.tenantId);
+        } else {
+          // Otherwise it's a subdomain, look it up
+          const [tenantRows] = (await (db as any).query(
+            'SELECT id FROM tenants WHERE subdomain = ?',
+            [req.tenantId]
+          )) as [RowDataPacket[], any];
 
-        if (tenantRows.length === 0) {
-          return res.status(404).json({
-            error: 'Tenant nicht gefunden',
-            upgrade_required: true,
-          });
+          if (tenantRows.length === 0) {
+            return res.status(404).json({
+              error: 'Tenant nicht gefunden',
+              upgrade_required: true,
+            });
+          }
+
+          numericTenantId = tenantRows[0].id;
         }
-
-        numericTenantId = tenantRows[0].id;
-      } else if (req.user && req.user.tenantId) {
-        numericTenantId = req.user.tenantId;
+      } else if (req.user && (req.user.tenantId || (req.user as any).tenant_id)) {
+        numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
       } else {
         return res.status(400).json({
           error: 'Keine Tenant-ID gefunden',
@@ -163,21 +177,27 @@ export const checkAllFeatures =
       let numericTenantId: number;
 
       if (req.tenantId) {
-        const [tenantRows] = (await (db as any).query(
-          'SELECT id FROM tenants WHERE subdomain = ?',
-          [req.tenantId]
-        )) as [RowDataPacket[], any];
+        // Check if tenantId is already numeric (from auth middleware)
+        if (typeof req.tenantId === 'number' || !isNaN(Number(req.tenantId))) {
+          numericTenantId = Number(req.tenantId);
+        } else {
+          // Otherwise it's a subdomain, look it up
+          const [tenantRows] = (await (db as any).query(
+            'SELECT id FROM tenants WHERE subdomain = ?',
+            [req.tenantId]
+          )) as [RowDataPacket[], any];
 
-        if (tenantRows.length === 0) {
-          return res.status(404).json({
-            error: 'Tenant nicht gefunden',
-            upgrade_required: true,
-          });
+          if (tenantRows.length === 0) {
+            return res.status(404).json({
+              error: 'Tenant nicht gefunden',
+              upgrade_required: true,
+            });
+          }
+
+          numericTenantId = tenantRows[0].id;
         }
-
-        numericTenantId = tenantRows[0].id;
-      } else if (req.user && req.user.tenantId) {
-        numericTenantId = req.user.tenantId;
+      } else if (req.user && (req.user.tenantId || (req.user as any).tenant_id)) {
+        numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
       } else {
         return res.status(400).json({
           error: 'Keine Tenant-ID gefunden',
