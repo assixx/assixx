@@ -115,7 +115,18 @@ class UnifiedNavigation {
       try {
         const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload;
         this.currentUser = payload;
-        this.currentRole = payload.role;
+        
+        // Check for role switch - if admin has switched to employee role
+        const activeRole = localStorage.getItem('activeRole');
+        if (payload.role === 'admin' && activeRole === 'employee') {
+          this.currentRole = 'employee';
+        } else if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
+          // Use activeRole if it's valid
+          this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+        } else {
+          // Default to user's actual role
+          this.currentRole = payload.role;
+        }
 
         // Also try to load full user profile
         this.loadFullUserProfile();
@@ -326,7 +337,7 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp.html',
+              url: '/pages/kvp-new.html',
               badge: 'new-kvp-suggestions',
             },
             {
@@ -468,7 +479,7 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp.html',
+              url: '/pages/kvp-new.html',
               badge: 'new-kvp-suggestions',
             },
             {
@@ -1542,7 +1553,7 @@ class UnifiedNavigation {
         return;
       }
 
-      const response = await fetch('/api/kvp/dashboard', {
+      const response = await fetch('/api/kvp/stats', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1552,8 +1563,8 @@ class UnifiedNavigation {
       if (response.ok) {
         const data = await response.json();
         const badge = document.getElementById('kvp-new-badge');
-        if (badge && data.success && data.data) {
-          const count = data.data.new_suggestions || 0;
+        if (badge && data.company) {
+          const count = data.company.byStatus?.new || 0;
           if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count.toString();
             badge.style.display = 'inline-block';

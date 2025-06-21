@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin-Verwaltung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      (function() {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const root = document.documentElement;
+        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+      })();
+    </script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>

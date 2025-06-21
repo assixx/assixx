@@ -200,3 +200,119 @@ window.addEventListener('DOMContentLoaded', function () {
 ## Status
 
 ✅ BEIDE PROBLEME GELÖST (10.01.2025)
+
+---
+
+## Problem-Beschreibung 3 (21.06.2025) - KVP-Seiten Header-Problem
+
+Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header komplett falsch dargestellt.
+
+### Symptome:
+
+- Role-Switch Button war neben dem Logo statt rechts im Header
+- Profilbild war überdimensional groß
+- Header-Layout stimmte nicht mit anderen Seiten überein
+- Console zeigte: `[UnifiedNav] Using cached loadUserInfo` aber Header war trotzdem falsch
+
+### Ursache:
+
+1. **Falsche CSS-Lade-Methode**: 
+   - KVP-Seiten nutzten `<link rel="stylesheet">` Tags
+   - Funktionierende Seiten nutzen `@import` innerhalb eines `<style>` Tags
+
+2. **Falsche Script-Reihenfolge**:
+   - `unified-navigation.ts` wurde VOR den Seiten-Scripts geladen
+   - `role-switch.ts` wurde separat geladen (unnötig)
+
+3. **Fehlende CSS-Datei**:
+   - `user-info-update.css` wurde nicht geladen
+
+## Lösung für KVP-Seiten
+
+### 1. CSS mit @import laden (WICHTIG!)
+
+```html
+<!-- FALSCH - führt zu Header-Problemen -->
+<link rel="stylesheet" href="/styles/dashboard-theme.css" />
+<link rel="stylesheet" href="/styles/user-info-update.css" />
+
+<!-- RICHTIG - so funktioniert es -->
+<style>
+  @import url('/styles/dashboard-theme.css');
+  @import url('/styles/user-info-update.css');
+  /* Weitere Seiten-spezifische Styles */
+</style>
+```
+
+### 2. Korrekte Script-Reihenfolge (unified-navigation.ts als LETZTES!)
+
+```html
+<!-- FALSCH - Header wird falsch dargestellt -->
+<script type="module" src="/scripts/components/unified-navigation.ts"></script>
+<script type="module" src="/scripts/auth.ts"></script>
+<script type="module" src="/scripts/pages/kvp.ts"></script>
+<script type="module" src="/scripts/role-switch.ts"></script>
+
+<!-- RICHTIG - Header funktioniert perfekt -->
+<script type="module" src="/scripts/auth.ts"></script>
+<script type="module" src="/scripts/pages/kvp.ts"></script>
+<script type="module" src="/scripts/components/unified-navigation.ts"></script>
+<!-- Kein separates role-switch.ts nötig! -->
+```
+
+### 3. Vollständiges funktionierendes Beispiel (documents-search.html als Vorlage)
+
+```html
+<head>
+  <!-- Font Awesome zuerst -->
+  <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+  
+  <!-- Alle anderen CSS mit @import -->
+  <style>
+    @import url('/styles/dashboard-theme.css');
+    @import url('/styles/user-info-update.css');
+    /* Seiten-spezifische Styles hier */
+  </style>
+</head>
+<body>
+  <!-- Navigation Container -->
+  <div id="navigation-container"></div>
+  
+  <!-- Main Content -->
+  <div class="layout-container">
+    <main class="main-content">
+      <!-- Seiten-Inhalt -->
+    </main>
+  </div>
+  
+  <!-- Scripts in DIESER Reihenfolge -->
+  <script type="module" src="/scripts/auth.ts"></script>
+  <script type="module" src="/scripts/pages/[seiten-script].ts"></script>
+  <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+</body>
+```
+
+## Wichtige Erkenntnisse für neue Seiten
+
+1. **IMMER @import verwenden** für CSS (außer fontawesome.min.css)
+2. **unified-navigation.ts IMMER als letztes Script** laden
+3. **Kein separates role-switch.ts** - wird von unified-navigation gehandhabt
+4. **user-info-update.css ist PFLICHT** für korrekten Header
+5. **Script-Reihenfolge**: auth.ts → seiten-script.ts → unified-navigation.ts
+
+## Debugging-Tipps
+
+Wenn der Header falsch aussieht:
+1. Prüfe ob CSS mit `@import` geladen wird (nicht `<link>`)
+2. Prüfe ob `unified-navigation.ts` als LETZTES Script geladen wird
+3. Prüfe ob `user-info-update.css` importiert wird
+4. Vergleiche mit einer funktionierenden Seite wie `documents-search.html`
+
+## Betroffene Dateien (Update 21.06.2025)
+
+- `/frontend/src/pages/kvp-new.html` - CSS-Methode und Script-Reihenfolge korrigiert
+- `/frontend/src/pages/kvp-detail.html` - CSS-Methode und Script-Reihenfolge korrigiert
+
+## Status
+
+✅ ALLE DREI PROBLEME GELÖST (21.06.2025)

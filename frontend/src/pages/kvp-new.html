@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KVP System - Assixx</title>
+    
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      (function() {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const root = document.documentElement;
+        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
+    
+    <!-- Dashboard Theme CSS -->
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/user-info-update.css');
+      
+      /* Dramatischer Hintergrund-Gradient */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(0deg,transparent,rgba(0,142,255,.03) 100%,#01000482 0,rgba(0,0,4,.6) 90%,#000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Filter Bar Styles */
+      .kvp-filter-bar {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .filter-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .filter-btn.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+      }
+
+      .filter-btn .badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .filter-btn.active .badge {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      /* Secondary Filters */
+      .secondary-filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        max-width: 800px;
+      }
+
+      .secondary-filters select,
+      .secondary-filters input {
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+      }
+
+      .secondary-filters select:focus,
+      .secondary-filters input:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
+      }
+
+      /* Info Box für Admins */
+      .admin-info-box {
+        background: rgba(255, 182, 107, 0.1);
+        border: 1px solid rgba(255, 182, 107, 0.3);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+      }
+
+      .admin-info-box i {
+        color: #ff6b6b;
+        font-size: 1.5rem;
+      }
+
+      /* KVP Suggestions Grid */
+      .kvp-suggestions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: var(--spacing-lg);
+        margin-top: var(--spacing-lg);
+      }
+
+      /* KVP Card */
+      .kvp-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        transition: all 0.3s ease;
+        position: relative;
+        cursor: pointer;
+      }
+
+      .kvp-card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+          0 12px 40px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        border-color: rgba(0, 142, 255, 0.5);
+      }
+
+      /* Status Badge */
+      .status-badge {
+        position: absolute;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .status-badge.new {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.5);
+      }
+
+      .status-badge.in_review {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.5);
+      }
+
+      .status-badge.approved {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.5);
+      }
+
+      .status-badge.implemented {
+        background: rgba(103, 58, 183, 0.2);
+        color: #673ab7;
+        border: 1px solid rgba(103, 58, 183, 0.5);
+      }
+
+      .status-badge.rejected {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.5);
+      }
+
+      .status-badge.archived {
+        background: rgba(158, 158, 158, 0.2);
+        color: #9e9e9e;
+        border: 1px solid rgba(158, 158, 158, 0.5);
+      }
+
+      /* Visibility Badge */
+      .visibility-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        margin-top: var(--spacing-sm);
+      }
+
+      .visibility-badge.department {
+        background: rgba(78, 205, 196, 0.2);
+        color: #4ecdc4;
+        border: 1px solid rgba(78, 205, 196, 0.5);
+      }
+
+      .visibility-badge.company {
+        background: rgba(102, 126, 234, 0.2);
+        color: #667eea;
+        border: 1px solid rgba(102, 126, 234, 0.5);
+      }
+
+      /* Suggestion Content */
+      .suggestion-header {
+        margin-bottom: var(--spacing-md);
+      }
+
+      .suggestion-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .suggestion-meta {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .suggestion-meta i {
+        color: var(--primary-color);
+      }
+
+      .suggestion-description {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin: var(--spacing-md) 0;
+        max-height: 4.8em; /* 3 lines * 1.6 line-height */
+        overflow: hidden;
+        position: relative;
+      }
+      
+      .suggestion-description::after {
+        content: '...';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.02) 50%);
+        padding-left: 20px;
+      }
+
+      .suggestion-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: var(--spacing-lg);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .category-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      /* Action Buttons */
+      .action-buttons {
+        display: flex;
+        gap: var(--spacing-sm);
+      }
+
+      .action-btn {
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary-color);
+      }
+
+      .action-btn.share {
+        color: var(--primary-color);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .action-btn.share:hover {
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      /* Create New Button */
+      .create-new-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 60px;
+        height: 60px;
+        background: var(--primary-color);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4);
+        transition: all 0.3s ease;
+        z-index: 100;
+      }
+
+      .create-new-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 32px rgba(33, 150, 243, 0.6);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.3);
+        margin-bottom: 1rem;
+      }
+
+      .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+      }
+
+      /* Statistics Cards */
+      .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .stat-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+
+      .stat-label {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+      }
+
+      /* Category Tag */
+      .category-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .category-tag:hover {
+        transform: scale(1.05);
+      }
+
+      /* Custom Dropdown Styles */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+        min-width: 150px;
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.8);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.9rem;
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
+      }
+
+      /* Scrollbar Styles */
+      .dropdown-options::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Modal Styles */
+      .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+
+      .modal.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-content {
+        background: #1a1a1a4a;
+        backdrop-filter: blur(20px) saturate(500%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .modal-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        transition: all 0.3s ease;
+      }
+
+      .modal-close:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--error-color);
+      }
+
+      .modal-body {
+        padding: var(--spacing-lg);
+      }
+
+      .modal-footer {
+        padding: var(--spacing-lg);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+      }
+
+      /* Form Elements */
+      .form-group {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: var(--spacing-sm);
+        font-weight: 500;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+      }
+
+      .form-label .required {
+        color: var(--error-color);
+      }
+
+      .form-control {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+      }
+
+      .form-control:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      /* Buttons */
+      .btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        box-shadow:
+          0 1px 4px rgba(33, 150, 243, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow:
+          0 6px 20px rgba(33, 150, 243, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(5px);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+      }
+
+      /* Warning Box */
+      .warning-box {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+      }
+
+      .warning-box i {
+        color: #ff9800;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .warning-box strong {
+        color: #ff9800;
+      }
+
+      .warning-box div {
+        flex: 1;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.9);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Navigation Container -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout -->
+    <div class="layout-container">
+      <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+          <h1>KVP System</h1>
+          <p>Kontinuierlicher Verbesserungsprozess</p>
+        </div>
+
+        <!-- Admin Info Box -->
+        <div class="admin-info-box" id="adminInfoBox" style="display: none;">
+          <i class="fas fa-lightbulb"></i>
+          <div>
+            <strong>Tipp für Admins:</strong> Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen. 
+            Als Admin können Sie Vorschläge verwalten und firmenweit teilen.
+          </div>
+        </div>
+
+        <!-- Statistics Overview (Admin only) -->
+        <div class="stats-overview" id="statsOverview" style="display: none;">
+          <div class="stat-card">
+            <div class="stat-value" id="totalSuggestions">0</div>
+            <div class="stat-label">Gesamt Vorschläge</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="openSuggestions">0</div>
+            <div class="stat-label">In Bearbeitung</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="implementedSuggestions">0</div>
+            <div class="stat-label">Umgesetzt</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalSavings">0€</div>
+            <div class="stat-label">Einsparungen</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="kvp-filter-bar">
+          <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-list"></i>
+            Alle <span class="badge" id="badgeAll">0</span>
+          </button>
+          <button class="filter-btn" data-filter="mine">
+            <i class="fas fa-user"></i>
+            Meine <span class="badge" id="badgeMine">0</span>
+          </button>
+          <button class="filter-btn" data-filter="department">
+            <i class="fas fa-building"></i>
+            Abteilung <span class="badge" id="badgeDepartment">0</span>
+          </button>
+          <button class="filter-btn" data-filter="company">
+            <i class="fas fa-globe"></i>
+            Firmenweit <span class="badge" id="badgeCompany">0</span>
+          </button>
+          <button class="filter-btn admin-only" data-filter="manage" style="display: none;">
+            <i class="fas fa-tasks"></i>
+            Verwalten
+          </button>
+          <button class="filter-btn admin-only" data-filter="archived" style="display: none;">
+            <i class="fas fa-archive"></i>
+            Archiv <span class="badge" id="badgeArchived">0</span>
+          </button>
+        </div>
+
+        <!-- Secondary Filters -->
+        <div class="secondary-filters">
+          <!-- Status Filter Dropdown -->
+          <div class="custom-dropdown">
+            <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+              <span>Alle Status</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="dropdown-options" id="statusDropdown">
+              <div class="dropdown-option" onclick="selectStatus('', 'Alle Status')">Alle Status</div>
+              <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
+              <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
+              <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
+              <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
+              <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+            </div>
+            <input type="hidden" name="statusFilter" id="statusFilterValue" />
+          </div>
+          
+          <!-- Category Filter Dropdown -->
+          <div class="custom-dropdown">
+            <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
+              <span>Alle Kategorien</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="dropdown-options" id="categoryDropdown">
+              <div class="dropdown-option" onclick="selectCategory('', 'Alle Kategorien')">Alle Kategorien</div>
+              <!-- Dynamisch geladen -->
+            </div>
+            <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
+          </div>
+
+          <!-- Department Filter Dropdown -->
+          <div class="custom-dropdown admin-only" style="display: none;">
+            <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+              <span>Alle Abteilungen</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="dropdown-options" id="departmentDropdown">
+              <div class="dropdown-option" onclick="selectDepartment('', 'Alle Abteilungen')">Alle Abteilungen</div>
+              <!-- Dynamisch geladen für Admins -->
+            </div>
+            <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
+          </div>
+
+          <input type="text" id="searchFilter" placeholder="Suchen..." />
+        </div>
+
+        <!-- Suggestions Container -->
+        <div class="kvp-suggestions-grid" id="suggestionsContainer">
+          <!-- Dynamisch geladen -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <i class="fas fa-inbox"></i>
+          <h3>Keine Vorschläge gefunden</h3>
+          <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
+        </div>
+
+        <!-- Create New Button -->
+        <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">
+          <i class="fas fa-plus"></i>
+        </button>
+      </main>
+    </div>
+
+    <!-- Create KVP Modal -->
+    <div id="createKvpModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Neuer KVP-Vorschlag</h3>
+          <button class="modal-close" onclick="window.hideCreateModal()">&times;</button>
+        </div>
+        <form id="createKvpForm">
+          <div class="modal-body">
+            <!-- Warning Box -->
+            <div class="warning-box">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                <strong>Wichtiger Hinweis:</strong><br>
+                Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. 
+                Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie den Vorschlag absenden.
+              </div>
+            </div>
+
+            <!-- Title -->
+            <div class="form-group">
+              <label class="form-label" for="kvpTitle">
+                Titel <span class="required">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="kvpTitle" 
+                name="title" 
+                class="form-control" 
+                placeholder="Kurze, prägnante Beschreibung"
+                required 
+                maxlength="255"
+              />
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+              <label class="form-label" for="kvpDescription">
+                Beschreibung <span class="required">*</span>
+              </label>
+              <textarea 
+                id="kvpDescription" 
+                name="description" 
+                class="form-control" 
+                placeholder="Detaillierte Beschreibung des Vorschlags..."
+                rows="4"
+                required
+              ></textarea>
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+              <label class="form-label" for="kvpCategory">
+                Kategorie <span class="required">*</span>
+              </label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
+                  <span>Bitte wählen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="kvpCategoryDropdown">
+                  <!-- Dynamisch geladen -->
+                </div>
+                <input type="hidden" name="category_id" id="kvpCategoryValue" required />
+              </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+              <label class="form-label" for="kvpPriority">
+                Priorität
+              </label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
+                  <span>Normal</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="kvpPriorityDropdown">
+                  <div class="dropdown-option" onclick="selectKvpPriority('low', 'Niedrig')">Niedrig</div>
+                  <div class="dropdown-option" onclick="selectKvpPriority('normal', 'Normal')">Normal</div>
+                  <div class="dropdown-option" onclick="selectKvpPriority('high', 'Hoch')">Hoch</div>
+                  <div class="dropdown-option" onclick="selectKvpPriority('urgent', 'Dringend')">Dringend</div>
+                </div>
+                <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
+              </div>
+            </div>
+
+            <!-- Expected Benefit -->
+            <div class="form-group">
+              <label class="form-label" for="kvpBenefit">
+                Erwarteter Nutzen
+              </label>
+              <textarea 
+                id="kvpBenefit" 
+                name="expected_benefit" 
+                class="form-control" 
+                placeholder="Welche Vorteile bringt dieser Vorschlag?"
+                rows="3"
+              ></textarea>
+            </div>
+
+            <!-- Estimated Cost (Optional) -->
+            <div class="form-group">
+              <label class="form-label" for="kvpCost">
+                Geschätzte Kosten (Optional)
+              </label>
+              <input 
+                type="number" 
+                id="kvpCost" 
+                name="estimated_cost" 
+                class="form-control" 
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window.hideCreateModal()">
+              Abbrechen
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Vorschlag einreichen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dropdown Functions -->
+    <script>
+      // Toggle Dropdown
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      // Select Status
+      function selectStatus(value, text) {
+        document.getElementById('statusDisplay').querySelector('span').textContent = text;
+        document.getElementById('statusFilterValue').value = value;
+        document.getElementById('statusDisplay').classList.remove('active');
+        document.getElementById('statusDropdown').classList.remove('active');
+        
+        // Trigger filter event
+        const event = new Event('change');
+        document.getElementById('statusFilterValue').dispatchEvent(event);
+      }
+
+      // Select Category
+      function selectCategory(value, text) {
+        document.getElementById('categoryDisplay').querySelector('span').textContent = text;
+        document.getElementById('categoryFilterValue').value = value;
+        document.getElementById('categoryDisplay').classList.remove('active');
+        document.getElementById('categoryDropdown').classList.remove('active');
+        
+        // Trigger filter event
+        const event = new Event('change');
+        document.getElementById('categoryFilterValue').dispatchEvent(event);
+      }
+
+      // Select Department
+      function selectDepartment(value, text) {
+        document.getElementById('departmentDisplay').querySelector('span').textContent = text;
+        document.getElementById('departmentFilterValue').value = value;
+        document.getElementById('departmentDisplay').classList.remove('active');
+        document.getElementById('departmentDropdown').classList.remove('active');
+        
+        // Trigger filter event
+        const event = new Event('change');
+        document.getElementById('departmentFilterValue').dispatchEvent(event);
+      }
+
+      // Select KVP Category
+      function selectKvpCategory(value, text) {
+        document.getElementById('kvpCategoryDisplay').querySelector('span').textContent = text;
+        document.getElementById('kvpCategoryValue').value = value;
+        document.getElementById('kvpCategoryDisplay').classList.remove('active');
+        document.getElementById('kvpCategoryDropdown').classList.remove('active');
+      }
+
+      // Select KVP Priority
+      function selectKvpPriority(value, text) {
+        document.getElementById('kvpPriorityDisplay').querySelector('span').textContent = text;
+        document.getElementById('kvpPriorityValue').value = value;
+        document.getElementById('kvpPriorityDisplay').classList.remove('active');
+        document.getElementById('kvpPriorityDropdown').classList.remove('active');
+      }
+
+      // Click outside to close
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Simple modal functions as fallback
+      window.showCreateModal = function() {
+        const modal = document.getElementById('createKvpModal');
+        if (modal) {
+          modal.classList.add('active');
+        }
+      };
+
+      window.hideCreateModal = function() {
+        const modal = document.getElementById('createKvpModal');
+        if (modal) {
+          modal.classList.remove('active');
+        }
+      };
+
+      // Click outside modal to close
+      document.getElementById('createKvpModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+          window.hideCreateModal();
+        }
+      });
+    </script>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth.ts"></script>
+    <script type="module" src="/scripts/utils/modal-manager.ts"></script>
+    <script type="module" src="/scripts/pages/kvp.ts"></script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+  </body>
+</html>
