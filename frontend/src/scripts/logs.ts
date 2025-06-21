@@ -201,8 +201,21 @@
                     ? (() => {
                         // Check if details is JSON or plain text
                         try {
-                          JSON.parse(log.details);
-                          // It's JSON, show with click handler
+                          const parsedDetails = JSON.parse(log.details);
+                          
+                          // Format KVP details specially
+                          if (log.action === 'kvp_created' || log.action === 'kvp_shared') {
+                            let formatted = '';
+                            if (parsedDetails.title) {
+                              formatted = `"${parsedDetails.title}"`;
+                            }
+                            if (parsedDetails.shared_to) {
+                              formatted = `Geteilt an: ${parsedDetails.shared_to === 'company' ? 'Firmenweit' : parsedDetails.shared_to}`;
+                            }
+                            return `<span style="color: var(--text-secondary);">${formatted}</span>`;
+                          }
+                          
+                          // For other JSON details, show with click handler
                           return `<span class="details-preview" onclick="showFullDetails('${btoa(log.details)}')" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
                         ${log.details.length > 50 ? log.details.substring(0, 50) + '...' : log.details}
                       </span>`;

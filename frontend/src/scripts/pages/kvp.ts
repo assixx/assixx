@@ -404,7 +404,8 @@ class KvpPage {
       const response = await fetch(`${API_BASE_URL}/kvp/${id}/share`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
       });
       
@@ -425,7 +426,8 @@ class KvpPage {
       const response = await fetch(`${API_BASE_URL}/kvp/${id}/unshare`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
       });
       
