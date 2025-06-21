@@ -283,7 +283,6 @@
         position: absolute;
         bottom: 0;
         right: 0;
-        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.02) 50%);
         padding-left: 20px;
       }
 
@@ -742,6 +741,87 @@
         grid-column: 1 / -1;
       }
 
+      /* Photo Upload Styles */
+      .photo-upload-area {
+        margin-top: var(--spacing-sm);
+      }
+
+      .upload-box {
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-xl);
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .upload-box:hover {
+        border-color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .upload-box i {
+        font-size: 2.5rem;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: var(--spacing-md);
+      }
+
+      .upload-box p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .upload-box p.small {
+        font-size: 0.85rem;
+        margin-top: var(--spacing-xs);
+      }
+
+      .photo-preview {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
+        flex-wrap: wrap;
+      }
+
+      .photo-preview-item {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .photo-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .photo-preview-item .remove-photo {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(244, 67, 54, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+      }
+
+      .photo-preview-item .remove-photo:hover {
+        background: #f44336;
+        transform: scale(1.1);
+      }
+
       /* Modal responsive adjustments */
       @media (max-width: 768px) {
         .form-grid {
@@ -1004,6 +1084,31 @@
                 rows="3"
               ></textarea>
             </div>
+
+            <!-- Photo Upload Section -->
+            <div class="form-group full-width">
+              <label class="form-label">
+                Fotos hinzufügen (optional)
+                <small class="text-muted">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</small>
+              </label>
+              <div class="photo-upload-area">
+                <input 
+                  type="file" 
+                  id="kvpPhotos" 
+                  name="photos" 
+                  accept="image/jpeg,image/jpg,image/png"
+                  multiple
+                  style="display: none;"
+                  onchange="handlePhotoSelection(this)"
+                />
+                <div class="upload-box" onclick="document.getElementById('kvpPhotos').click()">
+                  <i class="fas fa-camera"></i>
+                  <p>Klicken Sie hier, um Fotos auszuwählen</p>
+                  <p class="small text-muted">oder ziehen Sie Dateien hierher</p>
+                </div>
+                <div id="photoPreview" class="photo-preview"></div>
+              </div>
+            </div>
           </div>
 
           <div class="modal-footer">
@@ -1109,6 +1214,11 @@
         const modal = document.getElementById('createKvpModal');
         if (modal) {
           modal.classList.remove('active');
+          // Clear selected photos when closing modal
+          selectedPhotos = [];
+          window.selectedPhotos = selectedPhotos;
+          const preview = document.getElementById('photoPreview');
+          if (preview) preview.innerHTML = '';
         }
       };
 
@@ -1118,6 +1228,65 @@
           window.hideCreateModal();
         }
       });
+
+      // Photo upload handling
+      let selectedPhotos = [];
+      window.selectedPhotos = selectedPhotos;  // Make it globally accessible
+
+      function handlePhotoSelection(input) {
+        const files = Array.from(input.files);
+        const validFiles = files.filter(file => {
+          const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+          return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024; // 10MB
+        });
+
+        if (selectedPhotos.length + validFiles.length > 5) {
+          alert('Sie können maximal 5 Fotos hochladen.');
+          return;
+        }
+
+        validFiles.forEach(file => {
+          selectedPhotos.push(file);
+          window.selectedPhotos = selectedPhotos;  // Keep window reference updated
+          displayPhotoPreview(file, selectedPhotos.length - 1);
+        });
+
+        // Reset input
+        input.value = '';
+      }
+
+      function displayPhotoPreview(file, index) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const preview = document.getElementById('photoPreview');
+          const item = document.createElement('div');
+          item.className = 'photo-preview-item';
+          item.innerHTML = `
+            <img src="${e.target.result}" alt="Vorschau">
+            <button class="remove-photo" onclick="removePhoto(${index})" type="button">&times;</button>
+          `;
+          preview.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function removePhoto(index) {
+        selectedPhotos.splice(index, 1);
+        window.selectedPhotos = selectedPhotos;  // Keep window reference updated
+        refreshPhotoPreview();
+      }
+
+      function refreshPhotoPreview() {
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = '';
+        selectedPhotos.forEach((file, index) => {
+          displayPhotoPreview(file, index);
+        });
+      }
+
+      // Make functions globally available
+      window.handlePhotoSelection = handlePhotoSelection;
+      window.removePhoto = removePhoto;
     </script>
 
     <!-- Scripts -->

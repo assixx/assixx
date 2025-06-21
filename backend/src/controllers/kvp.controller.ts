@@ -142,7 +142,8 @@ class KvpController {
                cat.icon as category_icon,
                cat.color as category_color,
                su.first_name as shared_by_firstname,
-               su.last_name as shared_by_lastname
+               su.last_name as shared_by_lastname,
+               (SELECT COUNT(*) FROM kvp_attachments WHERE suggestion_id = s.id) as attachment_count
         FROM kvp_suggestions s
         LEFT JOIN users u ON s.submitted_by = u.id
         LEFT JOIN users su ON s.shared_by = su.id
@@ -330,6 +331,26 @@ class KvpController {
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
         [result.insertId]
+      );
+
+      // Log the creation
+      await (pool as any).query(
+        `INSERT INTO activity_logs 
+         (user_id, action, entity_type, entity_id, details, ip_address, user_agent) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          'kvp_created',
+          'kvp_suggestion',
+          result.insertId,
+          JSON.stringify({
+            title: req.body.title,
+            department_id: departmentId,
+            category_id: req.body.category_id || null
+          }),
+          req.ip || req.socket.remoteAddress,
+          req.headers['user-agent'] || null
+        ]
       );
 
       res.status(201).json({
@@ -561,6 +582,12 @@ class KvpController {
         return;
       }
 
+      // Get suggestion details for logging
+      const [suggestions] = await (pool as any).query(
+        'SELECT title, department_id FROM kvp_suggestions WHERE id = ?',
+        [id]
+      );
+
       // Update to company-wide visibility
       await (pool as any).query(
         `UPDATE kvp_suggestions 
@@ -579,6 +606,26 @@ class KvpController {
         id,
         'kvp_suggestion',
         req.user.tenant_id
+      );
+
+      // Log the sharing action
+      await (pool as any).query(
+        `INSERT INTO activity_logs 
+         (user_id, action, entity_type, entity_id, details, ip_address, user_agent) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          req.user.id,
+          'kvp_shared',
+          'kvp_suggestion',
+          id,
+          JSON.stringify({
+            title: suggestions[0].title,
+            shared_to: 'company',
+            from_department_id: suggestions[0].department_id
+          }),
+          req.ip || req.socket.remoteAddress,
+          req.headers['user-agent'] || null
+        ]
       );
 
       res.json({ 
@@ -961,13 +1008,151 @@ class KvpController {
     }
   }
 
-  // Placeholder methods for file handling (need multer integration)
-  async uploadAttachment(_req: any, res: Response): Promise<void> {
-    res.status(501).json({ error: 'Not implemented yet' });
+  /**
+   * Upload photo attachments for a KVP suggestion
+   * POST /api/kvp/:id/attachments
+   */
+  async uploadAttachment(req: any, res: Response): Promise<void> {
+    try {
+      console.log('=== KVP Upload Attachment Start ===');
+      console.log('User:', req.user);
+      console.log('Suggestion ID:', req.params.id);
+      console.log('Files received:', req.files?.length || 0);
+      
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const suggestionId = parseInt(req.params.id);
+      const files = req.files as Express.Multer.File[];
+
+      console.log('Parsed suggestion ID:', suggestionId);
+      console.log('Files array:', files);
+
+      if (!files || files.length === 0) {
+        console.log('No files in request');
+        res.status(400).json({ error: 'Keine Dateien hochgeladen' });
+        return;
+      }
+
+      // Check if user has permission to add attachments to this suggestion
+      // Fixed parameter order: userId, suggestionId, role, tenantId
+      const hasPermission = await kvpPermissionService.canViewSuggestion(
+        req.user.id,
+        suggestionId,
+        req.user.role,
+        req.user.tenant_id
+      );
+
+      console.log('Has permission:', hasPermission);
+
+      if (!hasPermission) {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+
+      const attachments = [];
+
+      // Save each file reference in database
+      for (const file of files) {
+        console.log('Processing file:', {
+          filename: file.filename,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.path
+        });
+
+        const [result] = await (pool as any).query(
+          `INSERT INTO kvp_attachments 
+           (suggestion_id, file_name, file_path, file_type, file_size, uploaded_by) 
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            suggestionId,
+            file.originalname,
+            file.path,
+            file.mimetype,
+            file.size,
+            req.user.id
+          ]
+        );
+
+        attachments.push({
+          id: result.insertId,
+          file_name: file.originalname,
+          file_type: file.mimetype,
+          file_size: file.size,
+          uploaded_at: new Date()
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `${attachments.length} Foto(s) erfolgreich hochgeladen`,
+        attachments
+      });
+    } catch (error) {
+      console.error('Error in KvpController.uploadAttachment:', error);
+      res.status(500).json({
+        error: 'Fehler beim Hochladen der Fotos',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
 
-  async downloadAttachment(_req: any, res: Response): Promise<void> {
-    res.status(501).json({ error: 'Not implemented yet' });
+  /**
+   * Download a KVP attachment
+   * GET /api/kvp/attachments/:attachmentId/download
+   */
+  async downloadAttachment(req: any, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const attachmentId = parseInt(req.params.attachmentId);
+
+      // Get attachment details
+      const [attachments] = await (pool as any).query(
+        `SELECT ka.*, ks.tenant_id 
+         FROM kvp_attachments ka
+         JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
+         WHERE ka.id = ?`,
+        [attachmentId]
+      );
+
+      if (attachments.length === 0) {
+        res.status(404).json({ error: 'Anhang nicht gefunden' });
+        return;
+      }
+
+      const attachment = attachments[0];
+
+      // Check if user has permission to view this attachment
+      // Fixed parameter order: userId, suggestionId, role, tenantId
+      const hasPermission = await kvpPermissionService.canViewSuggestion(
+        req.user.id,
+        attachment.suggestion_id,
+        req.user.role,
+        req.user.tenant_id
+      );
+
+      if (!hasPermission) {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+
+      // Send file
+      res.download(attachment.file_path, attachment.file_name);
+    } catch (error) {
+      console.error('Error in KvpController.downloadAttachment:', error);
+      res.status(500).json({
+        error: 'Fehler beim Herunterladen der Datei',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
 }
 

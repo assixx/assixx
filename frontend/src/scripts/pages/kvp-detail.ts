@@ -343,34 +343,57 @@ class KvpDetailPage {
   private renderAttachments(attachments: Attachment[]): void {
     if (attachments.length === 0) return;
     
-    document.getElementById('attachmentsCard')!.style.display = '';
-    const container = document.getElementById('attachmentList')!;
+    // Filter photo attachments
+    const photoTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const photos = attachments.filter(att => photoTypes.includes(att.file_type));
+    const otherFiles = attachments.filter(att => !photoTypes.includes(att.file_type));
     
-    container.innerHTML = attachments.map(attachment => {
-      const fileIcon = this.getFileIcon(attachment.file_type);
-      const fileSize = this.formatFileSize(attachment.file_size);
+    // Render photo gallery
+    if (photos.length > 0) {
+      document.getElementById('photoSection')!.style.display = '';
+      const photoGallery = document.getElementById('photoGallery')!;
       
-      return `
-        <div class="attachment-item" data-id="${attachment.id}">
-          <i class="${fileIcon}"></i>
-          <div class="attachment-info">
-            <div class="attachment-name">${this.escapeHtml(attachment.file_name)}</div>
-            <div class="attachment-meta">
-              ${fileSize} • ${attachment.uploaded_by_name} ${attachment.uploaded_by_lastname}
-            </div>
-          </div>
-          <i class="fas fa-download"></i>
+      photoGallery.innerHTML = photos.map((photo, index) => `
+        <div class="photo-thumbnail" onclick="window.openLightbox('${API_BASE_URL}/kvp/attachments/${photo.id}/download')">
+          <img src="${API_BASE_URL}/kvp/attachments/${photo.id}/download" 
+               alt="${this.escapeHtml(photo.file_name)}"
+               loading="lazy">
+          ${index === 0 && photos.length > 1 ? `<span class="photo-count">${photos.length} Fotos</span>` : ''}
         </div>
-      `;
-    }).join('');
+      `).join('');
+    }
     
-    // Add click handlers
-    container.querySelectorAll('.attachment-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const id = item.getAttribute('data-id');
-        if (id) this.downloadAttachment(parseInt(id));
+    // Render other attachments
+    if (otherFiles.length > 0) {
+      document.getElementById('attachmentsCard')!.style.display = '';
+      const container = document.getElementById('attachmentList')!;
+      
+      container.innerHTML = otherFiles.map(attachment => {
+        const fileIcon = this.getFileIcon(attachment.file_type);
+        const fileSize = this.formatFileSize(attachment.file_size);
+        
+        return `
+          <div class="attachment-item" data-id="${attachment.id}">
+            <i class="${fileIcon}"></i>
+            <div class="attachment-info">
+              <div class="attachment-name">${this.escapeHtml(attachment.file_name)}</div>
+              <div class="attachment-meta">
+                ${fileSize} • ${attachment.uploaded_by_name} ${attachment.uploaded_by_lastname}
+              </div>
+            </div>
+            <i class="fas fa-download"></i>
+          </div>
+        `;
+      }).join('');
+      
+      // Add click handlers
+      container.querySelectorAll('.attachment-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const id = item.getAttribute('data-id');
+          if (id) this.downloadAttachment(parseInt(id));
+        });
       });
-    });
+    }
   }
 
   private async downloadAttachment(attachmentId: number): Promise<void> {

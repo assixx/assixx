@@ -499,6 +499,8 @@
       view: 'Angesehen',
       assign: 'Zugewiesen',
       unassign: 'Entfernt',
+      kvp_created: 'KVP Erstellt',
+      kvp_shared: 'KVP Geteilt',
     };
     return actionLabels[action] || action;
   }

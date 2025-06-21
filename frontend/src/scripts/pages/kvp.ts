@@ -37,6 +37,7 @@ interface KvpSuggestion {
   expected_benefit?: string;
   estimated_cost?: number;
   actual_savings?: number;
+  attachment_count?: number;
 }
 
 interface KvpCategory {
@@ -292,6 +293,8 @@ class KvpPage {
             <div class="suggestion-meta">
               <span><i class="fas fa-user"></i> ${suggestion.submitted_by_name} ${suggestion.submitted_by_lastname}</span>
               <span><i class="fas fa-calendar"></i> ${new Date(suggestion.created_at).toLocaleDateString('de-DE')}</span>
+              ${suggestion.attachment_count && suggestion.attachment_count > 0 ? 
+                `<span><i class="fas fa-camera"></i> ${suggestion.attachment_count} Foto${suggestion.attachment_count > 1 ? 's' : ''}</span>` : ''}
             </div>
             <div class="visibility-badge ${suggestion.org_level}">
               <i class="fas ${visibilityIcon}"></i> ${visibilityText}
@@ -612,9 +615,30 @@ class KvpPage {
         throw new Error(error.message || 'Fehler beim Erstellen des Vorschlags');
       }
       
+      const result = await response.json();
+      const suggestionId = result.suggestion.id;
+      
+      // Upload photos if any
+      const selectedPhotos = (window as any).selectedPhotos;
+      console.log('Check selectedPhotos:', selectedPhotos);
+      console.log('Window.selectedPhotos type:', typeof (window as any).selectedPhotos);
+      console.log('Photos count:', selectedPhotos ? selectedPhotos.length : 0);
+      
+      if (selectedPhotos && selectedPhotos.length > 0) {
+        console.log('Uploading photos for suggestion:', suggestionId);
+        await this.uploadPhotos(suggestionId, selectedPhotos);
+      } else {
+        console.log('No photos to upload');
+      }
+      
       // Success
       this.showSuccess('Ihr Vorschlag wurde erfolgreich eingereicht');
       (window as any).hideCreateModal();
+      
+      // Clear photo selection
+      (window as any).selectedPhotos = [];
+      const photoPreview = document.getElementById('photoPreview');
+      if (photoPreview) photoPreview.innerHTML = '';
       
       // Reload suggestions
       await this.loadSuggestions();
@@ -622,6 +646,39 @@ class KvpPage {
     } catch (error) {
       console.error('Error creating suggestion:', error);
       this.showError(error instanceof Error ? error.message : 'Fehler beim Erstellen des Vorschlags');
+    }
+  }
+
+  private async uploadPhotos(suggestionId: number, photos: File[]): Promise<void> {
+    console.log('Uploading photos:', photos.length, 'photos for suggestion', suggestionId);
+    
+    const formData = new FormData();
+    photos.forEach((photo, index) => {
+      console.log(`Adding photo ${index}:`, photo.name, photo.size, photo.type);
+      formData.append('photos', photo);
+    });
+
+    try {
+      console.log('Sending photo upload request to:', `${API_BASE_URL}/kvp/${suggestionId}/attachments`);
+      const response = await fetch(`${API_BASE_URL}/kvp/${suggestionId}/attachments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      console.log('Upload response status:', response.status);
+      const responseData = await response.json();
+      console.log('Upload response data:', responseData);
+
+      if (!response.ok) {
+        console.error('Fehler beim Hochladen der Fotos:', responseData);
+        throw new Error(responseData.message || 'Upload fehlgeschlagen');
+      }
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      throw error;
     }
   }
 }
