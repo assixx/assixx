@@ -438,7 +438,8 @@ body {
   margin-bottom: var(--spacing-md);
 }
 .mb-4 {
-  margin-bottom: var(--spacing-lg);
+  /*margin-bottom: var(--spacing-lg);*/
+  margin-bottom: 38px;
 }
 .mb-5 {
   margin-bottom: var(--spacing-xl);

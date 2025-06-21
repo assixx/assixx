@@ -697,11 +697,14 @@ class UnifiedNavigation {
           ? '/pages/admin-dashboard.html?section=dashboard'
           : '/pages/employee-dashboard.html';
 
+    // Determine which logo to use based on sidebar collapsed state
+    const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+
     return `
       <!-- Header -->
       <header class="header">
         <a href="${dashboardUrl}" class="logo-container">
-          <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" />
+          <img src="${logoSrc}" alt="Assixx Logo" class="logo" id="header-logo" />
         </a>
         <div class="header-content">
           <div class="header-actions">
@@ -1078,6 +1081,12 @@ class UnifiedNavigation {
 
       // Update icon
       this.updateToggleIcon();
+
+      // Update logo based on collapsed state
+      const headerLogo = document.getElementById('header-logo') as HTMLImageElement;
+      if (headerLogo) {
+        headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+      }
 
       console.log('[UnifiedNav] Sidebar collapsed state:', newState);
       console.log('[UnifiedNav] Sidebar classes after:', sidebar.className);
@@ -2217,6 +2226,13 @@ const unifiedNavigationCSS = `
         width: 70px !important;
     }
 
+    /* Logo size adjustment when sidebar is collapsed */
+    body:has(.sidebar.collapsed) .header .logo {
+        height: 24px;
+        width: auto;
+        margin-left: -4px;
+    }
+
     .sidebar.collapsed .sidebar-title {
         padding: var(--spacing-sm);
         justify-content: center;
@@ -2396,11 +2412,11 @@ const unifiedNavigationCSS = `
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: var(--spacing-lg) var(--spacing-xl);
+        padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(115, 115, 115, 0.36);
+        /*border: 1px solid rgba(115, 115, 115, 0.36);*/
         border-radius: var(--radius-lg);
         margin-bottom: 20px;
         position: relative;
@@ -2539,7 +2555,7 @@ const unifiedNavigationCSS = `
         display: inline-block;
         padding: 2px 8px;
         border-radius: 8px;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 500;
         transition: all 0.2s ease;
         margin: 6px 0 0 0;
