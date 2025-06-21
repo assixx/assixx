@@ -559,10 +559,11 @@
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         width: 90%;
-        max-width: 600px;
+        max-width: 900px;
         max-height: 90vh;
         overflow-y: auto;
         animation: fadeInUp 0.3s ease-out;
+        padding: 20px;
       }
 
       .modal-header {
@@ -602,7 +603,7 @@
       }
 
       .modal-body {
-        padding: var(--spacing-lg);
+        padding: 20px;
       }
 
       .modal-footer {
@@ -727,6 +728,29 @@
         font-size: 0.9rem;
         line-height: 1.5;
         color: rgba(255, 255, 255, 0.9);
+      }
+
+      /* Form Grid Layout */
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .form-group.full-width {
+        grid-column: 1 / -1;
+      }
+
+      /* Modal responsive adjustments */
+      @media (max-width: 768px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .modal-content {
+          max-width: 95%;
+        }
       }
     </style>
   </head>
@@ -893,80 +917,82 @@
               </div>
             </div>
 
-            <!-- Title -->
-            <div class="form-group">
-              <label class="form-label" for="kvpTitle">
-                Titel <span class="required">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="kvpTitle" 
-                name="title" 
-                class="form-control" 
-                placeholder="Kurze, prägnante Beschreibung"
-                required 
-                maxlength="255"
-              />
-            </div>
+            <!-- Two column grid for all fields -->
+            <div class="form-grid">
+              <!-- Title -->
+              <div class="form-group">
+                <label class="form-label" for="kvpTitle">
+                  Titel <span class="required">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="kvpTitle" 
+                  name="title" 
+                  class="form-control" 
+                  placeholder="Kurze, prägnante Beschreibung"
+                  required 
+                  maxlength="255"
+                />
+              </div>
 
-            <!-- Description -->
-            <div class="form-group">
-              <label class="form-label" for="kvpDescription">
-                Beschreibung <span class="required">*</span>
-              </label>
-              <textarea 
-                id="kvpDescription" 
-                name="description" 
-                class="form-control" 
-                placeholder="Detaillierte Beschreibung des Vorschlags..."
-                rows="4"
-                required
-              ></textarea>
-            </div>
+              <!-- Description -->
+              <div class="form-group">
+                <label class="form-label" for="kvpDescription">
+                  Beschreibung <span class="required">*</span>
+                </label>
+                <textarea 
+                  id="kvpDescription" 
+                  name="description" 
+                  class="form-control" 
+                  placeholder="Detaillierte Beschreibung des Vorschlags..."
+                  rows="4"
+                  required
+                ></textarea>
+              </div>
+              <!-- Category -->
+              <div class="form-group">
+                <label class="form-label" for="kvpCategory">
+                  Kategorie <span class="required">*</span>
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
+                    <span>Bitte wählen</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="kvpCategoryDropdown">
+                    <!-- Dynamisch geladen -->
+                  </div>
+                  <input type="hidden" name="category_id" id="kvpCategoryValue" required />
+                </div>
+              </div>
 
-            <!-- Category -->
-            <div class="form-group">
-              <label class="form-label" for="kvpCategory">
-                Kategorie <span class="required">*</span>
-              </label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
-                  <span>Bitte wählen</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
+              <!-- Priority -->
+              <div class="form-group">
+                <label class="form-label" for="kvpPriority">
+                  Priorität
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
+                    <span>Normal</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="kvpPriorityDropdown">
+                    <div class="dropdown-option" onclick="selectKvpPriority('low', 'Niedrig')">Niedrig</div>
+                    <div class="dropdown-option" onclick="selectKvpPriority('normal', 'Normal')">Normal</div>
+                    <div class="dropdown-option" onclick="selectKvpPriority('high', 'Hoch')">Hoch</div>
+                    <div class="dropdown-option" onclick="selectKvpPriority('urgent', 'Dringend')">Dringend</div>
+                  </div>
+                  <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
                 </div>
-                <div class="dropdown-options" id="kvpCategoryDropdown">
-                  <!-- Dynamisch geladen -->
-                </div>
-                <input type="hidden" name="category_id" id="kvpCategoryValue" required />
               </div>
             </div>
 
-            <!-- Priority -->
-            <div class="form-group">
-              <label class="form-label" for="kvpPriority">
-                Priorität
-              </label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
-                  <span>Normal</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="kvpPriorityDropdown">
-                  <div class="dropdown-option" onclick="selectKvpPriority('low', 'Niedrig')">Niedrig</div>
-                  <div class="dropdown-option" onclick="selectKvpPriority('normal', 'Normal')">Normal</div>
-                  <div class="dropdown-option" onclick="selectKvpPriority('high', 'Hoch')">Hoch</div>
-                  <div class="dropdown-option" onclick="selectKvpPriority('urgent', 'Dringend')">Dringend</div>
-                </div>
-                <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
-              </div>
-            </div>
-
-            <!-- Expected Benefit -->
-            <div class="form-group">
+            <!-- Expected Benefit (full width) -->
+            <div class="form-group full-width">
               <label class="form-label" for="kvpBenefit">
                 Erwarteter Nutzen
               </label>
@@ -977,22 +1003,6 @@
                 placeholder="Welche Vorteile bringt dieser Vorschlag?"
                 rows="3"
               ></textarea>
-            </div>
-
-            <!-- Estimated Cost (Optional) -->
-            <div class="form-group">
-              <label class="form-label" for="kvpCost">
-                Geschätzte Kosten (Optional)
-              </label>
-              <input 
-                type="number" 
-                id="kvpCost" 
-                name="estimated_cost" 
-                class="form-control" 
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-              />
             </div>
           </div>
 

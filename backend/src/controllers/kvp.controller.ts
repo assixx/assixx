@@ -769,8 +769,7 @@ class KvpController {
       }
 
       const [categories] = await (pool as any).query(
-        'SELECT * FROM kvp_categories WHERE tenant_id = ? OR tenant_id IS NULL ORDER BY name',
-        [req.user.tenant_id]
+        'SELECT * FROM kvp_categories ORDER BY name'
       );
 
       res.json({

@@ -337,7 +337,7 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp-new.html',
+              url: '/pages/kvp.html',
               badge: 'new-kvp-suggestions',
             },
             {
@@ -479,7 +479,7 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp-new.html',
+              url: '/pages/kvp.html',
               badge: 'new-kvp-suggestions',
             },
             {
@@ -856,7 +856,7 @@ class UnifiedNavigation {
     } else if (item.badge === 'unread-documents') {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'new-kvp-suggestions') {
-      badgeHtml = `<span class="nav-badge" id="kvp-new-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     }
 
     // If has submenu, create a dropdown
@@ -1548,7 +1548,7 @@ class UnifiedNavigation {
 
       // Only show badge for admin/root users
       if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
-        const badge = document.getElementById('kvp-new-badge');
+        const badge = document.getElementById('kvp-badge');
         if (badge) badge.style.display = 'none';
         return;
       }
@@ -1562,7 +1562,7 @@ class UnifiedNavigation {
 
       if (response.ok) {
         const data = await response.json();
-        const badge = document.getElementById('kvp-new-badge');
+        const badge = document.getElementById('kvp-badge');
         if (badge && data.company) {
           const count = data.company.byStatus?.new || 0;
           if (count > 0) {
@@ -1587,6 +1587,11 @@ class UnifiedNavigation {
       // Nur für Employees
       const role = localStorage.getItem('userRole');
       if (role !== 'employee') return;
+
+      // Nur auf Survey-relevanten Seiten ausführen
+      const currentPath = window.location.pathname;
+      const surveyPages = ['/pages/survey.html', '/pages/employee-dashboard.html'];
+      if (!surveyPages.some(page => currentPath.includes(page))) return;
 
       const response = await fetch('/api/surveys/pending-count', {
         headers: {

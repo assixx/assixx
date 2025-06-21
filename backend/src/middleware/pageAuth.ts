@@ -118,7 +118,7 @@ const pagePermissions: Record<string, PageConfig> = {
     allowedRoles: ['employee', 'admin', 'root'],
     redirectOnFail: '/pages/login.html',
   },
-  '/pages/kvp-new.html': {
+  '/pages/kvp.html': {
     allowedRoles: ['employee', 'admin', 'root'],
     redirectOnFail: '/pages/login.html',
   },
