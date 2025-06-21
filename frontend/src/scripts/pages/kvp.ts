@@ -112,9 +112,15 @@ class KvpPage {
   private getEffectiveRole(): string {
     if (!this.currentUser) return 'employee';
     
-    // Check if admin has switched to employee role
-    if (this.currentUser.role === 'admin' && sessionStorage.getItem('roleSwitch') === 'employee') {
+    // Check if admin or root has switched to employee role
+    if ((this.currentUser.role === 'admin' || this.currentUser.role === 'root') && sessionStorage.getItem('roleSwitch') === 'employee') {
       return 'employee';
+    }
+    
+    // Check localStorage for activeRole (more reliable for root users)
+    const activeRole = localStorage.getItem('activeRole');
+    if (activeRole && activeRole !== this.currentUser.role) {
+      return activeRole as string;
     }
     
     return this.currentUser.role;

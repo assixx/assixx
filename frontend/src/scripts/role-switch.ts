@@ -65,7 +65,7 @@ async function switchRole(): Promise<void> {
     localStorage.setItem('activeRole', data.user.activeRole);
     
     // Also update sessionStorage for KVP page compatibility
-    if (data.user.activeRole === 'employee' && userRole === 'admin') {
+    if (data.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
       sessionStorage.setItem('roleSwitch', 'employee');
     } else {
       sessionStorage.removeItem('roleSwitch');
@@ -83,9 +83,22 @@ async function switchRole(): Promise<void> {
     // Create toast notification
     showToast(message, 'success');
 
-    // Reload current page after short delay to apply new role
+    // Redirect to appropriate dashboard after short delay
     setTimeout(() => {
-      window.location.reload();
+      const currentPath = window.location.pathname;
+      const newRole = data.user.activeRole;
+      
+      // If we're on a dashboard page, redirect to the appropriate dashboard
+      if (currentPath.includes('dashboard')) {
+        if (newRole === 'admin') {
+          window.location.href = '/pages/admin-dashboard.html';
+        } else if (newRole === 'employee') {
+          window.location.href = '/pages/employee-dashboard.html';
+        }
+      } else {
+        // For other pages (like KVP), just reload
+        window.location.reload();
+      }
     }, 1000);
   } catch (error) {
     console.error('Role switch error:', error);
@@ -265,7 +278,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     localStorage.setItem('activeRole', data.user.activeRole);
     
     // Also update sessionStorage for KVP page compatibility
-    if (data.user.activeRole === 'employee' && userRole === 'admin') {
+    if (data.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
       sessionStorage.setItem('roleSwitch', 'employee');
     } else {
       sessionStorage.removeItem('roleSwitch');
@@ -278,9 +291,23 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     const message = `Wechsel zur ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
     showToast(message, 'success');
 
-    // Reload current page after short delay to apply new role
+    // Redirect to appropriate dashboard after short delay
     setTimeout(() => {
-      window.location.reload();
+      const currentPath = window.location.pathname;
+      
+      // If we're on a dashboard page, redirect to the appropriate dashboard
+      if (currentPath.includes('dashboard')) {
+        if (targetRole === 'root') {
+          window.location.href = '/pages/root-dashboard.html';
+        } else if (targetRole === 'admin') {
+          window.location.href = '/pages/admin-dashboard.html';
+        } else if (targetRole === 'employee') {
+          window.location.href = '/pages/employee-dashboard.html';
+        }
+      } else {
+        // For other pages (like KVP), just reload
+        window.location.reload();
+      }
     }, 1000);
   } catch (error) {
     console.error('Role switch error:', error);
