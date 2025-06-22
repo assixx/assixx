@@ -3,6 +3,8 @@
  */
 
 import type { User, JWTPayload } from '../types/api.types';
+import SessionManager from './utils/session-manager';
+import { BrowserFingerprint } from './utils/browser-fingerprint';
 
 // Extend window for auth functions
 declare global {
@@ -43,7 +45,25 @@ export function removeAuthToken(): void {
 // Check if user is authenticated
 export function isAuthenticated(): boolean {
   const token = getAuthToken();
-  return token !== null && token.length > 0;
+  if (!token || token.length === 0) {
+    return false;
+  }
+  
+  // Check if token is expired
+  const payload = parseJwt(token);
+  if (!payload || !payload.exp) {
+    return false;
+  }
+  
+  // Check expiration (exp is in seconds, Date.now() is in milliseconds)
+  const now = Date.now() / 1000;
+  if (payload.exp < now) {
+    console.info('[AUTH] Token expired, clearing auth data');
+    removeAuthToken();
+    return false;
+  }
+  
+  return true;
 }
 
 // Parse JWT token
@@ -73,9 +93,13 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     throw new Error('No authentication token');
   }
 
+  // Get browser fingerprint
+  const fingerprint = await BrowserFingerprint.generate();
+  
   const headers: HeadersInit = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
+    'X-Browser-Fingerprint': fingerprint,
     ...options.headers,
   };
 
@@ -220,12 +244,15 @@ export async function logout(): Promise<void> {
   // Call logout API to log the action
   if (token) {
     try {
+      const fingerprint = await BrowserFingerprint.generate();
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'X-Browser-Fingerprint': fingerprint,
         },
+        body: JSON.stringify({}), // Empty body to satisfy Content-Type validation
       });
     } catch (error) {
       console.error('Error logging logout:', error);
@@ -238,6 +265,9 @@ export async function logout(): Promise<void> {
   localStorage.removeItem('userRole');
   localStorage.removeItem('activeRole');
   localStorage.removeItem('tenantId');
+  localStorage.removeItem('browserFingerprint');
+  localStorage.removeItem('fingerprintTimestamp');
+  localStorage.removeItem('sidebarCollapsed'); // Reset sidebar state on logout
   
   // Clear user profile cache
   userProfileCache = { data: null, timestamp: 0 };
@@ -296,6 +326,10 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Failed to load user info:', error);
       // Don't redirect immediately, let the user see the error
     });
+    
+    // Initialize session manager for authenticated users
+    SessionManager.getInstance();
+    console.info('[AUTH] Session manager initialized');
   }
 });
 

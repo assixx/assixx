@@ -16,6 +16,8 @@ export interface TokenPayload {
   username: string;
   role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
+  fingerprint?: string; // Browser fingerprint for session isolation
+  sessionId?: string; // Unique session identifier
   iat?: number;
   exp?: number;
 }

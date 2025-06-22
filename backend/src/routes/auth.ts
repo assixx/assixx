@@ -4,6 +4,7 @@
 
 import express, { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 // Import models (now ES modules)
 import User from '../models/user';
@@ -20,6 +21,36 @@ interface AuthenticatedRequest extends Request {
     tenant_id: number;
   };
 }
+
+/**
+ * @route GET /api/auth/validate
+ * @desc Validate current token
+ * @access Private
+ */
+router.get('/validate', authenticateToken, async (req, res): Promise<void> => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    
+    // Token is valid if we reach this point (authenticateToken middleware passed)
+    res.json({
+      success: true,
+      valid: true,
+      user: {
+        id: authReq.user.id,
+        username: authReq.user.username,
+        role: authReq.user.role,
+        tenant_id: authReq.user.tenant_id,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Token validation error:', error);
+    res.status(500).json({
+      success: false,
+      valid: false,
+      message: 'Fehler bei der Token-Validierung',
+    });
+  }
+});
 
 /**
  * @route GET /api/auth/user

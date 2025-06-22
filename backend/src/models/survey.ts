@@ -20,7 +20,6 @@ interface DbSurvey extends RowDataPacket {
   created_by: number;
   status: 'draft' | 'active' | 'closed';
   is_anonymous: boolean | number;
-  is_mandatory: boolean | number;
   start_date?: Date | null;
   end_date?: Date | null;
   created_at: Date;
@@ -81,7 +80,6 @@ interface SurveyCreateData {
   description?: string;
   status?: 'draft' | 'active' | 'closed';
   is_anonymous?: boolean;
-  is_mandatory?: boolean;
   start_date?: Date | string | null;
   end_date?: Date | string | null;
   questions?: Array<{
@@ -160,8 +158,8 @@ export class Survey {
         `
         INSERT INTO surveys (
           tenant_id, title, description, created_by, status,
-          is_anonymous, is_mandatory, start_date, end_date
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          is_anonymous, start_date, end_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
         [
           tenantId,
@@ -170,7 +168,6 @@ export class Survey {
           createdBy,
           surveyData.status || 'draft',
           surveyData.is_anonymous || false,
-          surveyData.is_mandatory || false,
           surveyData.start_date || null,
           surveyData.end_date || null,
         ]
@@ -260,7 +257,7 @@ export class Survey {
         u.first_name as creator_first_name,
         u.last_name as creator_last_name,
         COUNT(DISTINCT sr.id) as response_count,
-        COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_count
+        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
@@ -375,7 +372,6 @@ export class Survey {
           description = ?,
           status = ?,
           is_anonymous = ?,
-          is_mandatory = ?,
           start_date = ?,
           end_date = ?
         WHERE id = ? AND tenant_id = ?
@@ -385,7 +381,6 @@ export class Survey {
           surveyData.description || null,
           surveyData.status || 'draft',
           surveyData.is_anonymous || false,
-          surveyData.is_mandatory || false,
           surveyData.start_date || null,
           surveyData.end_date || null,
           surveyId,
@@ -518,7 +513,7 @@ export class Survey {
         `
         SELECT 
           COUNT(DISTINCT sr.id) as total_responses,
-          COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_responses,
+          COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_responses,
           MIN(sr.started_at) as first_response,
           MAX(sr.completed_at) as last_response
         FROM surveys s

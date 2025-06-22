@@ -2,6 +2,11 @@
 
 ## 🎯 START-TRIGGER (WICHTIGSTE SEKTION!)
 
+FYI: für Datenbankzugang lies immer DATABASE-MIGRATION-GUIDE.md in /docs
+    wir benutzen docker und pnpm
+Wichtig! niemals comitten oder pushen ohne Erlaubnis oder Nachfrage vom user
+NIEMALS Fast-Forwar merge durchführen!!!!!!!
+
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
 
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen

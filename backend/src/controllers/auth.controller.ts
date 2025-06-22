@@ -9,12 +9,27 @@ import userService from '../services/user.service';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../types/request.types';
 import { createLog } from '../routes/logs.js';
+import pool from '../database';
+import { RowDataPacket } from 'mysql2/promise';
+
+// Helper function to handle both real pool and mock database
+async function executeQuery<T extends RowDataPacket[]>(
+  sql: string,
+  params?: any[]
+): Promise<[T, any]> {
+  const result = await (pool as any).query(sql, params);
+  if (Array.isArray(result) && result.length === 2) {
+    return result as [T, any];
+  }
+  return [result as T, null];
+}
 
 // Interfaces for request bodies
 interface LoginRequest extends Request {
   body: {
     username?: string;
     password?: string;
+    fingerprint?: string; // Browser fingerprint for session isolation
   };
 }
 
@@ -83,8 +98,9 @@ class AuthController {
   async login(req: LoginRequest, res: Response): Promise<void> {
     console.log('[DEBUG] AuthController.login called');
     try {
-      const { username, password } = req.body;
+      const { username, password, fingerprint } = req.body;
       console.log('[DEBUG] Login attempt for username:', username);
+      console.log('[DEBUG] Browser fingerprint provided:', !!fingerprint);
 
       // Validate input
       if (!username || !password) {
@@ -95,9 +111,9 @@ class AuthController {
         return;
       }
 
-      // Authenticate user
+      // Authenticate user with fingerprint
       console.log('[DEBUG] Calling authService.authenticateUser');
-      const result = await authService.authenticateUser(username, password);
+      const result = await authService.authenticateUser(username, password, fingerprint);
       console.log('[DEBUG] Auth result:', result ? 'Success' : 'Failed');
 
       if (!result.success) {
@@ -205,6 +221,117 @@ class AuthController {
     });
 
     res.json({ message: 'Logout successful' });
+  }
+
+  /**
+   * Validate token
+   */
+  async validateToken(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      // Token is already validated by authenticateToken middleware
+      // Get fresh user data from database
+      const userId = req.user!.id;
+      const user = await userService.getUserById(userId, req.user!.tenantId);
+
+      if (!user) {
+        res.status(404).json({
+          error: 'User not found',
+          valid: false,
+        });
+        return;
+      }
+
+      // Check if user is active
+      if (!user.is_active) {
+        res.status(403).json({
+          error: 'User account is inactive',
+          valid: false,
+        });
+        return;
+      }
+
+      res.json({
+        valid: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          tenant_id: user.tenant_id,
+          department_id: user.department_id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+        },
+      });
+    } catch (error) {
+      logger.error('[AUTH] Validation error:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        valid: false,
+      });
+    }
+  }
+
+  /**
+   * Validate browser fingerprint
+   */
+  async validateFingerprint(
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { fingerprint } = req.body;
+      const user = req.user;
+
+      if (!fingerprint || !user) {
+        res.json({ valid: true }); // Skip validation if no fingerprint
+        return;
+      }
+
+      // Get session ID from token (if available)
+      const sessionId = (user as any).sessionId;
+      if (!sessionId) {
+        res.json({ valid: true }); // Skip if no session ID
+        return;
+      }
+
+      // Check session in database
+      const [sessions] = await executeQuery<RowDataPacket[]>(
+        'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
+        [user.id, sessionId]
+      );
+
+      if (sessions.length === 0) {
+        res.status(403).json({
+          error: 'Session not found or expired',
+          valid: false,
+        });
+        return;
+      }
+
+      const storedFingerprint = sessions[0].fingerprint;
+      if (storedFingerprint && storedFingerprint !== fingerprint) {
+        logger.warn(
+          `[SECURITY] Browser fingerprint mismatch for user ${user.id}`
+        );
+        res.status(403).json({
+          error: 'Browser fingerprint mismatch',
+          valid: false,
+        });
+        return;
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      logger.error('[AUTH] Fingerprint validation error:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        valid: false,
+      });
+    }
   }
 }
 

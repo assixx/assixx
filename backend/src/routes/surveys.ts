@@ -44,7 +44,7 @@ router.get('/pending-count',
     let pendingCount = 0;
     for (const survey of surveys) {
       const [response] = await (db as any).execute(
-        'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND is_complete = 1',
+        'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND status = \'completed\'',
         [survey.id, userId]
       );
 
@@ -315,7 +315,7 @@ router.post(
 
         const [responseResult] = (await connection.execute(
           `
-        INSERT INTO survey_responses (survey_id, user_id, anonymous_id)
+        INSERT INTO survey_responses (survey_id, user_id, session_id)
         VALUES (?, ?, ?)
       `,
           [
@@ -351,7 +351,7 @@ router.post(
 
         // Mark response as complete
         await connection.execute(
-          'UPDATE survey_responses SET is_complete = 1, completed_at = NOW() WHERE id = ?',
+          'UPDATE survey_responses SET status = \'completed\', completed_at = NOW() WHERE id = ?',
           [responseId]
         );
 
