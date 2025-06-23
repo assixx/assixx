@@ -1945,8 +1945,9 @@ const unifiedNavigationCSS = `
     }
     
     .header .logo {
-        height: 40px;
+        height: 50px;
         width: auto;
+        margin-left: -13px;
     }
 
     .header .header-actions {
