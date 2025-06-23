@@ -61,7 +61,6 @@ Das Projekt wurde neu strukturiert für bessere Übersichtlichkeit:
 
 ```
 docs/
-├── AKTIONSPLAN-BETA-FIXES.md    # Beta-Deployment Plan
 ├── ARCHITECTURE.md               # System-Architektur (WICHTIG!)
 ├── BACKUP-GUIDE.md              # Backup-Anleitung
 ├── BEFORE-STARTING-DEV.md       # Dev-Checkliste (PFLICHT VOR START!)
@@ -71,25 +70,18 @@ docs/
 ├── DATABASE-MIGRATION-GUIDE.md  # Migration Best Practices (WICHTIG!)
 ├── DEPLOYMENT.md                # Deployment-Guide
 ├── DESIGN-STANDARDS.md          # UI/UX Standards (GLASSMORPHISMUS!)
-├── DEVELOPMENT-GUIDE.md         # Entwickler-Guide
 ├── DOCKER-BEGINNERS-GUIDE.md    # Docker Einführung
 ├── DOCKER-SETUP-SUMMARY.md      # Docker Setup Zusammenfassung
 ├── DOCKER-SETUP.md              # Docker Konfiguration
 ├── FEATURES.md                  # Feature-Dokumentation
-├── GIT-BRANCH-STRATEGY.md       # Git-Workflow
 ├── HEADER-PROBLEM.md            # Header UI Problem Dokumentation
 ├── KEY-FEATURES.md              # Wichtige Features Übersicht
 ├── MODAL-PROBLEM.md             # Modal UI Problem Dokumentation
 ├── NAVIGATION-CONTAINER.md      # Navigation Container Dokumentation
-├── PHPMYADMIN-SETUP.md          # phpMyAdmin Setup Guide
 ├── PNPM-MIGRATION.md            # pnpm Migration Guide
 ├── PROJEKTSTRUKTUR.md           # Diese Datei (BEI ÄNDERUNGEN UPDATEN!)
 ├── QUESTIONS.md                 # FAQ
 ├── ROADMAP.md                   # Projekt-Roadmap
-├── SETUP-MACOS.md               # macOS Setup
-├── SETUP-QUICKSTART.md          # Schnellstart
-├── SETUP-UBUNTU-LINUX.md        # Ubuntu Setup
-├── SETUP-WINDOWS-WSL.md         # Windows/WSL Setup
 ├── TERMS-OF-USE.md              # Nutzungsbedingungen
 ├── TYPESCRIPT-STANDARDS.md      # TypeScript Code Standards
 ├── UNIT-TESTS.md                # Unit Testing Guide

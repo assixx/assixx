@@ -1,216 +1,78 @@
-# 🐳 Assixx Docker Setup Guide
+# 🐳 Docker Setup
 
-> **Für Beta-Kunden** - Schnelle Installation mit Docker
+## Voraussetzungen
+- Docker & Docker Compose installiert
+- 2GB RAM, 5GB Speicher
 
-## 📋 Voraussetzungen
+## Quick Start
 
-- Docker installiert (Version 20.10+)
-- Docker Compose installiert (Version 2.0+)
-- 2GB freier RAM
-- 5GB freier Speicherplatz
+### Option 1: Automatisch (Empfohlen)
+```bash
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx/docker
+./docker-init.sh
+```
 
-## 🚀 Quick Start (5 Minuten)
-
-### 1️⃣ Repository klonen
-
+### Option 2: Manuell
 ```bash
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
+
+# .env erstellen
+cp .env.example .env
+# JWT_SECRET und SESSION_SECRET in .env anpassen!
+
+# Volumes erstellen (nur beim ersten Mal)
+docker volume create assixx_mysql_data
+docker volume create assixx_redis_data
+
+# Starten
+cd docker && docker-compose up -d
 ```
 
-### 2️⃣ Environment konfigurieren
+## Zugriff
+- App: http://localhost:3000
+- phpMyAdmin: http://localhost:8080
+- Health: http://localhost:3000/health
+
+## Wichtige Befehle
 
 ```bash
-# Beispiel-Config kopieren
-cp .env.docker.example .env
-
-# .env Datei bearbeiten und anpassen
-nano .env
-```
-
-**WICHTIG zu ändern:**
-
-- `JWT_SECRET` - Zufälliger String (min. 32 Zeichen)
-- `SESSION_SECRET` - Zufälliger String (min. 32 Zeichen)
-- `SMTP_*` - Ihre E-Mail Einstellungen
-
-### 3️⃣ Docker Container starten
-
-```bash
-# Alle Services starten
-docker-compose up -d
-
-# Logs anzeigen
-docker-compose logs -f
-```
-
-### 4️⃣ Zugriff testen
-
-- **Anwendung**: http://localhost:3000
-- **Health Check**: http://localhost:3000/health
-
-## 🔧 Konfiguration
-
-### E-Mail Setup (Gmail Beispiel)
-
-1. Gmail App-Passwort erstellen:
-
-   - Gehe zu: https://myaccount.google.com/apppasswords
-   - Erstelle ein App-Passwort für "Mail"
-
-2. In `.env` eintragen:
-
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=ihre-email@gmail.com
-SMTP_PASS=ihr-app-passwort
-```
-
-### Datenbank-Zugriff
-
-```bash
-# MySQL Shell öffnen
-docker exec -it assixx-mysql mysql -u root -p
-
-# Backup erstellen
-docker exec assixx-mysql mysqldump -u root -p assixx > backup.sql
-```
-
-## 📊 Verwaltung
-
-### Container Status
-
-```bash
-# Alle Container anzeigen
+# Status
 docker-compose ps
 
-# Container stoppen
-docker-compose stop
-
-# Container neustarten
-docker-compose restart backend
-```
-
-### Logs
-
-```bash
-# Alle Logs
-docker-compose logs
-
-# Nur Backend Logs
-docker-compose logs backend
-
-# Live Logs
+# Logs
 docker-compose logs -f backend
-```
 
-### Updates
-
-```bash
-# Neueste Version holen
-git pull origin master
-
-# Container neu bauen
-docker-compose build
-
-# Mit neuer Version starten
-docker-compose up -d
-```
-
-## 🔒 Sicherheit
-
-### Firewall-Regeln
-
-```bash
-# Nur localhost Zugriff (Development)
-# Nichts zu tun - Standard
-
-# Externer Zugriff (Production)
-# Port 3000 in Firewall öffnen
-sudo ufw allow 3000/tcp
-```
-
-### SSL/HTTPS (Production)
-
-Für Production-Einsatz empfehlen wir einen Reverse Proxy:
-
-1. Nginx Proxy Manager
-2. Traefik
-3. Caddy
-
-Siehe `infrastructure/nginx/` für Beispiel-Configs.
-
-## 🚨 Troubleshooting
-
-### Container startet nicht
-
-```bash
-# Logs prüfen
-docker-compose logs backend
-
-# Container neu starten
+# Neustart
 docker-compose restart backend
 
-# Komplett neu aufbauen
+# Stoppen
 docker-compose down
-docker-compose up -d --build
+
+# Update
+git pull && docker-compose up -d --build
 ```
 
-### Datenbank-Verbindung fehlgeschlagen
+## Troubleshooting
 
+**Container startet nicht:**
 ```bash
-# MySQL Status prüfen
-docker-compose ps mysql
-
-# MySQL Logs
-docker-compose logs mysql
-
-# Verbindung testen
-docker exec -it assixx-mysql mysql -u assixx_user -p
+docker-compose logs backend
+docker-compose down && docker-compose up -d
 ```
 
-### Port bereits belegt
-
+**Port belegt:**
 ```bash
-# Wer nutzt Port 3000?
-sudo lsof -i :3000
-
-# Alternative Ports in docker-compose.yml:
-# ports:
-#   - "3001:3000"  # Host:Container
+lsof -i :3000
+# Oder anderen Port nutzen in docker-compose.yml
 ```
 
-## 📱 Mobile Zugriff
-
-Für Zugriff vom Smartphone/Tablet im lokalen Netzwerk:
-
-1. Server-IP herausfinden:
-
+**MySQL Fehler:**
 ```bash
-hostname -I
-# z.B. 192.168.1.100
+docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025!
 ```
 
-2. Im Browser öffnen:
-
-```
-http://192.168.1.100:3000
-```
-
-## 🆘 Support
-
-- **GitHub Issues**: https://github.com/SCS-Technik/Assixx/issues
-- **E-Mail**: support@scs-technik.de
-- **Dokumentation**: `/docs` Ordner
-
-## 🎯 Nächste Schritte
-
-1. ✅ Admin-Account erstellen
-2. ✅ Erste Mitarbeiter anlegen
-3. ✅ Features aktivieren
-4. ✅ E-Mail-Versand testen
-
----
-
-**Version**: 1.0.0 | **Stand**: 31.05.2025
+## Test-Accounts
+- Root: simon@scs-technik.de / Test123!
+- Neue Firma: http://localhost:3000/pages/signup.html
