@@ -4,7 +4,7 @@
  */
 
 // API configuration
-const API_BASE_URL = '/api';
+const KVP_API_BASE_URL = '/api';
 
 interface User {
   id: number;
@@ -94,7 +94,7 @@ class KvpPage {
 
   private async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/me`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/users/me`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -159,7 +159,7 @@ class KvpPage {
 
   private async loadCategories(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/kvp/categories`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp/categories`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -197,7 +197,7 @@ class KvpPage {
     if (effectiveRole === 'employee') return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/departments`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/departments`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -248,7 +248,7 @@ class KvpPage {
       if (searchFilter) params.append('search', searchFilter);
       if (this.currentFilter === 'archived') params.append('include_archived', 'true');
 
-      const response = await fetch(`${API_BASE_URL}/kvp?${params}`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp?${params}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -401,7 +401,7 @@ class KvpPage {
     if (!confirm('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?')) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/kvp/${id}/share`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp/${id}/share`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -423,7 +423,7 @@ class KvpPage {
     if (!confirm('Möchten Sie das Teilen wirklich rückgängig machen?')) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/kvp/${id}/unshare`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp/${id}/unshare`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -443,7 +443,7 @@ class KvpPage {
 
   private async loadStatistics(): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE_URL}/kvp/stats`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp/stats`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -603,7 +603,7 @@ class KvpPage {
       };
       
       // Submit to API
-      const response = await fetch(`${API_BASE_URL}/kvp`, {
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -661,8 +661,8 @@ class KvpPage {
     });
 
     try {
-      console.log('Sending photo upload request to:', `${API_BASE_URL}/kvp/${suggestionId}/attachments`);
-      const response = await fetch(`${API_BASE_URL}/kvp/${suggestionId}/attachments`, {
+      console.log('Sending photo upload request to:', `${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`);
+      const response = await fetch(`${KVP_API_BASE_URL}/kvp/${suggestionId}/attachments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

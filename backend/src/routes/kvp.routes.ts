@@ -4,11 +4,12 @@
  */
 
 import { Router } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import kvpController from '../controllers/kvp.controller';
 import { authenticateToken } from '../middleware/auth';
 import { checkRole } from '../middleware/role.middleware';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // All routes require authentication
 router.use(authenticateToken);

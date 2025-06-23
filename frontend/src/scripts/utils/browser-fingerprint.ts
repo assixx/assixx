@@ -102,9 +102,9 @@ export class BrowserFingerprint {
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      if (!gl) return 'no-webgl';
+      if (!gl || !(gl instanceof WebGLRenderingContext)) return 'no-webgl';
 
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as any;
       if (!debugInfo) return 'no-debug-info';
 
       return JSON.stringify({
