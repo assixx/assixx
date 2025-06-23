@@ -703,6 +703,11 @@ class UnifiedNavigation {
     return `
       <!-- Header -->
       <header class="header">
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
+          <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
+            <path class="toggle-icon-path" d="${this.isCollapsed ? 'M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z' : 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z'}"></path>
+          </svg>
+        </button>
         <a href="${dashboardUrl}" class="logo-container">
           <img src="${logoSrc}" alt="Assixx Logo" class="logo" id="header-logo" />
         </a>
@@ -810,11 +815,6 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
-                    <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
-                        <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
-                    </svg>
-                </button>
                 <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
@@ -1927,7 +1927,7 @@ const unifiedNavigationCSS = `
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
-        padding: 0 var(--spacing-lg);
+        padding: 0 20px;
         z-index: 1000;
     }
     
@@ -1996,7 +1996,7 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        transition: width 0.3s ease !important;
+        /*transition: width 0.3s ease !important;*/
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -2035,12 +2035,11 @@ const unifiedNavigationCSS = `
         font-size: 0.825rem;
         font-weight: 600;
         color: #ffd83e;
-        margin: 70px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
         border: 1.3px solid rgb(255, 203, 0);
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
         cursor: pointer;
         width: 98%;
         margin-left: 1%;
@@ -2049,6 +2048,7 @@ const unifiedNavigationCSS = `
         position: relative;
         overflow: visible;
         /*transform: rotate(-3deg);*/
+        margin-top: 23px;
     }
 
     /* Sticky Note folded corner - inner fold */
@@ -2190,28 +2190,26 @@ const unifiedNavigationCSS = `
         overflow: hidden;
     }
 
-    .sidebar-toggle {
-        position: absolute;
-        top: 10px;
-        left: 10px;
+    /* Toggle button im Header */
+    .header .sidebar-toggle {
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        background: rgba(255, 255, 255, 0);
-        border: 1px solid rgba(255, 255, 255, 0);
+        width: 40px;
+        height: 40px;
+        background: transparent;
+        border: 1px solid transparent;
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
         color: white;
-        z-index: 100;
-        left: 16px;
+        margin-right: 15px;
+        margin-left: -9px;
     }
 
-     .sidebar-toggle:hover {
-       /*background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);*/
+    .header .sidebar-toggle:hover {
+        background: rgba(255, 255, 255, 0.09);
         transform: scale(1.05);
     }
 
@@ -2225,7 +2223,7 @@ const unifiedNavigationCSS = `
 
     /* Collapsed Sidebar Styles */
     .sidebar.collapsed {
-        width: 70px !important;
+        width: 100px !important;
     }
 
     /* Logo size adjustment when sidebar is collapsed */
@@ -2237,14 +2235,12 @@ const unifiedNavigationCSS = `
 
     .sidebar.collapsed .sidebar-title {
         padding: var(--spacing-sm);
-        justify-content: center;
-        margin: 40px 4px var(--spacing-sm) 4px;
+        justify-content: center;  
         width: calc(100% - 8px);
         font-size: 0;
         transform: rotate(-2deg);
         background: #e6b800;
         min-height: 25px;
-        margin-top: 65px;
     }
 
     .sidebar.collapsed .title-text {
@@ -2258,12 +2254,6 @@ const unifiedNavigationCSS = `
         justify-content: center;
     }
 
-    .sidebar.collapsed .sidebar-toggle {
-        left: 16px;
-        /*width: 30px;
-        height: 30px;
-        position: relative;*/
-    }
 
     .sidebar.collapsed .pinned-icon {
         top: -7px;
@@ -2286,6 +2276,8 @@ const unifiedNavigationCSS = `
         flex-direction: column;
         align-items: center;
         min-height: auto;
+        margin-top: 28px;
+        margin-bottom: 83px;
     }
 
     .sidebar.collapsed .user-details {
@@ -2294,7 +2286,7 @@ const unifiedNavigationCSS = `
 
     .sidebar.collapsed .sidebar-link {
         padding: var(--spacing-sm);
-        justify-content: center;
+        justify-content: center;;
     }
 
     .sidebar.collapsed .sidebar-link .label {
@@ -2340,6 +2332,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-title {
         position: relative;
         padding-right: 0px;
+        margin-bottom: 8px;
     }
 
     .sidebar.collapsed .sidebar-link:hover::after,
@@ -2359,7 +2352,7 @@ const unifiedNavigationCSS = `
         z-index: 1000;
         pointer-events: none;
         opacity: 0;
-        animation: tooltipFadeIn 0.3s ease forwards;
+        /*animation: tooltipFadeIn 0.3s ease forwards;*/
     }
 
     @keyframes tooltipFadeIn {
@@ -2387,7 +2380,7 @@ const unifiedNavigationCSS = `
     .title-text,
     .user-details,
     .storage-widget {
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
     }
 
     /* Icon centering in collapsed state */
@@ -2400,7 +2393,7 @@ const unifiedNavigationCSS = `
         
         width: 36px;
         height: 36px;
-        margin: 0 auto;
+        margin: -2px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2424,7 +2417,7 @@ const unifiedNavigationCSS = `
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -2634,11 +2627,12 @@ const unifiedNavigationCSS = `
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
         position: relative;
         overflow: hidden;
         border: 1px solid transparent;
         font-size: 0.9rem;
+        margin-left: -4px;
     }
 
     .sidebar-link:hover {
@@ -2659,7 +2653,7 @@ const unifiedNavigationCSS = `
     .sidebar-link .icon {
         min-width: 20px;
         text-align: center;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
     }
 
     .sidebar-link .label {
@@ -2672,7 +2666,7 @@ const unifiedNavigationCSS = `
         height: 4px;
         border-radius: 50%;
         background: transparent;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
     }
 
     /*.sidebar-item.active .nav-indicator {
@@ -2707,7 +2701,7 @@ const unifiedNavigationCSS = `
 
     .submenu-arrow {
         margin-left: auto;
-        transition: transform 0.3s ease;
+        /*transition: transform 0.3s ease;*/
         opacity: 0.6;
     }
 
@@ -2722,7 +2716,7 @@ const unifiedNavigationCSS = `
         list-style: none;
         padding: 0;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
     }
 
     .submenu-item {
@@ -2736,7 +2730,7 @@ const unifiedNavigationCSS = `
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
-        transition: all 0.2s ease;
+        /*transition: all 0.2s ease;*/
         transform: translateX(6px);
     }
 
