@@ -1,6 +1,10 @@
 /**
  * Documents API Routes
  * Handles document upload, download, and management operations
+ * @swagger
+ * tags:
+ *   name: Documents
+ *   description: Document management operations
  */
 
 import express, { Router, Request } from 'express';
@@ -74,6 +78,108 @@ const upload = multer({
   },
 });
 
+/**
+ * @swagger
+ * /documents/upload:
+ *   post:
+ *     summary: Upload a document
+ *     description: Upload a PDF document to the system (Admin only)
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - document
+ *               - category
+ *             properties:
+ *               document:
+ *                 type: string
+ *                 format: binary
+ *                 description: PDF file to upload (max 5MB)
+ *               title:
+ *                 type: string
+ *                 description: Document title
+ *                 example: Arbeitsvertrag
+ *               description:
+ *                 type: string
+ *                 description: Document description
+ *                 example: Arbeitsvertrag für neuen Mitarbeiter
+ *               category:
+ *                 type: string
+ *                 enum: [personal, company, department, team, payroll]
+ *                 description: Document category
+ *               userId:
+ *                 type: integer
+ *                 description: Target user ID (for personal documents)
+ *               teamId:
+ *                 type: integer
+ *                 description: Target team ID (for team documents)
+ *               departmentId:
+ *                 type: integer
+ *                 description: Target department ID (for department documents)
+ *               year:
+ *                 type: integer
+ *                 description: Year (for payroll documents)
+ *                 example: 2025
+ *               month:
+ *                 type: integer
+ *                 description: Month (for payroll documents)
+ *                 example: 6
+ *     responses:
+ *       201:
+ *         description: Document uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Dokument erfolgreich hochgeladen
+ *                 documentId:
+ *                   type: integer
+ *                   description: ID of the uploaded document
+ *                   example: 123
+ *       400:
+ *         description: Bad request - Invalid file or parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - User is not an admin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       413:
+ *         description: File too large
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Nur PDF-Dateien sind erlaubt!
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Upload document
 router.post(
   '/upload',
@@ -249,6 +355,101 @@ router.post(
 );
 
 // Get documents (admin only)
+/**
+ * @swagger
+ * /documents:
+ *   get:
+ *     summary: Get all documents
+ *     description: Retrieve a list of documents with optional filtering (Admin only)
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [personal, company, department, team, payroll]
+ *         description: Filter by document category
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: integer
+ *         description: Filter by target user ID
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *         description: Filter by year (for payroll documents)
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *         description: Filter by month (for payroll documents)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Number of items per page
+ *       - in: query
+ *         name: archived
+ *         schema:
+ *           type: boolean
+ *         description: Filter by archived status
+ *     responses:
+ *       200:
+ *         description: Documents retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 documents:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Document'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalDocuments:
+ *                       type: integer
+ *                     hasNext:
+ *                       type: boolean
+ *                     hasPrev:
+ *                       type: boolean
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - User is not an admin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get(
   '/',
   authenticateToken as any,
@@ -303,6 +504,76 @@ router.get(
   }
 );
 
+/**
+ * @swagger
+ * /documents/preview/{documentId}:
+ *   get:
+ *     summary: Preview document
+ *     description: Get document content for inline preview (iframe display)
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: documentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Document ID to preview
+ *     responses:
+ *       200:
+ *         description: Document content for preview
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *         headers:
+ *           Content-Type:
+ *             schema:
+ *               type: string
+ *               example: application/pdf
+ *           Content-Disposition:
+ *             schema:
+ *               type: string
+ *               example: inline; filename="document.pdf"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - No access to this document
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Kein Zugriff auf dieses Dokument
+ *       404:
+ *         description: Document not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Dokument nicht gefunden
+ *       500:
+ *         description: Server error or document has no content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Dokument hat keinen Inhalt
+ */
 // Preview document (for iframe display)
 router.get(
   '/preview/:documentId',

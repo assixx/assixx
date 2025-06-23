@@ -1,6 +1,10 @@
 /**
  * Shift Planning Routes
  * API endpoints for shift planning system
+ * @swagger
+ * tags:
+ *   name: Shifts
+ *   description: Shift planning and management
  */
 
 import express, { Router, Request } from 'express';
@@ -174,6 +178,47 @@ interface ShiftWeeklyNotesSetRequest extends AuthenticatedRequest {
 // router.use(checkFeature('shift_planning'));
 
 /**
+ * @swagger
+ * /shifts/templates:
+ *   get:
+ *     summary: Get all shift templates
+ *     description: Retrieve all available shift templates for the tenant
+ *     tags: [Shifts]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Shift templates retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 templates:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ShiftTemplate'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Fehler beim Laden der Schichtvorlagen
+ */
+/**
  * Get all shift templates
  * GET /api/shifts/templates
  */
@@ -235,6 +280,89 @@ router.post(
   }
 );
 
+/**
+ * @swagger
+ * /shifts/plans:
+ *   get:
+ *     summary: Get all shift plans
+ *     description: Retrieve shift plans with optional filtering
+ *     tags: [Shifts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: department_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by department ID
+ *       - in: query
+ *         name: team_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by team ID
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter plans starting from this date
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter plans ending before this date
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, published, archived]
+ *         description: Filter by plan status
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Shift plans retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 plans:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ShiftPlan'
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of plans
+ *                 page:
+ *                   type: integer
+ *                   description: Current page
+ *                 limit:
+ *                   type: integer
+ *                   description: Items per page
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ */
 /**
  * Get all shift plans
  * GET /api/shifts/plans

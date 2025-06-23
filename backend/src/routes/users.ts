@@ -119,18 +119,18 @@ router.get(
     try {
       // Debug logging
       logger.info('GET /api/users/me - req.user:', req.user);
-      
+
       if (!req.user || !req.user.id) {
         logger.error('No user object or user.id in request');
         res.status(401).json({ message: 'User not authenticated' });
         return;
       }
-      
+
       const userId = parseInt(req.user.id.toString(), 10);
       const tenantId = req.user.tenant_id || req.user.tenantId;
-      
+
       logger.info(`Fetching user ${userId} from tenant ${tenantId}`);
-      
+
       const user = await User.findById(userId, tenantId);
       if (!user) {
         res.status(404).json({ message: 'Benutzer nicht gefunden' });
@@ -141,13 +141,11 @@ router.get(
       const { password: _password, ...userProfile } = user;
 
       logger.info(`User ${userId} retrieved their profile via /me endpoint`);
-      
+
       // Return in the format expected by the frontend
       res.json({ user: userProfile });
     } catch (error: any) {
-      logger.error(
-        `Error retrieving profile for user: ${error.message}`
-      );
+      logger.error(`Error retrieving profile for user: ${error.message}`);
       res.status(500).json({
         message: 'Fehler beim Abrufen des Profils',
         error: error.message,
@@ -335,7 +333,6 @@ router.get(
     }
   }
 );
-
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({

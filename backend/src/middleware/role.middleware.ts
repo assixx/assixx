@@ -25,9 +25,9 @@ export function checkRole(allowedRoles: string[]) {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      res.status(403).json({ 
-        error: 'Forbidden', 
-        message: `Diese Funktion erfordert eine der folgenden Rollen: ${allowedRoles.join(', ')}` 
+      res.status(403).json({
+        error: 'Forbidden',
+        message: `Diese Funktion erfordert eine der folgenden Rollen: ${allowedRoles.join(', ')}`,
       });
       return;
     }

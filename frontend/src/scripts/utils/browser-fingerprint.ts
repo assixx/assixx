@@ -41,8 +41,11 @@ export class BrowserFingerprint {
       // WebGL
       webgl: this.getWebGLFingerprint(),
       
-      // Audio
-      audio: await this.getAudioFingerprint(),
+      // Audio (mit Error Handling)
+      audio: await this.getAudioFingerprint().catch(err => {
+        console.debug('[Fingerprint] Audio fingerprint error:', err);
+        return 'audio-error';
+      }),
       
       // Fonts
       fonts: await this.getFontFingerprint(),
@@ -136,25 +139,47 @@ export class BrowserFingerprint {
       oscillator.start(0);
       
       return new Promise((resolve) => {
+        let isResolved = false;
+        
         // Add timeout to prevent hanging
         const timeout = setTimeout(() => {
-          oscillator.disconnect();
-          analyser.disconnect();
-          scriptProcessor.disconnect();
-          gain.disconnect();
-          audioContext.close();
+          if (isResolved) return;
+          isResolved = true;
+          
+          try {
+            oscillator.disconnect();
+            analyser.disconnect();
+            scriptProcessor.disconnect();
+            gain.disconnect();
+            if (audioContext.state !== 'closed') {
+              audioContext.close().catch(() => {});
+            }
+          } catch (err) {
+            // Ignore cleanup errors
+          }
           resolve('audio-timeout');
         }, 100); // 100ms timeout
 
         scriptProcessor.onaudioprocess = function(e) {
+          if (isResolved) return;
+          isResolved = true;
+          
           clearTimeout(timeout);
           const output = e.outputBuffer.getChannelData(0);
           const fingerprint = output.slice(0, 100).toString();
-          oscillator.disconnect();
-          analyser.disconnect();
-          scriptProcessor.disconnect();
-          gain.disconnect();
-          audioContext.close();
+          
+          try {
+            oscillator.disconnect();
+            analyser.disconnect();
+            scriptProcessor.disconnect();
+            gain.disconnect();
+            if (audioContext.state !== 'closed') {
+              audioContext.close().catch(() => {});
+            }
+          } catch (err) {
+            // Ignore cleanup errors
+          }
+          
           resolve(fingerprint);
         };
       });

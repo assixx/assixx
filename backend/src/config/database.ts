@@ -217,11 +217,15 @@ if (USE_MOCK_DB) {
     dateStrings: false,
     debug: false,
     typeCast: function (field: any, next: any) {
-      if (field.type === 'VAR_STRING' || field.type === 'STRING' || field.type === 'BLOB') {
+      if (
+        field.type === 'VAR_STRING' ||
+        field.type === 'STRING' ||
+        field.type === 'BLOB'
+      ) {
         return field.string('utf8');
       }
       return next();
-    }
+    },
   };
 
   try {

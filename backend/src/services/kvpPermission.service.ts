@@ -22,10 +22,16 @@ class KvpPermissionService {
   /**
    * Get all departments an admin has access to
    */
-  async getAdminDepartments(adminId: number, tenantId: number): Promise<number[]> {
+  async getAdminDepartments(
+    adminId: number,
+    tenantId: number
+  ): Promise<number[]> {
     try {
-      const result = await adminPermissionService.getAdminDepartments(adminId, tenantId);
-      return result.departments.map(dept => dept.id);
+      const result = await adminPermissionService.getAdminDepartments(
+        adminId,
+        tenantId
+      );
+      return result.departments.map((dept) => dept.id);
     } catch (error) {
       logger.error('Error getting admin departments:', error);
       return [];
@@ -72,7 +78,7 @@ class KvpPermissionService {
           'SELECT department_id FROM users WHERE id = ?',
           [userId]
         );
-        
+
         if (userInfo.length > 0 && suggestion.org_level === 'department') {
           return userInfo[0].department_id === suggestion.department_id;
         }
@@ -124,7 +130,9 @@ class KvpPermissionService {
 
       // Employee can only edit their own suggestions in 'new' status
       if (role === 'employee') {
-        return suggestion.submitted_by === userId && suggestion.status === 'new';
+        return (
+          suggestion.submitted_by === userId && suggestion.status === 'new'
+        );
       }
 
       // Admin logic
@@ -153,7 +161,14 @@ class KvpPermissionService {
     whereClause: string;
     queryParams: any[];
   }> {
-    const { userId, role, tenantId, includeArchived, statusFilter, departmentFilter } = params;
+    const {
+      userId,
+      role,
+      tenantId,
+      includeArchived,
+      statusFilter,
+      departmentFilter,
+    } = params;
     const conditions: string[] = ['s.tenant_id = ?'];
     const queryParams: any[] = [tenantId];
 
@@ -166,26 +181,27 @@ class KvpPermissionService {
         'SELECT department_id FROM users WHERE id = ?',
         [userId]
       );
-      
+
       const userDeptId = userInfo[0]?.department_id || null;
 
       // Employee sees: own + department + company-wide
       const visibilityConditions = [
         's.submitted_by = ?',
         '(s.org_level = ? AND s.department_id = ?)',
-        's.org_level = ?'
+        's.org_level = ?',
       ];
-      
+
       conditions.push(`(${visibilityConditions.join(' OR ')})`);
       queryParams.push(
         userId,
-        'department', userDeptId || 0,  // Use 0 as fallback for NULL department
+        'department',
+        userDeptId || 0, // Use 0 as fallback for NULL department
         'company'
       );
     } else if (role === 'admin') {
       // Get admin's managed departments
       const adminDepts = await this.getAdminDepartments(userId, tenantId);
-      
+
       if (adminDepts.length > 0) {
         const deptPlaceholders = adminDepts.map(() => '?').join(',');
         conditions.push(
@@ -223,7 +239,7 @@ class KvpPermissionService {
 
     return {
       whereClause: conditions.join(' AND '),
-      queryParams
+      queryParams,
     };
   }
 
@@ -286,7 +302,7 @@ class KvpPermissionService {
           entityType,
           entityId,
           oldValue ? JSON.stringify(oldValue) : null,
-          newValue ? JSON.stringify(newValue) : null
+          newValue ? JSON.stringify(newValue) : null,
         ]
       );
     } catch (error) {
@@ -353,13 +369,16 @@ class KvpPermissionService {
         byPriority[row.priority] = row.count;
       });
 
-      const total = Object.values(byStatus).reduce((sum, count) => sum + count, 0);
+      const total = Object.values(byStatus).reduce(
+        (sum, count) => sum + count,
+        0
+      );
 
       return {
         total,
         byStatus,
         byPriority,
-        totalSavings: parseFloat(savings[0].total_savings) || 0
+        totalSavings: parseFloat(savings[0].total_savings) || 0,
       };
     } catch (error) {
       logger.error('Error getting suggestion stats:', error);
@@ -367,7 +386,7 @@ class KvpPermissionService {
         total: 0,
         byStatus: {},
         byPriority: {},
-        totalSavings: 0
+        totalSavings: 0,
       };
     }
   }

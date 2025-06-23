@@ -1,6 +1,10 @@
 /**
  * Survey Management Routes
  * API endpoints for survey system with responses and analytics
+ * @swagger
+ * tags:
+ *   name: Survey
+ *   description: Survey creation, management and responses
  */
 
 import express, { Router } from 'express';
@@ -21,45 +25,130 @@ import db from '../database';
 const router: Router = express.Router();
 
 // Get pending surveys count for employee
-router.get('/pending-count', 
+router.get(
+  '/pending-count',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    const userId = authReq.user.id;
-    const tenantId = authReq.user.tenant_id;
+    try {
+      const authReq = req as any;
+      const userId = authReq.user.id;
+      const tenantId = authReq.user.tenant_id;
 
-    // Get all active surveys for the tenant
-    const [surveys] = await (db as any).execute(
-      `SELECT s.id 
+      // Get all active surveys for the tenant
+      const [surveys] = await (db as any).execute(
+        `SELECT s.id 
        FROM surveys s
        WHERE s.tenant_id = ? 
        AND s.status = 'active'
        AND (s.end_date IS NULL OR s.end_date > NOW())`,
-      [tenantId]
-    );
-
-    // Count surveys not yet completed by the user
-    let pendingCount = 0;
-    for (const survey of surveys) {
-      const [response] = await (db as any).execute(
-        'SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND status = \'completed\'',
-        [survey.id, userId]
+        [tenantId]
       );
 
-      if (response.length === 0) {
-        pendingCount++;
+      // Count surveys not yet completed by the user
+      let pendingCount = 0;
+      for (const survey of surveys) {
+        const [response] = await (db as any).execute(
+          "SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND status = 'completed'",
+          [survey.id, userId]
+        );
+
+        if (response.length === 0) {
+          pendingCount++;
+        }
       }
+
+      res.json({ pendingCount });
+    } catch (error: any) {
+      console.error('Error fetching pending surveys count:', error);
+      res
+        .status(500)
+        .json({ error: 'Fehler beim Abrufen der offenen Umfragen' });
     }
-
-    res.json({ pendingCount });
-  } catch (error: any) {
-    console.error('Error fetching pending surveys count:', error);
-    res.status(500).json({ error: 'Fehler beim Abrufen der offenen Umfragen' });
   }
-});
+);
 
+/**
+ * @swagger
+ * /surveys:
+ *   get:
+ *     summary: Get all surveys
+ *     description: Retrieve all surveys for the tenant with pagination and filtering
+ *     tags: [Survey]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, draft, closed]
+ *         description: Filter by survey status
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Surveys retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 surveys:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Survey'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     itemsPerPage:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Feature not available
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Feature not available for your subscription
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Fehler beim Abrufen der Umfragen
+ */
 // Get all surveys
 router.get(
   '/',
@@ -86,41 +175,45 @@ router.get(
 );
 
 // Get survey templates
-router.get('/templates',
+router.get(
+  '/templates',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    const templates = await Survey.getTemplates(authReq.user.tenant_id);
-    res.json(templates);
-  } catch (error: any) {
-    console.error('Error fetching templates:', error);
-    res.status(500).json({ error: 'Fehler beim Abrufen der Vorlagen' });
+    try {
+      const authReq = req as any;
+      const templates = await Survey.getTemplates(authReq.user.tenant_id);
+      res.json(templates);
+    } catch (error: any) {
+      console.error('Error fetching templates:', error);
+      res.status(500).json({ error: 'Fehler beim Abrufen der Vorlagen' });
+    }
   }
-});
+);
 
 // Get single survey
-router.get('/:id',
+router.get(
+  '/:id',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    const survey = await Survey.getById(
-      parseInt(req.params.id, 10),
-      authReq.user.tenant_id
-    );
-    if (!survey) {
-      res.status(404).json({ error: 'Umfrage nicht gefunden' });
-      return;
+    try {
+      const authReq = req as any;
+      const survey = await Survey.getById(
+        parseInt(req.params.id, 10),
+        authReq.user.tenant_id
+      );
+      if (!survey) {
+        res.status(404).json({ error: 'Umfrage nicht gefunden' });
+        return;
+      }
+      res.json(survey);
+    } catch (error: any) {
+      console.error('Error fetching survey:', error);
+      res.status(500).json({ error: 'Fehler beim Abrufen der Umfrage' });
     }
-    res.json(survey);
-  } catch (error: any) {
-    console.error('Error fetching survey:', error);
-    res.status(500).json({ error: 'Fehler beim Abrufen der Umfrage' });
   }
-});
+);
 
 // Get survey statistics (admin only)
 router.get('/:id/statistics', async (req, res) => {
@@ -143,33 +236,35 @@ router.get('/:id/statistics', async (req, res) => {
 });
 
 // Create survey (admin only)
-router.post('/',
+router.post(
+  '/',
   authenticateToken as any,
   checkFeature('surveys') as any,
   ...(validateCreateSurvey as any[]),
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-      res.status(403).json({ error: 'Keine Berechtigung' });
-      return;
+    try {
+      const authReq = req as any;
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+
+      const surveyId = await Survey.create(
+        req.body,
+        authReq.user.tenant_id,
+        authReq.user.id
+      );
+
+      res.status(201).json({
+        id: surveyId,
+        message: 'Umfrage erfolgreich erstellt',
+      });
+    } catch (error: any) {
+      console.error('Error creating survey:', error);
+      res.status(500).json({ error: 'Fehler beim Erstellen der Umfrage' });
     }
-
-    const surveyId = await Survey.create(
-      req.body,
-      authReq.user.tenant_id,
-      authReq.user.id
-    );
-
-    res.status(201).json({
-      id: surveyId,
-      message: 'Umfrage erfolgreich erstellt',
-    });
-  } catch (error: any) {
-    console.error('Error creating survey:', error);
-    res.status(500).json({ error: 'Fehler beim Erstellen der Umfrage' });
   }
-});
+);
 
 // Create survey from template (admin only)
 router.post('/from-template/:templateId', async (req, res) => {
@@ -351,7 +446,7 @@ router.post(
 
         // Mark response as complete
         await connection.execute(
-          'UPDATE survey_responses SET status = \'completed\', completed_at = NOW() WHERE id = ?',
+          "UPDATE survey_responses SET status = 'completed', completed_at = NOW() WHERE id = ?",
           [responseId]
         );
 

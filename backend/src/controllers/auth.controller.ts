@@ -113,7 +113,11 @@ class AuthController {
 
       // Authenticate user with fingerprint
       console.log('[DEBUG] Calling authService.authenticateUser');
-      const result = await authService.authenticateUser(username, password, fingerprint);
+      const result = await authService.authenticateUser(
+        username,
+        password,
+        fingerprint
+      );
       console.log('[DEBUG] Auth result:', result ? 'Success' : 'Failed');
 
       if (!result.success) {
@@ -226,10 +230,7 @@ class AuthController {
   /**
    * Validate token
    */
-  async validateToken(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
+  async validateToken(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Token is already validated by authenticateToken middleware
       // Get fresh user data from database

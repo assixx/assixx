@@ -66,10 +66,10 @@ class AuthService {
 
       // Generate session ID
       const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Generate JWT token with fingerprint and session ID
       const token = generateToken(result.user, fingerprint, sessionId);
-      
+
       // Store session info if fingerprint provided
       if (fingerprint) {
         try {

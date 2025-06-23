@@ -226,7 +226,7 @@ const createTenantRateLimiter = (
 
 // API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(
-  15 * 60 * 1000, 
+  15 * 60 * 1000,
   process.env.NODE_ENV === 'development' ? 10000 : 1000
 ); // 10000 requests per 15 minutes in dev, 1000 in prod
 export const authLimiter = createTenantRateLimiter(
@@ -234,7 +234,7 @@ export const authLimiter = createTenantRateLimiter(
   process.env.NODE_ENV === 'development' ? 100 : 5
 ); // 100 auth attempts in dev, 5 in prod
 export const uploadLimiter = createTenantRateLimiter(
-  15 * 60 * 1000, 
+  15 * 60 * 1000,
   process.env.NODE_ENV === 'development' ? 100 : 10
 ); // 100 uploads per 15 minutes in dev, 10 in prod
 
@@ -244,11 +244,11 @@ export const strictAuthLimiter = createTenantRateLimiter(
   process.env.NODE_ENV === 'development' ? 50 : 3
 ); // 50 login attempts in dev, 3 in prod
 export const apiLimiter = createTenantRateLimiter(
-  60 * 1000, 
+  60 * 1000,
   process.env.NODE_ENV === 'development' ? 1000 : 100
 ); // 1000 API requests per minute in dev, 100 in prod
 export const searchLimiter = createTenantRateLimiter(
-  60 * 1000, 
+  60 * 1000,
   process.env.NODE_ENV === 'development' ? 300 : 30
 ); // 300 search requests per minute in dev, 30 in prod
 export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 5); // 5 bulk operations per hour

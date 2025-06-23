@@ -1,6 +1,10 @@
 /**
  * Blackboard API Routes
  * Handles all operations related to the blackboard system
+ * @swagger
+ * tags:
+ *   name: Blackboard
+ *   description: Company announcements and bulletin board (Schwarzes Brett)
  */
 
 import express, { Router, Request, Response, NextFunction } from 'express';
@@ -182,6 +186,104 @@ async function canCreateForOrgLevel(
 }
 
 /**
+ * @swagger
+ * /blackboard:
+ *   get:
+ *     summary: Get all blackboard entries
+ *     description: Retrieve all blackboard entries visible to the user with pagination and filtering
+ *     tags: [Blackboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, archived]
+ *           default: active
+ *         description: Filter by entry status
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [all, company, department, team, personal]
+ *           default: all
+ *         description: Filter by visibility scope
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in title and content
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 18
+ *         description: Items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [created_at, updated_at, title, priority]
+ *           default: created_at
+ *         description: Sort by field
+ *       - in: query
+ *         name: sortDir
+ *         schema:
+ *           type: string
+ *           enum: [ASC, DESC]
+ *           default: DESC
+ *         description: Sort direction
+ *     responses:
+ *       200:
+ *         description: Blackboard entries retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 entries:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/BlackboardEntry'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     itemsPerPage:
+ *                       type: integer
+ *                     hasNext:
+ *                       type: boolean
+ *                     hasPrev:
+ *                       type: boolean
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+/**
  * @route GET /api/blackboard
  * @desc Get all blackboard entries visible to the user
  */
@@ -294,6 +396,119 @@ router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /blackboard:
+ *   post:
+ *     summary: Create blackboard entry
+ *     description: Create a new blackboard entry with optional file attachment
+ *     tags: [Blackboard]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - content
+ *               - org_level
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Entry title
+ *                 example: Wichtige Ankündigung
+ *               content:
+ *                 type: string
+ *                 description: Entry content (supports Markdown)
+ *                 example: Dies ist eine wichtige Mitteilung für alle Mitarbeiter.
+ *               org_level:
+ *                 type: string
+ *                 enum: [company, department, team]
+ *                 description: Organizational level
+ *               org_id:
+ *                 type: integer
+ *                 description: Department/Team ID (not needed for company level)
+ *               priority:
+ *                 type: string
+ *                 enum: [low, normal, high, urgent]
+ *                 default: normal
+ *                 description: Entry priority
+ *               color:
+ *                 type: string
+ *                 enum: [blue, green, yellow, red, purple]
+ *                 default: blue
+ *                 description: Display color
+ *               expires_at:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Expiration date (optional)
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Tags for categorization
+ *               requires_confirmation:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Whether users must confirm reading
+ *               attachment:
+ *                 type: string
+ *                 format: binary
+ *                 description: Optional file attachment (PDF, JPEG, PNG, GIF - max 10MB)
+ *     responses:
+ *       201:
+ *         description: Entry created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Blackboard entry created successfully
+ *                 entry:
+ *                   $ref: '#/components/schemas/BlackboardEntry'
+ *       400:
+ *         description: Bad request - validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - No permission for this org level
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: You do not have permission to create entries at this level
+ *       413:
+ *         description: File too large
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Nur PDF und Bilder (JPEG, PNG, GIF) sind erlaubt!
+ *       500:
+ *         description: Server error
+ */
 /**
  * @route POST /api/blackboard
  * @desc Create a new blackboard entry (with optional direct attachment)

@@ -82,6 +82,7 @@ docs/
 ├── PROJEKTSTRUKTUR.md           # Diese Datei (BEI ÄNDERUNGEN UPDATEN!)
 ├── QUESTIONS.md                 # FAQ
 ├── ROADMAP.md                   # Projekt-Roadmap
+├── SWAGGER-INTEGRATION-PLAN.md  # Swagger/OpenAPI Integrationsplan
 ├── TERMS-OF-USE.md              # Nutzungsbedingungen
 ├── TYPESCRIPT-STANDARDS.md      # TypeScript Code Standards
 ├── UNIT-TESTS.md                # Unit Testing Guide

@@ -20,7 +20,9 @@ export const checkFeature =
       let numericTenantId: number;
 
       // Debug logging
-      logger.info(`[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenantId: req.user.tenantId, tenant_id: (req.user as any).tenant_id } : null)}`);
+      logger.info(
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenantId: req.user.tenantId, tenant_id: (req.user as any).tenant_id } : null)}`
+      );
 
       if (req.tenantId) {
         // Check if tenantId is already numeric (from auth middleware)
@@ -42,7 +44,10 @@ export const checkFeature =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (req.user && (req.user.tenantId || (req.user as any).tenant_id)) {
+      } else if (
+        req.user &&
+        (req.user.tenantId || (req.user as any).tenant_id)
+      ) {
         // Fallback: Verwende tenantId aus JWT Token (unterstützt beide Schreibweisen)
         numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
       } else {
@@ -121,7 +126,10 @@ export const checkAnyFeature =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (req.user && (req.user.tenantId || (req.user as any).tenant_id)) {
+      } else if (
+        req.user &&
+        (req.user.tenantId || (req.user as any).tenant_id)
+      ) {
         numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
       } else {
         return res.status(400).json({
@@ -196,7 +204,10 @@ export const checkAllFeatures =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (req.user && (req.user.tenantId || (req.user as any).tenant_id)) {
+      } else if (
+        req.user &&
+        (req.user.tenantId || (req.user as any).tenant_id)
+      ) {
         numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
       } else {
         return res.status(400).json({

@@ -146,7 +146,7 @@ export function generateToken(user: DatabaseUser, fingerprint?: string, sessionI
       sessionId: sessionId || `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique session ID
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30m' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' }); // 8 Stunden wie bei den meisten SaaS
 
     return token;
   } catch (error) {
@@ -198,19 +198,24 @@ export function authenticateToken(
       isRoleSwitched?: boolean;
     };
     
-    // Validate browser fingerprint if present
-    if (user.fingerprint && user.sessionId) {
+    // Best Practice Session Security (wie Google, Facebook, etc.)
+    if (user.sessionId) {
       try {
-        // Get fingerprint from request header
+        // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
         const requestFingerprint = req.headers['x-browser-fingerprint'] as string;
+        // const requestIP = req.ip || req.connection.remoteAddress;
+        // const userAgent = req.headers['user-agent'];
         
-        if (requestFingerprint && requestFingerprint !== user.fingerprint) {
-          console.warn(`[SECURITY] Browser fingerprint mismatch for user ${user.id}`);
-          res.status(403).json({
-            error: 'Session security violation',
-            details: 'Browser fingerprint mismatch'
-          });
-          return;
+        // Log Security-relevante Änderungen für Monitoring
+        if (user.fingerprint && requestFingerprint && requestFingerprint !== user.fingerprint) {
+          console.info(`[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`);
+          
+          // Nur bei verdächtigen Mustern warnen/blockieren:
+          // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
+          // - Rapid fingerprint changes (> 10 pro Stunde)
+          // - Known malicious patterns
+          
+          // Für jetzt: Nur loggen, nicht blockieren
         }
         
         // Optionally validate session in database
