@@ -245,6 +245,15 @@
             <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
           </div>
           <div style="display: flex !important; gap: 1rem; align-items: center;">
+            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none;">
+              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
+                <i class="fas fa-plus"></i>
+              </button>
+              <span id="zoomLevel" class="zoom-level">100%</span>
+              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
             <button id="newEntryBtn" class="btn btn-primary" style="margin: 0;">
               <i class="fas fa-plus me-2"></i>
               Neuer Eintrag
@@ -314,16 +323,6 @@
           </div>
         </div>
 
-        <!-- Zoom Controls -->
-        <div class="zoom-controls">
-          <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
-            <i class="fas fa-plus"></i>
-          </button>
-          <span id="zoomLevel" class="zoom-level">100%</span>
-          <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
-            <i class="fas fa-minus"></i>
-          </button>
-        </div>
 
         <!-- Pinnwand Container -->
         <div class="blackboard-container" id="blackboardContainer">
