@@ -811,7 +811,7 @@ class UnifiedNavigation {
     return `
             <nav class="sidebar-nav">
                 <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
-                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                    <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
                         <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
                     </svg>
                 </button>
@@ -2035,7 +2035,7 @@ const unifiedNavigationCSS = `
         font-size: 0.825rem;
         font-weight: 600;
         color: #ffd83e;
-        margin: 30px 0 var(--spacing-sm) 0;
+        margin: 70px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
@@ -2163,7 +2163,7 @@ const unifiedNavigationCSS = `
     .pin-needle::after {
         content: '';
         position: absolute;
-        top: 8px;
+        top: 7px;  /* Von 17px auf 8px reduziert um Lücke zu schließen */
         left: 50%;
         transform: translateX(-50%);
         width: 2px;
@@ -2206,6 +2206,7 @@ const unifiedNavigationCSS = `
         transition: all 0.3s ease;
         color: white;
         z-index: 100;
+        left: 16px;
     }
 
      .sidebar-toggle:hover {
@@ -2243,6 +2244,7 @@ const unifiedNavigationCSS = `
         transform: rotate(-2deg);
         background: #e6b800;
         min-height: 25px;
+        margin-top: 65px;
     }
 
     .sidebar.collapsed .title-text {
@@ -2257,14 +2259,14 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-toggle {
-        left: 2px;
-        width: 30px;
+        left: 16px;
+        /*width: 30px;
         height: 30px;
-        position: relative;
+        position: relative;*/
     }
 
     .sidebar.collapsed .pinned-icon {
-        top: -9px;
+        top: -7px;
     }
 
     .sidebar.collapsed .pin-head {
