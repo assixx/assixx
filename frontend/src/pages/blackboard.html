@@ -7,6 +7,10 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/blackboard.css');
+      @import url('/styles/blackboard-update.css');
+      @import url('/styles/user-info-update.css');
+      
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -216,6 +220,7 @@
       /* Remove transform transition since we're using CSS zoom */
       .blackboard-container {
         /* zoom property will be applied via JavaScript */
+        position: relative;
       }
 
       .color-option.active {
@@ -225,40 +230,6 @@
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <link rel="stylesheet" href="/styles/blackboard.css" />
-    <link rel="stylesheet" href="/styles/blackboard-update.css" />
-    <script>
-      // Protect user-info elements from being overwritten
-      window.addEventListener('DOMContentLoaded', function () {
-        // Store original elements
-        const userInfoDiv = document.getElementById('user-info');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const roleIndicator = document.getElementById('role-indicator');
-
-        if (userInfoDiv) {
-          // Create a MutationObserver to watch for changes
-          const observer = new MutationObserver(function (mutations) {
-            mutations.forEach(function (mutation) {
-              if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
-                // If children were removed, restore them
-                if (userInfoDiv.children.length === 0) {
-                  console.log('[Blackboard] Restoring user-info elements');
-                  userInfoDiv.innerHTML = '';
-                  if (userAvatar) userInfoDiv.appendChild(userAvatar);
-                  if (userName) userInfoDiv.appendChild(userName);
-                  if (roleIndicator) userInfoDiv.appendChild(roleIndicator);
-                }
-              }
-            });
-          });
-
-          // Start observing
-          observer.observe(userInfoDiv, { childList: true, subtree: false });
-        }
-      });
-    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -874,10 +845,20 @@
         transition: background 0.3s ease;
       }
     </style>
-    <!-- Main blackboard script loaded FIRST to ensure user info is set -->
-    <script type="module" src="/scripts/blackboard.ts"></script>
-    <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Scripts with dynamic loading to prevent race condition -->
+    <script type="module">
+      // Wait for DOM to be ready before loading scripts
+      document.addEventListener('DOMContentLoaded', async () => {
+        // First load auth module
+        await import('/scripts/auth.ts');
+        // Then load unified navigation
+        await import('/scripts/components/unified-navigation.ts');
+        // Finally load blackboard after a small delay
+        setTimeout(() => {
+          import('/scripts/blackboard.ts');
+        }, 100);
+      });
+    </script>
     <!-- Update Modal to Design Standards -->
     <script src="/scripts/update-blackboard-modal.js" type="module"></script>
   </body>

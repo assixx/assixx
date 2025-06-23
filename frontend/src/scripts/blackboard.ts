@@ -154,30 +154,29 @@ function closeModal(modalId: string): void {
 // Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
 let entriesLoadingEnabled: boolean = false;
 
-document.addEventListener('DOMContentLoaded', () => {
+// Function to initialize blackboard
+function initializeBlackboard() {
   // Aktiviere das automatische Laden der Einträge
   entriesLoadingEnabled = true;
 
   // Alle Schließen-Buttons einrichten
   setupCloseButtons();
 
-  // Check if previewAttachment is available
-  console.log('[Blackboard] Checking window.previewAttachment:', typeof window.previewAttachment);
-  if (typeof window.previewAttachment !== 'function') {
-    console.error('[Blackboard] previewAttachment function not found in window!');
-  }
+  // Note: previewAttachment will be available after this module loads completely
+
+  // Debug: Log when this script loads
+  console.log('[Blackboard] Script loaded at:', new Date().toISOString());
 
   // Check if user is logged in
   checkLoggedIn()
     .then(() => {
-      // Load user info in header - with a small delay to ensure DOM is ready
-      setTimeout(() => {
-        loadHeaderUserInfo();
-      }, 100);
+      // Header user info is now handled by unified navigation
 
-      // Load user data
-      fetchUserData()
-        .then((userData: UserData) => {
+      // Get user data from localStorage instead of fetching again
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
           currentUserId = userData.id;
           isAdmin = userData.role === 'admin' || userData.role === 'root';
 
@@ -189,47 +188,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Load departments and teams for form dropdowns
           loadDepartmentsAndTeams();
-
-          // Always load entries on page load
-          entriesLoadingEnabled = true;
-          loadEntries().then(() => {
-            // Check if we have an entry parameter in the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const entryId = urlParams.get('entry');
-
-            if (entryId) {
-              // If we have an entry ID, scroll to the specific one
-              const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
-              if (entryElement) {
-                entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Add a highlight effect
-                entryElement.classList.add('highlight-entry');
-                setTimeout(() => {
-                  entryElement.classList.remove('highlight-entry');
-                }, 3000);
+        } catch (error) {
+          console.error('[Blackboard] Error parsing stored user data:', error);
+          // Fallback: fetch user data if localStorage is corrupted
+          fetchUserData()
+            .then((userData: UserData) => {
+              currentUserId = userData.id;
+              isAdmin = userData.role === 'admin' || userData.role === 'root';
+              const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+              if (newEntryBtn) {
+                newEntryBtn.style.display = isAdmin ? 'block' : 'none';
               }
-            }
-          });
-
-          // Hide the load entries button since entries are loaded automatically
-          const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
-          if (loadEntriesBtn) {
-            loadEntriesBtn.style.display = 'none';
-          }
-
-          // Retry-Button Ereignisbehandlung
-          const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement;
-          if (retryLoadBtn) {
-            retryLoadBtn.addEventListener('click', () => {
-              entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
-              loadEntries();
+              loadDepartmentsAndTeams();
+            })
+            .catch((error) => {
+              console.error('[Blackboard] Error loading user data:', error);
+              showError('Fehler beim Laden der Benutzerdaten');
             });
+        }
+      } else {
+        // No stored user data, fetch it
+        fetchUserData()
+          .then((userData: UserData) => {
+            currentUserId = userData.id;
+            isAdmin = userData.role === 'admin' || userData.role === 'root';
+            const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+            if (newEntryBtn) {
+              newEntryBtn.style.display = isAdmin ? 'block' : 'none';
+            }
+            loadDepartmentsAndTeams();
+          })
+          .catch((error) => {
+            console.error('[Blackboard] Error loading user data:', error);
+            showError('Fehler beim Laden der Benutzerdaten');
+          });
+      }
+
+      // Always load entries on page load
+      entriesLoadingEnabled = true;
+      loadEntries().then(() => {
+        // Check if we have an entry parameter in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const entryId = urlParams.get('entry');
+
+        if (entryId) {
+          // If we have an entry ID, scroll to the specific one
+          const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
+          if (entryElement) {
+            entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a highlight effect
+            entryElement.classList.add('highlight-entry');
+            setTimeout(() => {
+              entryElement.classList.remove('highlight-entry');
+            }, 3000);
           }
-        })
-        .catch((error) => {
-          console.error('Error loading user data:', error);
-          window.location.href = '/pages/login.html';
+        }
+      });
+
+      // Hide the load entries button since entries are loaded automatically
+      const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
+      if (loadEntriesBtn) {
+        loadEntriesBtn.style.display = 'none';
+      }
+
+      // Retry-Button Ereignisbehandlung
+      const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement;
+      if (retryLoadBtn) {
+        retryLoadBtn.addEventListener('click', () => {
+          entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
+          loadEntries();
         });
+      }
 
       // Setup event listeners
       setupEventListeners();
@@ -238,7 +267,15 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error checking login:', error);
       window.location.href = '/pages/login.html';
     });
-});
+}
+
+// Initialize when DOM is ready or immediately if already ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBlackboard);
+} else {
+  // DOM is already ready, call the function directly
+  initializeBlackboard();
+}
 
 /**
  * Setup close buttons for all modals
@@ -660,85 +697,7 @@ async function fetchUserData(): Promise<UserData> {
   return response.json();
 }
 
-/**
- * Load Header User Info - same as in admin-dashboard.ts
- */
-async function loadHeaderUserInfo(): Promise<void> {
-  try {
-    const token = getAuthToken();
-    if (!token) return;
-
-    console.log('[Blackboard] Loading header user info...');
-
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      const userData: User = await response.json();
-      console.log('[Blackboard] User data loaded:', userData);
-
-      // First check if user-info div exists and restore structure if needed
-      const userInfoDiv = document.getElementById('user-info');
-      if (userInfoDiv) {
-        // If user-info has been overwritten (no children or just text), restore it
-        if (userInfoDiv.children.length === 0) {
-          console.log('[Blackboard] Restoring user-info structure...');
-          userInfoDiv.innerHTML = `
-            <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
-            <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
-            <span id="role-indicator" class="role-badge admin" style="display: inline-flex !important; visibility: visible !important;">Admin</span>
-          `;
-        }
-      }
-
-      // Now get the elements
-      const userNameElement = document.getElementById('user-name') as HTMLElement;
-      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
-      const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
-
-      console.log('[Blackboard] Elements found after restore:', {
-        userNameElement: !!userNameElement,
-        userAvatar: !!userAvatar,
-        roleIndicator: !!roleIndicator,
-      });
-
-      if (userNameElement) {
-        const fullName =
-          userData.first_name && userData.last_name
-            ? `${userData.first_name} ${userData.last_name}`
-            : userData.username;
-        userNameElement.textContent = fullName;
-        console.log('[Blackboard] Set user name to:', fullName);
-      }
-
-      if (userAvatar) {
-        // Always set a default avatar first
-        userAvatar.src = '/assets/images/default-avatar.svg';
-
-        if (userData.profile_picture) {
-          userAvatar.src = userData.profile_picture;
-          userAvatar.onerror = function () {
-            this.src = '/assets/images/default-avatar.svg';
-          };
-        }
-        console.log('[Blackboard] Set avatar src to:', userAvatar.src);
-      }
-
-      // Update role indicator
-      if (roleIndicator && userData.role) {
-        roleIndicator.textContent =
-          userData.role === 'admin' ? 'Admin' : userData.role === 'root' ? 'Root' : 'Mitarbeiter';
-        roleIndicator.className = `role-badge ${userData.role}`;
-        console.log('[Blackboard] Set role to:', roleIndicator.textContent);
-      }
-    }
-  } catch (error) {
-    console.error('[Blackboard] Error loading user info:', error);
-  }
-}
+// loadHeaderUserInfo function removed - now handled by unified navigation
 
 /**
  * Load departments and teams

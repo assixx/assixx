@@ -316,3 +316,109 @@ Wenn der Header falsch aussieht:
 ## Status
 
 ✅ ALLE DREI PROBLEME GELÖST (21.06.2025)
+
+---
+
+## Problem-Beschreibung 4 (23.06.2025) - Blackboard.html Race Condition
+
+Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig ausschließenden Fehlern.
+
+### Symptome:
+
+- **Mit statischer Script-Reihenfolge**: Blackboard-Einträge ✓, aber Profilbild ✗
+- **Mit dynamischer Script-Reihenfolge**: Profilbild ✓, aber Blackboard-Einträge ✗
+- Build zeigte manchmal 145, manchmal 146 transformierte Module
+- `user-info` div wurde mit reinem Text "Son Goku" überschrieben
+
+### Ursachen:
+
+1. **CSS-Import-Methode** (Hauptproblem für fehlendes Profilbild):
+   - `user-info-update.css` wurde mit `<link>` statt `@import` geladen
+   - Dies führte zu Timing-Problemen beim Header-Rendering
+
+2. **Race Condition im blackboard.ts**:
+   - Script wartete auf `DOMContentLoaded` Event
+   - Bei dynamischem Import war das Event bereits vorbei
+   - Code wurde nie ausgeführt → Keine Einträge geladen
+
+3. **Script-Konflikte**:
+   - Mehrere Scripts manipulierten das `user-info` Element
+   - Je nach Lade-Reihenfolge überschrieb ein Script die korrekte Struktur
+
+## Lösung für Blackboard.html
+
+### 1. CSS korrekt mit @import laden
+
+```html
+<!-- Vorher (FALSCH): -->
+<style>
+  @import url('/styles/dashboard-theme.css');
+  @import url('/styles/blackboard.css');
+  @import url('/styles/blackboard-update.css');
+</style>
+<!-- ... später im Code ... -->
+<link rel="stylesheet" href="/styles/user-info-update.css" />
+
+<!-- Nachher (RICHTIG): -->
+<style>
+  @import url('/styles/dashboard-theme.css');
+  @import url('/styles/blackboard.css');
+  @import url('/styles/blackboard-update.css');
+  @import url('/styles/user-info-update.css');
+</style>
+```
+
+### 2. Race Condition in blackboard.ts beheben
+
+```typescript
+// Vorher (PROBLEM):
+document.addEventListener('DOMContentLoaded', () => {
+  // Code wird nicht ausgeführt wenn Script verzögert geladen wird
+});
+
+// Nachher (LÖSUNG):
+function initializeBlackboard() {
+  // Initialisierungs-Code hier
+}
+
+// Prüfe ob DOM bereits ready ist
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBlackboard);
+} else {
+  // DOM ist bereits ready, führe direkt aus
+  initializeBlackboard();
+}
+```
+
+### 3. Dynamisches Script-Loading beibehalten
+
+```html
+<script type="module">
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Lade Scripts in korrekter Reihenfolge mit Verzögerung
+    await import('/scripts/auth.ts');
+    await import('/scripts/components/unified-navigation.ts');
+    setTimeout(() => {
+      import('/scripts/blackboard.ts');
+    }, 100);
+  });
+</script>
+```
+
+## Wichtige Erkenntnisse
+
+1. **Gekoppelte Fehler**: Die Lösung eines Problems verursachte das andere
+2. **Module-Count als Indikator**: 145 vs 146 Module zeigten fehlende Script-Ladung an
+3. **CSS-Import ist kritisch**: NIEMALS `<link>` für kritische Header-CSS verwenden
+4. **Race Conditions beachten**: Bei dynamischem Script-Loading immer `document.readyState` prüfen
+
+## Debugging-Strategie für ähnliche Probleme
+
+1. **Build-Output prüfen**: Anzahl transformierter Module beachten
+2. **Console-Logs analysieren**: Auf Script-Lade-Reihenfolge achten
+3. **DOM-Mutations beobachten**: MutationObserver kann helfen, Überschreibungen zu finden
+4. **Beide Szenarien testen**: Statisches und dynamisches Loading vergleichen
+
+## Status
+
+✅ ALLE VIER PROBLEME GELÖST (23.06.2025)
