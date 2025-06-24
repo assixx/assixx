@@ -110,7 +110,7 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
 
   // In production, use mappings
   const mappings: { [key: string]: string } = {
-    'unified-navigation': 'unified-navigation-CL4_3UZb.js',
+    'unified-navigation': 'unified-navigation-BL8CUkkq.js',
     'root-dashboard': 'root-dashboard-Dfu_VQDO.js',
     'header-user-info': 'header-user-info-BRS5ypTV.js',
     'admin-dashboard': 'admin-dashboard-N_R6RCKQ.js',
@@ -124,7 +124,7 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     'storage-upgrade': 'storage-upgrade-CaOJRvXh.js',
     'admin-profile': 'admin-profile-DrPj6ROD.js',
     'manage-admins': 'manage-admins-Bo1AiG2V.js',
-    'components/unified-navigation': 'unified-navigation-CL4_3UZb.js',
+    'components/unified-navigation': 'unified-navigation-BL8CUkkq.js',
     'role-switch': 'role-switch-C7a6BNLX.js',
     'employee-dashboard': 'employee-dashboard-egyM3xDp.js',
     documents: 'documents-BIog5ddL.js',

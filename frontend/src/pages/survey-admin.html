@@ -1102,7 +1102,7 @@
         const responseRate = survey.response_count > 0 ? Math.round((survey.completed_count / survey.response_count) * 100) : 0;
 
         return `
-                <div class="survey-card" onclick="viewSurvey(${survey.id})">
+                <div class="survey-card" onclick="viewResults(${survey.id})">
                     <div class="survey-card-header">
                         <h3 class="survey-card-title">${getTextFromBuffer(survey.title)}</h3>
                         <span class="survey-status ${survey.status}">${getStatusText(survey.status)}</span>
