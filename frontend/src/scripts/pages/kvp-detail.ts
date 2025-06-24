@@ -227,7 +227,25 @@ class KvpDetailPage {
         ${this.suggestion.category_name}
       </span>
     `;
-    document.getElementById('status')!.textContent = this.getStatusText(this.suggestion.status);
+    
+    // For non-admins, just show the status text
+    const statusElement = document.getElementById('status')!;
+    const statusDropdownContainer = document.getElementById('statusDropdownContainer')!;
+    const statusDisplay = document.getElementById('statusDisplay')!;
+    
+    if (this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root')) {
+      // Hide the status text and show the dropdown for admins
+      statusElement.style.display = 'none';
+      statusDropdownContainer.style.display = '';
+      
+      // Update the dropdown display text
+      statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
+      document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
+    } else {
+      // Show only the status text for regular users
+      statusElement.textContent = this.getStatusText(this.suggestion.status);
+      statusDropdownContainer.style.display = 'none';
+    }
 
     if (this.suggestion.assigned_to) {
       document.getElementById('assignedToItem')!.style.display = '';
@@ -239,6 +257,11 @@ class KvpDetailPage {
       document.getElementById('implementationDate')!.textContent = new Date(
         this.suggestion.implementation_date,
       ).toLocaleDateString('de-DE');
+    }
+
+    if (this.suggestion.rejection_reason) {
+      document.getElementById('rejectionItem')!.style.display = '';
+      document.getElementById('rejectionReason')!.textContent = this.suggestion.rejection_reason;
     }
   }
 
@@ -440,6 +463,14 @@ class KvpDetailPage {
     document.getElementById('archiveBtn')?.addEventListener('click', async () => {
       await this.archiveSuggestion();
     });
+
+    // Status change listener for custom dropdown
+    document.addEventListener('statusChange', async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.status) {
+        await this.updateStatus(customEvent.detail.status);
+      }
+    });
   }
 
   private async addComment(): Promise<void> {
@@ -548,6 +579,78 @@ class KvpDetailPage {
     } catch (error) {
       console.error('Error archiving suggestion:', error);
       this.showError('Fehler beim Archivieren');
+    }
+  }
+
+  private async updateStatus(newStatus: string): Promise<void> {
+    try {
+      // Only allow admins and root users to update status
+      if (!this.currentUser || (this.currentUser.role !== 'admin' && this.currentUser.role !== 'root')) {
+        this.showError('Keine Berechtigung zum Ändern des Status');
+        return;
+      }
+
+      let updateData: any = {
+        status: newStatus,
+      };
+
+      // If status is rejected, ask for rejection reason
+      if (newStatus === 'rejected') {
+        const reason = prompt('Bitte geben Sie einen Ablehnungsgrund an:');
+        if (!reason || reason.trim() === '') {
+          this.showError('Ein Ablehnungsgrund ist erforderlich');
+          // Reset dropdown
+          const statusDisplay = document.getElementById('statusDisplay');
+          if (statusDisplay && this.suggestion) {
+            statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
+            document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
+          }
+          return;
+        }
+        updateData.rejection_reason = reason.trim();
+      }
+
+      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update status');
+      }
+
+      const data = await response.json();
+      this.suggestion = data.suggestion;
+      
+      // Update the status badge
+      const statusBadge = document.getElementById('statusBadge')!;
+      statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
+      statusBadge.textContent = this.getStatusText(newStatus);
+
+      // Update rejection reason display
+      if (newStatus === 'rejected' && updateData.rejection_reason) {
+        document.getElementById('rejectionItem')!.style.display = '';
+        document.getElementById('rejectionReason')!.textContent = updateData.rejection_reason;
+      } else if (newStatus !== 'rejected') {
+        document.getElementById('rejectionItem')!.style.display = 'none';
+      }
+
+      this.showSuccess(`Status geändert zu: ${this.getStatusText(newStatus)}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      this.showError('Fehler beim Aktualisieren des Status');
+      
+      // Reset dropdown to original value on error
+      const statusDisplay = document.getElementById('statusDisplay');
+      if (statusDisplay && this.suggestion) {
+        statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
+        document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
+      }
     }
   }
 

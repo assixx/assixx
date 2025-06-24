@@ -63,9 +63,16 @@ class UnifiedNavigation {
   private navigationItems: NavigationItems;
   private isCollapsed: boolean = false;
   private userProfileData: UserProfileResponse | null = null;
+  private lastKvpClickTimestamp: number | null = null;
+  private lastKnownKvpCount: number = 0;
 
   constructor() {
     this.navigationItems = this.getNavigationItems();
+    // Load last KVP click timestamp and count from localStorage
+    const savedTimestamp = localStorage.getItem('lastKvpClickTimestamp');
+    this.lastKvpClickTimestamp = savedTimestamp ? parseInt(savedTimestamp, 10) : null;
+    const savedCount = localStorage.getItem('lastKnownKvpCount');
+    this.lastKnownKvpCount = savedCount ? parseInt(savedCount, 10) : 0;
     this.init();
   }
 
@@ -979,6 +986,12 @@ class UnifiedNavigation {
             localStorage.setItem('openSubmenu', parentId);
           }
         }
+        
+        // Check if admin/root clicked on KVP submenu item
+        const submenuNavId = submenuLink.getAttribute('data-nav-id');
+        if (submenuNavId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
+          this.resetKvpBadge();
+        }
       }
 
       // Logout Button Click - Check both button and its children
@@ -1294,6 +1307,11 @@ class UnifiedNavigation {
       if (navId === 'documents' && this.currentRole === 'employee') {
         this.markAllDocumentsAsRead();
       }
+      
+      // If admin/root clicked on KVP, reset the badge
+      if (navId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
+        this.resetKvpBadge().catch(error => console.error('Error resetting KVP badge:', error));
+      }
     }
 
     // Add navigation animation
@@ -1583,12 +1601,27 @@ class UnifiedNavigation {
         const data = await response.json();
         const badge = document.getElementById('kvp-badge');
         if (badge && data.company) {
-          const count = data.company.byStatus?.new || 0;
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count.toString();
+          const currentCount = data.company.byStatus?.new || 0;
+          
+          // Check if user has clicked on KVP before
+          const hasClickedKvp = this.lastKvpClickTimestamp !== null;
+          
+          // Only show badge if:
+          // 1. There are new suggestions AND
+          // 2. Either the user has never clicked on KVP OR the count has increased since last click
+          if (currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount)) {
+            badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
             badge.style.display = 'inline-block';
+            console.log('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
           } else {
             badge.style.display = 'none';
+            console.log('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
+          }
+          
+          // Update the last known count if it has changed
+          if (currentCount !== this.lastKnownKvpCount && !hasClickedKvp) {
+            this.lastKnownKvpCount = currentCount;
+            localStorage.setItem('lastKnownKvpCount', currentCount.toString());
           }
         }
       }
@@ -1782,6 +1815,45 @@ class UnifiedNavigation {
       }
     } catch (error) {
       console.error('Error marking documents as read:', error);
+    }
+  }
+
+  // Reset KVP badge when admin/root clicks on KVP
+  private async resetKvpBadge(): Promise<void> {
+    console.log('[UnifiedNav] Resetting KVP badge');
+    const badge = document.getElementById('kvp-badge');
+    if (badge) {
+      badge.style.display = 'none';
+      badge.textContent = '0';
+      console.log('[UnifiedNav] KVP badge hidden');
+    }
+    
+    // Save the timestamp of when the user clicked on KVP
+    this.lastKvpClickTimestamp = Date.now();
+    localStorage.setItem('lastKvpClickTimestamp', this.lastKvpClickTimestamp.toString());
+    
+    // Get the current count from the API to save as baseline
+    try {
+      const token = localStorage.getItem('token');
+      if (token && token !== 'test-mode') {
+        const response = await fetch('/api/kvp/stats', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.company) {
+            this.lastKnownKvpCount = data.company.byStatus?.new || 0;
+            localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
+            console.log('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching KVP count for baseline:', error);
     }
   }
 
