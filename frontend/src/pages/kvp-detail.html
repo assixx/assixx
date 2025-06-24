@@ -50,6 +50,8 @@
         display: grid;
         grid-template-columns: 1fr 400px;
         gap: var(--spacing-lg);
+        position: relative;
+        z-index: 1;
       }
 
       /* Main Content */
@@ -62,6 +64,8 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
+        position: relative;
+        z-index: 1;
       }
 
       /* Sidebar */
@@ -69,6 +73,8 @@
         display: flex;
         flex-direction: column;
         gap: var(--spacing-lg);
+        position: relative;
+        z-index: 100;
       }
 
       .sidebar-card {
@@ -79,6 +85,7 @@
         padding: var(--spacing-lg);
         position: relative;
         z-index: 1;
+        overflow: visible; /* Wichtig für Dropdown-Sichtbarkeit */
       }
 
       /* Header with Status */
@@ -421,6 +428,7 @@
         position: relative;
         width: 100%;
         margin-top: 8px;
+        z-index: 10; /* Höher als sidebar-card */
       }
 
       .dropdown-display {
@@ -456,27 +464,26 @@
         top: calc(100% + 4px);
         left: 0;
         right: 0;
-        background: rgba(18, 18, 18, 0.9);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        background: rgba(18, 18, 18, 0.98);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: var(--radius-sm);
         box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          0 8px 32px rgba(0, 0, 0, 0.8),
+          0 0 0 1px rgba(255, 255, 255, 0.1);
         max-height: 200px;
         overflow-y: auto;
         opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
         transition: all 0.3s ease;
-        z-index: 2000;
+        z-index: 999999;
       }
 
       .dropdown-options.active {
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
+        z-index: 99999 !important; /* Sicherstellen, dass es über allem ist */
       }
 
       .dropdown-option {
@@ -594,6 +601,53 @@
               </div>
             </div>
 
+            <!-- Category & Status Info -->
+            <div class="content-section">
+              <h3 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Details
+              </h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Kategorie</span>
+                  <span class="info-value" id="category"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Status</span>
+                  <span class="info-value" id="status"></span>
+                  <!-- Status Dropdown for Admins -->
+                  <div class="custom-dropdown admin-only" id="statusDropdownContainer" style="display: none">
+                    <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+                      <span>Neu</span>
+                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <div class="dropdown-options" id="statusDropdown">
+                      <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
+                      <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
+                      <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
+                      <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
+                      <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+                    </div>
+                    <input type="hidden" name="statusValue" id="statusValue" />
+                  </div>
+                </div>
+                <div class="info-item" id="assignedToItem" style="display: none">
+                  <span class="info-label">Zugewiesen an</span>
+                  <span class="info-value" id="assignedTo"></span>
+                </div>
+                <div class="info-item" id="implementationItem" style="display: none">
+                  <span class="info-label">Umsetzung</span>
+                  <span class="info-value" id="implementationDate"></span>
+                </div>
+                <div class="info-item" id="rejectionItem" style="display: none">
+                  <span class="info-label">Ablehnungsgrund</span>
+                  <span class="info-value" id="rejectionReason"></span>
+                </div>
+              </div>
+            </div>
+
             <!-- Visibility Info -->
             <div class="visibility-info" id="visibilityInfo">
               <!-- Dynamic content -->
@@ -677,52 +731,6 @@
 
           <!-- Sidebar -->
           <div class="detail-sidebar">
-            <!-- Category & Status Info -->
-            <div class="sidebar-card">
-              <h3 class="section-title">
-                <i class="fas fa-info-circle"></i>
-                Details
-              </h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">Kategorie</span>
-                  <span class="info-value" id="category"></span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Status</span>
-                  <span class="info-value" id="status"></span>
-                  <!-- Status Dropdown for Admins -->
-                  <div class="custom-dropdown admin-only" id="statusDropdownContainer" style="display: none">
-                    <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
-                      <span>Neu</span>
-                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div class="dropdown-options" id="statusDropdown">
-                      <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
-                      <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
-                      <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
-                      <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
-                      <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
-                    </div>
-                    <input type="hidden" name="statusValue" id="statusValue" />
-                  </div>
-                </div>
-                <div class="info-item" id="assignedToItem" style="display: none">
-                  <span class="info-label">Zugewiesen an</span>
-                  <span class="info-value" id="assignedTo"></span>
-                </div>
-                <div class="info-item" id="implementationItem" style="display: none">
-                  <span class="info-label">Umsetzung</span>
-                  <span class="info-value" id="implementationDate"></span>
-                </div>
-                <div class="info-item" id="rejectionItem" style="display: none">
-                  <span class="info-label">Ablehnungsgrund</span>
-                  <span class="info-value" id="rejectionReason"></span>
-                </div>
-              </div>
-            </div>
 
             <!-- Attachments -->
             <div class="sidebar-card" id="attachmentsCard" style="display: none">
@@ -805,6 +813,11 @@
         document.querySelectorAll('.dropdown-options').forEach((d) => {
           if (d !== dropdown) d.classList.remove('active');
         });
+
+        // Reset inline styles - let CSS handle positioning
+        dropdown.style.top = '';
+        dropdown.style.left = '';
+        dropdown.style.width = '';
 
         display.classList.toggle('active');
         dropdown.classList.toggle('active');
