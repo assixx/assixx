@@ -118,7 +118,7 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     auth: 'auth-CLt6HVJ3.js',
     blackboard: 'blackboard-CkcWnHK8.js',
     calendar: 'calendar-CM3Czewy.js',
-    chat: 'chat-BMxgIT7z.js',
+    chat: 'chat-DQj9jM7D.js',
     'dashboard-scripts': 'dashboard-scripts-ctg6MSn3.js',
     shifts: 'shifts-CzuLC6lB.js',
     'storage-upgrade': 'storage-upgrade-CaOJRvXh.js',

@@ -1356,24 +1356,59 @@ class ChatClient {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
 
+    // Hide container before updating
+    messagesContainer.classList.remove('loaded');
     messagesContainer.innerHTML = '';
 
+    let lastMessageDate: string | null = null;
+
     messages.forEach((message) => {
+      // Check if we need to add a date separator
+      const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
+      
+      if (lastMessageDate !== messageDate) {
+        this.addDateSeparator(messageDate, messagesContainer);
+        lastMessageDate = messageDate;
+      }
+
       this.displayMessage(message);
     });
 
-    // Scroll to bottom
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    // Immediately set scroll position to bottom without animation
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Show container after positioning
+      setTimeout(() => {
+        messagesContainer.classList.add('loaded');
+      }, 50);
+    });
   }
 
   displayMessage(message: Message): void {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
 
+    // Check if we need to add a date separator
+    const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
+    const messages = messagesContainer.querySelectorAll('.message');
+    const lastMessage = messages[messages.length - 1];
+    
+    if (lastMessage) {
+      const lastMessageDate = lastMessage.getAttribute('data-date');
+      if (lastMessageDate && lastMessageDate !== messageDate) {
+        this.addDateSeparator(messageDate, messagesContainer);
+      }
+    } else if (messages.length === 0) {
+      // First message in conversation
+      this.addDateSeparator(messageDate, messagesContainer);
+    }
+
     const isOwnMessage = message.sender_id === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
     messageDiv.setAttribute('data-message-id', message.id.toString());
+    messageDiv.setAttribute('data-date', messageDate);
 
     const time = new Date(message.created_at).toLocaleTimeString('de-DE', {
       hour: '2-digit',
@@ -1399,6 +1434,29 @@ class ChatClient {
 
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  addDateSeparator(dateString: string, container: HTMLElement): void {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const messageDate = new Date(dateString.split('.').reverse().join('-'));
+    let displayDate = dateString;
+    
+    // Check if it's today
+    if (messageDate.toDateString() === today.toDateString()) {
+      displayDate = 'Heute';
+    }
+    // Check if it's yesterday
+    else if (messageDate.toDateString() === yesterday.toDateString()) {
+      displayDate = 'Gestern';
+    }
+    
+    const separator = document.createElement('div');
+    separator.className = 'date-separator';
+    separator.innerHTML = `<span>${displayDate}</span>`;
+    container.appendChild(separator);
   }
 
   renderAttachments(attachments: Attachment[]): string {
