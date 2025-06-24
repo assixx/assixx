@@ -294,10 +294,10 @@ class KvpPage {
               <span><i class="fas fa-user"></i> ${suggestion.submitted_by_name} ${suggestion.submitted_by_lastname}</span>
               <span><i class="fas fa-calendar"></i> ${new Date(suggestion.created_at).toLocaleDateString('de-DE')}</span>
               ${
-                suggestion.attachment_count && suggestion.attachment_count > 0
-                  ? `<span><i class="fas fa-camera"></i> ${suggestion.attachment_count} Foto${suggestion.attachment_count > 1 ? 's' : ''}</span>`
-                  : ''
-              }
+  suggestion.attachment_count && suggestion.attachment_count > 0
+    ? `<span><i class="fas fa-camera"></i> ${suggestion.attachment_count} Foto${suggestion.attachment_count > 1 ? 's' : ''}</span>`
+    : ''
+}
             </div>
             <div class="visibility-badge ${suggestion.org_level}">
               <i class="fas ${visibilityIcon}"></i> ${visibilityText}
@@ -310,7 +310,7 @@ class KvpPage {
           </div>
           
           <div class="suggestion-footer">
-            <div class="category-tag" style="background: ${suggestion.category_color ? suggestion.category_color + '20' : '#66666620'}; color: ${suggestion.category_color || '#666'}; border: 1px solid ${suggestion.category_color || '#666'};">
+            <div class="category-tag" style="background: ${suggestion.category_color ? `${suggestion.category_color}20` : '#66666620'}; color: ${suggestion.category_color || '#666'}; border: 1px solid ${suggestion.category_color || '#666'};">
               ${suggestion.category_icon || '💡'}
               ${suggestion.category_name || 'Sonstiges'}
             </div>
@@ -564,7 +564,7 @@ class KvpPage {
 
   private showError(message: string): void {
     // TODO: Implement toast notification
-    alert('Fehler: ' + message);
+    alert(`Fehler: ${message}`);
   }
 
   private openCreateModal(): void {

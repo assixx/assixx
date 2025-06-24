@@ -168,20 +168,20 @@
       </thead>
       <tbody>
         ${logs
-          .map((log) => {
-            const date = new Date(log.created_at);
-            const dateString = date.toLocaleDateString('de-DE', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            });
-            const timeString = date.toLocaleTimeString('de-DE', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            });
+    .map((log) => {
+      const date = new Date(log.created_at);
+      const dateString = date.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      const timeString = date.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
 
-            return `
+      return `
             <tr>
               <td>
                 <div>${dateString}</div>
@@ -197,35 +197,35 @@
               <td>${log.entity_type || '-'}</td>
               <td>
                 ${
-                  log.details
-                    ? (() => {
-                        // Check if details is JSON or plain text
-                        try {
-                          const parsedDetails = JSON.parse(log.details);
+  log.details
+    ? (() => {
+      // Check if details is JSON or plain text
+      try {
+        const parsedDetails = JSON.parse(log.details);
 
-                          // Format KVP details specially
-                          if (log.action === 'kvp_created' || log.action === 'kvp_shared') {
-                            let formatted = '';
-                            if (parsedDetails.title) {
-                              formatted = `"${parsedDetails.title}"`;
-                            }
-                            if (parsedDetails.shared_to) {
-                              formatted = `Geteilt an: ${parsedDetails.shared_to === 'company' ? 'Firmenweit' : parsedDetails.shared_to}`;
-                            }
-                            return `<span style="color: var(--text-secondary);">${formatted}</span>`;
-                          }
+        // Format KVP details specially
+        if (log.action === 'kvp_created' || log.action === 'kvp_shared') {
+          let formatted = '';
+          if (parsedDetails.title) {
+            formatted = `"${parsedDetails.title}"`;
+          }
+          if (parsedDetails.shared_to) {
+            formatted = `Geteilt an: ${parsedDetails.shared_to === 'company' ? 'Firmenweit' : parsedDetails.shared_to}`;
+          }
+          return `<span style="color: var(--text-secondary);">${formatted}</span>`;
+        }
 
-                          // For other JSON details, show with click handler
-                          return `<span class="details-preview" onclick="showFullDetails('${btoa(log.details)}')" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
-                        ${log.details.length > 50 ? log.details.substring(0, 50) + '...' : log.details}
+        // For other JSON details, show with click handler
+        return `<span class="details-preview" onclick="showFullDetails('${btoa(log.details)}')" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
+                        ${log.details.length > 50 ? `${log.details.substring(0, 50)}...` : log.details}
                       </span>`;
-                        } catch {
-                          // It's plain text, just show it
-                          return `<span style="color: var(--text-secondary);">${log.details}</span>`;
-                        }
-                      })()
-                    : '-'
-                }
+      } catch {
+        // It's plain text, just show it
+        return `<span style="color: var(--text-secondary);">${log.details}</span>`;
+      }
+    })()
+    : '-'
+  }
               </td>
               <td>
                 <span style="font-size: 12px; color: var(--text-secondary);">
@@ -234,8 +234,8 @@
               </td>
             </tr>
           `;
-          })
-          .join('')}
+    })
+    .join('')}
       </tbody>
     </table>
   `;

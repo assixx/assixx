@@ -197,15 +197,15 @@ class ModalManager {
       <div class="modal-overlay" id="${modalId}">
         <div class="modal-container modal-${config.size || 'md'}">
           ${
-            config.title
-              ? `
+  config.title
+    ? `
             <div class="modal-header">
               <h2 class="modal-title">${config.title}</h2>
               ${config.showCloseButton !== false ? '<button type="button" class="modal-close" data-action="close">&times;</button>' : ''}
             </div>
           `
-              : ''
-          }
+    : ''
+}
           <div class="modal-body">
             ${config.content || ''}
           </div>
@@ -261,7 +261,7 @@ export const modalManager = new ModalManager();
 
 // Export convenience functions
 export function openModal(content: string, config?: Partial<ModalConfig>): void {
-  const modalId = config?.id || 'modal-' + Date.now();
+  const modalId = config?.id || `modal-${Date.now()}`;
   modalManager.show(modalId, {
     ...config,
     content,

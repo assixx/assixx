@@ -193,7 +193,9 @@ export class Survey {
               question.question_type,
               question.is_required !== false,
               question.order_position || index + 1,
-              question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
+              question.options && question.options.length > 0
+                ? JSON.stringify(question.options)
+                : null,
             ]
           );
 
@@ -416,7 +418,7 @@ export class Survey {
     }
 
     const survey = surveys[0];
-    
+
     // Convert Buffer to string if needed
     if (survey.description && Buffer.isBuffer(survey.description)) {
       survey.description = survey.description.toString();
@@ -438,16 +440,17 @@ export class Survey {
       if (question.question_text && Buffer.isBuffer(question.question_text)) {
         question.question_text = question.question_text.toString();
       }
-      
+
       if (
         ['multiple_choice', 'single_choice'].includes(question.question_type) &&
         question.options
       ) {
         // Options are stored as JSON in the database
         try {
-          question.options = typeof question.options === 'string' 
-            ? JSON.parse(question.options) 
-            : question.options;
+          question.options =
+            typeof question.options === 'string'
+              ? JSON.parse(question.options)
+              : question.options;
         } catch (e) {
           console.error('Error parsing options for question:', question.id, e);
           question.options = [];
@@ -536,7 +539,9 @@ export class Survey {
               question.question_type,
               question.is_required !== false,
               question.order_position || index + 1,
-              question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
+              question.options && question.options.length > 0
+                ? JSON.stringify(question.options)
+                : null,
             ]
           );
 
@@ -658,10 +663,12 @@ export class Survey {
           question.question_type === 'multiple_choice'
         ) {
           // Get option statistics from JSON stored options
-          const options = question.options ? 
-            (typeof question.options === 'string' ? JSON.parse(question.options) : question.options) 
+          const options = question.options
+            ? typeof question.options === 'string'
+              ? JSON.parse(question.options)
+              : question.options
             : [];
-          
+
           // Get all answers for this question
           const [answers] = await typedQuery(
             `
@@ -672,27 +679,31 @@ export class Survey {
           `,
             [question.id]
           );
-          
+
           // Count responses per option
           const optionCounts: { [key: number]: number } = {};
           answers.forEach((answer: any) => {
-            const selectedOptions = typeof answer.answer_options === 'string' 
-              ? JSON.parse(answer.answer_options) 
-              : answer.answer_options;
-            
+            const selectedOptions =
+              typeof answer.answer_options === 'string'
+                ? JSON.parse(answer.answer_options)
+                : answer.answer_options;
+
             if (Array.isArray(selectedOptions)) {
               selectedOptions.forEach((optionIndex: number) => {
-                optionCounts[optionIndex] = (optionCounts[optionIndex] || 0) + 1;
+                optionCounts[optionIndex] =
+                  (optionCounts[optionIndex] || 0) + 1;
               });
             }
           });
-          
+
           // Format option statistics
-          questionStat.options = options.map((optionText: string, index: number) => ({
-            option_id: index,
-            option_text: optionText,
-            count: optionCounts[index] || 0
-          }));
+          questionStat.options = options.map(
+            (optionText: string, index: number) => ({
+              option_id: index,
+              option_text: optionText,
+              count: optionCounts[index] || 0,
+            })
+          );
         } else if (question.question_type === 'text') {
           // Get text responses
           const [textResponses] = await typedQuery(

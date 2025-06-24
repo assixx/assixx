@@ -102,7 +102,7 @@
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         border-color: var(--primary-color);
       }
-      
+
       .survey-card.completed:hover {
         border-color: var(--success-color);
         box-shadow: 0 8px 25px rgba(76, 175, 80, 0.2);
@@ -236,7 +236,7 @@
         max-height: 90vh;
         overflow-y: auto;
       }
-      
+
       /* Close button für Response Modal */
       #responseModal .close {
         position: absolute;
@@ -259,17 +259,17 @@
         -moz-user-select: none;
         -ms-user-select: none;
       }
-      
+
       #responseModal .close:hover {
         background: rgba(255, 255, 255, 0.2);
         color: var(--text-primary);
         transform: scale(1.1);
       }
-      
+
       #responseModal .close:active {
         transform: scale(0.95);
       }
-      
+
       .response-info {
         background: rgba(33, 150, 243, 0.1);
         padding: var(--spacing-md);
@@ -277,7 +277,7 @@
         margin-bottom: var(--spacing-lg);
         border: 1px solid rgba(33, 150, 243, 0.3);
       }
-      
+
       .response-info p {
         margin: 0;
         color: var(--text-primary);
@@ -285,36 +285,36 @@
         align-items: center;
         gap: var(--spacing-sm);
       }
-      
+
       .response-answers {
         max-height: 400px;
         overflow-y: auto;
         padding-right: var(--spacing-sm);
       }
-      
+
       .response-question {
         margin-bottom: var(--spacing-lg);
         padding-bottom: var(--spacing-lg);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
-      
+
       .response-question:last-child {
         border-bottom: none;
       }
-      
+
       .response-question h4 {
         color: var(--text-primary);
         margin-bottom: var(--spacing-md);
         font-size: 1.1rem;
       }
-      
+
       .response-answer {
         background: rgba(255, 255, 255, 0.05);
         padding: var(--spacing-md);
         border-radius: var(--radius-sm);
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
-      
+
       .response-answer p {
         margin: 0;
         color: var(--text-secondary);
@@ -322,12 +322,12 @@
         align-items: center;
         gap: var(--spacing-sm);
       }
-      
+
       .response-answer em {
         color: var(--text-muted);
         font-style: italic;
       }
-      
+
       .response-answer .fa-check-square {
         color: var(--success-color);
       }
@@ -860,7 +860,7 @@
       function createSurveyCard(survey, completed) {
         const card = document.createElement('div');
         card.className = completed ? 'survey-card completed' : 'survey-card';
-        
+
         // Add click handler for completed surveys
         if (completed) {
           card.style.cursor = 'pointer';
@@ -994,12 +994,11 @@
 
           case 'single_choice':
             return question.options
-              .map(
-                (option, index) => {
-                  // Handle both string array and object array formats
-                  const optionText = typeof option === 'string' ? option : option.option_text;
-                  const optionId = typeof option === 'string' ? index : option.id;
-                  return `
+              .map((option, index) => {
+                // Handle both string array and object array formats
+                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionId = typeof option === 'string' ? index : option.id;
+                return `
                         <div class="choice-option">
                             <input type="radio" 
                                    id="q${question.id}_opt${optionId}" 
@@ -1010,18 +1009,16 @@
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
                     `;
-                }
-              )
+              })
               .join('');
 
           case 'multiple_choice':
             return question.options
-              .map(
-                (option, index) => {
-                  // Handle both string array and object array formats
-                  const optionText = typeof option === 'string' ? option : option.option_text;
-                  const optionId = typeof option === 'string' ? index : option.id;
-                  return `
+              .map((option, index) => {
+                // Handle both string array and object array formats
+                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionId = typeof option === 'string' ? index : option.id;
+                return `
                         <div class="choice-option">
                             <input type="checkbox" 
                                    id="q${question.id}_opt${optionId}" 
@@ -1030,8 +1027,7 @@
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
                     `;
-                }
-              )
+              })
               .join('');
 
           case 'rating':
@@ -1096,7 +1092,7 @@
           // For single choice, store as array with one element
           answers[questionId] = {
             question_id: questionId,
-            answer_options: [value]
+            answer_options: [value],
           };
         } else {
           answers[questionId] = {
@@ -1225,14 +1221,14 @@
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
           });
-          
+
           if (!surveyResponse.ok) {
             alert('Fehler beim Abrufen der Umfrage-Details');
             return;
           }
-          
+
           const survey = await surveyResponse.json();
-          
+
           // Then get the user's response
           const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
             headers: {
@@ -1254,11 +1250,11 @@
           alert('Fehler beim Abrufen Ihrer Antworten');
         }
       }
-      
+
       // Show response modal
       function showResponseModal(survey, response) {
         console.log('Showing response modal with:', { survey, response });
-        
+
         // Create modal HTML - use same class structure as survey modal
         const modalHtml = `
           <div id="responseModal" class="modal" style="display: block;">
@@ -1278,10 +1274,11 @@
                   })}</p>
                 </div>
                 <div class="response-answers">
-                  ${survey.questions.map((question, index) => {
-                    const answer = response.answers.find(a => a.question_id === question.id);
-                    console.log('Question:', question, 'Answer:', answer);
-                    return `
+                  ${survey.questions
+                    .map((question, index) => {
+                      const answer = response.answers.find((a) => a.question_id === question.id);
+                      console.log('Question:', question, 'Answer:', answer);
+                      return `
                       <div class="response-question">
                         <h4>${index + 1}. ${question.question_text}</h4>
                         <div class="response-answer">
@@ -1289,25 +1286,26 @@
                         </div>
                       </div>
                     `;
-                  }).join('')}
+                    })
+                    .join('')}
                 </div>
               </div>
             </div>
           </div>
         `;
-        
+
         // Add modal to body
         document.body.insertAdjacentHTML('beforeend', modalHtml);
       }
-      
+
       // Format answer based on question type
       function formatAnswer(question, answer) {
         if (!answer) return '<em>Keine Antwort</em>';
-        
+
         switch (question.question_type) {
           case 'text':
             return `<p>${answer.answer_text || '<em>Keine Antwort</em>'}</p>`;
-            
+
           case 'single_choice':
           case 'multiple_choice':
             if (answer.answer_options && question.options) {
@@ -1321,33 +1319,36 @@
                   return '<em>Fehler beim Anzeigen der Antwort</em>';
                 }
               }
-              
+
               // Ensure it's an array
               if (!Array.isArray(selectedOptions)) {
                 selectedOptions = [selectedOptions];
               }
-              
-              return selectedOptions.map(optIndex => {
-                const option = typeof question.options[0] === 'string' 
-                  ? question.options[optIndex] 
-                  : question.options.find(o => o.id === optIndex)?.option_text;
-                return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
-              }).join('');
+
+              return selectedOptions
+                .map((optIndex) => {
+                  const option =
+                    typeof question.options[0] === 'string'
+                      ? question.options[optIndex]
+                      : question.options.find((o) => o.id === optIndex)?.option_text;
+                  return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
+                })
+                .join('');
             }
             return '<em>Keine Antwort</em>';
-            
+
           case 'rating':
           case 'number':
             return `<p>${answer.answer_number || '<em>Keine Antwort</em>'}</p>`;
-            
+
           case 'date':
             return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Keine Antwort</em>'}</p>`;
-            
+
           default:
             return '<em>Unbekannter Antworttyp</em>';
         }
       }
-      
+
       // Close response modal
       function closeResponseModal() {
         const modal = document.getElementById('responseModal');

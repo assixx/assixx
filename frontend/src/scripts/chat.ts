@@ -1668,7 +1668,7 @@ class ChatClient {
       if (conversation.last_message && conversation.last_message.content) {
         // Truncate message to one line (max ~40 chars)
         const content = conversation.last_message.content;
-        lastMessageText = content.length > 40 ? content.substring(0, 37) + '...' : content;
+        lastMessageText = content.length > 40 ? `${content.substring(0, 37)}...` : content;
       }
 
       const lastMessageTime = conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
@@ -1740,14 +1740,14 @@ class ChatClient {
           <i class="fas fa-search"></i>
         </button>
         ${
-          isAdmin
-            ? `
+  isAdmin
+    ? `
           <button class="chat-action-btn" title="Löschen" id="deleteConversationBtn">
             <i class="fas fa-trash"></i>
           </button>
         `
-            : ''
-        }
+    : ''
+}
       </div>
     `;
 
@@ -1923,9 +1923,9 @@ class ChatClient {
   async loadEmployeesForDepartment(departmentId: string): Promise<void> {
     try {
       // Filter employees by department
-      const employees = this.availableUsers.filter((user) => {
-        return user.role === 'employee' && user.department_id?.toString() === departmentId.toString();
-      });
+      const employees = this.availableUsers.filter(
+        (user) => user.role === 'employee' && user.department_id?.toString() === departmentId.toString(),
+      );
 
       const dropdown = document.getElementById('employeeDropdown');
 

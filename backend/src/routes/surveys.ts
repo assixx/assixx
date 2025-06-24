@@ -40,7 +40,7 @@ router.get(
         'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
         [userId, tenantId]
       );
-      
+
       const userDepartmentId = userInfo[0]?.department_id || null;
 
       // Get all active surveys assigned to the employee
@@ -173,9 +173,9 @@ router.get(
     try {
       const authReq = req as any;
       const { status, page, limit } = req.query;
-      
+
       let surveys;
-      
+
       // Root users see all surveys
       if (authReq.user.role === 'root') {
         surveys = await Survey.getAllByTenant(authReq.user.tenant_id, {
@@ -185,7 +185,7 @@ router.get(
           page: page ? parseInt(String(page)) : 1,
           limit: limit ? parseInt(String(limit)) : 20,
         });
-      } 
+      }
       // Admin users see filtered surveys based on department permissions
       else if (authReq.user.role === 'admin') {
         surveys = await Survey.getAllByTenantForAdmin(
@@ -219,7 +219,7 @@ router.get(
         res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
-      
+
       res.json(surveys);
     } catch (error: any) {
       console.error('Error fetching surveys:', error);
@@ -270,27 +270,29 @@ router.get(
 );
 
 // Get survey statistics (admin only)
-router.get('/:id/statistics', 
+router.get(
+  '/:id/statistics',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-      res.status(403).json({ error: 'Keine Berechtigung' });
-      return;
-    }
+    try {
+      const authReq = req as any;
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
 
-    const stats = await Survey.getStatistics(
-      parseInt(req.params.id, 10),
-      authReq.user.tenant_id
-    );
-    res.json(stats);
-  } catch (error: any) {
-    console.error('Error fetching statistics:', error);
-    res.status(500).json({ error: 'Fehler beim Abrufen der Statistiken' });
+      const stats = await Survey.getStatistics(
+        parseInt(req.params.id, 10),
+        authReq.user.tenant_id
+      );
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching statistics:', error);
+      res.status(500).json({ error: 'Fehler beim Abrufen der Statistiken' });
+    }
   }
-});
+);
 
 // Create survey (admin only)
 router.post(
@@ -314,23 +316,24 @@ router.post(
            WHERE admin_user_id = ? AND tenant_id = ? AND can_write = 1`,
           [authReq.user.id, authReq.user.tenant_id]
         );
-        
+
         const authorizedDeptIds = adminDepts.map((d: any) => d.department_id);
-        
+
         // Check each assignment
         for (const assignment of req.body.assignments) {
           if (assignment.type === 'department') {
             if (!authorizedDeptIds.includes(assignment.department_id)) {
-              res.status(403).json({ 
-                error: 'Sie haben keine Berechtigung für diese Abteilung' 
+              res.status(403).json({
+                error: 'Sie haben keine Berechtigung für diese Abteilung',
               });
               return;
             }
           }
           // Admins can always create surveys for "all_users"
           else if (assignment.type !== 'all_users') {
-            res.status(403).json({ 
-              error: 'Sie können nur Umfragen für Ihre Abteilungen oder die ganze Firma erstellen' 
+            res.status(403).json({
+              error:
+                'Sie können nur Umfragen für Ihre Abteilungen oder die ganze Firma erstellen',
             });
             return;
           }
@@ -350,103 +353,110 @@ router.post(
     } catch (error: any) {
       console.error('Error creating survey:', error);
       console.error('Error stack:', error.stack);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen der Umfrage',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details:
+          process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
   }
 );
 
 // Create survey from template (admin only)
-router.post('/from-template/:templateId', 
+router.post(
+  '/from-template/:templateId',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-      res.status(403).json({ error: 'Keine Berechtigung' });
-      return;
+    try {
+      const authReq = req as any;
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+
+      const surveyId = await Survey.createFromTemplate(
+        parseInt(req.params.templateId, 10),
+        authReq.user.tenant_id,
+        authReq.user.id
+      );
+
+      res.status(201).json({
+        id: surveyId,
+        message: 'Umfrage aus Vorlage erstellt',
+      });
+    } catch (error: any) {
+      console.error('Error creating survey from template:', error);
+      res
+        .status(500)
+        .json({ error: 'Fehler beim Erstellen der Umfrage aus Vorlage' });
     }
-
-    const surveyId = await Survey.createFromTemplate(
-      parseInt(req.params.templateId, 10),
-      authReq.user.tenant_id,
-      authReq.user.id
-    );
-
-    res.status(201).json({
-      id: surveyId,
-      message: 'Umfrage aus Vorlage erstellt',
-    });
-  } catch (error: any) {
-    console.error('Error creating survey from template:', error);
-    res
-      .status(500)
-      .json({ error: 'Fehler beim Erstellen der Umfrage aus Vorlage' });
   }
-});
+);
 
 // Update survey (admin only)
-router.put('/:id', 
+router.put(
+  '/:id',
   authenticateToken as any,
   checkFeature('surveys') as any,
-  ...(validateUpdateSurvey as any[]), 
+  ...(validateUpdateSurvey as any[]),
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-      res.status(403).json({ error: 'Keine Berechtigung' });
-      return;
+    try {
+      const authReq = req as any;
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+
+      const success = await Survey.update(
+        parseInt(req.params.id, 10),
+        req.body,
+        authReq.user.tenant_id
+      );
+
+      if (!success) {
+        res.status(404).json({ error: 'Umfrage nicht gefunden' });
+        return;
+      }
+
+      res.json({ message: 'Umfrage erfolgreich aktualisiert' });
+    } catch (error: any) {
+      console.error('Error updating survey:', error);
+      res.status(500).json({ error: 'Fehler beim Aktualisieren der Umfrage' });
     }
-
-    const success = await Survey.update(
-      parseInt(req.params.id, 10),
-      req.body,
-      authReq.user.tenant_id
-    );
-
-    if (!success) {
-      res.status(404).json({ error: 'Umfrage nicht gefunden' });
-      return;
-    }
-
-    res.json({ message: 'Umfrage erfolgreich aktualisiert' });
-  } catch (error: any) {
-    console.error('Error updating survey:', error);
-    res.status(500).json({ error: 'Fehler beim Aktualisieren der Umfrage' });
   }
-});
+);
 
 // Delete survey (admin only)
-router.delete('/:id', 
+router.delete(
+  '/:id',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-      res.status(403).json({ error: 'Keine Berechtigung' });
-      return;
+    try {
+      const authReq = req as any;
+      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+
+      const success = await Survey.delete(
+        parseInt(req.params.id, 10),
+        authReq.user.tenant_id
+      );
+
+      if (!success) {
+        res.status(404).json({ error: 'Umfrage nicht gefunden' });
+        return;
+      }
+
+      res.json({ message: 'Umfrage erfolgreich gelöscht' });
+    } catch (error: any) {
+      console.error('Error deleting survey:', error);
+      res.status(500).json({ error: 'Fehler beim Löschen der Umfrage' });
     }
-
-    const success = await Survey.delete(
-      parseInt(req.params.id, 10),
-      authReq.user.tenant_id
-    );
-
-    if (!success) {
-      res.status(404).json({ error: 'Umfrage nicht gefunden' });
-      return;
-    }
-
-    res.json({ message: 'Umfrage erfolgreich gelöscht' });
-  } catch (error: any) {
-    console.error('Error deleting survey:', error);
-    res.status(500).json({ error: 'Fehler beim Löschen der Umfrage' });
   }
-});
+);
 
 // Submit survey response
 router.post(
@@ -537,11 +547,13 @@ router.post(
             response_id: responseId,
             question_id: answer.question_id,
             answer_text: answer.answer_text || null,
-            answer_options: answer.answer_options ? JSON.stringify(answer.answer_options) : null,
+            answer_options: answer.answer_options
+              ? JSON.stringify(answer.answer_options)
+              : null,
             answer_number: answer.answer_number || null,
             answer_date: answer.answer_date || null,
           });
-          
+
           await connection.execute(
             `
           INSERT INTO survey_answers (
@@ -554,7 +566,9 @@ router.post(
               responseId,
               answer.question_id,
               answer.answer_text || null,
-              answer.answer_options ? JSON.stringify(answer.answer_options) : null,
+              answer.answer_options
+                ? JSON.stringify(answer.answer_options)
+                : null,
               answer.answer_number || null,
               answer.answer_date || null,
             ]
@@ -587,58 +601,63 @@ router.post(
 );
 
 // Get user's response to a survey
-router.get('/:id/my-response', 
+router.get(
+  '/:id/my-response',
   authenticateToken as any,
   checkFeature('surveys') as any,
   async (req, res) => {
-  try {
-    const authReq = req as any;
-    const surveyId = parseInt(req.params.id);
-    const userId = authReq.user.id; // Already a number from auth middleware
+    try {
+      const authReq = req as any;
+      const surveyId = parseInt(req.params.id);
+      const userId = authReq.user.id; // Already a number from auth middleware
 
-    console.log(`Checking response for survey ${surveyId} and user ${userId}`);
+      console.log(
+        `Checking response for survey ${surveyId} and user ${userId}`
+      );
 
-    const [responses] = await (db as any).execute(
-      `
+      const [responses] = await (db as any).execute(
+        `
       SELECT sr.*, sa.question_id, sa.answer_text, sa.answer_options, 
              sa.answer_number, sa.answer_date
       FROM survey_responses sr
       LEFT JOIN survey_answers sa ON sr.id = sa.response_id
       WHERE sr.survey_id = ? AND sr.user_id = ?
     `,
-      [surveyId, userId]
-    );
+        [surveyId, userId]
+      );
 
-    console.log(
-      `Found ${responses.length} responses for user ${userId} on survey ${surveyId}`
-    );
+      console.log(
+        `Found ${responses.length} responses for user ${userId} on survey ${surveyId}`
+      );
 
-    if (responses.length === 0) {
-      res.json({ responded: false });
-      return;
+      if (responses.length === 0) {
+        res.json({ responded: false });
+        return;
+      }
+
+      res.json({
+        responded: true,
+        response: {
+          id: responses[0].id,
+          completed_at: responses[0].completed_at,
+          answers: responses.map((r: any) => ({
+            question_id: r.question_id,
+            answer_text:
+              r.answer_text && Buffer.isBuffer(r.answer_text)
+                ? r.answer_text.toString()
+                : r.answer_text,
+            answer_options: r.answer_options,
+            answer_number: r.answer_number,
+            answer_date: r.answer_date,
+          })),
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching user response:', error);
+      res.status(500).json({ error: 'Fehler beim Abrufen der Antwort' });
     }
-
-    res.json({
-      responded: true,
-      response: {
-        id: responses[0].id,
-        completed_at: responses[0].completed_at,
-        answers: responses.map((r: any) => ({
-          question_id: r.question_id,
-          answer_text: r.answer_text && Buffer.isBuffer(r.answer_text) 
-            ? r.answer_text.toString() 
-            : r.answer_text,
-          answer_options: r.answer_options,
-          answer_number: r.answer_number,
-          answer_date: r.answer_date,
-        })),
-      },
-    });
-  } catch (error: any) {
-    console.error('Error fetching user response:', error);
-    res.status(500).json({ error: 'Fehler beim Abrufen der Antwort' });
   }
-});
+);
 
 // Export survey results to Excel - with rate limiting
 router.get(
@@ -749,7 +768,7 @@ router.get(
                         optionCounts[optionId]++;
                       }
                     });
-                  } catch (e) {
+                  } catch {
                     // Handle non-JSON or invalid data
                   }
                 }

@@ -1631,9 +1631,9 @@ class UnifiedNavigation {
         const parentBadge = document.getElementById('lean-management-badge');
         console.log('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
         console.log('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
-        
+
         const count = data.pendingCount || 0;
-        
+
         // Update child badge (in submenu)
         if (badge) {
           if (count > 0) {
@@ -1645,7 +1645,7 @@ class UnifiedNavigation {
             console.log('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
           }
         }
-        
+
         // Update parent badge (on LEAN-Management)
         if (parentBadge) {
           if (count > 0) {

@@ -178,10 +178,10 @@ class KvpDetailPage {
         <div class="visibility-badge company">
           <i class="fas fa-globe"></i> Firmenweit geteilt
           ${
-            this.suggestion.shared_by_name
-              ? `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>`
-              : ''
-          }
+  this.suggestion.shared_by_name
+    ? `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>`
+    : ''
+}
         </div>
       `;
     } else {
@@ -310,12 +310,12 @@ class KvpDetailPage {
             </div>
             <span class="comment-date">
               ${new Date(comment.created_at).toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })}
             </span>
           </div>
           <div class="comment-content">
@@ -582,9 +582,9 @@ class KvpDetailPage {
   }
 
   private formatFileSize(bytes: number): string {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
-    return Math.round(bytes / (1024 * 1024)) + ' MB';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${Math.round(bytes / (1024 * 1024))} MB`;
   }
 
   private escapeHtml(text: string): string {
@@ -600,7 +600,7 @@ class KvpDetailPage {
 
   private showError(message: string): void {
     // TODO: Implement toast notification
-    alert('Fehler: ' + message);
+    alert(`Fehler: ${message}`);
   }
 }
 

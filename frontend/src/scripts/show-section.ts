@@ -20,7 +20,7 @@ export function showSection(sectionName: string): void {
   // Check if sectionName already contains '-section'
   let sectionId = sectionName;
   if (!sectionName.endsWith('-section')) {
-    sectionId = sectionName + '-section';
+    sectionId = `${sectionName}-section`;
   }
 
   const targetSection = document.getElementById(sectionId);

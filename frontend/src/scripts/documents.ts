@@ -286,15 +286,15 @@ function createDocumentCard(doc: Document): HTMLElement {
         <span>${escapeHtml(doc.uploaded_by_name || 'System')}</span>
       </div>
       ${
-        doc.file_size
-          ? `
+  doc.file_size
+    ? `
         <div class="document-meta-item">
           <i class="fas fa-weight"></i>
           <span>${formatFileSize(doc.file_size)}</span>
         </div>
       `
-          : ''
-      }
+    : ''
+}
       <div class="document-meta-item">
         <i class="fas fa-layer-group"></i>
         <span>${getScopeLabel(doc.scope)}</span>
@@ -563,8 +563,8 @@ function updateElement(id: string, value: string | number): void {
  * Toggle dropdown
  */
 window.toggleDropdown = function (type: string): void {
-  const display = document.getElementById(type + 'Display');
-  const dropdown = document.getElementById(type + 'Dropdown');
+  const display = document.getElementById(`${type}Display`);
+  const dropdown = document.getElementById(`${type}Dropdown`);
 
   if (!display || !dropdown) return;
 
@@ -625,7 +625,7 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
