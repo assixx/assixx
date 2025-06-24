@@ -29,11 +29,15 @@ export class SessionManager {
   private setupActivityListeners(): void {
     // Track user activity
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
-    
-    events.forEach(event => {
-      document.addEventListener(event, () => {
-        this.updateActivity();
-      }, { passive: true });
+
+    events.forEach((event) => {
+      document.addEventListener(
+        event,
+        () => {
+          this.updateActivity();
+        },
+        { passive: true },
+      );
     });
 
     // Also track API calls as activity
@@ -47,7 +51,7 @@ export class SessionManager {
   private updateActivity(): void {
     this.lastActivityTime = Date.now();
     this.warningShown = false;
-    
+
     // Store last activity in localStorage for cross-tab synchronization
     localStorage.setItem('lastActivity', this.lastActivityTime.toString());
   }
@@ -77,7 +81,7 @@ export class SessionManager {
     const timeSinceActivity = now - this.lastActivityTime;
 
     // Check if we should show warning
-    if (!this.warningShown && timeSinceActivity >= (this.INACTIVITY_TIMEOUT - this.WARNING_TIME)) {
+    if (!this.warningShown && timeSinceActivity >= this.INACTIVITY_TIMEOUT - this.WARNING_TIME) {
       this.showTimeoutWarning();
       this.warningShown = true;
     }
@@ -146,7 +150,7 @@ export class SessionManager {
 
   private handleSessionTimeout(): void {
     console.log('Session timeout due to inactivity');
-    
+
     // Clear the interval
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
@@ -178,7 +182,7 @@ export class SessionManager {
     localStorage.removeItem('browserFingerprint');
     localStorage.removeItem('fingerprintTimestamp');
     localStorage.removeItem('sidebarCollapsed'); // Reset sidebar state on logout
-    
+
     // Stop checking
     if (this.checkInterval) {
       clearInterval(this.checkInterval);

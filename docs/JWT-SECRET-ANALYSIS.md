@@ -3,6 +3,7 @@
 ## Methode: `openssl rand -base64 32`
 
 ### ✅ Vorteile:
+
 1. **Kryptographisch sicher**: OpenSSL nutzt `/dev/urandom` (CSPRNG)
 2. **256-Bit Entropie**: Weit über empfohlenen Standards
 3. **Base64 kodiert**: Sicher für alle Systeme
@@ -10,12 +11,12 @@
 
 ### 📊 Sicherheitsanalyse:
 
-| Aspekt | Bewertung | Details |
-|--------|-----------|---------|
-| Entropie | ⭐⭐⭐⭐⭐ | 256 Bits (optimal) |
-| Zufälligkeit | ⭐⭐⭐⭐⭐ | CSPRNG (cryptographically secure) |
-| Länge | ⭐⭐⭐⭐⭐ | 44 Zeichen Base64 |
-| Brute-Force Resistenz | ⭐⭐⭐⭐⭐ | Praktisch unknackbar |
+| Aspekt                | Bewertung  | Details                           |
+| --------------------- | ---------- | --------------------------------- |
+| Entropie              | ⭐⭐⭐⭐⭐ | 256 Bits (optimal)                |
+| Zufälligkeit          | ⭐⭐⭐⭐⭐ | CSPRNG (cryptographically secure) |
+| Länge                 | ⭐⭐⭐⭐⭐ | 44 Zeichen Base64                 |
+| Brute-Force Resistenz | ⭐⭐⭐⭐⭐ | Praktisch unknackbar              |
 
 ### 🔐 Alternative Methoden (gleich sicher):
 

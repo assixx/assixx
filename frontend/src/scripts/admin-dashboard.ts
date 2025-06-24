@@ -607,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Use cached loadUserInfo from auth module
       console.info('[Admin Dashboard] Using cached loadUserInfo');
       const userData = await loadUserInfo();
-      
+
       const userNameElement = document.getElementById('user-name') as HTMLElement;
       const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
 

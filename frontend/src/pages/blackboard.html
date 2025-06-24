@@ -10,7 +10,7 @@
       @import url('/styles/blackboard.css');
       @import url('/styles/blackboard-update.css');
       @import url('/styles/user-info-update.css');
-      
+
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -28,7 +28,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -244,8 +244,8 @@
             <h1 class="card-title mb-2">Blackboard</h1>
             <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
           </div>
-          <div style="display: flex !important; gap: 1rem; align-items: center;">
-            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none;">
+          <div style="display: flex !important; gap: 1rem; align-items: center">
+            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
               <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
                 <i class="fas fa-plus"></i>
               </button>
@@ -254,11 +254,11 @@
                 <i class="fas fa-minus"></i>
               </button>
             </div>
-            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0;">
+            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
               <i class="fas fa-plus me-2"></i>
               Neuer Eintrag
             </button>
-            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0;">
+            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
               <i class="fas fa-paperclip me-2"></i>
               Bild/PDF anheften
             </button>
@@ -322,7 +322,6 @@
             </div>
           </div>
         </div>
-
 
         <!-- Pinnwand Container -->
         <div class="blackboard-container" id="blackboardContainer">

@@ -24,6 +24,7 @@ Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehm
 Für die schnellste und einfachste Einrichtung der Entwicklungsumgebung:
 
 #### Option 1: Automatisches Setup (NEU - Empfohlen!)
+
 ```bash
 # Repository klonen
 git clone https://github.com/SCS-Technik/Assixx.git
@@ -36,6 +37,7 @@ cd Assixx/docker
 ```
 
 #### Option 2: Manuelles Setup
+
 ```bash
 # Repository klonen
 git clone https://github.com/SCS-Technik/Assixx.git
@@ -56,21 +58,20 @@ docker-compose up -d
 
 Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisungen.
 
-
 ## 📚 Dokumentation
 
-| Dokument                                                         | Beschreibung                         |
-| ---------------------------------------------------------------- | ------------------------------------ |
-| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)               | Vollständige Verzeichnisstruktur     |
-| 📋 [FEATURES.md](./docs/FEATURES.md)                             | Komplette Feature-Übersicht & Preise |
-| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                     | Technische Architektur & Stack       |
-| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                     | Docker Setup & Anleitung             |
-| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                     | Backup-Strategie & Anleitung         |
-| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)   | Detaillierte Datenbank-Installation  |
-| 📝 [TODO.md](./TODO.md)                                          | Aktuelle Aufgaben & Roadmap          |
-| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                         | Production Deployment                |
-| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)             | UI/UX Design Standards               |
-| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                               | Entwicklungsfahrplan                 |
+| Dokument                                                       | Beschreibung                         |
+| -------------------------------------------------------------- | ------------------------------------ |
+| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)             | Vollständige Verzeichnisstruktur     |
+| 📋 [FEATURES.md](./docs/FEATURES.md)                           | Komplette Feature-Übersicht & Preise |
+| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                   | Technische Architektur & Stack       |
+| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                   | Docker Setup & Anleitung             |
+| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                   | Backup-Strategie & Anleitung         |
+| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) | Detaillierte Datenbank-Installation  |
+| 📝 [TODO.md](./TODO.md)                                        | Aktuelle Aufgaben & Roadmap          |
+| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                       | Production Deployment                |
+| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)           | UI/UX Design Standards               |
+| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                             | Entwicklungsfahrplan                 |
 
 ## 🎯 Kernfeatures
 

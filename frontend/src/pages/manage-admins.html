@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin-Verwaltung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    
+
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script>
-      (function() {
+      (function () {
         const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         const root = document.documentElement;
         root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
@@ -16,7 +16,7 @@
         root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
       })();
     </script>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
@@ -37,7 +37,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }

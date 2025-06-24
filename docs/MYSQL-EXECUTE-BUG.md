@@ -5,11 +5,13 @@
 Bei der Implementierung des KVP-Systems trat ein kritischer Fehler mit MySQL Prepared Statements auf.
 
 ### Fehlermeldung
+
 ```
 Error: Incorrect arguments to mysqld_stmt_execute
 ```
 
 ### Betroffene Umgebung
+
 - MySQL Version: 8.0.22+
 - Node.js mysql2 Library
 - Alle TypeScript Services die `pool.execute()` verwenden
@@ -21,6 +23,7 @@ MySQL 8.0.22 und höher haben einen bekannten Bug bei der Verwendung von Prepare
 **GitHub Issue:** https://github.com/sidorares/node-mysql2/issues/1239
 
 ### Technische Details
+
 - Bug tritt nur bei `execute()` auf, nicht bei `query()`
 - Betrifft parameterisierte Queries mit Platzhaltern (?)
 - Problem liegt in der C++ Binding zwischen mysql2 und MySQL Server
@@ -30,30 +33,29 @@ MySQL 8.0.22 und höher haben einen bekannten Bug bei der Verwendung von Prepare
 Alle `execute()` Aufrufe wurden durch `query()` ersetzt.
 
 ### Beispiel Vorher (Fehler)
+
 ```typescript
-const [results] = await pool.execute(
-  'SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?',
-  [tenantId, id]
-);
+const [results] = await pool.execute('SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?', [tenantId, id]);
 ```
 
 ### Beispiel Nachher (Funktioniert)
+
 ```typescript
-const [results] = await pool.query(
-  'SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?',
-  [tenantId, id]
-);
+const [results] = await pool.query('SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?', [tenantId, id]);
 ```
 
 ## Betroffene Dateien
 
 ### Backend Services (21.06.2025)
+
 - `/backend/src/services/kvpPermission.service.ts`
 - `/backend/src/controllers/kvp.controller.ts`
 - Alle anderen Services mit Prepared Statements
 
 ### Spezifische Änderungen
+
 1. **kvpPermission.service.ts**
+
    - `canViewSuggestion()`: execute → query
    - `canEditSuggestion()`: execute → query
    - `canDeleteSuggestion()`: execute → query
@@ -65,22 +67,26 @@ const [results] = await pool.query(
 ## Auswirkungen
 
 ### Vorteile der query() Methode
+
 - ✅ Funktioniert mit MySQL 8.0.22+
 - ✅ SQL Injection Schutz bleibt erhalten
 - ✅ Parameterisierte Queries funktionieren weiterhin
 - ✅ Keine Breaking Changes im Code
 
 ### Nachteile
+
 - ❌ Kein Prepared Statement Caching (minimaler Performance-Verlust)
 - ❌ Bei sehr hoher Last könnte execute() effizienter sein
 
 ## Performance Überlegungen
 
 **execute() vs query() Performance:**
+
 - `execute()`: Cached Prepared Statements, minimal schneller bei wiederholten Queries
 - `query()`: Kein Caching, aber für die meisten Anwendungen ausreichend schnell
 
 **Für Assixx Projekt:**
+
 - Performance-Unterschied vernachlässigbar
 - Stabilität wichtiger als minimale Performance-Gewinne
 
@@ -94,7 +100,9 @@ const [results] = await pool.query(
 ## Weitere Probleme
 
 ### Character Encoding
+
 Bei der Umstellung wurde auch ein Encoding-Problem mit deutschen Umlauten festgestellt:
+
 - Emojis und Sonderzeichen werden teilweise falsch dargestellt
 - Workaround: `SET NAMES utf8mb4` auf Connection-Ebene
 
@@ -115,6 +123,7 @@ connection.release();
 ## Status
 
 ✅ **GELÖST** (21.06.2025)
+
 - Alle execute() Aufrufe durch query() ersetzt
 - KVP System funktioniert stabil
 - Keine bekannten Probleme mit der query() Lösung

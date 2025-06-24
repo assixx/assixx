@@ -11,42 +11,42 @@ export class BrowserFingerprint {
     const fingerprint = {
       // User Agent
       userAgent: navigator.userAgent,
-      
+
       // Language
       language: navigator.language,
       languages: navigator.languages?.join(','),
-      
+
       // Screen properties
       screenResolution: `${screen.width}x${screen.height}`,
       screenColorDepth: screen.colorDepth,
       pixelRatio: window.devicePixelRatio,
-      
+
       // Timezone
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       timezoneOffset: new Date().getTimezoneOffset(),
-      
+
       // Hardware
       hardwareConcurrency: navigator.hardwareConcurrency,
       deviceMemory: (navigator as any).deviceMemory,
-      
+
       // Platform
       platform: navigator.platform,
-      
+
       // Plugins (deprecated but still useful for fingerprinting)
       plugins: this.getPlugins(),
-      
+
       // Canvas fingerprint
       canvas: await this.getCanvasFingerprint(),
-      
+
       // WebGL
       webgl: this.getWebGLFingerprint(),
-      
+
       // Audio (mit Error Handling)
-      audio: await this.getAudioFingerprint().catch(err => {
+      audio: await this.getAudioFingerprint().catch((err) => {
         console.debug('[Fingerprint] Audio fingerprint error:', err);
         return 'audio-error';
       }),
-      
+
       // Fonts
       fonts: await this.getFontFingerprint(),
     };
@@ -63,7 +63,7 @@ export class BrowserFingerprint {
     if (!navigator.plugins || navigator.plugins.length === 0) {
       return 'none';
     }
-    
+
     const plugins = [];
     for (let i = 0; i < navigator.plugins.length; i++) {
       plugins.push(navigator.plugins[i].name);
@@ -137,15 +137,15 @@ export class BrowserFingerprint {
       gain.connect(audioContext.destination);
 
       oscillator.start(0);
-      
+
       return new Promise((resolve) => {
         let isResolved = false;
-        
+
         // Add timeout to prevent hanging
         const timeout = setTimeout(() => {
           if (isResolved) return;
           isResolved = true;
-          
+
           try {
             oscillator.disconnect();
             analyser.disconnect();
@@ -160,14 +160,14 @@ export class BrowserFingerprint {
           resolve('audio-timeout');
         }, 100); // 100ms timeout
 
-        scriptProcessor.onaudioprocess = function(e) {
+        scriptProcessor.onaudioprocess = function (e) {
           if (isResolved) return;
           isResolved = true;
-          
+
           clearTimeout(timeout);
           const output = e.outputBuffer.getChannelData(0);
           const fingerprint = output.slice(0, 100).toString();
-          
+
           try {
             oscillator.disconnect();
             analyser.disconnect();
@@ -179,7 +179,7 @@ export class BrowserFingerprint {
           } catch (err) {
             // Ignore cleanup errors
           }
-          
+
           resolve(fingerprint);
         };
       });
@@ -193,10 +193,21 @@ export class BrowserFingerprint {
    */
   private static async getFontFingerprint(): Promise<string> {
     const testFonts = [
-      'Arial', 'Verdana', 'Times New Roman', 'Courier New',
-      'Georgia', 'Palatino', 'Garamond', 'Comic Sans MS',
-      'Impact', 'Lucida Console', 'Tahoma', 'Trebuchet MS',
-      'Arial Black', 'Arial Narrow', 'Lucida Sans Unicode'
+      'Arial',
+      'Verdana',
+      'Times New Roman',
+      'Courier New',
+      'Georgia',
+      'Palatino',
+      'Garamond',
+      'Comic Sans MS',
+      'Impact',
+      'Lucida Console',
+      'Tahoma',
+      'Trebuchet MS',
+      'Arial Black',
+      'Arial Narrow',
+      'Lucida Sans Unicode',
     ];
 
     const baseFonts = ['monospace', 'sans-serif', 'serif'];
@@ -244,14 +255,14 @@ export class BrowserFingerprint {
       const msgBuffer = new TextEncoder().encode(str);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     }
-    
+
     // Fallback to simple hash
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(36);

@@ -47,37 +47,37 @@ const options: swaggerJsdoc.Options = {
       description: 'Multi-Tenant SaaS Platform für Industrieunternehmen',
       contact: {
         name: 'SCS-Technik',
-        email: 'support@scs-technik.de'
-      }
+        email: 'support@scs-technik.de',
+      },
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production' 
-          ? 'https://api.assixx.com/api'
-          : 'http://localhost:3000/api',
-        description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development'
-      }
+        url: process.env.NODE_ENV === 'production' ? 'https://api.assixx.com/api' : 'http://localhost:3000/api',
+        description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
+      },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
+          bearerFormat: 'JWT',
+        },
       },
-      schemas: {} // Wird mit Model-Definitionen gefüllt
+      schemas: {}, // Wird mit Model-Definitionen gefüllt
     },
-    security: [{
-      bearerAuth: []
-    }]
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
   apis: [
     './backend/src/routes/*.ts',
     './backend/src/routes/**/*.ts',
     './backend/src/models/*.ts',
-    './backend/src/types/*.ts'
-  ]
+    './backend/src/types/*.ts',
+  ],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
@@ -91,7 +91,8 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 
 // Nach Security-Middleware, vor Routes
-app.use('/api-docs', 
+app.use(
+  '/api-docs',
   (req, res, next) => {
     // Nur in Development oder für Admins
     if (process.env.NODE_ENV === 'development' || req.user?.role === 'admin' || req.user?.role === 'root') {
@@ -103,8 +104,8 @@ app.use('/api-docs',
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: "Assixx API Docs",
-    customfavIcon: "/favicon.ico"
+    customSiteTitle: 'Assixx API Docs',
+    customfavIcon: '/favicon.ico',
   })
 );
 ```
@@ -237,6 +238,7 @@ router.post('/logout', authenticateToken, authController.logout);
 #### Priorität nach Nutzungshäufigkeit:
 
 1. **Dashboard/Stats Routes**
+
 ```typescript
 /**
  * @swagger
@@ -359,15 +361,15 @@ const swaggerOptions = {
     .swagger-ui .info { margin-bottom: 20px }
     .swagger-ui .scheme-container { display: none }
   `,
-  customSiteTitle: "Assixx API Documentation",
-  customfavIcon: "/favicon.ico",
+  customSiteTitle: 'Assixx API Documentation',
+  customfavIcon: '/favicon.ico',
   swaggerOptions: {
     docExpansion: 'none',
     filter: true,
     showRequestDuration: true,
     tryItOutEnabled: true,
-    persistAuthorization: true
-  }
+    persistAuthorization: true,
+  },
 };
 ```
 
@@ -405,20 +407,21 @@ jobs:
 
 ## 📊 Zeitplan & Meilensteine
 
-| Phase | Zeitaufwand | Meilenstein | Status |
-|-------|-------------|-------------|---------|
-| Phase 1 | 30 Min | Basic Setup fertig, Swagger UI erreichbar | ✅ Abgeschlossen |
-| Phase 2 | 1-2 Std | Auth & Core Models dokumentiert | 🔄 In Arbeit |
-| Phase 3 | 2-3 Std | Alle Feature-Routes dokumentiert | ⏳ Ausstehend |
-| Phase 4 | 1 Std | Examples & Error Handling komplett | ⏳ Ausstehend |
-| Phase 5 | 1 Std | Testing & UI-Optimierungen | ⏳ Ausstehend |
-| Phase 6 | Optional | Automatisierung implementiert | ⏳ Optional |
+| Phase   | Zeitaufwand | Meilenstein                               | Status           |
+| ------- | ----------- | ----------------------------------------- | ---------------- |
+| Phase 1 | 30 Min      | Basic Setup fertig, Swagger UI erreichbar | ✅ Abgeschlossen |
+| Phase 2 | 1-2 Std     | Auth & Core Models dokumentiert           | 🔄 In Arbeit     |
+| Phase 3 | 2-3 Std     | Alle Feature-Routes dokumentiert          | ⏳ Ausstehend    |
+| Phase 4 | 1 Std       | Examples & Error Handling komplett        | ⏳ Ausstehend    |
+| Phase 5 | 1 Std       | Testing & UI-Optimierungen                | ⏳ Ausstehend    |
+| Phase 6 | Optional    | Automatisierung implementiert             | ⏳ Optional      |
 
 **Gesamt: 1-2 Tage für vollständige Integration**
 
 ### ✅ Bisher abgeschlossen:
 
 #### Phase 1 (Komplett):
+
 - ✅ Dependencies installiert (swagger-jsdoc, swagger-ui-express)
 - ✅ Swagger-Konfiguration erstellt (`backend/src/config/swagger.ts`)
 - ✅ Swagger UI in app.ts eingebunden
@@ -426,6 +429,7 @@ jobs:
 - ✅ JSON Spec erreichbar unter http://localhost:3000/api-docs/swagger.json
 
 #### Phase 2 (Teilweise):
+
 - ✅ Authentication Routes dokumentiert:
   - `/auth/login` - User login mit Fingerprint-Support
   - `/auth/logout` - User logout

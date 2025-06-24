@@ -63,7 +63,7 @@ async function switchRole(): Promise<void> {
     // Update token and storage
     localStorage.setItem('token', data.token);
     localStorage.setItem('activeRole', data.user.activeRole);
-    
+
     // Also update sessionStorage for KVP page compatibility
     if (data.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
       sessionStorage.setItem('roleSwitch', 'employee');
@@ -87,7 +87,7 @@ async function switchRole(): Promise<void> {
     setTimeout(() => {
       const currentPath = window.location.pathname;
       const newRole = data.user.activeRole;
-      
+
       // If we're on a dashboard page, redirect to the appropriate dashboard
       if (currentPath.includes('dashboard')) {
         if (newRole === 'admin') {
@@ -276,7 +276,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     // Update token and storage
     localStorage.setItem('token', data.token);
     localStorage.setItem('activeRole', data.user.activeRole);
-    
+
     // Also update sessionStorage for KVP page compatibility
     if (data.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
       sessionStorage.setItem('roleSwitch', 'employee');
@@ -294,7 +294,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     // Redirect to appropriate dashboard after short delay
     setTimeout(() => {
       const currentPath = window.location.pathname;
-      
+
       // If we're on a dashboard page, redirect to the appropriate dashboard
       if (currentPath.includes('dashboard')) {
         if (targetRole === 'root') {

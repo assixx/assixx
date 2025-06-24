@@ -115,7 +115,7 @@ class UnifiedNavigation {
       try {
         const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload;
         this.currentUser = payload;
-        
+
         // Check for role switch - if admin has switched to employee role
         const activeRole = localStorage.getItem('activeRole');
         if (payload.role === 'admin' && activeRole === 'employee') {
@@ -156,7 +156,7 @@ class UnifiedNavigation {
 
       // Use cached loadUserInfo from auth module instead of making a separate call
       console.info('[UnifiedNav] Using cached loadUserInfo');
-      const userData = await loadUserInfoFromAuth() as any;
+      const userData = (await loadUserInfoFromAuth()) as any;
       if (userData) {
         const user = userData.user || userData;
 
@@ -1033,7 +1033,7 @@ class UnifiedNavigation {
       mainContent?.classList.add('sidebar-collapsed');
       chatMain?.classList.add('sidebar-collapsed');
       chatSidebar?.classList.add('sidebar-collapsed');
-      sidebar.style.setProperty('width', '70px', 'important');
+      sidebar.style.setProperty('width', '68px', 'important');
       this.updateToggleIcon();
     } else {
       sidebar.style.setProperty('width', '280px', 'important');
@@ -1600,7 +1600,7 @@ class UnifiedNavigation {
       // Nur auf Survey-relevanten Seiten ausführen
       const currentPath = window.location.pathname;
       const surveyPages = ['/pages/survey.html', '/pages/employee-dashboard.html'];
-      if (!surveyPages.some(page => currentPath.includes(page))) return;
+      if (!surveyPages.some((page) => currentPath.includes(page))) return;
 
       const response = await fetch('/api/surveys/pending-count', {
         headers: {
@@ -1942,6 +1942,7 @@ const unifiedNavigationCSS = `
         align-items: center;
         text-decoration: none;
         margin-right: var(--spacing-lg);
+        margin-bottom: -3px;
     }
     
     .header .logo {
@@ -1996,7 +1997,7 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        /*transition: width 0.3s ease !important;*/
+        transition: width 0.3s ease !important;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -2039,7 +2040,7 @@ const unifiedNavigationCSS = `
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
         border: 1.3px solid rgb(255, 203, 0);
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
         cursor: pointer;
         width: 98%;
         margin-left: 1%;
@@ -2073,7 +2074,7 @@ const unifiedNavigationCSS = `
         height: 0;
         border-style: solid;
         border-width: 13px 10px 4px 3px;
-        border-color: #fff #0c0d0e #0000 transparent;
+        border-color: #fff #00060a #0000 transparent;
         z-index: 1;
     }
 
@@ -2205,7 +2206,7 @@ const unifiedNavigationCSS = `
         transition: all 0.3s ease;
         color: white;
         margin-right: 15px;
-        margin-left: -9px;
+        margin-left: -6px;
     }
 
     .header .sidebar-toggle:hover {
@@ -2231,6 +2232,7 @@ const unifiedNavigationCSS = `
         height: 24px;
         width: auto;
         margin-left: -4px;
+        margin-bottom: 7px;
     }
 
     .sidebar.collapsed .sidebar-title {
@@ -2241,6 +2243,7 @@ const unifiedNavigationCSS = `
         transform: rotate(-2deg);
         background: #e6b800;
         min-height: 25px;
+        margin-left: 4px;
     }
 
     .sidebar.collapsed .title-text {
@@ -2380,7 +2383,7 @@ const unifiedNavigationCSS = `
     .title-text,
     .user-details,
     .storage-widget {
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
     }
 
     /* Icon centering in collapsed state */
@@ -2393,11 +2396,11 @@ const unifiedNavigationCSS = `
         
         width: 36px;
         height: 36px;
-        margin: -2px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
+        margin-left: 0px;
     }
     
     .sidebar.collapsed .sidebar-item.active .sidebar-link::before {
@@ -2407,7 +2410,7 @@ const unifiedNavigationCSS = `
     .user-info-card {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 30px;
         padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -2417,7 +2420,7 @@ const unifiedNavigationCSS = `
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -2473,14 +2476,15 @@ const unifiedNavigationCSS = `
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
         display: block !important;
-        width: 34px !important;
-        height: 34px !important;
+        width: 38px !important;
+        height: 38px !important;
         border-radius: 12px !important;
         object-fit: cover !important;
         border: none !important;
         flex-shrink: 0 !important;
         transition: all 0.3s ease;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        margin-left: 0px;
     }
 
     /* Avatar padding when sidebar is collapsed */
@@ -2627,20 +2631,19 @@ const unifiedNavigationCSS = `
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
         border: 1px solid transparent;
         font-size: 0.9rem;
-        margin-left: -4px;
+        margin-left: -1px;
     }
 
     .sidebar-link:hover {
         background: rgba(33, 150, 243, 0.1);
         color: var(--primary-color);
         transform: translateY(-2px);
-        border-color: rgba(33, 150, 243, 0.2);
-        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+        /*box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);*/
     }
 
     .sidebar-item.active .sidebar-link {
@@ -2653,7 +2656,7 @@ const unifiedNavigationCSS = `
     .sidebar-link .icon {
         min-width: 20px;
         text-align: center;
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
     }
 
     .sidebar-link .label {
@@ -2666,7 +2669,7 @@ const unifiedNavigationCSS = `
         height: 4px;
         border-radius: 50%;
         background: transparent;
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
     }
 
     /*.sidebar-item.active .nav-indicator {
@@ -2701,7 +2704,7 @@ const unifiedNavigationCSS = `
 
     .submenu-arrow {
         margin-left: auto;
-        /*transition: transform 0.3s ease;*/
+        transition: transform 0.3s ease;
         opacity: 0.6;
     }
 
@@ -2716,7 +2719,7 @@ const unifiedNavigationCSS = `
         list-style: none;
         padding: 0;
         overflow: hidden;
-        /*transition: all 0.3s ease;*/
+        transition: all 0.3s ease;
     }
 
     .submenu-item {
@@ -2730,7 +2733,7 @@ const unifiedNavigationCSS = `
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
-        /*transition: all 0.2s ease;*/
+        transition: all 0.2s ease;
         transform: translateX(6px);
     }
 

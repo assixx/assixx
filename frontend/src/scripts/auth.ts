@@ -48,13 +48,13 @@ export function isAuthenticated(): boolean {
   if (!token || token.length === 0) {
     return false;
   }
-  
+
   // Check if token is expired
   const payload = parseJwt(token);
   if (!payload || !payload.exp) {
     return false;
   }
-  
+
   // Check expiration (exp is in seconds, Date.now() is in milliseconds)
   const now = Date.now() / 1000;
   if (payload.exp < now) {
@@ -62,7 +62,7 @@ export function isAuthenticated(): boolean {
     removeAuthToken();
     return false;
   }
-  
+
   return true;
 }
 
@@ -95,7 +95,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 
   // Get browser fingerprint
   const fingerprint = await BrowserFingerprint.generate();
-  
+
   const headers: HeadersInit = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ export async function loadUserInfo(): Promise<User> {
   try {
     // Check if we have cached data that's still fresh
     const now = Date.now();
-    if (userProfileCache.data && (now - userProfileCache.timestamp) < CACHE_DURATION) {
+    if (userProfileCache.data && now - userProfileCache.timestamp < CACHE_DURATION) {
       console.info('loadUserInfo: Returning cached profile data');
       return userProfileCache.data;
     }
@@ -165,46 +165,46 @@ export async function loadUserInfo(): Promise<User> {
     }
 
     console.info('loadUserInfo: Attempting to fetch user profile...');
-    
+
     // Create the promise and store it
     profileLoadingPromise = (async () => {
-    const response = await fetchWithAuth('/api/user/profile');
-    console.info('loadUserInfo: Response status:', response.status);
+      const response = await fetchWithAuth('/api/user/profile');
+      console.info('loadUserInfo: Response status:', response.status);
 
-    const data = await response.json();
-    console.info('loadUserInfo: Response data:', data);
+      const data = await response.json();
+      console.info('loadUserInfo: Response data:', data);
 
-    if (response.ok) {
-      // The API returns the user object directly, not wrapped in data.user
-      const user: User = data.user || data;
+      if (response.ok) {
+        // The API returns the user object directly, not wrapped in data.user
+        const user: User = data.user || data;
 
-      // Update user display
-      const userName = document.getElementById('userName');
-      if (userName) {
-        const firstName = user.first_name || 'Admin';
-        const lastName = user.last_name || '';
-        userName.textContent = `${firstName} ${lastName}`.trim();
+        // Update user display
+        const userName = document.getElementById('userName');
+        if (userName) {
+          const firstName = user.first_name || 'Admin';
+          const lastName = user.last_name || '';
+          userName.textContent = `${firstName} ${lastName}`.trim();
+        }
+
+        const userRole = document.getElementById('userRole');
+        if (userRole) {
+          userRole.textContent = user.role || 'Benutzer';
+        }
+
+        // Update cache with fresh data
+        userProfileCache = { data: user, timestamp: Date.now() };
+        console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
+
+        // Clear the loading promise
+        profileLoadingPromise = null;
+        return user;
+      } else {
+        // Clear the loading promise on error
+        profileLoadingPromise = null;
+        throw new Error(data.message || 'Fehler beim Laden der Benutzerdaten');
       }
-
-      const userRole = document.getElementById('userRole');
-      if (userRole) {
-        userRole.textContent = user.role || 'Benutzer';
-      }
-
-      // Update cache with fresh data
-      userProfileCache = { data: user, timestamp: Date.now() };
-      console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
-
-      // Clear the loading promise
-      profileLoadingPromise = null;
-      return user;
-    } else {
-      // Clear the loading promise on error
-      profileLoadingPromise = null;
-      throw new Error(data.message || 'Fehler beim Laden der Benutzerdaten');
-    }
     })();
-    
+
     return profileLoadingPromise;
   } catch (error) {
     console.error('Error loading user info:', error);
@@ -268,7 +268,7 @@ export async function logout(): Promise<void> {
   localStorage.removeItem('browserFingerprint');
   localStorage.removeItem('fingerprintTimestamp');
   localStorage.removeItem('sidebarCollapsed'); // Reset sidebar state on logout
-  
+
   // Clear user profile cache
   userProfileCache = { data: null, timestamp: 0 };
   profileLoadingPromise = null;
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Failed to load user info:', error);
       // Don't redirect immediately, let the user see the error
     });
-    
+
     // Initialize session manager for authenticated users
     SessionManager.getInstance();
     console.info('[AUTH] Session manager initialized');

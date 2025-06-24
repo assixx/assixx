@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>KVP Vorschlag - Assixx</title>
-    
+
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script>
-      (function() {
+      (function () {
         const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         const root = document.documentElement;
         root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
@@ -15,14 +15,14 @@
         root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
       })();
     </script>
-    
+
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/user-info-update.css');
-      
+
       /* Dramatischer Hintergrund-Gradient */
       body {
         position: relative;
@@ -38,7 +38,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -420,7 +420,6 @@
     <!-- Main Layout -->
     <div class="layout-container">
       <main class="main-content">
-
         <!-- Detail Container -->
         <div class="detail-container">
           <!-- Main Content -->
@@ -429,9 +428,18 @@
               <div>
                 <h1 class="detail-title" id="suggestionTitle">Lädt...</h1>
                 <div class="detail-meta">
-                  <span><i class="fas fa-user"></i> <span id="submittedBy"></span></span>
-                  <span><i class="fas fa-calendar"></i> <span id="createdAt"></span></span>
-                  <span><i class="fas fa-building"></i> <span id="department"></span></span>
+                  <span>
+                    <i class="fas fa-user"></i>
+                    <span id="submittedBy"></span>
+                  </span>
+                  <span>
+                    <i class="fas fa-calendar"></i>
+                    <span id="createdAt"></span>
+                  </span>
+                  <span>
+                    <i class="fas fa-building"></i>
+                    <span id="department"></span>
+                  </span>
                 </div>
               </div>
               <div class="status-priority">
@@ -448,23 +456,26 @@
             <!-- Description -->
             <div class="content-section">
               <h3 class="section-title">
-                <i class="fas fa-align-left"></i> Beschreibung
+                <i class="fas fa-align-left"></i>
+                Beschreibung
               </h3>
               <div class="section-content" id="description"></div>
             </div>
 
             <!-- Expected Benefit -->
-            <div class="content-section" id="benefitSection" style="display: none;">
+            <div class="content-section" id="benefitSection" style="display: none">
               <h3 class="section-title">
-                <i class="fas fa-chart-line"></i> Erwarteter Nutzen
+                <i class="fas fa-chart-line"></i>
+                Erwarteter Nutzen
               </h3>
               <div class="section-content" id="expectedBenefit"></div>
             </div>
 
             <!-- Photo Gallery -->
-            <div class="content-section" id="photoSection" style="display: none;">
+            <div class="content-section" id="photoSection" style="display: none">
               <h3 class="section-title">
-                <i class="fas fa-images"></i> Fotos
+                <i class="fas fa-images"></i>
+                Fotos
               </h3>
               <div class="photo-gallery" id="photoGallery">
                 <!-- Dynamic content -->
@@ -472,9 +483,10 @@
             </div>
 
             <!-- Financial Info -->
-            <div class="content-section" id="financialSection" style="display: none;">
+            <div class="content-section" id="financialSection" style="display: none">
               <h3 class="section-title">
-                <i class="fas fa-euro-sign"></i> Finanzielle Informationen
+                <i class="fas fa-euro-sign"></i>
+                Finanzielle Informationen
               </h3>
               <div class="info-grid">
                 <div class="info-item">
@@ -491,24 +503,21 @@
             <!-- Comments Section -->
             <div class="comments-section">
               <h3 class="section-title">
-                <i class="fas fa-comments"></i> Kommentare
+                <i class="fas fa-comments"></i>
+                Kommentare
               </h3>
-              
+
               <!-- Comment Form -->
               <form class="comment-form" id="commentForm">
-                <textarea 
-                  class="comment-input" 
-                  id="commentInput" 
-                  placeholder="Kommentar hinzufügen..."
-                  required
-                ></textarea>
+                <textarea class="comment-input" id="commentInput" placeholder="Kommentar hinzufügen..." required></textarea>
                 <div>
-                  <label class="admin-only" style="display: none;">
+                  <label class="admin-only" style="display: none">
                     <input type="checkbox" id="internalComment" />
                     Interner Kommentar
                   </label>
                   <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i> Senden
+                    <i class="fas fa-paper-plane"></i>
+                    Senden
                   </button>
                 </div>
               </form>
@@ -525,7 +534,8 @@
             <!-- Category & Status Info -->
             <div class="sidebar-card">
               <h3 class="section-title">
-                <i class="fas fa-info-circle"></i> Details
+                <i class="fas fa-info-circle"></i>
+                Details
               </h3>
               <div class="info-grid">
                 <div class="info-item">
@@ -536,11 +546,11 @@
                   <span class="info-label">Status</span>
                   <span class="info-value" id="status"></span>
                 </div>
-                <div class="info-item" id="assignedToItem" style="display: none;">
+                <div class="info-item" id="assignedToItem" style="display: none">
                   <span class="info-label">Zugewiesen an</span>
                   <span class="info-value" id="assignedTo"></span>
                 </div>
-                <div class="info-item" id="implementationItem" style="display: none;">
+                <div class="info-item" id="implementationItem" style="display: none">
                   <span class="info-label">Umsetzung</span>
                   <span class="info-value" id="implementationDate"></span>
                 </div>
@@ -548,9 +558,10 @@
             </div>
 
             <!-- Attachments -->
-            <div class="sidebar-card" id="attachmentsCard" style="display: none;">
+            <div class="sidebar-card" id="attachmentsCard" style="display: none">
               <h3 class="section-title">
-                <i class="fas fa-paperclip"></i> Anhänge
+                <i class="fas fa-paperclip"></i>
+                Anhänge
               </h3>
               <div class="attachment-list" id="attachmentList">
                 <!-- Dynamic content -->
@@ -558,22 +569,27 @@
             </div>
 
             <!-- Actions -->
-            <div class="sidebar-card admin-only" id="actionsCard" style="display: none;">
+            <div class="sidebar-card admin-only" id="actionsCard" style="display: none">
               <h3 class="section-title">
-                <i class="fas fa-cog"></i> Aktionen
+                <i class="fas fa-cog"></i>
+                Aktionen
               </h3>
               <div class="action-buttons">
                 <button class="btn" id="editBtn">
-                  <i class="fas fa-edit"></i> Bearbeiten
+                  <i class="fas fa-edit"></i>
+                  Bearbeiten
                 </button>
-                <button class="btn" id="shareBtn" style="display: none;">
-                  <i class="fas fa-share-alt"></i> Teilen
+                <button class="btn" id="shareBtn" style="display: none">
+                  <i class="fas fa-share-alt"></i>
+                  Teilen
                 </button>
-                <button class="btn" id="unshareBtn" style="display: none;">
-                  <i class="fas fa-undo"></i> Teilen rückgängig
+                <button class="btn" id="unshareBtn" style="display: none">
+                  <i class="fas fa-undo"></i>
+                  Teilen rückgängig
                 </button>
                 <button class="btn" id="archiveBtn">
-                  <i class="fas fa-archive"></i> Archivieren
+                  <i class="fas fa-archive"></i>
+                  Archivieren
                 </button>
               </div>
             </div>
@@ -585,26 +601,26 @@
     <!-- Lightbox -->
     <div class="lightbox" id="photoLightbox">
       <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
-      <img id="lightboxImage" src="" alt="Vollbild">
+      <img id="lightboxImage" src="" alt="Vollbild" />
     </div>
 
     <!-- Scripts -->
     <script type="module" src="/scripts/auth.ts"></script>
     <script type="module" src="/scripts/pages/kvp-detail.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    
+
     <script>
       function openLightbox(src) {
         document.getElementById('lightboxImage').src = src;
         document.getElementById('photoLightbox').classList.add('active');
       }
-      
+
       function closeLightbox() {
         document.getElementById('photoLightbox').classList.remove('active');
       }
-      
+
       // Close lightbox on click outside
-      document.getElementById('photoLightbox')?.addEventListener('click', function(e) {
+      document.getElementById('photoLightbox')?.addEventListener('click', function (e) {
         if (e.target === this) {
           closeLightbox();
         }

@@ -75,13 +75,13 @@ class KvpDetailPage {
     // Get suggestion ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
-    
+
     if (!id || isNaN(parseInt(id))) {
       this.showError('Ungültige Vorschlags-ID');
-      setTimeout(() => window.location.href = '/pages/kvp.html', 2000);
+      setTimeout(() => (window.location.href = '/pages/kvp.html'), 2000);
       return;
     }
-    
+
     this.suggestionId = parseInt(id);
     this.init();
   }
@@ -90,19 +90,16 @@ class KvpDetailPage {
     try {
       // Get current user
       this.currentUser = await this.getCurrentUser();
-      
+
       // Load suggestion details
       await this.loadSuggestion();
-      
+
       // Setup UI based on role
       this.setupRoleBasedUI();
-      
+
       // Load related data
-      await Promise.all([
-        this.loadComments(),
-        this.loadAttachments()
-      ]);
-      
+      await Promise.all([this.loadComments(), this.loadAttachments()]);
+
       // Setup event listeners
       this.setupEventListeners();
     } catch (error) {
@@ -115,12 +112,12 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/users/me`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (!response.ok) throw new Error('Failed to get user info');
-      
+
       const data = await response.json();
       return data.user;
     } catch (error) {
@@ -133,56 +130,58 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error('Keine Berechtigung');
         }
         throw new Error('Failed to load suggestion');
       }
-      
+
       this.suggestion = await response.json();
       this.renderSuggestion();
     } catch (error) {
       console.error('Error loading suggestion:', error);
       this.showError(error instanceof Error ? error.message : 'Fehler beim Laden des Vorschlags');
-      setTimeout(() => window.location.href = '/pages/kvp.html', 2000);
+      setTimeout(() => (window.location.href = '/pages/kvp.html'), 2000);
     }
   }
 
   private renderSuggestion(): void {
     if (!this.suggestion) return;
 
-    
     // Basic info
     document.getElementById('suggestionTitle')!.textContent = this.suggestion.title;
-    document.getElementById('submittedBy')!.textContent = 
+    document.getElementById('submittedBy')!.textContent =
       `${this.suggestion.submitted_by_name} ${this.suggestion.submitted_by_lastname}`;
-    document.getElementById('createdAt')!.textContent = 
-      new Date(this.suggestion.created_at).toLocaleDateString('de-DE');
+    document.getElementById('createdAt')!.textContent = new Date(this.suggestion.created_at).toLocaleDateString(
+      'de-DE',
+    );
     document.getElementById('department')!.textContent = this.suggestion.department_name;
-    
+
     // Status and Priority
     const statusBadge = document.getElementById('statusBadge')!;
     statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
     statusBadge.textContent = this.getStatusText(this.suggestion.status);
-    
+
     const priorityBadge = document.getElementById('priorityBadge')!;
     priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
     priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
-    
+
     // Visibility info
     const visibilityInfo = document.getElementById('visibilityInfo')!;
     if (this.suggestion.org_level === 'company') {
       visibilityInfo.innerHTML = `
         <div class="visibility-badge company">
           <i class="fas fa-globe"></i> Firmenweit geteilt
-          ${this.suggestion.shared_by_name ? 
-            `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>` 
-            : ''}
+          ${
+            this.suggestion.shared_by_name
+              ? `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>`
+              : ''
+          }
         </div>
       `;
     } else {
@@ -192,33 +191,35 @@ class KvpDetailPage {
         </div>
       `;
     }
-    
+
     // Description
     document.getElementById('description')!.textContent = this.suggestion.description;
-    
+
     // Expected benefit
     if (this.suggestion.expected_benefit) {
       document.getElementById('benefitSection')!.style.display = '';
       document.getElementById('expectedBenefit')!.textContent = this.suggestion.expected_benefit;
     }
-    
+
     // Financial info
     if (this.suggestion.estimated_cost || this.suggestion.actual_savings) {
       document.getElementById('financialSection')!.style.display = '';
-      
+
       if (this.suggestion.estimated_cost) {
-        document.getElementById('estimatedCost')!.textContent = 
-          new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
-            .format(this.suggestion.estimated_cost);
+        document.getElementById('estimatedCost')!.textContent = new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+        }).format(this.suggestion.estimated_cost);
       }
-      
+
       if (this.suggestion.actual_savings) {
-        document.getElementById('actualSavings')!.textContent = 
-          new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
-            .format(this.suggestion.actual_savings);
+        document.getElementById('actualSavings')!.textContent = new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+        }).format(this.suggestion.actual_savings);
       }
     }
-    
+
     // Details sidebar
     document.getElementById('category')!.innerHTML = `
       <span style="color: ${this.suggestion.category_color || '#666'}">
@@ -227,16 +228,17 @@ class KvpDetailPage {
       </span>
     `;
     document.getElementById('status')!.textContent = this.getStatusText(this.suggestion.status);
-    
+
     if (this.suggestion.assigned_to) {
       document.getElementById('assignedToItem')!.style.display = '';
       // TODO: Load assigned user name
     }
-    
+
     if (this.suggestion.implementation_date) {
       document.getElementById('implementationItem')!.style.display = '';
-      document.getElementById('implementationDate')!.textContent = 
-        new Date(this.suggestion.implementation_date).toLocaleDateString('de-DE');
+      document.getElementById('implementationDate')!.textContent = new Date(
+        this.suggestion.implementation_date,
+      ).toLocaleDateString('de-DE');
     }
   }
 
@@ -246,11 +248,11 @@ class KvpDetailPage {
     // Show/hide admin elements
     const adminElements = document.querySelectorAll('.admin-only');
     if (this.currentUser.role === 'admin' || this.currentUser.role === 'root') {
-      adminElements.forEach(el => (el as HTMLElement).style.display = '');
-      
+      adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
+
       // Show actions card
       document.getElementById('actionsCard')!.style.display = '';
-      
+
       // Configure share/unshare buttons
       if (this.suggestion.org_level === 'department') {
         document.getElementById('shareBtn')!.style.display = '';
@@ -262,7 +264,7 @@ class KvpDetailPage {
         }
       }
     } else {
-      adminElements.forEach(el => (el as HTMLElement).style.display = 'none');
+      adminElements.forEach((el) => ((el as HTMLElement).style.display = 'none'));
     }
   }
 
@@ -270,12 +272,12 @@ class KvpDetailPage {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/comments`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (!response.ok) throw new Error('Failed to load comments');
-      
+
       const data = await response.json();
       this.renderComments(data.comments || []);
     } catch (error) {
@@ -285,17 +287,18 @@ class KvpDetailPage {
 
   private renderComments(comments: Comment[]): void {
     const container = document.getElementById('commentList')!;
-    
+
     if (comments.length === 0) {
       container.innerHTML = '<p class="empty-state">Noch keine Kommentare</p>';
       return;
     }
-    
-    container.innerHTML = comments.map(comment => {
-      const initials = `${comment.first_name[0]}${comment.last_name[0]}`.toUpperCase();
-      const commentClass = comment.is_internal ? 'comment-item comment-internal' : 'comment-item';
-      
-      return `
+
+    container.innerHTML = comments
+      .map((comment) => {
+        const initials = `${comment.first_name[0]}${comment.last_name[0]}`.toUpperCase();
+        const commentClass = comment.is_internal ? 'comment-item comment-internal' : 'comment-item';
+
+        return `
         <div class="${commentClass}">
           <div class="comment-header">
             <div class="comment-author">
@@ -311,7 +314,7 @@ class KvpDetailPage {
                 month: '2-digit',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
               })}
             </span>
           </div>
@@ -320,19 +323,20 @@ class KvpDetailPage {
           </div>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
   }
 
   private async loadAttachments(): Promise<void> {
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/attachments`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (!response.ok) throw new Error('Failed to load attachments');
-      
+
       const data = await response.json();
       this.renderAttachments(data.attachments || []);
     } catch (error) {
@@ -342,37 +346,42 @@ class KvpDetailPage {
 
   private renderAttachments(attachments: Attachment[]): void {
     if (attachments.length === 0) return;
-    
+
     // Filter photo attachments
     const photoTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const photos = attachments.filter(att => photoTypes.includes(att.file_type));
-    const otherFiles = attachments.filter(att => !photoTypes.includes(att.file_type));
-    
+    const photos = attachments.filter((att) => photoTypes.includes(att.file_type));
+    const otherFiles = attachments.filter((att) => !photoTypes.includes(att.file_type));
+
     // Render photo gallery
     if (photos.length > 0) {
       document.getElementById('photoSection')!.style.display = '';
       const photoGallery = document.getElementById('photoGallery')!;
-      
-      photoGallery.innerHTML = photos.map((photo, index) => `
+
+      photoGallery.innerHTML = photos
+        .map(
+          (photo, index) => `
         <div class="photo-thumbnail" onclick="window.openLightbox('${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download')">
           <img src="${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download" 
                alt="${this.escapeHtml(photo.file_name)}"
                loading="lazy">
           ${index === 0 && photos.length > 1 ? `<span class="photo-count">${photos.length} Fotos</span>` : ''}
         </div>
-      `).join('');
+      `,
+        )
+        .join('');
     }
-    
+
     // Render other attachments
     if (otherFiles.length > 0) {
       document.getElementById('attachmentsCard')!.style.display = '';
       const container = document.getElementById('attachmentList')!;
-      
-      container.innerHTML = otherFiles.map(attachment => {
-        const fileIcon = this.getFileIcon(attachment.file_type);
-        const fileSize = this.formatFileSize(attachment.file_size);
-        
-        return `
+
+      container.innerHTML = otherFiles
+        .map((attachment) => {
+          const fileIcon = this.getFileIcon(attachment.file_type);
+          const fileSize = this.formatFileSize(attachment.file_size);
+
+          return `
           <div class="attachment-item" data-id="${attachment.id}">
             <i class="${fileIcon}"></i>
             <div class="attachment-info">
@@ -384,10 +393,11 @@ class KvpDetailPage {
             <i class="fas fa-download"></i>
           </div>
         `;
-      }).join('');
-      
+        })
+        .join('');
+
       // Add click handlers
-      container.querySelectorAll('.attachment-item').forEach(item => {
+      container.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
           const id = item.getAttribute('data-id');
           if (id) this.downloadAttachment(parseInt(id));
@@ -412,21 +422,21 @@ class KvpDetailPage {
       e.preventDefault();
       await this.addComment();
     });
-    
+
     // Action buttons
     document.getElementById('editBtn')?.addEventListener('click', () => {
       // TODO: Navigate to edit page
       alert('Bearbeiten-Funktion noch nicht implementiert');
     });
-    
+
     document.getElementById('shareBtn')?.addEventListener('click', async () => {
       await this.shareSuggestion();
     });
-    
+
     document.getElementById('unshareBtn')?.addEventListener('click', async () => {
       await this.unshareSuggestion();
     });
-    
+
     document.getElementById('archiveBtn')?.addEventListener('click', async () => {
       await this.archiveSuggestion();
     });
@@ -435,32 +445,32 @@ class KvpDetailPage {
   private async addComment(): Promise<void> {
     const input = document.getElementById('commentInput') as HTMLTextAreaElement;
     const internalCheckbox = document.getElementById('internalComment') as HTMLInputElement;
-    
+
     const comment = input.value.trim();
     if (!comment) return;
-    
+
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           comment,
-          is_internal: internalCheckbox?.checked || false
-        })
+          is_internal: internalCheckbox?.checked || false,
+        }),
       });
-      
+
       if (!response.ok) throw new Error('Failed to add comment');
-      
+
       // Clear form
       input.value = '';
       if (internalCheckbox) internalCheckbox.checked = false;
-      
+
       // Reload comments
       await this.loadComments();
-      
+
       this.showSuccess('Kommentar hinzugefügt');
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -470,20 +480,20 @@ class KvpDetailPage {
 
   private async shareSuggestion(): Promise<void> {
     if (!confirm('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?')) return;
-    
+
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/share`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (!response.ok) throw new Error('Failed to share suggestion');
-      
+
       this.showSuccess('Vorschlag wurde firmenweit geteilt');
-      
+
       // Reload page to update UI
       await this.loadSuggestion();
       this.setupRoleBasedUI();
@@ -495,20 +505,20 @@ class KvpDetailPage {
 
   private async unshareSuggestion(): Promise<void> {
     if (!confirm('Möchten Sie das Teilen wirklich rückgängig machen?')) return;
-    
+
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/unshare`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (!response.ok) throw new Error('Failed to unshare suggestion');
-      
+
       this.showSuccess('Teilen wurde rückgängig gemacht');
-      
+
       // Reload page to update UI
       await this.loadSuggestion();
       this.setupRoleBasedUI();
@@ -520,21 +530,21 @@ class KvpDetailPage {
 
   private async archiveSuggestion(): Promise<void> {
     if (!confirm('Möchten Sie diesen Vorschlag wirklich archivieren?')) return;
-    
+
     try {
       const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
+
       if (!response.ok) throw new Error('Failed to archive suggestion');
-      
+
       this.showSuccess('Vorschlag wurde archiviert');
-      
+
       // Navigate back to list
-      setTimeout(() => window.location.href = '/pages/kvp.html', 1500);
+      setTimeout(() => (window.location.href = '/pages/kvp.html'), 1500);
     } catch (error) {
       console.error('Error archiving suggestion:', error);
       this.showError('Fehler beim Archivieren');
@@ -548,7 +558,7 @@ class KvpDetailPage {
       approved: 'Genehmigt',
       implemented: 'Umgesetzt',
       rejected: 'Abgelehnt',
-      archived: 'Archiviert'
+      archived: 'Archiviert',
     };
     return statusMap[status] || status;
   }
@@ -558,7 +568,7 @@ class KvpDetailPage {
       low: 'Niedrig',
       normal: 'Normal',
       high: 'Hoch',
-      urgent: 'Dringend'
+      urgent: 'Dringend',
     };
     return priorityMap[priority] || priority;
   }

@@ -9,10 +9,10 @@
 function initLayoutState() {
   const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
   const root = document.documentElement;
-  
+
   // Set data attribute for CSS selectors
   root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-  
+
   // Set CSS custom properties for immediate use
   root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
   root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');

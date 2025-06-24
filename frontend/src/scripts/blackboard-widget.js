@@ -123,7 +123,7 @@ class BlackboardWidget {
 
     // Initialize lazy loading for images
     this.initLazyLoading();
-    
+
     // Add click handlers
     this.entries.forEach((entry) => {
       const noteElement = document.getElementById(`mini-note-${entry.id}`);
@@ -131,7 +131,7 @@ class BlackboardWidget {
         noteElement.addEventListener('click', () => this.openEntry(entry.id));
       }
     });
-    
+
     // Mark widget as loaded to enable transitions
     if (widgetElement) {
       setTimeout(() => {
@@ -143,10 +143,10 @@ class BlackboardWidget {
   initLazyLoading() {
     // Use Intersection Observer for lazy loading images
     const lazyImages = this.container.querySelectorAll('img[data-src]');
-    
+
     if ('IntersectionObserver' in window) {
       const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const img = entry.target;
             img.src = img.dataset.src;
@@ -156,10 +156,10 @@ class BlackboardWidget {
         });
       });
 
-      lazyImages.forEach(img => imageObserver.observe(img));
+      lazyImages.forEach((img) => imageObserver.observe(img));
     } else {
       // Fallback for browsers without IntersectionObserver
-      lazyImages.forEach(img => {
+      lazyImages.forEach((img) => {
         img.src = img.dataset.src;
         img.removeAttribute('data-src');
       });

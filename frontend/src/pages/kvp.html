@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>KVP System - Assixx</title>
-    
+
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script>
-      (function() {
+      (function () {
         const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         const root = document.documentElement;
         root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
@@ -18,14 +18,14 @@
         root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    
+
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/user-info-update.css');
-      
+
       /* Dramatischer Hintergrund-Gradient */
       body {
         position: relative;
@@ -41,7 +41,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -277,7 +277,7 @@
         overflow: hidden;
         position: relative;
       }
-      
+
       .suggestion-description::after {
         content: '...';
         position: absolute;
@@ -540,7 +540,9 @@
         align-items: center;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
       }
 
       .modal.active {
@@ -827,7 +829,7 @@
         .form-grid {
           grid-template-columns: 1fr;
         }
-        
+
         .modal-content {
           max-width: 95%;
         }
@@ -849,16 +851,17 @@
         </div>
 
         <!-- Admin Info Box -->
-        <div class="admin-info-box" id="adminInfoBox" style="display: none;">
+        <div class="admin-info-box" id="adminInfoBox" style="display: none">
           <i class="fas fa-lightbulb"></i>
           <div>
-            <strong>Tipp für Admins:</strong> Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen. 
-            Als Admin können Sie Vorschläge verwalten und firmenweit teilen.
+            <strong>Tipp für Admins:</strong>
+            Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen. Als Admin können Sie Vorschläge verwalten und firmenweit
+            teilen.
           </div>
         </div>
 
         <!-- Statistics Overview (Admin only) -->
-        <div class="stats-overview" id="statsOverview" style="display: none;">
+        <div class="stats-overview" id="statsOverview" style="display: none">
           <div class="stat-card">
             <div class="stat-value" id="totalSuggestions">0</div>
             <div class="stat-label">Gesamt Vorschläge</div>
@@ -881,27 +884,32 @@
         <div class="kvp-filter-bar">
           <button class="filter-btn active" data-filter="all">
             <i class="fas fa-list"></i>
-            Alle <span class="badge" id="badgeAll">0</span>
+            Alle
+            <span class="badge" id="badgeAll">0</span>
           </button>
           <button class="filter-btn" data-filter="mine">
             <i class="fas fa-user"></i>
-            Meine <span class="badge" id="badgeMine">0</span>
+            Meine
+            <span class="badge" id="badgeMine">0</span>
           </button>
           <button class="filter-btn" data-filter="department">
             <i class="fas fa-building"></i>
-            Abteilung <span class="badge" id="badgeDepartment">0</span>
+            Abteilung
+            <span class="badge" id="badgeDepartment">0</span>
           </button>
           <button class="filter-btn" data-filter="company">
             <i class="fas fa-globe"></i>
-            Firmenweit <span class="badge" id="badgeCompany">0</span>
+            Firmenweit
+            <span class="badge" id="badgeCompany">0</span>
           </button>
-          <button class="filter-btn admin-only" data-filter="manage" style="display: none;">
+          <button class="filter-btn admin-only" data-filter="manage" style="display: none">
             <i class="fas fa-tasks"></i>
             Verwalten
           </button>
-          <button class="filter-btn admin-only" data-filter="archived" style="display: none;">
+          <button class="filter-btn admin-only" data-filter="archived" style="display: none">
             <i class="fas fa-archive"></i>
-            Archiv <span class="badge" id="badgeArchived">0</span>
+            Archiv
+            <span class="badge" id="badgeArchived">0</span>
           </button>
         </div>
 
@@ -925,7 +933,7 @@
             </div>
             <input type="hidden" name="statusFilter" id="statusFilterValue" />
           </div>
-          
+
           <!-- Category Filter Dropdown -->
           <div class="custom-dropdown">
             <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
@@ -942,7 +950,7 @@
           </div>
 
           <!-- Department Filter Dropdown -->
-          <div class="custom-dropdown admin-only" style="display: none;">
+          <div class="custom-dropdown admin-only" style="display: none">
             <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
               <span>Alle Abteilungen</span>
               <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -965,7 +973,7 @@
         </div>
 
         <!-- Empty State -->
-        <div class="empty-state" id="emptyState" style="display: none;">
+        <div class="empty-state" id="emptyState" style="display: none">
           <i class="fas fa-inbox"></i>
           <h3>Keine Vorschläge gefunden</h3>
           <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
@@ -991,9 +999,10 @@
             <div class="warning-box">
               <i class="fas fa-exclamation-triangle"></i>
               <div>
-                <strong>Wichtiger Hinweis:</strong><br>
-                Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. 
-                Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie den Vorschlag absenden.
+                <strong>Wichtiger Hinweis:</strong>
+                <br />
+                Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. Bitte prüfen Sie alle Angaben sorgfältig,
+                bevor Sie den Vorschlag absenden.
               </div>
             </div>
 
@@ -1002,15 +1011,16 @@
               <!-- Title -->
               <div class="form-group">
                 <label class="form-label" for="kvpTitle">
-                  Titel <span class="required">*</span>
+                  Titel
+                  <span class="required">*</span>
                 </label>
-                <input 
-                  type="text" 
-                  id="kvpTitle" 
-                  name="title" 
-                  class="form-control" 
+                <input
+                  type="text"
+                  id="kvpTitle"
+                  name="title"
+                  class="form-control"
                   placeholder="Kurze, prägnante Beschreibung"
-                  required 
+                  required
                   maxlength="255"
                 />
               </div>
@@ -1018,12 +1028,13 @@
               <!-- Description -->
               <div class="form-group">
                 <label class="form-label" for="kvpDescription">
-                  Beschreibung <span class="required">*</span>
+                  Beschreibung
+                  <span class="required">*</span>
                 </label>
-                <textarea 
-                  id="kvpDescription" 
-                  name="description" 
-                  class="form-control" 
+                <textarea
+                  id="kvpDescription"
+                  name="description"
+                  class="form-control"
                   placeholder="Detaillierte Beschreibung des Vorschlags..."
                   rows="4"
                   required
@@ -1032,7 +1043,8 @@
               <!-- Category -->
               <div class="form-group">
                 <label class="form-label" for="kvpCategory">
-                  Kategorie <span class="required">*</span>
+                  Kategorie
+                  <span class="required">*</span>
                 </label>
                 <div class="custom-dropdown">
                   <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
@@ -1050,9 +1062,7 @@
 
               <!-- Priority -->
               <div class="form-group">
-                <label class="form-label" for="kvpPriority">
-                  Priorität
-                </label>
+                <label class="form-label" for="kvpPriority">Priorität</label>
                 <div class="custom-dropdown">
                   <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
                     <span>Normal</span>
@@ -1073,13 +1083,11 @@
 
             <!-- Expected Benefit (full width) -->
             <div class="form-group full-width">
-              <label class="form-label" for="kvpBenefit">
-                Erwarteter Nutzen
-              </label>
-              <textarea 
-                id="kvpBenefit" 
-                name="expected_benefit" 
-                class="form-control" 
+              <label class="form-label" for="kvpBenefit">Erwarteter Nutzen</label>
+              <textarea
+                id="kvpBenefit"
+                name="expected_benefit"
+                class="form-control"
                 placeholder="Welche Vorteile bringt dieser Vorschlag?"
                 rows="3"
               ></textarea>
@@ -1092,13 +1100,13 @@
                 <small class="text-muted">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</small>
               </label>
               <div class="photo-upload-area">
-                <input 
-                  type="file" 
-                  id="kvpPhotos" 
-                  name="photos" 
+                <input
+                  type="file"
+                  id="kvpPhotos"
+                  name="photos"
                   accept="image/jpeg,image/jpg,image/png"
                   multiple
-                  style="display: none;"
+                  style="display: none"
                   onchange="handlePhotoSelection(this)"
                 />
                 <div class="upload-box" onclick="document.getElementById('kvpPhotos').click()">
@@ -1112,11 +1120,10 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.hideCreateModal()">
-              Abbrechen
-            </button>
+            <button type="button" class="btn btn-secondary" onclick="window.hideCreateModal()">Abbrechen</button>
             <button type="submit" class="btn btn-primary">
-              <i class="fas fa-save"></i> Vorschlag einreichen
+              <i class="fas fa-save"></i>
+              Vorschlag einreichen
             </button>
           </div>
         </form>
@@ -1148,7 +1155,7 @@
         document.getElementById('statusFilterValue').value = value;
         document.getElementById('statusDisplay').classList.remove('active');
         document.getElementById('statusDropdown').classList.remove('active');
-        
+
         // Trigger filter event
         const event = new Event('change');
         document.getElementById('statusFilterValue').dispatchEvent(event);
@@ -1160,7 +1167,7 @@
         document.getElementById('categoryFilterValue').value = value;
         document.getElementById('categoryDisplay').classList.remove('active');
         document.getElementById('categoryDropdown').classList.remove('active');
-        
+
         // Trigger filter event
         const event = new Event('change');
         document.getElementById('categoryFilterValue').dispatchEvent(event);
@@ -1172,7 +1179,7 @@
         document.getElementById('departmentFilterValue').value = value;
         document.getElementById('departmentDisplay').classList.remove('active');
         document.getElementById('departmentDropdown').classList.remove('active');
-        
+
         // Trigger filter event
         const event = new Event('change');
         document.getElementById('departmentFilterValue').dispatchEvent(event);
@@ -1195,7 +1202,7 @@
       }
 
       // Click outside to close
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         if (!e.target.closest('.custom-dropdown')) {
           document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
           document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
@@ -1203,14 +1210,14 @@
       });
 
       // Simple modal functions as fallback
-      window.showCreateModal = function() {
+      window.showCreateModal = function () {
         const modal = document.getElementById('createKvpModal');
         if (modal) {
           modal.classList.add('active');
         }
       };
 
-      window.hideCreateModal = function() {
+      window.hideCreateModal = function () {
         const modal = document.getElementById('createKvpModal');
         if (modal) {
           modal.classList.remove('active');
@@ -1223,7 +1230,7 @@
       };
 
       // Click outside modal to close
-      document.getElementById('createKvpModal')?.addEventListener('click', function(e) {
+      document.getElementById('createKvpModal')?.addEventListener('click', function (e) {
         if (e.target === this) {
           window.hideCreateModal();
         }
@@ -1231,11 +1238,11 @@
 
       // Photo upload handling
       let selectedPhotos = [];
-      window.selectedPhotos = selectedPhotos;  // Make it globally accessible
+      window.selectedPhotos = selectedPhotos; // Make it globally accessible
 
       function handlePhotoSelection(input) {
         const files = Array.from(input.files);
-        const validFiles = files.filter(file => {
+        const validFiles = files.filter((file) => {
           const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
           return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024; // 10MB
         });
@@ -1245,9 +1252,9 @@
           return;
         }
 
-        validFiles.forEach(file => {
+        validFiles.forEach((file) => {
           selectedPhotos.push(file);
-          window.selectedPhotos = selectedPhotos;  // Keep window reference updated
+          window.selectedPhotos = selectedPhotos; // Keep window reference updated
           displayPhotoPreview(file, selectedPhotos.length - 1);
         });
 
@@ -1257,7 +1264,7 @@
 
       function displayPhotoPreview(file, index) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           const preview = document.getElementById('photoPreview');
           const item = document.createElement('div');
           item.className = 'photo-preview-item';
@@ -1272,7 +1279,7 @@
 
       function removePhoto(index) {
         selectedPhotos.splice(index, 1);
-        window.selectedPhotos = selectedPhotos;  // Keep window reference updated
+        window.selectedPhotos = selectedPhotos; // Keep window reference updated
         refreshPhotoPreview();
       }
 

@@ -33,7 +33,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -209,14 +209,16 @@
         justify-content: center;
         align-items: center;
       }
-      
+
       .modal-overlay {
         display: flex;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
       }
-      
+
       .modal-overlay.active {
         opacity: 1;
         visibility: visible;
@@ -792,9 +794,14 @@
           </div>
 
           <!-- Department Selection (hidden by default) -->
-          <div class="form-group" id="departmentSelection" style="display: none;">
+          <div class="form-group" id="departmentSelection" style="display: none">
             <label class="form-label">Abteilungen auswählen</label>
-            <select id="departmentSelect" multiple class="form-control" style="min-height: 120px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <select
+              id="departmentSelect"
+              multiple
+              class="form-control"
+              style="min-height: 120px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1)"
+            >
               <!-- Department options will be loaded here -->
             </select>
             <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block">
@@ -831,17 +838,17 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module">
       import { modalManager } from '/scripts/utils/modal-manager.ts';
-      
+
       // Make modalManager available globally
       window.modalManager = modalManager;
-      
+
       // Wait for both DOM and other scripts to load
       window.addEventListener('load', function () {
         // Register survey modal template
         if (window.registerSurveyModalTemplate) {
           window.registerSurveyModalTemplate();
         }
-        
+
         if (window.loadSurveys) {
           window.loadSurveys();
         }
@@ -855,26 +862,26 @@
       let questionCounter = 0;
 
       // Register the survey modal template with the modal manager
-      window.registerSurveyModalTemplate = function() {
+      window.registerSurveyModalTemplate = function () {
         // Get the existing modal HTML
         const surveyModal = document.getElementById('surveyModal');
         if (surveyModal && window.modalManager) {
           // Clone the modal to preserve it
           const modalClone = surveyModal.cloneNode(true);
-          
+
           // Add modal-overlay class to the modal
           modalClone.classList.add('modal-overlay');
-          
+
           // Register the template
           window.modalManager.registerTemplate('surveyModal', modalClone.outerHTML);
-          
+
           // Remove the original modal from DOM
           surveyModal.remove();
         }
-      }
+      };
 
       // Custom dropdown functions
-      window.toggleDropdown = function(dropdownId) {
+      window.toggleDropdown = function (dropdownId) {
         const dropdown = document.getElementById(dropdownId + 'Dropdown');
         const display = document.getElementById(dropdownId + 'Display');
 
@@ -892,7 +899,7 @@
 
         dropdown.classList.toggle('active');
         display.classList.toggle('active');
-      }
+      };
 
       function selectAssignmentOption(value, text) {
         document.getElementById('assignmentType').value = value;
@@ -910,12 +917,12 @@
       }
 
       // Select assignment option (target group)
-      window.selectAssignmentOption = async function(type, text) {
+      window.selectAssignmentOption = async function (type, text) {
         document.getElementById('assignmentType').value = type;
         document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
         document.getElementById('assignmentDropdownDropdown').classList.remove('active');
         document.getElementById('assignmentDropdownDisplay').classList.remove('active');
-        
+
         // Show/hide department selection
         const departmentSelection = document.getElementById('departmentSelection');
         if (type === 'department') {
@@ -924,7 +931,7 @@
         } else {
           departmentSelection.style.display = 'none';
         }
-      }
+      };
 
       // Load departments that the admin has access to
       async function loadUserDepartments() {
@@ -942,7 +949,7 @@
 
           const userData = await userResponse.json();
           const user = userData.user || userData;
-          
+
           // Now get the admin permissions using the user ID
           const permissionsResponse = await fetch(`/api/admin-permissions/${user.id}`, {
             headers: {
@@ -951,14 +958,14 @@
           });
 
           let departments = [];
-          
+
           if (permissionsResponse.ok) {
             const permissionsData = await permissionsResponse.json();
             console.log('Admin permissions response:', permissionsData);
-            
+
             // Handle the wrapped response structure
             const permData = permissionsData.data || permissionsData;
-            
+
             if (permData.hasAllAccess) {
               // Admin has all access - load all departments
               console.log('Admin has all access, loading all departments');
@@ -976,7 +983,7 @@
               departments = permData.departments;
             }
           }
-          
+
           // If no departments found from permissions, try loading all departments
           // (This handles cases where permissions endpoint fails or returns empty)
           if (departments.length === 0) {
@@ -992,17 +999,15 @@
               departments = allDepartments;
             }
           }
-          
+
           if (departments.length > 0) {
             displayDepartmentOptions(departments);
           } else {
-            document.getElementById('departmentSelect').innerHTML = 
-              '<option disabled>Keine Abteilungen verfügbar</option>';
+            document.getElementById('departmentSelect').innerHTML = '<option disabled>Keine Abteilungen verfügbar</option>';
           }
         } catch (error) {
           console.error('Error loading departments:', error);
-          document.getElementById('departmentSelect').innerHTML = 
-            '<option disabled>Fehler beim Laden der Abteilungen</option>';
+          document.getElementById('departmentSelect').innerHTML = '<option disabled>Fehler beim Laden der Abteilungen</option>';
         }
       }
 
@@ -1010,19 +1015,19 @@
       function displayDepartmentOptions(departments) {
         const select = document.getElementById('departmentSelect');
         select.innerHTML = '';
-        
+
         // Debug: log first department to see structure
         if (departments.length > 0) {
           console.log('First department structure:', departments[0]);
         }
-        
-        departments.forEach(dept => {
+
+        departments.forEach((dept) => {
           const option = document.createElement('option');
           option.value = dept.id.toString();
-          
+
           // Just show the department name without description for now
           option.textContent = dept.name || 'Unnamed Department';
-          
+
           select.appendChild(option);
         });
       }
@@ -1040,7 +1045,7 @@
       });
 
       // Load surveys
-      window.loadSurveys = async function() {
+      window.loadSurveys = async function () {
         try {
           const response = await fetch('/api/surveys', {
             headers: {
@@ -1055,7 +1060,7 @@
         } catch (error) {
           console.error('Error loading surveys:', error);
         }
-      }
+      };
 
       // Display surveys
       function displaySurveys(surveys) {
@@ -1130,7 +1135,7 @@
       }
 
       // Load templates
-      window.loadTemplates = async function() {
+      window.loadTemplates = async function () {
         try {
           const response = await fetch('/api/surveys/templates', {
             headers: {
@@ -1145,7 +1150,7 @@
         } catch (error) {
           console.error('Error loading templates:', error);
         }
-      }
+      };
 
       // Display templates
       function displayTemplates(templates) {
@@ -1163,7 +1168,7 @@
       }
 
       // Create from template
-      window.createFromTemplate = async function(templateId) {
+      window.createFromTemplate = async function (templateId) {
         if (confirm('Möchten Sie eine neue Umfrage basierend auf dieser Vorlage erstellen?')) {
           try {
             const response = await fetch(`/api/surveys/from-template/${templateId}`, {
@@ -1183,12 +1188,12 @@
             alert('Fehler beim Erstellen der Umfrage');
           }
         }
-      }
+      };
 
       // Show create modal
-      window.showCreateModal = function() {
+      window.showCreateModal = function () {
         currentSurveyId = null;
-        
+
         // Show modal using modal manager
         window.modalManager.show('surveyModal', {
           onOpen: () => {
@@ -1196,19 +1201,19 @@
             document.getElementById('surveyForm').reset();
             document.getElementById('questionsList').innerHTML = '';
             questionCounter = 0;
-            
+
             // Reset assignment type to "Ganze Firma"
             document.getElementById('assignmentType').value = 'all_users';
             document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = 'Ganze Firma';
             document.getElementById('departmentSelection').style.display = 'none';
-            
+
             // Set default dates: today at 00:00 and 14 days later at 00:00
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             const endDate = new Date(today);
             endDate.setDate(endDate.getDate() + 14);
-            
+
             // Format dates for datetime-local input
             const formatDate = (date) => {
               const year = date.getFullYear();
@@ -1216,19 +1221,19 @@
               const day = String(date.getDate()).padStart(2, '0');
               return `${year}-${month}-${day}T00:00`;
             };
-            
+
             document.getElementById('startDate').value = formatDate(today);
             document.getElementById('endDate').value = formatDate(endDate);
-            
+
             addQuestion(); // Add first question by default
-          }
+          },
         });
-      }
+      };
 
       // Close modal
-      window.closeModal = function() {
+      window.closeModal = function () {
         window.modalManager.hide('surveyModal');
-      }
+      };
 
       // Add question
       function addQuestion() {
@@ -1327,46 +1332,46 @@
       }
 
       // Remove option
-      window.removeOption = function(button) {
+      window.removeOption = function (button) {
         button.parentElement.remove();
-      }
+      };
 
       // Remove question
-      window.removeQuestion = function(questionId) {
+      window.removeQuestion = function (questionId) {
         document.getElementById(questionId).remove();
         updateQuestionNumbers();
-      }
+      };
 
       // Update question numbers
-      window.updateQuestionNumbers = function() {
+      window.updateQuestionNumbers = function () {
         const questions = document.querySelectorAll('.question-item');
         questions.forEach((question, index) => {
           question.querySelector('.question-number').textContent = index + 1;
         });
-      }
+      };
 
       // Save survey
       async function saveSurvey(status) {
         const assignmentType = document.getElementById('assignmentType').value;
         const assignments = [];
-        
+
         // Handle different assignment types
         if (assignmentType === 'all_users') {
           assignments.push({ type: 'all_users' });
         } else if (assignmentType === 'department') {
           // Get selected departments from select element
           const select = document.getElementById('departmentSelect');
-          const selectedDepts = Array.from(select.selectedOptions).map(option => parseInt(option.value));
-          
+          const selectedDepts = Array.from(select.selectedOptions).map((option) => parseInt(option.value));
+
           if (selectedDepts.length === 0) {
             alert('Bitte wählen Sie mindestens eine Abteilung aus');
             return;
           }
-          
-          selectedDepts.forEach(deptId => {
+
+          selectedDepts.forEach((deptId) => {
             assignments.push({
               type: 'department',
-              department_id: deptId
+              department_id: deptId,
             });
           });
         } else if (assignmentType === 'team') {
@@ -1414,7 +1419,7 @@
       }
 
       // Get questions data
-      window.getQuestionsData = function() {
+      window.getQuestionsData = function () {
         const questions = [];
         const questionElements = document.querySelectorAll('.question-item');
 
@@ -1446,10 +1451,10 @@
         });
 
         return questions;
-      }
+      };
 
       // Get status text
-      window.getStatusText = function(status) {
+      window.getStatusText = function (status) {
         const statusTexts = {
           draft: 'Entwurf',
           active: 'Aktiv',
@@ -1457,15 +1462,15 @@
           archived: 'Archiviert',
         };
         return statusTexts[status] || status;
-      }
+      };
 
       // View survey
-      window.viewSurvey = function(surveyId) {
+      window.viewSurvey = function (surveyId) {
         window.location.href = `/survey-details?id=${surveyId}`;
-      }
+      };
 
       // Edit survey
-      window.editSurvey = async function(surveyId) {
+      window.editSurvey = async function (surveyId) {
         // Load survey data and populate form
         try {
           const response = await fetch(`/api/surveys/${surveyId}`, {
@@ -1477,28 +1482,28 @@
           if (response.ok) {
             const survey = await response.json();
             currentSurveyId = surveyId;
-            
+
             // Show modal using modal manager
             window.modalManager.show('surveyModal', {
               onOpen: () => {
                 document.getElementById('modalTitle').textContent = 'Umfrage bearbeiten';
                 populateSurveyForm(survey);
-              }
+              },
             });
           }
         } catch (error) {
           console.error('Error loading survey:', error);
           alert('Fehler beim Laden der Umfrage');
         }
-      }
+      };
 
       // View results
-      window.viewResults = function(surveyId) {
+      window.viewResults = function (surveyId) {
         window.location.href = `/survey-results?id=${surveyId}`;
-      }
+      };
 
       // Delete survey
-      window.deleteSurvey = async function(surveyId) {
+      window.deleteSurvey = async function (surveyId) {
         if (confirm('Möchten Sie diese Umfrage wirklich löschen?')) {
           try {
             const response = await fetch(`/api/surveys/${surveyId}`, {
@@ -1517,10 +1522,10 @@
             alert('Fehler beim Löschen der Umfrage');
           }
         }
-      }
+      };
 
       // Populate survey form (for editing)
-      window.populateSurveyForm = function(survey) {
+      window.populateSurveyForm = function (survey) {
         // Handle title (might be Buffer)
         document.getElementById('surveyTitle').value = getTextFromBuffer(survey.title);
 
@@ -1595,7 +1600,7 @@
             });
           }
         });
-      }
+      };
     </script>
   </body>
 </html>

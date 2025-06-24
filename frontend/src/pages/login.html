@@ -17,7 +17,7 @@
       if (token && userRole) {
         // Hide login form immediately while we redirect
         document.documentElement.style.visibility = 'hidden';
-        
+
         // Redirect based on role (validation happens in background after redirect)
         switch (userRole) {
           case 'root':
@@ -81,23 +81,23 @@
 
     <script type="module">
       import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
-      
+
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {
         const token = localStorage.getItem('token');
         const userRole = localStorage.getItem('userRole');
-        
+
         // If we still have token/role but are on login page, validate
         if (token && userRole) {
           try {
             const fingerprint = await BrowserFingerprint.generate();
             const response = await fetch('/api/auth/validate', {
               headers: {
-                'Authorization': `Bearer ${token}`,
-                'X-Browser-Fingerprint': fingerprint
-              }
+                Authorization: `Bearer ${token}`,
+                'X-Browser-Fingerprint': fingerprint,
+              },
             });
-            
+
             if (!response.ok || !(await response.json()).valid) {
               // Token is invalid, clear and show login
               localStorage.removeItem('token');
@@ -114,9 +114,9 @@
           document.documentElement.style.visibility = 'visible';
         }
       })();
-      
+
       // Setup the page
-      document.addEventListener('DOMContentLoaded', async function() {
+      document.addEventListener('DOMContentLoaded', async function () {
         // Check for timeout parameter
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('timeout') === 'true') {
@@ -125,13 +125,13 @@
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       });
-      
+
       // Error/Success Message Functions
       function showError(message) {
         // Remove any existing error messages
         const existingErrors = document.querySelectorAll('.alert-error');
-        existingErrors.forEach(error => error.remove());
-        
+        existingErrors.forEach((error) => error.remove());
+
         const errorDiv = document.createElement('div');
         const isTimeout = message.includes('Sitzung');
         errorDiv.className = `alert ${isTimeout ? 'alert-timeout' : 'alert-error'}`;
@@ -171,7 +171,7 @@
           // Generate browser fingerprint
           const fingerprint = await BrowserFingerprint.generate();
           BrowserFingerprint.store(fingerprint);
-          
+
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
@@ -227,7 +227,6 @@
           alert('An error occurred during login');
         }
       });
-
     </script>
 
     <style>
@@ -307,7 +306,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         z-index: -1;
       }
 
@@ -470,7 +469,7 @@
         border: 1px solid rgba(255, 59, 48, 0.3);
         color: #ff3b30;
       }
-      
+
       /* Special style for session timeout */
       .alert-timeout {
         background: rgba(255, 149, 0, 0.1);

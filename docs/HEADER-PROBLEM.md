@@ -216,11 +216,13 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 
 ### Ursache:
 
-1. **Falsche CSS-Lade-Methode**: 
+1. **Falsche CSS-Lade-Methode**:
+
    - KVP-Seiten nutzten `<link rel="stylesheet">` Tags
    - Funktionierende Seiten nutzen `@import` innerhalb eines `<style>` Tags
 
 2. **Falsche Script-Reihenfolge**:
+
    - `unified-navigation.ts` wurde VOR den Seiten-Scripts geladen
    - `role-switch.ts` wurde separat geladen (unnötig)
 
@@ -266,7 +268,7 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 <head>
   <!-- Font Awesome zuerst -->
   <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-  
+
   <!-- Alle anderen CSS mit @import -->
   <style>
     @import url('/styles/dashboard-theme.css');
@@ -277,14 +279,14 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 <body>
   <!-- Navigation Container -->
   <div id="navigation-container"></div>
-  
+
   <!-- Main Content -->
   <div class="layout-container">
     <main class="main-content">
       <!-- Seiten-Inhalt -->
     </main>
   </div>
-  
+
   <!-- Scripts in DIESER Reihenfolge -->
   <script type="module" src="/scripts/auth.ts"></script>
   <script type="module" src="/scripts/pages/[seiten-script].ts"></script>
@@ -303,6 +305,7 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 ## Debugging-Tipps
 
 Wenn der Header falsch aussieht:
+
 1. Prüfe ob CSS mit `@import` geladen wird (nicht `<link>`)
 2. Prüfe ob `unified-navigation.ts` als LETZTES Script geladen wird
 3. Prüfe ob `user-info-update.css` importiert wird
@@ -333,10 +336,12 @@ Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig aussc
 ### Ursachen:
 
 1. **CSS-Import-Methode** (Hauptproblem für fehlendes Profilbild):
+
    - `user-info-update.css` wurde mit `<link>` statt `@import` geladen
    - Dies führte zu Timing-Problemen beim Header-Rendering
 
 2. **Race Condition im blackboard.ts**:
+
    - Script wartete auf `DOMContentLoaded` Event
    - Bei dynamischem Import war das Event bereits vorbei
    - Code wurde nie ausgeführt → Keine Einträge geladen

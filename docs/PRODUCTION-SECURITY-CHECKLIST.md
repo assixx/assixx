@@ -5,11 +5,13 @@
 ### ⚠️ KRITISCH: JWT_SECRET
 
 1. **Generiere ein sicheres Secret** (mindestens 32 Zeichen):
+
    ```bash
    openssl rand -base64 32
    ```
 
 2. **Update die .env Datei**:
+
    ```env
    # NIEMALS das Beispiel-Secret in Produktion verwenden!
    JWT_SECRET=<dein-generiertes-secret-hier>

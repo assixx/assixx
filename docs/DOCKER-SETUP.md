@@ -1,12 +1,14 @@
 # 🐳 Docker Setup
 
 ## Voraussetzungen
+
 - Docker & Docker Compose installiert
 - 2GB RAM, 5GB Speicher
 
 ## Quick Start
 
 ### Option 1: Automatisch (Empfohlen)
+
 ```bash
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx/docker
@@ -14,6 +16,7 @@ cd Assixx/docker
 ```
 
 ### Option 2: Manuell
+
 ```bash
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
@@ -31,6 +34,7 @@ cd docker && docker-compose up -d
 ```
 
 ## Zugriff
+
 - App: http://localhost:3000
 - phpMyAdmin: http://localhost:8080
 - Health: http://localhost:3000/health
@@ -57,22 +61,26 @@ git pull && docker-compose up -d --build
 ## Troubleshooting
 
 **Container startet nicht:**
+
 ```bash
 docker-compose logs backend
 docker-compose down && docker-compose up -d
 ```
 
 **Port belegt:**
+
 ```bash
 lsof -i :3000
 # Oder anderen Port nutzen in docker-compose.yml
 ```
 
 **MySQL Fehler:**
+
 ```bash
 docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025!
 ```
 
 ## Test-Accounts
+
 - Root: simon@scs-technik.de / Test123!
 - Neue Firma: http://localhost:3000/pages/signup.html

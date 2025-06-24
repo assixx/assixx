@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Employee Dashboard - Assixx</title>
-    
+
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script>
-      (function() {
+      (function () {
         const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         const root = document.documentElement;
         root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
@@ -40,7 +40,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(5deg,transparent,rgba(0,142,255,.1) 100%,#01000482 0,rgba(0,0,4,.6) 100%,#000);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
