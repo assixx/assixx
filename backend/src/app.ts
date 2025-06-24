@@ -110,12 +110,12 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
 
   // In production, use mappings
   const mappings: { [key: string]: string } = {
-    'unified-navigation': 'unified-navigation-BuitqYag.js',
+    'unified-navigation': 'unified-navigation-CL4_3UZb.js',
     'root-dashboard': 'root-dashboard-Dfu_VQDO.js',
     'header-user-info': 'header-user-info-BRS5ypTV.js',
     'admin-dashboard': 'admin-dashboard-N_R6RCKQ.js',
     'admin-config': 'admin-config-ev_UCVpb.js',
-    auth: 'auth-BvajzGn4.js',
+    auth: 'auth-CLt6HVJ3.js',
     blackboard: 'blackboard-CkcWnHK8.js',
     calendar: 'calendar-CM3Czewy.js',
     chat: 'chat-BMxgIT7z.js',
@@ -124,9 +124,9 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     'storage-upgrade': 'storage-upgrade-CaOJRvXh.js',
     'admin-profile': 'admin-profile-DrPj6ROD.js',
     'manage-admins': 'manage-admins-Bo1AiG2V.js',
-    'components/unified-navigation': 'unified-navigation-BuitqYag.js',
-    'role-switch': 'role-switch-BYc551YJ.js',
-    'employee-dashboard': 'employee-dashboard-DjOn7w6o.js',
+    'components/unified-navigation': 'unified-navigation-CL4_3UZb.js',
+    'role-switch': 'role-switch-C7a6BNLX.js',
+    'employee-dashboard': 'employee-dashboard-egyM3xDp.js',
     documents: 'documents-BIog5ddL.js',
   };
 

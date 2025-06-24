@@ -1250,7 +1250,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Fragetext eingeben..." required>
+                        <input type="text" class="form-control" placeholder="Fragetext eingeben (min. 5 Zeichen)..." required minlength="5" maxlength="500">
                     </div>
                     <div class="form-group">
                         <div class="custom-dropdown">
@@ -1379,8 +1379,15 @@
           return;
         }
 
+        // Validate survey title
+        const title = document.getElementById('surveyTitle').value.trim();
+        if (title.length < 3 || title.length > 255) {
+          alert('Der Umfragetitel muss zwischen 3 und 255 Zeichen lang sein');
+          return;
+        }
+
         const surveyData = {
-          title: document.getElementById('surveyTitle').value,
+          title: title,
           description: document.getElementById('surveyDescription').value,
           is_anonymous: document.getElementById('isAnonymous').checked,
           is_mandatory: document.getElementById('isMandatory').checked,
@@ -1390,6 +1397,29 @@
           questions: getQuestionsData(),
           assignments: assignments,
         };
+
+        // Validate questions
+        if (surveyData.questions.length === 0) {
+          alert('Bitte fügen Sie mindestens eine Frage hinzu');
+          return;
+        }
+
+        // Validate each question
+        for (let i = 0; i < surveyData.questions.length; i++) {
+          const question = surveyData.questions[i];
+          if (question.question_text.length < 5 || question.question_text.length > 500) {
+            alert(`Frage ${i + 1}: Der Fragetext muss zwischen 5 und 500 Zeichen lang sein`);
+            return;
+          }
+
+          // Validate options for choice questions
+          if (question.question_type === 'single_choice' || question.question_type === 'multiple_choice') {
+            if (!question.options || question.options.length < 2) {
+              alert(`Frage ${i + 1}: Auswahlfragen benötigen mindestens 2 Optionen`);
+              return;
+            }
+          }
+        }
 
         try {
           const url = currentSurveyId ? `/api/surveys/${currentSurveyId}` : '/api/surveys';
@@ -1410,7 +1440,10 @@
             loadSurveys();
           } else {
             const error = await response.json();
-            alert('Fehler: ' + error.error);
+            // Handle different error response formats
+            const errorMessage = error.message || error.error || 'Unbekannter Fehler';
+            console.error('Server error:', error);
+            alert('Fehler: ' + errorMessage);
           }
         } catch (error) {
           console.error('Error saving survey:', error);
@@ -1424,7 +1457,7 @@
         const questionElements = document.querySelectorAll('.question-item');
 
         questionElements.forEach((element, index) => {
-          const questionText = element.querySelector('input[type="text"]').value;
+          const questionText = element.querySelector('input[type="text"]').value.trim();
           const questionTypeInput = element.querySelector('input[type="hidden"][id$="_typeValue"]');
           const questionType = questionTypeInput ? questionTypeInput.value : 'text';
           const isRequired = element.querySelector('input[type="checkbox"]').checked;

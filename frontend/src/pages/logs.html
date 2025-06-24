@@ -529,6 +529,12 @@
                       <div class="dropdown-option" onclick="selectOption('action', 'unassign', 'Entfernt')">Entfernt</div>
                       <div class="dropdown-option" onclick="selectOption('action', 'kvp_created', 'KVP Erstellt')">KVP Erstellt</div>
                       <div class="dropdown-option" onclick="selectOption('action', 'kvp_shared', 'KVP Geteilt')">KVP Geteilt</div>
+                      <div class="dropdown-option" onclick="selectOption('action', 'survey_created', 'Umfrage Erstellt')">Umfrage Erstellt</div>
+                      <div class="dropdown-option" onclick="selectOption('action', 'survey_updated', 'Umfrage Aktualisiert')">Umfrage Aktualisiert</div>
+                      <div class="dropdown-option" onclick="selectOption('action', 'survey_deleted', 'Umfrage Gelöscht')">Umfrage Gelöscht</div>
+                      <div class="dropdown-option" onclick="selectOption('action', 'survey_submitted', 'Umfrage Beantwortet')">Umfrage Beantwortet</div>
+                      <div class="dropdown-option" onclick="selectOption('action', 'survey_viewed', 'Umfrage Angesehen')">Umfrage Angesehen</div>
+                      <div class="dropdown-option" onclick="selectOption('action', 'survey_exported', 'Umfrage Exportiert')">Umfrage Exportiert</div>
                     </div>
                   </div>
                   <input type="hidden" id="filter-action" value="all" />
@@ -558,6 +564,26 @@
                     </div>
                   </div>
                   <input type="hidden" id="filter-entity" value="all" />
+                </div>
+                <div class="filter-group">
+                  <label class="filter-label">HTTP-Methode</label>
+                  <div class="custom-dropdown">
+                    <div class="dropdown-display" id="methodDisplay" onclick="toggleDropdown('method')">
+                      <span>Alle Methoden</span>
+                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <div class="dropdown-options" id="methodDropdown">
+                      <div class="dropdown-option" onclick="selectOption('method', 'all', 'Alle Methoden')">Alle Methoden</div>
+                      <div class="dropdown-option" onclick="selectOption('method', 'GET', 'GET')">GET</div>
+                      <div class="dropdown-option" onclick="selectOption('method', 'POST', 'POST')">POST</div>
+                      <div class="dropdown-option" onclick="selectOption('method', 'PUT', 'PUT')">PUT</div>
+                      <div class="dropdown-option" onclick="selectOption('method', 'DELETE', 'DELETE')">DELETE</div>
+                      <div class="dropdown-option" onclick="selectOption('method', 'PATCH', 'PATCH')">PATCH</div>
+                    </div>
+                  </div>
+                  <input type="hidden" id="filter-method" value="all" />
                 </div>
                 <div class="filter-group">
                   <label class="filter-label">Zeitraum</label>

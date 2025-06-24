@@ -35,14 +35,28 @@ router.get(
       const userId = authReq.user.id;
       const tenantId = authReq.user.tenant_id;
 
-      // Get all active surveys for the tenant
+      // First get the user's department_id
+      const [userInfo] = await (db as any).execute(
+        'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+        [userId, tenantId]
+      );
+      
+      const userDepartmentId = userInfo[0]?.department_id || null;
+
+      // Get all active surveys assigned to the employee
       const [surveys] = await (db as any).execute(
-        `SELECT s.id 
+        `SELECT DISTINCT s.id 
        FROM surveys s
+       INNER JOIN survey_assignments sa ON s.id = sa.survey_id
        WHERE s.tenant_id = ? 
        AND s.status = 'active'
-       AND (s.end_date IS NULL OR s.end_date > NOW())`,
-        [tenantId]
+       AND (s.end_date IS NULL OR s.end_date > NOW())
+       AND (
+         sa.assignment_type = 'all_users'
+         OR (sa.assignment_type = 'department' AND sa.department_id = ?)
+         OR (sa.assignment_type = 'user' AND sa.user_id = ?)
+       )`,
+        [tenantId, userDepartmentId, userId]
       );
 
       // Count surveys not yet completed by the user
@@ -159,13 +173,53 @@ router.get(
     try {
       const authReq = req as any;
       const { status, page, limit } = req.query;
-      const surveys = await Survey.getAllByTenant(authReq.user.tenant_id, {
-        status: status
-          ? (String(status) as 'active' | 'draft' | 'closed')
-          : undefined,
-        page: page ? parseInt(String(page)) : 1,
-        limit: limit ? parseInt(String(limit)) : 20,
-      });
+      
+      let surveys;
+      
+      // Root users see all surveys
+      if (authReq.user.role === 'root') {
+        surveys = await Survey.getAllByTenant(authReq.user.tenant_id, {
+          status: status
+            ? (String(status) as 'active' | 'draft' | 'closed')
+            : undefined,
+          page: page ? parseInt(String(page)) : 1,
+          limit: limit ? parseInt(String(limit)) : 20,
+        });
+      } 
+      // Admin users see filtered surveys based on department permissions
+      else if (authReq.user.role === 'admin') {
+        surveys = await Survey.getAllByTenantForAdmin(
+          authReq.user.tenant_id,
+          authReq.user.id,
+          {
+            status: status
+              ? (String(status) as 'active' | 'draft' | 'closed')
+              : undefined,
+            page: page ? parseInt(String(page)) : 1,
+            limit: limit ? parseInt(String(limit)) : 20,
+          }
+        );
+      }
+      // Employee users see surveys assigned to them
+      else if (authReq.user.role === 'employee') {
+        surveys = await Survey.getAllByTenantForEmployee(
+          authReq.user.tenant_id,
+          authReq.user.id,
+          {
+            status: status
+              ? (String(status) as 'active' | 'draft' | 'closed')
+              : undefined,
+            page: page ? parseInt(String(page)) : 1,
+            limit: limit ? parseInt(String(limit)) : 20,
+          }
+        );
+      }
+      // Other roles don't have access
+      else {
+        res.status(403).json({ error: 'Keine Berechtigung' });
+        return;
+      }
+      
       res.json(surveys);
     } catch (error: any) {
       console.error('Error fetching surveys:', error);
@@ -216,7 +270,10 @@ router.get(
 );
 
 // Get survey statistics (admin only)
-router.get('/:id/statistics', async (req, res) => {
+router.get('/:id/statistics', 
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
@@ -249,6 +306,37 @@ router.post(
         return;
       }
 
+      // For admin users, validate department assignments
+      if (authReq.user.role === 'admin' && req.body.assignments) {
+        // Get admin's authorized departments
+        const [adminDepts] = await (db as any).execute(
+          `SELECT department_id FROM admin_department_permissions 
+           WHERE admin_user_id = ? AND tenant_id = ? AND can_write = 1`,
+          [authReq.user.id, authReq.user.tenant_id]
+        );
+        
+        const authorizedDeptIds = adminDepts.map((d: any) => d.department_id);
+        
+        // Check each assignment
+        for (const assignment of req.body.assignments) {
+          if (assignment.type === 'department') {
+            if (!authorizedDeptIds.includes(assignment.department_id)) {
+              res.status(403).json({ 
+                error: 'Sie haben keine Berechtigung für diese Abteilung' 
+              });
+              return;
+            }
+          }
+          // Admins can always create surveys for "all_users"
+          else if (assignment.type !== 'all_users') {
+            res.status(403).json({ 
+              error: 'Sie können nur Umfragen für Ihre Abteilungen oder die ganze Firma erstellen' 
+            });
+            return;
+          }
+        }
+      }
+
       const surveyId = await Survey.create(
         req.body,
         authReq.user.tenant_id,
@@ -261,13 +349,20 @@ router.post(
       });
     } catch (error: any) {
       console.error('Error creating survey:', error);
-      res.status(500).json({ error: 'Fehler beim Erstellen der Umfrage' });
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        error: 'Fehler beim Erstellen der Umfrage',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   }
 );
 
 // Create survey from template (admin only)
-router.post('/from-template/:templateId', async (req, res) => {
+router.post('/from-template/:templateId', 
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
@@ -294,7 +389,11 @@ router.post('/from-template/:templateId', async (req, res) => {
 });
 
 // Update survey (admin only)
-router.put('/:id', ...(validateUpdateSurvey as any[]), async (req, res) => {
+router.put('/:id', 
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  ...(validateUpdateSurvey as any[]), 
+  async (req, res) => {
   try {
     const authReq = req as any;
     if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
@@ -321,7 +420,10 @@ router.put('/:id', ...(validateUpdateSurvey as any[]), async (req, res) => {
 });
 
 // Delete survey (admin only)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', 
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
@@ -349,6 +451,8 @@ router.delete('/:id', async (req, res) => {
 // Submit survey response
 router.post(
   '/:id/responses',
+  authenticateToken as any,
+  checkFeature('surveys') as any,
   ...(validateSurveyResponse as any[]),
   async (req, res) => {
     try {
@@ -362,7 +466,8 @@ router.post(
         userId,
         userIdType: typeof userId,
         answersCount: answers ? answers.length : 0,
-        answers,
+        answers: JSON.stringify(answers, null, 2),
+        tenantId: authReq.user.tenant_id,
       });
 
       // Check if survey exists and is active
@@ -410,10 +515,11 @@ router.post(
 
         const [responseResult] = (await connection.execute(
           `
-        INSERT INTO survey_responses (survey_id, user_id, session_id)
-        VALUES (?, ?, ?)
+        INSERT INTO survey_responses (tenant_id, survey_id, user_id, session_id)
+        VALUES (?, ?, ?, ?)
       `,
           [
+            authReq.user.tenant_id,
             surveyId,
             isAnonymous ? null : userId,
             isAnonymous
@@ -426,18 +532,29 @@ router.post(
 
         // Save answers
         for (const answer of answers) {
+          console.log('Saving answer:', {
+            tenant_id: authReq.user.tenant_id,
+            response_id: responseId,
+            question_id: answer.question_id,
+            answer_text: answer.answer_text || null,
+            answer_options: answer.answer_options ? JSON.stringify(answer.answer_options) : null,
+            answer_number: answer.answer_number || null,
+            answer_date: answer.answer_date || null,
+          });
+          
           await connection.execute(
             `
           INSERT INTO survey_answers (
-            response_id, question_id, answer_text, option_id, 
+            tenant_id, response_id, question_id, answer_text, answer_options, 
             answer_number, answer_date
-          ) VALUES (?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
             [
+              authReq.user.tenant_id,
               responseId,
               answer.question_id,
               answer.answer_text || null,
-              answer.option_id || null,
+              answer.answer_options ? JSON.stringify(answer.answer_options) : null,
               answer.answer_number || null,
               answer.answer_date || null,
             ]
@@ -470,7 +587,10 @@ router.post(
 );
 
 // Get user's response to a survey
-router.get('/:id/my-response', async (req, res) => {
+router.get('/:id/my-response', 
+  authenticateToken as any,
+  checkFeature('surveys') as any,
+  async (req, res) => {
   try {
     const authReq = req as any;
     const surveyId = parseInt(req.params.id);
@@ -480,7 +600,7 @@ router.get('/:id/my-response', async (req, res) => {
 
     const [responses] = await (db as any).execute(
       `
-      SELECT sr.*, sa.question_id, sa.answer_text, sa.option_id, 
+      SELECT sr.*, sa.question_id, sa.answer_text, sa.answer_options, 
              sa.answer_number, sa.answer_date
       FROM survey_responses sr
       LEFT JOIN survey_answers sa ON sr.id = sa.response_id
@@ -505,8 +625,10 @@ router.get('/:id/my-response', async (req, res) => {
         completed_at: responses[0].completed_at,
         answers: responses.map((r: any) => ({
           question_id: r.question_id,
-          answer_text: r.answer_text,
-          option_id: r.option_id,
+          answer_text: r.answer_text && Buffer.isBuffer(r.answer_text) 
+            ? r.answer_text.toString() 
+            : r.answer_text,
+          answer_options: r.answer_options,
           answer_number: r.answer_number,
           answer_date: r.answer_date,
         })),
@@ -596,9 +718,8 @@ router.get(
 
             // Get responses for this question
             const [responses] = (await (db as any).execute(
-              `SELECT sa.*, so.option_text, u.first_name, u.last_name
+              `SELECT sa.*, u.first_name, u.last_name
              FROM survey_answers sa
-             LEFT JOIN survey_question_options so ON sa.option_id = so.id
              LEFT JOIN survey_responses sr ON sa.response_id = sr.id
              LEFT JOIN users u ON sr.user_id = u.id
              WHERE sa.question_id = ?`,
@@ -619,11 +740,18 @@ router.get(
               });
 
               responses.forEach((resp: any) => {
-                if (
-                  resp.option_id &&
-                  optionCounts[resp.option_id] !== undefined
-                ) {
-                  optionCounts[resp.option_id]++;
+                // Parse answer_options if it's stored as JSON
+                if (resp.answer_options) {
+                  try {
+                    const selectedOptions = JSON.parse(resp.answer_options);
+                    selectedOptions.forEach((optionId: number) => {
+                      if (optionCounts[optionId] !== undefined) {
+                        optionCounts[optionId]++;
+                      }
+                    });
+                  } catch (e) {
+                    // Handle non-JSON or invalid data
+                  }
                 }
               });
 
