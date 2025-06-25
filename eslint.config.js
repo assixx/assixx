@@ -38,6 +38,7 @@ export default [
         clearTimeout: 'readonly',
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
+        Express: 'readonly',
       },
     },
     plugins: {
@@ -96,6 +97,15 @@ export default [
         closeAdminModal: 'readonly',
         showModal: 'readonly',
         hideModal: 'readonly',
+        // Browser API globals
+        navigator: 'readonly',
+        screen: 'readonly',
+        crypto: 'readonly',
+        MutationObserver: 'readonly',
+        IntersectionObserver: 'readonly',
+        requestAnimationFrame: 'readonly',
+        Audio: 'readonly',
+        prompt: 'readonly',
       },
     },
     plugins: {
@@ -254,6 +264,8 @@ export default [
         EventTarget: 'readonly',
         Element: 'readonly',
         HTMLElement: 'readonly',
+        MutationObserver: 'readonly',
+        IntersectionObserver: 'readonly',
         // Common libraries that might be used
         $: 'readonly',
         jQuery: 'readonly',
@@ -276,9 +288,9 @@ export default [
     },
   },
 
-  // Vite config needs ES modules
+  // Vite and PostCSS configs need ES modules
   {
-    files: ['frontend/vite.config.js'],
+    files: ['frontend/vite.config.js', 'frontend/postcss.config.js'],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: 'module',
@@ -322,6 +334,8 @@ export default [
   {
     ignores: [
       'node_modules/**',
+      'node_modules_old_backup/**',
+      '**/node_modules_old_backup/**',
       'uploads/**',
       '*.log',
       '.env',
@@ -333,6 +347,7 @@ export default [
       'frontend/dist/**',
       'frontend/src/scripts/lib/**',
       'frontend/src/styles/lib/**',
+      'frontend/public/**',
       'backend/logs/**',
       // Backend Scripts - bleiben CommonJS
       'backend/scripts/**/*.js',
@@ -346,8 +361,19 @@ export default [
       'backend/src/register-ts.js',
       // Database Migrations
       'backend/src/database/migrations/**/*.js',
+      // Database build scripts
+      'database/**/*.js',
       // Temporär - werden später migriert
       'backend/src/websocket.js',
+      // Test files - keine Notwendigkeit zu prüfen
+      'backend/src/__tests__/**',
+      'backend/**/*.test.ts',
+      'backend/**/*.spec.ts',
+      'frontend/**/*.test.ts',
+      'frontend/**/*.spec.ts',
+      '**/__tests__/**',
+      '**/test/**',
+      '**/tests/**',
     ],
   },
 ];

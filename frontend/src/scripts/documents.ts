@@ -286,15 +286,15 @@ function createDocumentCard(doc: Document): HTMLElement {
         <span>${escapeHtml(doc.uploaded_by_name || 'System')}</span>
       </div>
       ${
-  doc.file_size
-    ? `
+        doc.file_size
+          ? `
         <div class="document-meta-item">
           <i class="fas fa-weight"></i>
           <span>${formatFileSize(doc.file_size)}</span>
         </div>
       `
-    : ''
-}
+          : ''
+      }
       <div class="document-meta-item">
         <i class="fas fa-layer-group"></i>
         <span>${getScopeLabel(doc.scope)}</span>

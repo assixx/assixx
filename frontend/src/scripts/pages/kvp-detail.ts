@@ -178,10 +178,10 @@ class KvpDetailPage {
         <div class="visibility-badge company">
           <i class="fas fa-globe"></i> Firmenweit geteilt
           ${
-  this.suggestion.shared_by_name
-    ? `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>`
-    : ''
-}
+            this.suggestion.shared_by_name
+              ? `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>`
+              : ''
+          }
         </div>
       `;
     } else {
@@ -227,17 +227,17 @@ class KvpDetailPage {
         ${this.suggestion.category_name}
       </span>
     `;
-    
+
     // For non-admins, just show the status text
     const statusElement = document.getElementById('status')!;
     const statusDropdownContainer = document.getElementById('statusDropdownContainer')!;
     const statusDisplay = document.getElementById('statusDisplay')!;
-    
+
     if (this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root')) {
       // Hide the status text and show the dropdown for admins
       statusElement.style.display = 'none';
       statusDropdownContainer.style.display = '';
-      
+
       // Update the dropdown display text
       statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
       document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
@@ -333,12 +333,12 @@ class KvpDetailPage {
             </div>
             <span class="comment-date">
               ${new Date(comment.created_at).toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })}
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </span>
           </div>
           <div class="comment-content">
@@ -626,7 +626,7 @@ class KvpDetailPage {
 
       const data = await response.json();
       this.suggestion = data.suggestion;
-      
+
       // Update the status badge
       const statusBadge = document.getElementById('statusBadge')!;
       statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
@@ -644,7 +644,7 @@ class KvpDetailPage {
     } catch (error) {
       console.error('Error updating status:', error);
       this.showError('Fehler beim Aktualisieren des Status');
-      
+
       // Reset dropdown to original value on error
       const statusDisplay = document.getElementById('statusDisplay');
       if (statusDisplay && this.suggestion) {

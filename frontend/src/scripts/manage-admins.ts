@@ -265,9 +265,9 @@
       </thead>
       <tbody>
         ${admins
-    .map((admin) => {
-      const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || '-';
-      return `
+          .map((admin) => {
+            const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || '-';
+            return `
           <tr>
             <td>${admin.id}</td>
             <td>${admin.username}</td>
@@ -289,8 +289,8 @@
             </td>
           </tr>
         `;
-    })
-    .join('')}
+          })
+          .join('')}
       </tbody>
     </table>
   `;
@@ -690,10 +690,10 @@
         <input type="checkbox" name="groupSelect" value="${group.id}" style="margin-right: 8px;" />
         <span>${group.name}</span>
         ${
-  group.departments && group.departments.length > 0
-    ? `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>`
-    : ''
-  }
+          group.departments && group.departments.length > 0
+            ? `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>`
+            : ''
+        }
       </label>
       ${group.subgroups && group.subgroups.length > 0 ? renderGroupTree(group.subgroups, level + 1) : ''}
     </div>

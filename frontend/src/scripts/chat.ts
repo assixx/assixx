@@ -1069,7 +1069,7 @@ class ChatClient {
         window.location.href = '/pages/login.html';
         break;
 
-      case 'new_message':
+      case 'new_message': {
         // Backend sends message data directly, not wrapped in { message, conversationId }
         const messageData = message.data as Message & { conversation_id: number };
         this.handleNewMessage({
@@ -1077,6 +1077,7 @@ class ChatClient {
           conversationId: messageData.conversation_id,
         });
         break;
+      }
 
       case 'typing_start':
       case 'user_typing':
@@ -1365,7 +1366,7 @@ class ChatClient {
     messages.forEach((message) => {
       // Check if we need to add a date separator
       const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
-      
+
       if (lastMessageDate !== messageDate) {
         this.addDateSeparator(messageDate, messagesContainer);
         lastMessageDate = messageDate;
@@ -1393,7 +1394,7 @@ class ChatClient {
     const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
     const messages = messagesContainer.querySelectorAll('.message');
     const lastMessage = messages[messages.length - 1];
-    
+
     if (lastMessage) {
       const lastMessageDate = lastMessage.getAttribute('data-date');
       if (lastMessageDate && lastMessageDate !== messageDate) {
@@ -1440,10 +1441,10 @@ class ChatClient {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const messageDate = new Date(dateString.split('.').reverse().join('-'));
     let displayDate = dateString;
-    
+
     // Check if it's today
     if (messageDate.toDateString() === today.toDateString()) {
       displayDate = 'Heute';
@@ -1452,7 +1453,7 @@ class ChatClient {
     else if (messageDate.toDateString() === yesterday.toDateString()) {
       displayDate = 'Gestern';
     }
-    
+
     const separator = document.createElement('div');
     separator.className = 'date-separator';
     separator.innerHTML = `<span>${displayDate}</span>`;
@@ -1798,14 +1799,14 @@ class ChatClient {
           <i class="fas fa-search"></i>
         </button>
         ${
-  isAdmin
-    ? `
+          isAdmin
+            ? `
           <button class="chat-action-btn" title="Löschen" id="deleteConversationBtn">
             <i class="fas fa-trash"></i>
           </button>
         `
-    : ''
-}
+            : ''
+        }
       </div>
     `;
 

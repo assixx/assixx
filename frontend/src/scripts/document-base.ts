@@ -347,15 +347,15 @@ export class DocumentBase {
           <span>${this.escapeHtml(doc.uploaded_by_name || 'System')}</span>
         </div>
         ${
-  doc.file_size
-    ? `
+          doc.file_size
+            ? `
           <div class="document-meta-item">
             <i class="fas fa-weight"></i>
             <span>${this.formatFileSize(doc.file_size)}</span>
           </div>
         `
-    : ''
-}
+            : ''
+        }
       </div>
     `;
 

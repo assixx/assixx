@@ -921,14 +921,14 @@ async function viewEvent(eventId: number): Promise<void> {
           <span><strong>Ende:</strong> ${event.all_day ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
         </div>
         ${
-  event.location
-    ? `
+          event.location
+            ? `
         <div class="detail-item">
           <i class="fas fa-map-marker-alt"></i>
           <span><strong>Ort:</strong> ${escapeHtml(event.location)}</span>
         </div>`
-    : ''
-}
+            : ''
+        }
         <div class="detail-item">
           <i class="fas fa-layer-group"></i>
           <span><strong>Ebene:</strong> ${levelText}</span>

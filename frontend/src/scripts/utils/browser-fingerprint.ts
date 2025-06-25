@@ -42,8 +42,8 @@ export class BrowserFingerprint {
       webgl: this.getWebGLFingerprint(),
 
       // Audio (mit Error Handling)
-      audio: await this.getAudioFingerprint().catch((err) => {
-        console.debug('[Fingerprint] Audio fingerprint error:', err);
+      audio: await this.getAudioFingerprint().catch(() => {
+        console.debug('[Fingerprint] Audio fingerprint error');
         return 'audio-error';
       }),
 
@@ -93,7 +93,7 @@ export class BrowserFingerprint {
       ctx.fillText(txt, 4, 17);
 
       return canvas.toDataURL();
-    } catch (e) {
+    } catch {
       return 'canvas-blocked';
     }
   }
@@ -114,7 +114,7 @@ export class BrowserFingerprint {
         vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
         renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
       });
-    } catch (e) {
+    } catch {
       return 'webgl-blocked';
     }
   }
@@ -154,7 +154,7 @@ export class BrowserFingerprint {
             if (audioContext.state !== 'closed') {
               audioContext.close().catch(() => {});
             }
-          } catch (err) {
+          } catch {
             // Ignore cleanup errors
           }
           resolve('audio-timeout');
@@ -176,14 +176,14 @@ export class BrowserFingerprint {
             if (audioContext.state !== 'closed') {
               audioContext.close().catch(() => {});
             }
-          } catch (err) {
+          } catch {
             // Ignore cleanup errors
           }
 
           resolve(fingerprint);
         };
       });
-    } catch (e) {
+    } catch {
       return 'audio-blocked';
     }
   }

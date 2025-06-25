@@ -882,15 +882,15 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       ${contentHtml}
       
       ${
-  !isDirectAttachment && entry.attachment_count && entry.attachment_count > 0
-    ? `
+        !isDirectAttachment && entry.attachment_count && entry.attachment_count > 0
+          ? `
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
           <i class="fas fa-paperclip" style="color: #666;"></i>
           <span style="color: #666; font-size: 12px;">${entry.attachment_count} Anhang${entry.attachment_count > 1 ? 'änge' : ''}</span>
         </div>
       `
-    : ''
-}
+          : ''
+      }
       
       <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
         <span>
@@ -902,8 +902,8 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       </div>
       
       ${
-  canEdit
-    ? `
+        canEdit
+          ? `
         <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.2s;">
           <button class="btn btn-sm btn-link p-1" onclick="event.stopPropagation(); editEntry(${entry.id})" title="Bearbeiten">
             <i class="fas fa-edit"></i>
@@ -913,8 +913,8 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           </button>
         </div>
       `
-    : ''
-}
+          : ''
+      }
     </div>
   `;
 
@@ -1355,29 +1355,29 @@ async function viewEntry(entryId: number): Promise<void> {
             ${escapeHtml(entry.content).replace(/\n/g, '<br>')}
           </div>
           ${
-  entry.tags && entry.tags.length > 0
-    ? `
+            entry.tags && entry.tags.length > 0
+              ? `
             <div class="entry-tags">
               ${entry.tags.map((tag: string) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
             </div>
           `
-    : ''
-}
+              : ''
+          }
           ${
-  attachments.length > 0
-    ? `
+            attachments.length > 0
+              ? `
             <div class="entry-attachments">
               <h4 class="entry-attachments-title">
                 <i class="fas fa-paperclip"></i> Anhänge (${attachments.length})
               </h4>
               <div class="entry-attachment-list" id="attachment-list-${entryId}">
                 ${attachments
-    .map((att) => {
-      const isPDF = att.mime_type === 'application/pdf';
+                  .map((att) => {
+                    const isPDF = att.mime_type === 'application/pdf';
 
-      console.log(`[Blackboard] Rendering attachment:`, att);
+                    console.log(`[Blackboard] Rendering attachment:`, att);
 
-      return `
+                    return `
                     <div class="entry-attachment-item" 
                          data-attachment-id="${att.id}"
                          data-mime-type="${att.mime_type}"
@@ -1390,13 +1390,13 @@ async function viewEntry(entryId: number): Promise<void> {
                       <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
                     </div>
                   `;
-    })
-    .join('')}
+                  })
+                  .join('')}
               </div>
             </div>
           `
-    : ''
-}
+              : ''
+          }
         `;
 
         // Update footer buttons BEFORE showing modal

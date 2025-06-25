@@ -986,7 +986,7 @@ class UnifiedNavigation {
             localStorage.setItem('openSubmenu', parentId);
           }
         }
-        
+
         // Check if admin/root clicked on KVP submenu item
         const submenuNavId = submenuLink.getAttribute('data-nav-id');
         if (submenuNavId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
@@ -1307,10 +1307,10 @@ class UnifiedNavigation {
       if (navId === 'documents' && this.currentRole === 'employee') {
         this.markAllDocumentsAsRead();
       }
-      
+
       // If admin/root clicked on KVP, reset the badge
       if (navId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
-        this.resetKvpBadge().catch(error => console.error('Error resetting KVP badge:', error));
+        this.resetKvpBadge().catch((error) => console.error('Error resetting KVP badge:', error));
       }
     }
 
@@ -1602,10 +1602,10 @@ class UnifiedNavigation {
         const badge = document.getElementById('kvp-badge');
         if (badge && data.company) {
           const currentCount = data.company.byStatus?.new || 0;
-          
+
           // Check if user has clicked on KVP before
           const hasClickedKvp = this.lastKvpClickTimestamp !== null;
-          
+
           // Only show badge if:
           // 1. There are new suggestions AND
           // 2. Either the user has never clicked on KVP OR the count has increased since last click
@@ -1617,7 +1617,7 @@ class UnifiedNavigation {
             badge.style.display = 'none';
             console.log('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
           }
-          
+
           // Update the last known count if it has changed
           if (currentCount !== this.lastKnownKvpCount && !hasClickedKvp) {
             this.lastKnownKvpCount = currentCount;
@@ -1827,11 +1827,11 @@ class UnifiedNavigation {
       badge.textContent = '0';
       console.log('[UnifiedNav] KVP badge hidden');
     }
-    
+
     // Save the timestamp of when the user clicked on KVP
     this.lastKvpClickTimestamp = Date.now();
     localStorage.setItem('lastKvpClickTimestamp', this.lastKvpClickTimestamp.toString());
-    
+
     // Get the current count from the API to save as baseline
     try {
       const token = localStorage.getItem('token');
@@ -1842,7 +1842,7 @@ class UnifiedNavigation {
             'Content-Type': 'application/json',
           },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.company) {

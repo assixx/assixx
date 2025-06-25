@@ -1561,23 +1561,23 @@ class ShiftPlanningSystem {
             <span class="detail-value">${assignedEmployees || 'Keine Mitarbeiter zugewiesen'}</span>
           </div>
           ${
-  this.selectedContext.departmentId
-    ? `
+            this.selectedContext.departmentId
+              ? `
           <div class="detail-row">
             <span class="detail-label">Abteilung:</span>
             <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name || '-'}</span>
           </div>`
-    : ''
-}
+              : ''
+          }
           ${
-  this.selectedContext.machineId
-    ? `
+            this.selectedContext.machineId
+              ? `
           <div class="detail-row">
             <span class="detail-label">Maschine:</span>
             <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name || '-'}</span>
           </div>`
-    : ''
-}
+              : ''
+          }
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="window.modalManager.closeModal()">Schließen</button>

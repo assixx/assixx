@@ -1,5 +1,5 @@
 declare module 'express-validator' {
-  import { Request, Response, NextFunction, RequestHandler } from 'express';
+  import { Request, RequestHandler } from 'express';
 
   export interface ValidationError {
     type: string;
@@ -9,7 +9,7 @@ declare module 'express-validator' {
     value?: any;
   }
 
-  export interface Result<T = any> {
+  export interface Result {
     isEmpty(): boolean;
     array(): ValidationError[];
   }

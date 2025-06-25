@@ -103,16 +103,16 @@
         <i class="fas fa-folder tree-item-icon"></i>
         <span class="tree-item-name">${group.name}</span>
         ${
-  group.departments && group.departments.length > 0
-    ? `<span class="tree-item-count">${group.departments.length}</span>`
-    : ''
-  }
+          group.departments && group.departments.length > 0
+            ? `<span class="tree-item-count">${group.departments.length}</span>`
+            : ''
+        }
       </div>
       ${
-  group.subgroups && group.subgroups.length > 0
-    ? `<div class="tree-children">${renderGroupItems(group.subgroups, level + 1)}</div>`
-    : ''
-  }
+        group.subgroups && group.subgroups.length > 0
+          ? `<div class="tree-children">${renderGroupItems(group.subgroups, level + 1)}</div>`
+          : ''
+      }
     </div>
   `,
       )
@@ -151,19 +151,19 @@
       <h4>Zugeordnete Abteilungen (${group.departments?.length || 0})</h4>
       <div>
         ${
-  group.departments && group.departments.length > 0
-    ? group.departments
-      .map(
-        (dept) => `
+          group.departments && group.departments.length > 0
+            ? group.departments
+                .map(
+                  (dept) => `
             <div class="department-item">
               <i class="fas fa-building" style="margin-right: 8px; color: var(--primary-color);"></i>
               <span>${dept.name}</span>
             </div>
           `,
-      )
-      .join('')
-    : '<p class="text-secondary">Keine Abteilungen zugeordnet</p>'
-  }
+                )
+                .join('')
+            : '<p class="text-secondary">Keine Abteilungen zugeordnet</p>'
+        }
       </div>
     </div>
 
