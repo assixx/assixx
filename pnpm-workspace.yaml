@@ -1,2 +1,6 @@
+packages:
+  - 'frontend'
+  - 'backend'
+  - 'scripts'
 ignoredBuiltDependencies:
   - unrs-resolver
