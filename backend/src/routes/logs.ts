@@ -433,7 +433,7 @@ router.delete(
 // Log-Eintrag erstellen (interne Funktion)
 export async function createLog(
   userId: number,
-  tenantId: number,
+  tenantId: number | null,
   action: string,
   entityType?: string,
   entityId?: number,

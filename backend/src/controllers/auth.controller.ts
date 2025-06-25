@@ -138,7 +138,7 @@ class AuthController {
       // Log successful login
       await createLog(
         result.user!.id,
-        result.user!.tenant_id,
+        result.user!.tenantId,
         'login',
         'user',
         result.user!.id,
@@ -209,7 +209,7 @@ class AuthController {
     if (req.user) {
       await createLog(
         req.user.id,
-        req.user.tenant_id,
+        req.user.tenantId,
         'logout',
         'user',
         req.user.id,
