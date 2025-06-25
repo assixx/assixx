@@ -799,7 +799,7 @@
 
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch('/api/users/change-password', {
+          const response = await fetch('/api/users/profile/password', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

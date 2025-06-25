@@ -275,20 +275,21 @@ async function handlePasswordChange(event: Event): Promise<void> {
 
   try {
     const token = getAuthToken();
-    const response = await fetch('/api/user/change-password', {
-      method: 'POST',
+    const response = await fetch('/api/users/profile/password', {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        current_password: currentPassword,
-        new_password: newPassword,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
       }),
     });
 
     if (response.ok) {
       showMessage('Passwort erfolgreich geändert', 'success');
+      showSuccessOverlay('Passwort erfolgreich geändert!');
       form.reset();
     } else {
       const error = await response.json();
@@ -378,4 +379,28 @@ function showMessage(message: string, type: 'success' | 'error'): void {
   setTimeout(() => {
     container.innerHTML = '';
   }, 5000);
+}
+
+/**
+ * Show success overlay animation
+ */
+function showSuccessOverlay(text: string = 'Erfolgreich!'): void {
+  const overlay = document.createElement('div');
+  overlay.className = 'success-overlay';
+  overlay.innerHTML = `
+    <div class="success-message">
+      <div class="success-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="success-text">
+        ${text}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Remove after animation
+  setTimeout(() => {
+    overlay.remove();
+  }, 2000);
 }
