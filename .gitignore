@@ -56,3 +56,11 @@ coverage/
 
 # ESLint
 eslint-report.json
+
+# Database Backups
+backups/daily/
+backups/weekly/
+backups/monthly/
+backups/quick/
+backups/latest_backup.sql.gz
+backups/cron.log
