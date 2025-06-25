@@ -448,7 +448,16 @@ export async function createLog(
       (tenant_id, user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `,
-      [tenantId, userId, action, entityType, entityId, details, ipAddress, userAgent]
+      [
+        tenantId,
+        userId,
+        action,
+        entityType,
+        entityId,
+        details,
+        ipAddress,
+        userAgent,
+      ]
     );
   } catch (error) {
     logger.error('Error creating log entry:', error);
