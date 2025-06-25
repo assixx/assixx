@@ -2869,7 +2869,7 @@ const unifiedNavigationCSS = `
     .layout-container {
         display: flex;
         min-height: 100vh;
-        padding-top: 60px; /* Space for fixed header */
+        padding-top: 87px; /* Space for fixed header */
     }
 
     .main-content {
