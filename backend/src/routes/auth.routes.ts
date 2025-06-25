@@ -54,6 +54,14 @@ router.get('/user', authenticateToken, (req, res) =>
   authController.getUserProfile(req as any, res)
 );
 
+// Session validation endpoints
+router.get('/validate', authenticateToken, (req, res) =>
+  authController.validateToken(req as any, res)
+);
+router.post('/validate-fingerprint', authenticateToken, (req, res) =>
+  authController.validateFingerprint(req as any, res)
+);
+
 export default router;
 
 // CommonJS compatibility

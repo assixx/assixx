@@ -25,7 +25,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -369,7 +369,13 @@
         gap: 12px;
         min-height: 0; /* Wichtig für Firefox */
         max-height: 100%;
-        scroll-behavior: smooth;
+        scroll-behavior: auto; /* Disable smooth scrolling for instant positioning */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .messages-container.loaded {
+        opacity: 1;
       }
 
       .message {
@@ -382,6 +388,43 @@
 
       .message.own {
         justify-content: flex-end;
+      }
+
+      /* Date Separator */
+      .date-separator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px 0;
+        position: relative;
+      }
+
+      .date-separator span {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .date-separator::before,
+      .date-separator::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .date-separator::before {
+        margin-right: 16px;
+      }
+
+      .date-separator::after {
+        margin-left: 16px;
       }
 
       .message:not(.own) {

@@ -11,10 +11,40 @@ import { Request, Response, NextFunction } from 'express';
 import UserModel from './models/user';
 import { DatabaseUser } from './types';
 import { TokenPayload, TokenValidationResult } from './types/auth.types';
+import pool from './database';
+import { RowDataPacket } from 'mysql2/promise';
 
 // Konstante für das JWT-Secret aus der Umgebungsvariable
-const JWT_SECRET: string =
-  process.env.JWT_SECRET || 'fallback_secret_nur_fuer_entwicklung';
+const JWT_SECRET: string = process.env.JWT_SECRET || '';
+
+// In Produktion MUSS ein JWT_SECRET gesetzt sein
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'JWT_SECRET must be set in production and be at least 32 characters long!'
+    );
+  } else {
+    console.warn(
+      '⚠️  WARNING: Using insecure default JWT_SECRET for development only!'
+    );
+    // Nur in Entwicklung einen Fallback verwenden
+    const JWT_SECRET_FALLBACK =
+      'dev_only_secret_do_not_use_in_prod_' + Date.now();
+    (global as any).JWT_SECRET = JWT_SECRET_FALLBACK;
+  }
+}
+
+// Helper function to handle both real pool and mock database
+async function executeQuery<T extends RowDataPacket[]>(
+  sql: string,
+  params?: any[]
+): Promise<[T, any]> {
+  const result = await (pool as any).query(sql, params);
+  if (Array.isArray(result) && result.length === 2) {
+    return result as [T, any];
+  }
+  return [result as T, null];
+}
 
 // Helper function to convert DbUser to DatabaseUser
 function dbUserToDatabaseUser(dbUser: any): DatabaseUser {
@@ -108,7 +138,11 @@ export async function authenticateUser(
 /**
  * Token-Generierung für authentifizierte Benutzer
  */
-export function generateToken(user: DatabaseUser): string {
+export function generateToken(
+  user: DatabaseUser,
+  fingerprint?: string,
+  sessionId?: string
+): string {
   try {
     const payload: TokenPayload = {
       id: parseInt(user.id.toString(), 10), // Ensure ID is a number
@@ -117,9 +151,13 @@ export function generateToken(user: DatabaseUser): string {
       tenant_id: user.tenant_id
         ? parseInt(user.tenant_id.toString(), 10)
         : null,
+      fingerprint: fingerprint, // Browser fingerprint
+      sessionId:
+        sessionId ||
+        `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique session ID
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' }); // 8 Stunden wie bei den meisten SaaS
 
     return token;
   } catch (error) {
@@ -157,7 +195,7 @@ export function authenticateToken(
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
     if (err || !decoded || typeof decoded === 'string') {
       res.status(403).json({
         error: 'Invalid or expired token',
@@ -170,6 +208,54 @@ export function authenticateToken(
       activeRole?: string;
       isRoleSwitched?: boolean;
     };
+
+    // Best Practice Session Security (wie Google, Facebook, etc.)
+    if (user.sessionId) {
+      try {
+        // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
+        const requestFingerprint = req.headers[
+          'x-browser-fingerprint'
+        ] as string;
+        // const requestIP = req.ip || req.connection.remoteAddress;
+        // const userAgent = req.headers['user-agent'];
+
+        // Log Security-relevante Änderungen für Monitoring
+        if (
+          user.fingerprint &&
+          requestFingerprint &&
+          requestFingerprint !== user.fingerprint
+        ) {
+          console.info(
+            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`
+          );
+
+          // Nur bei verdächtigen Mustern warnen/blockieren:
+          // - Mehrere Sessions gleichzeitig von verschiedenen Ländern
+          // - Rapid fingerprint changes (> 10 pro Stunde)
+          // - Known malicious patterns
+
+          // Für jetzt: Nur loggen, nicht blockieren
+        }
+
+        // Optionally validate session in database
+        if (process.env.VALIDATE_SESSIONS === 'true') {
+          const [sessions] = await executeQuery<RowDataPacket[]>(
+            'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
+            [user.id, user.sessionId]
+          );
+
+          if (sessions.length === 0) {
+            res.status(403).json({
+              error: 'Session expired or not found',
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('[AUTH] Session validation error:', error);
+        // Continue anyway in case of database issues
+      }
+    }
 
     // Normalize user object for consistency and ensure IDs are numbers
     const authenticatedUser: any = {

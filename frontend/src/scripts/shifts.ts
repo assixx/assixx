@@ -980,7 +980,7 @@ class ShiftPlanningSystem {
       // Extract date part only (YYYY-MM-DD) from potentially full datetime string
       const dateString = shift.date;
       const date = dateString.split('T')[0]; // Get only YYYY-MM-DD part
-      let shiftType = shift.shift_type;
+      const shiftType = shift.shift_type;
 
       // Skip custom shifts or convert them based on time
       if (shiftType === 'custom') {
@@ -1287,7 +1287,7 @@ class ShiftPlanningSystem {
           week_start: weekStart,
           week_end: weekEnd,
           assignments,
-          notes: notes,
+          notes,
         }),
       });
 
@@ -1561,23 +1561,23 @@ class ShiftPlanningSystem {
             <span class="detail-value">${assignedEmployees || 'Keine Mitarbeiter zugewiesen'}</span>
           </div>
           ${
-            this.selectedContext.departmentId
-              ? `
+  this.selectedContext.departmentId
+    ? `
           <div class="detail-row">
             <span class="detail-label">Abteilung:</span>
             <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name || '-'}</span>
           </div>`
-              : ''
-          }
+    : ''
+}
           ${
-            this.selectedContext.machineId
-              ? `
+  this.selectedContext.machineId
+    ? `
           <div class="detail-row">
             <span class="detail-label">Maschine:</span>
             <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name || '-'}</span>
           </div>`
-              : ''
-          }
+    : ''
+}
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="window.modalManager.closeModal()">Schließen</button>

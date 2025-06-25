@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KVP Vorschlag - Assixx</title>
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const root = document.documentElement;
+        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+      })();
+    </script>
+
+    <!-- Dashboard Theme CSS -->
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/user-info-update.css');
+
+      /* Dramatischer Hintergrund-Gradient */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Detail Container */
+      .detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: var(--spacing-lg);
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Main Content */
+      .detail-main {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Sidebar */
+      .detail-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+        position: relative;
+        z-index: 100;
+      }
+
+      .sidebar-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        position: relative;
+        z-index: 1;
+        overflow: visible; /* Wichtig für Dropdown-Sichtbarkeit */
+      }
+
+      /* Header with Status */
+      .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .detail-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .detail-meta {
+        display: flex;
+        gap: var(--spacing-lg);
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+      }
+
+      .detail-meta i {
+        color: var(--primary-color);
+      }
+
+      /* Status and Priority */
+      .status-priority {
+        display: flex;
+        gap: var(--spacing-md);
+        align-items: center;
+      }
+
+      .priority-badge {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .priority-badge.low {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.5);
+      }
+
+      .priority-badge.normal {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.5);
+      }
+
+      .priority-badge.high {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.5);
+      }
+
+      .priority-badge.urgent {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.5);
+      }
+
+      /* Status Badge */
+      .status-badge {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .status-badge.new {
+        background: rgba(100, 181, 246, 0.2);
+        color: #64b5f6;
+        border: 1px solid rgba(100, 181, 246, 0.5);
+      }
+
+      .status-badge.inreview {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.5);
+      }
+
+      .status-badge.approved {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.5);
+      }
+
+      .status-badge.implemented {
+        background: rgba(46, 125, 50, 0.2);
+        color: #2e7d32;
+        border: 1px solid rgba(46, 125, 50, 0.5);
+      }
+
+      .status-badge.rejected {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.5);
+      }
+
+      .status-badge.archived {
+        background: rgba(158, 158, 158, 0.2);
+        color: #9e9e9e;
+        border: 1px solid rgba(158, 158, 158, 0.5);
+      }
+
+      /* Content Sections */
+      .content-section {
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .section-content {
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.6;
+      }
+
+      /* Info Grid */
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+      }
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .info-label {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+      }
+
+      .info-value {
+        font-size: 1rem;
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      /* Comments Section */
+      .comments-section {
+        margin-top: var(--spacing-xl);
+        padding-top: var(--spacing-xl);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .comment-form {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .comment-input {
+        flex: 1;
+        padding: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .comment-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+      }
+
+      .comment-item {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+      }
+
+      .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .comment-author {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .comment-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .comment-internal {
+        background: rgba(255, 182, 107, 0.05);
+        border-color: rgba(255, 182, 107, 0.3);
+      }
+
+      .internal-badge {
+        background: rgba(255, 182, 107, 0.2);
+        color: #ff6b6b;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      /* Attachments */
+      .attachment-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+      }
+
+      .attachment-item {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .attachment-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--primary-color);
+      }
+
+      /* Photo Gallery */
+      .photo-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-md);
+      }
+
+      .photo-thumbnail {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+      }
+
+      .photo-thumbnail:hover {
+        border-color: var(--primary-color);
+        transform: scale(1.05);
+      }
+
+      .photo-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .photo-count {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      /* Lightbox */
+      .lightbox {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 2000;
+        cursor: pointer;
+      }
+
+      .lightbox.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+      }
+
+      .lightbox-close {
+        position: absolute;
+        top: 20px;
+        right: 40px;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .lightbox-close:hover {
+        transform: scale(1.2);
+      }
+
+      /* Custom Dropdown Styles */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+        margin-top: 8px;
+        z-index: 10; /* Höher als sidebar-card */
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-color);
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.8),
+          0 0 0 1px rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 999999;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        z-index: 99999 !important; /* Sicherstellen, dass es über allem ist */
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.9rem;
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
+      }
+
+      /* Scrollbar Styles */
+      .dropdown-options::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      .dropdown-options::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Action Buttons */
+      .action-buttons {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-lg);
+      }
+
+      .btn {
+        padding: var(--spacing-sm);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .btn-primary {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .detail-container {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Navigation Container -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout -->
+    <div class="layout-container">
+      <main class="main-content">
+        <!-- Detail Container -->
+        <div class="detail-container">
+          <!-- Main Content -->
+          <div class="detail-main">
+            <div class="detail-header">
+              <div>
+                <h1 class="detail-title" id="suggestionTitle">Lädt...</h1>
+                <div class="detail-meta">
+                  <span>
+                    <i class="fas fa-user"></i>
+                    <span id="submittedBy"></span>
+                  </span>
+                  <span>
+                    <i class="fas fa-calendar"></i>
+                    <span id="createdAt"></span>
+                  </span>
+                  <span>
+                    <i class="fas fa-building"></i>
+                    <span id="department"></span>
+                  </span>
+                </div>
+              </div>
+              <div class="status-priority">
+                <span class="priority-badge" id="priorityBadge"></span>
+                <span class="status-badge" id="statusBadge"></span>
+              </div>
+            </div>
+
+            <!-- Category & Status Info -->
+            <div class="content-section">
+              <h3 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Details
+              </h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Kategorie</span>
+                  <span class="info-value" id="category"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Status</span>
+                  <span class="info-value" id="status"></span>
+                  <!-- Status Dropdown for Admins -->
+                  <div class="custom-dropdown admin-only" id="statusDropdownContainer" style="display: none">
+                    <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+                      <span>Neu</span>
+                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </div>
+                    <div class="dropdown-options" id="statusDropdown">
+                      <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
+                      <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
+                      <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
+                      <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
+                      <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+                    </div>
+                    <input type="hidden" name="statusValue" id="statusValue" />
+                  </div>
+                </div>
+                <div class="info-item" id="assignedToItem" style="display: none">
+                  <span class="info-label">Zugewiesen an</span>
+                  <span class="info-value" id="assignedTo"></span>
+                </div>
+                <div class="info-item" id="implementationItem" style="display: none">
+                  <span class="info-label">Umsetzung</span>
+                  <span class="info-value" id="implementationDate"></span>
+                </div>
+                <div class="info-item" id="rejectionItem" style="display: none">
+                  <span class="info-label">Ablehnungsgrund</span>
+                  <span class="info-value" id="rejectionReason"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visibility Info -->
+            <div class="visibility-info" id="visibilityInfo">
+              <!-- Dynamic content -->
+            </div>
+
+            <!-- Description -->
+            <div class="content-section">
+              <h3 class="section-title">
+                <i class="fas fa-align-left"></i>
+                Beschreibung
+              </h3>
+              <div class="section-content" id="description"></div>
+            </div>
+
+            <!-- Expected Benefit -->
+            <div class="content-section" id="benefitSection" style="display: none">
+              <h3 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                Erwarteter Nutzen
+              </h3>
+              <div class="section-content" id="expectedBenefit"></div>
+            </div>
+
+            <!-- Photo Gallery -->
+            <div class="content-section" id="photoSection" style="display: none">
+              <h3 class="section-title">
+                <i class="fas fa-images"></i>
+                Fotos
+              </h3>
+              <div class="photo-gallery" id="photoGallery">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Financial Info -->
+            <div class="content-section" id="financialSection" style="display: none">
+              <h3 class="section-title">
+                <i class="fas fa-euro-sign"></i>
+                Finanzielle Informationen
+              </h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Geschätzte Kosten</span>
+                  <span class="info-value" id="estimatedCost">-</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Tatsächliche Einsparungen</span>
+                  <span class="info-value" id="actualSavings">-</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-section">
+              <h3 class="section-title">
+                <i class="fas fa-comments"></i>
+                Kommentare
+              </h3>
+
+              <!-- Comment Form -->
+              <form class="comment-form" id="commentForm">
+                <textarea class="comment-input" id="commentInput" placeholder="Kommentar hinzufügen..." required></textarea>
+                <div>
+                  <label class="admin-only" style="display: none">
+                    <input type="checkbox" id="internalComment" />
+                    Interner Kommentar
+                  </label>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    Senden
+                  </button>
+                </div>
+              </form>
+
+              <!-- Comment List -->
+              <div class="comment-list" id="commentList">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="detail-sidebar">
+
+            <!-- Attachments -->
+            <div class="sidebar-card" id="attachmentsCard" style="display: none">
+              <h3 class="section-title">
+                <i class="fas fa-paperclip"></i>
+                Anhänge
+              </h3>
+              <div class="attachment-list" id="attachmentList">
+                <!-- Dynamic content -->
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="sidebar-card admin-only" id="actionsCard" style="display: none">
+              <h3 class="section-title">
+                <i class="fas fa-cog"></i>
+                Aktionen
+              </h3>
+              <div class="action-buttons">
+                <button class="btn" id="editBtn">
+                  <i class="fas fa-edit"></i>
+                  Bearbeiten
+                </button>
+                <button class="btn" id="shareBtn" style="display: none">
+                  <i class="fas fa-share-alt"></i>
+                  Teilen
+                </button>
+                <button class="btn" id="unshareBtn" style="display: none">
+                  <i class="fas fa-undo"></i>
+                  Teilen rückgängig
+                </button>
+                <button class="btn" id="archiveBtn">
+                  <i class="fas fa-archive"></i>
+                  Archivieren
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="photoLightbox">
+      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+      <img id="lightboxImage" src="" alt="Vollbild" />
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth.ts"></script>
+    <script type="module" src="/scripts/pages/kvp-detail.ts"></script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+
+    <script>
+      function openLightbox(src) {
+        document.getElementById('lightboxImage').src = src;
+        document.getElementById('photoLightbox').classList.add('active');
+      }
+
+      function closeLightbox() {
+        document.getElementById('photoLightbox').classList.remove('active');
+      }
+
+      // Close lightbox on click outside
+      document.getElementById('photoLightbox')?.addEventListener('click', function (e) {
+        if (e.target === this) {
+          closeLightbox();
+        }
+      });
+
+      // Toggle Dropdown
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+
+        // Reset inline styles - let CSS handle positioning
+        dropdown.style.top = '';
+        dropdown.style.left = '';
+        dropdown.style.width = '';
+
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      // Select Status
+      function selectStatus(value, text) {
+        document.getElementById('statusDisplay').querySelector('span').textContent = text;
+        document.getElementById('statusValue').value = value;
+        document.getElementById('statusDisplay').classList.remove('active');
+        document.getElementById('statusDropdown').classList.remove('active');
+
+        // Trigger status update event
+        const event = new CustomEvent('statusChange', { detail: { status: value } });
+        document.dispatchEvent(event);
+      }
+
+      // Click outside to close
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+    </script>
+  </body>
+</html>

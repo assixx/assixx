@@ -1,6 +1,10 @@
 /**
  * Employee Self-Service Routes
  * API endpoints for employee access to their information and documents
+ * @swagger
+ * tags:
+ *   name: Employee
+ *   description: Employee self-service operations
  */
 
 import express, { Router } from 'express';
@@ -28,6 +32,51 @@ async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
 
 const router: Router = express.Router();
 
+/**
+ * @swagger
+ * /employee/info:
+ *   get:
+ *     summary: Get employee information
+ *     description: Retrieve the current employee's personal information
+ *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Employee information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - User is not an employee
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Employee not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Mitarbeiter nicht gefunden
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get employee information
 router.get(
   '/info',
@@ -57,6 +106,43 @@ router.get(
   }
 );
 
+/**
+ * @swagger
+ * /employee/documents:
+ *   get:
+ *     summary: Get employee documents
+ *     description: Retrieve all documents accessible to the employee (personal, team, department, and company documents)
+ *     tags: [Employee]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Documents retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Document'
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - User is not an employee
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get employee documents (including team, department, and company documents)
 router.get(
   '/documents',

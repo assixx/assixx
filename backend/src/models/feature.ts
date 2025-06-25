@@ -99,8 +99,8 @@ export class Feature {
         JOIN features f ON tf.feature_id = f.id
         WHERE tf.tenant_id = ? 
         AND f.code = ?
-        AND tf.status = 'active'
-        AND (tf.valid_until IS NULL OR tf.valid_until >= CURDATE())
+        AND tf.is_active = 1
+        AND (tf.expires_at IS NULL OR tf.expires_at >= NOW())
       `;
 
       const [results] = await executeQuery<DbTenantFeature[]>(query, [

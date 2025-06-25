@@ -7,6 +7,10 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/blackboard.css');
+      @import url('/styles/blackboard-update.css');
+      @import url('/styles/user-info-update.css');
+
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -24,7 +28,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -216,6 +220,7 @@
       /* Remove transform transition since we're using CSS zoom */
       .blackboard-container {
         /* zoom property will be applied via JavaScript */
+        position: relative;
       }
 
       .color-option.active {
@@ -225,40 +230,6 @@
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <link rel="stylesheet" href="/styles/blackboard.css" />
-    <link rel="stylesheet" href="/styles/blackboard-update.css" />
-    <script>
-      // Protect user-info elements from being overwritten
-      window.addEventListener('DOMContentLoaded', function () {
-        // Store original elements
-        const userInfoDiv = document.getElementById('user-info');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const roleIndicator = document.getElementById('role-indicator');
-
-        if (userInfoDiv) {
-          // Create a MutationObserver to watch for changes
-          const observer = new MutationObserver(function (mutations) {
-            mutations.forEach(function (mutation) {
-              if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
-                // If children were removed, restore them
-                if (userInfoDiv.children.length === 0) {
-                  console.log('[Blackboard] Restoring user-info elements');
-                  userInfoDiv.innerHTML = '';
-                  if (userAvatar) userInfoDiv.appendChild(userAvatar);
-                  if (userName) userInfoDiv.appendChild(userName);
-                  if (roleIndicator) userInfoDiv.appendChild(roleIndicator);
-                }
-              }
-            });
-          });
-
-          // Start observing
-          observer.observe(userInfoDiv, { childList: true, subtree: false });
-        }
-      });
-    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -273,13 +244,22 @@
             <h1 class="card-title mb-2">Blackboard</h1>
             <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
           </div>
-          <div class="d-flex gap-2">
-            <button id="newEntryBtn" class="btn btn-primary">
-              <i class="fas fa-plus"></i>
+          <div style="display: flex !important; gap: 1rem; align-items: center">
+            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
+              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
+                <i class="fas fa-plus"></i>
+              </button>
+              <span id="zoomLevel" class="zoom-level">100%</span>
+              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
+              <i class="fas fa-plus me-2"></i>
               Neuer Eintrag
             </button>
-            <button id="directAttachBtn" class="btn btn-secondary">
-              <i class="fas fa-paperclip"></i>
+            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
+              <i class="fas fa-paperclip me-2"></i>
               Bild/PDF anheften
             </button>
           </div>
@@ -341,17 +321,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Zoom Controls -->
-        <div class="zoom-controls">
-          <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
-            <i class="fas fa-plus"></i>
-          </button>
-          <span id="zoomLevel" class="zoom-level">100%</span>
-          <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
-            <i class="fas fa-minus"></i>
-          </button>
         </div>
 
         <!-- Pinnwand Container -->
@@ -874,10 +843,20 @@
         transition: background 0.3s ease;
       }
     </style>
-    <!-- Main blackboard script loaded FIRST to ensure user info is set -->
-    <script type="module" src="/scripts/blackboard.ts"></script>
-    <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Scripts with dynamic loading to prevent race condition -->
+    <script type="module">
+      // Wait for DOM to be ready before loading scripts
+      document.addEventListener('DOMContentLoaded', async () => {
+        // First load auth module
+        await import('/scripts/auth.ts');
+        // Then load unified navigation
+        await import('/scripts/components/unified-navigation.ts');
+        // Finally load blackboard after a small delay
+        setTimeout(() => {
+          import('/scripts/blackboard.ts');
+        }, 100);
+      });
+    </script>
     <!-- Update Modal to Design Standards -->
     <script src="/scripts/update-blackboard-modal.js" type="module"></script>
   </body>

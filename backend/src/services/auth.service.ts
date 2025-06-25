@@ -14,6 +14,20 @@ import {
   TokenValidationResult,
 } from '../types/auth.types';
 import { DatabaseUser } from '../types/models';
+import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+
+// Helper function to handle both real pool and mock database
+async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
+  pool: any,
+  sql: string,
+  params?: any[]
+): Promise<[T, any]> {
+  const result = await pool.query(sql, params);
+  if (Array.isArray(result) && result.length === 2) {
+    return result as [T, any];
+  }
+  return [result as T, null];
+}
 
 class AuthService {
   /**
@@ -24,7 +38,8 @@ class AuthService {
    */
   async authenticateUser(
     username: string,
-    password: string
+    password: string,
+    fingerprint?: string
   ): Promise<AuthResult> {
     try {
       // Use existing auth function
@@ -49,8 +64,26 @@ class AuthService {
         };
       }
 
-      // Generate JWT token - pass the whole user object
-      const token = generateToken(result.user);
+      // Generate session ID
+      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Generate JWT token with fingerprint and session ID
+      const token = generateToken(result.user, fingerprint, sessionId);
+
+      // Store session info if fingerprint provided
+      if (fingerprint) {
+        try {
+          const pool = (await import('../database')).default;
+          await executeQuery<ResultSetHeader>(
+            pool,
+            'INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))',
+            [result.user.id, sessionId, fingerprint]
+          );
+        } catch (error) {
+          logger.warn('Failed to store session info:', error);
+          // Continue anyway - session will work without stored fingerprint
+        }
+      }
 
       // Convert database user to app user format and remove sensitive data
       const userWithoutPassword = { ...result.user };

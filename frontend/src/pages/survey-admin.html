@@ -33,7 +33,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -43,7 +43,6 @@
       /* Survey-specific styles */
       .survey-container {
         padding: var(--spacing-xl);
-        max-width: 1400px;
         margin: 0 auto;
       }
 
@@ -87,6 +86,8 @@
         padding: var(--spacing-lg);
         transition: all 0.3s ease;
         cursor: pointer;
+        margin-top: 10px;
+        margin-left: -5px;
       }
 
       .survey-card:hover {
@@ -196,7 +197,8 @@
       }
 
       /* Create Survey Modal */
-      .modal {
+      .modal,
+      .modal-overlay {
         display: none;
         position: fixed;
         top: 0;
@@ -210,7 +212,22 @@
         align-items: center;
       }
 
-      .modal-content {
+      .modal-overlay {
+        display: flex;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-content,
+      .modal-container {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -713,10 +730,10 @@
 
     <!-- Create/Edit Survey Modal -->
     <div id="surveyModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-content modal-container">
         <div class="modal-header">
           <h2 class="modal-title" id="modalTitle">Neue Umfrage erstellen</h2>
-          <button class="close-btn" onclick="closeModal()">&times;</button>
+          <button class="close-btn" data-action="close">&times;</button>
         </div>
 
         <form id="surveyForm">
@@ -764,21 +781,34 @@
             <label class="form-label">Zielgruppe</label>
             <div class="custom-dropdown">
               <div class="dropdown-display" id="assignmentDropdownDisplay" onclick="toggleDropdown('assignmentDropdown')">
-                <span>Alle Mitarbeiter</span>
+                <span>Ganze Firma</span>
                 <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="dropdown-options" id="assignmentDropdownDropdown">
-                <div class="dropdown-option" onclick="selectAssignmentOption('all_users', 'Alle Mitarbeiter')">Alle Mitarbeiter</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('department', 'Bestimmte Abteilung')">Bestimmte Abteilung</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('team', 'Bestimmtes Team')">Bestimmtes Team</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('individual', 'Einzelne Mitarbeiter')">
-                  Einzelne Mitarbeiter
-                </div>
+                <div class="dropdown-option" onclick="selectAssignmentOption('all_users', 'Ganze Firma')">Ganze Firma</div>
+                <div class="dropdown-option" onclick="selectAssignmentOption('department', 'Abteilung')">Abteilung</div>
+                <div class="dropdown-option" onclick="selectAssignmentOption('team', 'Team')">Team (kommt später)</div>
               </div>
               <input type="hidden" id="assignmentType" value="all_users" />
             </div>
+          </div>
+
+          <!-- Department Selection (hidden by default) -->
+          <div class="form-group" id="departmentSelection" style="display: none">
+            <label class="form-label">Abteilungen auswählen</label>
+            <select
+              id="departmentSelect"
+              multiple
+              class="form-control"
+              style="min-height: 120px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1)"
+            >
+              <!-- Department options will be loaded here -->
+            </select>
+            <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block">
+              Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl
+            </small>
           </div>
 
           <div class="question-builder">
@@ -793,7 +823,7 @@
           </div>
 
           <div class="action-buttons">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
             <button type="button" class="btn btn-primary" onclick="saveSurvey('draft')">
               <i class="fas fa-save"></i>
               Als Entwurf speichern
@@ -808,18 +838,52 @@
     </div>
 
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module">
+      import { modalManager } from '/scripts/utils/modal-manager.ts';
+
+      // Make modalManager available globally
+      window.modalManager = modalManager;
+
+      // Wait for both DOM and other scripts to load
+      window.addEventListener('load', function () {
+        // Register survey modal template
+        if (window.registerSurveyModalTemplate) {
+          window.registerSurveyModalTemplate();
+        }
+
+        if (window.loadSurveys) {
+          window.loadSurveys();
+        }
+        if (window.loadTemplates) {
+          window.loadTemplates();
+        }
+      });
+    </script>
     <script>
       let currentSurveyId = null;
       let questionCounter = 0;
 
-      // Initialize
-      document.addEventListener('DOMContentLoaded', function () {
-        loadSurveys();
-        loadTemplates();
-      });
+      // Register the survey modal template with the modal manager
+      window.registerSurveyModalTemplate = function () {
+        // Get the existing modal HTML
+        const surveyModal = document.getElementById('surveyModal');
+        if (surveyModal && window.modalManager) {
+          // Clone the modal to preserve it
+          const modalClone = surveyModal.cloneNode(true);
+
+          // Add modal-overlay class to the modal
+          modalClone.classList.add('modal-overlay');
+
+          // Register the template
+          window.modalManager.registerTemplate('surveyModal', modalClone.outerHTML);
+
+          // Remove the original modal from DOM
+          surveyModal.remove();
+        }
+      };
 
       // Custom dropdown functions
-      function toggleDropdown(dropdownId) {
+      window.toggleDropdown = function (dropdownId) {
         const dropdown = document.getElementById(dropdownId + 'Dropdown');
         const display = document.getElementById(dropdownId + 'Display');
 
@@ -837,7 +901,7 @@
 
         dropdown.classList.toggle('active');
         display.classList.toggle('active');
-      }
+      };
 
       function selectAssignmentOption(value, text) {
         document.getElementById('assignmentType').value = value;
@@ -854,6 +918,122 @@
         handleQuestionTypeChange(questionId, type);
       }
 
+      // Select assignment option (target group)
+      window.selectAssignmentOption = async function (type, text) {
+        document.getElementById('assignmentType').value = type;
+        document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
+        document.getElementById('assignmentDropdownDropdown').classList.remove('active');
+        document.getElementById('assignmentDropdownDisplay').classList.remove('active');
+
+        // Show/hide department selection
+        const departmentSelection = document.getElementById('departmentSelection');
+        if (type === 'department') {
+          departmentSelection.style.display = 'block';
+          await loadUserDepartments();
+        } else {
+          departmentSelection.style.display = 'none';
+        }
+      };
+
+      // Load departments that the admin has access to
+      async function loadUserDepartments() {
+        try {
+          // First get the current user info
+          const userResponse = await fetch('/api/user/profile', {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+
+          if (!userResponse.ok) {
+            throw new Error('Failed to load user profile');
+          }
+
+          const userData = await userResponse.json();
+          const user = userData.user || userData;
+
+          // Now get the admin permissions using the user ID
+          const permissionsResponse = await fetch(`/api/admin-permissions/${user.id}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+
+          let departments = [];
+
+          if (permissionsResponse.ok) {
+            const permissionsData = await permissionsResponse.json();
+            console.log('Admin permissions response:', permissionsData);
+
+            // Handle the wrapped response structure
+            const permData = permissionsData.data || permissionsData;
+
+            if (permData.hasAllAccess) {
+              // Admin has all access - load all departments
+              console.log('Admin has all access, loading all departments');
+              const allDeptsResponse = await fetch('/api/departments', {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+              if (allDeptsResponse.ok) {
+                departments = await allDeptsResponse.json();
+              }
+            } else if (permData.departments && permData.departments.length > 0) {
+              // Admin has specific departments
+              console.log('Admin has specific departments:', permData.departments);
+              departments = permData.departments;
+            }
+          }
+
+          // If no departments found from permissions, try loading all departments
+          // (This handles cases where permissions endpoint fails or returns empty)
+          if (departments.length === 0) {
+            console.log('No departments from permissions, trying to load all departments');
+            const allDeptsResponse = await fetch('/api/departments', {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+              },
+            });
+            if (allDeptsResponse.ok) {
+              const allDepartments = await allDeptsResponse.json();
+              console.log('All departments loaded:', allDepartments);
+              departments = allDepartments;
+            }
+          }
+
+          if (departments.length > 0) {
+            displayDepartmentOptions(departments);
+          } else {
+            document.getElementById('departmentSelect').innerHTML = '<option disabled>Keine Abteilungen verfügbar</option>';
+          }
+        } catch (error) {
+          console.error('Error loading departments:', error);
+          document.getElementById('departmentSelect').innerHTML = '<option disabled>Fehler beim Laden der Abteilungen</option>';
+        }
+      }
+
+      // Display department options in select
+      function displayDepartmentOptions(departments) {
+        const select = document.getElementById('departmentSelect');
+        select.innerHTML = '';
+
+        // Debug: log first department to see structure
+        if (departments.length > 0) {
+          console.log('First department structure:', departments[0]);
+        }
+
+        departments.forEach((dept) => {
+          const option = document.createElement('option');
+          option.value = dept.id.toString();
+
+          // Just show the department name without description for now
+          option.textContent = dept.name || 'Unnamed Department';
+
+          select.appendChild(option);
+        });
+      }
+
       // Close dropdowns when clicking outside
       document.addEventListener('click', function (event) {
         if (!event.target.closest('.custom-dropdown')) {
@@ -867,7 +1047,7 @@
       });
 
       // Load surveys
-      async function loadSurveys() {
+      window.loadSurveys = async function () {
         try {
           const response = await fetch('/api/surveys', {
             headers: {
@@ -882,7 +1062,7 @@
         } catch (error) {
           console.error('Error loading surveys:', error);
         }
-      }
+      };
 
       // Display surveys
       function displaySurveys(surveys) {
@@ -922,7 +1102,7 @@
         const responseRate = survey.response_count > 0 ? Math.round((survey.completed_count / survey.response_count) * 100) : 0;
 
         return `
-                <div class="survey-card" onclick="viewSurvey(${survey.id})">
+                <div class="survey-card" onclick="viewResults(${survey.id})">
                     <div class="survey-card-header">
                         <h3 class="survey-card-title">${getTextFromBuffer(survey.title)}</h3>
                         <span class="survey-status ${survey.status}">${getStatusText(survey.status)}</span>
@@ -957,7 +1137,7 @@
       }
 
       // Load templates
-      async function loadTemplates() {
+      window.loadTemplates = async function () {
         try {
           const response = await fetch('/api/surveys/templates', {
             headers: {
@@ -972,7 +1152,7 @@
         } catch (error) {
           console.error('Error loading templates:', error);
         }
-      }
+      };
 
       // Display templates
       function displayTemplates(templates) {
@@ -990,7 +1170,7 @@
       }
 
       // Create from template
-      async function createFromTemplate(templateId) {
+      window.createFromTemplate = async function (templateId) {
         if (confirm('Möchten Sie eine neue Umfrage basierend auf dieser Vorlage erstellen?')) {
           try {
             const response = await fetch(`/api/surveys/from-template/${templateId}`, {
@@ -1010,23 +1190,52 @@
             alert('Fehler beim Erstellen der Umfrage');
           }
         }
-      }
+      };
 
       // Show create modal
-      function showCreateModal() {
+      window.showCreateModal = function () {
         currentSurveyId = null;
-        document.getElementById('modalTitle').textContent = 'Neue Umfrage erstellen';
-        document.getElementById('surveyForm').reset();
-        document.getElementById('questionsList').innerHTML = '';
-        questionCounter = 0;
-        addQuestion(); // Add first question by default
-        document.getElementById('surveyModal').style.display = 'flex';
-      }
+
+        // Show modal using modal manager
+        window.modalManager.show('surveyModal', {
+          onOpen: () => {
+            document.getElementById('modalTitle').textContent = 'Neue Umfrage erstellen';
+            document.getElementById('surveyForm').reset();
+            document.getElementById('questionsList').innerHTML = '';
+            questionCounter = 0;
+
+            // Reset assignment type to "Ganze Firma"
+            document.getElementById('assignmentType').value = 'all_users';
+            document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = 'Ganze Firma';
+            document.getElementById('departmentSelection').style.display = 'none';
+
+            // Set default dates: today at 00:00 and 14 days later at 00:00
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(today);
+            endDate.setDate(endDate.getDate() + 14);
+
+            // Format dates for datetime-local input
+            const formatDate = (date) => {
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              return `${year}-${month}-${day}T00:00`;
+            };
+
+            document.getElementById('startDate').value = formatDate(today);
+            document.getElementById('endDate').value = formatDate(endDate);
+
+            addQuestion(); // Add first question by default
+          },
+        });
+      };
 
       // Close modal
-      function closeModal() {
-        document.getElementById('surveyModal').style.display = 'none';
-      }
+      window.closeModal = function () {
+        window.modalManager.hide('surveyModal');
+      };
 
       // Add question
       function addQuestion() {
@@ -1043,7 +1252,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Fragetext eingeben..." required>
+                        <input type="text" class="form-control" placeholder="Fragetext eingeben (min. 5 Zeichen)..." required minlength="5" maxlength="500">
                     </div>
                     <div class="form-group">
                         <div class="custom-dropdown">
@@ -1125,28 +1334,62 @@
       }
 
       // Remove option
-      function removeOption(button) {
+      window.removeOption = function (button) {
         button.parentElement.remove();
-      }
+      };
 
       // Remove question
-      function removeQuestion(questionId) {
+      window.removeQuestion = function (questionId) {
         document.getElementById(questionId).remove();
         updateQuestionNumbers();
-      }
+      };
 
       // Update question numbers
-      function updateQuestionNumbers() {
+      window.updateQuestionNumbers = function () {
         const questions = document.querySelectorAll('.question-item');
         questions.forEach((question, index) => {
           question.querySelector('.question-number').textContent = index + 1;
         });
-      }
+      };
 
       // Save survey
       async function saveSurvey(status) {
+        const assignmentType = document.getElementById('assignmentType').value;
+        const assignments = [];
+
+        // Handle different assignment types
+        if (assignmentType === 'all_users') {
+          assignments.push({ type: 'all_users' });
+        } else if (assignmentType === 'department') {
+          // Get selected departments from select element
+          const select = document.getElementById('departmentSelect');
+          const selectedDepts = Array.from(select.selectedOptions).map((option) => parseInt(option.value));
+
+          if (selectedDepts.length === 0) {
+            alert('Bitte wählen Sie mindestens eine Abteilung aus');
+            return;
+          }
+
+          selectedDepts.forEach((deptId) => {
+            assignments.push({
+              type: 'department',
+              department_id: deptId,
+            });
+          });
+        } else if (assignmentType === 'team') {
+          alert('Team-Zuweisung wird in einer späteren Version verfügbar sein');
+          return;
+        }
+
+        // Validate survey title
+        const title = document.getElementById('surveyTitle').value.trim();
+        if (title.length < 3 || title.length > 255) {
+          alert('Der Umfragetitel muss zwischen 3 und 255 Zeichen lang sein');
+          return;
+        }
+
         const surveyData = {
-          title: document.getElementById('surveyTitle').value,
+          title: title,
           description: document.getElementById('surveyDescription').value,
           is_anonymous: document.getElementById('isAnonymous').checked,
           is_mandatory: document.getElementById('isMandatory').checked,
@@ -1154,12 +1397,31 @@
           end_date: document.getElementById('endDate').value || null,
           status: status,
           questions: getQuestionsData(),
-          assignments: [
-            {
-              type: document.getElementById('assignmentType').value,
-            },
-          ],
+          assignments: assignments,
         };
+
+        // Validate questions
+        if (surveyData.questions.length === 0) {
+          alert('Bitte fügen Sie mindestens eine Frage hinzu');
+          return;
+        }
+
+        // Validate each question
+        for (let i = 0; i < surveyData.questions.length; i++) {
+          const question = surveyData.questions[i];
+          if (question.question_text.length < 5 || question.question_text.length > 500) {
+            alert(`Frage ${i + 1}: Der Fragetext muss zwischen 5 und 500 Zeichen lang sein`);
+            return;
+          }
+
+          // Validate options for choice questions
+          if (question.question_type === 'single_choice' || question.question_type === 'multiple_choice') {
+            if (!question.options || question.options.length < 2) {
+              alert(`Frage ${i + 1}: Auswahlfragen benötigen mindestens 2 Optionen`);
+              return;
+            }
+          }
+        }
 
         try {
           const url = currentSurveyId ? `/api/surveys/${currentSurveyId}` : '/api/surveys';
@@ -1180,7 +1442,10 @@
             loadSurveys();
           } else {
             const error = await response.json();
-            alert('Fehler: ' + error.error);
+            // Handle different error response formats
+            const errorMessage = error.message || error.error || 'Unbekannter Fehler';
+            console.error('Server error:', error);
+            alert('Fehler: ' + errorMessage);
           }
         } catch (error) {
           console.error('Error saving survey:', error);
@@ -1189,12 +1454,12 @@
       }
 
       // Get questions data
-      function getQuestionsData() {
+      window.getQuestionsData = function () {
         const questions = [];
         const questionElements = document.querySelectorAll('.question-item');
 
         questionElements.forEach((element, index) => {
-          const questionText = element.querySelector('input[type="text"]').value;
+          const questionText = element.querySelector('input[type="text"]').value.trim();
           const questionTypeInput = element.querySelector('input[type="hidden"][id$="_typeValue"]');
           const questionType = questionTypeInput ? questionTypeInput.value : 'text';
           const isRequired = element.querySelector('input[type="checkbox"]').checked;
@@ -1221,10 +1486,10 @@
         });
 
         return questions;
-      }
+      };
 
       // Get status text
-      function getStatusText(status) {
+      window.getStatusText = function (status) {
         const statusTexts = {
           draft: 'Entwurf',
           active: 'Aktiv',
@@ -1232,15 +1497,15 @@
           archived: 'Archiviert',
         };
         return statusTexts[status] || status;
-      }
+      };
 
       // View survey
-      function viewSurvey(surveyId) {
+      window.viewSurvey = function (surveyId) {
         window.location.href = `/survey-details?id=${surveyId}`;
-      }
+      };
 
       // Edit survey
-      async function editSurvey(surveyId) {
+      window.editSurvey = async function (surveyId) {
         // Load survey data and populate form
         try {
           const response = await fetch(`/api/surveys/${surveyId}`, {
@@ -1251,24 +1516,29 @@
 
           if (response.ok) {
             const survey = await response.json();
-            populateSurveyForm(survey);
             currentSurveyId = surveyId;
-            document.getElementById('modalTitle').textContent = 'Umfrage bearbeiten';
-            document.getElementById('surveyModal').style.display = 'flex';
+
+            // Show modal using modal manager
+            window.modalManager.show('surveyModal', {
+              onOpen: () => {
+                document.getElementById('modalTitle').textContent = 'Umfrage bearbeiten';
+                populateSurveyForm(survey);
+              },
+            });
           }
         } catch (error) {
           console.error('Error loading survey:', error);
           alert('Fehler beim Laden der Umfrage');
         }
-      }
+      };
 
       // View results
-      function viewResults(surveyId) {
+      window.viewResults = function (surveyId) {
         window.location.href = `/survey-results?id=${surveyId}`;
-      }
+      };
 
       // Delete survey
-      async function deleteSurvey(surveyId) {
+      window.deleteSurvey = async function (surveyId) {
         if (confirm('Möchten Sie diese Umfrage wirklich löschen?')) {
           try {
             const response = await fetch(`/api/surveys/${surveyId}`, {
@@ -1287,10 +1557,10 @@
             alert('Fehler beim Löschen der Umfrage');
           }
         }
-      }
+      };
 
       // Populate survey form (for editing)
-      function populateSurveyForm(survey) {
+      window.populateSurveyForm = function (survey) {
         // Handle title (might be Buffer)
         document.getElementById('surveyTitle').value = getTextFromBuffer(survey.title);
 
@@ -1365,7 +1635,7 @@
             });
           }
         });
-      }
+      };
     </script>
   </body>
 </html>

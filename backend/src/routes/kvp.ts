@@ -1,608 +1,462 @@
 /**
  * KVP API Routes (Kontinuierlicher Verbesserungsprozess)
  * Handles all operations related to the KVP system
+ * @swagger
+ * tags:
+ *   name: KVP
+ *   description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess)
  */
 
-import express, { Router, Request, Response, NextFunction } from 'express';
+import express, { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { promises as fs } from 'fs';
-import * as fsSync from 'fs';
-import { authenticateToken } from '../auth';
-
-// Import models (now ES modules)
-import kvpModel from '../models/kvp';
+import { authenticateToken } from '../auth.js';
+import kvpController from '../controllers/kvp.controller.js';
 
 const router: Router = express.Router();
 
-// Helper function to get tenant ID from user object
-function getTenantId(user: any): number {
-  return user.tenant_id || user.tenantId || 1;
-}
-
-// Configure multer for file uploads
+// Configure multer for image uploads
 const storage = multer.diskStorage({
-  destination(
-    _req: Request,
-
-    _file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void
-  ): void {
-    const uploadPath = path.join(process.cwd(), 'backend', 'uploads', 'kvp');
-    fs.mkdir(uploadPath, { recursive: true })
-      .then(() => cb(null, uploadPath))
-      .catch((error) => cb(error as Error, uploadPath));
+  destination(_req, _file, cb) {
+    cb(null, 'uploads/kvp/');
   },
-  filename(
-    _req: Request,
-
-    file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void
-  ): void {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(
-      null,
-      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`
-    );
+  filename(_req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
 
 const upload = multer({
   storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter(
-    _req: Request,
-
-    file: Express.Multer.File,
-    cb: multer.FileFilterCallback
-  ): void {
-    // Allow images and PDFs
-    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Nur Bilder (JPEG, PNG, GIF) und PDF-Dateien sind erlaubt'));
+      cb(new Error('Nur JPG, JPEG und PNG Dateien sind erlaubt!'));
     }
   },
 });
 
-// Helper function to check admin permissions
-function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  const authReq = req as any;
-  if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-    res.status(403).json({
-      success: false,
-      message: 'Admin-Berechtigung erforderlich',
-    });
-    return;
-  }
-  next();
-}
+// All routes require authentication
+router.use(authenticateToken);
 
-// GET /api/kvp/categories - Get all categories
-router.get(
-  '/categories',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const categories = await kvpModel.getCategories(tenantId);
+/**
+ * @swagger
+ * /kvp:
+ *   get:
+ *     summary: Get all KVP suggestions
+ *     description: Retrieve all KVP suggestions visible to the user with pagination and filtering
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, approved, implemented, rejected]
+ *         description: Filter by suggestion status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in title and description
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: shared
+ *         schema:
+ *           type: boolean
+ *         description: Filter by shared/private status
+ *     responses:
+ *       200:
+ *         description: KVP suggestions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/KvpSuggestion'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     itemsPerPage:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// KVP Routes
+router.get('/', kvpController.getAll);
 
-      res.json({
-        success: true,
-        data: categories,
-      });
-    } catch (error: any) {
-      console.error('Error fetching KVP categories:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Laden der Kategorien',
-        error: error.message,
-      });
-    }
-  }
-);
+/**
+ * @swagger
+ * /kvp/categories:
+ *   get:
+ *     summary: Get KVP categories
+ *     description: Retrieve all available KVP categories
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Categories retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               example: ['Sicherheit', 'Produktivität', 'Qualität', 'Kosten', 'Umwelt', 'Sonstiges']
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/categories', kvpController.getCategories);
 
-// GET /api/kvp/suggestions - Get suggestions with filters
-router.get(
-  '/suggestions',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const { status, category_id, priority, org_level } = req.query;
+/**
+ * @swagger
+ * /kvp/stats:
+ *   get:
+ *     summary: Get KVP statistics
+ *     description: Retrieve statistics about KVP suggestions
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of suggestions
+ *                 byStatus:
+ *                   type: object
+ *                   properties:
+ *                     pending:
+ *                       type: integer
+ *                     approved:
+ *                       type: integer
+ *                     implemented:
+ *                       type: integer
+ *                     rejected:
+ *                       type: integer
+ *                 byCategory:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: integer
+ *                 thisMonth:
+ *                   type: integer
+ *                   description: Suggestions created this month
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/stats', kvpController.getStatistics);
 
-      const filters: any = {};
-      if (status) filters.status = String(status);
-      if (category_id) filters.category_id = parseInt(String(category_id));
-      if (priority) filters.priority = String(priority);
-      if (org_level) filters.org_level = String(org_level);
+/**
+ * @swagger
+ * /kvp/{id}:
+ *   get:
+ *     summary: Get KVP suggestion by ID
+ *     description: Retrieve a specific KVP suggestion with all details
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: KVP suggestion ID
+ *     responses:
+ *       200:
+ *         description: KVP suggestion retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/KvpSuggestion'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Suggestion not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Vorschlag nicht gefunden
+ */
+router.get('/:id', kvpController.getById);
 
-      const suggestions = await kvpModel.getSuggestions(
-        tenantId,
-        authReq.user.id,
-        authReq.user.role,
-        filters
-      );
+/**
+ * @swagger
+ * /kvp:
+ *   post:
+ *     summary: Create KVP suggestion
+ *     description: Create a new KVP suggestion
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - category
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Suggestion title
+ *                 example: Optimierung der Pausenzeiten
+ *               description:
+ *                 type: string
+ *                 description: Detailed description
+ *                 example: Durch versetzte Pausenzeiten können wir die Produktivität steigern...
+ *               category:
+ *                 type: string
+ *                 enum: ['Sicherheit', 'Produktivität', 'Qualität', 'Kosten', 'Umwelt', 'Sonstiges']
+ *                 description: Suggestion category
+ *               potential_savings:
+ *                 type: number
+ *                 description: Estimated savings in EUR
+ *                 example: 5000
+ *               implementation_effort:
+ *                 type: string
+ *                 enum: ['low', 'medium', 'high']
+ *                 description: Effort required
+ *               is_shared:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Share with other users
+ *     responses:
+ *       201:
+ *         description: Suggestion created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: KVP-Vorschlag erfolgreich erstellt
+ *                 suggestion:
+ *                   $ref: '#/components/schemas/KvpSuggestion'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/', kvpController.create);
 
-      res.json({
-        success: true,
-        data: suggestions,
-      });
-    } catch (error: any) {
-      console.error('Error fetching KVP suggestions:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Laden der Verbesserungsvorschläge',
-        error: error.message,
-      });
-    }
-  }
-);
+router.put('/:id', kvpController.update);
+router.delete('/:id', kvpController.delete);
 
-// GET /api/kvp/suggestions/:id - Get single suggestion
-router.get(
-  '/suggestions/:id',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const suggestion = await kvpModel.getSuggestionById(
-        parseInt(req.params.id, 10),
-        tenantId,
-        authReq.user.id,
-        authReq.user.role
-      );
+// Share/unshare routes
+router.post('/:id/share', kvpController.shareSuggestion);
+router.post('/:id/unshare', kvpController.unshareSuggestion);
 
-      if (!suggestion) {
-        res.status(404).json({
-          success: false,
-          message: 'Verbesserungsvorschlag nicht gefunden',
-        });
-        return;
-      }
+/**
+ * @swagger
+ * /kvp/{id}/comments:
+ *   get:
+ *     summary: Get comments for KVP suggestion
+ *     description: Retrieve all comments for a specific KVP suggestion
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: KVP suggestion ID
+ *     responses:
+ *       200:
+ *         description: Comments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 comments:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       comment:
+ *                         type: string
+ *                       created_by:
+ *                         type: integer
+ *                       created_by_name:
+ *                         type: string
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                   example:
+ *                     - id: 1
+ *                       comment: "Sehr gute Idee! Das sollten wir umsetzen."
+ *                       created_by: 42
+ *                       created_by_name: "Max Mustermann"
+ *                       created_at: "2025-06-23T10:30:00Z"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Suggestion not found
+ */
+/**
+ * @swagger
+ * /kvp/{id}/comments:
+ *   post:
+ *     summary: Add comment to KVP suggestion
+ *     description: Add a new comment to a specific KVP suggestion
+ *     tags: [KVP]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: KVP suggestion ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - comment
+ *             properties:
+ *               comment:
+ *                 type: string
+ *                 description: Comment text
+ *                 example: "Sehr gute Idee! Das sollten wir umsetzen."
+ *     responses:
+ *       201:
+ *         description: Comment added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Kommentar erfolgreich hinzugefügt
+ *                 comment:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     comment:
+ *                       type: string
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Suggestion not found
+ */
+// Comments
+router.get('/:id/comments', kvpController.getComments);
+router.post('/:id/comments', kvpController.addComment);
 
-      // Get attachments and comments
-      const [attachments, comments] = await Promise.all([
-        kvpModel.getAttachments(suggestion.id),
-        kvpModel.getComments(suggestion.id, authReq.user.role),
-      ]);
-
-      suggestion.attachments = attachments;
-      suggestion.comments = comments;
-
-      res.json({
-        success: true,
-        data: suggestion,
-      });
-    } catch (error: any) {
-      console.error('Error fetching KVP suggestion:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Laden des Verbesserungsvorschlags',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// POST /api/kvp/suggestions - Create new suggestion
+// Attachments
+router.get('/:id/attachments', kvpController.getAttachments);
 router.post(
-  '/suggestions',
-  [
-    authenticateToken,
-    upload.array('attachments', 5),
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const {
-        title,
-        description,
-        category_id,
-        org_level,
-        org_id,
-        priority,
-        expected_benefit,
-        estimated_cost,
-      } = req.body;
-
-      // Validate required fields
-      if (!title || !description || !org_level || !org_id) {
-        res.status(400).json({
-          success: false,
-          message:
-            'Titel, Beschreibung, Organisationsebene und Organisations-ID sind erforderlich',
-        });
-        return;
-      }
-
-      const suggestionData: any = {
-        tenant_id: tenantId,
-        title,
-        description,
-        category_id: category_id ? parseInt(category_id) : 13, // Default to Sicherheit if not provided
-        org_level,
-        org_id: parseInt(org_id),
-        submitted_by: authReq.user.id,
-        priority: priority || 'normal',
-        expected_benefit: expected_benefit || null,
-        estimated_cost: estimated_cost ? parseFloat(estimated_cost) : null,
-      };
-
-      const suggestion = await kvpModel.createSuggestion(suggestionData);
-
-      // Handle file uploads
-      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        for (const file of req.files) {
-          await kvpModel.addAttachment(suggestion.id, {
-            file_name: file.originalname,
-            file_path: file.path,
-            file_type: file.mimetype,
-            file_size: file.size,
-            uploaded_by: authReq.user.id,
-          });
-        }
-      }
-
-      res.status(201).json({
-        success: true,
-        message: 'Verbesserungsvorschlag erfolgreich eingereicht',
-        data: suggestion,
-      });
-    } catch (error: any) {
-      console.error('Error creating KVP suggestion:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Erstellen des Verbesserungsvorschlags',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// PUT /api/kvp/suggestions/:id/status - Update suggestion status (Admin only)
-router.put(
-  '/suggestions/:id/status',
-  [
-    authenticateToken,
-    requireAdmin,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const { status, reason } = req.body;
-
-      const validStatuses = [
-        'new',
-        'pending',
-        'in_review',
-        'approved',
-        'implemented',
-        'rejected',
-        'archived',
-      ];
-      if (!validStatuses.includes(status)) {
-        res.status(400).json({
-          success: false,
-          message: 'Ungültiger Status',
-        });
-        return;
-      }
-
-      const updated = await kvpModel.updateSuggestionStatus(
-        parseInt(req.params.id, 10),
-        tenantId,
-        status,
-        authReq.user.id,
-        reason
-      );
-
-      if (!updated) {
-        res.status(404).json({
-          success: false,
-          message: 'Verbesserungsvorschlag nicht gefunden',
-        });
-        return;
-      }
-
-      res.json({
-        success: true,
-        message: 'Status erfolgreich aktualisiert',
-      });
-    } catch (error: any) {
-      console.error('Error updating KVP suggestion status:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Aktualisieren des Status',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// POST /api/kvp/suggestions/:id/comments - Add comment
-router.post(
-  '/suggestions/:id/comments',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const { comment, is_internal } = req.body;
-
-      if (!comment || comment.trim() === '') {
-        res.status(400).json({
-          success: false,
-          message: 'Kommentar darf nicht leer sein',
-        });
-        return;
-      }
-
-      // Only admins can add internal comments
-      const isInternal =
-        is_internal &&
-        (authReq.user.role === 'admin' || authReq.user.role === 'root');
-
-      const commentId = await kvpModel.addComment(
-        parseInt(req.params.id, 10),
-        authReq.user.id,
-        comment.trim(),
-        isInternal
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Kommentar erfolgreich hinzugefügt',
-        data: { id: commentId },
-      });
-    } catch (error: any) {
-      console.error('Error adding KVP comment:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Hinzufügen des Kommentars',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// GET /api/kvp/dashboard - Get dashboard statistics (Admin only)
+  '/:id/attachments',
+  upload.array('photos', 5),
+  kvpController.uploadAttachment
+); // Max 5 photos
 router.get(
-  '/dashboard',
-  [
-    authenticateToken,
-    requireAdmin,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const stats = await kvpModel.getDashboardStats(tenantId);
-
-      res.json({
-        success: true,
-        data: stats,
-      });
-    } catch (error: any) {
-      console.error('Error fetching KVP dashboard stats:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Laden der Dashboard-Statistiken',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// GET /api/kvp/my-points - Get user's points
-router.get(
-  '/my-points',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const points = await kvpModel.getUserPoints(tenantId, authReq.user.id);
-
-      res.json({
-        success: true,
-        data: points,
-      });
-    } catch (error: any) {
-      console.error('Error fetching user points:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Laden der Punkte',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// POST /api/kvp/award-points - Award points to user (Admin only)
-router.post(
-  '/award-points',
-  [
-    authenticateToken,
-    requireAdmin,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const { user_id, suggestion_id, points, reason } = req.body;
-
-      if (!user_id || !suggestion_id || !points || !reason) {
-        res.status(400).json({
-          success: false,
-          message: 'Alle Felder sind erforderlich',
-        });
-        return;
-      }
-
-      const pointsId = await kvpModel.awardPoints(
-        tenantId,
-        user_id,
-        suggestion_id,
-        parseInt(points.toString()),
-        reason,
-        authReq.user.id
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Punkte erfolgreich vergeben',
-        data: { id: pointsId },
-      });
-    } catch (error: any) {
-      console.error('Error awarding points:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Vergeben der Punkte',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// GET /api/kvp/attachments/:id/download - Download attachment
-router.get(
-  '/attachments/:id/download',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const attachmentId = parseInt(req.params.id);
-
-      // Get attachment details and verify access
-      const attachment = await kvpModel.getAttachment(
-        attachmentId,
-        tenantId,
-        authReq.user.id,
-        authReq.user.role
-      );
-
-      if (!attachment) {
-        res.status(404).json({
-          success: false,
-          message: 'Anhang nicht gefunden oder kein Zugriff',
-        });
-        return;
-      }
-
-      // Use the absolute file path directly
-      const filePath = attachment.file_path;
-
-      // Check if file exists
-      if (!fsSync.existsSync(filePath)) {
-        res.status(404).json({
-          success: false,
-          message: 'Datei nicht gefunden',
-        });
-        return;
-      }
-
-      // Set appropriate headers
-      res.setHeader('Content-Type', attachment.file_type);
-      res.setHeader(
-        'Content-Disposition',
-        `inline; filename="${attachment.file_name}"`
-      );
-
-      // Stream the file
-      const fileStream = fsSync.createReadStream(filePath);
-      fileStream.pipe(res);
-    } catch (error: any) {
-      console.error('Error downloading attachment:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Download',
-        error: error.message,
-      });
-    }
-  }
-);
-
-// DELETE /api/kvp/suggestions/:id - Delete suggestion (only by owner)
-router.delete(
-  '/suggestions/:id',
-  [
-    authenticateToken,
-  ] as any[] /* tenantMiddleware, checkFeature('kvp_system'), */, // Temporarily disabled
-  async (req: any, res: any) => {
-    try {
-      const authReq = req as any;
-      const tenantId = getTenantId(authReq.user);
-      const suggestionId = parseInt(req.params.id);
-
-      // Get suggestion to verify ownership
-      const suggestion = await kvpModel.getSuggestionById(
-        suggestionId,
-        tenantId,
-        authReq.user.id,
-        authReq.user.role
-      );
-
-      if (!suggestion) {
-        res.status(404).json({
-          success: false,
-          message: 'Verbesserungsvorschlag nicht gefunden',
-        });
-        return;
-      }
-
-      // Only allow deletion by the original submitter
-      if (suggestion.submitted_by !== authReq.user.id) {
-        res.status(403).json({
-          success: false,
-          message: 'Sie können nur Ihre eigenen Vorschläge löschen',
-        });
-        return;
-      }
-
-      // Delete the suggestion (this should cascade to attachments, comments, etc.)
-      await kvpModel.deleteSuggestion(suggestionId, tenantId, authReq.user.id);
-
-      res.json({
-        success: true,
-        message: 'Verbesserungsvorschlag wurde erfolgreich gelöscht',
-      });
-    } catch (error: any) {
-      console.error('Error deleting KVP suggestion:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Fehler beim Löschen des Verbesserungsvorschlags',
-        error: error.message,
-      });
-    }
-  }
+  '/attachments/:attachmentId/download',
+  kvpController.downloadAttachment
 );
 
 export default router;
-
-// CommonJS compatibility

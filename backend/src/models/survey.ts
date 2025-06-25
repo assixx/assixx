@@ -20,7 +20,6 @@ interface DbSurvey extends RowDataPacket {
   created_by: number;
   status: 'draft' | 'active' | 'closed';
   is_anonymous: boolean | number;
-  is_mandatory: boolean | number;
   start_date?: Date | null;
   end_date?: Date | null;
   created_at: Date;
@@ -181,36 +180,26 @@ export class Survey {
       // Add questions
       if (surveyData.questions && surveyData.questions.length > 0) {
         for (const [index, question] of surveyData.questions.entries()) {
-          const [questionResult] = await connection.query<ResultSetHeader>(
+          await connection.query<ResultSetHeader>(
             `
             INSERT INTO survey_questions (
-              survey_id, question_text, question_type, is_required, order_position
-            ) VALUES (?, ?, ?, ?, ?)
+              tenant_id, survey_id, question_text, question_type, is_required, order_index, options
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
           `,
             [
+              tenantId,
               surveyId,
               question.question_text,
               question.question_type,
               question.is_required !== false,
               question.order_position || index + 1,
+              question.options && question.options.length > 0
+                ? JSON.stringify(question.options)
+                : null,
             ]
           );
 
-          const questionId = questionResult.insertId;
-
-          // Add options for multiple choice questions
-          if (question.options && question.options.length > 0) {
-            for (const [optIndex, option] of question.options.entries()) {
-              await connection.query(
-                `
-                INSERT INTO survey_question_options (
-                  question_id, option_text, order_position
-                ) VALUES (?, ?, ?)
-              `,
-                [questionId, option, optIndex + 1]
-              );
-            }
-          }
+          // No need to insert options separately - they're stored as JSON in the questions table
         }
       }
 
@@ -220,10 +209,11 @@ export class Survey {
           await connection.query(
             `
             INSERT INTO survey_assignments (
-              survey_id, assignment_type, department_id, team_id, user_id
-            ) VALUES (?, ?, ?, ?, ?)
+              tenant_id, survey_id, assignment_type, department_id, team_id, user_id
+            ) VALUES (?, ?, ?, ?, ?, ?)
           `,
             [
+              tenantId,
               surveyId,
               assignment.type,
               assignment.department_id || null,
@@ -245,7 +235,7 @@ export class Survey {
   }
 
   /**
-   * Get all surveys for a tenant
+   * Get all surveys for a tenant (used by root users)
    */
   static async getAllByTenant(
     tenantId: number,
@@ -260,7 +250,7 @@ export class Survey {
         u.first_name as creator_first_name,
         u.last_name as creator_last_name,
         COUNT(DISTINCT sr.id) as response_count,
-        COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_count
+        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
       FROM surveys s
       LEFT JOIN users u ON s.created_by = u.id
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
@@ -268,6 +258,129 @@ export class Survey {
     `;
 
     const params: any[] = [tenantId];
+
+    if (status) {
+      query += ' AND s.status = ?';
+      params.push(status);
+    }
+
+    query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const [surveys] = (await typedQuery(query, params)) as [DbSurvey[], any];
+    return surveys;
+  }
+
+  /**
+   * Get surveys for employee based on assignments
+   * Returns surveys that are:
+   * 1. Assigned to "all_users" (whole company), OR
+   * 2. Assigned to the employee's department, OR
+   * 3. Assigned to the employee's team, OR
+   * 4. Assigned directly to the employee
+   */
+  static async getAllByTenantForEmployee(
+    tenantId: number,
+    employeeUserId: number,
+    filters: SurveyFilters = {}
+  ): Promise<DbSurvey[]> {
+    const { status, page = 1, limit = 20 } = filters;
+    const offset = (page - 1) * limit;
+
+    // First get employee's department info
+    const [userInfo] = (await typedQuery(
+      `SELECT department_id FROM users WHERE id = ? AND tenant_id = ?`,
+      [employeeUserId, tenantId]
+    )) as [any[], any];
+
+    if (userInfo.length === 0) {
+      return [];
+    }
+
+    const { department_id } = userInfo[0];
+    const team_id: number | null = null; // No team_id in users table currently
+
+    let query = `
+      SELECT DISTINCT
+        s.*,
+        u.first_name as creator_first_name,
+        u.last_name as creator_last_name,
+        COUNT(DISTINCT sr.id) as response_count,
+        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
+      FROM surveys s
+      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+      INNER JOIN survey_assignments sa ON s.id = sa.survey_id
+      WHERE s.tenant_id = ?
+      AND (
+        -- Employee can see surveys assigned to all users
+        sa.assignment_type = 'all_users'
+        OR
+        -- Employee can see surveys assigned to their department
+        (sa.assignment_type = 'department' AND sa.department_id = ?)
+        OR
+        -- Employee can see surveys assigned to their team
+        (sa.assignment_type = 'team' AND sa.team_id = ?)
+        OR
+        -- Employee can see surveys assigned directly to them
+        (sa.assignment_type = 'user' AND sa.user_id = ?)
+      )
+    `;
+
+    const params: any[] = [tenantId, department_id, team_id, employeeUserId];
+
+    if (status) {
+      query += ' AND s.status = ?';
+      params.push(status);
+    }
+
+    query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const [surveys] = (await typedQuery(query, params)) as [DbSurvey[], any];
+    return surveys;
+  }
+
+  /**
+   * Get surveys for admin with department filtering
+   * Returns surveys that are:
+   * 1. Assigned to "all_users" (whole company), OR
+   * 2. Assigned to departments the admin has access to
+   */
+  static async getAllByTenantForAdmin(
+    tenantId: number,
+    adminUserId: number,
+    filters: SurveyFilters = {}
+  ): Promise<DbSurvey[]> {
+    const { status, page = 1, limit = 20 } = filters;
+    const offset = (page - 1) * limit;
+
+    let query = `
+      SELECT DISTINCT
+        s.*,
+        u.first_name as creator_first_name,
+        u.last_name as creator_last_name,
+        COUNT(DISTINCT sr.id) as response_count,
+        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
+      FROM surveys s
+      LEFT JOIN users u ON s.created_by = u.id
+      LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+      LEFT JOIN survey_assignments sa ON s.id = sa.survey_id
+      LEFT JOIN admin_department_permissions adp ON adp.admin_user_id = ? AND adp.tenant_id = s.tenant_id
+      WHERE s.tenant_id = ?
+      AND (
+        -- Admin can see surveys assigned to all users
+        sa.assignment_type = 'all_users'
+        OR
+        -- Admin can see surveys assigned to their departments
+        (sa.assignment_type = 'department' AND sa.department_id = adp.department_id AND adp.can_read = 1)
+        OR
+        -- Admin created the survey
+        s.created_by = ?
+      )
+    `;
+
+    const params: any[] = [adminUserId, tenantId, adminUserId];
 
     if (status) {
       query += ' AND s.status = ?';
@@ -306,30 +419,42 @@ export class Survey {
 
     const survey = surveys[0];
 
+    // Convert Buffer to string if needed
+    if (survey.description && Buffer.isBuffer(survey.description)) {
+      survey.description = survey.description.toString();
+    }
+
     // Get questions
     const [questions] = await typedQuery(
       `
       SELECT * FROM survey_questions
       WHERE survey_id = ?
-      ORDER BY order_position
+      ORDER BY order_index
     `,
       [surveyId]
     );
 
-    // Get options for each question
+    // Parse options from JSON and convert Buffer to string for each question
     for (const question of questions) {
+      // Convert Buffer to string if needed
+      if (question.question_text && Buffer.isBuffer(question.question_text)) {
+        question.question_text = question.question_text.toString();
+      }
+
       if (
-        ['multiple_choice', 'single_choice'].includes(question.question_type)
+        ['multiple_choice', 'single_choice'].includes(question.question_type) &&
+        question.options
       ) {
-        const [options] = await typedQuery(
-          `
-          SELECT * FROM survey_question_options
-          WHERE question_id = ?
-          ORDER BY order_position
-        `,
-          [question.id]
-        );
-        question.options = options;
+        // Options are stored as JSON in the database
+        try {
+          question.options =
+            typeof question.options === 'string'
+              ? JSON.parse(question.options)
+              : question.options;
+        } catch (e) {
+          console.error('Error parsing options for question:', question.id, e);
+          question.options = [];
+        }
       }
     }
 
@@ -375,7 +500,6 @@ export class Survey {
           description = ?,
           status = ?,
           is_anonymous = ?,
-          is_mandatory = ?,
           start_date = ?,
           end_date = ?
         WHERE id = ? AND tenant_id = ?
@@ -385,7 +509,6 @@ export class Survey {
           surveyData.description || null,
           surveyData.status || 'draft',
           surveyData.is_anonymous || false,
-          surveyData.is_mandatory || false,
           surveyData.start_date || null,
           surveyData.end_date || null,
           surveyId,
@@ -403,36 +526,26 @@ export class Survey {
 
         // Add new questions
         for (const [index, question] of surveyData.questions.entries()) {
-          const [questionResult] = await connection.query<ResultSetHeader>(
+          await connection.query<ResultSetHeader>(
             `
             INSERT INTO survey_questions (
-              survey_id, question_text, question_type, is_required, order_position
-            ) VALUES (?, ?, ?, ?, ?)
+              tenant_id, survey_id, question_text, question_type, is_required, order_index, options
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
           `,
             [
+              tenantId,
               surveyId,
               question.question_text,
               question.question_type,
               question.is_required !== false,
               question.order_position || index + 1,
+              question.options && question.options.length > 0
+                ? JSON.stringify(question.options)
+                : null,
             ]
           );
 
-          const questionId = questionResult.insertId;
-
-          // Add options
-          if (question.options && question.options.length > 0) {
-            for (const [optIndex, option] of question.options.entries()) {
-              await connection.query(
-                `
-                INSERT INTO survey_question_options (
-                  question_id, option_text, order_position
-                ) VALUES (?, ?, ?)
-              `,
-                [questionId, option, optIndex + 1]
-              );
-            }
-          }
+          // No need to insert options separately - they're stored as JSON in the questions table
         }
       }
 
@@ -518,7 +631,7 @@ export class Survey {
         `
         SELECT 
           COUNT(DISTINCT sr.id) as total_responses,
-          COUNT(DISTINCT CASE WHEN sr.is_complete = 1 THEN sr.id END) as completed_responses,
+          COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_responses,
           MIN(sr.started_at) as first_response,
           MAX(sr.completed_at) as last_response
         FROM surveys s
@@ -549,22 +662,48 @@ export class Survey {
           question.question_type === 'single_choice' ||
           question.question_type === 'multiple_choice'
         ) {
-          // Get option statistics
-          const [optionStats] = await typedQuery(
+          // Get option statistics from JSON stored options
+          const options = question.options
+            ? typeof question.options === 'string'
+              ? JSON.parse(question.options)
+              : question.options
+            : [];
+
+          // Get all answers for this question
+          const [answers] = await typedQuery(
             `
-            SELECT 
-              sqo.id as option_id,
-              sqo.option_text,
-              COUNT(DISTINCT sa.response_id) as count
-            FROM survey_question_options sqo
-            LEFT JOIN survey_answers sa ON sa.option_id = sqo.id
-            WHERE sqo.question_id = ?
-            GROUP BY sqo.id, sqo.option_text
-            ORDER BY sqo.order_position
+            SELECT sa.answer_options
+            FROM survey_answers sa
+            WHERE sa.question_id = ?
+            AND sa.answer_options IS NOT NULL
           `,
             [question.id]
           );
-          questionStat.options = optionStats;
+
+          // Count responses per option
+          const optionCounts: { [key: number]: number } = {};
+          answers.forEach((answer: any) => {
+            const selectedOptions =
+              typeof answer.answer_options === 'string'
+                ? JSON.parse(answer.answer_options)
+                : answer.answer_options;
+
+            if (Array.isArray(selectedOptions)) {
+              selectedOptions.forEach((optionIndex: number) => {
+                optionCounts[optionIndex] =
+                  (optionCounts[optionIndex] || 0) + 1;
+              });
+            }
+          });
+
+          // Format option statistics
+          questionStat.options = options.map(
+            (optionText: string, index: number) => ({
+              option_id: index,
+              option_text: optionText,
+              count: optionCounts[index] || 0,
+            })
+          );
         } else if (question.question_type === 'text') {
           // Get text responses
           const [textResponses] = await typedQuery(

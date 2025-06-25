@@ -5,9 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Assixx - Login</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+    <link rel="preload" as="image" href="../favicon.ico" />
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- Quick redirect check before page renders -->
+    <script>
+      // Immediate redirect check - no async, no fingerprint, just redirect
+      const token = localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+      if (token && userRole) {
+        // Hide login form immediately while we redirect
+        document.documentElement.style.visibility = 'hidden';
+
+        // Redirect based on role (validation happens in background after redirect)
+        switch (userRole) {
+          case 'root':
+            window.location.replace('./root-dashboard.html');
+            break;
+          case 'admin':
+            window.location.replace('./admin-dashboard.html');
+            break;
+          case 'employee':
+            window.location.replace('./employee-dashboard.html');
+            break;
+        }
+      }
+    </script>
+
     <!-- Back to Homepage Button -->
     <a href="/" class="back-button">
       <span class="icon">←</span>
@@ -54,14 +79,65 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
+
+      // Fallback validation in case redirect failed
+      (async function validateIfNeeded() {
+        const token = localStorage.getItem('token');
+        const userRole = localStorage.getItem('userRole');
+
+        // If we still have token/role but are on login page, validate
+        if (token && userRole) {
+          try {
+            const fingerprint = await BrowserFingerprint.generate();
+            const response = await fetch('/api/auth/validate', {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Browser-Fingerprint': fingerprint,
+              },
+            });
+
+            if (!response.ok || !(await response.json()).valid) {
+              // Token is invalid, clear and show login
+              localStorage.removeItem('token');
+              localStorage.removeItem('userRole');
+              localStorage.removeItem('user');
+              document.documentElement.style.visibility = 'visible';
+            }
+          } catch (error) {
+            // On error, show login page
+            document.documentElement.style.visibility = 'visible';
+          }
+        } else {
+          // No token, show login page
+          document.documentElement.style.visibility = 'visible';
+        }
+      })();
+
+      // Setup the page
+      document.addEventListener('DOMContentLoaded', async function () {
+        // Check for timeout parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('timeout') === 'true') {
+          showError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      });
+
       // Error/Success Message Functions
       function showError(message) {
+        // Remove any existing error messages
+        const existingErrors = document.querySelectorAll('.alert-error');
+        existingErrors.forEach((error) => error.remove());
+
         const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-error';
+        const isTimeout = message.includes('Sitzung');
+        errorDiv.className = `alert ${isTimeout ? 'alert-timeout' : 'alert-error'}`;
         errorDiv.innerHTML = `
           <div class="alert-content">
-            <strong>Fehler!</strong><br>
+            ${isTimeout ? '<strong>⏱️ Sitzung abgelaufen</strong><br>' : '<strong>Fehler!</strong><br>'}
             ${message.replace(/\n/g, '<br>')}
           </div>
         `;
@@ -92,12 +168,16 @@
         const password = document.getElementById('password').value;
 
         try {
+          // Generate browser fingerprint
+          const fingerprint = await BrowserFingerprint.generate();
+          BrowserFingerprint.store(fingerprint);
+
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username, password, fingerprint }),
           });
 
           // Handle rate limiting error
@@ -147,18 +227,6 @@
           alert('An error occurred during login');
         }
       });
-
-      function showPasswordReset() {
-        alert('Passwort-Reset Funktion - Coming Soon!');
-      }
-
-      function requestAccess() {
-        alert('Zugangsdaten beantragen - Coming Soon!');
-      }
-
-      function showHelp() {
-        alert('Hilfe - Coming Soon!');
-      }
     </script>
 
     <style>
@@ -238,7 +306,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         z-index: -1;
       }
 
@@ -400,6 +468,13 @@
         background: rgba(255, 59, 48, 0.1);
         border: 1px solid rgba(255, 59, 48, 0.3);
         color: #ff3b30;
+      }
+
+      /* Special style for session timeout */
+      .alert-timeout {
+        background: rgba(255, 149, 0, 0.1);
+        border: 1px solid rgba(255, 149, 0, 0.3);
+        color: #ff9500;
       }
 
       .alert-content {

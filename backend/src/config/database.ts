@@ -211,23 +211,19 @@ if (USE_MOCK_DB) {
     multipleStatements: false, // Sicherheitsverbesserung
     charset: 'utf8mb4',
     connectTimeout: 60000, // 60 seconds
-    typeCast(field: any, next: () => any) {
-      // Convert TEXT fields to strings
+    stringifyObjects: false,
+    supportBigNumbers: true,
+    bigNumberStrings: false,
+    dateStrings: false,
+    debug: false,
+    typeCast: function (field: any, next: any) {
       if (
-        field.type === 'TINY_TEXT' ||
-        field.type === 'TEXT' ||
-        field.type === 'MEDIUM_TEXT' ||
-        field.type === 'LONG_TEXT' ||
         field.type === 'VAR_STRING' ||
-        field.type === 'STRING'
+        field.type === 'STRING' ||
+        field.type === 'BLOB'
       ) {
-        return field.string();
+        return field.string('utf8');
       }
-      // Keep BLOB/BINARY fields as Buffers
-      if (field.type === 'BLOB' || field.type === 'BINARY') {
-        return field.buffer();
-      }
-      // Use default handling for all other types
       return next();
     },
   };

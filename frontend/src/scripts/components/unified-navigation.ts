@@ -8,6 +8,8 @@ import type { User } from '../../../../backend/src/types/models';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { switchRoleForRoot } from '../role-switch';
+// Import loadUserInfo for cached profile loading
+import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
 
 // Declare global type for window
 declare global {
@@ -61,9 +63,16 @@ class UnifiedNavigation {
   private navigationItems: NavigationItems;
   private isCollapsed: boolean = false;
   private userProfileData: UserProfileResponse | null = null;
+  private lastKvpClickTimestamp: number | null = null;
+  private lastKnownKvpCount: number = 0;
 
   constructor() {
     this.navigationItems = this.getNavigationItems();
+    // Load last KVP click timestamp and count from localStorage
+    const savedTimestamp = localStorage.getItem('lastKvpClickTimestamp');
+    this.lastKvpClickTimestamp = savedTimestamp ? parseInt(savedTimestamp, 10) : null;
+    const savedCount = localStorage.getItem('lastKnownKvpCount');
+    this.lastKnownKvpCount = savedCount ? parseInt(savedCount, 10) : 0;
     this.init();
   }
 
@@ -113,7 +122,18 @@ class UnifiedNavigation {
       try {
         const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload;
         this.currentUser = payload;
-        this.currentRole = payload.role;
+
+        // Check for role switch - if admin has switched to employee role
+        const activeRole = localStorage.getItem('activeRole');
+        if (payload.role === 'admin' && activeRole === 'employee') {
+          this.currentRole = 'employee';
+        } else if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
+          // Use activeRole if it's valid
+          this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+        } else {
+          // Default to user's actual role
+          this.currentRole = payload.role;
+        }
 
         // Also try to load full user profile
         this.loadFullUserProfile();
@@ -141,14 +161,10 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (!token || token === 'test-mode') return;
 
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData: UserProfileResponse = await response.json();
+      // Use cached loadUserInfo from auth module instead of making a separate call
+      console.info('[UnifiedNav] Using cached loadUserInfo');
+      const userData = (await loadUserInfoFromAuth()) as any;
+      if (userData) {
         const user = userData.user || userData;
 
         // Update company info (new)
@@ -323,6 +339,7 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('lean'),
           label: 'LEAN-Management',
           hasSubmenu: true,
+          badge: 'lean-management-parent',
           submenu: [
             {
               id: 'kvp',
@@ -465,6 +482,7 @@ class UnifiedNavigation {
           icon: this.getSVGIcon('lean'),
           label: 'LEAN-Management',
           hasSubmenu: true,
+          badge: 'lean-management-parent',
           submenu: [
             {
               id: 'kvp',
@@ -688,11 +706,19 @@ class UnifiedNavigation {
           ? '/pages/admin-dashboard.html?section=dashboard'
           : '/pages/employee-dashboard.html';
 
+    // Determine which logo to use based on sidebar collapsed state
+    const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+
     return `
       <!-- Header -->
       <header class="header">
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
+          <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
+            <path class="toggle-icon-path" d="${this.isCollapsed ? 'M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z' : 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z'}"></path>
+          </svg>
+        </button>
         <a href="${dashboardUrl}" class="logo-container">
-          <img src="/images/logo-Bz_kpWvs.png" alt="Assixx Logo" class="logo" />
+          <img src="${logoSrc}" alt="Assixx Logo" class="logo" id="header-logo" />
         </a>
         <div class="header-content">
           <div class="header-actions">
@@ -798,11 +824,6 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
-                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="white">
-                        <path class="toggle-icon-path" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"/>
-                    </svg>
-                </button>
                 <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
@@ -843,20 +864,28 @@ class UnifiedNavigation {
     if (item.badge === 'unread-messages') {
       badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'pending-surveys') {
-      badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #ff9800; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 15px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-documents') {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'new-kvp-suggestions') {
-      badgeHtml = `<span class="nav-badge" id="kvp-new-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+    } else if (item.badge === 'lean-management-parent') {
+      badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
     }
 
     // If has submenu, create a dropdown
     if (hasSubmenu) {
       const submenuItems = item
         .submenu!.map((child) => {
-          const childBadgeHtml = child.badgeId
-            ? `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`
-            : '';
+          // Support both badgeId and badge properties
+          let childBadgeHtml = '';
+          if (child.badgeId) {
+            childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+          } else if (child.badge === 'pending-surveys') {
+            childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
+          } else if (child.badge === 'new-kvp-suggestions') {
+            childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+          }
 
           return `
               <li class="submenu-item" style="position: relative;">
@@ -957,6 +986,12 @@ class UnifiedNavigation {
             localStorage.setItem('openSubmenu', parentId);
           }
         }
+        
+        // Check if admin/root clicked on KVP submenu item
+        const submenuNavId = submenuLink.getAttribute('data-nav-id');
+        if (submenuNavId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
+          this.resetKvpBadge();
+        }
       }
 
       // Logout Button Click - Check both button and its children
@@ -1021,7 +1056,7 @@ class UnifiedNavigation {
       mainContent?.classList.add('sidebar-collapsed');
       chatMain?.classList.add('sidebar-collapsed');
       chatSidebar?.classList.add('sidebar-collapsed');
-      sidebar.style.setProperty('width', '70px', 'important');
+      sidebar.style.setProperty('width', '68px', 'important');
       this.updateToggleIcon();
     } else {
       sidebar.style.setProperty('width', '280px', 'important');
@@ -1069,6 +1104,12 @@ class UnifiedNavigation {
 
       // Update icon
       this.updateToggleIcon();
+
+      // Update logo based on collapsed state
+      const headerLogo = document.getElementById('header-logo') as HTMLImageElement;
+      if (headerLogo) {
+        headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+      }
 
       console.log('[UnifiedNav] Sidebar collapsed state:', newState);
       console.log('[UnifiedNav] Sidebar classes after:', sidebar.className);
@@ -1265,6 +1306,11 @@ class UnifiedNavigation {
       // If user clicked on documents, mark all as read
       if (navId === 'documents' && this.currentRole === 'employee') {
         this.markAllDocumentsAsRead();
+      }
+      
+      // If admin/root clicked on KVP, reset the badge
+      if (navId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
+        this.resetKvpBadge().catch(error => console.error('Error resetting KVP badge:', error));
       }
     }
 
@@ -1539,12 +1585,12 @@ class UnifiedNavigation {
 
       // Only show badge for admin/root users
       if (this.currentRole !== 'admin' && this.currentRole !== 'root') {
-        const badge = document.getElementById('kvp-new-badge');
+        const badge = document.getElementById('kvp-badge');
         if (badge) badge.style.display = 'none';
         return;
       }
 
-      const response = await fetch('/api/kvp/dashboard', {
+      const response = await fetch('/api/kvp/stats', {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1553,14 +1599,29 @@ class UnifiedNavigation {
 
       if (response.ok) {
         const data = await response.json();
-        const badge = document.getElementById('kvp-new-badge');
-        if (badge && data.success && data.data) {
-          const count = data.data.new_suggestions || 0;
-          if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count.toString();
+        const badge = document.getElementById('kvp-badge');
+        if (badge && data.company) {
+          const currentCount = data.company.byStatus?.new || 0;
+          
+          // Check if user has clicked on KVP before
+          const hasClickedKvp = this.lastKvpClickTimestamp !== null;
+          
+          // Only show badge if:
+          // 1. There are new suggestions AND
+          // 2. Either the user has never clicked on KVP OR the count has increased since last click
+          if (currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount)) {
+            badge.textContent = currentCount > 99 ? '99+' : currentCount.toString();
             badge.style.display = 'inline-block';
+            console.log('[UnifiedNav] KVP badge shown - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
           } else {
             badge.style.display = 'none';
+            console.log('[UnifiedNav] KVP badge hidden - count:', currentCount, 'lastKnown:', this.lastKnownKvpCount);
+          }
+          
+          // Update the last known count if it has changed
+          if (currentCount !== this.lastKnownKvpCount && !hasClickedKvp) {
+            this.lastKnownKvpCount = currentCount;
+            localStorage.setItem('lastKnownKvpCount', currentCount.toString());
           }
         }
       }
@@ -1573,11 +1634,19 @@ class UnifiedNavigation {
   public async updatePendingSurveys(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
+      console.log('[UnifiedNav] updatePendingSurveys - Token exists:', !!token);
       if (!token || token === 'test-mode') return;
 
       // Nur für Employees
       const role = localStorage.getItem('userRole');
-      if (role !== 'employee') return;
+      console.log('[UnifiedNav] updatePendingSurveys - User role:', role);
+      if (role !== 'employee') {
+        console.log('[UnifiedNav] updatePendingSurveys - Skipping, not an employee');
+        return;
+      }
+
+      console.log('[UnifiedNav] updatePendingSurveys - Fetching pending count...');
+      // Auf allen Seiten ausführen, da Badge in Sidebar immer sichtbar ist
 
       const response = await fetch('/api/surveys/pending-count', {
         headers: {
@@ -1586,26 +1655,53 @@ class UnifiedNavigation {
         },
       });
 
+      console.log('[UnifiedNav] updatePendingSurveys - Response status:', response.status);
+
       if (response.ok) {
         const data: PendingCountResponse = await response.json();
+        console.log('[UnifiedNav] updatePendingSurveys - Pending count data:', data);
         const badge = document.getElementById('surveys-pending-badge');
+        const parentBadge = document.getElementById('lean-management-badge');
+        console.log('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
+        console.log('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
+
+        const count = data.pendingCount || 0;
+
+        // Update child badge (in submenu)
         if (badge) {
-          const count = data.pendingCount || 0;
           if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count.toString();
             badge.style.display = 'inline-block';
+            console.log('[UnifiedNav] updatePendingSurveys - Badge shown with count:', count);
           } else {
             badge.style.display = 'none';
+            console.log('[UnifiedNav] updatePendingSurveys - Badge hidden, count is 0');
+          }
+        }
+
+        // Update parent badge (on LEAN-Management)
+        if (parentBadge) {
+          if (count > 0) {
+            parentBadge.textContent = count > 99 ? '99+' : count.toString();
+            parentBadge.style.display = 'inline-block';
+            console.log('[UnifiedNav] updatePendingSurveys - Parent badge shown with count:', count);
+          } else {
+            parentBadge.style.display = 'none';
+            console.log('[UnifiedNav] updatePendingSurveys - Parent badge hidden, count is 0');
           }
         }
       } else if (response.status === 404) {
+        console.log('[UnifiedNav] updatePendingSurveys - 404 error, endpoint not found');
         // API endpoint doesn't exist yet - hide badge silently
         const badge = document.getElementById('surveys-pending-badge');
         if (badge) {
           badge.style.display = 'none';
         }
+      } else {
+        console.log('[UnifiedNav] updatePendingSurveys - Error response:', response.status, response.statusText);
       }
     } catch (error) {
+      console.error('[UnifiedNav] updatePendingSurveys - Exception:', error);
       // Silently handle errors for pending surveys
       const badge = document.getElementById('surveys-pending-badge');
       if (badge) {
@@ -1719,6 +1815,45 @@ class UnifiedNavigation {
       }
     } catch (error) {
       console.error('Error marking documents as read:', error);
+    }
+  }
+
+  // Reset KVP badge when admin/root clicks on KVP
+  private async resetKvpBadge(): Promise<void> {
+    console.log('[UnifiedNav] Resetting KVP badge');
+    const badge = document.getElementById('kvp-badge');
+    if (badge) {
+      badge.style.display = 'none';
+      badge.textContent = '0';
+      console.log('[UnifiedNav] KVP badge hidden');
+    }
+    
+    // Save the timestamp of when the user clicked on KVP
+    this.lastKvpClickTimestamp = Date.now();
+    localStorage.setItem('lastKvpClickTimestamp', this.lastKvpClickTimestamp.toString());
+    
+    // Get the current count from the API to save as baseline
+    try {
+      const token = localStorage.getItem('token');
+      if (token && token !== 'test-mode') {
+        const response = await fetch('/api/kvp/stats', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.company) {
+            this.lastKnownKvpCount = data.company.byStatus?.new || 0;
+            localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
+            console.log('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching KVP count for baseline:', error);
     }
   }
 
@@ -1904,7 +2039,7 @@ const unifiedNavigationCSS = `
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
-        padding: 0 var(--spacing-lg);
+        padding: 0 20px;
         z-index: 1000;
     }
     
@@ -1919,11 +2054,13 @@ const unifiedNavigationCSS = `
         align-items: center;
         text-decoration: none;
         margin-right: var(--spacing-lg);
+        margin-bottom: -3px;
     }
     
     .header .logo {
-        height: 40px;
+        height: 50px;
         width: auto;
+        margin-left: -13px;
     }
 
     .header .header-actions {
@@ -2011,7 +2148,6 @@ const unifiedNavigationCSS = `
         font-size: 0.825rem;
         font-weight: 600;
         color: #ffd83e;
-        margin: 30px 0 var(--spacing-sm) 0;
         padding: var(--spacing-sm) var(--spacing-md);
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
@@ -2025,6 +2161,7 @@ const unifiedNavigationCSS = `
         position: relative;
         overflow: visible;
         /*transform: rotate(-3deg);*/
+        margin-top: 23px;
     }
 
     /* Sticky Note folded corner - inner fold */
@@ -2049,7 +2186,7 @@ const unifiedNavigationCSS = `
         height: 0;
         border-style: solid;
         border-width: 13px 10px 4px 3px;
-        border-color: #fff #0c0d0e #0000 transparent;
+        border-color: #fff #00060a #0000 transparent;
         z-index: 1;
     }
 
@@ -2139,7 +2276,7 @@ const unifiedNavigationCSS = `
     .pin-needle::after {
         content: '';
         position: absolute;
-        top: 8px;
+        top: 7px;  /* Von 17px auf 8px reduziert um Lücke zu schließen */
         left: 50%;
         transform: translateX(-50%);
         width: 2px;
@@ -2166,27 +2303,26 @@ const unifiedNavigationCSS = `
         overflow: hidden;
     }
 
-    .sidebar-toggle {
-        position: absolute;
-        top: 10px;
-        left: 10px;
+    /* Toggle button im Header */
+    .header .sidebar-toggle {
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        background: rgba(255, 255, 255, 0);
-        border: 1px solid rgba(255, 255, 255, 0);
+        width: 40px;
+        height: 40px;
+        background: transparent;
+        border: 1px solid transparent;
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
         color: white;
-        z-index: 100;
+        margin-right: 15px;
+        margin-left: -6px;
     }
 
-     .sidebar-toggle:hover {
-       /*background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);*/
+    .header .sidebar-toggle:hover {
+        background: rgba(255, 255, 255, 0.09);
         transform: scale(1.05);
     }
 
@@ -2200,18 +2336,26 @@ const unifiedNavigationCSS = `
 
     /* Collapsed Sidebar Styles */
     .sidebar.collapsed {
-        width: 70px !important;
+        width: 100px !important;
+    }
+
+    /* Logo size adjustment when sidebar is collapsed */
+    body:has(.sidebar.collapsed) .header .logo {
+        height: 24px;
+        width: auto;
+        margin-left: -4px;
+        margin-bottom: 7px;
     }
 
     .sidebar.collapsed .sidebar-title {
         padding: var(--spacing-sm);
-        justify-content: center;
-        margin: 40px 4px var(--spacing-sm) 4px;
+        justify-content: center;  
         width: calc(100% - 8px);
         font-size: 0;
         transform: rotate(-2deg);
         background: #e6b800;
         min-height: 25px;
+        margin-left: 4px;
     }
 
     .sidebar.collapsed .title-text {
@@ -2225,15 +2369,9 @@ const unifiedNavigationCSS = `
         justify-content: center;
     }
 
-    .sidebar.collapsed .sidebar-toggle {
-        left: 2px;
-        width: 30px;
-        height: 30px;
-        position: relative;
-    }
 
     .sidebar.collapsed .pinned-icon {
-        top: -9px;
+        top: -7px;
     }
 
     .sidebar.collapsed .pin-head {
@@ -2253,6 +2391,8 @@ const unifiedNavigationCSS = `
         flex-direction: column;
         align-items: center;
         min-height: auto;
+        margin-top: 28px;
+        margin-bottom: 83px;
     }
 
     .sidebar.collapsed .user-details {
@@ -2261,7 +2401,7 @@ const unifiedNavigationCSS = `
 
     .sidebar.collapsed .sidebar-link {
         padding: var(--spacing-sm);
-        justify-content: center;
+        justify-content: center;;
     }
 
     .sidebar.collapsed .sidebar-link .label {
@@ -2307,6 +2447,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-title {
         position: relative;
         padding-right: 0px;
+        margin-bottom: 8px;
     }
 
     .sidebar.collapsed .sidebar-link:hover::after,
@@ -2326,7 +2467,7 @@ const unifiedNavigationCSS = `
         z-index: 1000;
         pointer-events: none;
         opacity: 0;
-        animation: tooltipFadeIn 0.3s ease forwards;
+        /*animation: tooltipFadeIn 0.3s ease forwards;*/
     }
 
     @keyframes tooltipFadeIn {
@@ -2367,11 +2508,11 @@ const unifiedNavigationCSS = `
         
         width: 36px;
         height: 36px;
-        margin: 0 auto;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
+        margin-left: 0px;
     }
     
     .sidebar.collapsed .sidebar-item.active .sidebar-link::before {
@@ -2381,12 +2522,12 @@ const unifiedNavigationCSS = `
     .user-info-card {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: var(--spacing-lg) var(--spacing-xl);
+        gap: 30px;
+        padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(115, 115, 115, 0.36);
+        /*border: 1px solid rgba(115, 115, 115, 0.36);*/
         border-radius: var(--radius-lg);
         margin-bottom: 20px;
         position: relative;
@@ -2447,14 +2588,15 @@ const unifiedNavigationCSS = `
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
         display: block !important;
-        width: 34px !important;
-        height: 34px !important;
+        width: 38px !important;
+        height: 38px !important;
         border-radius: 12px !important;
         object-fit: cover !important;
         border: none !important;
         flex-shrink: 0 !important;
         transition: all 0.3s ease;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        margin-left: 0px;
     }
 
     /* Avatar padding when sidebar is collapsed */
@@ -2525,7 +2667,7 @@ const unifiedNavigationCSS = `
         display: inline-block;
         padding: 2px 8px;
         border-radius: 8px;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 500;
         transition: all 0.2s ease;
         margin: 6px 0 0 0;
@@ -2606,14 +2748,14 @@ const unifiedNavigationCSS = `
         overflow: hidden;
         border: 1px solid transparent;
         font-size: 0.9rem;
+        margin-left: -1px;
     }
 
     .sidebar-link:hover {
         background: rgba(33, 150, 243, 0.1);
         color: var(--primary-color);
         transform: translateY(-2px);
-        border-color: rgba(33, 150, 243, 0.2);
-        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+        /*box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);*/
     }
 
     .sidebar-item.active .sidebar-link {
@@ -2698,13 +2840,14 @@ const unifiedNavigationCSS = `
 
     .submenu-link {
         display: inline flow-root list-item;
-        padding: 8px 16px;
+        padding: 8px 45px 8px 16px;
         color: var(--text-secondary);
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
         transition: all 0.2s ease;
         transform: translateX(6px);
+        position: relative;
     }
 
     .submenu-link:hover {

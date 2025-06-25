@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Employee Dashboard - Assixx</title>
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const root = document.documentElement;
+        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -26,7 +40,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -696,7 +710,7 @@
           </div>
 
           <!-- KVP Card -->
-          <div class="feature-card" onclick="window.location.href='/kvp'">
+          <div class="feature-card" onclick="window.location.href='/pages/kvp.html'">
             <div class="feature-icon">💡</div>
             <h3 class="feature-title">Verbesserungsvorschläge</h3>
             <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>

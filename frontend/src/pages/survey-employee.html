@@ -25,7 +25,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -99,6 +99,11 @@
         transform: translateY(-4px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         border-color: var(--primary-color);
+      }
+
+      .survey-card.completed:hover {
+        border-color: var(--success-color);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.2);
       }
 
       /* Completed survey card styling */
@@ -216,6 +221,113 @@
       .survey-action.completed:hover {
         background: rgba(76, 175, 80, 0.3);
         box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+      }
+
+      /* Response Modal Styles - inherit from general modal styles */
+      #responseModal .modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 800px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      /* Close button für Response Modal */
+      #responseModal .close {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        color: var(--text-secondary);
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      #responseModal .close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: var(--text-primary);
+        transform: scale(1.1);
+      }
+
+      #responseModal .close:active {
+        transform: scale(0.95);
+      }
+
+      .response-info {
+        background: rgba(33, 150, 243, 0.1);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--spacing-lg);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+      }
+
+      .response-info p {
+        margin: 0;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .response-answers {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: var(--spacing-sm);
+      }
+
+      .response-question {
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .response-question:last-child {
+        border-bottom: none;
+      }
+
+      .response-question h4 {
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-md);
+        font-size: 1.1rem;
+      }
+
+      .response-answer {
+        background: rgba(255, 255, 255, 0.05);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .response-answer p {
+        margin: 0;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .response-answer em {
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      .response-answer .fa-check-square {
+        color: var(--success-color);
       }
 
       /* Success Animation */
@@ -747,6 +859,12 @@
         const card = document.createElement('div');
         card.className = completed ? 'survey-card completed' : 'survey-card';
 
+        // Add click handler for completed surveys
+        if (completed) {
+          card.style.cursor = 'pointer';
+          card.onclick = () => viewResponse(survey.id);
+        }
+
         const deadline = survey.end_date ? new Date(survey.end_date) : null;
         const daysLeft = deadline ? Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24)) : null;
         const isUrgent = daysLeft && daysLeft <= 7;
@@ -874,34 +992,40 @@
 
           case 'single_choice':
             return question.options
-              .map(
-                (option) => `
+              .map((option, index) => {
+                // Handle both string array and object array formats
+                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionId = typeof option === 'string' ? index : option.id;
+                return `
                         <div class="choice-option">
                             <input type="radio" 
-                                   id="q${question.id}_opt${option.id}" 
+                                   id="q${question.id}_opt${optionId}" 
                                    name="question_${question.id}" 
-                                   value="${option.id}"
+                                   value="${optionId}"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, ${option.id}, 'single')">
-                            <label for="q${question.id}_opt${option.id}">${option.option_text}</label>
+                                   onchange="updateAnswer(${question.id}, ${optionId}, 'single')">
+                            <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
-                    `,
-              )
+                    `;
+              })
               .join('');
 
           case 'multiple_choice':
             return question.options
-              .map(
-                (option) => `
+              .map((option, index) => {
+                // Handle both string array and object array formats
+                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionId = typeof option === 'string' ? index : option.id;
+                return `
                         <div class="choice-option">
                             <input type="checkbox" 
-                                   id="q${question.id}_opt${option.id}" 
-                                   value="${option.id}"
-                                   onchange="updateMultipleChoice(${question.id}, ${option.id}, this.checked)">
-                            <label for="q${question.id}_opt${option.id}">${option.option_text}</label>
+                                   id="q${question.id}_opt${optionId}" 
+                                   value="${optionId}"
+                                   onchange="updateMultipleChoice(${question.id}, ${optionId}, this.checked)">
+                            <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
-                    `,
-              )
+                    `;
+              })
               .join('');
 
           case 'rating':
@@ -962,10 +1086,18 @@
 
       // Update answer
       function updateAnswer(questionId, value, type) {
-        answers[questionId] = {
-          question_id: questionId,
-          [`answer_${type === 'single' ? 'option_id' : type === 'text' ? 'text' : type === 'number' ? 'number' : 'date'}`]: value,
-        };
+        if (type === 'single') {
+          // For single choice, store as array with one element
+          answers[questionId] = {
+            question_id: questionId,
+            answer_options: [value],
+          };
+        } else {
+          answers[questionId] = {
+            question_id: questionId,
+            [`answer_${type === 'text' ? 'text' : type === 'number' ? 'number' : 'date'}`]: value,
+          };
+        }
         updateProgress();
       }
 
@@ -1019,15 +1151,19 @@
           const answer = answers[questionId];
 
           if (answer.selected_options) {
-            // Multiple choice - create separate answer for each option
-            answer.selected_options.forEach((optionId) => {
-              answersArray.push({
-                question_id: parseInt(questionId),
-                option_id: optionId,
-              });
+            // Multiple choice - store as answer_options array
+            answersArray.push({
+              question_id: parseInt(questionId),
+              answer_options: answer.selected_options,
+            });
+          } else if (answer.answer_options) {
+            // Single choice - already has answer_options array
+            answersArray.push({
+              question_id: parseInt(questionId),
+              answer_options: answer.answer_options,
             });
           } else {
-            // Single answer
+            // Other answer types (text, number, date)
             answersArray.push({
               question_id: parseInt(questionId),
               ...answer,
@@ -1077,6 +1213,21 @@
       // View response (for completed surveys)
       async function viewResponse(surveyId) {
         try {
+          // First get the survey details
+          const surveyResponse = await fetch(`/api/surveys/${surveyId}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+
+          if (!surveyResponse.ok) {
+            alert('Fehler beim Abrufen der Umfrage-Details');
+            return;
+          }
+
+          const survey = await surveyResponse.json();
+
+          // Then get the user's response
           const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -1086,16 +1237,8 @@
           if (response.ok) {
             const data = await response.json();
             if (data.responded && data.response) {
-              // Show response in a nice format
-              const formattedDate = new Date(data.response.completed_at).toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              });
-
-              alert(`Sie haben diese Umfrage am ${formattedDate} abgeschlossen.\n\nAnzahl Antworten: ${data.response.answers.length}`);
+              // Show response in a modal
+              showResponseModal(survey, data.response);
             } else {
               alert('Keine Antworten für diese Umfrage gefunden.');
             }
@@ -1103,6 +1246,112 @@
         } catch (error) {
           console.error('Error viewing response:', error);
           alert('Fehler beim Abrufen Ihrer Antworten');
+        }
+      }
+
+      // Show response modal
+      function showResponseModal(survey, response) {
+        console.log('Showing response modal with:', { survey, response });
+
+        // Create modal HTML - use same class structure as survey modal
+        const modalHtml = `
+          <div id="responseModal" class="modal" style="display: block;">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h2>Ihre Antworten - ${survey.title}</h2>
+                <span class="close" onclick="closeResponseModal()">&times;</span>
+              </div>
+              <div class="modal-body">
+                <div class="response-info">
+                  <p><i class="fas fa-clock"></i> Abgeschlossen am: ${new Date(response.completed_at).toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}</p>
+                </div>
+                <div class="response-answers">
+                  ${survey.questions
+                    .map((question, index) => {
+                      const answer = response.answers.find((a) => a.question_id === question.id);
+                      console.log('Question:', question, 'Answer:', answer);
+                      return `
+                      <div class="response-question">
+                        <h4>${index + 1}. ${question.question_text}</h4>
+                        <div class="response-answer">
+                          ${formatAnswer(question, answer)}
+                        </div>
+                      </div>
+                    `;
+                    })
+                    .join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      }
+
+      // Format answer based on question type
+      function formatAnswer(question, answer) {
+        if (!answer) return '<em>Keine Antwort</em>';
+
+        switch (question.question_type) {
+          case 'text':
+            return `<p>${answer.answer_text || '<em>Keine Antwort</em>'}</p>`;
+
+          case 'single_choice':
+          case 'multiple_choice':
+            if (answer.answer_options && question.options) {
+              // Parse JSON string if needed
+              let selectedOptions = answer.answer_options;
+              if (typeof selectedOptions === 'string') {
+                try {
+                  selectedOptions = JSON.parse(selectedOptions);
+                } catch (e) {
+                  console.error('Error parsing answer_options:', e);
+                  return '<em>Fehler beim Anzeigen der Antwort</em>';
+                }
+              }
+
+              // Ensure it's an array
+              if (!Array.isArray(selectedOptions)) {
+                selectedOptions = [selectedOptions];
+              }
+
+              return selectedOptions
+                .map((optIndex) => {
+                  const option =
+                    typeof question.options[0] === 'string'
+                      ? question.options[optIndex]
+                      : question.options.find((o) => o.id === optIndex)?.option_text;
+                  return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
+                })
+                .join('');
+            }
+            return '<em>Keine Antwort</em>';
+
+          case 'rating':
+          case 'number':
+            return `<p>${answer.answer_number || '<em>Keine Antwort</em>'}</p>`;
+
+          case 'date':
+            return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Keine Antwort</em>'}</p>`;
+
+          default:
+            return '<em>Unbekannter Antworttyp</em>';
+        }
+      }
+
+      // Close response modal
+      function closeResponseModal() {
+        const modal = document.getElementById('responseModal');
+        if (modal) {
+          modal.remove();
         }
       }
 

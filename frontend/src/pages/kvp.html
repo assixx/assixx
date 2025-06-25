@@ -4,13 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>KVP System - Assixx</title>
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const root = document.documentElement;
+        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
+
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <!-- KVP spezifische Styles -->
     <style>
       @import url('/styles/dashboard-theme.css');
-      /* Glassmorphismus Design-Standards */
+      @import url('/styles/user-info-update.css');
 
       /* Dramatischer Hintergrund-Gradient */
       body {
@@ -27,19 +41,116 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
 
-      /* KVP-spezifische Erweiterungen des Dashboard-Themes */
-      .kvp-grid {
+      /* Filter Bar Styles */
+      .kvp-filter-bar {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .filter-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .filter-btn.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+      }
+
+      .filter-btn .badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .filter-btn.active .badge {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      /* Secondary Filters */
+      .secondary-filters {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        max-width: 800px;
+      }
+
+      .secondary-filters select,
+      .secondary-filters input {
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+      }
+
+      .secondary-filters select:focus,
+      .secondary-filters input:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
+      }
+
+      /* Info Box für Admins */
+      .admin-info-box {
+        background: rgba(255, 182, 107, 0.1);
+        border: 1px solid rgba(255, 182, 107, 0.3);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+      }
+
+      .admin-info-box i {
+        color: #ff6b6b;
+        font-size: 1.5rem;
+      }
+
+      /* KVP Suggestions Grid */
+      .kvp-suggestions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
         gap: var(--spacing-lg);
         margin-top: var(--spacing-lg);
       }
 
+      /* KVP Card */
       .kvp-card {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -50,7 +161,8 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-lg);
         transition: all 0.3s ease;
-        animation: fadeInUp 0.6s ease-out;
+        position: relative;
+        cursor: pointer;
       }
 
       .kvp-card:hover {
@@ -59,295 +171,271 @@
           0 12px 40px rgba(0, 0, 0, 0.5),
           inset 0 1px 0 rgba(255, 255, 255, 0.15);
         border-color: rgba(0, 142, 255, 0.5);
-        background: rgba(255, 255, 255, 0.03);
       }
 
-      .card-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: var(--spacing-md);
-        color: var(--text-primary);
-      }
-
-      .card-icon {
-        font-size: 1.5rem;
-        margin-right: var(--spacing-md);
-        color: var(--primary-color);
-      }
-
-      .card-title {
-        font-size: 1.25rem;
+      /* Status Badge */
+      .status-badge {
+        position: absolute;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
         font-weight: 600;
-        margin: 0;
+        text-transform: uppercase;
       }
 
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-        gap: var(--spacing-md);
-        margin-top: var(--spacing-md);
+      .status-badge.new {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.5);
       }
 
-      .stat-item {
-        text-align: center;
-        background: var(--background-dark);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        border: 1px solid var(--border-color);
+      .status-badge.in_review {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.5);
       }
 
-      .stat-number {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: var(--primary-color);
-        display: block;
+      .status-badge.approved {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.5);
       }
 
-      .stat-label {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        margin-top: var(--spacing-xs);
+      .status-badge.implemented {
+        background: rgba(103, 58, 183, 0.2);
+        color: #673ab7;
+        border: 1px solid rgba(103, 58, 183, 0.5);
       }
 
-      .suggestions-list {
-        max-height: 400px;
-        overflow-y: auto;
-        margin-top: var(--spacing-md);
+      .status-badge.rejected {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.5);
       }
 
-      .suggestion-item {
-        background: var(--background-dark);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-        cursor: pointer;
-        transition: all 0.3s ease;
+      .status-badge.archived {
+        background: rgba(158, 158, 158, 0.2);
+        color: #9e9e9e;
+        border: 1px solid rgba(158, 158, 158, 0.5);
       }
 
-      .suggestion-item:hover {
-        background: rgba(33, 150, 243, 0.1);
-        border-color: var(--primary-color);
-        transform: translateX(4px);
-      }
-
-      .suggestion-header {
-        display: flex;
-        justify-content: space-between;
+      /* Visibility Badge */
+      .visibility-badge {
+        display: inline-flex;
         align-items: center;
-        margin-bottom: var(--spacing-sm);
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 0.75rem;
+        margin-top: var(--spacing-sm);
+      }
+
+      .visibility-badge.department {
+        background: rgba(78, 205, 196, 0.2);
+        color: #4ecdc4;
+        border: 1px solid rgba(78, 205, 196, 0.5);
+      }
+
+      .visibility-badge.company {
+        background: rgba(102, 126, 234, 0.2);
+        color: #667eea;
+        border: 1px solid rgba(102, 126, 234, 0.5);
+      }
+
+      /* Suggestion Content */
+      .suggestion-header {
+        margin-bottom: var(--spacing-md);
       }
 
       .suggestion-title {
+        font-size: 1.1rem;
         font-weight: 600;
         color: var(--text-primary);
-        font-size: 1rem;
-      }
-
-      .status-badge {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-sm);
-        font-size: 0.75rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        transition: all 0.2s ease;
-        display: inline-block;
-      }
-
-      .status-badge:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      /* Status Colors */
-      .status-new {
-        background: linear-gradient(135deg, #2196f3, #1976d2);
-        color: white;
-        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-      }
-
-      .status-pending {
-        background: linear-gradient(135deg, #9c27b0, #7b1fa2);
-        color: white;
-        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
-      }
-
-      .status-in_review {
-        background: linear-gradient(135deg, #ff9800, #f57c00);
-        color: white;
-        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
-      }
-
-      .status-approved {
-        background: linear-gradient(135deg, #4caf50, #388e3c);
-        color: white;
-        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-      }
-
-      .status-implemented {
-        background: linear-gradient(135deg, #00c853, #00a345);
-        color: white;
-        box-shadow: 0 2px 8px rgba(0, 200, 83, 0.3);
-      }
-
-      .status-rejected {
-        background: linear-gradient(135deg, #f44336, #d32f2f);
-        color: white;
-        box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
-      }
-
-      .status-archived {
-        background: linear-gradient(135deg, #607d8b, #455a64);
-        color: white;
-        box-shadow: 0 2px 8px rgba(96, 125, 139, 0.3);
-      }
-
-      .suggestion-description {
-        color: var(--text-secondary);
-        margin: var(--spacing-sm) 0;
-        line-height: 1.4;
+        margin-bottom: var(--spacing-sm);
       }
 
       .suggestion-meta {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
         display: flex;
-        gap: var(--spacing-sm);
-        flex-wrap: wrap;
-      }
-
-      .filter-bar {
-        display: flex;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-        flex-wrap: wrap;
-      }
-
-      .filter-select {
-        background: var(--background-dark);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
-        color: var(--text-primary);
-        font-size: 0.9rem;
-      }
-
-      .filter-select option {
-        background: var(--background-dark);
-        color: var(--text-primary);
-      }
-
-      /* Modal Styles */
-      .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
         align-items: center;
-        justify-content: center;
+        gap: var(--spacing-md);
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
       }
 
-      .modal-content {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+      .suggestion-meta i {
+        color: var(--primary-color);
       }
 
-      .modal-header {
+      .suggestion-description {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin: var(--spacing-md) 0;
+        max-height: 4.8em; /* 3 lines * 1.6 line-height */
+        overflow: hidden;
+        position: relative;
+      }
+
+      .suggestion-description::after {
+        content: '...';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        padding-left: 20px;
+      }
+
+      .suggestion-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: var(--spacing-lg);
-        border-bottom: 1px solid var(--border-color);
+        margin-top: var(--spacing-lg);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
-      .modal-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin: 0;
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
+      .category-tag {
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      /* Action Buttons */
+      .action-buttons {
+        display: flex;
+        gap: var(--spacing-sm);
+      }
+
+      .action-btn {
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.85rem;
+        cursor: pointer;
         transition: all 0.3s ease;
       }
 
-      .modal-close:hover {
-        background-color: var(--background-dark);
-        color: var(--error-color);
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--primary-color);
       }
 
-      .modal form {
-        padding: var(--spacing-lg);
-      }
-
-      .modal .form-group {
-        margin-bottom: var(--spacing-md);
-      }
-
-      .modal-form-content {
-        overflow-y: auto;
-        flex: 1;
-        margin-top: 0;
-      }
-
-      .button-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      .modal .btn-primary {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-      }
-
-      .modal .btn-secondary {
-        background: rgba(255, 255, 255, 0.05);
+      .action-btn.share {
         color: var(--primary-color);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-color: rgba(33, 150, 243, 0.5);
       }
 
-      /* Custom Dropdown Styles für Modal */
+      .action-btn.share:hover {
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      /* Create New Button */
+      .create-new-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 60px;
+        height: 60px;
+        background: var(--primary-color);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4);
+        transition: all 0.3s ease;
+        z-index: 100;
+      }
+
+      .create-new-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 12px 32px rgba(33, 150, 243, 0.6);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.3);
+        margin-bottom: 1rem;
+      }
+
+      .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+      }
+
+      /* Statistics Cards */
+      .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .stat-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+
+      .stat-label {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+      }
+
+      /* Category Tag */
+      .category-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .category-tag:hover {
+        transform: scale(1.05);
+      }
+
+      /* Custom Dropdown Styles */
       .custom-dropdown {
         position: relative;
         width: 100%;
+        min-width: 150px;
       }
 
       .dropdown-display {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -355,6 +443,7 @@
         color: #fff;
         cursor: pointer;
         transition: all 0.3s ease;
+        font-size: 0.9rem;
       }
 
       .dropdown-display:hover {
@@ -363,7 +452,6 @@
       }
 
       .dropdown-display svg {
-        opacity: 0.6;
         transition: transform 0.3s ease;
       }
 
@@ -405,6 +493,7 @@
         cursor: pointer;
         transition: all 0.2s ease;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.9rem;
       }
 
       .dropdown-option:last-child {
@@ -417,26 +506,116 @@
         padding-left: 16px;
       }
 
+      /* Scrollbar Styles */
       .dropdown-options::-webkit-scrollbar {
-        width: 4px;
+        width: 6px;
       }
 
       .dropdown-options::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.02);
       }
 
       .dropdown-options::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
+        border-radius: 3px;
       }
 
-      .modal-form-actions {
+      .dropdown-options::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Modal Styles */
+      .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.3s ease,
+          visibility 0.3s ease;
+      }
+
+      .modal.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-content {
+        background: #1a1a1a4a;
+        backdrop-filter: blur(20px) saturate(500%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        width: 90%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: fadeInUp 0.3s ease-out;
+        padding: 20px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: var(--spacing-lg);
-        border-top: 1px solid var(--border-color);
-        background: rgba(255, 255, 255, 0.02);
-        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
+      .modal-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        transition: all 0.3s ease;
+      }
+
+      .modal-close:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--error-color);
+      }
+
+      .modal-body {
+        padding: 20px;
+      }
+
+      .modal-footer {
+        padding: var(--spacing-lg);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+      }
+
+      /* Form Elements */
       .form-group {
         margin-bottom: var(--spacing-lg);
       }
@@ -446,23 +625,26 @@
         margin-bottom: var(--spacing-sm);
         font-weight: 500;
         color: var(--text-primary);
+        font-size: 0.9rem;
       }
 
-      .modal .form-control,
-      .form-input {
+      .form-label .required {
+        color: var(--error-color);
+      }
+
+      .form-control {
         width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
         color: #fff;
-        font-size: 1rem;
         transition: all 0.3s ease;
+        font-size: 0.95rem;
       }
 
-      .modal .form-control:focus,
-      .form-input:focus {
+      .form-control:focus {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(0, 142, 255, 0.5);
         box-shadow:
@@ -471,1672 +653,486 @@
         outline: none;
       }
 
-      .form-input::placeholder {
-        color: var(--text-secondary);
-      }
-
-      .form-textarea {
-        min-height: 100px;
+      textarea.form-control {
         resize: vertical;
+        min-height: 80px;
       }
 
-      .file-upload {
-        border: 2px dashed var(--border-color);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-lg);
-        text-align: center;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        background: var(--background-dark);
-      }
-
-      .file-upload:hover {
-        border-color: var(--primary-color);
-        background: rgba(33, 150, 243, 0.05);
-      }
-
-      .category-pills {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-sm);
-        margin-top: var(--spacing-sm);
-      }
-
-      .category-pill {
-        padding: var(--spacing-sm) var(--spacing-md);
+      /* Buttons */
+      .btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
         border-radius: var(--radius-sm);
+        font-weight: 500;
         font-size: 0.9rem;
-        border: 1px solid var(--border-color);
         cursor: pointer;
         transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        background: var(--background-dark);
-        color: var(--text-primary);
-      }
-
-      .category-pill:hover {
-        border-color: var(--primary-color);
-        background: rgba(33, 150, 243, 0.1);
-      }
-
-      .category-pill.selected {
-        border-color: var(--primary-color);
-        background: var(--primary-color);
-        color: white;
-      }
-
-      .loading {
-        text-align: center;
-        padding: var(--spacing-xl);
-        color: var(--text-secondary);
-      }
-
-      .error-message {
-        background: rgba(244, 67, 54, 0.1);
-        border: 1px solid var(--error-color);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        margin: var(--spacing-md) 0;
-        color: var(--error-color);
-      }
-
-      .success-message {
-        background: rgba(76, 175, 80, 0.1);
-        border: 1px solid var(--success-color);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        margin: var(--spacing-md) 0;
-        color: var(--success-color);
-      }
-
-      #selectedFiles {
-        margin-top: var(--spacing-sm);
-      }
-
-      .selected-file {
-        background: var(--background-dark);
-        padding: var(--spacing-sm) var(--spacing-md);
-        border-radius: var(--radius-sm);
-        margin: var(--spacing-xs) 0;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-      }
-
-      .form-actions {
-        display: flex;
-        gap: var(--spacing-md);
-        margin-top: var(--spacing-xl);
-        justify-content: flex-end;
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: var(--spacing-xl);
-        color: var(--text-secondary);
-      }
-
-      .main-content {
-        padding: var(--spacing-lg);
-      }
-
-      .page-header {
-        margin-bottom: var(--spacing-xl);
-      }
-
-      .page-title {
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-      }
-
-      .page-subtitle {
-        color: var(--text-secondary);
-        margin-top: var(--spacing-sm);
-        font-size: 1.1rem;
-      }
-
-      /* Modal Styles */
-      .suggestion-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1000;
-        display: flex;
+        border: none;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        animation: fadeIn 0.3s ease;
+        gap: var(--spacing-sm);
       }
 
-      .modal-backdrop {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        box-shadow:
+          0 1px 4px rgba(33, 150, 243, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
       }
 
-      .modal-close:hover {
-        background: var(--background-hover);
-        color: var(--text-primary);
-      }
-
-      .modal-body {
-        padding: var(--spacing-lg);
-        max-height: calc(90vh - 100px);
-        overflow-y: auto;
-      }
-
-      .suggestion-detail-content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-lg);
-      }
-
-      .suggestion-info {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--spacing-md);
-        padding: var(--spacing-md);
-        background: var(--background-lighter);
-        border-radius: var(--radius-md);
-      }
-
-      .info-row {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-      }
-
-      .suggestion-description-full h3,
-      .suggestion-benefit h3,
-      .suggestion-cost h3,
-      .suggestion-attachments h3,
-      .suggestion-comments h3 {
-        color: var(--text-primary);
-        margin: 0 0 var(--spacing-md) 0;
-        font-size: 1.2rem;
-      }
-
-      .suggestion-description-full p,
-      .suggestion-benefit p,
-      .suggestion-cost p {
-        color: var(--text-secondary);
-        line-height: 1.6;
-        margin: 0;
-      }
-
-      .attachments-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--spacing-md);
-      }
-
-      .attachment-item {
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-        background: var(--background-lighter);
-        transition: all 0.2s ease;
-      }
-
-      .attachment-item:hover {
+      .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+        box-shadow:
+          0 6px 20px rgba(33, 150, 243, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
       }
 
-      .attachment-image {
-        width: 100%;
-        height: 150px;
-        object-fit: contain;
-        cursor: pointer;
-      }
-
-      .attachment-file {
-        display: flex;
-        align-items: center;
-        padding: var(--spacing-lg);
-        gap: var(--spacing-md);
-      }
-
-      .file-icon {
-        font-size: 2rem;
-      }
-
-      .file-name {
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.04);
         color: var(--text-primary);
-        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(5px);
       }
 
-      .attachment-info {
-        padding: var(--spacing-md);
-        border-top: 1px solid var(--border-color);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .attachment-info small {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-      }
-
-      .download-btn {
-        background: var(--primary-color);
-        color: white;
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-sm);
-        text-decoration: none;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-      }
-
-      .download-btn:hover {
-        background: var(--primary-dark);
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
         transform: translateY(-1px);
       }
 
-      .comments-list {
+      /* Warning Box */
+      .warning-box {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
         display: flex;
-        flex-direction: column;
+        align-items: flex-start;
         gap: var(--spacing-md);
       }
 
-      .comment-item {
-        background: var(--background-lighter);
-        padding: var(--spacing-md);
-        border-radius: var(--radius-md);
-        border-left: 3px solid var(--primary-color);
+      .warning-box i {
+        color: #ff9800;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        margin-top: 2px;
       }
 
-      .comment-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: var(--spacing-sm);
+      .warning-box strong {
+        color: #ff9800;
       }
 
-      .comment-header strong {
-        color: var(--text-primary);
-      }
-
-      .comment-header small {
-        color: var(--text-secondary);
-      }
-
-      .comment-content {
-        color: var(--text-secondary);
+      .warning-box div {
+        flex: 1;
+        font-size: 0.9rem;
         line-height: 1.5;
+        color: rgba(255, 255, 255, 0.9);
       }
 
-      .priority-badge {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: var(--radius-sm);
-        font-size: 0.8rem;
-        font-weight: 500;
+      /* Form Grid Layout */
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
       }
 
-      .priority-niedrig {
-        background: rgba(34, 197, 94, 0.1);
-        color: rgb(34, 197, 94);
+      .form-group.full-width {
+        grid-column: 1 / -1;
       }
 
-      .priority-normal {
-        background: rgba(59, 130, 246, 0.1);
-        color: rgb(59, 130, 246);
+      /* Photo Upload Styles */
+      .photo-upload-area {
+        margin-top: var(--spacing-sm);
       }
 
-      .priority-hoch {
-        background: rgba(245, 158, 11, 0.1);
-        color: rgb(245, 158, 11);
-      }
-
-      .priority-kritisch {
-        background: rgba(239, 68, 68, 0.1);
-        color: rgb(239, 68, 68);
-      }
-
-      /* Action Buttons */
-      .suggestion-actions {
-        display: flex;
-        gap: var(--spacing-md);
-        padding: var(--spacing-md);
-        background: var(--background-lighter);
+      .upload-box {
+        border: 2px dashed rgba(255, 255, 255, 0.2);
         border-radius: var(--radius-md);
-        border-left: 3px solid var(--primary-color);
-      }
-
-      .action-btn {
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: none;
-        border-radius: var(--radius-sm);
-        font-size: 0.9rem;
-        font-weight: 500;
+        padding: var(--spacing-xl);
+        text-align: center;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .upload-box:hover {
+        border-color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .upload-box i {
+        font-size: 2.5rem;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: var(--spacing-md);
+      }
+
+      .upload-box p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .upload-box p.small {
+        font-size: 0.85rem;
+        margin-top: var(--spacing-xs);
+      }
+
+      .photo-preview {
         display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-md);
+        flex-wrap: wrap;
       }
 
-      .delete-btn {
-        background: rgba(239, 68, 68, 0.1);
-        color: rgb(239, 68, 68);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-      }
-
-      .delete-btn:hover {
-        background: rgba(239, 68, 68, 0.2);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-      }
-
-      .archive-btn {
-        background: rgba(156, 163, 175, 0.1);
-        color: rgb(75, 85, 99);
-        border: 1px solid rgba(156, 163, 175, 0.2);
-      }
-
-      .archive-btn:hover {
-        background: rgba(156, 163, 175, 0.2);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(156, 163, 175, 0.3);
-      }
-
-      /* Image Loading and Preview */
-      .attachment-image-container {
-        width: 100%;
-        height: 150px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--background-lighter);
-        border-radius: var(--radius-sm);
-      }
-
-      .attachment-image-loader {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        text-align: center;
-      }
-
-      .attachment-error {
-        color: rgb(239, 68, 68);
-        font-size: 0.9rem;
-        text-align: center;
-        padding: var(--spacing-md);
-      }
-
-      /* Full-size Image Modal */
-      .image-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.3s ease;
-      }
-
-      .image-modal-backdrop {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        backdrop-filter: blur(4px);
-      }
-
-      .image-modal-content {
+      .photo-preview-item {
         position: relative;
-        max-width: 90vw;
-        max-height: 90vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        width: 100px;
+        height: 100px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
       }
 
-      .image-modal-close {
+      .photo-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .photo-preview-item .remove-photo {
         position: absolute;
-        top: -40px;
-        right: 0;
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
+        top: 4px;
+        right: 4px;
+        background: rgba(244, 67, 54, 0.9);
         color: white;
-        font-size: 1.5rem;
-        cursor: pointer;
-        padding: var(--spacing-sm);
+        border: none;
         border-radius: 50%;
-        width: 35px;
-        height: 35px;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 0.9rem;
         transition: all 0.2s ease;
       }
 
-      .image-modal-close:hover {
-        background: rgba(255, 255, 255, 0.3);
+      .photo-preview-item .remove-photo:hover {
+        background: #f44336;
+        transform: scale(1.1);
       }
 
-      .full-size-image {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-xl);
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideUp {
-        from {
-          opacity: 0;
-          transform: translateY(20px) scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
-
-      /* Responsive */
+      /* Modal responsive adjustments */
       @media (max-width: 768px) {
-        .modal {
-          padding: var(--spacing-sm);
+        .form-grid {
+          grid-template-columns: 1fr;
         }
 
         .modal-content {
-          width: 100%;
-          max-height: calc(100vh - 2rem);
-        }
-
-        .modal-header,
-        .modal-form-content,
-        .modal-form-actions {
-          padding: var(--spacing-md);
-        }
-
-        .suggestion-info {
-          grid-template-columns: 1fr;
-        }
-
-        .attachments-grid {
-          grid-template-columns: 1fr;
+          max-width: 95%;
         }
       }
     </style>
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
+
   <body>
-    <!-- Unified Navigation -->
+    <!-- Navigation Container -->
     <div id="navigation-container"></div>
 
-    <!-- Main Layout mit Sidebar -->
+    <!-- Main Layout -->
     <div class="layout-container">
-      <!-- Main Content -->
       <main class="main-content">
+        <!-- Page Header -->
         <div class="page-header">
-          <h1 class="page-title">KVP System</h1>
-          <p class="page-subtitle">Kontinuierlicher Verbesserungsprozess - Gemeinsam besser werden</p>
+          <h1>KVP System</h1>
+          <p>Kontinuierlicher Verbesserungsprozess</p>
         </div>
 
-        <!-- Main Grid -->
-        <div class="kvp-grid">
-          <!-- New Suggestion Card (nur für Employees) -->
-          <div class="kvp-card" id="newSuggestionCard">
-            <div class="card-header">
-              <div class="card-icon">📝</div>
-              <h2 class="card-title">Neuen Vorschlag einreichen</h2>
-            </div>
-            <p class="text-secondary">
-              Haben Sie eine Idee zur Verbesserung? Teilen Sie Ihren Vorschlag mit Fotos und erhalten Sie Feedback!
-            </p>
-            <div style="margin-top: var(--spacing-lg)">
-              <button class="btn btn-primary" id="newSuggestionBtn">
-                <i class="fas fa-plus"></i>
-                Vorschlag einreichen
-              </button>
-            </div>
-          </div>
-
-          <!-- Admin Status Management Card (nur für Admins) -->
-          <div class="kvp-card" id="adminManagementCard" style="display: none">
-            <div class="card-header">
-              <div class="card-icon">⚙️</div>
-              <h2 class="card-title">Vorschläge verwalten</h2>
-            </div>
-            <p class="text-secondary">
-              Als Administrator können Sie den Status von Verbesserungsvorschlägen ändern und Kommentare hinzufügen.
-            </p>
-            <div style="margin-top: var(--spacing-lg)">
-              <div class="stats-grid">
-                <div class="stat-item">
-                  <span class="stat-number" id="adminNewSuggestions">-</span>
-                  <span class="stat-label">Neue Vorschläge</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number" id="adminPendingSuggestions">-</span>
-                  <span class="stat-label">In Bearbeitung</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Statistics Card -->
-          <div class="kvp-card">
-            <div class="card-header">
-              <div class="card-icon">📊</div>
-              <h2 class="card-title">Statistiken</h2>
-            </div>
-            <div class="stats-grid" id="statsGrid">
-              <div class="stat-item">
-                <span class="stat-number" id="totalSuggestions">-</span>
-                <span class="stat-label">Gesamt</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number" id="newSuggestions">-</span>
-                <span class="stat-label">Neu</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number" id="implementedSuggestions">-</span>
-                <span class="stat-label">Umgesetzt</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number" id="inProgressSuggestions">-</span>
-                <span class="stat-label">In Arbeit</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- My Suggestions Card -->
-          <div class="kvp-card">
-            <div class="card-header">
-              <div class="card-icon">💼</div>
-              <h2 class="card-title">Meine Vorschläge</h2>
-            </div>
-
-            <!-- Filter Bar -->
-            <div class="filter-bar">
-              <select class="filter-select" id="statusFilter">
-                <option value="">Alle Status</option>
-                <option value="new">Neu</option>
-                <option value="in_review">In Prüfung</option>
-                <option value="in_progress">In Arbeit</option>
-                <option value="implemented">Umgesetzt</option>
-                <option value="rejected">Abgelehnt</option>
-              </select>
-
-              <select class="filter-select" id="categoryFilter">
-                <option value="">Alle Kategorien</option>
-              </select>
-            </div>
-
-            <div class="suggestions-list" id="suggestionsList">
-              <div class="loading">Lade Vorschläge...</div>
-            </div>
-          </div>
-
-          <!-- My Points Card -->
-          <div class="kvp-card">
-            <div class="card-header">
-              <div class="card-icon">🏆</div>
-              <h2 class="card-title">Meine Punkte</h2>
-            </div>
-            <div class="stats-grid" id="pointsGrid">
-              <div class="stat-item">
-                <span class="stat-number" id="totalPoints">-</span>
-                <span class="stat-label">Gesamt Punkte</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number" id="totalAwards">-</span>
-                <span class="stat-label">Auszeichnungen</span>
-              </div>
-            </div>
-            <p style="margin-top: var(--spacing-md); font-size: 0.9rem" class="text-secondary">
-              Sammeln Sie Punkte für eingereichte und umgesetzte Verbesserungsvorschläge!
-            </p>
+        <!-- Admin Info Box -->
+        <div class="admin-info-box" id="adminInfoBox" style="display: none">
+          <i class="fas fa-lightbulb"></i>
+          <div>
+            <strong>Tipp für Admins:</strong>
+            Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen. Als Admin können Sie Vorschläge verwalten und firmenweit
+            teilen.
           </div>
         </div>
+
+        <!-- Statistics Overview (Admin only) -->
+        <div class="stats-overview" id="statsOverview" style="display: none">
+          <div class="stat-card">
+            <div class="stat-value" id="totalSuggestions">0</div>
+            <div class="stat-label">Gesamt Vorschläge</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="openSuggestions">0</div>
+            <div class="stat-label">In Bearbeitung</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="implementedSuggestions">0</div>
+            <div class="stat-label">Umgesetzt</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalSavings">0€</div>
+            <div class="stat-label">Einsparungen</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="kvp-filter-bar">
+          <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-list"></i>
+            Alle
+            <span class="badge" id="badgeAll">0</span>
+          </button>
+          <button class="filter-btn" data-filter="mine">
+            <i class="fas fa-user"></i>
+            Meine
+            <span class="badge" id="badgeMine">0</span>
+          </button>
+          <button class="filter-btn" data-filter="department">
+            <i class="fas fa-building"></i>
+            Abteilung
+            <span class="badge" id="badgeDepartment">0</span>
+          </button>
+          <button class="filter-btn" data-filter="company">
+            <i class="fas fa-globe"></i>
+            Firmenweit
+            <span class="badge" id="badgeCompany">0</span>
+          </button>
+          <button class="filter-btn admin-only" data-filter="manage" style="display: none">
+            <i class="fas fa-tasks"></i>
+            Verwalten
+          </button>
+          <button class="filter-btn admin-only" data-filter="archived" style="display: none">
+            <i class="fas fa-archive"></i>
+            Archiv
+            <span class="badge" id="badgeArchived">0</span>
+          </button>
+        </div>
+
+        <!-- Secondary Filters -->
+        <div class="secondary-filters">
+          <!-- Status Filter Dropdown -->
+          <div class="custom-dropdown">
+            <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+              <span>Alle Status</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="dropdown-options" id="statusDropdown">
+              <div class="dropdown-option" onclick="selectStatus('', 'Alle Status')">Alle Status</div>
+              <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
+              <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
+              <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
+              <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
+              <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+            </div>
+            <input type="hidden" name="statusFilter" id="statusFilterValue" />
+          </div>
+
+          <!-- Category Filter Dropdown -->
+          <div class="custom-dropdown">
+            <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
+              <span>Alle Kategorien</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="dropdown-options" id="categoryDropdown">
+              <div class="dropdown-option" onclick="selectCategory('', 'Alle Kategorien')">Alle Kategorien</div>
+              <!-- Dynamisch geladen -->
+            </div>
+            <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
+          </div>
+
+          <!-- Department Filter Dropdown -->
+          <div class="custom-dropdown admin-only" style="display: none">
+            <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+              <span>Alle Abteilungen</span>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div class="dropdown-options" id="departmentDropdown">
+              <div class="dropdown-option" onclick="selectDepartment('', 'Alle Abteilungen')">Alle Abteilungen</div>
+              <!-- Dynamisch geladen für Admins -->
+            </div>
+            <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
+          </div>
+
+          <input type="text" id="searchFilter" placeholder="Suchen..." />
+        </div>
+
+        <!-- Suggestions Container -->
+        <div class="kvp-suggestions-grid" id="suggestionsContainer">
+          <!-- Dynamisch geladen -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none">
+          <i class="fas fa-inbox"></i>
+          <h3>Keine Vorschläge gefunden</h3>
+          <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
+        </div>
+
+        <!-- Create New Button -->
+        <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">
+          <i class="fas fa-plus"></i>
+        </button>
       </main>
     </div>
 
-    <!-- New Suggestion Modal -->
-    <div class="modal" id="newSuggestionModal">
-      <div
-        class="modal-content"
-        style="
-          background: rgba(255, 255, 255, 0.02) !important;
-          backdrop-filter: blur(20px) saturate(180%) !important;
-          -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-        "
-      >
+    <!-- Create KVP Modal -->
+    <div id="createKvpModal" class="modal">
+      <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">Neuen Verbesserungsvorschlag einreichen</h3>
-          <button class="modal-close" onclick="closeNewSuggestionModal()">&times;</button>
+          <h3 class="modal-title">Neuer KVP-Vorschlag</h3>
+          <button class="modal-close" onclick="window.hideCreateModal()">&times;</button>
         </div>
-
-        <div class="modal-form-content">
-          <form id="newSuggestionForm" enctype="multipart/form-data">
-            <div class="form-group">
-              <label class="form-label">Titel *</label>
-              <input type="text" class="form-input" name="title" placeholder="Kurzer, aussagekräftiger Titel" required />
+        <form id="createKvpForm">
+          <div class="modal-body">
+            <!-- Warning Box -->
+            <div class="warning-box">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                <strong>Wichtiger Hinweis:</strong>
+                <br />
+                Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. Bitte prüfen Sie alle Angaben sorgfältig,
+                bevor Sie den Vorschlag absenden.
+              </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Beschreibung *</label>
+            <!-- Two column grid for all fields -->
+            <div class="form-grid">
+              <!-- Title -->
+              <div class="form-group">
+                <label class="form-label" for="kvpTitle">
+                  Titel
+                  <span class="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="kvpTitle"
+                  name="title"
+                  class="form-control"
+                  placeholder="Kurze, prägnante Beschreibung"
+                  required
+                  maxlength="255"
+                />
+              </div>
+
+              <!-- Description -->
+              <div class="form-group">
+                <label class="form-label" for="kvpDescription">
+                  Beschreibung
+                  <span class="required">*</span>
+                </label>
+                <textarea
+                  id="kvpDescription"
+                  name="description"
+                  class="form-control"
+                  placeholder="Detaillierte Beschreibung des Vorschlags..."
+                  rows="4"
+                  required
+                ></textarea>
+              </div>
+              <!-- Category -->
+              <div class="form-group">
+                <label class="form-label" for="kvpCategory">
+                  Kategorie
+                  <span class="required">*</span>
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
+                    <span>Bitte wählen</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="kvpCategoryDropdown">
+                    <!-- Dynamisch geladen -->
+                  </div>
+                  <input type="hidden" name="category_id" id="kvpCategoryValue" required />
+                </div>
+              </div>
+
+              <!-- Priority -->
+              <div class="form-group">
+                <label class="form-label" for="kvpPriority">Priorität</label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
+                    <span>Normal</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="kvpPriorityDropdown">
+                    <div class="dropdown-option" onclick="selectKvpPriority('low', 'Niedrig')">Niedrig</div>
+                    <div class="dropdown-option" onclick="selectKvpPriority('normal', 'Normal')">Normal</div>
+                    <div class="dropdown-option" onclick="selectKvpPriority('high', 'Hoch')">Hoch</div>
+                    <div class="dropdown-option" onclick="selectKvpPriority('urgent', 'Dringend')">Dringend</div>
+                  </div>
+                  <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Expected Benefit (full width) -->
+            <div class="form-group full-width">
+              <label class="form-label" for="kvpBenefit">Erwarteter Nutzen</label>
               <textarea
-                class="form-input form-textarea"
-                name="description"
-                placeholder="Detaillierte Beschreibung des Problems und Ihres Lösungsvorschlags"
-                required
+                id="kvpBenefit"
+                name="expected_benefit"
+                class="form-control"
+                placeholder="Welche Vorteile bringt dieser Vorschlag?"
+                rows="3"
               ></textarea>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Kategorie</label>
-              <div class="category-pills" id="categoryPills">
-                <!-- Categories will be loaded here -->
-              </div>
-              <input type="hidden" name="category_id" id="selectedCategoryId" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Organisationsebene *</label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="orgLevelDisplay" onclick="toggleDropdown('orgLevel')">
-                  <span>Bitte wählen</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
+            <!-- Photo Upload Section -->
+            <div class="form-group full-width">
+              <label class="form-label">
+                Fotos hinzufügen (optional)
+                <small class="text-muted">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</small>
+              </label>
+              <div class="photo-upload-area">
+                <input
+                  type="file"
+                  id="kvpPhotos"
+                  name="photos"
+                  accept="image/jpeg,image/jpg,image/png"
+                  multiple
+                  style="display: none"
+                  onchange="handlePhotoSelection(this)"
+                />
+                <div class="upload-box" onclick="document.getElementById('kvpPhotos').click()">
+                  <i class="fas fa-camera"></i>
+                  <p>Klicken Sie hier, um Fotos auszuwählen</p>
+                  <p class="small text-muted">oder ziehen Sie Dateien hierher</p>
                 </div>
-                <div class="dropdown-options" id="orgLevelDropdown">
-                  <div class="dropdown-option" onclick="selectOrgLevel('', 'Bitte wählen')">Bitte wählen</div>
-                  <div class="dropdown-option" onclick="selectOrgLevel('company', 'Gesamtes Unternehmen')">Gesamtes Unternehmen</div>
-                  <div class="dropdown-option" onclick="selectOrgLevel('department', 'Abteilung')">Abteilung</div>
-                  <div class="dropdown-option" onclick="selectOrgLevel('team', 'Team')">Team</div>
-                </div>
-                <input type="hidden" name="org_level" id="orgLevelValue" required />
+                <div id="photoPreview" class="photo-preview"></div>
               </div>
             </div>
-
-            <div class="form-group">
-              <label class="form-label">Priorität</label>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="priorityDisplay" onclick="toggleDropdown('priority')">
-                  <span>Normal</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="priorityDropdown">
-                  <div class="dropdown-option" onclick="selectPriority('low', 'Niedrig')">Niedrig</div>
-                  <div class="dropdown-option" onclick="selectPriority('normal', 'Normal')">Normal</div>
-                  <div class="dropdown-option" onclick="selectPriority('high', 'Hoch')">Hoch</div>
-                  <div class="dropdown-option" onclick="selectPriority('urgent', 'Dringend')">Dringend</div>
-                </div>
-                <input type="hidden" name="priority" id="priorityValue" value="normal" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Erwarteter Nutzen</label>
-              <textarea class="form-input" name="expected_benefit" placeholder="Welchen Nutzen erwarten Sie von der Umsetzung?"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Geschätzte Kosten (€)</label>
-              <input type="number" class="form-input" name="estimated_cost" step="0.01" placeholder="0.00" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Fotos/Dokumente</label>
-              <div class="file-upload" id="fileUploadArea">
-                <div>📁 Klicken zum Dateien auswählen</div>
-                <div style="font-size: 0.8rem; margin-top: var(--spacing-xs); opacity: 0.8">
-                  Max. 5 Dateien, je 10MB (JPG, PNG, GIF, PDF)
-                </div>
-              </div>
-              <input type="file" id="attachments" name="attachments" multiple accept=".jpg,.jpeg,.png,.gif,.pdf" style="display: none" />
-              <div id="selectedFiles"></div>
-            </div>
-          </form>
-        </div>
-
-        <div class="modal-form-actions">
-          <div class="button-group">
-            <button type="submit" class="btn btn-primary" form="newSuggestionForm">Vorschlag einreichen</button>
-            <button type="button" class="btn btn-secondary" onclick="closeNewSuggestionModal()">Abbrechen</button>
           </div>
-        </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="window.hideCreateModal()">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              Vorschlag einreichen
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
+    <!-- Dropdown Functions -->
     <script>
-      let categories = [];
-      let selectedCategoryId = null;
-      let currentUser = null;
-
-      // Initialize on page load
-      document.addEventListener('DOMContentLoaded', function () {
-        checkAuth();
-        loadUserInfo();
-        loadCategories();
-        loadSuggestions();
-        loadDashboardStats();
-        loadUserPoints();
-
-        // Initialize logout button
-        document.getElementById('logout-btn').addEventListener('click', function () {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        });
-
-        // Initialize KVP buttons based on user role
-        initializeButtons();
-      });
-
-      async function loadUserInfo() {
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            const userName = document.getElementById('user-name');
-            const userAvatar = document.getElementById('user-avatar');
-
-            // Display first and last name
-            const displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username || 'Benutzer';
-            userName.textContent = displayName;
-
-            // Update avatar if available
-            if (userData.profile_picture_url) {
-              userAvatar.src = userData.profile_picture_url;
-              userAvatar.onerror = function () {
-                this.src = '/assets/images/default-avatar.svg';
-              };
-            }
-          }
-        } catch (error) {
-          console.error('Error loading user info:', error);
-          // Fallback to local storage
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          const userName = document.getElementById('user-name');
-          if (userName) {
-            userName.textContent = user.username || 'Benutzer';
-          }
-        }
-      }
-
-      function checkAuth() {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          window.location.href = '/login';
-          return;
-        }
-
-        // Decode JWT to get user info (simple decode, not verification)
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          currentUser = payload;
-          // User info wird durch header-user-info.ts geladen
-        } catch (e) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        }
-      }
-
-      function initializeButtons() {
-        // Show/hide cards based on user role
-        const newSuggestionCard = document.getElementById('newSuggestionCard');
-        const adminManagementCard = document.getElementById('adminManagementCard');
-
-        if (currentUser && currentUser.role === 'employee') {
-          // Employee: Show suggestion card, hide admin card
-          if (newSuggestionCard) newSuggestionCard.style.display = 'block';
-          if (adminManagementCard) adminManagementCard.style.display = 'none';
-
-          // Initialize new suggestion button
-          const newSuggestionBtn = document.getElementById('newSuggestionBtn');
-          if (newSuggestionBtn) {
-            newSuggestionBtn.addEventListener('click', openNewSuggestionModal);
-          }
-        } else if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')) {
-          // Admin: Hide suggestion card, show admin card
-          if (newSuggestionCard) newSuggestionCard.style.display = 'none';
-          if (adminManagementCard) adminManagementCard.style.display = 'block';
-
-          // Load admin statistics
-          loadAdminStats();
-        }
-
-        // Initialize filter event listeners
-        const statusFilter = document.getElementById('statusFilter');
-        const categoryFilter = document.getElementById('categoryFilter');
-
-        if (statusFilter) {
-          statusFilter.addEventListener('change', loadSuggestions);
-        }
-        if (categoryFilter) {
-          categoryFilter.addEventListener('change', loadSuggestions);
-        }
-
-        // Initialize file upload area
-        const fileUploadArea = document.getElementById('fileUploadArea');
-        if (fileUploadArea) {
-          fileUploadArea.addEventListener('click', function () {
-            const attachmentsInput = document.getElementById('attachments');
-            if (attachmentsInput) attachmentsInput.click();
-          });
-        }
-
-        // Initialize cancel button
-        const cancelBtn = document.getElementById('cancelBtn');
-        if (cancelBtn) {
-          cancelBtn.addEventListener('click', closeNewSuggestionModal);
-        }
-      }
-
-      async function loadAdminStats() {
-        try {
-          const response = await apiCall('/api/kvp/dashboard');
-          const data = await response.json();
-
-          if (data.success) {
-            const stats = data.data;
-            document.getElementById('adminNewSuggestions').textContent = stats.new_suggestions || 0;
-            document.getElementById('adminPendingSuggestions').textContent = (stats.in_review || 0) + (stats.in_progress || 0);
-          }
-        } catch (error) {
-          console.error('Error loading admin stats:', error);
-        }
-      }
-
-      async function apiCall(url, options = {}) {
-        const token = localStorage.getItem('token');
-        const defaultOptions = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        };
-
-        // Don't set Content-Type for FormData
-        if (options.body instanceof FormData) {
-          delete defaultOptions.headers['Content-Type'];
-        }
-
-        const response = await fetch(url, { ...defaultOptions, ...options });
-
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          throw new Error('Unauthorized');
-        }
-
-        return response;
-      }
-
-      async function loadCategories() {
-        try {
-          const response = await apiCall('/api/kvp/categories');
-          const data = await response.json();
-
-          if (data.success) {
-            categories = data.data;
-            renderCategoryPills();
-            renderCategoryFilter();
-          }
-        } catch (error) {
-          console.error('Error loading categories:', error);
-        }
-      }
-
-      function renderCategoryPills() {
-        const container = document.getElementById('categoryPills');
-        container.innerHTML = categories
-          .map(
-            (cat) => `
-        <div class="category-pill" data-category-id="${cat.id}" style="border-color: ${cat.color}40;">
-          <span>${cat.icon}</span>
-          <span>${cat.name}</span>
-        </div>
-      `,
-          )
-          .join('');
-
-        // Add event listeners to category pills
-        container.querySelectorAll('.category-pill').forEach((pill) => {
-          pill.addEventListener('click', function () {
-            selectCategory(parseInt(this.dataset.categoryId));
-          });
-        });
-      }
-
-      function renderCategoryFilter() {
-        const select = document.getElementById('categoryFilter');
-        select.innerHTML =
-          '<option value="">Alle Kategorien</option>' +
-          categories.map((cat) => `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`).join('');
-      }
-
-      function selectCategory(categoryId) {
-        // Remove previous selection
-        document.querySelectorAll('.category-pill').forEach((pill) => {
-          pill.classList.remove('selected');
-        });
-
-        // Add selection to clicked pill
-        document.querySelector(`[data-category-id="${categoryId}"]`).classList.add('selected');
-
-        selectedCategoryId = categoryId;
-        document.getElementById('selectedCategoryId').value = categoryId;
-      }
-
-      async function loadSuggestions() {
-        try {
-          const statusFilter = document.getElementById('statusFilter').value;
-          const categoryFilter = document.getElementById('categoryFilter').value;
-
-          let url = '/api/kvp/suggestions?';
-          if (statusFilter) url += `status=${statusFilter}&`;
-          if (categoryFilter) url += `category_id=${categoryFilter}&`;
-
-          const response = await apiCall(url);
-          const data = await response.json();
-
-          if (data.success) {
-            renderSuggestions(data.data);
-          } else {
-            throw new Error(data.message);
-          }
-        } catch (error) {
-          console.error('Error loading suggestions:', error);
-          document.getElementById('suggestionsList').innerHTML = '<div class="error-message">Fehler beim Laden der Vorschläge</div>';
-        }
-      }
-
-      function renderSuggestions(suggestions) {
-        const container = document.getElementById('suggestionsList');
-
-        if (suggestions.length === 0) {
-          container.innerHTML = '<div class="empty-state">Keine Vorschläge gefunden</div>';
-          return;
-        }
-
-        const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'root');
-
-        container.innerHTML = suggestions
-          .map(
-            (suggestion) => `
-        <div class="suggestion-item" data-suggestion-id="${suggestion.id}" style="cursor: pointer;">
-          <div class="suggestion-header">
-            <div class="suggestion-title">${suggestion.title}</div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <span class="status-badge status-${suggestion.status}">${getStatusText(suggestion.status)}</span>
-              ${
-                isAdmin
-                  ? `
-                <select class="filter-select status-select" data-suggestion-id="${suggestion.id}" style="padding: 4px 8px; font-size: 0.8rem;">
-                  <option value="new" ${suggestion.status === 'new' ? 'selected' : ''}>Neu</option>
-                  <option value="in_review" ${suggestion.status === 'in_review' ? 'selected' : ''}>In Prüfung</option>
-                  <option value="approved" ${suggestion.status === 'approved' ? 'selected' : ''}>Genehmigt</option>
-                  <option value="implemented" ${suggestion.status === 'implemented' ? 'selected' : ''}>Umgesetzt</option>
-                  <option value="rejected" ${suggestion.status === 'rejected' ? 'selected' : ''}>Abgelehnt</option>
-                  <option value="archived" ${suggestion.status === 'archived' ? 'selected' : ''}>Archiviert</option>
-                </select>
-              `
-                  : ''
-              }
-            </div>
-          </div>
-          <div class="suggestion-description">
-            ${suggestion.description.length > 150 ? suggestion.description.substring(0, 150) + '...' : suggestion.description}
-          </div>
-          <div class="suggestion-meta">
-            ${suggestion.category_name ? `<span>${suggestion.category_icon} ${suggestion.category_name}</span>` : ''}
-            <span>Von: ${suggestion.submitted_by_name} ${suggestion.submitted_by_lastname}</span>
-            <span>${formatDate(suggestion.created_at)}</span>
-            <span>${suggestion.attachment_count} Dateien</span>
-            <span>${suggestion.comment_count} Kommentare</span>
-            ${suggestion.avg_rating ? `<span>⭐ ${parseFloat(suggestion.avg_rating).toFixed(1)}</span>` : ''}
-          </div>
-        </div>
-      `,
-          )
-          .join('');
-
-        // Add event listeners to status selects for admins
-        if (isAdmin) {
-          container.querySelectorAll('.status-select').forEach((select) => {
-            select.addEventListener('change', function (e) {
-              e.stopPropagation();
-              const suggestionId = parseInt(this.dataset.suggestionId);
-              changeStatus(suggestionId, this.value);
-            });
-
-            select.addEventListener('click', function (e) {
-              e.stopPropagation();
-            });
-          });
-        }
-
-        // Add click event listeners to suggestion items for detail view
-        container.querySelectorAll('.suggestion-item').forEach((item) => {
-          item.addEventListener('click', function (e) {
-            // Don't trigger if clicking on status select
-            if (e.target.classList.contains('status-select')) {
-              return;
-            }
-            const suggestionId = parseInt(this.dataset.suggestionId);
-            viewSuggestion(suggestionId);
-          });
-        });
-      }
-
-      async function changeStatus(suggestionId, newStatus) {
-        try {
-          const response = await apiCall(`/api/kvp/suggestions/${suggestionId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({
-              status: newStatus,
-              reason: `Status geändert zu ${getStatusText(newStatus)}`,
-            }),
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            showSuccessMessage('Status erfolgreich geändert');
-            loadSuggestions();
-            loadDashboardStats();
-            if (currentUser.role === 'admin' || currentUser.role === 'root') {
-              loadAdminStats();
-            }
-          } else {
-            throw new Error(data.message);
-          }
-        } catch (error) {
-          console.error('Error changing status:', error);
-          showErrorMessage('Fehler beim Ändern des Status: ' + error.message);
-          loadSuggestions(); // Reload to reset the dropdown
-        }
-      }
-
-      async function loadDashboardStats() {
-        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')) {
-          try {
-            const response = await apiCall('/api/kvp/dashboard');
-            const data = await response.json();
-
-            if (data.success) {
-              const stats = data.data;
-              document.getElementById('totalSuggestions').textContent = stats.total_suggestions || 0;
-              document.getElementById('newSuggestions').textContent = stats.new_suggestions || 0;
-              document.getElementById('implementedSuggestions').textContent = stats.implemented || 0;
-              document.getElementById('inProgressSuggestions').textContent = stats.in_progress || 0;
-            }
-          } catch (error) {
-            console.error('Error loading dashboard stats:', error);
-          }
-        } else {
-          // Hide admin stats for employees
-          document.getElementById('totalSuggestions').textContent = '👥';
-          document.getElementById('newSuggestions').textContent = '👀';
-          document.getElementById('implementedSuggestions').textContent = '✅';
-          document.getElementById('inProgressSuggestions').textContent = '🔧';
-        }
-      }
-
-      async function loadUserPoints() {
-        try {
-          const response = await apiCall('/api/kvp/my-points');
-          const data = await response.json();
-
-          if (data.success) {
-            const points = data.data;
-            document.getElementById('totalPoints').textContent = points.total_points || 0;
-            document.getElementById('totalAwards').textContent = points.total_awards || 0;
-          }
-        } catch (error) {
-          console.error('Error loading user points:', error);
-        }
-      }
-
-      function openNewSuggestionModal() {
-        document.getElementById('newSuggestionModal').style.display = 'flex';
-      }
-
-      function closeNewSuggestionModal() {
-        document.getElementById('newSuggestionModal').style.display = 'none';
-        document.getElementById('newSuggestionForm').reset();
-        selectedCategoryId = null;
-        document.querySelectorAll('.category-pill').forEach((pill) => {
-          pill.classList.remove('selected');
-        });
-        document.getElementById('selectedFiles').innerHTML = '';
-
-        // Reset custom dropdowns
-        document.getElementById('orgLevelDisplay').querySelector('span').textContent = 'Bitte wählen';
-        document.getElementById('orgLevelValue').value = '';
-        document.getElementById('priorityDisplay').querySelector('span').textContent = 'Normal';
-        document.getElementById('priorityValue').value = 'normal';
-
-        // Close all dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-        document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-      }
-
-      // Handle file selection
-      document.getElementById('attachments').addEventListener('change', function (e) {
-        const files = Array.from(e.target.files);
-        const container = document.getElementById('selectedFiles');
-
-        container.innerHTML = files
-          .map(
-            (file) => `
-        <div class="selected-file">
-          <span>📎</span>
-          <span>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-        </div>
-      `,
-          )
-          .join('');
-      });
-
-      // Handle form submission
-      document.getElementById('newSuggestionForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const formData = new FormData(this);
-
-        // Set default values if not provided
-        if (!formData.get('org_level') || formData.get('org_level') === '') {
-          formData.set('org_level', 'company'); // Default to company level
-        }
-        formData.set('org_id', '8'); // Use tenant ID as org_id for company level
-
-        if (!formData.get('category_id') || formData.get('category_id') === '') {
-          formData.set('category_id', '13'); // Default to Sicherheit category
-        }
-
-        if (!formData.get('priority') || formData.get('priority') === '') {
-          formData.set('priority', 'normal'); // Default priority
-        }
-
-        try {
-          const submitButton = document.querySelector('button[form="newSuggestionForm"][type="submit"]');
-          if (submitButton) {
-            submitButton.textContent = 'Wird eingereicht...';
-            submitButton.disabled = true;
-          }
-
-          const response = await apiCall('/api/kvp/suggestions', {
-            method: 'POST',
-            body: formData,
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            closeNewSuggestionModal();
-            showSuccessMessage('Verbesserungsvorschlag erfolgreich eingereicht!');
-            loadSuggestions();
-            loadDashboardStats();
-          } else {
-            throw new Error(data.message);
-          }
-        } catch (error) {
-          console.error('Error submitting suggestion:', error);
-          showErrorMessage('Fehler beim Einreichen des Vorschlags: ' + error.message);
-        } finally {
-          const submitButton = document.querySelector('button[form="newSuggestionForm"][type="submit"]');
-          if (submitButton) {
-            submitButton.textContent = 'Vorschlag einreichen';
-            submitButton.disabled = false;
-          }
-        }
-      });
-
-      async function viewSuggestion(id) {
-        try {
-          const response = await apiCall(`/api/kvp/suggestions/${id}`);
-          const data = await response.json();
-
-          if (!data.success) {
-            throw new Error(data.message || 'Fehler beim Laden des Vorschlags');
-          }
-
-          const suggestion = data.data;
-          showSuggestionModal(suggestion);
-        } catch (error) {
-          console.error('Error loading suggestion:', error);
-          showErrorMessage('Fehler beim Laden der Vorschlag-Details: ' + error.message);
-        }
-      }
-
-      function showSuggestionModal(suggestion) {
-        const modal = document.createElement('div');
-        modal.className = 'suggestion-modal';
-        modal.innerHTML = `
-        <div class="modal-backdrop"></div>
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>${suggestion.title}</h2>
-            <button class="modal-close">✕</button>
-          </div>
-          <div class="modal-body">
-            <div class="suggestion-detail-content">
-              <div class="suggestion-info">
-                <div class="info-row">
-                  <strong>Status:</strong> 
-                  <span class="status-badge status-${suggestion.status}">${getStatusText(suggestion.status)}</span>
-                </div>
-                <div class="info-row">
-                  <strong>Kategorie:</strong> 
-                  ${suggestion.category_name ? `${suggestion.category_icon} ${suggestion.category_name}` : 'Keine Kategorie'}
-                </div>
-                <div class="info-row">
-                  <strong>Eingereicht von:</strong> 
-                  ${suggestion.submitted_by_name} ${suggestion.submitted_by_lastname}
-                </div>
-                <div class="info-row">
-                  <strong>Datum:</strong> 
-                  ${formatDate(suggestion.created_at)}
-                </div>
-                <div class="info-row">
-                  <strong>Priorität:</strong> 
-                  <span class="priority-badge priority-${suggestion.priority}">${getPriorityText(suggestion.priority)}</span>
-                </div>
-              </div>
-              
-              <div class="suggestion-actions">
-                ${
-                  currentUser && suggestion.submitted_by === currentUser.id
-                    ? `
-                  <button class="action-btn delete-btn" data-suggestion-id="${suggestion.id}">
-                    🗑️ Vorschlag löschen
-                  </button>
-                `
-                    : ''
-                }
-                ${
-                  currentUser && (currentUser.role === 'admin' || currentUser.role === 'root')
-                    ? `
-                  <button class="action-btn archive-btn" data-suggestion-id="${suggestion.id}">
-                    📦 Archivieren
-                  </button>
-                `
-                    : ''
-                }
-              </div>
-              
-              <div class="suggestion-description-full">
-                <h3>Beschreibung</h3>
-                <p>${suggestion.description}</p>
-              </div>
-              
-              ${
-                suggestion.expected_benefit
-                  ? `
-                <div class="suggestion-benefit">
-                  <h3>Erwarteter Nutzen</h3>
-                  <p>${suggestion.expected_benefit}</p>
-                </div>
-              `
-                  : ''
-              }
-              
-              ${
-                suggestion.estimated_cost
-                  ? `
-                <div class="suggestion-cost">
-                  <h3>Geschätzte Kosten</h3>
-                  <p>${suggestion.estimated_cost}</p>
-                </div>
-              `
-                  : ''
-              }
-              
-              ${
-                suggestion.attachments && suggestion.attachments.length > 0
-                  ? `
-                <div class="suggestion-attachments">
-                  <h3>Anhänge (${suggestion.attachments.length})</h3>
-                  <div class="attachments-grid">
-                    ${suggestion.attachments
-                      .map(
-                        (attachment) => `
-                      <div class="attachment-item" data-attachment-id="${attachment.id}">
-                        ${
-                          attachment.file_type.startsWith('image/')
-                            ? `
-                          <div class="attachment-image-container">
-                            <div class="attachment-image-loader">📷 Lade Bild...</div>
-                          </div>
-                        `
-                            : `
-                          <div class="attachment-file">
-                            <span class="file-icon">📄</span>
-                            <span class="file-name">${attachment.filename}</span>
-                          </div>
-                        `
-                        }
-                        <div class="attachment-info">
-                          <small>${attachment.filename}</small>
-                          <button class="download-btn" data-attachment-id="${attachment.id}">
-                            Herunterladen
-                          </button>
-                        </div>
-                      </div>
-                    `,
-                      )
-                      .join('')}
-                  </div>
-                </div>
-              `
-                  : ''
-              }
-              
-              ${
-                suggestion.comments && suggestion.comments.length > 0
-                  ? `
-                <div class="suggestion-comments">
-                  <h3>Kommentare (${suggestion.comments.length})</h3>
-                  <div class="comments-list">
-                    ${suggestion.comments
-                      .map(
-                        (comment) => `
-                      <div class="comment-item">
-                        <div class="comment-header">
-                          <strong>${comment.author_name} ${comment.author_lastname}</strong>
-                          <small>${formatDate(comment.created_at)}</small>
-                        </div>
-                        <div class="comment-content">${comment.content}</div>
-                      </div>
-                    `,
-                      )
-                      .join('')}
-                  </div>
-                </div>
-              `
-                  : ''
-              }
-            </div>
-          </div>
-        </div>
-      `;
-
-        document.body.appendChild(modal);
-
-        // Event listeners
-        modal.querySelector('.modal-close').addEventListener('click', () => {
-          document.body.removeChild(modal);
-        });
-
-        modal.querySelector('.modal-backdrop').addEventListener('click', () => {
-          document.body.removeChild(modal);
-        });
-
-        // Action button event listeners
-        const deleteBtn = modal.querySelector('.delete-btn');
-        if (deleteBtn) {
-          deleteBtn.addEventListener('click', async () => {
-            if (confirm('Sind Sie sicher, dass Sie diesen Vorschlag löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
-              const suggestionId = parseInt(deleteBtn.dataset.suggestionId);
-              await deleteSuggestion(suggestionId);
-              document.body.removeChild(modal);
-            }
-          });
-        }
-
-        const archiveBtn = modal.querySelector('.archive-btn');
-        if (archiveBtn) {
-          archiveBtn.addEventListener('click', async () => {
-            if (confirm('Sind Sie sicher, dass Sie diesen Vorschlag archivieren möchten?')) {
-              const suggestionId = parseInt(archiveBtn.dataset.suggestionId);
-              await archiveSuggestion(suggestionId);
-              document.body.removeChild(modal);
-            }
-          });
-        }
-
-        // Download button event listeners
-        modal.querySelectorAll('.download-btn').forEach((btn) => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const attachmentId = btn.dataset.attachmentId;
-            await downloadAttachment(attachmentId);
-          });
-        });
-
-        // Load images asynchronously with authentication
-        modal.querySelectorAll('.attachment-image-container').forEach((container) => {
-          const attachmentId = container.closest('.attachment-item').dataset.attachmentId;
-          loadAttachmentImage(container, attachmentId);
-        });
-
-        // Escape key to close
-        const escapeHandler = (e) => {
-          if (e.key === 'Escape') {
-            document.body.removeChild(modal);
-            document.removeEventListener('keydown', escapeHandler);
-          }
-        };
-        document.addEventListener('keydown', escapeHandler);
-      }
-
-      function getPriorityText(priority) {
-        const priorityMap = {
-          niedrig: 'Niedrig',
-          normal: 'Normal',
-          hoch: 'Hoch',
-          kritisch: 'Kritisch',
-        };
-        return priorityMap[priority] || priority;
-      }
-
-      function getStatusText(status) {
-        const statusMap = {
-          new: 'Neu',
-          pending: 'Wartend',
-          in_review: 'In Prüfung',
-          approved: 'Genehmigt',
-          implemented: 'Umgesetzt',
-          rejected: 'Abgelehnt',
-          archived: 'Archiviert',
-        };
-        return statusMap[status] || status;
-      }
-
-      function formatDate(dateString) {
-        return new Date(dateString).toLocaleDateString('de-DE');
-      }
-
-      // Delete suggestion function (only for owners)
-      async function deleteSuggestion(suggestionId) {
-        try {
-          const response = await apiCall(`/api/kvp/suggestions/${suggestionId}`, {
-            method: 'DELETE',
-          });
-
-          const data = await response.json();
-
-          if (!data.success) {
-            throw new Error(data.message || 'Fehler beim Löschen des Vorschlags');
-          }
-
-          showSuccessMessage('Vorschlag wurde erfolgreich gelöscht');
-          await loadSuggestions(); // Reload the list
-        } catch (error) {
-          console.error('Error deleting suggestion:', error);
-          showErrorMessage('Fehler beim Löschen des Vorschlags: ' + error.message);
-        }
-      }
-
-      // Archive suggestion function (for admins)
-      async function archiveSuggestion(suggestionId) {
-        try {
-          const response = await apiCall(`/api/kvp/suggestions/${suggestionId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({
-              status: 'archived',
-              reason: 'Vorschlag archiviert',
-            }),
-          });
-
-          const data = await response.json();
-
-          if (!data.success) {
-            throw new Error(data.message || 'Fehler beim Archivieren des Vorschlags');
-          }
-
-          showSuccessMessage('Vorschlag wurde erfolgreich archiviert');
-          await loadSuggestions(); // Reload the list
-        } catch (error) {
-          console.error('Error archiving suggestion:', error);
-          showErrorMessage('Fehler beim Archivieren des Vorschlags: ' + error.message);
-        }
-      }
-
-      // Load attachment image with authentication
-      async function loadAttachmentImage(container, attachmentId) {
-        try {
-          const response = await apiCall(`/api/kvp/attachments/${attachmentId}/download`);
-
-          if (!response.ok) {
-            throw new Error('Fehler beim Laden des Bildes');
-          }
-
-          const blob = await response.blob();
-          const imageUrl = URL.createObjectURL(blob);
-
-          const img = document.createElement('img');
-          img.src = imageUrl;
-          img.alt = 'Anhang';
-          img.className = 'attachment-image';
-          img.style.cursor = 'pointer';
-
-          // Add click handler for full-size view
-          img.addEventListener('click', () => {
-            showImageModal(imageUrl);
-          });
-
-          container.innerHTML = '';
-          container.appendChild(img);
-        } catch (error) {
-          console.error('Error loading image:', error);
-          container.innerHTML = '<div class="attachment-error">❌ Bild konnte nicht geladen werden</div>';
-        }
-      }
-
-      // Download attachment function
-      async function downloadAttachment(attachmentId) {
-        try {
-          const response = await apiCall(`/api/kvp/attachments/${attachmentId}/download`);
-
-          if (!response.ok) {
-            throw new Error('Fehler beim Download');
-          }
-
-          const blob = await response.blob();
-          const contentDisposition = response.headers.get('content-disposition');
-          let filename = 'download';
-
-          if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-            if (filenameMatch) {
-              filename = filenameMatch[1];
-            }
-          }
-
-          // Create download link and trigger download
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } catch (error) {
-          console.error('Error downloading attachment:', error);
-          showErrorMessage('Fehler beim Download: ' + error.message);
-        }
-      }
-
-      // Show image in full-size modal
-      function showImageModal(imageUrl) {
-        const modal = document.createElement('div');
-        modal.className = 'image-modal';
-        modal.innerHTML = `
-        <div class="image-modal-backdrop"></div>
-        <div class="image-modal-content">
-          <button class="image-modal-close">✕</button>
-          <img src="${imageUrl}" alt="Vollbild" class="full-size-image">
-        </div>
-      `;
-
-        document.body.appendChild(modal);
-
-        modal.querySelector('.image-modal-close').addEventListener('click', () => {
-          document.body.removeChild(modal);
-          URL.revokeObjectURL(imageUrl);
-        });
-
-        modal.querySelector('.image-modal-backdrop').addEventListener('click', () => {
-          document.body.removeChild(modal);
-          URL.revokeObjectURL(imageUrl);
-        });
-      }
-
-      function showSuccessMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'success-message';
-        messageDiv.textContent = message;
-        document.querySelector('.main-content').prepend(messageDiv);
-
-        setTimeout(() => messageDiv.remove(), 5000);
-      }
-
-      function showErrorMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'error-message';
-        messageDiv.textContent = message;
-        document.querySelector('.main-content').prepend(messageDiv);
-
-        setTimeout(() => messageDiv.remove(), 5000);
-      }
-
-      // Custom Dropdown Functions
+      // Toggle Dropdown
       function toggleDropdown(type) {
         const display = document.getElementById(type + 'Display');
         const dropdown = document.getElementById(type + 'Dropdown');
@@ -2153,21 +1149,59 @@
         dropdown.classList.toggle('active');
       }
 
-      function selectOrgLevel(value, text) {
-        document.getElementById('orgLevelDisplay').querySelector('span').textContent = text;
-        document.getElementById('orgLevelValue').value = value;
-        document.getElementById('orgLevelDisplay').classList.remove('active');
-        document.getElementById('orgLevelDropdown').classList.remove('active');
+      // Select Status
+      function selectStatus(value, text) {
+        document.getElementById('statusDisplay').querySelector('span').textContent = text;
+        document.getElementById('statusFilterValue').value = value;
+        document.getElementById('statusDisplay').classList.remove('active');
+        document.getElementById('statusDropdown').classList.remove('active');
+
+        // Trigger filter event
+        const event = new Event('change');
+        document.getElementById('statusFilterValue').dispatchEvent(event);
       }
 
-      function selectPriority(value, text) {
-        document.getElementById('priorityDisplay').querySelector('span').textContent = text;
-        document.getElementById('priorityValue').value = value;
-        document.getElementById('priorityDisplay').classList.remove('active');
-        document.getElementById('priorityDropdown').classList.remove('active');
+      // Select Category
+      function selectCategory(value, text) {
+        document.getElementById('categoryDisplay').querySelector('span').textContent = text;
+        document.getElementById('categoryFilterValue').value = value;
+        document.getElementById('categoryDisplay').classList.remove('active');
+        document.getElementById('categoryDropdown').classList.remove('active');
+
+        // Trigger filter event
+        const event = new Event('change');
+        document.getElementById('categoryFilterValue').dispatchEvent(event);
       }
 
-      // Close dropdowns when clicking outside
+      // Select Department
+      function selectDepartment(value, text) {
+        document.getElementById('departmentDisplay').querySelector('span').textContent = text;
+        document.getElementById('departmentFilterValue').value = value;
+        document.getElementById('departmentDisplay').classList.remove('active');
+        document.getElementById('departmentDropdown').classList.remove('active');
+
+        // Trigger filter event
+        const event = new Event('change');
+        document.getElementById('departmentFilterValue').dispatchEvent(event);
+      }
+
+      // Select KVP Category
+      function selectKvpCategory(value, text) {
+        document.getElementById('kvpCategoryDisplay').querySelector('span').textContent = text;
+        document.getElementById('kvpCategoryValue').value = value;
+        document.getElementById('kvpCategoryDisplay').classList.remove('active');
+        document.getElementById('kvpCategoryDropdown').classList.remove('active');
+      }
+
+      // Select KVP Priority
+      function selectKvpPriority(value, text) {
+        document.getElementById('kvpPriorityDisplay').querySelector('span').textContent = text;
+        document.getElementById('kvpPriorityValue').value = value;
+        document.getElementById('kvpPriorityDisplay').classList.remove('active');
+        document.getElementById('kvpPriorityDropdown').classList.remove('active');
+      }
+
+      // Click outside to close
       document.addEventListener('click', function (e) {
         if (!e.target.closest('.custom-dropdown')) {
           document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
@@ -2175,16 +1209,97 @@
         }
       });
 
-      // Close modal when clicking outside
-      window.addEventListener('click', function (e) {
-        const modal = document.getElementById('newSuggestionModal');
-        if (e.target === modal) {
-          closeNewSuggestionModal();
+      // Simple modal functions as fallback
+      window.showCreateModal = function () {
+        const modal = document.getElementById('createKvpModal');
+        if (modal) {
+          modal.classList.add('active');
+        }
+      };
+
+      window.hideCreateModal = function () {
+        const modal = document.getElementById('createKvpModal');
+        if (modal) {
+          modal.classList.remove('active');
+          // Clear selected photos when closing modal
+          selectedPhotos = [];
+          window.selectedPhotos = selectedPhotos;
+          const preview = document.getElementById('photoPreview');
+          if (preview) preview.innerHTML = '';
+        }
+      };
+
+      // Click outside modal to close
+      document.getElementById('createKvpModal')?.addEventListener('click', function (e) {
+        if (e.target === this) {
+          window.hideCreateModal();
         }
       });
+
+      // Photo upload handling
+      let selectedPhotos = [];
+      window.selectedPhotos = selectedPhotos; // Make it globally accessible
+
+      function handlePhotoSelection(input) {
+        const files = Array.from(input.files);
+        const validFiles = files.filter((file) => {
+          const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+          return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024; // 10MB
+        });
+
+        if (selectedPhotos.length + validFiles.length > 5) {
+          alert('Sie können maximal 5 Fotos hochladen.');
+          return;
+        }
+
+        validFiles.forEach((file) => {
+          selectedPhotos.push(file);
+          window.selectedPhotos = selectedPhotos; // Keep window reference updated
+          displayPhotoPreview(file, selectedPhotos.length - 1);
+        });
+
+        // Reset input
+        input.value = '';
+      }
+
+      function displayPhotoPreview(file, index) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const preview = document.getElementById('photoPreview');
+          const item = document.createElement('div');
+          item.className = 'photo-preview-item';
+          item.innerHTML = `
+            <img src="${e.target.result}" alt="Vorschau">
+            <button class="remove-photo" onclick="removePhoto(${index})" type="button">&times;</button>
+          `;
+          preview.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function removePhoto(index) {
+        selectedPhotos.splice(index, 1);
+        window.selectedPhotos = selectedPhotos; // Keep window reference updated
+        refreshPhotoPreview();
+      }
+
+      function refreshPhotoPreview() {
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = '';
+        selectedPhotos.forEach((file, index) => {
+          displayPhotoPreview(file, index);
+        });
+      }
+
+      // Make functions globally available
+      window.handlePhotoSelection = handlePhotoSelection;
+      window.removePhoto = removePhoto;
     </script>
 
-    <!-- Unified Navigation -->
+    <!-- Scripts -->
+    <script type="module" src="/scripts/auth.ts"></script>
+    <script type="module" src="/scripts/utils/modal-manager.ts"></script>
+    <script type="module" src="/scripts/pages/kvp.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
   </body>
 </html>

@@ -85,7 +85,7 @@ let selectedFiles: File[] = [];
 let directAttachmentFile: File | null = null;
 
 // Store event handlers globally to avoid duplicates
-let directAttachHandlers: {
+const directAttachHandlers: {
   dropZoneClick?: () => void;
   fileInputChange?: (e: Event) => void;
   dragOver?: (e: DragEvent) => void;
@@ -154,30 +154,29 @@ function closeModal(modalId: string): void {
 // Globale Variable, um zu verhindern, dass Endlosanfragen gesendet werden
 let entriesLoadingEnabled: boolean = false;
 
-document.addEventListener('DOMContentLoaded', () => {
+// Function to initialize blackboard
+function initializeBlackboard() {
   // Aktiviere das automatische Laden der Einträge
   entriesLoadingEnabled = true;
 
   // Alle Schließen-Buttons einrichten
   setupCloseButtons();
 
-  // Check if previewAttachment is available
-  console.log('[Blackboard] Checking window.previewAttachment:', typeof window.previewAttachment);
-  if (typeof window.previewAttachment !== 'function') {
-    console.error('[Blackboard] previewAttachment function not found in window!');
-  }
+  // Note: previewAttachment will be available after this module loads completely
+
+  // Debug: Log when this script loads
+  console.log('[Blackboard] Script loaded at:', new Date().toISOString());
 
   // Check if user is logged in
   checkLoggedIn()
     .then(() => {
-      // Load user info in header - with a small delay to ensure DOM is ready
-      setTimeout(() => {
-        loadHeaderUserInfo();
-      }, 100);
+      // Header user info is now handled by unified navigation
 
-      // Load user data
-      fetchUserData()
-        .then((userData: UserData) => {
+      // Get user data from localStorage instead of fetching again
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
           currentUserId = userData.id;
           isAdmin = userData.role === 'admin' || userData.role === 'root';
 
@@ -189,47 +188,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Load departments and teams for form dropdowns
           loadDepartmentsAndTeams();
-
-          // Always load entries on page load
-          entriesLoadingEnabled = true;
-          loadEntries().then(() => {
-            // Check if we have an entry parameter in the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const entryId = urlParams.get('entry');
-
-            if (entryId) {
-              // If we have an entry ID, scroll to the specific one
-              const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
-              if (entryElement) {
-                entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Add a highlight effect
-                entryElement.classList.add('highlight-entry');
-                setTimeout(() => {
-                  entryElement.classList.remove('highlight-entry');
-                }, 3000);
+        } catch (error) {
+          console.error('[Blackboard] Error parsing stored user data:', error);
+          // Fallback: fetch user data if localStorage is corrupted
+          fetchUserData()
+            .then((userData: UserData) => {
+              currentUserId = userData.id;
+              isAdmin = userData.role === 'admin' || userData.role === 'root';
+              const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+              if (newEntryBtn) {
+                newEntryBtn.style.display = isAdmin ? 'block' : 'none';
               }
-            }
-          });
-
-          // Hide the load entries button since entries are loaded automatically
-          const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
-          if (loadEntriesBtn) {
-            loadEntriesBtn.style.display = 'none';
-          }
-
-          // Retry-Button Ereignisbehandlung
-          const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement;
-          if (retryLoadBtn) {
-            retryLoadBtn.addEventListener('click', () => {
-              entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
-              loadEntries();
+              loadDepartmentsAndTeams();
+            })
+            .catch((error) => {
+              console.error('[Blackboard] Error loading user data:', error);
+              showError('Fehler beim Laden der Benutzerdaten');
             });
+        }
+      } else {
+        // No stored user data, fetch it
+        fetchUserData()
+          .then((userData: UserData) => {
+            currentUserId = userData.id;
+            isAdmin = userData.role === 'admin' || userData.role === 'root';
+            const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+            if (newEntryBtn) {
+              newEntryBtn.style.display = isAdmin ? 'block' : 'none';
+            }
+            loadDepartmentsAndTeams();
+          })
+          .catch((error) => {
+            console.error('[Blackboard] Error loading user data:', error);
+            showError('Fehler beim Laden der Benutzerdaten');
+          });
+      }
+
+      // Always load entries on page load
+      entriesLoadingEnabled = true;
+      loadEntries().then(() => {
+        // Check if we have an entry parameter in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const entryId = urlParams.get('entry');
+
+        if (entryId) {
+          // If we have an entry ID, scroll to the specific one
+          const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
+          if (entryElement) {
+            entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a highlight effect
+            entryElement.classList.add('highlight-entry');
+            setTimeout(() => {
+              entryElement.classList.remove('highlight-entry');
+            }, 3000);
           }
-        })
-        .catch((error) => {
-          console.error('Error loading user data:', error);
-          window.location.href = '/pages/login.html';
+        }
+      });
+
+      // Hide the load entries button since entries are loaded automatically
+      const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
+      if (loadEntriesBtn) {
+        loadEntriesBtn.style.display = 'none';
+      }
+
+      // Retry-Button Ereignisbehandlung
+      const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement;
+      if (retryLoadBtn) {
+        retryLoadBtn.addEventListener('click', () => {
+          entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
+          loadEntries();
         });
+      }
 
       // Setup event listeners
       setupEventListeners();
@@ -238,7 +267,15 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error checking login:', error);
       window.location.href = '/pages/login.html';
     });
-});
+}
+
+// Initialize when DOM is ready or immediately if already ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBlackboard);
+} else {
+  // DOM is already ready, call the function directly
+  initializeBlackboard();
+}
 
 /**
  * Setup close buttons for all modals
@@ -530,7 +567,7 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -660,85 +697,7 @@ async function fetchUserData(): Promise<UserData> {
   return response.json();
 }
 
-/**
- * Load Header User Info - same as in admin-dashboard.ts
- */
-async function loadHeaderUserInfo(): Promise<void> {
-  try {
-    const token = getAuthToken();
-    if (!token) return;
-
-    console.log('[Blackboard] Loading header user info...');
-
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      const userData: User = await response.json();
-      console.log('[Blackboard] User data loaded:', userData);
-
-      // First check if user-info div exists and restore structure if needed
-      const userInfoDiv = document.getElementById('user-info');
-      if (userInfoDiv) {
-        // If user-info has been overwritten (no children or just text), restore it
-        if (userInfoDiv.children.length === 0) {
-          console.log('[Blackboard] Restoring user-info structure...');
-          userInfoDiv.innerHTML = `
-            <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
-            <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
-            <span id="role-indicator" class="role-badge admin" style="display: inline-flex !important; visibility: visible !important;">Admin</span>
-          `;
-        }
-      }
-
-      // Now get the elements
-      const userNameElement = document.getElementById('user-name') as HTMLElement;
-      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
-      const roleIndicator = document.getElementById('role-indicator') as HTMLElement;
-
-      console.log('[Blackboard] Elements found after restore:', {
-        userNameElement: !!userNameElement,
-        userAvatar: !!userAvatar,
-        roleIndicator: !!roleIndicator,
-      });
-
-      if (userNameElement) {
-        const fullName =
-          userData.first_name && userData.last_name
-            ? `${userData.first_name} ${userData.last_name}`
-            : userData.username;
-        userNameElement.textContent = fullName;
-        console.log('[Blackboard] Set user name to:', fullName);
-      }
-
-      if (userAvatar) {
-        // Always set a default avatar first
-        userAvatar.src = '/assets/images/default-avatar.svg';
-
-        if (userData.profile_picture) {
-          userAvatar.src = userData.profile_picture;
-          userAvatar.onerror = function () {
-            this.src = '/assets/images/default-avatar.svg';
-          };
-        }
-        console.log('[Blackboard] Set avatar src to:', userAvatar.src);
-      }
-
-      // Update role indicator
-      if (roleIndicator && userData.role) {
-        roleIndicator.textContent =
-          userData.role === 'admin' ? 'Admin' : userData.role === 'root' ? 'Root' : 'Mitarbeiter';
-        roleIndicator.className = `role-badge ${userData.role}`;
-        console.log('[Blackboard] Set role to:', roleIndicator.textContent);
-      }
-    }
-  } catch (error) {
-    console.error('[Blackboard] Error loading user info:', error);
-  }
-}
+// loadHeaderUserInfo function removed - now handled by unified navigation
 
 /**
  * Load departments and teams
@@ -923,15 +882,15 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       ${contentHtml}
       
       ${
-        !isDirectAttachment && entry.attachment_count && entry.attachment_count > 0
-          ? `
+  !isDirectAttachment && entry.attachment_count && entry.attachment_count > 0
+    ? `
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
           <i class="fas fa-paperclip" style="color: #666;"></i>
           <span style="color: #666; font-size: 12px;">${entry.attachment_count} Anhang${entry.attachment_count > 1 ? 'änge' : ''}</span>
         </div>
       `
-          : ''
-      }
+    : ''
+}
       
       <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
         <span>
@@ -943,8 +902,8 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       </div>
       
       ${
-        canEdit
-          ? `
+  canEdit
+    ? `
         <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.2s;">
           <button class="btn btn-sm btn-link p-1" onclick="event.stopPropagation(); editEntry(${entry.id})" title="Bearbeiten">
             <i class="fas fa-edit"></i>
@@ -954,8 +913,8 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           </button>
         </div>
       `
-          : ''
-      }
+    : ''
+}
     </div>
   `;
 
@@ -1396,29 +1355,29 @@ async function viewEntry(entryId: number): Promise<void> {
             ${escapeHtml(entry.content).replace(/\n/g, '<br>')}
           </div>
           ${
-            entry.tags && entry.tags.length > 0
-              ? `
+  entry.tags && entry.tags.length > 0
+    ? `
             <div class="entry-tags">
               ${entry.tags.map((tag: string) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
             </div>
           `
-              : ''
-          }
+    : ''
+}
           ${
-            attachments.length > 0
-              ? `
+  attachments.length > 0
+    ? `
             <div class="entry-attachments">
               <h4 class="entry-attachments-title">
                 <i class="fas fa-paperclip"></i> Anhänge (${attachments.length})
               </h4>
               <div class="entry-attachment-list" id="attachment-list-${entryId}">
                 ${attachments
-                  .map((att) => {
-                    const isPDF = att.mime_type === 'application/pdf';
+    .map((att) => {
+      const isPDF = att.mime_type === 'application/pdf';
 
-                    console.log(`[Blackboard] Rendering attachment:`, att);
+      console.log(`[Blackboard] Rendering attachment:`, att);
 
-                    return `
+      return `
                     <div class="entry-attachment-item" 
                          data-attachment-id="${att.id}"
                          data-mime-type="${att.mime_type}"
@@ -1431,13 +1390,13 @@ async function viewEntry(entryId: number): Promise<void> {
                       <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
                     </div>
                   `;
-                  })
-                  .join('')}
+    })
+    .join('')}
               </div>
             </div>
           `
-              : ''
-          }
+    : ''
+}
         `;
 
         // Update footer buttons BEFORE showing modal

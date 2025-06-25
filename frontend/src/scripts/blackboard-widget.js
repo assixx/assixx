@@ -8,6 +8,8 @@ class BlackboardWidget {
     this.container = document.getElementById(containerId);
     this.entries = [];
     this.loading = false;
+    // Check sidebar state from localStorage immediately
+    this.sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     this.init();
   }
 
@@ -27,8 +29,12 @@ class BlackboardWidget {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          // Sidebar state changed, reload entries
-          this.loadEntries();
+          // Update our state and reload entries
+          const newCollapsedState = sidebar.classList.contains('collapsed');
+          if (newCollapsedState !== this.sidebarCollapsed) {
+            this.sidebarCollapsed = newCollapsedState;
+            this.loadEntries();
+          }
         }
       });
     });
@@ -66,10 +72,8 @@ class BlackboardWidget {
     const contentElement = document.getElementById('blackboard-widget-content');
 
     try {
-      // Check if sidebar is collapsed
-      const sidebar = document.querySelector('.sidebar');
-      const isCollapsed = sidebar && sidebar.classList.contains('collapsed');
-      const limit = isCollapsed ? 5 : 3;
+      // Use pre-determined sidebar state
+      const limit = this.sidebarCollapsed ? 5 : 3;
 
       const response = await fetch(`/api/blackboard/dashboard?limit=${limit}`, {
         headers: {
@@ -98,6 +102,7 @@ class BlackboardWidget {
 
   renderEntries() {
     const contentElement = document.getElementById('blackboard-widget-content');
+    const widgetElement = this.container.querySelector('.blackboard-widget');
 
     if (this.entries.length === 0) {
       contentElement.innerHTML = `
@@ -116,6 +121,9 @@ class BlackboardWidget {
             </div>
         `;
 
+    // Initialize lazy loading for images
+    this.initLazyLoading();
+
     // Add click handlers
     this.entries.forEach((entry) => {
       const noteElement = document.getElementById(`mini-note-${entry.id}`);
@@ -123,6 +131,39 @@ class BlackboardWidget {
         noteElement.addEventListener('click', () => this.openEntry(entry.id));
       }
     });
+
+    // Mark widget as loaded to enable transitions
+    if (widgetElement) {
+      setTimeout(() => {
+        widgetElement.classList.add('loaded');
+      }, 50);
+    }
+  }
+
+  initLazyLoading() {
+    // Use Intersection Observer for lazy loading images
+    const lazyImages = this.container.querySelectorAll('img[data-src]');
+
+    if ('IntersectionObserver' in window) {
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+            observer.unobserve(img);
+          }
+        });
+      });
+
+      lazyImages.forEach((img) => imageObserver.observe(img));
+    } else {
+      // Fallback for browsers without IntersectionObserver
+      lazyImages.forEach((img) => {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+      });
+    }
   }
 
   createMiniNote(entry) {
@@ -160,9 +201,10 @@ class BlackboardWidget {
       if (isImage) {
         contentHtml = `
           <div class="mini-note-attachment">
-            <img src="/api/blackboard/attachments/${attachment.id}/preview" 
+            <img data-src="/api/blackboard/attachments/${attachment.id}/preview" 
                  alt="${this.escapeHtml(attachment.original_name)}" 
                  style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
+                 loading="lazy"
                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
             <div style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 80px; color: #666;">
               <i class="fas fa-image" style="font-size: 24px; margin-bottom: 5px;"></i>

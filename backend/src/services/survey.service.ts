@@ -15,7 +15,6 @@ interface SurveyData {
   created_by: number;
   status: 'draft' | 'active' | 'closed';
   is_anonymous: boolean | number;
-  is_mandatory: boolean | number;
   start_date?: Date | null;
   end_date?: Date | null;
   created_at: Date;

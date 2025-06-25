@@ -265,9 +265,9 @@
       </thead>
       <tbody>
         ${admins
-          .map((admin) => {
-            const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || '-';
-            return `
+    .map((admin) => {
+      const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || '-';
+      return `
           <tr>
             <td>${admin.id}</td>
             <td>${admin.username}</td>
@@ -289,8 +289,8 @@
             </td>
           </tr>
         `;
-          })
-          .join('')}
+    })
+    .join('')}
       </tbody>
     </table>
   `;
@@ -690,10 +690,10 @@
         <input type="checkbox" name="groupSelect" value="${group.id}" style="margin-right: 8px;" />
         <span>${group.name}</span>
         ${
-          group.departments && group.departments.length > 0
-            ? `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>`
-            : ''
-        }
+  group.departments && group.departments.length > 0
+    ? `<small style="margin-left: 8px; color: var(--text-secondary);">(${group.departments.length} Abteilungen)</small>`
+    : ''
+  }
       </label>
       ${group.subgroups && group.subgroups.length > 0 ? renderGroupTree(group.subgroups, level + 1) : ''}
     </div>
@@ -940,8 +940,8 @@
     const formData: any = {
       first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
       last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
-      email: email,
-      password: password,
+      email,
+      password,
       position: (document.getElementById('positionDropdownValue') as HTMLInputElement).value,
       notes: (document.getElementById('adminNotes') as HTMLTextAreaElement).value,
       role: 'admin',
@@ -971,7 +971,7 @@
       }
 
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1017,8 +1017,8 @@
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                adminId: adminId,
-                departmentIds: departmentIds,
+                adminId,
+                departmentIds,
                 permissions: { can_read: true, can_write: false, can_delete: false },
               }),
             });
@@ -1037,8 +1037,8 @@
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  adminId: adminId,
-                  groupIds: groupIds,
+                  adminId,
+                  groupIds,
                   permissions: { can_read: true, can_write: false, can_delete: false },
                 }),
               });
@@ -1054,7 +1054,7 @@
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                adminId: adminId,
+                adminId,
                 departmentIds: [], // Empty array removes all permissions
                 permissions: { can_read: true, can_write: false, can_delete: false },
               }),
@@ -1084,11 +1084,11 @@
 
   // Hilfsfunktionen für Benachrichtigungen
   function showError(message: string) {
-    alert('Fehler: ' + message); // TODO: Bessere Notification implementieren
+    alert(`Fehler: ${message}`); // TODO: Bessere Notification implementieren
   }
 
   function showSuccess(message: string) {
-    alert('Erfolg: ' + message); // TODO: Bessere Notification implementieren
+    alert(`Erfolg: ${message}`); // TODO: Bessere Notification implementieren
   }
 
   // Modal schließen bei Klick außerhalb

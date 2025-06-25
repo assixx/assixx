@@ -1,6 +1,10 @@
 /**
  * Teams API Routes
  * Handles team management operations and team member management
+ * @swagger
+ * tags:
+ *   name: Teams
+ *   description: Team management and team member operations
  */
 
 import express, { Router, Request, Response, NextFunction } from 'express';
@@ -99,6 +103,106 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   }
 });
 
+/**
+ * @swagger
+ * /teams:
+ *   post:
+ *     summary: Create a new team
+ *     description: Create a new team (Admin/Root only)
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Team name
+ *                 example: DevOps Team
+ *               description:
+ *                 type: string
+ *                 description: Team description
+ *                 example: Verantwortlich für CI/CD und Infrastruktur
+ *               department_id:
+ *                 type: integer
+ *                 description: Department ID this team belongs to
+ *                 example: 2
+ *               leader_id:
+ *                 type: integer
+ *                 description: User ID of team leader
+ *                 example: 15
+ *               max_members:
+ *                 type: integer
+ *                 description: Maximum team size
+ *                 example: 10
+ *               location:
+ *                 type: string
+ *                 description: Team location
+ *                 example: Gebäude B, Raum 201
+ *               budget:
+ *                 type: number
+ *                 description: Team budget
+ *                 example: 50000
+ *               is_active:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Whether team is active
+ *               goals:
+ *                 type: string
+ *                 description: Team goals and objectives
+ *     responses:
+ *       201:
+ *         description: Team created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team erfolgreich erstellt
+ *                 teamId:
+ *                   type: integer
+ *                   example: 8
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Teamname ist erforderlich
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Not admin/root
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Zugriff verweigert
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Create team
 router.post('/', async (req, res): Promise<void> => {
   try {
@@ -157,6 +261,37 @@ router.post('/', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams:
+ *   get:
+ *     summary: Get all teams
+ *     description: Retrieve all teams for the tenant
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Teams retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Team'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get all teams
 router.get('/', async (req, res): Promise<void> => {
   try {
@@ -172,6 +307,52 @@ router.get('/', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams/{id}:
+ *   get:
+ *     summary: Get team by ID
+ *     description: Retrieve a specific team by its ID
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     responses:
+ *       200:
+ *         description: Team retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Team'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Team not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team nicht gefunden
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get single team
 router.get('/:id', async (req, res): Promise<void> => {
   try {
@@ -193,6 +374,110 @@ router.get('/:id', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams/{id}:
+ *   put:
+ *     summary: Update team
+ *     description: Update an existing team (Admin/Root only)
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Team name
+ *               description:
+ *                 type: string
+ *                 description: Team description
+ *               department_id:
+ *                 type: integer
+ *                 description: Department ID
+ *               leader_id:
+ *                 type: integer
+ *                 description: Team leader user ID
+ *               max_members:
+ *                 type: integer
+ *                 description: Maximum team size
+ *               location:
+ *                 type: string
+ *                 description: Team location
+ *               budget:
+ *                 type: number
+ *                 description: Team budget
+ *               is_active:
+ *                 type: boolean
+ *                 description: Whether team is active
+ *               goals:
+ *                 type: string
+ *                 description: Team goals
+ *     responses:
+ *       200:
+ *         description: Team updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team erfolgreich aktualisiert
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Teamname ist erforderlich
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Not admin/root
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Zugriff verweigert
+ *       404:
+ *         description: Team not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team nicht gefunden
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Update team
 router.put('/:id', async (req, res): Promise<void> => {
   try {
@@ -256,6 +541,66 @@ router.put('/:id', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams/{id}:
+ *   delete:
+ *     summary: Delete team
+ *     description: Delete a team (Admin/Root only)
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     responses:
+ *       200:
+ *         description: Team deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team erfolgreich gelöscht
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Not admin/root
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Zugriff verweigert
+ *       404:
+ *         description: Team not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team nicht gefunden
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Delete team
 router.delete('/:id', async (req, res): Promise<void> => {
   try {
@@ -288,6 +633,75 @@ router.delete('/:id', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams/{id}/members:
+ *   get:
+ *     summary: Get team members
+ *     description: Retrieve all members of a specific team
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     responses:
+ *       200:
+ *         description: Team members retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   username:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   first_name:
+ *                     type: string
+ *                   last_name:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *                     enum: [root, admin, employee]
+ *                   position:
+ *                     type: string
+ *                   joined_at:
+ *                     type: string
+ *                     format: date-time
+ *                   is_leader:
+ *                     type: boolean
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Team not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team nicht gefunden
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get team members
 router.get('/:id/members', async (req, res): Promise<void> => {
   try {
@@ -315,6 +729,89 @@ router.get('/:id/members', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams/{id}/members:
+ *   post:
+ *     summary: Add user to team
+ *     description: Add a user to a team (Admin/Root only)
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: User ID to add to team
+ *                 example: 42
+ *     responses:
+ *       200:
+ *         description: User added to team successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Benutzer erfolgreich zum Team hinzugefügt
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Benutzer-ID ist erforderlich
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Not admin/root
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Zugriff verweigert
+ *       404:
+ *         description: Team or user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Team nicht gefunden
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Add user to team
 router.post('/:id/members', async (req, res): Promise<void> => {
   try {
@@ -367,6 +864,72 @@ router.post('/:id/members', async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * @swagger
+ * /teams/{id}/members/{userId}:
+ *   delete:
+ *     summary: Remove user from team
+ *     description: Remove a user from a team (Admin/Root only)
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Team ID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID to remove
+ *     responses:
+ *       200:
+ *         description: User removed from team successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Benutzer erfolgreich aus dem Team entfernt
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Not admin/root
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Zugriff verweigert
+ *       404:
+ *         description: Team, user, or membership not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Benutzer ist kein Mitglied dieses Teams
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Remove user from team
 router.delete('/:id/members/:userId', async (req, res): Promise<void> => {
   try {

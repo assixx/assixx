@@ -347,15 +347,15 @@ export class DocumentBase {
           <span>${this.escapeHtml(doc.uploaded_by_name || 'System')}</span>
         </div>
         ${
-          doc.file_size
-            ? `
+  doc.file_size
+    ? `
           <div class="document-meta-item">
             <i class="fas fa-weight"></i>
             <span>${this.formatFileSize(doc.file_size)}</span>
           </div>
         `
-            : ''
-        }
+    : ''
+}
       </div>
     `;
 
@@ -489,7 +489,7 @@ export class DocumentBase {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
   protected escapeHtml(text: string): string {
@@ -654,8 +654,8 @@ window.downloadDocument = async function (docId?: string | number): Promise<void
 
 // Toggle dropdown
 window.toggleDropdown = function (type: string): void {
-  const display = document.getElementById(type + 'Display');
-  const dropdown = document.getElementById(type + 'Dropdown');
+  const display = document.getElementById(`${type}Display`);
+  const dropdown = document.getElementById(`${type}Dropdown`);
 
   if (!display || !dropdown) return;
 

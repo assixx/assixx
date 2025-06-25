@@ -181,12 +181,12 @@
    - [x] Konflikte erkennen
    - [x] Export-Funktion
 
-9. **KVP-System**
+9. **KVP-System** ✅
 
-   - [ ] Vorschläge einreichen
-   - [ ] Status-Updates
-   - [ ] Bewertungen
-   - [ ] Statistiken
+   - [x] Vorschläge einreichen ✅
+   - [x] Status-Updates ✅
+   - [x] Bewertungen ✅
+   - [x] Statistiken ✅
 
 10. **Survey-System**
 
@@ -207,7 +207,7 @@
     - [ ] Benachrichtigungen
     - [ ] Sprache/Theme
 
-### Fortschritt: 9/12 Bereiche getestet ✅
+### Fortschritt: 10/12 Bereiche getestet ✅
 
 ## 🧪 PHASE 0: Funktionstests ✅ ABGESCHLOSSEN
 

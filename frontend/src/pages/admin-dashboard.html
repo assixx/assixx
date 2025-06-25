@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+      })();
+    </script>
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -46,7 +59,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(0deg, transparent 0%, rgba(0, 142, 255, 0.03) 100%, #01000482 60%, rgba(0, 0, 4, 0.6) 90%, black 100%);
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
       }
@@ -565,6 +578,51 @@
         border-color: #17a2b8;
         transform: translateY(-1px);
       }
+
+      /* Global Layout Shift Prevention using CSS Custom Properties */
+      :root {
+        /* These are set by inline script above */
+        --sidebar-width: 250px;
+        --content-margin: 250px;
+        --grid-columns: 3;
+        --card-max-width: 100%;
+        --widget-padding: 1.5rem;
+      }
+
+      /* When sidebar is collapsed */
+      [data-sidebar='collapsed'] {
+        --sidebar-width: 60px;
+        --content-margin: 60px;
+        --grid-columns: 4;
+        --card-max-width: 100%;
+        --widget-padding: 2rem;
+      }
+
+      /* Apply to all main content */
+      .main-content {
+        margin-left: var(--content-margin);
+        transition: margin-left 0.3s ease;
+      }
+
+      /* Apply to all grids */
+      .admin-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        max-width: 100%;
+      }
+
+      /* Apply to all cards and widgets */
+      .card,
+      .widget,
+      .stat-card,
+      .blackboard-widget {
+        transition: all 0.3s ease;
+        max-width: var(--card-max-width);
+      }
+
+      /* Prevent any layout shift during initial load */
+      body:not(.loaded) * {
+        transition: none !important;
+      }
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -604,7 +662,7 @@
           </div>
 
           <!-- Blackboard Widget -->
-          <div id="blackboard-widget-container" style="margin-top: 2rem"></div>
+          <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading"></div>
 
           <!-- Main Grid Container -->
           <div class="admin-grid">
@@ -1275,6 +1333,50 @@
         }
       };
     </script>
+
+    <!-- Performance Monitoring Script -->
+    <script>
+      // Add performance monitoring to all fetch requests
+      (function () {
+        const originalFetch = window.fetch;
+        let requestCounter = 0;
+
+        window.fetch = function (...args) {
+          const requestId = ++requestCounter;
+          const url = args[0];
+          const startTime = performance.now();
+
+          console.log(`[Performance] Request #${requestId} starting: ${url}`);
+
+          return originalFetch
+            .apply(this, args)
+            .then((response) => {
+              const endTime = performance.now();
+              const duration = (endTime - startTime).toFixed(2);
+              console.log(`[Performance] Request #${requestId} completed: ${url} - ${duration}ms (Status: ${response.status})`);
+              return response;
+            })
+            .catch((error) => {
+              const endTime = performance.now();
+              const duration = (endTime - startTime).toFixed(2);
+              console.error(`[Performance] Request #${requestId} failed: ${url} - ${duration}ms`, error);
+              throw error;
+            });
+        };
+
+        // Log page load performance
+        window.addEventListener('load', () => {
+          const perfData = performance.getEntriesByType('navigation')[0];
+          if (perfData) {
+            console.log('[Performance] Page Load Metrics:');
+            console.log(`  - DOM Content Loaded: ${perfData.domContentLoadedEventEnd.toFixed(2)}ms`);
+            console.log(`  - Load Complete: ${perfData.loadEventEnd.toFixed(2)}ms`);
+            console.log(`  - Total Resources: ${performance.getEntriesByType('resource').length}`);
+          }
+        });
+      })();
+    </script>
+
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/show-section.ts"></script>
@@ -1317,7 +1419,38 @@
     <script>
       // Direkte Event-Listener hinzufügen
       console.log('Adding direct event listeners');
+
+      // Performance monitoring helper
+      function measurePerformance(label, fn) {
+        const startTime = performance.now();
+        console.log(`[Performance] Starting: ${label}`);
+
+        const result = fn();
+
+        if (result && result.then) {
+          // Handle promises
+          return result
+            .then((res) => {
+              const endTime = performance.now();
+              console.log(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
+              return res;
+            })
+            .catch((err) => {
+              const endTime = performance.now();
+              console.error(`[Performance] Failed: ${label} - ${(endTime - startTime).toFixed(2)}ms`, err);
+              throw err;
+            });
+        } else {
+          // Handle synchronous functions
+          const endTime = performance.now();
+          console.log(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
+          return result;
+        }
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
+        console.log('[Performance] DOMContentLoaded event fired');
+        const pageStartTime = performance.now();
         // Event-Listener für das Schließen des Mitarbeiter-Modals
         const closeEmployeeModalBtn = document.getElementById('close-employee-modal');
         const cancelEmployeeBtn = document.getElementById('cancel-employee-button');
@@ -2318,7 +2451,13 @@
             window.location.reload();
           }
         };
-        window.loadTeamsTable = loadTeamsTable || (() => console.log('loadTeamsTable not implemented'));
+        // Temporary fix: Define loadTeamsTable if not available
+        window.loadTeamsTable =
+          window.loadTeamsTable ||
+          function () {
+            console.log('loadTeamsTable called but not yet implemented');
+            // TODO: Implement team loading functionality
+          };
         window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
         window.loadDashboardStats = window.loadDashboardStats || (() => console.log('loadDashboardStats not implemented'));
       });
@@ -2660,5 +2799,15 @@
         align-items: center;
       }
     </style>
+
+    <!-- Mark body as loaded after all scripts -->
+    <script>
+      window.addEventListener('load', function () {
+        // Add 'loaded' class to enable transitions after initial load
+        setTimeout(() => {
+          document.body.classList.add('loaded');
+        }, 100);
+      });
+    </script>
   </body>
 </html>

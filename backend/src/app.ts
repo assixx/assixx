@@ -40,6 +40,10 @@ import { protectPage, contentSecurityPolicy } from './middleware/pageAuth';
 // Routes
 import routes from './routes';
 
+// Swagger documentation
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
+
 // Create Express app
 const app: Application = express();
 
@@ -106,23 +110,23 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
 
   // In production, use mappings
   const mappings: { [key: string]: string } = {
-    'unified-navigation': 'unified-navigation-BuitqYag.js',
+    'unified-navigation': 'unified-navigation-BL8CUkkq.js',
     'root-dashboard': 'root-dashboard-Dfu_VQDO.js',
     'header-user-info': 'header-user-info-BRS5ypTV.js',
     'admin-dashboard': 'admin-dashboard-N_R6RCKQ.js',
     'admin-config': 'admin-config-ev_UCVpb.js',
-    auth: 'auth-BvajzGn4.js',
+    auth: 'auth-CLt6HVJ3.js',
     blackboard: 'blackboard-CkcWnHK8.js',
     calendar: 'calendar-CM3Czewy.js',
-    chat: 'chat-BMxgIT7z.js',
+    chat: 'chat-DQj9jM7D.js',
     'dashboard-scripts': 'dashboard-scripts-ctg6MSn3.js',
     shifts: 'shifts-CzuLC6lB.js',
     'storage-upgrade': 'storage-upgrade-CaOJRvXh.js',
     'admin-profile': 'admin-profile-DrPj6ROD.js',
     'manage-admins': 'manage-admins-Bo1AiG2V.js',
-    'components/unified-navigation': 'unified-navigation-BuitqYag.js',
-    'role-switch': 'role-switch-BYc551YJ.js',
-    'employee-dashboard': 'employee-dashboard-DjOn7w6o.js',
+    'components/unified-navigation': 'unified-navigation-BL8CUkkq.js',
+    'role-switch': 'role-switch-C7a6BNLX.js',
+    'employee-dashboard': 'employee-dashboard-egyM3xDp.js',
     documents: 'documents-BIog5ddL.js',
   };
 
@@ -318,6 +322,35 @@ app.use(legacyRoutes);
 import roleSwitchRoutes from './routes/role-switch';
 console.log('[DEBUG] Mounting role-switch routes at /api/role-switch');
 app.use('/api/role-switch', roleSwitchRoutes);
+
+// Swagger API Documentation - BEFORE CSRF Protection
+if (process.env.NODE_ENV === 'development') {
+  console.log('[DEBUG] Mounting Swagger UI at /api-docs');
+
+  // Serve OpenAPI JSON spec
+  app.get('/api-docs/swagger.json', (_req: Request, res: Response): void => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
+  // Serve Swagger UI
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Assixx API Documentation',
+      customfavIcon: '/favicon.ico',
+      swaggerOptions: {
+        docExpansion: 'none',
+        filter: true,
+        showRequestDuration: true,
+        tryItOutEnabled: true,
+        persistAuthorization: true,
+      },
+    })
+  );
+}
 
 // CSRF Protection - applied to all routes except specified exceptions
 console.log('[DEBUG] Applying CSRF protection');

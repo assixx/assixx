@@ -23,6 +23,21 @@ Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehm
 
 Für die schnellste und einfachste Einrichtung der Entwicklungsumgebung:
 
+#### Option 1: Automatisches Setup (NEU - Empfohlen!)
+
+```bash
+# Repository klonen
+git clone https://github.com/SCS-Technik/Assixx.git
+cd Assixx/docker
+
+# Setup-Script ausführen (erstellt alles automatisch)
+./docker-init.sh
+
+# Auf http://localhost:3000 zugreifen
+```
+
+#### Option 2: Manuelles Setup
+
 ```bash
 # Repository klonen
 git clone https://github.com/SCS-Technik/Assixx.git
@@ -31,42 +46,32 @@ cd Assixx
 # In Docker-Verzeichnis wechseln
 cd docker
 
+# Volumes erstellen (nur beim ersten Mal nötig)
+docker volume create assixx_mysql_data
+docker volume create assixx_redis_data
+
 # Docker-Umgebung starten
 docker-compose up -d
 
 # Auf http://localhost:3000 zugreifen
 ```
 
-Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisungen und **[DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md)** für Docker-Einsteiger.
-
-### Platform-spezifische Setup-Guides:
-
-- **[Windows (WSL)](./docs/SETUP-WINDOWS-WSL.md)** - Kompletter Setup-Guide für Windows mit WSL
-- **[Ubuntu/Linux](./docs/SETUP-UBUNTU-LINUX.md)** - Setup-Guide für Ubuntu und Debian-basierte Systeme
-- **[macOS](./docs/SETUP-MACOS.md)** - Setup-Guide für macOS mit Homebrew
-
-Siehe auch [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) für detaillierte Datenbank-Konfiguration.
+Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisungen.
 
 ## 📚 Dokumentation
 
-| Dokument                                                         | Beschreibung                         |
-| ---------------------------------------------------------------- | ------------------------------------ |
-| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)               | Vollständige Verzeichnisstruktur     |
-| 📋 [FEATURES.md](./docs/FEATURES.md)                             | Komplette Feature-Übersicht & Preise |
-| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                     | Technische Architektur & Stack       |
-| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                     | Docker Development Environment       |
-| 🐳 [DOCKER-BEGINNERS-GUIDE.md](./docs/DOCKER-BEGINNERS-GUIDE.md) | Docker Anleitung für Einsteiger      |
-| 🐳 [DOCKER-SETUP-SUMMARY.md](./docs/DOCKER-SETUP-SUMMARY.md)     | Docker Setup Zusammenfassung         |
-| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                     | Backup-Strategie & Anleitung         |
-| 🪟 [SETUP-WINDOWS-WSL.md](./docs/SETUP-WINDOWS-WSL.md)           | Windows (WSL) Setup Guide            |
-| 🐧 [SETUP-UBUNTU-LINUX.md](./docs/SETUP-UBUNTU-LINUX.md)         | Ubuntu/Linux Setup Guide             |
-| 🍎 [SETUP-MACOS.md](./docs/SETUP-MACOS.md)                       | macOS Setup Guide                    |
-| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)   | Detaillierte Datenbank-Installation  |
-| 📝 [TODO.md](./TODO.md)                                          | Aktuelle Aufgaben & Roadmap          |
-| 🔧 [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)           | Entwickler-Richtlinien               |
-| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                         | Production Deployment                |
-| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)             | UI/UX Design Standards               |
-| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                               | Entwicklungsfahrplan                 |
+| Dokument                                                       | Beschreibung                         |
+| -------------------------------------------------------------- | ------------------------------------ |
+| 📁 [PROJEKTSTRUKTUR.md](./docs/PROJEKTSTRUKTUR.md)             | Vollständige Verzeichnisstruktur     |
+| 📋 [FEATURES.md](./docs/FEATURES.md)                           | Komplette Feature-Übersicht & Preise |
+| 🏗️ [ARCHITECTURE.md](./docs/ARCHITECTURE.md)                   | Technische Architektur & Stack       |
+| 🐳 [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)                   | Docker Setup & Anleitung             |
+| 💾 [BACKUP-GUIDE.md](./docs/BACKUP-GUIDE.md)                   | Backup-Strategie & Anleitung         |
+| 💾 [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md) | Detaillierte Datenbank-Installation  |
+| 📝 [TODO.md](./TODO.md)                                        | Aktuelle Aufgaben & Roadmap          |
+| 🚢 [DEPLOYMENT.md](./docs/DEPLOYMENT.md)                       | Production Deployment                |
+| 🎨 [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)           | UI/UX Design Standards               |
+| 🗺️ [ROADMAP.md](./docs/ROADMAP.md)                             | Entwicklungsfahrplan                 |
 
 ## 🎯 Kernfeatures
 
@@ -112,6 +117,10 @@ Siehe [ARCHITECTURE.md](./docs/ARCHITECTURE.md) für technische Details.
 # Repository klonen
 git clone https://github.com/SCS-Technik/Assixx.git
 cd Assixx
+
+# Volumes erstellen (nur beim ersten Mal)
+docker volume create assixx_mysql_data
+docker volume create assixx_redis_data
 
 # Docker starten
 cd docker && docker-compose up -d
