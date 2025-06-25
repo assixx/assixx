@@ -108,26 +108,26 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     return;
   }
 
-  // In production, use mappings
+  // In production, use mappings (now without hashes)
   const mappings: { [key: string]: string } = {
-    'unified-navigation': 'unified-navigation-CHH1VBLs.js',
-    'root-dashboard': 'root-dashboard-Dfu_VQDO.js',
-    'header-user-info': 'header-user-info-BRS5ypTV.js',
-    'admin-dashboard': 'admin-dashboard-N_R6RCKQ.js',
-    'admin-config': 'admin-config-ev_UCVpb.js',
-    auth: 'auth-CLt6HVJ3.js',
-    blackboard: 'blackboard-CkcWnHK8.js',
-    calendar: 'calendar-CM3Czewy.js',
-    chat: 'chat-DQj9jM7D.js',
-    'dashboard-scripts': 'dashboard-scripts-ctg6MSn3.js',
-    shifts: 'shifts-CzuLC6lB.js',
-    'storage-upgrade': 'storage-upgrade-CaOJRvXh.js',
-    'admin-profile': 'admin-profile-DrPj6ROD.js',
-    'manage-admins': 'manage-admins-Bo1AiG2V.js',
-    'components/unified-navigation': 'unified-navigation-CHH1VBLs.js',
-    'role-switch': 'role-switch-C7a6BNLX.js',
-    'employee-dashboard': 'employee-dashboard-egyM3xDp.js',
-    documents: 'documents-BIog5ddL.js',
+    'unified-navigation': 'unified-navigation.js',
+    'root-dashboard': 'root-dashboard.js',
+    'header-user-info': 'header-user-info.js',
+    'admin-dashboard': 'admin-dashboard.js',
+    'admin-config': 'admin-config.js',
+    auth: 'auth.js',
+    blackboard: 'blackboard.js',
+    calendar: 'calendar.js',
+    chat: 'chat.js',
+    'dashboard-scripts': 'dashboard-scripts.js',
+    shifts: 'shifts.js',
+    'storage-upgrade': 'storage-upgrade.js',
+    'admin-profile': 'admin-profile.js',
+    'manage-admins': 'manage-admins.js',
+    'components/unified-navigation': 'unified-navigation.js',
+    'role-switch': 'role-switch.js',
+    'employee-dashboard': 'employee-dashboard.js',
+    documents: 'documents.js',
   };
 
   const compiledFile = mappings[filename];

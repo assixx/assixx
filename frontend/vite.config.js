@@ -45,8 +45,8 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
-        chunkFileNames: 'js/[name]-[hash].js',
-        entryFileNames: 'js/[name]-[hash].js',
+        chunkFileNames: 'js/[name].js',
+        entryFileNames: 'js/[name].js',
       },
     },
     // Minification
