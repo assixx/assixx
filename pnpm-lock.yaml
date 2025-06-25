@@ -102,9 +102,6 @@ importers:
       '@types/express-rate-limit':
         specifier: ^5.1.3
         version: 5.1.3
-      '@types/helmet':
-        specifier: ^0.0.48
-        version: 0.0.48
       '@types/hpp':
         specifier: ^0.2.6
         version: 0.2.6
@@ -903,9 +900,6 @@ packages:
 
   '@types/express@4.17.23':
     resolution: {integrity: sha512-Crp6WY9aTYP3qPi2wGDo9iUe/rceX01UMhnF1jmwDcKCFM6cx7YhGP/Mpr3y9AASpfHixIG0E6azCcL5OcDHsQ==}
-
-  '@types/helmet@0.0.48':
-    resolution: {integrity: sha512-C7MpnvSDrunS1q2Oy1VWCY7CDWHozqSnM8P4tFeRTuzwqni+PYOjEredwcqWG+kLpYcgLsgcY3orHB54gbx2Jw==}
 
   '@types/hpp@0.2.6':
     resolution: {integrity: sha512-6gn1RuHA1/XFCVCqCkSV+AWy07YwtGg4re4SHhLMoiARTg9XlrbYMtVR+Uvws0VlERXzzcA+1UYvxEV6O+sgPg==}
@@ -4070,10 +4064,6 @@ snapshots:
       '@types/express-serve-static-core': 4.19.6
       '@types/qs': 6.14.0
       '@types/serve-static': 1.15.8
-
-  '@types/helmet@0.0.48':
-    dependencies:
-      '@types/express': 4.17.23
 
   '@types/hpp@0.2.6':
     dependencies:
