@@ -2538,7 +2538,7 @@ const unifiedNavigationCSS = `
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
         animation: fadeInUp 0.6s ease-out;
-        margin-top:15px;
+        margin-top: 39px;
     }
 
     /* Welcome hero style gradient backgrounds */
@@ -2869,7 +2869,7 @@ const unifiedNavigationCSS = `
     .layout-container {
         display: flex;
         min-height: 100vh;
-        padding-top: 60px; /* Space for fixed header */
+        padding-top: 87px; /* Space for fixed header */
     }
 
     .main-content {

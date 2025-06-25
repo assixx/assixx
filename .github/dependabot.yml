@@ -5,22 +5,32 @@
 
 version: 2
 updates:
-  # Backend dependencies
+  # Backend dependencies (pnpm compatible)
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     open-pull-requests-limit: 10
+    # Reduce update frequency by grouping updates
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
-  # Frontend dependencies
+  # Frontend dependencies (pnpm compatible)
   - package-ecosystem: 'npm'
     directory: '/frontend'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     open-pull-requests-limit: 10
+    # Reduce update frequency by grouping updates
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'

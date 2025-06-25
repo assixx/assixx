@@ -378,9 +378,7 @@
         }
       }
 
-      .stat-card:hover {
-        /*animation: subtle-pulse 2s infinite;*/
-      }
+      /* .stat-card:hover animation entfernt */
 
       /* Action buttons in tables - equal width */
       .table td:last-child .btn {
@@ -468,6 +466,7 @@
         margin-bottom: 4px;
         display: -webkit-box;
         -webkit-line-clamp: 1;
+        line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -623,6 +622,8 @@
       body:not(.loaded) * {
         transition: none !important;
       }
+
+      /* Breadcrumb Styles sind jetzt in breadcrumb.js enthalten */
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -637,9 +638,11 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
+        <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
+        <div id="breadcrumb-container"></div>
+        
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section">
-          <h1 class="text-center mb-4">Admin Dashboard</h1>
 
           <!-- Dashboard Stats Grid -->
           <div class="dashboard-grid">
@@ -812,7 +815,6 @@
 
         <!-- Employees Section -->
         <section id="employees-section" class="content-section" style="display: none">
-          <h1>Mitarbeiterverwaltung</h1>
           <button class="btn btn-primary mb-3" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
           <div class="card">
             <div class="card-header">
@@ -854,7 +856,6 @@
 
         <!-- Documents Section -->
         <section id="documents-section" class="content-section" style="display: none">
-          <h1>Dokumentenverwaltung</h1>
           <div class="flex-between mb-3">
             <div>
               <button class="btn btn-primary" onclick="window.location.href='/pages/document-upload.html'">
@@ -904,7 +905,6 @@
 
         <!-- Teams Section -->
         <section id="teams-section" class="content-section" style="display: none">
-          <h1>Teamverwaltung</h1>
           <button class="btn btn-primary mb-3" onclick="showTeamModal()">Neues Team</button>
           <div class="card">
             <div class="card-header">
@@ -931,7 +931,6 @@
 
         <!-- Settings Section -->
         <section id="settings-section" class="content-section" style="display: none">
-          <h1>Einstellungen</h1>
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">System-Einstellungen</h2>
@@ -1384,6 +1383,13 @@
     <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
+    
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
 
     <!-- Initialize dashboard on page load -->
     <script type="module">
