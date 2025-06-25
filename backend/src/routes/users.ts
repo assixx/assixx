@@ -552,18 +552,18 @@ router.put(
       const userId = authReq.user.id;
 
       // Verify current password and update to new password
-      const success = await User.changePassword(
+      const result = await User.changePassword(
         userId,
         authReq.user.tenant_id,
         currentPassword,
         newPassword
       );
 
-      if (success) {
+      if (result.success) {
         logger.info(`User ${userId} changed their password`);
-        res.json({ message: 'Passwort erfolgreich geändert' });
+        res.json({ message: result.message });
       } else {
-        res.status(400).json({ message: 'Aktuelles Passwort ist ungültig' });
+        res.status(400).json({ message: result.message });
       }
     } catch (error: any) {
       logger.error(

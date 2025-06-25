@@ -57,6 +57,10 @@ router.get(
       const conditions: string[] = [];
       const params: any[] = [];
 
+      // WICHTIG: Immer nach tenant_id filtern!
+      conditions.push('al.tenant_id = ?');
+      params.push(req.user.tenant_id);
+
       if (userId) {
         conditions.push('al.user_id = ?');
         params.push(userId);
@@ -116,6 +120,7 @@ router.get(
         `
         SELECT 
           al.id,
+          al.tenant_id,
           al.user_id,
           CONCAT(u.first_name, ' ', u.last_name) as user_name,
           u.role as user_role,
@@ -280,6 +285,10 @@ router.delete(
       const conditions: string[] = [];
       const params: any[] = [];
 
+      // WICHTIG: Immer nach tenant_id filtern!
+      conditions.push('tenant_id = ?');
+      params.push(req.user.tenant_id);
+
       if (userId) {
         conditions.push('user_id = ?');
         params.push(userId);
@@ -392,6 +401,7 @@ router.delete(
       // Log this deletion action with better details
       await createLog(
         req.user.id,
+        req.user.tenant_id,
         'delete',
         'logs',
         undefined,
@@ -423,6 +433,7 @@ router.delete(
 // Log-Eintrag erstellen (interne Funktion)
 export async function createLog(
   userId: number,
+  tenantId: number,
   action: string,
   entityType?: string,
   entityId?: number,
@@ -434,10 +445,10 @@ export async function createLog(
     await executeQuery(
       `
       INSERT INTO activity_logs 
-      (user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+      (tenant_id, user_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `,
-      [userId, action, entityType, entityId, details, ipAddress, userAgent]
+      [tenantId, userId, action, entityType, entityId, details, ipAddress, userAgent]
     );
   } catch (error) {
     logger.error('Error creating log entry:', error);

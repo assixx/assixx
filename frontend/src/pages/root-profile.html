@@ -373,6 +373,76 @@
         border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
+      /* Success Animation */
+      .success-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      .success-message {
+        background: rgba(76, 175, 80, 0.1);
+        border: 2px solid #4caf50;
+        backdrop-filter: blur(20px);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
+        text-align: center;
+        animation: scaleIn 0.5s ease-out;
+      }
+
+      .success-icon {
+        font-size: 4rem;
+        color: #4caf50;
+        margin-bottom: var(--spacing-lg);
+        animation: checkmark 0.6s ease-out 0.3s both;
+      }
+
+      .success-text {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes scaleIn {
+        from {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes checkmark {
+        0% {
+          transform: scale(0) rotate(0deg);
+        }
+        50% {
+          transform: scale(1.2) rotate(360deg);
+        }
+        100% {
+          transform: scale(1) rotate(360deg);
+        }
+      }
+
       /* Responsive */
       @media (max-width: 768px) {
         .profile-picture-section {
@@ -457,18 +527,18 @@
           <!-- Password Change Card -->
           <div class="profile-card">
             <h2 class="card-title">Passwort ändern</h2>
-            <form id="password-form">
+            <form id="password-form" autocomplete="off">
               <div class="form-group">
                 <label class="form-label">Aktuelles Passwort</label>
-                <input type="password" id="current_password" name="current_password" class="form-control" required />
+                <input type="password" id="current_password" name="current_password" class="form-control" autocomplete="current-password" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Neues Passwort</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" required />
+                <input type="password" id="new_password" name="new_password" class="form-control" autocomplete="new-password" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Neues Passwort bestätigen</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required />
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" autocomplete="new-password" required />
               </div>
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-key"></i>
@@ -689,7 +759,7 @@
             const data = Object.fromEntries(formData);
 
             try {
-              const response = await fetch('/api/user/change-password', {
+              const response = await fetch('/api/users/profile/password', {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -703,6 +773,7 @@
 
               if (response.ok) {
                 showMessage('Passwort erfolgreich geändert', 'success');
+                showSuccessOverlay('Passwort erfolgreich geändert!');
                 e.target.reset();
               } else {
                 const error = await response.json();
@@ -804,6 +875,28 @@
             container.innerHTML = '';
           }, 5000);
         }
+      }
+
+      // Show success overlay animation
+      function showSuccessOverlay(text = 'Erfolgreich!') {
+        const overlay = document.createElement('div');
+        overlay.className = 'success-overlay';
+        overlay.innerHTML = `
+          <div class="success-message">
+            <div class="success-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="success-text">
+              ${text}
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Remove after animation
+        setTimeout(() => {
+          overlay.remove();
+        }, 2000);
       }
 
       // Logout
