@@ -27,7 +27,7 @@ export class BrowserFingerprint {
 
       // Hardware
       hardwareConcurrency: navigator.hardwareConcurrency,
-      deviceMemory: (navigator as any).deviceMemory,
+      deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
 
       // Platform
       platform: navigator.platform,
@@ -107,7 +107,12 @@ export class BrowserFingerprint {
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (!gl || !(gl instanceof WebGLRenderingContext)) return 'no-webgl';
 
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as any;
+      interface WebGLDebugRendererInfo {
+        UNMASKED_VENDOR_WEBGL: number;
+        UNMASKED_RENDERER_WEBGL: number;
+      }
+
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info') as WebGLDebugRendererInfo | null;
       if (!debugInfo) return 'no-debug-info';
 
       return JSON.stringify({
@@ -124,7 +129,11 @@ export class BrowserFingerprint {
    */
   private static async getAudioFingerprint(): Promise<string> {
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      interface AudioWindow extends Window {
+        webkitAudioContext?: typeof AudioContext;
+      }
+
+      const audioContext = new (window.AudioContext || (window as AudioWindow).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const analyser = audioContext.createAnalyser();
       const gain = audioContext.createGain();

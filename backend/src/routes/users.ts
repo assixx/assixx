@@ -3,59 +3,98 @@
  * Handles user profile operations and profile picture uploads
  */
 
-import express, { Router, Request } from 'express';
+import express, { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import bcrypt from 'bcryptjs';
-import { authenticateToken } from '../middleware/auth';
+import { security } from '../middleware/security';
+import { createValidation } from '../middleware/validation';
+import { param } from 'express-validator';
 import { logger } from '../utils/logger';
 
 // Import User model (keeping require pattern for compatibility)
-import User from '../models/user';
+import User, { DbUser } from '../models/user';
 
 const router: Router = express.Router();
 
-// Extended Request interfaces
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    tenant_id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
+// Import types
+import { AuthenticatedRequest } from '../types/request.types';
+import { successResponse, errorResponse } from '../types/response.types';
+import { getErrorMessage } from '../utils/errorHandler';
+import { validationSchemas } from '../middleware/validation';
+import { typed } from '../utils/routeHandlers';
 
+// Extended request for file uploads
+interface FileUploadRequest extends AuthenticatedRequest {
   file?: Express.Multer.File;
 }
 
-// Removed unused ProfileUpdateRequest interface
+// Validation schemas
+const userIdValidation = createValidation([
+  param('id').isInt({ min: 1 }).withMessage('Invalid user ID'),
+]);
+
+// Type definitions for request bodies
+interface ProfileUpdateBody {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  department_id?: number;
+  position?: string;
+  password?: string;
+  role?: string;
+  tenant_id?: number;
+}
+
+interface PasswordChangeBody {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+interface AvailabilityUpdateBody {
+  [key: string]: string | undefined;
+  monday_start?: string;
+  monday_end?: string;
+  tuesday_start?: string;
+  tuesday_end?: string;
+  wednesday_start?: string;
+  wednesday_end?: string;
+  thursday_start?: string;
+  thursday_end?: string;
+  friday_start?: string;
+  friday_end?: string;
+  saturday_start?: string;
+  saturday_end?: string;
+  sunday_start?: string;
+  sunday_end?: string;
+}
 
 // Get all users (admin only)
 router.get(
   '/',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.admin(),
+  typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-
       // Get query parameters
       const { role, limit } = req.query;
 
-      let users: any[] = [];
+      let users: DbUser[] = [];
 
       // Different logic based on user role
-      if (authReq.user.role === 'admin' || authReq.user.role === 'root') {
+      if (req.user.role === 'admin' || req.user.role === 'root') {
         // Admins see all users
-        users = await User.findAllByTenant(authReq.user.tenant_id);
-      } else if (authReq.user.role === 'employee') {
+        users = await User.findAllByTenant(req.user.tenant_id);
+      } else if (req.user.role === 'employee') {
         // Employees only see users from their department
         const currentUser = await User.findById(
-          authReq.user.id,
-          authReq.user.tenant_id
+          req.user.id,
+          req.user.tenant_id
         );
         if (currentUser && currentUser.department_id) {
-          const allUsers = await User.findAllByTenant(authReq.user.tenant_id);
+          const allUsers = await User.findAllByTenant(req.user.tenant_id);
           users = allUsers.filter(
             (u) => u.department_id === currentUser.department_id
           );
@@ -100,22 +139,22 @@ router.get(
       }));
 
       res.json(sanitizedUsers);
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error fetching users:', error);
       res.status(500).json({
         message: 'Error fetching users',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 // Get current user data (alias for /profile) - for frontend compatibility
 // IMPORTANT: This must come BEFORE the /:id route to avoid 'me' being treated as an ID
 router.get(
   '/me',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.user(),
+  typed.auth(async (req, res) => {
     try {
       // Debug logging
       logger.info('GET /api/users/me - req.user:', req.user);
@@ -127,13 +166,13 @@ router.get(
       }
 
       const userId = parseInt(req.user.id.toString(), 10);
-      const tenantId = req.user.tenant_id || req.user.tenantId;
+      const tenantId = req.user.tenant_id;
 
       logger.info(`Fetching user ${userId} from tenant ${tenantId}`);
 
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        res.status(404).json({ message: 'Benutzer nicht gefunden' });
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
@@ -144,90 +183,94 @@ router.get(
 
       // Return in the format expected by the frontend
       res.json({ user: userProfile });
-    } catch (error: any) {
-      logger.error(`Error retrieving profile for user: ${error.message}`);
-      res.status(500).json({
-        message: 'Fehler beim Abrufen des Profils',
-        error: error.message,
-      });
+    } catch (error) {
+      logger.error(
+        `Error retrieving profile for user: ${getErrorMessage(error)}`
+      );
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen des Profils', 500));
     }
-  }
+  })
 );
 
 // Get specific user by ID (admin only)
 router.get(
   '/:id',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.admin(),
+  typed.params<{ id: string }>(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-
-      // Check if user is admin or root
-      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-        res.status(403).json({ message: 'Access denied' });
-        return;
-      }
+      // Security middleware already checked admin/root role
 
       const userId = parseInt(req.params.id);
-      const user = await User.findById(userId, authReq.user.tenant_id);
+      const user = await User.findById(userId, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json({ message: 'Benutzer nicht gefunden' });
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Remove password from response
       const { password: _password, ...userProfile } = user;
       res.json(userProfile);
-    } catch (error: any) {
-      logger.error(`Error fetching user ${req.params.id}: ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Error fetching user ${req.params.id}: ${getErrorMessage(error)}`
+      );
       res.status(500).json({
         message: 'Fehler beim Abrufen des Benutzers',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 // Update user by ID (admin only)
 router.put(
   '/:id',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.admin(),
+  typed.paramsBody<
+    { id: string },
+    {
+      username?: string;
+      email?: string;
+      password?: string;
+      role?: string;
+      first_name?: string;
+      last_name?: string;
+      department_id?: number;
+      position?: string;
+      is_active?: boolean;
+      is_archived?: boolean;
+    }
+  >(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-
-      // Check if user is admin or root
-      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-        res.status(403).json({ message: 'Access denied' });
-        return;
-      }
+      // Security middleware already checked admin/root role
 
       const userId = parseInt(req.params.id);
-      const updateData = req.body;
-
-      // Remove fields that shouldn't be updated directly
-      delete updateData.id;
-      delete updateData.tenant_id;
-      delete updateData.created_at;
-      delete updateData.updated_at;
+      // Create a copy and filter out protected fields
+      const {
+        id: _id,
+        tenant_id: _tenant_id,
+        created_at: _created_at,
+        updated_at: _updated_at,
+        ...updateData
+      } = req.body as Record<string, unknown>;
 
       // Verify user belongs to tenant before updating
-      const existingUser = await User.findById(userId, authReq.user.tenant_id);
+      const existingUser = await User.findById(userId, req.user.tenant_id);
       if (!existingUser) {
-        res.status(404).json({ message: 'Benutzer nicht gefunden' });
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Hash password if provided
-      if (updateData.password && updateData.password.trim() !== '') {
+      const password = updateData.password;
+      if (typeof password === 'string' && password.trim() !== '') {
         const saltRounds = 10;
-        updateData.password = await bcrypt.hash(
-          updateData.password,
-          saltRounds
-        );
+        updateData.password = await bcrypt.hash(password, saltRounds);
         logger.info(
-          `Password updated for user ${userId} by admin ${authReq.user.id}`
+          `Password updated for user ${userId} by admin ${req.user.id}`
         );
       } else {
         // Remove empty password field
@@ -235,123 +278,112 @@ router.put(
       }
 
       // Update user
-      const success = await User.update(userId, updateData);
+      const success = await User.update(userId, updateData, req.user.tenant_id);
 
       if (!success) {
         res.status(500).json({ message: 'Aktualisierung fehlgeschlagen' });
         return;
       }
 
-      logger.info(`User ${userId} updated by ${authReq.user.id}`);
+      logger.info(`User ${userId} updated by ${req.user.id}`);
       res.json({ message: 'Benutzer erfolgreich aktualisiert' });
-    } catch (error: any) {
-      logger.error(`Error updating user ${req.params.id}: ${error.message}`);
-      res.status(500).json({
-        message: 'Fehler beim Aktualisieren des Benutzers',
-        error: error.message,
-      });
+    } catch (error) {
+      logger.error(
+        `Error updating user ${req.params.id}: ${getErrorMessage(error)}`
+      );
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Aktualisieren des Benutzers', 500));
     }
-  }
+  })
 );
 
 // Delete user by ID (admin only)
 router.delete(
   '/:id',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.admin(userIdValidation),
+  typed.params<{ id: string }>(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-
-      // Check if user is admin or root
-      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-        res.status(403).json({ message: 'Access denied' });
-        return;
-      }
+      // Security middleware already checked admin/root role
 
       const userId = parseInt(req.params.id);
 
       // Prevent self-deletion
-      if (userId === authReq.user.id) {
+      if (userId === req.user.id) {
         res
           .status(400)
-          .json({ message: 'Sie können sich nicht selbst löschen' });
+          .json(errorResponse('Sie können sich nicht selbst löschen', 400));
         return;
       }
 
       // Verify user belongs to tenant before deleting
-      const existingUser = await User.findById(userId, authReq.user.tenant_id);
+      const existingUser = await User.findById(userId, req.user.tenant_id);
       if (!existingUser) {
-        res.status(404).json({ message: 'Benutzer nicht gefunden' });
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       const success = await User.delete(userId);
 
       if (!success) {
-        res.status(500).json({ message: 'Löschen fehlgeschlagen' });
+        res.status(500).json(errorResponse('Löschen fehlgeschlagen', 500));
         return;
       }
 
-      logger.info(`User ${userId} deleted by ${authReq.user.id}`);
-      res.json({ message: 'Benutzer erfolgreich gelöscht' });
-    } catch (error: any) {
-      logger.error(`Error deleting user ${req.params.id}: ${error.message}`);
-      res.status(500).json({
-        message: 'Fehler beim Löschen des Benutzers',
-        error: error.message,
-      });
+      logger.info(`User ${userId} deleted by ${req.user.id}`);
+      res.json(successResponse(null, 'Benutzer erfolgreich gelöscht'));
+    } catch (error) {
+      logger.error(
+        `Error deleting user ${req.params.id}: ${getErrorMessage(error)}`
+      );
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Löschen des Benutzers', 500));
     }
-  }
+  })
 );
 
 // Get logged-in user's profile data
 router.get(
   '/profile',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.user(),
+  typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-      const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
+      const user = await User.findById(req.user.id, req.user.tenant_id);
       if (!user) {
-        res.status(404).json({ message: 'Benutzer nicht gefunden' });
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
       // Remove password from response
       const { password: _password, ...userProfile } = user;
 
-      logger.info(`User ${authReq.user.id} retrieved their profile`);
-      res.json(userProfile);
-    } catch (error: any) {
+      logger.info(`User ${req.user.id} retrieved their profile`);
+      res.json(successResponse(userProfile));
+    } catch (error) {
       logger.error(
-        `Error retrieving profile for user ${(req as AuthenticatedRequest).user.id}: ${error.message}`
+        `Error retrieving profile for user ${req.user.id}: ${getErrorMessage(error)}`
       );
-      res.status(500).json({
-        message: 'Fehler beim Abrufen des Profils',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen des Profils', 500));
     }
-  }
+  })
 );
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
-  destination(_req: any, _file: any, cb: any) {
+  destination(_req, _file, cb) {
     cb(null, 'uploads/profile_pictures/');
   },
-  filename(_req: any, file: any, cb: any) {
+  filename(_req, file, cb) {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const extension = path.extname(file.originalname);
     cb(null, `profile-${uniqueSuffix}${extension}`);
   },
 });
 
-const fileFilter = (
-  _req: any,
-
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
+const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   // Accept only images
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
@@ -369,11 +401,10 @@ const upload = multer({
 // Update user profile
 router.put(
   '/profile',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.user(validationSchemas.profileUpdate),
+  typed.body<ProfileUpdateBody>(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-      const userId = authReq.user.id;
+      const userId = req.user.id;
       const updateData = req.body;
 
       // Prevent password updates through profile endpoint
@@ -386,54 +417,57 @@ router.put(
       if (updateData.email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(updateData.email)) {
-          res.status(400).json({ message: 'Ungültige E-Mail-Adresse' });
+          res.status(400).json(errorResponse('Ungültige E-Mail-Adresse', 400));
           return;
         }
       }
 
-      const success = await User.update(userId, updateData);
+      const success = await User.update(userId, updateData, req.user.tenant_id);
 
       if (success) {
         logger.info(`User ${userId} updated their profile`);
-        res.json({ message: 'Profil erfolgreich aktualisiert' });
+        res.json(successResponse(null, 'Profil erfolgreich aktualisiert'));
       } else {
         res
           .status(500)
-          .json({ message: 'Fehler beim Aktualisieren des Profils' });
+          .json(errorResponse('Fehler beim Aktualisieren des Profils', 500));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error updating profile for user ${(req as AuthenticatedRequest).user.id}: ${error.message}`
+        `Error updating profile for user ${req.user.id}: ${getErrorMessage(error)}`
       );
-      res.status(500).json({
-        message: 'Fehler beim Aktualisieren des Profils',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Aktualisieren des Profils', 500));
     }
-  }
+  })
 );
 
 // Upload profile picture
 router.post(
   '/profile/picture',
-  authenticateToken as any,
+  ...security.user(),
   upload.single('profilePicture'),
-  async (req: any, res: any): Promise<void> => {
+  typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-      if (!req.file) {
+      const fileReq = req as FileUploadRequest;
+      if (!fileReq.file) {
         res.status(400).json({ message: 'Keine Datei hochgeladen' });
         return;
       }
 
-      const userId = authReq.user.id;
-      const fileName = req.file.filename;
+      const userId = req.user.id;
+      const fileName = fileReq.file.filename;
       const filePath = `/uploads/profile_pictures/${fileName}`;
 
       // Update user's profile picture URL in database
-      const success = await User.update(userId, {
-        profile_picture: filePath,
-      });
+      const success = await User.update(
+        userId,
+        {
+          profile_picture: filePath,
+        },
+        req.user.tenant_id
+      );
 
       if (success) {
         logger.info(`User ${userId} uploaded new profile picture: ${fileName}`);
@@ -443,46 +477,49 @@ router.post(
         });
       } else {
         // Clean up uploaded file if database update failed
-        await fs.unlink(req.file.path);
+        if (req.file) {
+          await fs.unlink(req.file.path);
+        }
         res
           .status(500)
           .json({ message: 'Fehler beim Speichern des Profilbildes' });
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${error.message}`
+        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${getErrorMessage(error)}`
       );
 
       // Clean up uploaded file
       if (req.file?.path) {
         try {
           await fs.unlink(req.file.path);
-        } catch (unlinkError: any) {
-          logger.error(`Error deleting temporary file: ${unlinkError.message}`);
+        } catch (unlinkError) {
+          logger.error(
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
+          );
         }
       }
 
       res.status(500).json({
         message: 'Fehler beim Hochladen des Profilbildes',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 // Delete profile picture
 router.delete(
   '/profile/picture',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.user(),
+  typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
-      const userId = authReq.user.id;
+      const userId = req.user.id;
 
       // Get current user to find existing profile picture
-      const user = await User.findById(userId, authReq.user.tenant_id);
+      const user = await User.findById(userId, req.user.tenant_id);
       if (!user) {
-        res.status(404).json({ message: 'Benutzer nicht gefunden' });
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
         return;
       }
 
@@ -496,15 +533,19 @@ router.delete(
         );
         try {
           await fs.unlink(oldFilePath);
-        } catch (unlinkError: any) {
+        } catch (unlinkError) {
           logger.warn(
-            `Could not delete old profile picture file: ${unlinkError.message}`
+            `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`
           );
         }
       }
 
       // Remove profile picture URL from database
-      const success = await User.update(userId, { profile_picture: undefined });
+      const success = await User.update(
+        userId,
+        { profile_picture: undefined },
+        req.user.tenant_id
+      );
 
       if (success) {
         logger.info(`User ${userId} deleted their profile picture`);
@@ -514,76 +555,60 @@ router.delete(
           .status(500)
           .json({ message: 'Fehler beim Löschen des Profilbildes' });
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error deleting profile picture for user ${(req as AuthenticatedRequest).user.id}: ${error.message}`
+        `Error deleting profile picture for user ${req.user.id}: ${getErrorMessage(error)}`
       );
-      res.status(500).json({
-        message: 'Fehler beim Löschen des Profilbildes',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Löschen des Profilbildes', 500));
     }
-  }
+  })
 );
 
 // Change password
 router.put(
   '/profile/password',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.user(validationSchemas.passwordChange),
+  typed.body<PasswordChangeBody>(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
       const { currentPassword, newPassword } = req.body;
 
-      if (!currentPassword || !newPassword) {
-        res
-          .status(400)
-          .json({ message: 'Aktuelles und neues Passwort sind erforderlich' });
-        return;
-      }
+      // Validation is now handled by middleware
 
-      if (newPassword.length < 6) {
-        res.status(400).json({
-          message: 'Neues Passwort muss mindestens 6 Zeichen lang sein',
-        });
-        return;
-      }
-
-      const userId = authReq.user.id;
+      const userId = req.user.id;
 
       // Verify current password and update to new password
       const result = await User.changePassword(
         userId,
-        authReq.user.tenant_id,
+        req.user.tenant_id,
         currentPassword,
         newPassword
       );
 
       if (result.success) {
         logger.info(`User ${userId} changed their password`);
-        res.json({ message: result.message });
+        res.json(successResponse(null, result.message));
       } else {
-        res.status(400).json({ message: result.message });
+        res.status(400).json(errorResponse(result.message, 400));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error changing password for user ${(req as AuthenticatedRequest).user.id}: ${error.message}`
+        `Error changing password for user ${req.user.id}: ${getErrorMessage(error)}`
       );
-      res.status(500).json({
-        message: 'Fehler beim Ändern des Passworts',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Ändern des Passworts', 500));
     }
-  }
+  })
 );
 
 // Update employee availability
 router.put(
   '/:id/availability',
-  authenticateToken as any,
-  async (req: any, res: any): Promise<void> => {
+  ...security.admin(validationSchemas.availabilityUpdate),
+  typed.paramsBody<{ id: string }, AvailabilityUpdateBody>(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedRequest;
       const employeeId = parseInt(req.params.id);
       const {
         availability_status,
@@ -592,25 +617,12 @@ router.put(
         availability_notes,
       } = req.body;
 
-      // Check if user is admin or root
-      if (authReq.user.role !== 'admin' && authReq.user.role !== 'root') {
-        res.status(403).json({
-          message: 'Nur Administratoren können die Verfügbarkeit ändern',
-        });
-        return;
-      }
-
-      // Validate availability status
-      const validStatuses = ['available', 'unavailable', 'vacation', 'sick'];
-      if (!validStatuses.includes(availability_status)) {
-        res.status(400).json({ message: 'Ungültiger Verfügbarkeitsstatus' });
-        return;
-      }
+      // Validation is now handled by middleware
 
       // Update user availability
       const success = await User.updateAvailability(
         employeeId,
-        authReq.user.tenant_id,
+        req.user.tenant_id,
         {
           availability_status,
           availability_start,
@@ -621,22 +633,25 @@ router.put(
 
       if (success) {
         logger.info(
-          `Admin ${authReq.user.id} updated availability for employee ${employeeId}`
+          `Admin ${req.user.id} updated availability for employee ${employeeId}`
         );
-        res.json({ message: 'Verfügbarkeit erfolgreich aktualisiert' });
+        res.json(
+          successResponse(null, 'Verfügbarkeit erfolgreich aktualisiert')
+        );
       } else {
-        res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
+        res.status(404).json(errorResponse('Mitarbeiter nicht gefunden', 404));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error updating availability for employee ${req.params.id}: ${error.message}`
+        `Error updating availability for employee ${req.params.id}: ${getErrorMessage(error)}`
       );
-      res.status(500).json({
-        message: 'Fehler beim Aktualisieren der Verfügbarkeit',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(
+          errorResponse('Fehler beim Aktualisieren der Verfügbarkeit', 500)
+        );
     }
-  }
+  })
 );
 
 export default router;

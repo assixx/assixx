@@ -5,6 +5,7 @@
 Das Breadcrumb-System bietet eine konsistente Navigation für alle Seiten im Assixx-Projekt. Es zeigt dem Benutzer seinen aktuellen Standort in der Anwendungshierarchie.
 
 ## 🎨 Aktuelles Design (Referenz: Admin Dashboard)
+
 beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 
 ### HTML-Struktur
@@ -47,7 +48,9 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 12px;
-  box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);
+  box-shadow:
+    0 0px 4px rgba(33, 150, 243, 0.3),
+    inset 0 1px 0 hsla(0, 0%, 100%, 0.2);
   color: #fff;
   font-size: 14px;
   padding: 6px 20px;
@@ -123,10 +126,10 @@ Jede HTML-Seite kann die Breadcrumb einfach importieren:
 <div id="breadcrumb-container"></div>
 <script type="module">
   import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-  
+
   initBreadcrumb([
     { label: 'Home', href: '/', icon: 'fa-home' },
-    { label: 'Admin Dashboard', icon: 'fa-tachometer-alt', current: true }
+    { label: 'Admin Dashboard', icon: 'fa-tachometer-alt', current: true },
   ]);
 </script>
 ```
@@ -146,18 +149,21 @@ function generateBreadcrumbsFromURL(): BreadcrumbItem[] {
 ## 📊 Breadcrumb-Struktur für alle Seiten
 
 ### Admin-Bereich
+
 - **Home** → Admin Dashboard
 - **Home** → Admin Dashboard → Benutzer verwalten
 - **Home** → Admin Dashboard → Konfiguration
 - **Home** → Admin Dashboard → Umfragen
 
 ### Employee-Bereich
+
 - **Home** → Mitarbeiter Dashboard
 - **Home** → Mitarbeiter Dashboard → Dokumente
 - **Home** → Mitarbeiter Dashboard → Schwarzes Brett
 - **Home** → Mitarbeiter Dashboard → Chat
 
 ### Gemeinsame Bereiche
+
 - **Home** → Profil
 - **Home** → Einstellungen
 - **Home** → Kalender
@@ -188,14 +194,14 @@ initBreadcrumb();
 initBreadcrumb([
   { label: 'Home', href: '/', icon: 'fa-home' },
   { label: 'Verwaltung', href: '/admin', icon: 'fa-cog' },
-  { label: 'Benutzer', icon: 'fa-users', current: true }
+  { label: 'Benutzer', icon: 'fa-users', current: true },
 ]);
 
 // Mit Custom-Optionen
 initBreadcrumb(items, {
   container: '#my-breadcrumb',
   separator: '/',
-  showIcons: true
+  showIcons: true,
 });
 ```
 

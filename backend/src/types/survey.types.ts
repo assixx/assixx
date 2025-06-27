@@ -120,6 +120,6 @@ export interface SurveyStatistics {
     questionId: number;
     questionText: string;
     responseCount: number;
-    answers?: any;
+    answers?: Record<string, unknown>;
   }>;
 }

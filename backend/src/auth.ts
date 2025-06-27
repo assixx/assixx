@@ -11,8 +11,8 @@ import { Request, Response, NextFunction } from 'express';
 import UserModel from './models/user';
 import { DatabaseUser } from './types';
 import { TokenPayload, TokenValidationResult } from './types/auth.types';
-import pool from './database';
-import { RowDataPacket } from 'mysql2/promise';
+import { AuthUser } from './types/request.types';
+import { query as executeQuery, RowDataPacket } from './utils/db';
 
 // Konstante für das JWT-Secret aus der Umgebungsvariable
 const JWT_SECRET: string = process.env.JWT_SECRET || '';
@@ -27,27 +27,14 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
     console.warn(
       '⚠️  WARNING: Using insecure default JWT_SECRET for development only!'
     );
-    // Nur in Entwicklung einen Fallback verwenden
-    const JWT_SECRET_FALLBACK =
-      'dev_only_secret_do_not_use_in_prod_' + Date.now();
-    (global as any).JWT_SECRET = JWT_SECRET_FALLBACK;
   }
 }
 
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[]>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
+// Import DbUser type from user model
+import type { DbUser } from './models/user';
 
 // Helper function to convert DbUser to DatabaseUser
-function dbUserToDatabaseUser(dbUser: any): DatabaseUser {
+function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
   return {
     id: dbUser.id,
     username: dbUser.username,
@@ -55,18 +42,15 @@ function dbUserToDatabaseUser(dbUser: any): DatabaseUser {
     password_hash: dbUser.password || '',
     first_name: dbUser.first_name,
     last_name: dbUser.last_name,
-    role: dbUser.role,
-    tenant_id: dbUser.tenant_id,
-    department_id: dbUser.department_id,
-    is_active:
-      dbUser.is_active === true ||
-      (dbUser.is_active as any) === 1 ||
-      (dbUser.is_active as any) === '1',
+    role: dbUser.role as 'admin' | 'employee' | 'root',
+    tenant_id: dbUser.tenant_id ?? null,
+    department_id: dbUser.department_id ?? null,
+    is_active: dbUser.is_active === true || dbUser.is_active === undefined,
     is_archived: dbUser.is_archived || false,
-    profile_picture: dbUser.profile_picture,
+    profile_picture: dbUser.profile_picture ?? null,
     phone_number: dbUser.phone || null,
-    position: dbUser.position,
-    hire_date: dbUser.hire_date,
+    position: dbUser.position ?? null,
+    hire_date: dbUser.hire_date ?? null,
     birth_date: dbUser.birthday || null,
     created_at: dbUser.created_at || new Date(),
     updated_at: dbUser.updated_at || new Date(),
@@ -114,11 +98,7 @@ export async function authenticateUser(
     console.log('[DEBUG] Password comparison result:', isValid);
     if (isValid) {
       // Check if user is active
-      if (
-        user.is_active === false ||
-        (user.is_active as any) === 0 ||
-        (user.is_active as any) === '0'
-      ) {
+      if (user.is_active === false) {
         console.log('[DEBUG] User is inactive, denying access');
         return { user: null, error: 'USER_INACTIVE' };
       }
@@ -258,33 +238,28 @@ export function authenticateToken(
     }
 
     // Normalize user object for consistency and ensure IDs are numbers
-    const authenticatedUser: any = {
+    const authenticatedUser: AuthUser & {
+      activeRole?: string;
+      isRoleSwitched?: boolean;
+    } = {
       id: parseInt(user.id.toString(), 10),
       userId: parseInt(user.id.toString(), 10),
       username: user.username,
       email: '', // Will be filled from database if needed
-      firstName: '',
-      lastName: '',
+      first_name: '',
+      last_name: '',
       role: user.role,
       activeRole: user.activeRole || user.role, // Support für Dual-Role
       isRoleSwitched: user.isRoleSwitched || false,
-      tenantId: user.tenant_id ? parseInt(user.tenant_id.toString(), 10) : null,
-      tenant_id: user.tenant_id,
-      departmentId: null,
-      isActive: true,
-      isArchived: false,
-      profilePicture: null,
-      phoneNumber: null,
+      tenant_id: user.tenant_id ? parseInt(user.tenant_id.toString(), 10) : 0,
+      department_id: null,
       position: null,
-      hireDate: null,
-      birthDate: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
     req.user = authenticatedUser;
-    // Set tenantId directly on req for backwards compatibility
-    (req as any).tenantId = authenticatedUser.tenantId;
+    // Set tenant_id directly on req for backwards compatibility
+    (req as Request & { tenant_id: number }).tenant_id =
+      authenticatedUser.tenant_id;
     next();
   });
 }

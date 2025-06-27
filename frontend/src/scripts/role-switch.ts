@@ -147,9 +147,18 @@ function updateRoleUI(): void {
 // Toast notification helper
 function showToast(message: string, type: 'success' | 'error' = 'success'): void {
   // Try to use existing toast system first
-  if (typeof window !== 'undefined' && (window as any).DashboardUI?.showToast) {
-    (window as any).DashboardUI.showToast(message, type);
-    return;
+  interface ToastWindow {
+    DashboardUI?: {
+      showToast: (message: string, type: 'success' | 'error') => void;
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    const toastWindow = window as unknown as ToastWindow;
+    if (toastWindow.DashboardUI?.showToast) {
+      toastWindow.DashboardUI.showToast(message, type);
+      return;
+    }
   }
 
   // Fallback toast implementation

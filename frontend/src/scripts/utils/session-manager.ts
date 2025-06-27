@@ -207,7 +207,10 @@ export class SessionManager {
 
 // Initialize session manager when module loads
 if (typeof window !== 'undefined') {
-  (window as any).sessionManager = SessionManager.getInstance();
+  interface SessionWindow extends Window {
+    sessionManager: SessionManager;
+  }
+  (window as unknown as SessionWindow).sessionManager = SessionManager.getInstance();
 }
 
 // Export for use in other modules

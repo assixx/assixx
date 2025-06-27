@@ -15,7 +15,7 @@ updates:
     groups:
       dependencies:
         patterns:
-          - "*"
+          - '*'
 
   # Frontend dependencies (pnpm compatible)
   - package-ecosystem: 'npm'
@@ -27,7 +27,7 @@ updates:
     groups:
       dependencies:
         patterns:
-          - "*"
+          - '*'
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'

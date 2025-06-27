@@ -3,120 +3,39 @@
  * Handles chat-related operations including messages, conversations, and file attachments
  */
 
-import { Response } from 'express';
-import { Pool } from 'mysql2/promise';
+import { Request, Response } from 'express';
 import chatService from '../services/chat.service';
-import path from 'path';
-import fs from 'fs/promises';
-import {
-  AuthenticatedRequest as BaseAuthRequest,
-  ChatUsersRequest as BaseChatUsersRequest,
-  GetConversationsRequest as BaseGetConversationsRequest,
-  CreateConversationRequest as BaseCreateConversationRequest,
-  GetMessagesRequest as BaseGetMessagesRequest,
-  SendMessageRequest as BaseSendMessageRequest,
-} from '../types/request.types';
+import * as path from 'path';
+import { promises as fs } from 'fs';
+import { AuthenticatedRequest } from '../types/request.types';
+import { Pool } from 'mysql2/promise';
 
-// Extended Request interfaces for chat operations with DB pool
-interface AuthenticatedRequest extends BaseAuthRequest {
+// Extended request with tenantDb
+interface TenantAuthenticatedRequest extends AuthenticatedRequest {
   tenantDb?: Pool;
 }
 
-interface ChatUsersRequest extends BaseChatUsersRequest {
-  tenantDb?: Pool;
-}
-
-interface CreateConversationRequest extends BaseCreateConversationRequest {
-  tenantDb?: Pool;
-}
-
-interface GetConversationsRequest extends BaseGetConversationsRequest {
-  tenantDb?: Pool;
-}
-
-interface GetMessagesRequest extends BaseGetMessagesRequest {
-  tenantDb?: Pool;
-}
-
-interface SendMessageRequest extends BaseSendMessageRequest {
-  tenantDb?: Pool;
-  file?: any; // Multer file - will be typed properly later
-}
-
-interface GetConversationParticipantsRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-  params: {
-    id: string;
-  };
-}
-
-interface AddParticipantRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-  params: {
-    id: string;
-  };
-  body: {
-    userId: number;
-  };
-}
-
-interface RemoveParticipantRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-  params: {
-    id: string;
-    userId: string;
-  };
-}
-
-interface UpdateConversationNameRequest extends AuthenticatedRequest {
-  user: {
-    userId: number;
-    tenantId: number;
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
-  params: {
-    id: string;
-  };
-  body: {
-    name: string;
-  };
+// Type guard to check if request is authenticated
+function isAuthenticated(req: Request): req is AuthenticatedRequest {
+  return (
+    'user' in req &&
+    req.user != null &&
+    typeof req.user === 'object' &&
+    'tenant_id' in req.user
+  );
 }
 
 class ChatController {
   // Get list of users available for chat
-  async getUsers(req: ChatUsersRequest, res: Response): Promise<void> {
+  async getUsers(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const users = await chatService.getUsers(
-        req.user.tenantId,
+        req.user.tenant_id,
         req.user.userId || req.user.id
       );
       res.json(users);
@@ -126,17 +45,17 @@ class ChatController {
   }
 
   // Create a new conversation
-  async createConversation(
-    req: CreateConversationRequest,
-    res: Response
-  ): Promise<void> {
+  async createConversation(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
-      const { participant_ids: participantIds, name } = req.body;
+      const { participant_ids: participantIds, name } = req.body as {
+        participant_ids?: number[];
+        name?: string;
+      };
 
       if (
         !participantIds ||
@@ -148,7 +67,7 @@ class ChatController {
       }
 
       const conversation = await chatService.createConversation(
-        req.user.tenantId,
+        req.user.tenant_id,
         req.user.userId || req.user.id,
         participantIds,
         participantIds.length > 1,
@@ -162,18 +81,15 @@ class ChatController {
   }
 
   // Get user's conversations
-  async getConversations(
-    req: GetConversationsRequest,
-    res: Response
-  ): Promise<void> {
+  async getConversations(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const conversations = await chatService.getConversations(
-        req.user.tenantId,
+        req.user.tenant_id,
         req.user.userId || req.user.id
       );
 
@@ -184,19 +100,19 @@ class ChatController {
   }
 
   // Get messages for a conversation
-  async getMessages(req: GetMessagesRequest, res: Response): Promise<void> {
+  async getMessages(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const conversationId = parseInt(req.params.id);
-      const limit = parseInt(req.query.limit || '50');
-      const offset = parseInt(req.query.offset || '0');
+      const limit = parseInt(String(req.query.limit || '50'));
+      const offset = parseInt(String(req.query.offset || '0'));
 
       const result = await chatService.getMessages(
-        req.user.tenantId,
+        req.user.tenant_id,
         conversationId,
         req.user.userId,
         limit,
@@ -211,15 +127,16 @@ class ChatController {
   }
 
   // Send a message
-  async sendMessage(req: SendMessageRequest, res: Response): Promise<void> {
+  async sendMessage(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const conversationId = parseInt(req.params.id);
-      let content = req.body.content || '';
+      const body = req.body as { content?: string };
+      let content = body.content || '';
       let attachmentUrl: string | undefined;
 
       // Handle file upload
@@ -238,7 +155,7 @@ class ChatController {
       }
 
       const message = await chatService.sendMessage(
-        req.user.tenantId,
+        req.user.tenant_id,
         conversationId,
         req.user.userId,
         content,
@@ -259,11 +176,11 @@ class ChatController {
 
   // Get conversation participants
   async getConversationParticipants(
-    req: GetConversationParticipantsRequest,
+    req: Request,
     res: Response
   ): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -272,7 +189,7 @@ class ChatController {
 
       const participants = await chatService.getConversationParticipants(
         conversationId,
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       res.json(participants);
@@ -282,24 +199,21 @@ class ChatController {
   }
 
   // Add participant to conversation
-  async addParticipant(
-    req: AddParticipantRequest,
-    res: Response
-  ): Promise<void> {
+  async addParticipant(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const conversationId = parseInt(req.params.id);
-      const { userId } = req.body;
+      const { userId } = req.body as { userId?: number };
 
       await chatService.addParticipant(
         conversationId,
         userId,
         req.user.userId || req.user.id,
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       res.json({ message: 'Participant added successfully' });
@@ -309,12 +223,9 @@ class ChatController {
   }
 
   // Remove participant from conversation
-  async removeParticipant(
-    req: RemoveParticipantRequest,
-    res: Response
-  ): Promise<void> {
+  async removeParticipant(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -326,7 +237,7 @@ class ChatController {
         conversationId,
         userId,
         req.user.userId || req.user.id,
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       res.json({ message: 'Participant removed successfully' });
@@ -336,18 +247,15 @@ class ChatController {
   }
 
   // Update conversation name
-  async updateConversationName(
-    req: UpdateConversationNameRequest,
-    res: Response
-  ): Promise<void> {
+  async updateConversationName(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const conversationId = parseInt(req.params.id);
-      const { name } = req.body;
+      const { name } = req.body as { name?: string };
 
       if (!name || name.trim().length === 0) {
         res.status(400).json({ error: 'Name is required' });
@@ -358,7 +266,7 @@ class ChatController {
         conversationId,
         name,
         req.user.userId || req.user.id,
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       res.json({ message: 'Conversation name updated successfully' });
@@ -368,7 +276,7 @@ class ChatController {
   }
 
   // Handle file download
-  async downloadFile(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async downloadFile(req: Request, res: Response): Promise<void> {
     try {
       const filename = req.params.filename;
       const filePath = path.join(process.cwd(), 'uploads', 'chat', filename);
@@ -388,19 +296,16 @@ class ChatController {
   }
 
   // Get unread message count
-  async getUnreadCount(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
+  async getUnreadCount(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const unreadCount = await chatService.getUnreadCount(
-        null as any, // tenantDb parameter is not used
-        req.user.tenantId,
+        (req as TenantAuthenticatedRequest).tenantDb as Pool, // tenantDb parameter is not used but required
+        req.user.tenant_id,
         req.user.userId || req.user.id
       );
 
@@ -411,12 +316,9 @@ class ChatController {
   }
 
   // Mark all messages in a conversation as read
-  async markConversationAsRead(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
+  async markConversationAsRead(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -433,12 +335,9 @@ class ChatController {
   }
 
   // Delete conversation
-  async deleteConversation(
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> {
+  async deleteConversation(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.user) {
+      if (!isAuthenticated(req)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }

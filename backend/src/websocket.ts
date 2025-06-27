@@ -4,6 +4,10 @@ import { URL } from 'url';
 import { Server } from 'http';
 import db from './database.js';
 import { logger } from './utils/logger.js';
+import { RowDataPacket, ResultSetHeader, Pool } from 'mysql2/promise';
+
+// Cast db to Pool type for proper typing
+const pool = db as unknown as Pool;
 interface ExtendedWebSocket extends WebSocket {
   userId?: number;
   tenantId?: number;
@@ -14,13 +18,18 @@ interface ExtendedWebSocket extends WebSocket {
 
 interface WebSocketMessage {
   type: string;
-  data: any;
+  data: unknown;
 }
 
 interface SendMessageData {
   conversationId: number;
   content: string;
-  attachments?: any[];
+  attachments?: Array<{
+    filename: string;
+    content?: string | Buffer;
+    path?: string;
+    contentType?: string;
+  }>;
 }
 
 interface TypingData {
@@ -57,7 +66,13 @@ export class ChatWebSocketServer {
 
   private async handleConnection(
     ws: ExtendedWebSocket,
-    request: any
+    request: {
+      url?: string;
+      headers: {
+        host?: string;
+        authorization?: string;
+      };
+    }
   ): Promise<void> {
     try {
       // Token aus Query-Parameter oder Header extrahieren
@@ -72,7 +87,17 @@ export class ChatWebSocketServer {
       }
 
       // Token verifizieren
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        ws.close(1008, 'JWT Secret nicht konfiguriert');
+        return;
+      }
+
+      const decoded = jwt.verify(token, jwtSecret) as {
+        id: number;
+        tenant_id: number;
+        role: string;
+      };
       const userId = decoded.id;
       const tenantId = decoded.tenant_id;
 
@@ -116,19 +141,22 @@ export class ChatWebSocketServer {
 
       switch (message.type) {
         case 'send_message':
-          await this.handleSendMessage(ws, message.data);
+          await this.handleSendMessage(ws, message.data as SendMessageData);
           break;
         case 'typing_start':
-          await this.handleTyping(ws, message.data, true);
+          await this.handleTyping(ws, message.data as TypingData, true);
           break;
         case 'typing_stop':
-          await this.handleTyping(ws, message.data, false);
+          await this.handleTyping(ws, message.data as TypingData, false);
           break;
         case 'mark_read':
-          await this.handleMarkRead(ws, message.data);
+          await this.handleMarkRead(ws, message.data as MarkReadData);
           break;
         case 'join_conversation':
-          await this.handleJoinConversation(ws, message.data);
+          await this.handleJoinConversation(
+            ws,
+            message.data as JoinConversationData
+          );
           break;
         case 'ping':
           this.sendMessage(ws, {
@@ -170,12 +198,14 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp.conversation_id = c.id
         WHERE cp.conversation_id = ? AND c.tenant_id = ?
       `;
-      const [participants] = await (db as any).query(participantQuery, [
-        conversationId,
-        ws.tenantId,
-      ]);
+      const [participants] = await pool.query<RowDataPacket[]>(
+        participantQuery,
+        [conversationId, ws.tenantId]
+      );
 
-      const participantIds = participants.map((p: any) => p.user_id);
+      const participantIds = participants.map(
+        (p) => (p as { user_id: number }).user_id
+      );
 
       // Convert IDs to strings for comparison since ws.userId might be a string
       const participantIdsStr = participantIds.map((id: number) => String(id));
@@ -192,7 +222,7 @@ export class ChatWebSocketServer {
         INSERT INTO messages (conversation_id, sender_id, content, tenant_id)
         VALUES (?, ?, ?, ?)
       `;
-      const [result] = await (db as any).query(messageQuery, [
+      const [result] = await pool.query<ResultSetHeader>(messageQuery, [
         conversationId,
         ws.userId,
         content,
@@ -206,7 +236,9 @@ export class ChatWebSocketServer {
         SELECT id, username, first_name, last_name, profile_picture_url 
         FROM users WHERE id = ?
       `;
-      const [senderInfo] = await (db as any).query(senderQuery, [ws.userId]);
+      const [senderInfo] = await pool.query<RowDataPacket[]>(senderQuery, [
+        ws.userId,
+      ]);
       const sender = senderInfo[0];
 
       // Nachricht-Objekt für Broadcast erstellen
@@ -272,11 +304,10 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp.conversation_id = c.id
         WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
       `;
-      const [participants] = await (db as any).query(participantQuery, [
-        conversationId,
-        ws.tenantId,
-        ws.userId,
-      ]);
+      const [participants] = await pool.query<RowDataPacket[]>(
+        participantQuery,
+        [conversationId, ws.tenantId, ws.userId]
+      );
 
       // Typing-Event an andere Teilnehmer senden
       for (const participant of participants) {
@@ -305,7 +336,7 @@ export class ChatWebSocketServer {
 
     try {
       // Nachricht als gelesen markieren
-      await (db as any).query(
+      await pool.query<ResultSetHeader>(
         `
         UPDATE messages 
         SET is_read = 1 
@@ -324,7 +355,9 @@ export class ChatWebSocketServer {
       const messageQuery = `
         SELECT sender_id, conversation_id FROM messages WHERE id = ?
       `;
-      const [messageInfo] = await (db as any).query(messageQuery, [messageId]);
+      const [messageInfo] = await pool.query<RowDataPacket[]>(messageQuery, [
+        messageId,
+      ]);
 
       if (messageInfo.length > 0) {
         const senderId = messageInfo[0].sender_id;
@@ -366,11 +399,10 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp.conversation_id = c.id
         WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
       `;
-      const [participants] = await (db as any).query(participantQuery, [
-        conversationId,
-        ws.tenantId,
-        ws.userId,
-      ]);
+      const [participants] = await pool.query<RowDataPacket[]>(
+        participantQuery,
+        [conversationId, ws.tenantId, ws.userId]
+      );
 
       for (const participant of participants) {
         const clientWs = this.clients.get(participant.user_id);
@@ -395,11 +427,13 @@ export class ChatWebSocketServer {
       this.clients.delete(ws.userId);
 
       // Offline-Status senden
-      await this.broadcastUserStatus(ws.userId, ws.tenantId!, 'offline');
+      if (ws.tenantId !== undefined) {
+        await this.broadcastUserStatus(ws.userId, ws.tenantId, 'offline');
+      }
     }
   }
 
-  private handleError(_ws: ExtendedWebSocket, error: Error): void {
+  private handleError(_ws: ExtendedWebSocket, error: unknown): void {
     logger.error('WebSocket Fehler:', error);
   }
 
@@ -417,11 +451,10 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp1.conversation_id = c.id
         WHERE cp1.user_id = ? AND c.tenant_id = ? AND cp2.user_id != ?
       `;
-      const [relatedUsers] = await (db as any).query(conversationsQuery, [
-        userId,
-        tenantId,
-        userId,
-      ]);
+      const [relatedUsers] = await pool.query<RowDataPacket[]>(
+        conversationsQuery,
+        [userId, tenantId, userId]
+      );
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {
@@ -475,11 +508,11 @@ export class ChatWebSocketServer {
         AND m.delivery_status = 'scheduled'
       `;
 
-      const [scheduledMessages] = await (db as any).query(query);
+      const [scheduledMessages] = await pool.query<RowDataPacket[]>(query);
 
       for (const message of scheduledMessages) {
         // Nachricht als zugestellt markieren
-        await (db as any).query(
+        await pool.query<ResultSetHeader>(
           'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
           [message.id]
         );
@@ -489,16 +522,17 @@ export class ChatWebSocketServer {
           SELECT user_id FROM conversation_participants 
           WHERE conversation_id = ?
         `;
-        const [participants] = await (db as any).query(participantQuery, [
-          message.conversation_id,
-        ]);
+        const [participants] = await pool.query<RowDataPacket[]>(
+          participantQuery,
+          [message.conversation_id]
+        );
 
         // Sender-Informationen abrufen
         const senderQuery = `
           SELECT first_name, last_name, profile_picture_url 
           FROM users WHERE id = ?
         `;
-        const [senderInfo] = await (db as any).query(senderQuery, [
+        const [senderInfo] = await pool.query<RowDataPacket[]>(senderQuery, [
           message.sender_id,
         ]);
         const sender = senderInfo[0];
@@ -520,7 +554,12 @@ export class ChatWebSocketServer {
           delivery_status: 'delivered',
           is_read: false,
           is_scheduled: true,
-          attachments: [] as any[],
+          attachments: [] as Array<{
+            filename: string;
+            content?: string | Buffer;
+            path?: string;
+            contentType?: string;
+          }>,
         };
 
         for (const participant of participants) {
@@ -569,12 +608,12 @@ export class ChatWebSocketServer {
         LIMIT 50
       `;
 
-      const [queuedMessages] = await (db as any).query(query);
+      const [queuedMessages] = await pool.query<RowDataPacket[]>(query);
 
       for (const message of queuedMessages) {
         try {
           // Update status to processing
-          await (db as any).query(
+          await pool.query<ResultSetHeader>(
             'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
             [message.queue_id]
           );
@@ -594,7 +633,12 @@ export class ChatWebSocketServer {
             created_at: message.created_at,
             delivery_status: 'delivered',
             is_read: false,
-            attachments: [] as any[],
+            attachments: [] as Array<{
+              filename: string;
+              content?: string | Buffer;
+              path?: string;
+              contentType?: string;
+            }>,
           };
 
           // An Empfänger senden wenn online
@@ -607,13 +651,13 @@ export class ChatWebSocketServer {
           }
 
           // Als zugestellt markieren
-          await (db as any).query(
+          await pool.query<ResultSetHeader>(
             'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
             [message.queue_id]
           );
 
           // Delivery status in messages table aktualisieren
-          await (db as any).query(
+          await pool.query<ResultSetHeader>(
             'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
             [message.message_id]
           );
@@ -624,23 +668,23 @@ export class ChatWebSocketServer {
           );
 
           // Bei Fehler als failed markieren wenn max attempts erreicht
-          const [result] = await (db as any).query(
+          const [result] = await pool.query<RowDataPacket[]>(
             'SELECT attempts FROM message_delivery_queue WHERE id = ?',
             [message.queue_id]
           );
 
-          if (result[0]?.attempts >= 3) {
-            await (db as any).query(
+          if (result[0] && result[0].attempts >= 3) {
+            await pool.query<ResultSetHeader>(
               'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
               [message.queue_id]
             );
-            await (db as any).query(
+            await pool.query<ResultSetHeader>(
               'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
               [message.message_id]
             );
           } else {
             // Zurück auf pending setzen für erneuten Versuch
-            await (db as any).query(
+            await pool.query<ResultSetHeader>(
               'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
               [message.queue_id]
             );

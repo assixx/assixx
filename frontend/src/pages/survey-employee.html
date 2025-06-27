@@ -780,10 +780,17 @@
           });
 
           if (response.ok) {
-            const surveys = await response.json();
-            // Filter only active and closed surveys (not draft or archived)
-            const relevantSurveys = surveys.filter((s) => s.status === 'active' || s.status === 'closed');
-            displaySurveys(relevantSurveys);
+            const result = await response.json();
+            const surveys = result.data || result.surveys || result;
+            // Ensure surveys is an array
+            if (Array.isArray(surveys)) {
+              // Filter only active and closed surveys (not draft or archived)
+              const relevantSurveys = surveys.filter((s) => s.status === 'active' || s.status === 'closed');
+              displaySurveys(relevantSurveys);
+            } else {
+              console.error('Invalid surveys data format:', surveys);
+              displaySurveys([]);
+            }
           }
         } catch (error) {
           console.error('Error loading surveys:', error);
@@ -911,7 +918,8 @@
           });
 
           if (response.ok) {
-            currentSurvey = await response.json();
+            const result = await response.json();
+            currentSurvey = result.data || result.survey || result;
             answers = {};
             displaySurveyForm();
           }

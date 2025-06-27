@@ -1,32 +1,18 @@
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import bcrypt from 'bcryptjs';
 import { logger } from '../utils/logger';
 import {
   generateEmployeeId,
   generateTempEmployeeId,
 } from '../utils/employeeIdGenerator';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-console.log('[DEBUG] UserModel loading, pool type:', typeof pool);
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  console.log('[DEBUG] executeQuery called, pool exists:', !!pool);
-  // Use any to bypass TypeScript union type issues
-  const result = await (pool as any).query(sql, params);
-  // MySQL2 returns [rows, fields] or result could be T directly from mock
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  // Mock database returns the data directly
-  return [result as T, null];
-}
+import { normalizeMySQLBoolean } from '../utils/typeHelpers';
 
 // Database User interface with snake_case to match DB schema
-interface DbUser extends RowDataPacket {
+export interface DbUser extends RowDataPacket {
   id: number;
   username: string;
   email: string;
@@ -244,7 +230,7 @@ export class User {
   static async findByUsername(username: string): Promise<DbUser | undefined> {
     console.log('[DEBUG] findByUsername called for:', username);
     try {
-      console.log('[DEBUG] About to execute query with pool:', typeof pool);
+      console.log('[DEBUG] About to execute query');
       const [rows] = await executeQuery<DbUser[]>(
         'SELECT * FROM users WHERE username = ?',
         [username]
@@ -279,14 +265,8 @@ export class User {
 
       if (rows[0]) {
         // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-        rows[0].is_active =
-          (rows[0].is_active as any) === 1 ||
-          (rows[0].is_active as any) === '1' ||
-          rows[0].is_active === true;
-        rows[0].is_archived =
-          (rows[0].is_archived as any) === 1 ||
-          (rows[0].is_archived as any) === '1' ||
-          rows[0].is_archived === true;
+        rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
+        rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
       }
 
       return rows[0];
@@ -314,7 +294,7 @@ export class User {
         WHERE u.role = ? AND u.tenant_id = ?
       `;
 
-      const params: any[] = [role, tenant_id];
+      const params: unknown[] = [role, tenant_id];
 
       if (!includeArchived) {
         query += ` AND u.is_archived = false`;
@@ -325,14 +305,8 @@ export class User {
       // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
       const normalizedRows = rows.map((row) => ({
         ...row,
-        is_active:
-          (row.is_active as any) === 1 ||
-          (row.is_active as any) === '1' ||
-          row.is_active === true,
-        is_archived:
-          (row.is_archived as any) === 1 ||
-          (row.is_archived as any) === '1' ||
-          row.is_archived === true,
+        is_active: normalizeMySQLBoolean(row.is_active),
+        is_archived: normalizeMySQLBoolean(row.is_archived),
       }));
 
       return normalizedRows;
@@ -372,12 +346,13 @@ export class User {
 
   static async update(
     id: number,
-    userData: Partial<UserCreateData>
+    userData: Partial<UserCreateData>,
+    tenantId?: number
   ): Promise<boolean> {
     try {
       // Dynamisch Query aufbauen basierend auf den zu aktualisierenden Feldern
       const fields: string[] = [];
-      const values: any[] = [];
+      const values: unknown[] = [];
 
       // Für jedes übergebene Feld Query vorbereiten
       Object.entries(userData).forEach(([key, value]) => {
@@ -404,10 +379,16 @@ export class User {
         return false;
       }
 
-      // ID für die WHERE-Klausel anhängen
+      // ID und tenant_id für die WHERE-Klausel anhängen
       values.push(id);
 
-      const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+      let query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+
+      // Add tenant_id check if provided for additional security
+      if (tenantId !== undefined) {
+        query += ` AND tenant_id = ?`;
+        values.push(tenantId);
+      }
 
       logger.info(`Executing update query: ${query}`);
       logger.info(`With values: ${JSON.stringify(values)}`);
@@ -437,7 +418,7 @@ export class User {
         WHERE u.tenant_id = ?
       `;
 
-      const values: any[] = [filters.tenant_id];
+      const values: unknown[] = [filters.tenant_id];
 
       // Filter für archivierte Benutzer
       if (filters.is_archived !== undefined) {
@@ -514,14 +495,8 @@ export class User {
       // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
       const normalizedRows = rows.map((row) => ({
         ...row,
-        is_active:
-          (row.is_active as any) === 1 ||
-          (row.is_active as any) === '1' ||
-          row.is_active === true,
-        is_archived:
-          (row.is_archived as any) === 1 ||
-          (row.is_archived as any) === '1' ||
-          row.is_archived === true,
+        is_active: normalizeMySQLBoolean(row.is_active),
+        is_archived: normalizeMySQLBoolean(row.is_archived),
       }));
 
       return normalizedRows;
@@ -534,14 +509,19 @@ export class User {
   // Neue Methode: Profilbild aktualisieren
   static async updateProfilePicture(
     userId: number,
-    picturePath: string
+    picturePath: string,
+    tenantId?: number
   ): Promise<boolean> {
     try {
-      const query = `UPDATE users SET profile_picture = ? WHERE id = ?`;
-      const [result] = await executeQuery<ResultSetHeader>(query, [
-        picturePath,
-        userId,
-      ]);
+      let query = `UPDATE users SET profile_picture = ? WHERE id = ?`;
+      const values = [picturePath, userId];
+
+      if (tenantId !== undefined) {
+        query += ` AND tenant_id = ?`;
+        values.push(tenantId);
+      }
+
+      const [result] = await executeQuery<ResultSetHeader>(query, values);
       return result.affectedRows > 0;
     } catch (error) {
       logger.error(
@@ -555,7 +535,7 @@ export class User {
   static async countWithFilters(filters: UserFilter): Promise<number> {
     try {
       let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = ?`;
-      const values: any[] = [filters.tenant_id];
+      const values: unknown[] = [filters.tenant_id];
 
       // Filter für archivierte Benutzer
       if (filters.is_archived !== undefined) {
@@ -602,15 +582,21 @@ export class User {
   }
 
   // Neue Methode: Benutzer archivieren
-  static async archiveUser(userId: number): Promise<boolean> {
+  static async archiveUser(
+    userId: number,
+    tenantId?: number
+  ): Promise<boolean> {
     logger.info(`Archiving user ${userId}`);
-    return this.update(userId, { is_archived: true });
+    return this.update(userId, { is_archived: true }, tenantId);
   }
 
   // Neue Methode: Benutzer aus dem Archiv wiederherstellen
-  static async unarchiveUser(userId: number): Promise<boolean> {
+  static async unarchiveUser(
+    userId: number,
+    tenantId?: number
+  ): Promise<boolean> {
     logger.info(`Unarchiving user ${userId}`);
-    return this.update(userId, { is_archived: false });
+    return this.update(userId, { is_archived: false }, tenantId);
   }
 
   // Neue Methode: Alle archivierten Benutzer auflisten
@@ -628,7 +614,7 @@ export class User {
         WHERE u.is_archived = true
       `;
 
-      const params: any[] = [];
+      const params: unknown[] = [];
 
       if (role) {
         query += ` AND u.role = ?`;
@@ -823,7 +809,7 @@ export class User {
       ];
 
       // Nur erlaubte Felder übernehmen
-      const updates: any = {};
+      const updates: Record<string, unknown> = {};
       Object.keys(userData).forEach((key) => {
         if (
           allowedFields.includes(key) &&
@@ -874,7 +860,7 @@ export class User {
                    FROM users u 
                    LEFT JOIN departments d ON u.department_id = d.id 
                    WHERE u.tenant_id = ?`;
-      const params: any[] = [filters.tenant_id];
+      const params: unknown[] = [filters.tenant_id];
 
       if (filters.role) {
         query += ' AND u.role = ?';
@@ -886,14 +872,8 @@ export class User {
       // Normalize boolean fields
       const normalizedRows = rows.map((row) => ({
         ...row,
-        is_active:
-          (row.is_active as any) === 1 ||
-          (row.is_active as any) === '1' ||
-          row.is_active === true,
-        is_archived:
-          (row.is_archived as any) === 1 ||
-          (row.is_archived as any) === '1' ||
-          row.is_archived === true,
+        is_active: normalizeMySQLBoolean(row.is_active),
+        is_archived: normalizeMySQLBoolean(row.is_archived),
       }));
 
       return normalizedRows;
@@ -917,14 +897,8 @@ export class User {
       // Normalize boolean fields
       const normalizedRows = rows.map((row) => ({
         ...row,
-        is_active:
-          (row.is_active as any) === 1 ||
-          (row.is_active as any) === '1' ||
-          row.is_active === true,
-        is_archived:
-          (row.is_archived as any) === 1 ||
-          (row.is_archived as any) === '1' ||
-          row.is_archived === true,
+        is_active: normalizeMySQLBoolean(row.is_active),
+        is_archived: normalizeMySQLBoolean(row.is_archived),
       }));
 
       return normalizedRows;
@@ -940,14 +914,17 @@ export class User {
   static async count(filters: UserFilter): Promise<number> {
     try {
       let query = 'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?';
-      const params: any[] = [filters.tenant_id];
+      const params: unknown[] = [filters.tenant_id];
 
       if (filters.role) {
         query += ' AND role = ?';
         params.push(filters.role);
       }
 
-      const [rows] = await executeQuery<any[]>(query, params);
+      interface CountResult extends RowDataPacket {
+        count: number;
+      }
+      const [rows] = await executeQuery<CountResult[]>(query, params);
       return rows[0]?.count || 0;
     } catch (error) {
       logger.error(`Error counting users: ${(error as Error).message}`);
@@ -958,7 +935,10 @@ export class User {
   // Count active users by tenant
   static async countActiveByTenant(tenantId: number): Promise<number> {
     try {
-      const [rows] = await executeQuery<any[]>(
+      interface CountResult extends RowDataPacket {
+        count: number;
+      }
+      const [rows] = await executeQuery<CountResult[]>(
         'SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND is_active = 1',
         [tenantId]
       );
@@ -1007,7 +987,7 @@ export class User {
 }
 
 // Export types
-export type { DbUser, UserCreateData, UserFilter };
+export type { UserCreateData, UserFilter };
 
 // Default export for CommonJS compatibility
 export default User;

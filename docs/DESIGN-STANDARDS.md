@@ -906,8 +906,12 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 
 /* Fade In (Success Overlay) */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Scale In (Success Message) */
@@ -988,6 +992,7 @@ transition: all 0.6s ease-out;
 **Dieses Design ist der STANDARD für alle Success-Messages in der gesamten Anwendung!**
 
 **HTML Struktur:**
+
 ```javascript
 function showSuccessMessage() {
   const overlay = document.createElement('div');
@@ -1012,6 +1017,7 @@ function showSuccessMessage() {
 ```
 
 **CSS Styles:**
+
 ```css
 /* Success Overlay - Fullscreen mit Glassmorphismus */
 .success-overlay {
@@ -1056,6 +1062,7 @@ function showSuccessMessage() {
 ```
 
 **Verwendungsbeispiele:**
+
 - Nach erfolgreichem Formular-Submit
 - Nach Upload-Abschluss
 - Nach Speichern von Einstellungen
@@ -1063,6 +1070,7 @@ function showSuccessMessage() {
 - Nach erfolgreicher Registrierung
 
 **Best Practices:**
+
 1. **Immer 2 Sekunden anzeigen** - nicht kürzer, nicht länger
 2. **Text anpassen** je nach Kontext (z.B. "Erfolgreich gespeichert!", "Upload abgeschlossen!")
 3. **Nur für wichtige Erfolge** verwenden - nicht für kleine Updates

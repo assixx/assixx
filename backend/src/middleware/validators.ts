@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 
 // express-validator v7 with native ESM support
 import { body, validationResult } from 'express-validator';
-
-type ValidationChain = any;
+import type { ValidationMiddleware } from '../types/middleware.types';
 
 // Type for middleware array including validation chains and error handler
-type ValidationMiddleware =
-  | ValidationChain
-  | ((req: Request, res: Response, next: NextFunction) => void);
+// Not used anymore - we use ValidationMiddleware from types/middleware.types.ts
+// type ValidatorMiddleware =
+//   | ValidationChain
+//   | ((req: Request, res: Response, next: NextFunction) => void);
 
 // Gemeinsame Fehlerbehandlungsfunktion
 const handleValidationErrors = (
@@ -21,7 +21,7 @@ const handleValidationErrors = (
     res.status(400).json({
       message: `Validierungsfehler: ${errors
         .array()
-        .map((err: any) => err.msg)
+        .map((err) => err.msg)
         .join(', ')}`,
       errors: errors.array(),
     });
@@ -30,7 +30,7 @@ const handleValidationErrors = (
   next();
 };
 
-export const validateCreateEmployee: ValidationMiddleware[] = [
+export const validateCreateEmployee: ValidationMiddleware = [
   body('username')
     .isLength({ min: 3 })
     .trim()
@@ -67,7 +67,7 @@ export const validateCreateEmployee: ValidationMiddleware[] = [
   handleValidationErrors,
 ];
 
-export const validateUpdateEmployee: ValidationMiddleware[] = [
+export const validateUpdateEmployee: ValidationMiddleware = [
   body('username')
     .optional()
     .isLength({ min: 3 })
@@ -113,7 +113,7 @@ export const validateUpdateEmployee: ValidationMiddleware[] = [
   handleValidationErrors,
 ];
 
-export const validateToggleEmployeeStatus: ValidationMiddleware[] = [
+export const validateToggleEmployeeStatus: ValidationMiddleware = [
   body('status')
     .isIn(['active', 'inactive'])
     .withMessage('Status muss entweder "active" oder "inactive" sein'),
@@ -121,7 +121,7 @@ export const validateToggleEmployeeStatus: ValidationMiddleware[] = [
 ];
 
 // Authentication validators
-export const validateLogin: ValidationMiddleware[] = [
+export const validateLogin: ValidationMiddleware = [
   body('username')
     .notEmpty()
     .trim()
@@ -137,7 +137,7 @@ export const validateLogin: ValidationMiddleware[] = [
   handleValidationErrors,
 ];
 
-export const validateSignup: ValidationMiddleware[] = [
+export const validateSignup: ValidationMiddleware = [
   body('companyName')
     .notEmpty()
     .trim()
@@ -185,7 +185,7 @@ export const validateSignup: ValidationMiddleware[] = [
 ];
 
 // Survey validators
-export const validateCreateSurvey: ValidationMiddleware[] = [
+export const validateCreateSurvey: ValidationMiddleware = [
   body('title')
     .notEmpty()
     .trim()
@@ -249,7 +249,7 @@ export const validateCreateSurvey: ValidationMiddleware[] = [
   handleValidationErrors,
 ];
 
-export const validateUpdateSurvey: ValidationMiddleware[] = [
+export const validateUpdateSurvey: ValidationMiddleware = [
   body('title')
     .optional()
     .trim()
@@ -281,7 +281,7 @@ export const validateUpdateSurvey: ValidationMiddleware[] = [
   handleValidationErrors,
 ];
 
-export const validateSurveyResponse: ValidationMiddleware[] = [
+export const validateSurveyResponse: ValidationMiddleware = [
   body('answers')
     .isArray({ min: 1 })
     .withMessage(
@@ -312,7 +312,7 @@ export const validateSurveyResponse: ValidationMiddleware[] = [
 ];
 
 // Document validators
-export const validateDocumentUpload: ValidationMiddleware[] = [
+export const validateDocumentUpload: ValidationMiddleware = [
   body('userId')
     .optional()
     .isInt({ min: 1 })
@@ -381,7 +381,7 @@ export const validateDocumentUpload: ValidationMiddleware[] = [
 ];
 
 // Calendar/Shift validators
-export const validateCreateShift: ValidationMiddleware[] = [
+export const validateCreateShift: ValidationMiddleware = [
   body('employee_id')
     .notEmpty()
     .isInt({ min: 1 })
@@ -418,7 +418,7 @@ export const validateCreateShift: ValidationMiddleware[] = [
 ];
 
 // Blackboard validators
-export const validateCreatePost: ValidationMiddleware[] = [
+export const validateCreatePost: ValidationMiddleware = [
   body('title')
     .notEmpty()
     .trim()
@@ -459,7 +459,7 @@ export const validateCreatePost: ValidationMiddleware[] = [
 ];
 
 // Parameter validators
-export const validateIdParam: ValidationMiddleware[] = [
+export const validateIdParam: ValidationMiddleware = [
   body('id')
     .optional()
     .isInt({ min: 1 })

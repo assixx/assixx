@@ -5,6 +5,7 @@
 
 import express, { Router } from 'express';
 import { authenticateToken } from '../auth';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();
 
@@ -86,8 +87,8 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
       success: true,
       areas: filteredAreas,
     });
-  } catch (error: any) {
-    console.error('Error fetching areas:', error);
+  } catch (error) {
+    console.error('Error fetching areas:', getErrorMessage(error));
     res.status(500).json({
       success: false,
       message: 'Fehler beim Laden der Bereiche',
@@ -117,8 +118,8 @@ router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
       success: true,
       area,
     });
-  } catch (error: any) {
-    console.error('Error fetching area:', error);
+  } catch (error) {
+    console.error('Error fetching area:', getErrorMessage(error));
     res.status(500).json({
       success: false,
       message: 'Fehler beim Laden des Bereichs',
@@ -166,8 +167,8 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
       message: 'Bereich erfolgreich erstellt',
       area,
     });
-  } catch (error: any) {
-    console.error('Error creating area:', error);
+  } catch (error) {
+    console.error('Error creating area:', getErrorMessage(error));
     res.status(500).json({
       success: false,
       message: 'Fehler beim Erstellen des Bereichs',

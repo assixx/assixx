@@ -181,16 +181,23 @@ document.addEventListener('DOMContentLoaded', () => {
       ]);
 
       if (adminsResponse.ok && usersResponse.ok) {
-        const admins: AdminUser[] = await adminsResponse.json();
-        const users: User[] = await usersResponse.json();
+        const adminsData = await adminsResponse.json();
+        const usersData = await usersResponse.json();
+
+        const admins: AdminUser[] = adminsData.data || adminsData || [];
+        const users: User[] = usersData.data || usersData || [];
 
         // Update counters
         const adminCount = document.getElementById('admin-count');
         const userCount = document.getElementById('user-count');
         const tenantCount = document.getElementById('tenant-count');
 
-        if (adminCount) adminCount.textContent = admins.length.toString();
-        if (userCount) userCount.textContent = users.length.toString();
+        if (adminCount && Array.isArray(admins)) {
+          adminCount.textContent = admins.length.toString();
+        }
+        if (userCount && Array.isArray(users)) {
+          userCount.textContent = users.length.toString();
+        }
         if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
       }
     } catch (error) {
@@ -209,13 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const admins: AdminUser[] = await response.json();
+        const data = await response.json();
+        const admins: AdminUser[] = data.data || data || [];
         console.info('Loaded admins:', admins);
         displayAdmins(admins);
 
         // Update admin count
         const adminCount = document.getElementById('admin-count');
-        if (adminCount) {
+        if (adminCount && Array.isArray(admins)) {
           adminCount.textContent = admins.length.toString();
         }
       } else {
@@ -327,16 +335,17 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           logsContainer.innerHTML = logs
-            .map((log: any) => {
-              const date = new Date(log.created_at);
-              const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-              const dateString = date.toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              });
+            .map(
+              (log: { created_at: string; action: string; user_name: string; user_role: string; details?: string }) => {
+                const date = new Date(log.created_at);
+                const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                const dateString = date.toLocaleDateString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                });
 
-              return `
+                return `
               <div class="log-entry" onclick="window.location.href='/pages/logs.html'">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
@@ -349,7 +358,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
             `;
-            })
+              },
+            )
             .join('');
         }
       }

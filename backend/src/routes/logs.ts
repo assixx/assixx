@@ -4,6 +4,34 @@ import { executeQuery } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { query, body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
+
+interface LogEntry extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  user_id: number;
+  user_name: string;
+  user_role: string;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  details: string | Buffer;
+  ip_address: string;
+  user_agent: string;
+  created_at: Date;
+}
+
+interface CountResult extends RowDataPacket {
+  total: number;
+}
+
+interface UserInfo extends RowDataPacket {
+  name: string;
+}
+
+interface RootUser extends RowDataPacket {
+  password: string;
+}
 
 const router: Router = express.Router();
 
@@ -55,7 +83,7 @@ router.get(
     try {
       // Build WHERE conditions
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: (string | number | null)[] = [];
 
       // WICHTIG: Immer nach tenant_id filtern!
       conditions.push('al.tenant_id = ?');
@@ -116,7 +144,7 @@ router.get(
         conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       // Logs mit User-Informationen abrufen
-      const [logs] = await executeQuery<any[]>(
+      const [logs] = await executeQuery<LogEntry[]>(
         `
         SELECT 
           al.id,
@@ -141,7 +169,7 @@ router.get(
       );
 
       // Total count für Pagination
-      const [countResult] = await executeQuery<any[]>(
+      const [countResult] = await executeQuery<CountResult[]>(
         `
         SELECT COUNT(*) as total
         FROM activity_logs al
@@ -165,8 +193,8 @@ router.get(
           log.user_name &&
           typeof log.user_name === 'object' &&
           Buffer.isBuffer(log.user_name)
-            ? log.user_name.toString('utf8')
-            : log.user_name,
+            ? (log.user_name as Buffer).toString('utf8')
+            : log.user_name || null,
       }));
 
       res.json({
@@ -246,7 +274,7 @@ router.delete(
 
       // Verify root password
       try {
-        const [rootUser] = await executeQuery<any[]>(
+        const [rootUser] = await executeQuery<RootUser[]>(
           'SELECT password FROM users WHERE id = ? AND role = "root"',
           [req.user.id]
         );
@@ -283,7 +311,7 @@ router.delete(
     try {
       // Build WHERE conditions
       const conditions: string[] = [];
-      const params: any[] = [];
+      const params: (string | number | null)[] = [];
 
       // WICHTIG: Immer nach tenant_id filtern!
       conditions.push('tenant_id = ?');
@@ -341,7 +369,7 @@ router.delete(
         conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       // Delete logs matching the filters
-      const [result] = await executeQuery<any>(
+      const [result] = await executeQuery<ResultSetHeader>(
         `
         DELETE FROM activity_logs
         ${whereClause}
@@ -355,7 +383,7 @@ router.delete(
       const filterDescriptions: string[] = [];
       if (userId) {
         // Get username for the filter
-        const [userInfo] = await executeQuery<any[]>(
+        const [userInfo] = await executeQuery<UserInfo[]>(
           'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = ?',
           [userId]
         );

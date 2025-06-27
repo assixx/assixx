@@ -178,8 +178,8 @@ export async function loadUserInfo(): Promise<User> {
         // The API returns the user object directly, not wrapped in data.user
         const user: User = data.user || data;
 
-        // Update user display
-        const userName = document.getElementById('userName');
+        // Update user display - check both element IDs for compatibility
+        const userName = document.getElementById('userName') || document.getElementById('user-name');
         if (userName) {
           const firstName = user.first_name || 'Admin';
           const lastName = user.last_name || '';

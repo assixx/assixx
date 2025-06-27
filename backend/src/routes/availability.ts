@@ -5,7 +5,7 @@
 
 import express, { Router } from 'express';
 import availabilityController from '../controllers/availability.controller';
-import { authenticateToken } from '../middleware/auth';
+import { security } from '../middleware/security';
 import { checkFeature } from '../middleware/features';
 
 const router: Router = express.Router();
@@ -13,57 +13,57 @@ const router: Router = express.Router();
 // Get current availability status for all employees
 router.get(
   '/current',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.getCurrentStatus.bind(availabilityController) as any
+  ...security.user(),
+  checkFeature('shift_planning'),
+  availabilityController.getCurrentStatus.bind(availabilityController)
 );
 
 // Get availability summary for date range
 router.get(
   '/summary',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.getSummary.bind(availabilityController) as any
+  ...security.user(),
+  checkFeature('shift_planning'),
+  availabilityController.getSummary.bind(availabilityController)
 );
 
 // Get all availability records (with filters)
 router.get(
   '/',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.getAll.bind(availabilityController) as any
+  ...security.user(),
+  checkFeature('shift_planning'),
+  availabilityController.getAll.bind(availabilityController)
 );
 
 // Get specific availability record
 router.get(
   '/:id',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.getById.bind(availabilityController) as any
+  ...security.user(),
+  checkFeature('shift_planning'),
+  availabilityController.getById.bind(availabilityController)
 );
 
 // Create new availability record
 router.post(
   '/',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.create.bind(availabilityController) as any
+  ...security.user(),
+  checkFeature('shift_planning'),
+  availabilityController.create.bind(availabilityController)
 );
 
 // Update availability record
 router.put(
   '/:id',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.update.bind(availabilityController) as any
+  ...security.user(),
+  checkFeature('shift_planning'),
+  availabilityController.update.bind(availabilityController)
 );
 
 // Delete availability record
 router.delete(
   '/:id',
-  authenticateToken as any,
-  checkFeature('shift_planning') as any,
-  availabilityController.delete.bind(availabilityController) as any
+  ...security.admin(),
+  checkFeature('shift_planning'),
+  availabilityController.delete.bind(availabilityController)
 );
 
 export default router;

@@ -163,31 +163,36 @@ class UnifiedNavigation {
 
       // Use cached loadUserInfo from auth module instead of making a separate call
       console.info('[UnifiedNav] Using cached loadUserInfo');
-      const userData = (await loadUserInfoFromAuth()) as any;
+      const userData = (await loadUserInfoFromAuth()) as UserProfileResponse & { data?: UserProfileResponse };
       if (userData) {
         const user = userData.user || userData;
 
         // Update company info (new)
         const companyElement = document.getElementById('sidebar-company-name');
-        if (companyElement && userData.company_name) {
-          companyElement.textContent = userData.company_name;
+        if (companyElement) {
+          const companyName = userData.company_name || userData.data?.company_name || 'Firmenname';
+          companyElement.textContent = companyName;
         }
 
         const domainElement = document.getElementById('sidebar-domain');
-        if (domainElement && userData.subdomain) {
-          domainElement.textContent = `${userData.subdomain}.assixx.de`;
+        if (domainElement) {
+          const subdomain = userData.subdomain || userData.data?.subdomain || 'demo';
+          domainElement.textContent = `${subdomain}.assixx.de`;
         }
 
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          sidebarUserName.textContent = userData.email || user.email || this.currentUser?.email || 'User';
+          const email = userData.email || userData.data?.email || user.email || this.currentUser?.email || 'User';
+          sidebarUserName.textContent = email;
         }
 
         const sidebarFullName = document.getElementById('sidebar-user-fullname');
         if (sidebarFullName) {
-          const firstName = userData.first_name || userData.firstName || (user as User).firstName || '';
-          const lastName = userData.last_name || userData.lastName || (user as User).lastName || '';
+          const firstName =
+            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName =
+            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             sidebarFullName.textContent = fullName;
@@ -199,30 +204,48 @@ class UnifiedNavigation {
         // Update header user name with full name
         const headerUserName = document.getElementById('user-name');
         if (headerUserName) {
-          const firstName = userData.first_name || userData.firstName || (user as User).firstName || '';
-          const lastName = userData.last_name || userData.lastName || (user as User).lastName || '';
+          // Same logic as sidebar-user-fullname which works correctly
+          const firstName =
+            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName =
+            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+          console.log('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
+
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             headerUserName.textContent = fullName;
+            console.log('[UnifiedNav] Set header name to:', fullName);
+          } else {
+            // Fallback auf Email oder Username wenn keine Namen vorhanden
+            const email = userData.email || userData.data?.email || user.email || this.currentUser?.email;
+            const username = userData.username || user.username || this.currentUser?.username;
+            headerUserName.textContent = email || username || 'User';
+            console.log('[UnifiedNav] Fallback to email/username:', email || username);
           }
         }
 
         // Update avatar if we have profile picture
         const sidebarAvatar = document.getElementById('sidebar-user-avatar') as HTMLImageElement;
         if (sidebarAvatar) {
-          const profilePic = userData.profile_picture || userData.profilePicture || (user as User).profilePicture;
-          if (profilePic) {
-            sidebarAvatar.src = profilePic;
-          }
+          const profilePic =
+            userData.profile_picture ||
+            userData.data?.profile_picture ||
+            userData.profilePicture ||
+            (user as User).profilePicture ||
+            '/assets/images/default-avatar.svg';
+          sidebarAvatar.src = profilePic;
         }
 
         // Also update header avatar
         const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
         if (headerAvatar) {
-          const profilePic = userData.profile_picture || userData.profilePicture || (user as User).profilePicture;
-          if (profilePic) {
-            headerAvatar.src = profilePic;
-          }
+          const profilePic =
+            userData.profile_picture ||
+            userData.data?.profile_picture ||
+            userData.profilePicture ||
+            (user as User).profilePicture ||
+            '/assets/images/default-avatar.svg';
+          headerAvatar.src = profilePic;
         }
 
         // Store profile data
@@ -875,19 +898,21 @@ class UnifiedNavigation {
 
     // If has submenu, create a dropdown
     if (hasSubmenu) {
-      const submenuItems = item
-        .submenu!.map((child) => {
-          // Support both badgeId and badge properties
-          let childBadgeHtml = '';
-          if (child.badgeId) {
-            childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-          } else if (child.badge === 'pending-surveys') {
-            childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
-          } else if (child.badge === 'new-kvp-suggestions') {
-            childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-          }
+      const submenuItems =
+        item.submenu && item.submenu.length > 0
+          ? item.submenu
+              .map((child) => {
+                // Support both badgeId and badge properties
+                let childBadgeHtml = '';
+                if (child.badgeId) {
+                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                } else if (child.badge === 'pending-surveys') {
+                  childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
+                } else if (child.badge === 'new-kvp-suggestions') {
+                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                }
 
-          return `
+                return `
               <li class="submenu-item" style="position: relative;">
                 <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
                   <span class="submenu-label">${child.label}</span>
@@ -895,8 +920,9 @@ class UnifiedNavigation {
                 </a>
               </li>
             `;
-        })
-        .join('');
+              })
+              .join('')
+          : '';
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
@@ -920,17 +946,20 @@ class UnifiedNavigation {
 
     // If has children, create a dropdown (old style)
     if (hasChildren) {
-      const submenuItems = item
-        .children!.map(
-          (child) => `
+      const submenuItems =
+        item.children && item.children.length > 0
+          ? item.children
+              .map(
+                (child) => `
         <li class="submenu-item">
           <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
       `,
-        )
-        .join('');
+              )
+              .join('')
+          : '';
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
@@ -1096,7 +1125,7 @@ class UnifiedNavigation {
       }
 
       // Force browser to recalculate styles
-      sidebar.offsetWidth;
+      void sidebar.offsetWidth;
 
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
@@ -1466,7 +1495,7 @@ class UnifiedNavigation {
               }
             }
           }
-        } catch (e) {
+        } catch {
           // Skip invalid URLs
           console.warn('Invalid submenu URL:', linkElement.href);
         }
@@ -1743,7 +1772,13 @@ class UnifiedNavigation {
           total: 0,
         };
 
-        documents.forEach((doc: any) => {
+        interface DocumentResponse {
+          is_read?: boolean;
+          category?: string;
+          scope?: 'company' | 'department' | 'team' | 'personal';
+        }
+
+        documents.forEach((doc: DocumentResponse) => {
           if (!doc.is_read) {
             unreadCounts.total++;
 
@@ -1932,7 +1967,7 @@ class UnifiedNavigation {
       document.head.appendChild(styleSheet);
 
       // Force style recalculation
-      document.body.offsetHeight;
+      void document.body.offsetHeight;
     } else {
       console.log('[UnifiedNav] CSS styles already present');
     }
@@ -2635,6 +2670,7 @@ const unifiedNavigationCSS = `
         overflow: hidden;
         text-overflow: ellipsis;
         text-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+        white-space: normal;
     }
 
     .company-domain {
@@ -3060,7 +3096,11 @@ if (!document.querySelector('#unified-navigation-styles')) {
 // Export to window for backwards compatibility
 
 // Global function for submenu toggle
-(window as any).toggleSubmenu = function (event: Event, itemId: string) {
+interface NavigationWindow extends Window {
+  toggleSubmenu: (event: Event, itemId: string) => void;
+}
+
+(window as unknown as NavigationWindow).toggleSubmenu = function (event: Event, itemId: string) {
   event.preventDefault();
   event.stopPropagation();
 
@@ -3109,19 +3149,27 @@ const setupPeriodicUpdates = () => {
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
     window.unifiedNav.updateUnreadMessages();
-    setInterval(() => window.unifiedNav.updateUnreadMessages(), 30000); // Alle 30 Sekunden
+    setInterval(() => window.unifiedNav?.updateUnreadMessages(), 30000); // Alle 30 Sekunden
   }
 
   // Offene Umfragen beim Start und periodisch aktualisieren
-  if (window.unifiedNav && typeof window.unifiedNav.updatePendingSurveys === 'function') {
+  if (
+    window.unifiedNav &&
+    'updatePendingSurveys' in window.unifiedNav &&
+    typeof window.unifiedNav.updatePendingSurveys === 'function'
+  ) {
     window.unifiedNav.updatePendingSurveys();
-    setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
+    setInterval(() => window.unifiedNav?.updatePendingSurveys?.(), 30000); // Alle 30 Sekunden
   }
 
   // Storage-Informationen für Root User beim Start und periodisch aktualisieren
-  if (window.unifiedNav && typeof window.unifiedNav.updateStorageInfo === 'function') {
+  if (
+    window.unifiedNav &&
+    'updateStorageInfo' in window.unifiedNav &&
+    typeof window.unifiedNav.updateStorageInfo === 'function'
+  ) {
     window.unifiedNav.updateStorageInfo();
-    setInterval(() => window.unifiedNav.updateStorageInfo(), 60000); // Alle 60 Sekunden
+    setInterval(() => window.unifiedNav?.updateStorageInfo?.(), 60000); // Alle 60 Sekunden
   }
 };
 

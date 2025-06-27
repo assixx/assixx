@@ -14,20 +14,7 @@ import {
   TokenValidationResult,
 } from '../types/auth.types';
 import { DatabaseUser } from '../types/models';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  pool: any,
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await pool.query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
+import { execute, ResultSetHeader } from '../utils/db';
 
 class AuthService {
   /**
@@ -73,9 +60,7 @@ class AuthService {
       // Store session info if fingerprint provided
       if (fingerprint) {
         try {
-          const pool = (await import('../database')).default;
-          await executeQuery<ResultSetHeader>(
-            pool,
+          await execute<ResultSetHeader>(
             'INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))',
             [result.user.id, sessionId, fingerprint]
           );
@@ -87,14 +72,16 @@ class AuthService {
 
       // Convert database user to app user format and remove sensitive data
       const userWithoutPassword = { ...result.user };
-      delete (userWithoutPassword as any).password;
+      if ('password' in userWithoutPassword) {
+        delete userWithoutPassword.password;
+      }
 
       return {
         success: true,
         token,
         user: this.mapDatabaseUserToAppUser(
           this.dbUserToDatabaseUser(userWithoutPassword)
-        ),
+        ) as unknown as AuthResult['user'],
       };
     } catch (error) {
       logger.error('Authentication error:', error);
@@ -139,7 +126,7 @@ class AuthService {
       }
 
       // Check if tenant ID is provided
-      if (!userData.tenantId) {
+      if (!userData.tenant_id) {
         return {
           success: false,
           user: null,
@@ -158,20 +145,30 @@ class AuthService {
         first_name: vorname,
         last_name: nachname,
         role,
-        tenant_id: userData.tenantId,
+        tenant_id: userData.tenant_id,
       });
 
       // Get created user (without password)
-      const user = await UserModel.findById(userId, userData.tenantId);
+      const user = await UserModel.findById(userId, userData.tenant_id);
       if (!user) {
         throw new Error('Failed to retrieve created user');
       }
 
-      delete (user as any).password;
+      if (user && 'password' in user) {
+        delete user.password;
+      }
+
+      // Ensure tenant_id is present
+      const userWithTenantId = {
+        ...user,
+        tenant_id: user.tenant_id || userData.tenant_id,
+      };
 
       return {
         success: true,
-        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(user)),
+        user: this.mapDatabaseUserToAppUser(
+          this.dbUserToDatabaseUser(userWithTenantId)
+        ) as unknown as AuthResult['user'],
       };
     } catch (error) {
       logger.error('Registration error:', error);
@@ -186,10 +183,14 @@ class AuthService {
    */
   async verifyToken(token: string): Promise<TokenValidationResult> {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || '');
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        throw new Error('JWT_SECRET not configured');
+      }
+      const decoded = jwt.verify(token, secret);
       return {
         valid: true,
-        user: decoded as any,
+        user: decoded as unknown as DatabaseUser,
       };
     } catch (error) {
       logger.error('Token verification error:', error);
@@ -204,21 +205,49 @@ class AuthService {
    * Map database user format to application user format
    * @private
    */
-  private mapDatabaseUserToAppUser(dbUser: DatabaseUser): any {
+  private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<
+    DatabaseUser,
+    'password_hash'
+  > & {
+    firstName: string;
+    lastName: string;
+    departmentId: number | null;
+    isActive: boolean;
+    isArchived: boolean;
+    profilePicture: string | null;
+    phoneNumber: string | null;
+    hireDate: Date | null;
+    birthDate: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } {
     return {
+      // DatabaseUser properties (snake_case)
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
+      first_name: dbUser.first_name,
+      last_name: dbUser.last_name,
+      role: dbUser.role as 'admin' | 'root' | 'employee',
+      tenant_id: dbUser.tenant_id,
+      department_id: dbUser.department_id,
+      is_active: dbUser.is_active,
+      is_archived: dbUser.is_archived,
+      profile_picture: dbUser.profile_picture,
+      phone_number: dbUser.phone_number,
+      position: dbUser.position,
+      hire_date: dbUser.hire_date,
+      birth_date: dbUser.birth_date,
+      created_at: dbUser.created_at,
+      updated_at: dbUser.updated_at,
+      // Additional camelCase properties
       firstName: dbUser.first_name,
       lastName: dbUser.last_name,
-      role: dbUser.role,
-      tenantId: dbUser.tenant_id,
       departmentId: dbUser.department_id,
       isActive: dbUser.is_active,
       isArchived: dbUser.is_archived,
       profilePicture: dbUser.profile_picture,
       phoneNumber: dbUser.phone_number,
-      position: dbUser.position,
       hireDate: dbUser.hire_date,
       birthDate: dbUser.birth_date,
       createdAt: dbUser.created_at,
@@ -230,7 +259,26 @@ class AuthService {
    * Convert DbUser to DatabaseUser format
    * @private
    */
-  private dbUserToDatabaseUser(dbUser: any): DatabaseUser {
+  private dbUserToDatabaseUser(dbUser: {
+    id: number;
+    username: string;
+    email: string;
+    password?: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    tenant_id: number;
+    department_id?: number | null;
+    is_active?: boolean | number | string;
+    is_archived?: boolean;
+    profile_picture?: string | null;
+    phone?: string | null;
+    position?: string | null;
+    hire_date?: Date | null;
+    birthday?: Date | null;
+    created_at?: Date;
+    updated_at?: Date;
+  }): DatabaseUser {
     return {
       id: dbUser.id,
       username: dbUser.username,
@@ -238,13 +286,13 @@ class AuthService {
       password_hash: dbUser.password || '',
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
-      role: dbUser.role,
+      role: dbUser.role as 'admin' | 'employee' | 'root',
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id,
       is_active:
         dbUser.is_active === true ||
-        (dbUser.is_active as any) === 1 ||
-        (dbUser.is_active as any) === '1',
+        dbUser.is_active === 1 ||
+        dbUser.is_active === '1',
       is_archived: dbUser.is_archived || false,
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone || null,

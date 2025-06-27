@@ -1,6 +1,9 @@
-import pool from '../database';
+import {
+  execute as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger';
-import { RowDataPacket } from 'mysql2';
 
 export interface DbPlan extends RowDataPacket {
   id: number;
@@ -72,8 +75,8 @@ export class Plan {
         WHERE is_active = true 
         ORDER BY sort_order ASC
       `;
-      const result = await (pool as any).execute(query);
-      return result[0] as DbPlan[];
+      const [plans] = await executeQuery<DbPlan[]>(query);
+      return plans;
     } catch (error) {
       logger.error(`Error fetching plans: ${(error as Error).message}`);
       throw error;
@@ -84,8 +87,7 @@ export class Plan {
   static async findByCode(code: string): Promise<DbPlan | null> {
     try {
       const query = 'SELECT * FROM plans WHERE code = ? AND is_active = true';
-      const result = await (pool as any).execute(query, [code]);
-      const plans = result[0] as DbPlan[];
+      const [plans] = await executeQuery<DbPlan[]>(query, [code]);
       return plans.length > 0 ? plans[0] : null;
     } catch (error) {
       logger.error(`Error fetching plan by code: ${(error as Error).message}`);
@@ -109,8 +111,7 @@ export class Plan {
         AND f.is_active = true
         ORDER BY f.category, f.name
       `;
-      const result = await (pool as any).execute(query, [planId]);
-      const features = result[0] as DbPlanFeature[];
+      const [features] = await executeQuery<DbPlanFeature[]>(query, [planId]);
       return features;
     } catch (error) {
       logger.error(`Error fetching plan features: ${(error as Error).message}`);
@@ -133,8 +134,7 @@ export class Plan {
         ORDER BY tp.started_at DESC
         LIMIT 1
       `;
-      const result = await (pool as any).execute(query, [tenantId]);
-      const plans = result[0] as DbTenantPlan[];
+      const [plans] = await executeQuery<DbTenantPlan[]>(query, [tenantId]);
       return plans.length > 0 ? plans[0] : null;
     } catch (error) {
       logger.error(`Error fetching tenant plan: ${(error as Error).message}`);
@@ -153,7 +153,7 @@ export class Plan {
       const effectiveDate = request.effectiveDate || new Date();
 
       // Cancel current plan
-      await (pool as any).execute(
+      await executeQuery<ResultSetHeader>(
         `UPDATE tenant_plans 
          SET status = 'cancelled', cancelled_at = NOW() 
          WHERE tenant_id = ? AND status IN ('active', 'trial')`,
@@ -161,14 +161,14 @@ export class Plan {
       );
 
       // Create new plan subscription
-      await (pool as any).execute(
+      await executeQuery<ResultSetHeader>(
         `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
          VALUES (?, ?, 'active', ?)`,
         [request.tenantId, newPlan.id, effectiveDate]
       );
 
       // Update tenant's current_plan_id
-      await (pool as any).execute(
+      await executeQuery<ResultSetHeader>(
         'UPDATE tenants SET current_plan_id = ? WHERE id = ?',
         [newPlan.id, request.tenantId]
       );
@@ -180,7 +180,7 @@ export class Plan {
         .map((f) => f.feature_id);
 
       if (includedFeatureIds.length > 0) {
-        await (pool as any).execute(
+        await executeQuery<ResultSetHeader>(
           `UPDATE tenant_features 
            SET is_active = FALSE 
            WHERE tenant_id = ? 
@@ -207,8 +207,7 @@ export class Plan {
         WHERE tenant_id = ? 
         AND status = 'active'
       `;
-      const result = await (pool as any).execute(query, [tenantId]);
-      const addons = result[0] as DbTenantAddon[];
+      const [addons] = await executeQuery<DbTenantAddon[]>(query, [tenantId]);
       return addons;
     } catch (error) {
       logger.error(`Error fetching tenant addons: ${(error as Error).message}`);
@@ -248,7 +247,7 @@ export class Plan {
       }
 
       for (const update of updates) {
-        await (pool as any).execute(
+        await executeQuery<ResultSetHeader>(
           `INSERT INTO tenant_addons (tenant_id, addon_type, quantity, unit_price, status)
            VALUES (?, ?, ?, ?, 'active')
            ON DUPLICATE KEY UPDATE
@@ -286,8 +285,9 @@ export class Plan {
         GROUP BY t.id, tp.custom_price, p.base_price
       `;
 
-      const result = await (pool as any).execute(query, [tenantId]);
-      const queryResult = result[0] as any[];
+      const [queryResult] = await executeQuery<RowDataPacket[]>(query, [
+        tenantId,
+      ]);
       const data = queryResult[0];
 
       const planCost = data?.plan_cost || 0;

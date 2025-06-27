@@ -3,7 +3,8 @@
  * These types extend Express Request with authentication and file upload support
  */
 
-import { Request, ParamsDictionary } from 'express-serve-static-core';
+import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
 import { TenantInfo } from './tenant.types';
 
@@ -14,19 +15,21 @@ export interface AuthUser {
   username: string;
   email: string;
   role: string;
-  tenantId: number;
+  tenant_id: number;
   tenantName?: string;
   first_name?: string;
   last_name?: string;
   department_id?: number | null;
   position?: string | null;
+  activeRole?: string; // For role switching functionality
 }
 
 // Base authenticated request
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest
+  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
   user: AuthUser;
   tenant?: TenantInfo | null;
-  tenantId?: number | null;
+  tenant_id?: number | null;
   subdomain?: string;
   userId?: number; // Convenience property
 }
@@ -62,7 +65,7 @@ export interface ParamsRequest<T extends ParamsDictionary = ParamsDictionary>
 }
 
 // Request with typed body
-export interface BodyRequest<T = any> extends AuthenticatedRequest {
+export interface BodyRequest<T = unknown> extends AuthenticatedRequest {
   body: T;
 }
 
@@ -74,7 +77,7 @@ export interface QueryRequest<T extends ParsedQs = ParsedQs>
 
 // Combined request types
 export interface FullRequest<
-  TBody = any,
+  TBody = unknown,
   TQuery extends ParsedQs = ParsedQs,
   TParams extends ParamsDictionary = ParamsDictionary,
 > extends AuthenticatedRequest {
@@ -85,10 +88,40 @@ export interface FullRequest<
 
 // Document-specific request types
 export interface DocumentRequest extends AuthenticatedRequest {
-  document?: any; // Will be typed properly when Document model is fully migrated
+  document?: {
+    id: number;
+    filename: string;
+    category?: string;
+    tenant_id: number;
+    [key: string]: unknown;
+  }; // Will be typed properly when Document model is fully migrated
   params: {
     documentId: string;
   };
+}
+
+// Public Request (no authentication required)
+export interface PublicRequest
+  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  subdomain?: string;
+  tenantId?: number | null;
+}
+
+// Optional Auth Request (authentication optional)
+export interface OptionalAuthRequest
+  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  user?: AuthUser;
+  tenant?: TenantInfo | null;
+  tenantId?: number | null;
+  subdomain?: string;
+}
+
+// API Key Request
+export interface ApiKeyRequest
+  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+  apiKey?: string;
+  apiKeyPermissions?: string[];
+  tenantId?: number;
 }
 
 // Chat-specific request types

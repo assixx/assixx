@@ -22,9 +22,11 @@ interface BlackboardCreateRequest extends TenantRequest {
     priority?: 'low' | 'normal' | 'high';
     is_pinned?: boolean;
     color?: string | null;
-    tags?: string | null;
+    tags?: string | string[] | null;
     created_by: number;
     expires_at?: Date | string | null;
+    org_level?: string;
+    org_id?: number | null;
   };
 }
 
@@ -85,7 +87,12 @@ class BlackboardController {
         limit: req.query.limit ? parseInt(req.query.limit) : undefined,
       };
 
-      const result = await blackboardService.getAll(req.tenantDb, filters);
+      const result = await blackboardService.getAll(
+        req.tenantDb,
+        filters,
+        req.user.tenant_id,
+        req.user.id
+      );
       res.json(result);
     } catch (error) {
       console.error('Error in BlackboardController.getAll:', error);
@@ -113,7 +120,12 @@ class BlackboardController {
         return;
       }
 
-      const result = await blackboardService.getById(req.tenantDb, id);
+      const result = await blackboardService.getById(
+        req.tenantDb,
+        id,
+        req.user.tenant_id,
+        req.user.id
+      );
       if (!result) {
         res.status(404).json({ error: 'Nicht gefunden' });
         return;
@@ -139,7 +151,26 @@ class BlackboardController {
         return;
       }
 
-      const result = await blackboardService.create(req.tenantDb, req.body);
+      const createData = {
+        ...req.body,
+        tenant_id: req.user.tenant_id,
+        created_by: req.user.id,
+        author_id: req.user.id,
+        org_level: (req.body.org_level || 'company') as
+          | 'company'
+          | 'department'
+          | 'team',
+        org_id: req.body.org_id || null,
+        expires_at: req.body.expires_at
+          ? new Date(req.body.expires_at)
+          : undefined,
+        tags: req.body.tags
+          ? typeof req.body.tags === 'string'
+            ? req.body.tags.split(',')
+            : req.body.tags
+          : undefined,
+      };
+      const result = await blackboardService.create(req.tenantDb, createData);
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in BlackboardController.create:', error);
@@ -167,7 +198,20 @@ class BlackboardController {
         return;
       }
 
-      const result = await blackboardService.update(req.tenantDb, id, req.body);
+      const updateData = {
+        ...req.body,
+        tags: req.body.tags
+          ? typeof req.body.tags === 'string'
+            ? req.body.tags.split(',')
+            : req.body.tags
+          : undefined,
+      };
+      const result = await blackboardService.update(
+        req.tenantDb,
+        id,
+        updateData,
+        req.user.tenant_id
+      );
       res.json(result);
     } catch (error) {
       console.error('Error in BlackboardController.update:', error);
@@ -195,7 +239,7 @@ class BlackboardController {
         return;
       }
 
-      await blackboardService.delete(req.tenantDb, id);
+      await blackboardService.delete(req.tenantDb, id, req.user.tenant_id);
       res.status(204).send();
     } catch (error) {
       console.error('Error in BlackboardController.delete:', error);

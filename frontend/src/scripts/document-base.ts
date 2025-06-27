@@ -96,7 +96,7 @@ export class DocumentBase {
     controlLeft.appendChild(toggleContainer);
 
     // Make instance available globally for onclick handlers
-    (window as any).documentBase = this;
+    window.documentBase = this;
   }
 
   /**
@@ -105,12 +105,14 @@ export class DocumentBase {
   protected setupEventListeners(): void {
     // Search input (only for search page)
     if (this.currentScope === 'all') {
-      const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+      const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
       if (searchInput) {
         searchInput.addEventListener('input', (e: Event) => {
-          const target = e.target as HTMLInputElement;
-          this.currentSearch = target.value.toLowerCase();
-          this.performSearch();
+          const target = e.target as HTMLInputElement | null;
+          if (target) {
+            this.currentSearch = target.value.toLowerCase();
+            this.performSearch();
+          }
         });
 
         // Focus on search input
@@ -122,8 +124,8 @@ export class DocumentBase {
     const sortDropdown = document.getElementById('sortDropdown');
     if (sortDropdown) {
       sortDropdown.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        if (target.classList.contains('dropdown-option')) {
+        const target = e.target as HTMLElement | null;
+        if (target && target.classList.contains('dropdown-option')) {
           const sortValue = target.dataset.sort as SortOption;
           if (sortValue) {
             this.currentSort = sortValue;
@@ -137,7 +139,8 @@ export class DocumentBase {
 
     // Click outside to close dropdowns
     document.addEventListener('click', (e) => {
-      if (!(e.target as HTMLElement).closest('.custom-dropdown')) {
+      const target = e.target as HTMLElement | null;
+      if (target && !target.closest('.custom-dropdown')) {
         this.closeAllDropdowns();
       }
     });
@@ -406,7 +409,7 @@ export class DocumentBase {
     this.updateElement('modalUploadDate', this.formatDate(doc.created_at));
 
     // Setup preview
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement;
+    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
     const previewError = document.getElementById('previewError');
 
     if (previewFrame && previewError) {
@@ -592,7 +595,7 @@ window.closeDocumentModal = function (): void {
     modal.style.display = 'none';
 
     // Clean up blob URL
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement;
+    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
     if (previewFrame) {
       const blobUrl = previewFrame.dataset.blobUrl;
       if (blobUrl) {

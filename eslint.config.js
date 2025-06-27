@@ -57,8 +57,8 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': 'off',
     },
   },
@@ -124,8 +124,8 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': 'off',
     },
   },
@@ -171,8 +171,8 @@ export default [
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
       'prettier/prettier': 'error',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -349,6 +349,8 @@ export default [
       'frontend/src/styles/lib/**',
       'frontend/public/**',
       'backend/logs/**',
+      // TypeScript Declaration Files
+      '**/*.d.ts',
       // Backend Scripts - bleiben CommonJS
       'backend/scripts/**/*.js',
       'backend/src/utils/scripts/**/*.js',

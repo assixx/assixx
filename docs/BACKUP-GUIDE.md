@@ -155,13 +155,11 @@ bash setup-docker-db.sh
 ## 🔐 Sicherheitshinweise
 
 1. **Backup-Dateien schützen**:
-
    - Enthalten sensible Daten
    - Verschlüsseln für externe Speicherung
    - Zugriff beschränken
 
 2. **Passwörter**:
-
    - In Scripts hartcodiert (ändern in Produktion!)
    - Umgebungsvariablen verwenden
 
@@ -226,12 +224,10 @@ zcat backup.sql.gz | split -l 1000 - partial_
 ## 💡 Best Practices
 
 1. **Testen Sie Backups regelmäßig**
-
    - Monatlich eine Test-Wiederherstellung
    - Dokumentieren Sie den Prozess
 
 2. **3-2-1 Regel**
-
    - 3 Kopien Ihrer Daten
    - 2 verschiedene Medien
    - 1 externe Kopie

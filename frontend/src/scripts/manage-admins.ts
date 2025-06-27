@@ -59,10 +59,19 @@
 
   // Make functions available globally immediately
   // These will be properly defined later
-  (window as any).editAdmin = null;
-  (window as any).deleteAdmin = null;
-  (window as any).showAddAdminModal = null;
-  (window as any).closeAdminModal = null;
+  interface ManageAdminsWindow extends Window {
+    editAdmin: typeof editAdminHandler | null;
+    deleteAdmin: typeof deleteAdminHandler | null;
+    showAddAdminModal: (() => void) | null;
+    closeAdminModal: (() => void) | null;
+    closePermissionsModal: (() => void) | null;
+    savePermissionsHandler: (() => Promise<void>) | null;
+  }
+
+  (window as unknown as ManageAdminsWindow).editAdmin = null;
+  (window as unknown as ManageAdminsWindow).deleteAdmin = null;
+  (window as unknown as ManageAdminsWindow).showAddAdminModal = null;
+  (window as unknown as ManageAdminsWindow).closeAdminModal = null;
 
   // Logout wird jetzt durch header-user-info.ts gehandhabt
 
@@ -100,7 +109,7 @@
         }
 
         // Log each admin's is_active status
-        admins.forEach((admin: any) => {
+        admins.forEach((admin) => {
           console.log(`Admin ${admin.username} (ID: ${admin.id}) - is_active: ${admin.is_active}`);
         });
         renderAdminTable();
@@ -383,7 +392,11 @@
     const positionValue = admin.position || '';
     (document.getElementById('positionDropdownValue') as HTMLInputElement).value = positionValue;
     const displayText = positionValue ? getPositionDisplay(positionValue) : 'Position auswählen...';
-    document.getElementById('positionDropdownDisplay')!.querySelector('span')!.textContent = displayText;
+    const positionDropdown = document.getElementById('positionDropdownDisplay');
+    if (positionDropdown) {
+      const span = positionDropdown.querySelector('span');
+      if (span) span.textContent = displayText;
+    }
 
     (document.getElementById('adminNotes') as HTMLTextAreaElement).value = admin.notes || '';
 
@@ -520,7 +533,7 @@
   }
 
   // Admin hinzufügen Modal anzeigen
-  (window as any).showAddAdminModal = function () {
+  (window as unknown as ManageAdminsWindow).showAddAdminModal = function () {
     currentAdminId = null;
     const modal = document.getElementById('adminModal');
     const title = document.getElementById('modalTitle');
@@ -531,7 +544,11 @@
 
     // Reset custom dropdown
     (document.getElementById('positionDropdownValue') as HTMLInputElement).value = '';
-    document.getElementById('positionDropdownDisplay')!.querySelector('span')!.textContent = 'Position auswählen...';
+    const positionDropdown = document.getElementById('positionDropdownDisplay');
+    if (positionDropdown) {
+      const span = positionDropdown.querySelector('span');
+      if (span) span.textContent = 'Position auswählen...';
+    }
 
     // Hide active status checkbox for new admins (they are always active)
     const activeStatusGroup = document.getElementById('activeStatusGroup');
@@ -553,14 +570,14 @@
   };
 
   // Modal schließen
-  (window as any).closeAdminModal = function () {
+  (window as unknown as ManageAdminsWindow).closeAdminModal = function () {
     const modal = document.getElementById('adminModal');
     modal?.classList.remove('active');
     currentAdminId = null;
   };
 
   // Permissions Modal schließen
-  (window as any).closePermissionsModal = function () {
+  (window as unknown as ManageAdminsWindow).closePermissionsModal = function () {
     console.log('🔵 closePermissionsModal called');
     const modal = document.getElementById('permissionsModal');
     if (modal) {
@@ -812,7 +829,7 @@
   }
 
   // Save permissions handler
-  (window as any).savePermissionsHandler = async function () {
+  (window as unknown as ManageAdminsWindow).savePermissionsHandler = async function () {
     console.log('🔵 savePermissionsHandler called');
     console.log('currentPermissionAdminId:', currentPermissionAdminId);
 
@@ -904,7 +921,8 @@
       if (deptResponse.ok) {
         console.log('✅ Permissions saved successfully, reloading page...');
         showSuccess('Berechtigungen erfolgreich aktualisiert');
-        (window as any).closePermissionsModal();
+        const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
+        if (closeModal) closeModal();
         // Seite neu laden für vollständige Aktualisierung
         window.location.reload();
       } else {
@@ -937,7 +955,18 @@
       return;
     }
 
-    const formData: any = {
+    interface AdminFormData {
+      first_name: string;
+      last_name: string;
+      email: string;
+      password?: string;
+      position: string;
+      notes: string;
+      role: string;
+      is_active?: boolean;
+    }
+
+    const formData: AdminFormData = {
       first_name: (document.getElementById('adminFirstName') as HTMLInputElement).value,
       last_name: (document.getElementById('adminLastName') as HTMLInputElement).value,
       email,
@@ -1069,7 +1098,8 @@
         }
 
         showSuccess(currentAdminId ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
-        (window as any).closeAdminModal();
+        const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
+        if (closeModal) closeModal();
         // Seite neu laden für vollständige Aktualisierung
         window.location.reload();
       } else {
@@ -1095,15 +1125,16 @@
   window.addEventListener('click', (e) => {
     const modal = document.getElementById('adminModal');
     if (e.target === modal) {
-      (window as any).closeAdminModal();
+      const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
+      if (closeModal) closeModal();
     }
   });
 
   // Initialisierung
   document.addEventListener('DOMContentLoaded', async () => {
     // Assign global functions to handlers after DOM is ready
-    (window as any).editAdmin = editAdminHandler;
-    (window as any).deleteAdmin = deleteAdminHandler;
+    (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
+    (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
 
     // Daten laden
     await loadAdmins();

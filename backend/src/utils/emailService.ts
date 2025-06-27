@@ -8,6 +8,7 @@ import nodemailer, {
   SendMailOptions,
   SentMessageInfo,
 } from 'nodemailer';
+import type { Attachment } from 'nodemailer/lib/mailer';
 import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
@@ -38,7 +39,7 @@ interface EmailOptions {
   subject: string;
   text?: string;
   html?: string;
-  attachments?: any[];
+  attachments?: Attachment[];
 }
 
 interface EmailResult {
@@ -67,7 +68,7 @@ interface BulkMessageOptions {
   templateName?: string;
   replacements?: { [key: string]: string };
   notificationType?: string;
-  attachments?: any[];
+  attachments?: Attachment[];
   tenantId?: number;
   userId?: number;
   checkFeature?: boolean;
@@ -108,7 +109,7 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   transporter = nodemailer.createTransport(transportConfig);
 
   // Test SMTP-Verbindung
-  transporter!.verify((error: Error | null): void => {
+  transporter.verify((error: Error | null): void => {
     if (error) {
       logger.error(`E-Mail-Konfiguration fehlgeschlagen: ${error.message}`);
     } else {
@@ -116,7 +117,7 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
     }
   });
 
-  return transporter!;
+  return transporter;
 }
 
 /**
@@ -144,9 +145,9 @@ async function loadTemplate(
     });
 
     return templateContent;
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Fehler beim Laden des E-Mail-Templates '${templateName}': ${error.message}`
+      `Fehler beim Laden des E-Mail-Templates '${templateName}': ${(error as Error).message}`
     );
     // Fallback-Template
     return `
@@ -187,13 +188,13 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       attachments: options.attachments,
     };
 
-    const info: SentMessageInfo = await transporter!.sendMail(mailOptions);
+    const info: SentMessageInfo = await transporter.sendMail(mailOptions);
 
     logger.info(`E-Mail gesendet: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    logger.error(`Fehler beim Senden der E-Mail: ${error.message}`);
-    return { success: false, error: error.message };
+  } catch (error) {
+    logger.error(`Fehler beim Senden der E-Mail: ${(error as Error).message}`);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -249,9 +250,9 @@ async function processQueue(): Promise<void> {
         await new Promise((resolve) => global.setTimeout(resolve, 1000));
       }
     }
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Fehler bei der Verarbeitung der E-Mail-Queue: ${error.message}`
+      `Fehler bei der Verarbeitung der E-Mail-Queue: ${(error as Error).message}`
     );
   } finally {
     isProcessingQueue = false;
@@ -300,11 +301,11 @@ async function sendNewDocumentNotification(
       html,
       text: `Hallo ${replacements.userName},\n\nEin neues Dokument "${replacements.documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Fehler beim Senden der Dokumentenbenachrichtigung: ${error.message}`
+      `Fehler beim Senden der Dokumentenbenachrichtigung: ${(error as Error).message}`
     );
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -336,9 +337,11 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
       html,
       text: `Hallo ${replacements.userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
-  } catch (error: any) {
-    logger.error(`Fehler beim Senden der Willkommens-E-Mail: ${error.message}`);
-    return { success: false, error: error.message };
+  } catch (error) {
+    logger.error(
+      `Fehler beim Senden der Willkommens-E-Mail: ${(error as Error).message}`
+    );
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -429,11 +432,11 @@ async function sendBulkNotification(
       success: true,
       messageId: `${validUsers.length} E-Mails zur Versandwarteschlange hinzugefügt`,
     };
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${error.message}`
+      `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${(error as Error).message}`
     );
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 

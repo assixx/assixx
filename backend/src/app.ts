@@ -59,12 +59,12 @@ app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Input sanitization middleware - apply globally to all routes
-app.use(sanitizeInputs as any);
+app.use(sanitizeInputs);
 
 // Protect HTML pages based on user role
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path.endsWith('.html')) {
-    return (protectPage as any)(req, res, next);
+    return protectPage(req, res, next);
   }
   next();
 });
@@ -92,6 +92,54 @@ app.use(
   })
 );
 
+// Handle /js/ requests - map to TypeScript files in development
+app.use('/js', (req: Request, res: Response): void => {
+  // Map JS requests to TypeScript source files
+  const jsFileName = path.basename(req.path, '.js');
+
+  // Check mappings for TypeScript files
+  const tsMapping: { [key: string]: string } = {
+    'unified-navigation': '/scripts/components/unified-navigation.ts',
+    'admin-dashboard': '/scripts/admin-dashboard.ts',
+    'role-switch': '/scripts/role-switch.ts',
+    'header-user-info': '/scripts/header-user-info.ts',
+    'root-dashboard': '/scripts/root-dashboard.ts',
+    auth: '/scripts/auth.ts',
+    blackboard: '/scripts/blackboard.ts',
+    calendar: '/scripts/calendar.ts',
+    chat: '/scripts/chat.ts',
+    shifts: '/scripts/shifts.ts',
+    documents: '/scripts/documents.ts',
+    'employee-dashboard': '/scripts/employee-dashboard.ts',
+    'manage-admins': '/scripts/manage-admins.ts',
+    'admin-profile': '/scripts/admin-profile.ts',
+    'admin-config': '/scripts/admin-config.ts',
+    'components/unified-navigation':
+      '/scripts/components/unified-navigation.ts', // Added mapping for survey-results
+  };
+
+  const tsPath = tsMapping[jsFileName];
+  if (tsPath) {
+    // Redirect to the TypeScript file
+    res.redirect(tsPath);
+    return;
+  }
+
+  // If no mapping found, try to find it in dist
+  const distJsPath = path.join(distPath, 'js', req.path.substring(1));
+  if (fs.existsSync(distJsPath)) {
+    res.type('application/javascript').sendFile(distJsPath);
+    return;
+  }
+
+  // Fallback - return empty module
+  res
+    .type('application/javascript')
+    .send(
+      `// Module ${jsFileName} not found\nconsole.warn('Module ${jsFileName} not found');`
+    );
+});
+
 // Development mode: Handle TypeScript files
 app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
   if (!req.path.endsWith('.ts')) {
@@ -108,36 +156,38 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     return;
   }
 
-  // In production, use mappings (now without hashes)
+  // Serve TypeScript file directly from src
+  const tsPath = path.join(srcPath, req.path);
+
+  // Special handling for components subdirectory
   const mappings: { [key: string]: string } = {
-    'unified-navigation': 'unified-navigation.js',
-    'root-dashboard': 'root-dashboard.js',
-    'header-user-info': 'header-user-info.js',
-    'admin-dashboard': 'admin-dashboard.js',
-    'admin-config': 'admin-config.js',
-    auth: 'auth.js',
-    blackboard: 'blackboard.js',
-    calendar: 'calendar.js',
-    chat: 'chat.js',
-    'dashboard-scripts': 'dashboard-scripts.js',
-    shifts: 'shifts.js',
-    'storage-upgrade': 'storage-upgrade.js',
-    'admin-profile': 'admin-profile.js',
-    'manage-admins': 'manage-admins.js',
-    'components/unified-navigation': 'unified-navigation.js',
-    'role-switch': 'role-switch.js',
-    'employee-dashboard': 'employee-dashboard.js',
-    documents: 'documents.js',
+    'components/unified-navigation': 'scripts/components/unified-navigation.ts',
   };
 
-  const compiledFile = mappings[filename];
-  if (compiledFile) {
-    console.log(`[DEBUG] Redirecting ${req.path} to /js/${compiledFile}`);
-    res.redirect(`/js/${compiledFile}`);
+  let actualTsPath = tsPath;
+
+  // Check if we need to map the path
+  const requestPath = req.path.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
+  if (mappings[requestPath]) {
+    actualTsPath = path.join(srcPath, mappings[requestPath]);
+  }
+
+  if (fs.existsSync(actualTsPath)) {
+    console.log(`[DEBUG] Serving TypeScript file: ${actualTsPath}`);
+
+    // Read the TypeScript file
+    const tsContent = fs.readFileSync(actualTsPath, 'utf8');
+
+    // Transform import statements to add .ts extension
+    const transformedContent = tsContent
+      .replace(/from\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g, "from '$1.ts'")
+      .replace(/import\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g, "import '$1.ts'");
+
+    res.type('application/javascript').send(transformedContent);
   } else {
     // For missing files, return empty module to avoid syntax errors
     console.warn(
-      `[DEBUG] No mapping found for ${filename}, returning empty module`
+      `[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`
     );
     res
       .type('application/javascript')
@@ -150,9 +200,20 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
 // Fallback to src directory for assets (images, etc.)
 app.use(
   express.static(srcPath, {
-    setHeaders: (res: Response): void => {
+    setHeaders: (res: Response, filePath: string): void => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
+
+      // Set correct MIME types
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Content-Type', 'text/html');
+      } else if (filePath.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json');
+      }
     },
   })
 );
@@ -183,10 +244,8 @@ app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
   }
 
   // Prevent large request bodies (additional protection)
-  if (
-    req.get('Content-Length') &&
-    parseInt(req.get('Content-Length')!) > 50 * 1024 * 1024
-  ) {
+  const contentLength = req.get('Content-Length');
+  if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) {
     // 50MB max
     res.status(413).json({ error: 'Request entity too large' });
     return;
@@ -201,7 +260,7 @@ app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
   if (req.path === '/auth/user' || req.path === '/auth/check') {
     return next();
   }
-  generalLimiter(req, res, next);
+  return generalLimiter(req, res, next);
 });
 
 // Auth endpoints have stricter limits, but exempt /api/auth/user
@@ -212,7 +271,7 @@ app.use(
     if (req.path === '/user' || req.path === '/check') {
       return next();
     }
-    authLimiter(req, res, next);
+    return authLimiter(req, res, next);
   }
 );
 
@@ -304,11 +363,12 @@ app.post(
     try {
       // Call auth controller directly
       await authController.login(req, res);
-    } catch (error: any) {
+    } catch (error) {
       console.error('[DEBUG] Error in /login endpoint:', error);
-      res
-        .status(500)
-        .json({ message: 'Internal server error', error: error.message });
+      res.status(500).json({
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 );
@@ -366,8 +426,8 @@ app.use(htmlRoutes);
 
 // Root redirect - send users to appropriate dashboard based on role
 import { redirectToDashboard } from './middleware/pageAuth';
-app.get('/', redirectToDashboard as any);
-app.get('/dashboard', redirectToDashboard as any);
+app.get('/', redirectToDashboard);
+app.get('/dashboard', redirectToDashboard);
 
 // Error handling middleware
 app.use(

@@ -7,8 +7,8 @@ import bcrypt from 'bcryptjs';
 import User from '../models/user';
 import { logger } from '../utils/logger';
 
-// Type alias for User model return type
-type DbUser = any;
+// Import types from User model
+import type { DbUser } from '../models/user';
 
 // Interfaces
 interface UserData {
@@ -76,7 +76,9 @@ class UserService {
 
       if (user) {
         // Remove sensitive data
-        delete (user as any).password;
+        if ('password' in user) {
+          delete user.password;
+        }
 
         // Ensure tenant_id is present (required field)
         if (!user.tenant_id) {
@@ -142,8 +144,10 @@ class UserService {
       const totalPages = Math.ceil(total / limit);
 
       const data = users.map((user: DbUser) => {
-        const userData = user as any;
-        delete userData.password;
+        const userData = { ...user };
+        if ('password' in userData) {
+          delete userData.password;
+        }
         return userData as UserData;
       });
 
@@ -170,14 +174,14 @@ class UserService {
   ): Promise<UserData | null> {
     try {
       // Create a clean update object without forbidden fields
-      const cleanUpdateData: any = { ...updateData };
+      const cleanUpdateData: Record<string, unknown> = { ...updateData };
 
       // These deletions are redundant due to TypeScript types, but kept for runtime safety
       delete cleanUpdateData.id;
       delete cleanUpdateData.password;
       delete cleanUpdateData.role;
 
-      await User.update(userId, cleanUpdateData);
+      await User.update(userId, cleanUpdateData, tenantId);
       return await this.getUserById(userId, tenantId);
     } catch (error) {
       logger.error('Error updating user:', error);
@@ -188,11 +192,15 @@ class UserService {
   /**
    * Update user password
    */
-  async updatePassword(userId: number, newPassword: string): Promise<boolean> {
+  async updatePassword(
+    userId: number,
+    tenantId: number,
+    newPassword: string
+  ): Promise<boolean> {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      await User.update(userId, { password: hashedPassword });
+      await User.update(userId, { password: hashedPassword }, tenantId);
       return true;
     } catch (error) {
       logger.error('Error updating password:', error);
@@ -218,10 +226,11 @@ class UserService {
    */
   async archiveUser(
     userId: number,
+    tenantId: number,
     archived: boolean = true
   ): Promise<boolean> {
     try {
-      await User.update(userId, { archived } as any);
+      await User.update(userId, { is_archived: archived }, tenantId);
       return true;
     } catch (error) {
       logger.error('Error archiving user:', error);

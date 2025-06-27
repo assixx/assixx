@@ -31,7 +31,7 @@ interface TenantCreateRequest extends TenantRequest {
     subscription_ends_at?: string | Date | null;
     max_users?: number;
     is_active?: boolean;
-    settings?: any;
+    settings?: Record<string, unknown>;
     billing_contact?: string;
     custom_domain?: string;
   };
@@ -47,7 +47,7 @@ interface TenantUpdateRequest extends TenantRequest {
     plan_type?: 'free' | 'basic' | 'premium' | 'enterprise';
     max_users?: number;
     is_active?: boolean;
-    settings?: any;
+    settings?: Record<string, unknown>;
     billing_contact?: string;
     custom_domain?: string;
   };

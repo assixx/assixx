@@ -3,7 +3,7 @@
  * Handles permission checks and department visibility for KVP suggestions
  */
 
-import pool from '../config/database.js';
+import { query as executeQuery, RowDataPacket } from '../utils/db';
 import { logger } from '../utils/logger.js';
 import adminPermissionService from './adminPermission.service.js';
 
@@ -15,8 +15,6 @@ interface KvpVisibilityQuery {
   statusFilter?: string;
   departmentFilter?: number;
 }
-
-// KvpSuggestion interface removed - using direct database results
 
 class KvpPermissionService {
   /**
@@ -52,7 +50,7 @@ class KvpPermissionService {
       if (role === 'root') return true;
 
       // Get suggestion details
-      const [suggestions] = await (pool as any).query(
+      const [suggestions] = await executeQuery<RowDataPacket[]>(
         `SELECT tenant_id, department_id, org_level, org_id, submitted_by 
          FROM kvp_suggestions 
          WHERE id = ?`,
@@ -74,7 +72,7 @@ class KvpPermissionService {
         if (suggestion.org_level === 'company') return true;
 
         // Can see department suggestions if in same department
-        const [userInfo] = await (pool as any).query(
+        const [userInfo] = await executeQuery<RowDataPacket[]>(
           'SELECT department_id FROM users WHERE id = ?',
           [userId]
         );
@@ -112,7 +110,7 @@ class KvpPermissionService {
   ): Promise<boolean> {
     try {
       // Get suggestion details
-      const [suggestions] = await (pool as any).query(
+      const [suggestions] = await executeQuery<RowDataPacket[]>(
         `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by 
          FROM kvp_suggestions 
          WHERE id = ?`,
@@ -159,7 +157,7 @@ class KvpPermissionService {
    */
   async buildVisibilityQuery(params: KvpVisibilityQuery): Promise<{
     whereClause: string;
-    queryParams: any[];
+    queryParams: (string | number)[];
   }> {
     const {
       userId,
@@ -170,14 +168,14 @@ class KvpPermissionService {
       departmentFilter,
     } = params;
     const conditions: string[] = ['s.tenant_id = ?'];
-    const queryParams: any[] = [tenantId];
+    const queryParams: (string | number)[] = [tenantId];
 
     // Root sees everything
     if (role === 'root') {
       // No additional filters needed
     } else if (role === 'employee') {
       // Get user's department
-      const [userInfo] = await (pool as any).query(
+      const [userInfo] = await executeQuery<RowDataPacket[]>(
         'SELECT department_id FROM users WHERE id = ?',
         [userId]
       );
@@ -253,7 +251,7 @@ class KvpPermissionService {
   ): Promise<boolean> {
     try {
       // Get suggestion details
-      const [suggestions] = await (pool as any).query(
+      const [suggestions] = await executeQuery<RowDataPacket[]>(
         `SELECT tenant_id, department_id, org_level 
          FROM kvp_suggestions 
          WHERE id = ?`,
@@ -287,11 +285,11 @@ class KvpPermissionService {
     entityId: number,
     entityType: string = 'kvp_suggestion',
     tenantId: number,
-    oldValue?: any,
-    newValue?: any
+    oldValue?: unknown,
+    newValue?: unknown
   ): Promise<void> {
     try {
-      await (pool as any).query(
+      await executeQuery(
         `INSERT INTO admin_logs 
          (tenant_id, admin_user_id, action, entity_type, entity_id, old_value, new_value) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -325,7 +323,7 @@ class KvpPermissionService {
   }> {
     try {
       let whereClause = 's.tenant_id = ?';
-      const params: any[] = [tenantId];
+      const params: (string | number)[] = [tenantId];
 
       if (scope === 'department') {
         whereClause += ' AND s.department_id = ?';
@@ -333,7 +331,7 @@ class KvpPermissionService {
       }
 
       // Get counts by status
-      const [statusCounts] = await (pool as any).query(
+      const [statusCounts] = await executeQuery<RowDataPacket[]>(
         `SELECT status, COUNT(*) as count 
          FROM kvp_suggestions s
          WHERE ${whereClause}
@@ -342,7 +340,7 @@ class KvpPermissionService {
       );
 
       // Get counts by priority
-      const [priorityCounts] = await (pool as any).query(
+      const [priorityCounts] = await executeQuery<RowDataPacket[]>(
         `SELECT priority, COUNT(*) as count 
          FROM kvp_suggestions s
          WHERE ${whereClause}
@@ -351,7 +349,7 @@ class KvpPermissionService {
       );
 
       // Get total savings
-      const [savings] = await (pool as any).query(
+      const [savings] = await executeQuery<RowDataPacket[]>(
         `SELECT COALESCE(SUM(actual_savings), 0) as total_savings 
          FROM kvp_suggestions s
          WHERE ${whereClause} AND status = 'implemented'`,
@@ -360,12 +358,12 @@ class KvpPermissionService {
 
       // Build result
       const byStatus: Record<string, number> = {};
-      statusCounts.forEach((row: any) => {
+      statusCounts.forEach((row: RowDataPacket) => {
         byStatus[row.status] = row.count;
       });
 
       const byPriority: Record<string, number> = {};
-      priorityCounts.forEach((row: any) => {
+      priorityCounts.forEach((row: RowDataPacket) => {
         byPriority[row.priority] = row.count;
       });
 

@@ -13,13 +13,11 @@ Dieses Dokument beschreibt das Konzept für Abteilungszuweisungen und die damit 
 ### Probleme:
 
 1. **Schichtplanung ohne Abteilung möglich** ❌
-
    - Man kann aktuell Schichtpläne erstellen ohne eine Abteilung auszuwählen
    - Dies führt zu "freischwebenden" Schichtplänen ohne Kontext
    - Keine klare Zuordnung wer für welche Schichten verantwortlich ist
 
 2. **Fehlende Validierung** ❌
-
    - Frontend erlaubt Speichern ohne Abteilung
    - Backend akzeptiert NULL-Werte für department_id
    - Datenbank hat department_id als nullable Feld
@@ -33,13 +31,11 @@ Dieses Dokument beschreibt das Konzept für Abteilungszuweisungen und die damit 
 ### Phase 1: Abteilung als Pflichtfeld (SOFORT)
 
 1. **Frontend-Validierung:**
-
    - Schichtplan-Grid wird erst nach Abteilungsauswahl angezeigt
    - Platzhalter/Info-Box: "Bitte wählen Sie zuerst eine Abteilung aus"
    - Save-Button deaktiviert ohne Abteilung
 
 2. **Backend-Validierung:**
-
    - department_id als Pflichtfeld in allen Shift-bezogenen APIs
    - Fehlermeldung: "Abteilung muss ausgewählt werden"
 
@@ -84,7 +80,6 @@ CREATE TABLE admin_department_permissions (
 ### Erweiterte Logik:
 
 1. **Root User kann:**
-
    - Admin-Berechtigungen für spezifische Abteilungen vergeben
    - Berechtigungen wieder entziehen
    - Übersicht über alle Berechtigungen
@@ -154,12 +149,10 @@ CREATE TABLE admin_department_permissions (
 ## ⚠️ Wichtige Hinweise
 
 1. **Rückwärtskompatibilität:**
-
    - Bestehende Admins behalten volle Rechte
    - Erst wenn spezifische Berechtigungen vergeben werden, greifen diese
 
 2. **Performance:**
-
    - Zusätzliche JOINs für Berechtigungsprüfung
    - Caching-Strategie für Berechtigungen entwickeln
 

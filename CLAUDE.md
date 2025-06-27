@@ -71,7 +71,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.' && echo "✅ 
 - [ ] ✅ Docker Quick-Check ausgeführt
 - [ ] ✅ TODO.md gelesen (nur "AKTUELLE PHASE" Section)
 - [ ] ✅ CLAUDE.md gelesen
-- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen
+- [ ] ✅ **backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md gelesen (PFLICHT bei Backend-Arbeit!)**
 - [ ] ✅ docs/DESIGN-STANDARDS.md gelesen
 - [ ] ✅ docs/TYPESCRIPT-STANDARDS.md gelesen
 - [ ] ✅ README.md gelesen
@@ -94,20 +94,6 @@ cat /home/scs/projects/Assixx/TODO.md
 - 📊 Zeigt Prioritäten und aktuelle Arbeitsstände
 - 🚫 Verhindert doppelte Arbeit
 - 🗺️ Gibt Überblick über das gesamte Projekt
-
-### 2️⃣ PROJEKTSTRUKTUR (ZWEITE PRIORITÄT!)
-
-```bash
-# Projektstruktur überprüfen und bei Bedarf aktualisieren:
-cat /home/scs/projects/Assixx/docs/PROJEKTSTRUKTUR.md
-```
-
-**Warum?**
-
-- 📁 Zeigt die aktuelle Ordnerstruktur
-- 🔍 Hilft beim Finden von Dateien
-- ⚠️ Zeigt was fehlt oder migriert werden muss
-- 📝 Muss bei Strukturänderungen aktualisiert werden
 
 ### 3️⃣ DESIGN-STANDARDS (DRITTE PRIORITÄT!)
 
@@ -151,6 +137,7 @@ cat /home/scs/projects/Assixx/docs/BEFORE-STARTING-DEV.md
 
 ### 5️⃣ WEITERE WICHTIGE DOKUMENTE
 
+- **⚡ TypeScript Architecture (PFLICHT!)**: [TYPESCRIPT-ARCHITECTURE-GUIDE.md](./backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md)
 - **Entwickler-Guidelines**: [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)
 - **Architektur**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - **Features**: [FEATURES.md](./docs/FEATURES.md)
@@ -250,43 +237,48 @@ function validateSubdomain(value) {
      },
      {
        "id": "4",
-       "content": "docs/PROJEKTSTRUKTUR.md lesen",
+       "content": "backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md lesen (PFLICHT!)",
        "status": "pending",
        "priority": "high"
      },
      {
        "id": "5",
-       "content": "docs/DESIGN-STANDARDS.md lesen",
+       "content": "docs/PROJEKTSTRUKTUR.md lesen",
        "status": "pending",
        "priority": "high"
      },
      {
        "id": "6",
-       "content": "README.md lesen",
+       "content": "docs/DESIGN-STANDARDS.md lesen",
        "status": "pending",
        "priority": "high"
      },
      {
        "id": "7",
-       "content": "docs/DATABASE-MIGRATION-GUIDE.md lesen",
+       "content": "README.md lesen",
        "status": "pending",
        "priority": "high"
      },
      {
        "id": "8",
-       "content": "docs/BEFORE-STARTING-DEV.md AUSFÜHREN",
+       "content": "docs/DATABASE-MIGRATION-GUIDE.md lesen",
        "status": "pending",
        "priority": "high"
      },
      {
        "id": "9",
+       "content": "docs/BEFORE-STARTING-DEV.md AUSFÜHREN",
+       "status": "pending",
+       "priority": "high"
+     },
+     {
+       "id": "10",
        "content": "Mit Entwicklung beginnen",
        "status": "pending",
        "priority": "medium"
      }
    ]
    ```
-
    - TODO.md lesen
    - CLAUDE.md lesen
    - docs/PROJEKTSTRUKTUR.md lesen
@@ -315,13 +307,11 @@ function validateSubdomain(value) {
    ```
 
 3. **✔️ DOPPELTE BESTÄTIGUNG**:
-
    - Frage 1: "Sind Sie sicher, dass wir anfangen sollen?"
    - Nach Ja: Konkrete Aufgabenliste zeigen
    - Frage 2: "Welche Aufgabe möchten Sie beginnen?"
 
 4. **🔍 CHECKUP-PROTOKOLL**:
-
    - **VOR Arbeitsbeginn**: "Haben Sie Backups/Tests durchgeführt?"
    - **NACH Fertigstellung**: "Haben Sie die Änderungen getestet?"
 

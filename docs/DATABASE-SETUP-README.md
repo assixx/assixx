@@ -602,7 +602,6 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
    ```
 
 2. **Features aktivieren/deaktivieren:**
-
    - Tenant aus Dropdown auswählen
    - Feature-Karte finden
    - "Aktivieren" oder "Deaktivieren" klicken
@@ -664,7 +663,6 @@ Assixx verwendet eine **Shared Database, Shared Schema**-Architektur mit Tenant-
    ```
 
 2. **Tenant wird automatisch erstellt:**
-
    - Neue Zeile in `tenants`-Tabelle
    - Eindeutige `tenant_id` generiert
    - Admin-Benutzer automatisch zugeordnet
@@ -836,13 +834,11 @@ Assixx/
    ```
 
 2. **Abteilungen erstellen:**
-
    - Admin Dashboard → Organisationsverwaltung
    - Neue Abteilung anlegen
    - Manager zuweisen
 
 3. **Teams erstellen:**
-
    - Teams innerhalb von Abteilungen
    - Teamleiter bestimmen
 

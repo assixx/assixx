@@ -21,7 +21,6 @@ Dieser Plan beschreibt die Erweiterung des KVP-Systems um department-basierte Si
    - Coding Standards
    - Error Handling Patterns
 4. **NAVIGATION-CONTAINER.MD**
-
    - Navigation Integration
    - Role-basierte Menüs
    - Sidebar-Verhalten

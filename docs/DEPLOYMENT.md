@@ -333,14 +333,12 @@ Die `docker-compose.monitoring.yml` enthält:
 ### Wichtige Metriken
 
 1. **Application Metrics**
-
    - Request Rate
    - Response Time
    - Error Rate
    - Active Users
 
 2. **System Metrics**
-
    - CPU Usage
    - Memory Usage
    - Disk I/O

@@ -7,7 +7,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'admin' | 'employee' | 'root';
-  tenantId: number | null;
+  tenant_id: number | null;
   departmentId: number | null;
   isActive: boolean;
   isArchived: boolean;
@@ -28,7 +28,7 @@ export interface DatabaseUser {
   password_hash: string;
   first_name: string;
   last_name: string;
-  role: string;
+  role: 'admin' | 'employee' | 'root';
   tenant_id: number | null;
   department_id: number | null;
   is_active: boolean;
@@ -78,7 +78,7 @@ export interface Document {
   originalName: string;
   category: string;
   uploadedBy: number;
-  tenantId: number;
+  tenant_id: number;
   fileSize: number;
   mimeType: string;
   description: string | null;
@@ -122,7 +122,7 @@ export interface Department {
   id: number;
   name: string;
   description: string | null;
-  tenantId: number;
+  tenant_id: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -144,7 +144,7 @@ export interface BlackboardEntry {
   title: string;
   content: string;
   authorId: number;
-  tenantId: number;
+  tenant_id: number;
   isPinned: boolean;
   expiresAt: Date | null;
   tags: string | null;
@@ -163,7 +163,7 @@ export interface CalendarEvent {
   location: string | null;
   type: string;
   createdBy: number;
-  tenantId: number;
+  tenant_id: number;
   departmentId: number | null;
   isRecurring: boolean;
   recurringPattern: string | null;
@@ -191,7 +191,7 @@ export interface KvpSuggestion {
   description: string;
   category: string;
   submittedBy: number;
-  tenantId: number;
+  tenant_id: number;
   status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'implemented';
   priority: 'low' | 'medium' | 'high';
   attachments: string | null;
@@ -223,7 +223,7 @@ export interface Survey {
   title: string;
   description: string | null;
   createdBy: number;
-  tenantId: number;
+  tenant_id: number;
   departmentId: number | null;
   isActive: boolean;
   isAnonymous: boolean;
@@ -246,7 +246,7 @@ export interface SurveyResponse {
 export interface EmployeeAvailability {
   id: number;
   employeeId: number;
-  tenantId: number;
+  tenant_id: number;
   status:
     | 'available'
     | 'unavailable'

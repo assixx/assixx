@@ -586,7 +586,10 @@ window.selectSort = function (value: SortOption, text: string): void {
   const input = document.getElementById('sortValue') as HTMLInputElement;
 
   if (display && dropdown && input) {
-    display.querySelector('span')!.textContent = text;
+    const span = display.querySelector('span');
+    if (span) {
+      span.textContent = text;
+    }
     input.value = value;
     display.classList.remove('active');
     dropdown.classList.remove('active');
@@ -640,7 +643,7 @@ function escapeHtml(text: string): string {
 /**
  * Debounce function
  */
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: number): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null;
 
   return function executedFunction(...args: Parameters<T>) {

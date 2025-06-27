@@ -1,18 +1,9 @@
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 // Database interfaces
 interface DbAdminLog extends RowDataPacket {
@@ -22,8 +13,8 @@ interface DbAdminLog extends RowDataPacket {
   action: string;
   entity_type?: string;
   entity_id?: number;
-  old_values?: any;
-  new_values?: any;
+  old_values?: string | Record<string, unknown> | null;
+  new_values?: string | Record<string, unknown> | null;
   ip_address?: string;
   user_agent?: string;
   created_at: Date;
@@ -36,8 +27,8 @@ interface AdminLogCreateData {
   ip_address?: string;
   entity_type?: string;
   entity_id?: number;
-  old_values?: any;
-  new_values?: any;
+  old_values?: Record<string, unknown>;
+  new_values?: Record<string, unknown>;
   user_agent?: string;
 }
 
@@ -79,7 +70,7 @@ export class AdminLog {
 
   static async getByUserId(userId: number, days = 0): Promise<DbAdminLog[]> {
     let query = `SELECT * FROM admin_logs WHERE admin_id = ?`;
-    const params: any[] = [userId];
+    const params: unknown[] = [userId];
 
     // Wenn days > 0, dann nur Logs der letzten X Tage abrufen
     if (days > 0) {

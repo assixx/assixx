@@ -3,25 +3,30 @@
  * Handles HTTP requests for employee availability management
  */
 
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import availabilityService from '../services/availability.service';
-import { AuthRequest } from '../types/request.types';
+import { AuthenticatedRequest } from '../types/request.types';
+
+// Type guard to check if request has authenticated user
+function isAuthenticated(req: Request): req is AuthenticatedRequest {
+  return 'user' in req && req.user != null && 'tenant_id' in req.user;
+}
 
 class AvailabilityController {
   /**
    * Get all availability records
    * GET /api/availability
    */
-  async getAll(req: AuthRequest, res: Response): Promise<void> {
+  async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
 
       const filter = {
-        tenantId,
+        tenant_id: tenantId,
         employeeId: req.query.employee_id
           ? parseInt(req.query.employee_id as string)
           : undefined,
@@ -42,13 +47,13 @@ class AvailabilityController {
    * Get current availability status for all employees
    * GET /api/availability/current
    */
-  async getCurrentStatus(req: AuthRequest, res: Response): Promise<void> {
+  async getCurrentStatus(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
 
       const employees = await availabilityService.getCurrentStatus(tenantId);
       res.json({ employees });
@@ -64,13 +69,13 @@ class AvailabilityController {
    * Get availability summary for date range
    * GET /api/availability/summary
    */
-  async getSummary(req: AuthRequest, res: Response): Promise<void> {
+  async getSummary(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
 
       const { start_date, end_date } = req.query;
       if (!start_date || !end_date) {
@@ -94,13 +99,13 @@ class AvailabilityController {
    * Get availability by ID
    * GET /api/availability/:id
    */
-  async getById(req: AuthRequest, res: Response): Promise<void> {
+  async getById(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      if (!tenantId) {
-        res.status(400).json({ error: 'Tenant ID required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
 
       const id = parseInt(req.params.id);
       const record = await availabilityService.getById(id, tenantId);
@@ -121,18 +126,24 @@ class AvailabilityController {
    * Create new availability record
    * POST /api/availability
    */
-  async create(req: AuthRequest, res: Response): Promise<void> {
+  async create(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      const userId = req.user?.id;
-
-      if (!tenantId || !userId) {
-        res.status(400).json({ error: 'Authentication required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
+      const userId = req.user.id;
 
       const { employee_id, status, start_date, end_date, reason, notes } =
-        req.body;
+        req.body as {
+          employee_id?: number;
+          status?: string;
+          start_date?: string;
+          end_date?: string;
+          reason?: string;
+          notes?: string;
+        };
 
       // Validate required fields
       if (!employee_id || !status || !start_date || !end_date) {
@@ -153,7 +164,7 @@ class AvailabilityController {
       }
 
       // Check permission - only admin/root can create for others
-      if (req.user?.role === 'employee' && employee_id !== userId) {
+      if (req.user.role === 'employee' && employee_id !== userId) {
         res.status(403).json({
           error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit ändern',
         });
@@ -162,8 +173,14 @@ class AvailabilityController {
 
       const id = await availabilityService.create({
         employeeId: employee_id,
-        tenantId,
-        status,
+        tenant_id: tenantId,
+        status: status as
+          | 'available'
+          | 'unavailable'
+          | 'vacation'
+          | 'sick'
+          | 'other'
+          | 'training',
         startDate: start_date,
         endDate: end_date,
         reason,
@@ -185,18 +202,23 @@ class AvailabilityController {
    * Update availability record
    * PUT /api/availability/:id
    */
-  async update(req: AuthRequest, res: Response): Promise<void> {
+  async update(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      const userId = req.user?.id;
-
-      if (!tenantId || !userId) {
-        res.status(400).json({ error: 'Authentication required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
+      const userId = req.user.id;
 
       const id = parseInt(req.params.id);
-      const { status, start_date, end_date, reason, notes } = req.body;
+      const { status, start_date, end_date, reason, notes } = req.body as {
+        status?: string;
+        start_date?: string;
+        end_date?: string;
+        reason?: string;
+        notes?: string;
+      };
 
       // Get existing record
       const existing = await availabilityService.getById(id, tenantId);
@@ -206,7 +228,7 @@ class AvailabilityController {
       }
 
       // Check permission
-      if (req.user?.role === 'employee' && existing.employeeId !== userId) {
+      if (req.user.role === 'employee' && existing.employeeId !== userId) {
         res.status(403).json({
           error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit ändern',
         });
@@ -226,7 +248,13 @@ class AvailabilityController {
       }
 
       const success = await availabilityService.update(id, tenantId, {
-        status,
+        status: status as
+          | 'available'
+          | 'unavailable'
+          | 'vacation'
+          | 'sick'
+          | 'other'
+          | 'training',
         startDate: start_date,
         endDate: end_date,
         reason,
@@ -254,15 +282,14 @@ class AvailabilityController {
    * Delete availability record
    * DELETE /api/availability/:id
    */
-  async delete(req: AuthRequest, res: Response): Promise<void> {
+  async delete(req: Request, res: Response): Promise<void> {
     try {
-      const tenantId = req.user?.tenantId;
-      const userId = req.user?.id;
-
-      if (!tenantId || !userId) {
-        res.status(400).json({ error: 'Authentication required' });
+      if (!isAuthenticated(req)) {
+        res.status(401).json({ error: 'Authentication required' });
         return;
       }
+      const tenantId = req.user.tenant_id;
+      const userId = req.user.id;
 
       const id = parseInt(req.params.id);
 
@@ -274,7 +301,7 @@ class AvailabilityController {
       }
 
       // Check permission
-      if (req.user?.role === 'employee' && existing.employeeId !== userId) {
+      if (req.user.role === 'employee' && existing.employeeId !== userId) {
         res.status(403).json({
           error: 'Mitarbeiter können nur ihre eigene Verfügbarkeit löschen',
         });

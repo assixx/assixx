@@ -5,6 +5,7 @@
 import express, { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
 
 // Import models (keeping require pattern for compatibility)
 import User from '../models/user';
@@ -108,9 +109,10 @@ router.get('/', async (req, res): Promise<void> => {
     }
 
     // Einstellungen speichern
+    // IMPORTANT: When uncommenting, add user.tenant_id as third parameter for security
     await User.update(user.id, {
       notification_settings: JSON.stringify(notificationSettings),
-    });
+    }, user.tenant_id);
     */
 
     logger.info(
@@ -138,9 +140,9 @@ router.get('/', async (req, res): Promise<void> => {
         </body>
       </html>
     `);
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Fehler bei der Abmeldung von Benachrichtigungen: ${error.message}`
+      `Fehler bei der Abmeldung von Benachrichtigungen: ${getErrorMessage(error)}`
     );
 
     res.status(400).send(`

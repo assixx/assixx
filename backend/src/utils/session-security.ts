@@ -12,7 +12,7 @@ interface SecurityEvent {
     | 'fingerprint_change'
     | 'ip_change'
     | 'suspicious_activity';
-  details: any;
+  details: Record<string, unknown>;
   timestamp: Date;
   ip?: string;
   userAgent?: string;

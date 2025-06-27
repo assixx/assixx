@@ -13,7 +13,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     firstName: dbUser.first_name,
     lastName: dbUser.last_name,
     role: dbUser.role as User['role'],
-    tenantId: dbUser.tenant_id,
+    tenant_id: dbUser.tenant_id,
     departmentId: dbUser.department_id,
     isActive: dbUser.is_active,
     isArchived: dbUser.is_archived,
@@ -77,51 +77,71 @@ export function camelToSnakeString(str: string): string {
 /**
  * Convert object keys from snake_case to camelCase
  */
-export function snakeToCamel<T = any>(obj: any): T {
+export function snakeToCamel<T = unknown>(obj: unknown): T {
   if (obj === null || obj === undefined) {
-    return obj;
+    return obj as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => snakeToCamel(item)) as any;
+    return obj.map((item) => snakeToCamel(item)) as T;
   }
 
   if (typeof obj !== 'object' || obj instanceof Date) {
-    return obj;
+    return obj as T;
   }
 
-  const converted: any = {};
+  const converted: Record<string, unknown> = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const camelKey = snakeToCamelString(key);
-      converted[camelKey] = snakeToCamel(obj[key]);
+      converted[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key]);
     }
   }
-  return converted;
+  return converted as T;
 }
 
 /**
  * Convert object keys from camelCase to snake_case
  */
-export function camelToSnake<T = any>(obj: any): T {
+export function camelToSnake<T = unknown>(obj: unknown): T {
   if (obj === null || obj === undefined) {
-    return obj;
+    return obj as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => camelToSnake(item)) as any;
+    return obj.map((item) => camelToSnake(item)) as T;
   }
 
   if (typeof obj !== 'object' || obj instanceof Date) {
-    return obj;
+    return obj as T;
   }
 
-  const converted: any = {};
+  const converted: Record<string, unknown> = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const snakeKey = camelToSnakeString(key);
-      converted[snakeKey] = camelToSnake(obj[key]);
+      converted[snakeKey] = camelToSnake((obj as Record<string, unknown>)[key]);
     }
   }
-  return converted;
+  return converted as T;
+}
+
+/**
+ * Normalize MySQL boolean values to JavaScript boolean
+ * MySQL returns 0/1 for boolean fields, this converts them properly
+ */
+export function normalizeMySQLBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+
+  if (typeof value === 'string') {
+    return value === '1' || value.toLowerCase() === 'true';
+  }
+
+  return false;
 }

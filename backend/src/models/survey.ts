@@ -3,13 +3,13 @@
  * Handles database operations for surveys
  */
 
-import pool from '../database';
-import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
-
-// Type-safe pool query wrapper
-const typedQuery = (sql: string, params?: any[]): Promise<[any, any]> => {
-  return (pool as any).query(sql, params);
-};
+import {
+  query as typedQuery,
+  getConnection,
+  RowDataPacket,
+  ResultSetHeader,
+  PoolConnection,
+} from '../utils/db';
 
 // Database interfaces
 interface DbSurvey extends RowDataPacket {
@@ -103,6 +103,28 @@ interface SurveyCreateData {
   }>;
 }
 
+interface SurveyUpdateData {
+  title?: string;
+  description?: string;
+  status?: 'draft' | 'active' | 'closed';
+  is_anonymous?: boolean;
+  is_mandatory?: boolean;
+  start_date?: Date | string | null;
+  end_date?: Date | string | null;
+  questions?: Array<{
+    question_text: string;
+    question_type:
+      | 'text'
+      | 'single_choice'
+      | 'multiple_choice'
+      | 'rating'
+      | 'number';
+    is_required?: boolean;
+    order_position?: number;
+    options?: string[];
+  }>;
+}
+
 interface SurveyFilters {
   status?: 'draft' | 'active' | 'closed';
   page?: number;
@@ -120,7 +142,11 @@ interface SurveyStatistics {
     id: number;
     question_text: string;
     question_type: string;
-    responses?: any[];
+    responses?: Array<{
+      answer_text?: string;
+      selected_option_id?: number;
+      rating?: number;
+    }>;
     options?: Array<{
       option_id: number;
       option_text: string;
@@ -130,7 +156,7 @@ interface SurveyStatistics {
       average: number | null;
       min: number | null;
       max: number | null;
-      count: number;
+      total_responses: number;
     };
   }>;
 }
@@ -145,12 +171,13 @@ export class Survey {
     createdBy: number
   ): Promise<number> {
     // Check if we're using mock database
-    if (!('getConnection' in pool)) {
+    let connection: PoolConnection;
+    try {
+      connection = await getConnection();
+    } catch {
       // Mock implementation - just return a fake ID
       return 1;
     }
-
-    const connection = (await pool.getConnection()) as PoolConnection;
     try {
       await connection.beginTransaction();
 
@@ -257,7 +284,7 @@ export class Survey {
       WHERE s.tenant_id = ?
     `;
 
-    const params: any[] = [tenantId];
+    const params: unknown[] = [tenantId];
 
     if (status) {
       query += ' AND s.status = ?';
@@ -267,7 +294,7 @@ export class Survey {
     query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [surveys] = (await typedQuery(query, params)) as [DbSurvey[], any];
+    const [surveys] = await typedQuery<DbSurvey[]>(query, params);
     return surveys;
   }
 
@@ -288,10 +315,10 @@ export class Survey {
     const offset = (page - 1) * limit;
 
     // First get employee's department info
-    const [userInfo] = (await typedQuery(
+    const [userInfo] = await typedQuery<RowDataPacket[]>(
       `SELECT department_id FROM users WHERE id = ? AND tenant_id = ?`,
       [employeeUserId, tenantId]
-    )) as [any[], any];
+    );
 
     if (userInfo.length === 0) {
       return [];
@@ -327,7 +354,12 @@ export class Survey {
       )
     `;
 
-    const params: any[] = [tenantId, department_id, team_id, employeeUserId];
+    const params: unknown[] = [
+      tenantId,
+      department_id,
+      team_id,
+      employeeUserId,
+    ];
 
     if (status) {
       query += ' AND s.status = ?';
@@ -337,7 +369,7 @@ export class Survey {
     query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [surveys] = (await typedQuery(query, params)) as [DbSurvey[], any];
+    const [surveys] = await typedQuery<DbSurvey[]>(query, params);
     return surveys;
   }
 
@@ -380,7 +412,7 @@ export class Survey {
       )
     `;
 
-    const params: any[] = [adminUserId, tenantId, adminUserId];
+    const params: unknown[] = [adminUserId, tenantId, adminUserId];
 
     if (status) {
       query += ' AND s.status = ?';
@@ -390,7 +422,7 @@ export class Survey {
     query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const [surveys] = (await typedQuery(query, params)) as [DbSurvey[], any];
+    const [surveys] = await typedQuery<DbSurvey[]>(query, params);
     return surveys;
   }
 
@@ -401,7 +433,7 @@ export class Survey {
     surveyId: number,
     tenantId: number
   ): Promise<DbSurvey | null> {
-    const [surveys] = (await typedQuery(
+    const [surveys] = await typedQuery<DbSurvey[]>(
       `
       SELECT s.*, 
         u.first_name as creator_first_name,
@@ -411,9 +443,9 @@ export class Survey {
       WHERE s.id = ? AND s.tenant_id = ?
     `,
       [surveyId, tenantId]
-    )) as [DbSurvey[], any];
+    );
 
-    if (surveys.length === 0) {
+    if (!surveys || !Array.isArray(surveys) || surveys.length === 0) {
       return null;
     }
 
@@ -425,7 +457,7 @@ export class Survey {
     }
 
     // Get questions
-    const [questions] = await typedQuery(
+    const [questions] = await typedQuery<DbSurveyQuestion[]>(
       `
       SELECT * FROM survey_questions
       WHERE survey_id = ?
@@ -458,10 +490,10 @@ export class Survey {
       }
     }
 
-    survey.questions = questions;
+    survey.questions = questions as DbSurveyQuestion[];
 
     // Get assignments
-    const [assignments] = await typedQuery(
+    const [assignments] = await typedQuery<DbSurveyAssignment[]>(
       `
       SELECT * FROM survey_assignments
       WHERE survey_id = ?
@@ -469,7 +501,7 @@ export class Survey {
       [surveyId]
     );
 
-    survey.assignments = assignments;
+    survey.assignments = assignments as DbSurveyAssignment[];
 
     return survey;
   }
@@ -479,16 +511,17 @@ export class Survey {
    */
   static async update(
     surveyId: number,
-    surveyData: SurveyCreateData,
+    surveyData: SurveyUpdateData,
     tenantId: number
   ): Promise<boolean> {
     // Check if we're using mock database
-    if (!('getConnection' in pool)) {
+    let connection: PoolConnection;
+    try {
+      connection = await getConnection();
+    } catch {
       // Mock implementation
       return true;
     }
-
-    const connection = (await pool.getConnection()) as PoolConnection;
     try {
       await connection.beginTransaction();
 
@@ -563,7 +596,7 @@ export class Survey {
    * Delete survey
    */
   static async delete(surveyId: number, tenantId: number): Promise<boolean> {
-    const [result] = await typedQuery(
+    const [result] = await typedQuery<ResultSetHeader>(
       'DELETE FROM surveys WHERE id = ? AND tenant_id = ?',
       [surveyId, tenantId]
     );
@@ -574,7 +607,7 @@ export class Survey {
    * Get survey templates
    */
   static async getTemplates(tenantId: number): Promise<DbSurveyTemplate[]> {
-    const [templates] = await typedQuery(
+    const [templates] = await typedQuery<DbSurveyTemplate[]>(
       `
       SELECT * FROM survey_templates
       WHERE tenant_id = ? OR is_public = 1
@@ -593,7 +626,7 @@ export class Survey {
     tenantId: number,
     createdBy: number
   ): Promise<number> {
-    const [templates] = await typedQuery(
+    const [templates] = await typedQuery<DbSurveyTemplate[]>(
       `
       SELECT * FROM survey_templates
       WHERE id = ? AND (tenant_id = ? OR is_public = 1)
@@ -627,7 +660,7 @@ export class Survey {
   ): Promise<SurveyStatistics> {
     try {
       // Get basic statistics
-      const [stats] = await typedQuery(
+      const [stats] = await typedQuery<RowDataPacket[]>(
         `
         SELECT 
           COUNT(DISTINCT sr.id) as total_responses,
@@ -648,10 +681,32 @@ export class Survey {
       }
 
       // Get question statistics
-      const questionStats = [];
+      interface QuestionStatistic {
+        id: number;
+        question_text: string;
+        question_type: string;
+        responses: Array<{
+          answer_text?: string;
+          selected_option_id?: number;
+          rating?: number;
+        }>;
+        options?: Array<{
+          option_id: number;
+          option_text: string;
+          count: number;
+        }>;
+        statistics?: {
+          average: number | null;
+          min: number | null;
+          max: number | null;
+          total_responses: number;
+        };
+      }
+
+      const questionStats: QuestionStatistic[] = [];
 
       for (const question of survey.questions || []) {
-        const questionStat: any = {
+        const questionStat: QuestionStatistic = {
           id: question.id,
           question_text: question.question_text,
           question_type: question.question_type,
@@ -670,7 +725,7 @@ export class Survey {
             : [];
 
           // Get all answers for this question
-          const [answers] = await typedQuery(
+          const [answers] = await typedQuery<RowDataPacket[]>(
             `
             SELECT sa.answer_options
             FROM survey_answers sa
@@ -682,7 +737,7 @@ export class Survey {
 
           // Count responses per option
           const optionCounts: { [key: number]: number } = {};
-          answers.forEach((answer: any) => {
+          (answers as RowDataPacket[]).forEach((answer) => {
             const selectedOptions =
               typeof answer.answer_options === 'string'
                 ? JSON.parse(answer.answer_options)
@@ -706,7 +761,7 @@ export class Survey {
           );
         } else if (question.question_type === 'text') {
           // Get text responses
-          const [textResponses] = await typedQuery(
+          const [textResponses] = await typedQuery<RowDataPacket[]>(
             `
             SELECT 
               sa.answer_text,
@@ -720,25 +775,33 @@ export class Survey {
           `,
             [question.id]
           );
-          questionStat.responses = textResponses;
+          questionStat.responses = textResponses.map((row) => ({
+            answer_text: row.answer_text?.toString(),
+          }));
         } else if (
           question.question_type === 'rating' ||
           question.question_type === 'number'
         ) {
           // Get numeric statistics
-          const [numericStats] = await typedQuery(
+          const [numericStats] = await typedQuery<RowDataPacket[]>(
             `
             SELECT 
               AVG(sa.answer_number) as average,
               MIN(sa.answer_number) as min,
               MAX(sa.answer_number) as max,
-              COUNT(sa.answer_number) as count
+              COUNT(sa.answer_number) as total_responses
             FROM survey_answers sa
             WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
           `,
             [question.id]
           );
-          questionStat.statistics = numericStats[0];
+          const stats = numericStats[0];
+          questionStat.statistics = {
+            average: stats.average || null,
+            min: stats.min || null,
+            max: stats.max || null,
+            total_responses: stats.total_responses || 0,
+          };
         }
 
         questionStats.push(questionStat);

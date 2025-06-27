@@ -6,26 +6,18 @@
  *   description: User authentication and authorization endpoints
  */
 
-import express, { Router, Request, Response } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import express, { Router } from 'express';
+import { security } from '../middleware/security';
+import { validationSchemas } from '../middleware/validation';
+import { successResponse, errorResponse } from '../types/response.types';
 import { logger } from '../utils/logger';
 import authController from '../controllers/auth.controller';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
 import User from '../models/user';
 
 const router: Router = express.Router();
-
-// Extended Request interfaces
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    tenant_id: number;
-  };
-}
 
 /**
  * @swagger
@@ -71,56 +63,63 @@ interface AuthenticatedRequest extends Request {
  *       500:
  *         description: Server error
  */
-router.get('/validate', authenticateToken, async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedRequest;
-
-    // Token is valid if we reach this point (authenticateToken middleware passed)
-    res.json({
-      success: true,
-      valid: true,
-      user: {
-        id: authReq.user.id,
-        username: authReq.user.username,
-        role: authReq.user.role,
-        tenant_id: authReq.user.tenant_id,
-      },
-    });
-  } catch (error: any) {
-    logger.error('Token validation error:', error);
-    res.status(500).json({
-      success: false,
-      valid: false,
-      message: 'Fehler bei der Token-Validierung',
-    });
-  }
-});
+router.get(
+  '/validate',
+  ...security.user(),
+  typed.auth(async (req, res) => {
+    try {
+      // Token is valid if we reach this point (authenticateToken middleware passed)
+      res.json(
+        successResponse(
+          {
+            valid: true,
+            user: {
+              id: req.user.id,
+              username: req.user.username,
+              role: req.user.role,
+              tenant_id: req.user.tenant_id,
+            },
+          },
+          'Token is valid'
+        )
+      );
+    } catch (error) {
+      logger.error('Token validation error:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler bei der Token-Validierung', 500));
+    }
+  })
+);
 
 /**
  * @route GET /api/auth/user
  * @desc Get current user profile
  * @access Private
  */
-router.get('/user', authenticateToken, async (req, res): Promise<void> => {
-  try {
-    const authReq = req as AuthenticatedRequest;
-    const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
+router.get(
+  '/user',
+  ...security.user(),
+  typed.auth(async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id, req.user.tenant_id);
 
-    if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
+      if (!user) {
+        res.status(404).json(errorResponse('User not found', 404));
+        return;
+      }
+
+      // Remove sensitive data
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = user;
+
+      res.json(successResponse(userWithoutPassword));
+    } catch (error) {
+      console.error('Error in get user profile:', error);
+      res.status(500).json(errorResponse('Server error', 500));
     }
-
-    // Remove sensitive data
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user;
-
-    res.json(userWithoutPassword);
-  } catch (error: any) {
-    console.error('Error in get user profile:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  })
+);
 
 /**
  * @swagger
@@ -202,7 +201,11 @@ router.get('/user', authenticateToken, async (req, res): Promise<void> => {
  *       500:
  *         description: Server error
  */
-router.post('/login', authController.login as any);
+router.post(
+  '/login',
+  ...security.auth(validationSchemas.login),
+  authController.login
+);
 
 /**
  * @swagger
@@ -275,7 +278,11 @@ router.post('/login', authController.login as any);
  *       500:
  *         description: Server error
  */
-router.post('/register', authController.register as any);
+router.post(
+  '/register',
+  ...security.auth(validationSchemas.signup),
+  authController.register
+);
 
 /**
  * @swagger
@@ -303,16 +310,20 @@ router.post('/register', authController.register as any);
  *                   type: string
  *                   example: Logout successful
  */
-router.post('/logout', authenticateToken, authController.logout as any);
+router.post('/logout', ...security.user(), typed.auth(authController.logout));
 
 /**
  * @route GET /api/auth/logout
  * @desc Logout user (client-side only) - Legacy endpoint
  * @access Public
  */
-router.get('/logout', (_req: Request, res: Response): void => {
-  res.json({ message: 'Logout successful' });
-});
+router.get(
+  '/logout',
+  ...security.public(),
+  typed.public((_req, res) => {
+    res.json(successResponse(null, 'Logout successful'));
+  })
+);
 
 export default router;
 

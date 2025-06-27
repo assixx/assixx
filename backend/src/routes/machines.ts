@@ -5,6 +5,7 @@
 
 import express, { Router, Request } from 'express';
 import { authenticateToken } from '../auth';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();
 
@@ -65,8 +66,8 @@ router.get('/', authenticateToken, async (req, res): Promise<void> => {
       success: true,
       machines: filteredMachines,
     });
-  } catch (error: any) {
-    console.error('Error fetching machines:', error);
+  } catch (error) {
+    console.error('Error fetching machines:', getErrorMessage(error));
     res.status(500).json({
       success: false,
       message: 'Fehler beim Laden der Maschinen',
@@ -98,8 +99,8 @@ router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
       success: true,
       machine,
     });
-  } catch (error: any) {
-    console.error('Error fetching machine:', error);
+  } catch (error) {
+    console.error('Error fetching machine:', getErrorMessage(error));
     res.status(500).json({
       success: false,
       message: 'Fehler beim Laden der Maschine',
@@ -149,8 +150,8 @@ router.post('/', authenticateToken, async (req, res): Promise<void> => {
       message: 'Maschine erfolgreich erstellt',
       machine,
     });
-  } catch (error: any) {
-    console.error('Error creating machine:', error);
+  } catch (error) {
+    console.error('Error creating machine:', getErrorMessage(error));
     res.status(500).json({
       success: false,
       message: 'Fehler beim Erstellen der Maschine',

@@ -68,7 +68,7 @@ interface Attachment {
 
 class KvpDetailPage {
   private currentUser: User | null = null;
-  private suggestionId: number;
+  private suggestionId: number = 0;
   private suggestion: KvpSuggestion | null = null;
 
   constructor() {
@@ -154,32 +154,40 @@ class KvpDetailPage {
     if (!this.suggestion) return;
 
     // Basic info
-    document.getElementById('suggestionTitle')!.textContent = this.suggestion.title;
-    document.getElementById('submittedBy')!.textContent =
-      `${this.suggestion.submitted_by_name} ${this.suggestion.submitted_by_lastname}`;
-    document.getElementById('createdAt')!.textContent = new Date(this.suggestion.created_at).toLocaleDateString(
-      'de-DE',
-    );
-    document.getElementById('department')!.textContent = this.suggestion.department_name;
+    const titleEl = document.getElementById('suggestionTitle');
+    const submittedByEl = document.getElementById('submittedBy');
+    const createdAtEl = document.getElementById('createdAt');
+    const departmentEl = document.getElementById('department');
+
+    if (titleEl) titleEl.textContent = this.suggestion.title;
+    if (submittedByEl)
+      submittedByEl.textContent = `${this.suggestion.submitted_by_name} ${this.suggestion.submitted_by_lastname}`;
+    if (createdAtEl) createdAtEl.textContent = new Date(this.suggestion.created_at).toLocaleDateString('de-DE');
+    if (departmentEl) departmentEl.textContent = this.suggestion.department_name;
 
     // Status and Priority
-    const statusBadge = document.getElementById('statusBadge')!;
-    statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
-    statusBadge.textContent = this.getStatusText(this.suggestion.status);
+    const statusBadge = document.getElementById('statusBadge');
+    if (statusBadge) {
+      statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
+      statusBadge.textContent = this.getStatusText(this.suggestion.status);
+    }
 
-    const priorityBadge = document.getElementById('priorityBadge')!;
-    priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
-    priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
+    const priorityBadge = document.getElementById('priorityBadge');
+    if (priorityBadge) {
+      priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
+      priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
+    }
 
     // Visibility info
-    const visibilityInfo = document.getElementById('visibilityInfo')!;
+    const visibilityInfo = document.getElementById('visibilityInfo');
+    if (!visibilityInfo) return;
     if (this.suggestion.org_level === 'company') {
       visibilityInfo.innerHTML = `
         <div class="visibility-badge company">
           <i class="fas fa-globe"></i> Firmenweit geteilt
           ${
             this.suggestion.shared_by_name
-              ? `<span> von ${this.suggestion.shared_by_name} am ${new Date(this.suggestion.shared_at!).toLocaleDateString('de-DE')}</span>`
+              ? `<span> von ${this.suggestion.shared_by_name} am ${this.suggestion.shared_at ? new Date(this.suggestion.shared_at).toLocaleDateString('de-DE') : ''}</span>`
               : ''
           }
         </div>
@@ -193,45 +201,60 @@ class KvpDetailPage {
     }
 
     // Description
-    document.getElementById('description')!.textContent = this.suggestion.description;
+    const descriptionEl = document.getElementById('description');
+    if (descriptionEl) descriptionEl.textContent = this.suggestion.description;
 
     // Expected benefit
     if (this.suggestion.expected_benefit) {
-      document.getElementById('benefitSection')!.style.display = '';
-      document.getElementById('expectedBenefit')!.textContent = this.suggestion.expected_benefit;
+      const benefitSection = document.getElementById('benefitSection');
+      const expectedBenefit = document.getElementById('expectedBenefit');
+      if (benefitSection) benefitSection.style.display = '';
+      if (expectedBenefit) expectedBenefit.textContent = this.suggestion.expected_benefit;
     }
 
     // Financial info
     if (this.suggestion.estimated_cost || this.suggestion.actual_savings) {
-      document.getElementById('financialSection')!.style.display = '';
+      const financialSection = document.getElementById('financialSection');
+      if (financialSection) financialSection.style.display = '';
 
       if (this.suggestion.estimated_cost) {
-        document.getElementById('estimatedCost')!.textContent = new Intl.NumberFormat('de-DE', {
-          style: 'currency',
-          currency: 'EUR',
-        }).format(this.suggestion.estimated_cost);
+        const estimatedCostEl = document.getElementById('estimatedCost');
+        if (estimatedCostEl) {
+          estimatedCostEl.textContent = new Intl.NumberFormat('de-DE', {
+            style: 'currency',
+            currency: 'EUR',
+          }).format(this.suggestion.estimated_cost);
+        }
       }
 
       if (this.suggestion.actual_savings) {
-        document.getElementById('actualSavings')!.textContent = new Intl.NumberFormat('de-DE', {
-          style: 'currency',
-          currency: 'EUR',
-        }).format(this.suggestion.actual_savings);
+        const actualSavingsEl = document.getElementById('actualSavings');
+        if (actualSavingsEl) {
+          actualSavingsEl.textContent = new Intl.NumberFormat('de-DE', {
+            style: 'currency',
+            currency: 'EUR',
+          }).format(this.suggestion.actual_savings);
+        }
       }
     }
 
     // Details sidebar
-    document.getElementById('category')!.innerHTML = `
+    const categoryEl = document.getElementById('category');
+    if (categoryEl) {
+      categoryEl.innerHTML = `
       <span style="color: ${this.suggestion.category_color || '#666'}">
         <i class="${this.suggestion.category_icon || 'fas fa-tag'}"></i>
         ${this.suggestion.category_name}
       </span>
     `;
+    }
 
     // For non-admins, just show the status text
-    const statusElement = document.getElementById('status')!;
-    const statusDropdownContainer = document.getElementById('statusDropdownContainer')!;
-    const statusDisplay = document.getElementById('statusDisplay')!;
+    const statusElement = document.getElementById('status');
+    const statusDropdownContainer = document.getElementById('statusDropdownContainer');
+    const statusDisplay = document.getElementById('statusDisplay');
+
+    if (!statusElement || !statusDropdownContainer || !statusDisplay) return;
 
     if (this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root')) {
       // Hide the status text and show the dropdown for admins
@@ -239,8 +262,10 @@ class KvpDetailPage {
       statusDropdownContainer.style.display = '';
 
       // Update the dropdown display text
-      statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
-      document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
+      const statusSpan = statusDisplay.querySelector('span');
+      if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
+      const statusValue = document.getElementById('statusValue');
+      if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
     } else {
       // Show only the status text for regular users
       statusElement.textContent = this.getStatusText(this.suggestion.status);
@@ -248,20 +273,25 @@ class KvpDetailPage {
     }
 
     if (this.suggestion.assigned_to) {
-      document.getElementById('assignedToItem')!.style.display = '';
+      const assignedToItem = document.getElementById('assignedToItem');
+      if (assignedToItem) assignedToItem.style.display = '';
       // TODO: Load assigned user name
     }
 
     if (this.suggestion.implementation_date) {
-      document.getElementById('implementationItem')!.style.display = '';
-      document.getElementById('implementationDate')!.textContent = new Date(
-        this.suggestion.implementation_date,
-      ).toLocaleDateString('de-DE');
+      const implementationItem = document.getElementById('implementationItem');
+      const implementationDate = document.getElementById('implementationDate');
+      if (implementationItem) implementationItem.style.display = '';
+      if (implementationDate) {
+        implementationDate.textContent = new Date(this.suggestion.implementation_date).toLocaleDateString('de-DE');
+      }
     }
 
     if (this.suggestion.rejection_reason) {
-      document.getElementById('rejectionItem')!.style.display = '';
-      document.getElementById('rejectionReason')!.textContent = this.suggestion.rejection_reason;
+      const rejectionItem = document.getElementById('rejectionItem');
+      const rejectionReason = document.getElementById('rejectionReason');
+      if (rejectionItem) rejectionItem.style.display = '';
+      if (rejectionReason) rejectionReason.textContent = this.suggestion.rejection_reason;
     }
   }
 
@@ -274,16 +304,20 @@ class KvpDetailPage {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
 
       // Show actions card
-      document.getElementById('actionsCard')!.style.display = '';
+      const actionsCard = document.getElementById('actionsCard');
+      if (actionsCard) actionsCard.style.display = '';
 
       // Configure share/unshare buttons
+      const shareBtn = document.getElementById('shareBtn');
+      const unshareBtn = document.getElementById('unshareBtn');
+
       if (this.suggestion.org_level === 'department') {
-        document.getElementById('shareBtn')!.style.display = '';
-        document.getElementById('unshareBtn')!.style.display = 'none';
+        if (shareBtn) shareBtn.style.display = '';
+        if (unshareBtn) unshareBtn.style.display = 'none';
       } else if (this.suggestion.org_level === 'company') {
-        document.getElementById('shareBtn')!.style.display = 'none';
+        if (shareBtn) shareBtn.style.display = 'none';
         if (this.currentUser.role === 'root' || this.suggestion.shared_by === this.currentUser.id) {
-          document.getElementById('unshareBtn')!.style.display = '';
+          if (unshareBtn) unshareBtn.style.display = '';
         }
       }
     } else {
@@ -309,7 +343,8 @@ class KvpDetailPage {
   }
 
   private renderComments(comments: Comment[]): void {
-    const container = document.getElementById('commentList')!;
+    const container = document.getElementById('commentList');
+    if (!container) return;
 
     if (comments.length === 0) {
       container.innerHTML = '<p class="empty-state">Noch keine Kommentare</p>';
@@ -377,8 +412,11 @@ class KvpDetailPage {
 
     // Render photo gallery
     if (photos.length > 0) {
-      document.getElementById('photoSection')!.style.display = '';
-      const photoGallery = document.getElementById('photoGallery')!;
+      const photoSection = document.getElementById('photoSection');
+      const photoGallery = document.getElementById('photoGallery');
+
+      if (photoSection) photoSection.style.display = '';
+      if (!photoGallery) return;
 
       photoGallery.innerHTML = photos
         .map(
@@ -396,8 +434,11 @@ class KvpDetailPage {
 
     // Render other attachments
     if (otherFiles.length > 0) {
-      document.getElementById('attachmentsCard')!.style.display = '';
-      const container = document.getElementById('attachmentList')!;
+      const attachmentsCard = document.getElementById('attachmentsCard');
+      const container = document.getElementById('attachmentList');
+
+      if (attachmentsCard) attachmentsCard.style.display = '';
+      if (!container) return;
 
       container.innerHTML = otherFiles
         .map((attachment) => {
@@ -590,7 +631,12 @@ class KvpDetailPage {
         return;
       }
 
-      let updateData: any = {
+      interface UpdateData {
+        status: string;
+        rejection_reason?: string;
+      }
+
+      let updateData: UpdateData = {
         status: newStatus,
       };
 
@@ -602,8 +648,10 @@ class KvpDetailPage {
           // Reset dropdown
           const statusDisplay = document.getElementById('statusDisplay');
           if (statusDisplay && this.suggestion) {
-            statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
-            document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
+            const statusSpan = statusDisplay.querySelector('span');
+            if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
+            const statusValue = document.getElementById('statusValue');
+            if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
           }
           return;
         }
@@ -628,16 +676,20 @@ class KvpDetailPage {
       this.suggestion = data.suggestion;
 
       // Update the status badge
-      const statusBadge = document.getElementById('statusBadge')!;
+      const statusBadge = document.getElementById('statusBadge');
+      if (!statusBadge) return;
       statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(newStatus);
 
       // Update rejection reason display
+      const rejectionItem = document.getElementById('rejectionItem');
+      const rejectionReason = document.getElementById('rejectionReason');
+
       if (newStatus === 'rejected' && updateData.rejection_reason) {
-        document.getElementById('rejectionItem')!.style.display = '';
-        document.getElementById('rejectionReason')!.textContent = updateData.rejection_reason;
+        if (rejectionItem) rejectionItem.style.display = '';
+        if (rejectionReason) rejectionReason.textContent = updateData.rejection_reason;
       } else if (newStatus !== 'rejected') {
-        document.getElementById('rejectionItem')!.style.display = 'none';
+        if (rejectionItem) rejectionItem.style.display = 'none';
       }
 
       this.showSuccess(`Status geändert zu: ${this.getStatusText(newStatus)}`);
@@ -648,8 +700,10 @@ class KvpDetailPage {
       // Reset dropdown to original value on error
       const statusDisplay = document.getElementById('statusDisplay');
       if (statusDisplay && this.suggestion) {
-        statusDisplay.querySelector('span')!.textContent = this.getStatusText(this.suggestion.status);
-        document.getElementById('statusValue')!.setAttribute('value', this.suggestion.status);
+        const statusSpan = statusDisplay.querySelector('span');
+        if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
+        const statusValue = document.getElementById('statusValue');
+        if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
       }
     }
   }

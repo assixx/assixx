@@ -1,18 +1,9 @@
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 // Database interfaces
 interface DbDepartment extends RowDataPacket {
@@ -47,7 +38,7 @@ interface DbColumn extends RowDataPacket {
   Type: string;
   Null: string;
   Key: string;
-  Default: any;
+  Default: string | null;
   Extra: string;
 }
 
@@ -92,7 +83,7 @@ export class Department {
       );
 
       let query: string;
-      let params: any[];
+      let params: unknown[];
 
       if (hasStatus && hasVisibility) {
         query = `
@@ -195,7 +186,7 @@ export class Department {
   ): Promise<boolean> {
     logger.info(`Updating department ${id}`);
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
 
     // Only update provided fields
     if (departmentData.name !== undefined) {
@@ -289,11 +280,14 @@ export class Department {
   }
 
   // Count departments by tenant
-  static async countByTenant(tenantId: number): Promise<number> {
+  static async countByTenant(tenant_id: number): Promise<number> {
     try {
-      const [rows] = await executeQuery<any[]>(
+      interface CountResult extends RowDataPacket {
+        count: number;
+      }
+      const [rows] = await executeQuery<CountResult[]>(
         'SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?',
-        [tenantId]
+        [tenant_id]
       );
       return rows[0]?.count || 0;
     } catch (error) {
@@ -305,11 +299,14 @@ export class Department {
   }
 
   // Count teams by tenant (assuming teams are linked to departments)
-  static async countTeamsByTenant(tenantId: number): Promise<number> {
+  static async countTeamsByTenant(tenant_id: number): Promise<number> {
     try {
-      const [rows] = await executeQuery<any[]>(
+      interface CountResult extends RowDataPacket {
+        count: number;
+      }
+      const [rows] = await executeQuery<CountResult[]>(
         'SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?',
-        [tenantId]
+        [tenant_id]
       );
       return rows[0]?.count || 0;
     } catch (error) {

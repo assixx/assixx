@@ -120,7 +120,16 @@
   }
 
   // Select a group
-  (window as any).selectGroup = function (groupId: number) {
+  interface ManageDeptGroupsWindow extends Window {
+    selectGroup: (groupId: number) => void;
+    editGroup: (groupId: number) => void;
+    showCreateGroupModal: () => void;
+    closeModal: () => void;
+    deleteGroup: (groupId: number) => Promise<void>;
+    addDepartmentsToGroup: (groupId: number) => Promise<void>;
+  }
+
+  (window as unknown as ManageDeptGroupsWindow).selectGroup = function (groupId: number) {
     selectedGroupId = groupId;
 
     // Update active state
@@ -201,34 +210,13 @@
     }
   }
 
-  // Edit group
-  (window as any).editGroup = function (groupId: number) {
-    const group = findGroupById(groupId);
-    if (!group) return;
-
-    editingGroupId = groupId;
-    document.getElementById('modalTitle')!.textContent = 'Abteilungsgruppe bearbeiten';
-
-    const form = document.getElementById('createGroupForm') as HTMLFormElement;
-    if (form) {
-      (form.elements.namedItem('name') as HTMLInputElement).value = group.name;
-      (form.elements.namedItem('description') as HTMLTextAreaElement).value = group.description || '';
-      (form.elements.namedItem('parentGroupId') as HTMLSelectElement).value = group.parent_group_id?.toString() || '';
-
-      // Set selected departments
-      const checkboxes = form.querySelectorAll<HTMLInputElement>('input[name="departments"]');
-      checkboxes.forEach((cb) => {
-        cb.checked = group.departments?.some((d) => d.id === parseInt(cb.value)) || false;
-      });
-    }
-
-    document.getElementById('createGroupModal')?.classList.add('show');
-  };
+  // Edit group (first implementation - removed duplicate)
 
   // Show create group modal
-  (window as any).showCreateGroupModal = function () {
+  (window as unknown as ManageDeptGroupsWindow).showCreateGroupModal = function () {
     editingGroupId = null;
-    document.getElementById('modalTitle')!.textContent = 'Neue Abteilungsgruppe erstellen';
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) modalTitle.textContent = 'Neue Abteilungsgruppe erstellen';
     (document.getElementById('createGroupForm') as HTMLFormElement)?.reset();
 
     // Load parent groups
@@ -241,12 +229,13 @@
   };
 
   // Edit group
-  (window as any).editGroup = function (groupId: number) {
+  (window as unknown as ManageDeptGroupsWindow).editGroup = function (groupId: number) {
     const group = findGroupById(groupId);
     if (!group) return;
 
     editingGroupId = groupId;
-    document.getElementById('modalTitle')!.textContent = 'Gruppe bearbeiten';
+    const modalTitle = document.getElementById('modalTitle');
+    if (modalTitle) modalTitle.textContent = 'Gruppe bearbeiten';
 
     // Fill form
     (document.getElementById('groupName') as HTMLInputElement).value = group.name;
@@ -304,7 +293,7 @@
   }
 
   // Close modal
-  (window as any).closeModal = function () {
+  (window as unknown as ManageDeptGroupsWindow).closeModal = function () {
     document.getElementById('createGroupModal')?.classList.remove('active');
     editingGroupId = null;
   };
@@ -351,7 +340,7 @@
   });
 
   // Delete group
-  (window as any).deleteGroup = async function (groupId: number) {
+  (window as unknown as ManageDeptGroupsWindow).deleteGroup = async function (groupId: number) {
     const group = findGroupById(groupId);
     if (!group) return;
 
@@ -372,7 +361,9 @@
         showSuccess('Gruppe gelöscht');
         selectedGroupId = null;
         await loadGroups();
-        document.getElementById('groupDetails')!.innerHTML = `
+        const groupDetails = document.getElementById('groupDetails');
+        if (groupDetails) {
+          groupDetails.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">
             <i class="fas fa-info-circle"></i>
@@ -380,6 +371,7 @@
           <div>Wählen Sie eine Gruppe aus, um Details anzuzeigen</div>
         </div>
       `;
+        }
       } else {
         const error = await response.json();
         showError(error.error || 'Fehler beim Löschen');
@@ -391,9 +383,9 @@
   };
 
   // Add departments to group
-  (window as any).addDepartmentsToGroup = async function (groupId: number) {
+  (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup = async function (groupId: number) {
     // For now, just open edit modal
-    (window as any).editGroup(groupId);
+    (window as unknown as ManageDeptGroupsWindow).editGroup(groupId);
   };
 
   // Helper functions

@@ -55,7 +55,6 @@ const [results] = await pool.query('SELECT * FROM kvp_suggestions WHERE tenant_i
 ### Spezifische Änderungen
 
 1. **kvpPermission.service.ts**
-
    - `canViewSuggestion()`: execute → query
    - `canEditSuggestion()`: execute → query
    - `canDeleteSuggestion()`: execute → query

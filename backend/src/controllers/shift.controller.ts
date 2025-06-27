@@ -19,6 +19,7 @@ interface ShiftCreateRequest extends TenantRequest {
     user_id: number;
     template_id?: number;
     shift_date: Date | string;
+    date?: Date | string; // Alternative to shift_date
     start_time: string;
     end_time: string;
     break_duration?: number;
@@ -29,6 +30,8 @@ interface ShiftCreateRequest extends TenantRequest {
     notes?: string;
     created_by: number;
     hourly_rate?: number;
+    shift_plan_id?: number;
+    plan_id?: number; // Alternative to shift_plan_id
   };
 }
 
@@ -88,15 +91,19 @@ class ShiftController {
       }
 
       const filters = {
-        ...req.query,
-        user_id: req.query.user_id
-          ? parseInt(req.query.user_id, 10)
-          : undefined,
         department_id: req.query.department_id
           ? parseInt(req.query.department_id, 10)
           : undefined,
-        page: req.query.page ? parseInt(req.query.page, 10) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+        team_id: undefined as number | undefined, // Not in query but expected by ShiftFilters
+        start_date: req.query.start_date,
+        end_date: req.query.end_date,
+        status: req.query.status as
+          | 'draft'
+          | 'published'
+          | 'archived'
+          | undefined,
+        plan_id: undefined as number | undefined,
+        template_id: undefined as number | undefined,
       };
       const result = await shiftService.getAll(req.tenantDb, filters);
       res.json(result);
@@ -152,7 +159,13 @@ class ShiftController {
         return;
       }
 
-      const result = await shiftService.create(req.tenantDb, req.body);
+      const createData = {
+        ...req.body,
+        tenant_id: req.user.tenant_id,
+        shift_plan_id: req.body.shift_plan_id || req.body.plan_id,
+        date: req.body.date || req.body.shift_date,
+      };
+      const result = await shiftService.create(req.tenantDb, createData);
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in ShiftController.create:', error);

@@ -10,7 +10,7 @@ import { PAGINATION } from './constants';
 interface QueryParams {
   page?: string | number;
   limit?: string | number;
-  [key: string]: any;
+  [key: string]: string | number | undefined;
 }
 
 interface PaginationResult {
@@ -82,7 +82,7 @@ export function formatPaginationResponse(
  * @param input - User input
  * @returns Sanitized input
  */
-export function sanitizeInput(input: any): any {
+export function sanitizeInput(input: unknown): unknown {
   if (typeof input !== 'string') return input;
 
   return input

@@ -3,13 +3,11 @@
 ## 📊 Was wird gesichert?
 
 1. **MySQL Datenbank** (Kritisch)
-
    - Alle Tenant-Daten
    - Benutzerkonten
    - Systemkonfiguration
 
 2. **Upload-Verzeichnis** (Wichtig)
-
    - Dokumente
    - Profilbilder
    - Chat-Anhänge

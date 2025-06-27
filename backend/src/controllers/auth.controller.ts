@@ -9,19 +9,12 @@ import userService from '../services/user.service';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../types/request.types';
 import { createLog } from '../routes/logs.js';
-import pool from '../database';
+import { executeQuery } from '../database';
 import { RowDataPacket } from 'mysql2/promise';
 
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[]>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
+// Type guard to check if request has authenticated user
+function isAuthenticated(req: Request): req is AuthenticatedRequest {
+  return 'user' in req && req.user != null && 'id' in req.user;
 }
 
 // Interfaces for request bodies
@@ -42,7 +35,6 @@ interface RegisterRequest extends Request {
     last_name?: string;
     role?: string;
     tenant_id?: number;
-    [key: string]: any; // For additional fields
   };
 }
 
@@ -56,9 +48,9 @@ class AuthController {
       res.json({
         authenticated: true,
         user: {
-          id: req.user!.id,
-          username: req.user!.username,
-          role: req.user!.role,
+          id: req.user.id,
+          username: req.user.username,
+          role: req.user.role,
         },
       });
     } catch (error) {
@@ -76,8 +68,8 @@ class AuthController {
   ): Promise<void> {
     try {
       const user = await userService.getUserById(
-        req.user!.id,
-        req.user!.tenantId
+        req.user.id,
+        req.user.tenant_id
       );
 
       if (!user) {
@@ -128,7 +120,11 @@ class AuthController {
       }
 
       // Set token as httpOnly cookie for HTML pages
-      res.cookie('token', result.token!, {
+      if (!result.token) {
+        res.status(500).json({ message: 'Token generation failed' });
+        return;
+      }
+      res.cookie('token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -136,31 +132,36 @@ class AuthController {
       });
 
       // Log successful login
-      await createLog(
-        result.user!.id,
-        result.user!.tenantId,
-        'login',
-        'user',
-        result.user!.id,
-        `Erfolgreich angemeldet`,
-        req.ip,
-        req.headers['user-agent']
-      );
+      if (result.user) {
+        await createLog(
+          result.user.id,
+          result.user.tenant_id,
+          'login',
+          'user',
+          result.user.id,
+          `Erfolgreich angemeldet`,
+          req.ip || 'unknown',
+          req.headers['user-agent'] || 'unknown'
+        );
+      }
 
       // Return user data and token (compatible with legacy frontend)
       res.json({
         message: 'Login erfolgreich',
         token: result.token,
-        role: result.user!.role,
+        role: result.user?.role,
         user: result.user,
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Login error:', error);
-      console.error('[DEBUG] Login error details:', error.message, error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      console.error('[DEBUG] Login error details:', errorMessage, errorStack);
       res.status(500).json({
         message: 'Server error during login',
         error:
-          process.env.NODE_ENV === 'development' ? error.message : undefined,
+          process.env.NODE_ENV === 'development' ? errorMessage : undefined,
       });
     }
   }
@@ -178,7 +179,7 @@ class AuthController {
         vorname: req.body.first_name || '',
         nachname: req.body.last_name || '',
         role: req.body.role as 'admin' | 'employee' | undefined,
-        tenantId: req.body.tenant_id,
+        tenant_id: req.body.tenant_id,
       };
 
       // Register user through service
@@ -204,18 +205,18 @@ class AuthController {
   /**
    * Logout user
    */
-  async logout(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async logout(req: Request, res: Response): Promise<void> {
     // Log logout action if user is authenticated
-    if (req.user) {
+    if (isAuthenticated(req)) {
       await createLog(
         req.user.id,
-        req.user.tenantId,
+        req.user.tenant_id,
         'logout',
         'user',
         req.user.id,
         'Abgemeldet',
-        req.ip,
-        req.headers['user-agent']
+        req.ip || 'unknown',
+        req.headers['user-agent'] || 'unknown'
       );
     }
 
@@ -236,8 +237,8 @@ class AuthController {
     try {
       // Token is already validated by authenticateToken middleware
       // Get fresh user data from database
-      const userId = req.user!.id;
-      const user = await userService.getUserById(userId, req.user!.tenantId);
+      const userId = req.user.id;
+      const user = await userService.getUserById(userId, req.user.tenant_id);
 
       if (!user) {
         res.status(404).json({
@@ -286,7 +287,7 @@ class AuthController {
     res: Response
   ): Promise<void> {
     try {
-      const { fingerprint } = req.body;
+      const { fingerprint } = req.body as { fingerprint?: string };
       const user = req.user;
 
       if (!fingerprint || !user) {
@@ -295,7 +296,13 @@ class AuthController {
       }
 
       // Get session ID from token (if available)
-      const sessionId = (user as any).sessionId;
+      interface UserWithSession {
+        id: number;
+        tenant_id: number;
+        sessionId?: string;
+      }
+      const userWithSession = user as UserWithSession;
+      const sessionId = userWithSession.sessionId;
       if (!sessionId) {
         res.json({ valid: true }); // Skip if no session ID
         return;

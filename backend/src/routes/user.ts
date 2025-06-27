@@ -7,10 +7,12 @@ import path from 'path';
 import fs from 'fs';
 import { authenticateToken } from '../middleware/auth';
 import multer from 'multer';
+import { getErrorMessage } from '../utils/errorHandler';
 
 // Import models and database (now ES modules)
 import User from '../models/user';
-import db from '../database';
+import { executeQuery } from '../config/database.js';
+import { RowDataPacket } from 'mysql2';
 
 const router: Router = express.Router();
 
@@ -44,7 +46,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (
-  _req: any,
+  _req: unknown,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
@@ -94,7 +96,7 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     let departmentInfo = null;
     if (user.department_id) {
       // Verwende db statt req.tenantDb
-      const [departments] = await (db as any).execute(
+      const [departments] = await executeQuery<RowDataPacket[]>(
         'SELECT * FROM departments WHERE id = ?',
         [user.department_id]
       );
@@ -108,7 +110,7 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     let teamInfo = null;
     if (user.team_id) {
       // Verwende db statt req.tenantDb
-      const [teams] = await (db as any).execute(
+      const [teams] = await executeQuery<RowDataPacket[]>(
         'SELECT * FROM teams WHERE id = ?',
         [user.team_id]
       );
@@ -121,7 +123,7 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
     // Get tenant information
     let tenantInfo = null;
     if (user.tenant_id) {
-      const [tenants] = await (db as any).execute(
+      const [tenants] = await executeQuery<RowDataPacket[]>(
         'SELECT * FROM tenants WHERE id = ?',
         [user.tenant_id]
       );
@@ -143,8 +145,8 @@ router.get('/profile', authenticateToken, async (req, res): Promise<void> => {
       company_name: tenantInfo ? tenantInfo.company_name : null,
       subdomain: tenantInfo ? tenantInfo.subdomain : null,
     });
-  } catch (error: any) {
-    console.error('Error fetching user profile:', error);
+  } catch (error) {
+    console.error('Error fetching user profile:', getErrorMessage(error));
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -167,7 +169,7 @@ router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
     if ('password' in updates) delete updates.password;
     if ('created_at' in updates) delete updates.created_at;
 
-    const result = await User.update(id, updates);
+    const result = await User.update(id, updates, authReq.user.tenant_id);
 
     if (result) {
       const updatedUser = await User.findById(id, authReq.user.tenant_id);
@@ -184,8 +186,8 @@ router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
     } else {
       res.status(400).json({ message: 'Failed to update profile' });
     }
-  } catch (error: any) {
-    console.error('Error updating user profile:', error);
+  } catch (error) {
+    console.error('Error updating user profile:', getErrorMessage(error));
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -221,8 +223,8 @@ router.get(
       } else {
         res.status(404).json({ message: 'Profile picture file not found' });
       }
-    } catch (error: any) {
-      console.error('Error fetching profile picture:', error);
+    } catch (error) {
+      console.error('Error fetching profile picture:', getErrorMessage(error));
       res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -265,18 +267,22 @@ router.post(
           if (fs.existsSync(oldFilePath)) {
             fs.unlinkSync(oldFilePath);
           }
-        } catch (unlinkError: any) {
+        } catch (unlinkError) {
           console.warn(
             'Could not delete old profile picture:',
-            unlinkError.message
+            getErrorMessage(unlinkError)
           );
         }
       }
 
       // Update user's profile picture URL in database
-      const success = await User.update(userId, {
-        profile_picture: profilePictureUrl,
-      });
+      const success = await User.update(
+        userId,
+        {
+          profile_picture: profilePictureUrl,
+        },
+        authReq.user.tenant_id
+      );
 
       if (success) {
         res.json({
@@ -290,20 +296,24 @@ router.post(
           .status(500)
           .json({ message: 'Fehler beim Speichern des Profilbildes' });
       }
-    } catch (error: any) {
-      console.error('Error uploading profile picture:', error);
+    } catch (error) {
+      console.error('Error uploading profile picture:', getErrorMessage(error));
 
       // Clean up uploaded file on error
       if ((req as AuthenticatedRequest).file) {
         try {
-          fs.unlinkSync((req as AuthenticatedRequest).file!.path);
-        } catch (unlinkError: any) {
-          console.error('Error deleting temporary file:', unlinkError.message);
+          fs.unlinkSync((req as AuthenticatedRequest).file.path);
+        } catch (unlinkError) {
+          console.error(
+            'Error deleting temporary file:',
+            getErrorMessage(unlinkError)
+          );
         }
       }
 
       res.status(500).json({
-        message: error.message || 'Fehler beim Hochladen des Profilbildes',
+        message:
+          getErrorMessage(error) || 'Fehler beim Hochladen des Profilbildes',
       });
     }
   }
@@ -341,18 +351,22 @@ router.delete(
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
           }
-        } catch (unlinkError: any) {
+        } catch (unlinkError) {
           console.warn(
             'Could not delete profile picture file:',
-            unlinkError.message
+            getErrorMessage(unlinkError)
           );
         }
       }
 
       // Remove profile picture URL from database
-      const success = await User.update(userId, {
-        profile_picture: undefined,
-      });
+      const success = await User.update(
+        userId,
+        {
+          profile_picture: undefined,
+        },
+        authReq.user.tenant_id
+      );
 
       if (success) {
         res.json({ message: 'Profilbild erfolgreich gelöscht' });
@@ -361,8 +375,8 @@ router.delete(
           .status(500)
           .json({ message: 'Fehler beim Löschen des Profilbildes' });
       }
-    } catch (error: any) {
-      console.error('Error deleting profile picture:', error);
+    } catch (error) {
+      console.error('Error deleting profile picture:', getErrorMessage(error));
       res.status(500).json({
         message: 'Fehler beim Löschen des Profilbildes',
       });

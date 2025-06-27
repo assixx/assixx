@@ -7,12 +7,19 @@ import express, { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { authenticateToken, authorizeRole } from '../auth';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
+import { security } from '../middleware/security';
+import { createValidation } from '../middleware/validation';
+import { param } from 'express-validator';
+import { successResponse, errorResponse } from '../types/response.types';
+import { RowDataPacket } from 'mysql2';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
 import User from '../models/user';
 import AdminLog from '../models/adminLog';
 import Tenant from '../models/tenant';
-import pool from '../database';
+import { executeQuery } from '../database';
 
 const router: Router = express.Router();
 
@@ -29,7 +36,7 @@ interface CreateAdminRequest extends AuthenticatedRequest {
     last_name?: string;
     company?: string;
     notes?: string;
-    [key: string]: any; // Allow additional fields
+    [key: string]: unknown; // Allow additional fields
   };
 }
 
@@ -78,12 +85,26 @@ interface DashboardData {
   employeeCount: number;
   totalUsers: number;
   tenantId: number;
-  features: any[];
+  features: unknown[];
 }
 
 interface DatabaseError extends Error {
   code?: string;
 }
+
+interface LegacyAdminUpdateData {
+  username?: string;
+  email?: string;
+  company?: string;
+  notes?: string;
+  password?: string;
+  new_password?: string;
+}
+
+// Validation schemas
+const updateAdminValidation = createValidation([
+  param('id').isInt({ min: 1 }).withMessage('Ungültige Admin-ID'),
+]);
 
 // Admin-Benutzer erstellen - POST /admins endpoint
 router.post(
@@ -105,13 +126,13 @@ router.post(
 
       // Add admin to tenant_admins table
       try {
-        await (pool as any).query(
+        await executeQuery<RowDataPacket[]>(
           'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
           [req.user.tenant_id, adminId]
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
-      } catch (taError: any) {
-        logger.warn(`Could not add admin to tenant_admins: ${taError.message}`);
+      } catch (taError) {
+        logger.warn('Could not add admin to tenant_admins:', taError);
         // Continue anyway - the admin was created successfully
       }
 
@@ -119,8 +140,11 @@ router.post(
       res
         .status(201)
         .json({ message: 'Admin-Benutzer erfolgreich erstellt', adminId });
-    } catch (error: any) {
-      logger.error('Fehler beim Erstellen des Admin-Benutzers:', error);
+    } catch (error) {
+      logger.error(
+        'Fehler beim Erstellen des Admin-Benutzers:',
+        getErrorMessage(error)
+      );
       const dbError = error as DatabaseError;
       if (dbError.code === 'ER_DUP_ENTRY') {
         res.status(409).json({
@@ -131,7 +155,7 @@ router.post(
       }
       res.status(500).json({
         message: 'Fehler beim Erstellen des Admin-Benutzers',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
   }
@@ -157,13 +181,13 @@ router.post(
 
       // Add admin to tenant_admins table
       try {
-        await (pool as any).query(
+        await executeQuery<RowDataPacket[]>(
           'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
           [req.user.tenant_id, adminId]
         );
         logger.info(`Admin ${adminId} added to tenant_admins table`);
-      } catch (taError: any) {
-        logger.warn(`Could not add admin to tenant_admins: ${taError.message}`);
+      } catch (taError) {
+        logger.warn('Could not add admin to tenant_admins:', taError);
         // Continue anyway - the admin was created successfully
       }
 
@@ -171,8 +195,11 @@ router.post(
       res
         .status(201)
         .json({ message: 'Admin-Benutzer erfolgreich erstellt', adminId });
-    } catch (error: any) {
-      logger.error('Fehler beim Erstellen des Admin-Benutzers:', error);
+    } catch (error) {
+      logger.error(
+        'Fehler beim Erstellen des Admin-Benutzers:',
+        getErrorMessage(error)
+      );
       const dbError = error as DatabaseError;
       if (dbError.code === 'ER_DUP_ENTRY') {
         res.status(409).json({
@@ -183,7 +210,7 @@ router.post(
       }
       res.status(500).json({
         message: 'Fehler beim Erstellen des Admin-Benutzers',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
   }
@@ -204,7 +231,7 @@ router.get(
 
       // Tenant-Informationen hinzufügen
       const adminsWithTenants = await Promise.all(
-        admins.map(async (admin: any) => {
+        admins.map(async (admin) => {
           if (admin.tenant_id) {
             const tenant = await Tenant.findById(admin.tenant_id);
             admin.tenant_name = tenant ? tenant.name : null;
@@ -215,22 +242,35 @@ router.get(
 
       logger.info(`Retrieved ${adminsWithTenants.length} admin users`);
       res.json(adminsWithTenants);
-    } catch (error: any) {
-      logger.error('Fehler beim Abrufen der Admin-Benutzer:', error);
+    } catch (error) {
+      logger.error(
+        'Fehler beim Abrufen der Admin-Benutzer:',
+        getErrorMessage(error)
+      );
       res.status(500).json({
         message: 'Fehler beim Abrufen der Admin-Benutzer',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
   }
 );
 
+interface AdminUpdateData {
+  username?: string;
+  email?: string;
+  password?: string;
+  first_name?: string;
+  last_name?: string;
+  department_id?: number;
+  position?: string;
+  is_active?: boolean;
+}
+
 // Admin-Benutzer aktualisieren
 router.put(
   '/admins/:id',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(updateAdminValidation),
+  typed.paramsBody<{ id: string }, AdminUpdateData>(async (req, res) => {
     const adminId = req.params.id;
     const updateData = req.body;
 
@@ -256,29 +296,33 @@ router.put(
       }
 
       // Update durchführen
-      const success = await User.update(parseInt(adminId, 10), updateData);
+      const success = await User.update(
+        parseInt(adminId, 10),
+        updateData,
+        req.user.tenant_id
+      );
 
       if (success) {
-        res.json({ message: 'Admin erfolgreich aktualisiert' });
+        res.json(successResponse(null, 'Admin erfolgreich aktualisiert'));
       } else {
-        res.status(500).json({ message: 'Fehler beim Aktualisieren' });
+        res.status(500).json(errorResponse('Fehler beim Aktualisieren', 500));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Fehler beim Aktualisieren des Admins:', error);
-      res.status(500).json({
-        message: 'Fehler beim Aktualisieren',
-        error: error.message,
-      });
+      res.status(500).json(errorResponse('Fehler beim Aktualisieren', 500));
     }
-  }
+  })
 );
 
 // Admin-Benutzer löschen
 router.delete(
   '/admins/:id',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(
+    createValidation([
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Admin-ID'),
+    ])
+  ),
+  typed.params<{ id: string }>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
 
@@ -312,29 +356,31 @@ router.delete(
 
       if (success) {
         logger.info(`Admin user with ID ${adminId} deleted successfully`);
-        res.json({ message: 'Admin-Benutzer erfolgreich gelöscht' });
+        res.json(successResponse(null, 'Admin-Benutzer erfolgreich gelöscht'));
       } else {
         logger.warn(`Failed to delete admin user with ID ${adminId}`);
         res
           .status(500)
-          .json({ message: 'Fehler beim Löschen des Admin-Benutzers' });
+          .json(errorResponse('Fehler beim Löschen des Admin-Benutzers', 500));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(`Error deleting admin user with ID ${adminId}:`, error);
-      res.status(500).json({
-        message: 'Fehler beim Löschen des Admin-Benutzers',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Löschen des Admin-Benutzers', 500));
     }
-  }
+  })
 );
 
 // NEUE ROUTE: Details eines Admin-Benutzers abrufen
 router.get(
   '/admin/:id',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(
+    createValidation([
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Admin-ID'),
+    ])
+  ),
+  typed.params<{ id: string }>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
 
@@ -372,23 +418,21 @@ router.get(
       }
 
       logger.info(`Details for admin ${adminId} retrieved successfully`);
-      res.json(adminData);
-    } catch (error: any) {
+      res.json(successResponse(adminData));
+    } catch (error) {
       logger.error(`Error retrieving details for admin ${adminId}:`, error);
-      res.status(500).json({
-        message: 'Fehler beim Abrufen der Admin-Details',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen der Admin-Details', 500));
     }
-  }
+  })
 );
 
 // NEUE ROUTE: Admin-Benutzer aktualisieren
 router.put(
   '/admin/:id',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(updateAdminValidation),
+  typed.paramsBody<{ id: string }, LegacyAdminUpdateData>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
 
@@ -418,7 +462,7 @@ router.put(
       const { username, email, company, new_password, notes } = req.body;
 
       // Objekt für die Aktualisierung erstellen
-      const updateData: any = {
+      const updateData: LegacyAdminUpdateData = {
         username,
         email,
         company,
@@ -431,28 +475,34 @@ router.put(
       }
 
       // Admin aktualisieren
-      await User.update(parseInt(adminId, 10), updateData);
+      await User.update(parseInt(adminId, 10), updateData, req.user.tenant_id);
 
       logger.info(
         `Admin ${adminId} updated successfully by root user ${rootUser}`
       );
-      res.json({ message: 'Admin-Benutzer erfolgreich aktualisiert' });
-    } catch (error: any) {
+      res.json(
+        successResponse(null, 'Admin-Benutzer erfolgreich aktualisiert')
+      );
+    } catch (error) {
       logger.error(`Error updating admin ${adminId}:`, error);
-      res.status(500).json({
-        message: 'Fehler beim Aktualisieren des Admin-Benutzers',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(
+          errorResponse('Fehler beim Aktualisieren des Admin-Benutzers', 500)
+        );
     }
-  }
+  })
 );
 
 // NEUE ROUTE: Admin-Logs abrufen
 router.get(
   '/admin/:id/logs',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(
+    createValidation([
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Admin-ID'),
+    ])
+  ),
+  typed.params<{ id: string }>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
     const days = parseInt(req.query.days as string) || 0; // 0 bedeutet alle Logs
@@ -485,44 +535,40 @@ router.get(
       const logs = await AdminLog.getByUserId(parseInt(adminId, 10), days);
 
       logger.info(`Retrieved ${logs.length} logs for admin ${adminId}`);
-      res.json(logs);
-    } catch (error: any) {
+      res.json(successResponse(logs));
+    } catch (error) {
       logger.error(`Error retrieving logs for admin ${adminId}:`, error);
-      res.status(500).json({
-        message: 'Fehler beim Abrufen der Admin-Logs',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen der Admin-Logs', 500));
     }
-  }
+  })
 );
 
 // Alle Tenants abrufen
 router.get(
   '/tenants',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.auth(async (req, res) => {
     logger.info(`Root user ${req.user.username} requesting tenants list`);
 
     try {
       const tenants = await Tenant.findAll();
-      res.json(tenants);
-    } catch (error: any) {
+      res.json(successResponse(tenants));
+    } catch (error) {
       logger.error('Fehler beim Abrufen der Tenants:', error);
-      res.status(500).json({
-        message: 'Fehler beim Abrufen der Tenants',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen der Tenants', 500));
     }
-  }
+  })
 );
 
 // Dashboard-Daten für Root-User
 router.get(
   '/dashboard-data',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.auth(async (req, res) => {
     logger.info(`Root user ${req.user.username} requesting dashboard data`);
 
     try {
@@ -550,23 +596,21 @@ router.get(
       logger.info(
         `Dashboard data retrieved successfully for root user ${req.user.username}`
       );
-      res.json(dashboardData);
-    } catch (error: any) {
+      res.json(successResponse(dashboardData));
+    } catch (error) {
       logger.error(`Error retrieving dashboard data:`, error);
-      res.status(500).json({
-        message: 'Fehler beim Abrufen der Dashboard-Daten',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen der Dashboard-Daten', 500));
     }
-  }
+  })
 );
 
 // NEUE ROUTE: Storage-Informationen für Root-User
 router.get(
   '/storage-info',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.auth(async (req, res) => {
     logger.info(`Root user ${req.user.username} requesting storage info`);
 
     try {
@@ -610,23 +654,23 @@ router.get(
       logger.info(
         `Storage info for tenant ${req.user.tenant_id}: ${usedStorage} / ${totalStorage} bytes (${percentage}%)`
       );
-      res.json(storageInfo);
-    } catch (error: any) {
+      res.json(successResponse(storageInfo));
+    } catch (error) {
       logger.error(`Error retrieving storage info:`, error);
-      res.status(500).json({
-        message: 'Fehler beim Abrufen der Speicherinformationen',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(
+          errorResponse('Fehler beim Abrufen der Speicherinformationen', 500)
+        );
     }
-  }
+  })
 );
 
 // NEUE ROUTE: Tenant komplett löschen (Root-User löscht sich selbst und seinen Tenant)
 router.delete(
   '/delete-tenant',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.auth(async (req, res) => {
     const rootUser = req.user;
     logger.warn(
       `Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`
@@ -638,7 +682,7 @@ router.delete(
 
       if (!tenant) {
         logger.error(`Tenant ${rootUser.tenant_id} not found`);
-        res.status(404).json({ message: 'Tenant nicht gefunden' });
+        res.status(404).json(errorResponse('Tenant nicht gefunden', 404));
         return;
       }
 
@@ -665,30 +709,28 @@ router.delete(
         logger.warn(
           `Tenant ${rootUser.tenant_id} and all associated data deleted successfully`
         );
-        res.json({
-          success: true,
-          message:
-            'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht',
-        });
+        res.json(
+          successResponse(
+            { success: true },
+            'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht'
+          )
+        );
       } else {
         logger.error(`Failed to delete tenant ${rootUser.tenant_id}`);
-        res.status(500).json({
-          success: false,
-          message: 'Fehler beim Löschen des Tenants',
-        });
+        res
+          .status(500)
+          .json(errorResponse('Fehler beim Löschen des Tenants', 500));
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
         `Critical error deleting tenant ${rootUser.tenant_id}:`,
         error
       );
-      res.status(500).json({
-        success: false,
-        message: 'Kritischer Fehler beim Löschen des Tenants',
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json(errorResponse('Kritischer Fehler beim Löschen des Tenants', 500));
     }
-  }
+  })
 );
 
 export default router;

@@ -3,72 +3,64 @@
  * Handles document-related requests
  */
 
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import documentService from '../services/document.service';
 import { logger } from '../utils/logger';
 import { parsePagination } from '../utils/helpers';
 import { HTTP_STATUS } from '../utils/constants';
-import { AuthenticatedRequest as BaseAuthRequest } from '../types/request.types';
+import { AuthenticatedRequest } from '../types/request.types';
 import Team from '../models/team';
 
-// Extended Request interface for document operations
-interface AuthenticatedRequest extends BaseAuthRequest {
-  user: {
-    id: number;
-    userId: number;
-    tenantId: number;
-    username: string;
-    email: string;
-    role: string;
-    tenantName?: string;
-    first_name?: string;
-    last_name?: string;
-    department_id?: number | null;
-    position?: string | null;
-  };
-}
-
-interface DocumentQueryRequest extends AuthenticatedRequest {
-  query: {
-    page?: string;
-    limit?: string;
-    category?: string;
-    userId?: string;
-  };
-}
-
-interface DocumentByIdRequest extends AuthenticatedRequest {
-  params: {
-    id: string;
-  };
-}
-
+// Extended request interface for file upload
 interface DocumentUploadRequest extends AuthenticatedRequest {
   body: {
     category?: string;
-    description?: string;
+    description?: string | null;
     userId?: string;
   };
 }
 
+// Extended request interface for update
 interface DocumentUpdateRequest extends AuthenticatedRequest {
-  params: {
-    id: string;
-  };
   body: {
     category?: string;
-    description?: string;
+    description?: string | null;
   };
+}
+
+// Type guard to check if request is authenticated
+function isAuthenticated(req: Request): req is AuthenticatedRequest {
+  return (
+    'user' in req &&
+    req.user != null &&
+    typeof req.user === 'object' &&
+    'tenant_id' in req.user
+  );
 }
 
 class DocumentController {
   /**
    * Get all documents with pagination
    */
-  async getDocuments(req: DocumentQueryRequest, res: Response): Promise<void> {
+  async getDocuments(req: Request, res: Response): Promise<void> {
     try {
-      const { limit, offset } = parsePagination(req.query);
-      const { category, userId } = req.query;
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
+      const { limit, offset } = parsePagination(
+        req.query as {
+          page?: string | number;
+          limit?: string | number;
+          [key: string]: string | number | undefined;
+        }
+      );
+      const category = req.query.category as string | undefined;
+      const userId = req.query.userId as string | undefined;
 
       // Get user's teams
       let userTeamId: number | undefined;
@@ -83,7 +75,7 @@ class DocumentController {
       }
 
       const result = await documentService.getDocuments({
-        tenantId: req.user.tenantId,
+        tenant_id: req.user.tenant_id,
         category,
         userId: userId ? parseInt(userId, 10) : req.user.id,
         departmentId: req.user.department_id || undefined,
@@ -109,16 +101,21 @@ class DocumentController {
   /**
    * Get document by ID
    */
-  async getDocumentById(
-    req: DocumentByIdRequest,
-    res: Response
-  ): Promise<void> {
+  async getDocumentById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
+      const id = req.params.id;
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       if (!document) {
@@ -146,10 +143,18 @@ class DocumentController {
    * Upload new document
    */
   async uploadDocument(
-    req: DocumentUploadRequest,
+    req: Request & Partial<DocumentUploadRequest>,
     res: Response
   ): Promise<void> {
     try {
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
       if (!req.file) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
@@ -164,11 +169,20 @@ class DocumentController {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        category: req.body.category || 'general', // Provide default if undefined
-        description: req.body.description || null,
-        userId: req.body.userId ? parseInt(req.body.userId, 10) : req.user.id,
+        category:
+          (req.body as DocumentUploadRequest['body'])?.category || 'general', // Provide default if undefined
+        description:
+          (req.body as DocumentUploadRequest['body'])?.description || null,
+        userId: (() => {
+          const bodyUserId = (req.body as DocumentUploadRequest['body'])
+            ?.userId;
+          if (bodyUserId) {
+            return parseInt(bodyUserId, 10);
+          }
+          return req.user.id;
+        })(),
         uploadedBy: req.user.id,
-        tenantId: req.user.tenantId,
+        tenant_id: req.user.tenant_id,
       };
 
       const result = await documentService.createDocument(documentData);
@@ -191,20 +205,28 @@ class DocumentController {
    * Update document metadata
    */
   async updateDocument(
-    req: DocumentUpdateRequest,
+    req: Request & Partial<DocumentUpdateRequest>,
     res: Response
   ): Promise<void> {
     try {
-      const { id } = req.params;
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
+      const id = req.params.id;
       const updateData = {
-        category: req.body.category,
-        description: req.body.description,
+        category: (req.body as DocumentUpdateRequest['body'])?.category,
+        description: (req.body as DocumentUpdateRequest['body'])?.description,
       };
 
       const result = await documentService.updateDocument(
         parseInt(id, 10),
         updateData,
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       if (!result) {
@@ -231,13 +253,21 @@ class DocumentController {
   /**
    * Delete document
    */
-  async deleteDocument(req: DocumentByIdRequest, res: Response): Promise<void> {
+  async deleteDocument(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
+      const id = req.params.id;
 
       const result = await documentService.deleteDocument(
         parseInt(id, 10),
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       if (!result) {
@@ -264,16 +294,21 @@ class DocumentController {
   /**
    * Download document
    */
-  async downloadDocument(
-    req: DocumentByIdRequest,
-    res: Response
-  ): Promise<void> {
+  async downloadDocument(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
+      const id = req.params.id;
 
       const document = await documentService.getDocumentById(
         parseInt(id, 10),
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       if (!document) {
@@ -299,17 +334,22 @@ class DocumentController {
   /**
    * Mark document as read
    */
-  async markDocumentAsRead(
-    req: DocumentByIdRequest,
-    res: Response
-  ): Promise<void> {
+  async markDocumentAsRead(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      if (!isAuthenticated(req)) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+        return;
+      }
+
+      const id = req.params.id;
 
       const success = await documentService.markDocumentAsRead(
         parseInt(id, 10),
         req.user.id,
-        req.user.tenantId
+        req.user.tenant_id
       );
 
       if (!success) {

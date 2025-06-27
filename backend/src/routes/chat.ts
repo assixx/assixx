@@ -11,9 +11,11 @@ import express, { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import chatController from '../controllers/chat.controller';
-import { authenticateToken } from '../middleware/auth';
+import { security } from '../middleware/security';
+import { body, param, query } from 'express-validator';
+import { createValidation } from '../middleware/validation';
+import { typed } from '../utils/routeHandlers';
 import type {
-  AuthenticatedRequest,
   ChatUsersRequest,
   GetConversationsRequest,
   CreateConversationRequest,
@@ -22,6 +24,47 @@ import type {
 } from '../types/request.types';
 
 const router: Router = express.Router();
+
+// Request body interfaces
+interface CreateConversationBody {
+  participant_ids: number[];
+  is_group?: boolean;
+  name?: string;
+}
+
+interface SendMessageBody {
+  message: string;
+}
+
+// Validation schemas
+const createConversationValidation = createValidation([
+  body('participant_ids')
+    .isArray({ min: 1 })
+    .withMessage('Teilnehmer müssen als Array angegeben werden'),
+  body('participant_ids.*')
+    .isInt({ min: 1 })
+    .withMessage('Ungültige Teilnehmer-ID'),
+  body('is_group').optional().isBoolean(),
+  body('name').optional().trim().notEmpty(),
+]);
+
+const sendMessageValidation = createValidation([
+  param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+  body('message')
+    .notEmpty()
+    .trim()
+    .withMessage('Nachricht darf nicht leer sein'),
+]);
+
+const getMessagesValidation = createValidation([
+  param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+]);
+
+const searchUsersValidation = createValidation([
+  query('search').optional().trim(),
+]);
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
@@ -113,8 +156,12 @@ const upload = multer({
  *               $ref: '#/components/schemas/Error'
  */
 // Routes with controller methods
-router.get('/users', authenticateToken, (req, res) =>
-  chatController.getUsers(req as unknown as ChatUsersRequest, res)
+router.get(
+  '/users',
+  ...security.user(searchUsersValidation),
+  typed.auth(async (req, res) => {
+    await chatController.getUsers(req as ChatUsersRequest, res);
+  })
 );
 
 /**
@@ -145,11 +192,12 @@ router.get('/users', authenticateToken, (req, res) =>
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/conversations', authenticateToken, (req, res) =>
-  chatController.getConversations(
-    req as unknown as GetConversationsRequest,
-    res
-  )
+router.get(
+  '/conversations',
+  ...security.user(),
+  typed.auth(async (req, res) => {
+    await chatController.getConversations(req as GetConversationsRequest, res);
+  })
 );
 
 /**
@@ -206,11 +254,15 @@ router.get('/conversations', authenticateToken, (req, res) =>
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/conversations', authenticateToken, (req, res) =>
-  chatController.createConversation(
-    req as unknown as CreateConversationRequest,
-    res
-  )
+router.post(
+  '/conversations',
+  ...security.user(createConversationValidation),
+  typed.body<CreateConversationBody>(async (req, res) => {
+    await chatController.createConversation(
+      req as CreateConversationRequest,
+      res
+    );
+  })
 );
 /**
  * @swagger
@@ -284,8 +336,12 @@ router.post('/conversations', authenticateToken, (req, res) =>
  *                   type: string
  *                   example: Konversation nicht gefunden
  */
-router.get('/conversations/:id/messages', authenticateToken, (req, res) =>
-  chatController.getMessages(req as unknown as GetMessagesRequest, res)
+router.get(
+  '/conversations/:id/messages',
+  ...security.user(getMessagesValidation),
+  typed.params<{ id: string }>(async (req, res) => {
+    await chatController.getMessages(req as GetMessagesRequest, res);
+  })
 );
 /**
  * @swagger
@@ -388,10 +444,11 @@ router.get('/conversations/:id/messages', authenticateToken, (req, res) =>
  */
 router.post(
   '/conversations/:id/messages',
-  authenticateToken,
+  ...security.user(sendMessageValidation),
   upload.single('attachment'),
-  (req, res) =>
-    chatController.sendMessage(req as unknown as SendMessageRequest, res)
+  typed.paramsBody<{ id: string }, SendMessageBody>(async (req, res) => {
+    await chatController.sendMessage(req as SendMessageRequest, res);
+  })
 );
 /**
  * @swagger
@@ -483,24 +540,21 @@ router.post(
  *                   type: string
  *                   example: Datei nicht gefunden
  */
-router.get('/attachments/:filename', authenticateToken, (req, res) =>
-  chatController.downloadFile(req as unknown as AuthenticatedRequest, res)
+router.get(
+  '/attachments/:filename',
+  ...security.user(
+    createValidation([
+      param('filename').notEmpty().withMessage('Dateiname erforderlich'),
+    ])
+  ),
+  typed.params<{ filename: string }>(async (req, res) => {
+    await chatController.downloadFile(req, res);
+  })
 );
-// router.put(
-//   '/messages/:id/read',
-//   authenticateToken,
-//   chatController.markAsRead as any
-// );
-// router.get(
-//   '/work-schedules',
-//   authenticateToken,
-//   chatController.getWorkSchedules as any
-// );
-// router.delete(
-//   '/messages/:id',
-//   authenticateToken,
-//   chatController.deleteMessage as any
-// );
+// TODO: Implement these routes when controller methods are ready
+// router.put('/messages/:id/read', ...security.user(), chatController.markAsRead);
+// router.get('/work-schedules', ...security.user(), chatController.getWorkSchedules);
+// router.delete('/messages/:id', ...security.user(), chatController.deleteMessage);
 /**
  * @swagger
  * /chat/unread-count:
@@ -541,8 +595,12 @@ router.get('/attachments/:filename', authenticateToken, (req, res) =>
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/unread-count', authenticateToken, (req, res) =>
-  chatController.getUnreadCount(req as unknown as AuthenticatedRequest, res)
+router.get(
+  '/unread-count',
+  ...security.user(),
+  typed.auth(async (req, res) => {
+    await chatController.getUnreadCount(req, res);
+  })
 );
 /**
  * @swagger
@@ -601,17 +659,19 @@ router.get('/unread-count', authenticateToken, (req, res) =>
  *                   type: string
  *                   example: Konversation nicht gefunden
  */
-router.post('/conversations/:id/read', authenticateToken, (req, res) =>
-  chatController.markConversationAsRead(
-    req as unknown as AuthenticatedRequest,
-    res
-  )
+router.post(
+  '/conversations/:id/read',
+  ...security.user(
+    createValidation([
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+    ])
+  ),
+  typed.params<{ id: string }>(async (req, res) => {
+    await chatController.markConversationAsRead(req, res);
+  })
 );
-// router.put(
-//   '/messages/:id/archive',
-//   authenticateToken,
-//   chatController.archiveMessage as any
-// );
+// TODO: Implement when controller method is ready
+// router.put('/messages/:id/archive', ...security.user(), chatController.archiveMessage);
 /**
  * @swagger
  * /chat/conversations/{id}:
@@ -666,8 +726,16 @@ router.post('/conversations/:id/read', authenticateToken, (req, res) =>
  *                   type: string
  *                   example: Konversation nicht gefunden
  */
-router.delete('/conversations/:id', authenticateToken, (req, res) =>
-  chatController.deleteConversation(req as unknown as AuthenticatedRequest, res)
+router.delete(
+  '/conversations/:id',
+  ...security.user(
+    createValidation([
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+    ])
+  ),
+  typed.params<{ id: string }>(async (req, res) => {
+    await chatController.deleteConversation(req, res);
+  })
 );
 
 export default router;

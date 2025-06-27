@@ -19,7 +19,7 @@ interface TenantRequest extends Request {
     id: number;
     tenant_id: number;
     role: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

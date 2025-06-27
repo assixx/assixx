@@ -452,7 +452,7 @@ router.get('/:id/attachments', kvpController.getAttachments);
 router.post(
   '/:id/attachments',
   upload.array('photos', 5),
-  kvpController.uploadAttachment
+  kvpController.uploadAttachment as unknown as express.RequestHandler // Multer adds files to request
 ); // Max 5 photos
 router.get(
   '/attachments/:attachmentId/download',

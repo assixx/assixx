@@ -217,12 +217,10 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 ### Ursache:
 
 1. **Falsche CSS-Lade-Methode**:
-
    - KVP-Seiten nutzten `<link rel="stylesheet">` Tags
    - Funktionierende Seiten nutzen `@import` innerhalb eines `<style>` Tags
 
 2. **Falsche Script-Reihenfolge**:
-
    - `unified-navigation.ts` wurde VOR den Seiten-Scripts geladen
    - `role-switch.ts` wurde separat geladen (unnötig)
 
@@ -336,12 +334,10 @@ Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig aussc
 ### Ursachen:
 
 1. **CSS-Import-Methode** (Hauptproblem für fehlendes Profilbild):
-
    - `user-info-update.css` wurde mit `<link>` statt `@import` geladen
    - Dies führte zu Timing-Problemen beim Header-Rendering
 
 2. **Race Condition im blackboard.ts**:
-
    - Script wartete auf `DOMContentLoaded` Event
    - Bei dynamischem Import war das Event bereits vorbei
    - Code wurde nie ausgeführt → Keine Einträge geladen

@@ -4,75 +4,47 @@
  */
 
 import {
+  getAllEntries,
   getEntryById,
   createEntry,
   updateEntry,
   deleteEntry,
+  type DbBlackboardEntry,
+  type EntryQueryOptions,
+  type EntryCreateData as ModelEntryCreateData,
 } from '../models/blackboard';
 import { Pool } from 'mysql2/promise';
 
-// Interfaces
-interface BlackboardEntry {
-  id: number;
-  tenant_id: number;
-  title: string;
-  content: string;
-  category?: string | null;
-  priority: 'low' | 'normal' | 'high';
-  is_pinned: boolean | number;
-  color?: string | null;
-  tags?: string | null;
-  created_by: number;
-  created_at: Date;
-  updated_at: Date;
-  expires_at?: Date | null;
-  // Extended fields from joins
-  creator_name?: string;
-  has_attachment?: number;
-  attachments?: BlackboardAttachment[];
-}
+// Service-specific interfaces
+type BlackboardEntry = DbBlackboardEntry;
 
-interface BlackboardAttachment {
-  id: number;
-  entry_id: number;
-  filename: string;
-  original_name: string;
-  file_size: number;
-  mime_type: string;
-  uploaded_at: Date;
-}
-
-interface BlackboardFilters {
+interface BlackboardFilters extends EntryQueryOptions {
   category?: string;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   is_pinned?: boolean;
-  search?: string;
-  page?: number;
-  limit?: number;
 }
 
-interface BlackboardCreateData {
-  tenant_id: number;
-  title: string;
-  content: string;
-  category?: string | null;
-  priority?: 'low' | 'normal' | 'high';
+interface BlackboardCreateData extends ModelEntryCreateData {
+  // Service layer specific fields
   is_pinned?: boolean;
-  color?: string | null;
-  tags?: string | null;
-  created_by: number;
-  expires_at?: Date | string | null;
+  category?: string | null;
+  created_by?: number; // Alternative to author_id for backward compatibility
 }
 
 interface BlackboardUpdateData {
   title?: string;
   content?: string;
-  category?: string | null;
-  priority?: 'low' | 'normal' | 'high';
-  is_pinned?: boolean;
-  color?: string | null;
-  tags?: string | null;
+  org_level?: 'company' | 'department' | 'team';
+  org_id?: number;
   expires_at?: Date | string | null;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  color?: string;
+  status?: 'active' | 'archived';
+  requires_confirmation?: boolean;
+  tags?: string[];
+  author_id?: number;
+  is_pinned?: boolean;
+  category?: string | null;
 }
 
 class BlackboardService {
@@ -81,21 +53,31 @@ class BlackboardService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: BlackboardFilters = {}
+    filters: BlackboardFilters = {},
+    tenantId: number,
+    userId: number
   ): Promise<BlackboardEntry[]> {
-    // getAllEntries expects (tenantId, userId, options)
-    // For now, return empty array as we need tenant_id and user_id
-    return [];
+    try {
+      const result = await getAllEntries(tenantId, userId, filters);
+      return result.entries;
+    } catch (error) {
+      console.error('Error in BlackboardService.getAll:', error);
+      throw error;
+    }
   }
 
   /**
    * Holt einen Blackboard Eintrag per ID
    */
-  async getById(_tenantDb: Pool, id: number): Promise<BlackboardEntry | null> {
+  async getById(
+    _tenantDb: Pool,
+    id: number,
+    tenantId: number,
+    userId: number
+  ): Promise<BlackboardEntry | null> {
     try {
-      // TODO: getEntryById expects different parameters
-      const entry = await (getEntryById as any)(id, 1);
-      return entry as BlackboardEntry | null;
+      const entry = await getEntryById(id, tenantId, userId);
+      return entry;
     } catch (error) {
       console.error('Error in BlackboardService.getById:', error);
       throw error;
@@ -110,8 +92,31 @@ class BlackboardService {
     data: BlackboardCreateData
   ): Promise<BlackboardEntry> {
     try {
-      const entry = await (createEntry as any)(data);
-      return entry as BlackboardEntry;
+      // Map service data to model data
+      const modelData: ModelEntryCreateData = {
+        tenant_id: data.tenant_id,
+        title: data.title,
+        content: data.content,
+        org_level: data.org_level,
+        org_id: data.org_id,
+        author_id: data.author_id || data.created_by,
+        expires_at:
+          data.expires_at instanceof Date
+            ? data.expires_at
+            : data.expires_at
+              ? new Date(data.expires_at)
+              : undefined,
+        priority: data.priority,
+        color: data.color,
+        tags: data.tags,
+        requires_confirmation: data.requires_confirmation,
+      };
+
+      const entry = await createEntry(modelData);
+      if (!entry) {
+        throw new Error('Failed to create blackboard entry');
+      }
+      return entry;
     } catch (error) {
       console.error('Error in BlackboardService.create:', error);
       throw error;
@@ -124,12 +129,25 @@ class BlackboardService {
   async update(
     _tenantDb: Pool,
     id: number,
-    data: BlackboardUpdateData
+    data: BlackboardUpdateData,
+    tenantId: number
   ): Promise<BlackboardEntry | null> {
     try {
-      // TODO: updateEntry expects different parameters
-      const entry = await (updateEntry as any)(id, 1, data);
-      return entry as BlackboardEntry | null;
+      // Remove service-specific fields before passing to model
+      const { is_pinned: _is_pinned, category: _category, ...modelData } = data;
+
+      // Convert expires_at to Date if it's a string
+      const updateData = {
+        ...modelData,
+        expires_at: modelData.expires_at
+          ? typeof modelData.expires_at === 'string'
+            ? new Date(modelData.expires_at)
+            : modelData.expires_at
+          : undefined,
+      };
+
+      const entry = await updateEntry(id, updateData, tenantId);
+      return entry;
     } catch (error) {
       console.error('Error in BlackboardService.update:', error);
       throw error;
@@ -139,10 +157,13 @@ class BlackboardService {
   /**
    * Löscht einen Blackboard Eintrag
    */
-  async delete(_tenantDb: Pool, id: number): Promise<boolean> {
+  async delete(
+    _tenantDb: Pool,
+    id: number,
+    tenantId: number
+  ): Promise<boolean> {
     try {
-      // TODO: deleteEntry expects different parameters
-      return await (deleteEntry as any)(id, 1);
+      return await deleteEntry(id, tenantId);
     } catch (error) {
       console.error('Error in BlackboardService.delete:', error);
       throw error;

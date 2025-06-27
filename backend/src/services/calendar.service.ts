@@ -15,73 +15,27 @@ import {
   getEventAttendees,
   getDashboardEvents,
   canManageEvent,
+  type DbCalendarEvent,
+  type EventQueryOptions,
+  type EventCreateData as ModelEventCreateData,
+  type EventUpdateData as ModelEventUpdateData,
 } from '../models/calendar';
 import { Pool } from 'mysql2/promise';
 
-// Re-export interfaces from model
-interface CalendarEvent {
-  id: number;
-  tenant_id: number;
-  title: string;
-  description?: string | null;
-  location?: string | null;
-  start_time: Date;
-  end_time: Date;
-  all_day: boolean | number;
-  org_level: 'company' | 'department' | 'team' | 'personal';
-  org_id?: number;
-  created_by: number;
-  reminder_time?: number | null;
-  color: string;
-  status: 'active' | 'cancelled';
-  created_at: Date;
-  updated_at: Date;
-  // Extended fields
-  creator_name?: string;
-  user_response?: string | null;
-}
+// UserInfo is defined below
 
-interface EventFilters {
-  status?: 'active' | 'cancelled';
-  filter?: 'all' | 'company' | 'department' | 'team';
-  search?: string;
-  start_date?: string;
-  end_date?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortDir?: 'ASC' | 'DESC';
-}
+// Service-specific interfaces
+// CalendarEvent is currently the same as DbCalendarEvent
+type CalendarEvent = DbCalendarEvent;
 
-interface EventCreateData {
-  tenant_id: number;
-  title: string;
-  description?: string;
-  location?: string;
-  start_time: string | Date;
-  end_time: string | Date;
-  all_day?: boolean;
-  org_level: 'company' | 'department' | 'team' | 'personal';
-  org_id?: number;
-  created_by: number;
-  reminder_time?: number | null;
-  color?: string;
-}
+// EventFilters is currently the same as EventQueryOptions
+type EventFilters = EventQueryOptions;
 
-interface EventUpdateData {
-  title?: string;
-  description?: string;
-  location?: string;
-  start_time?: string | Date;
-  end_time?: string | Date;
-  all_day?: boolean;
-  org_level?: 'company' | 'department' | 'team' | 'personal';
-  org_id?: number;
-  status?: 'active' | 'cancelled';
-  reminder_time?: number | string | null;
-  color?: string;
-  created_by?: number;
-}
+// EventCreateData is currently the same as ModelEventCreateData
+type EventCreateData = ModelEventCreateData;
+
+// EventUpdateData is currently the same as ModelEventUpdateData
+type EventUpdateData = ModelEventUpdateData;
 
 interface EventsResponse {
   events: CalendarEvent[];
@@ -91,6 +45,24 @@ interface EventsResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+interface EventAttendee {
+  user_id: number;
+  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
+  responded_at?: Date;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  profile_picture?: string;
+}
+
+interface UserInfo {
+  id?: number;
+  role: string | null;
+  departmentId: number | null;
+  teamId: number | null;
 }
 
 class CalendarService {
@@ -124,7 +96,7 @@ class CalendarService {
     options: EventFilters = {}
   ): Promise<EventsResponse> {
     try {
-      return await (getAllEvents as any)(tenantId, userId, options);
+      return await getAllEvents(tenantId, userId, options);
     } catch (error) {
       console.error('Error in CalendarService.getAllEvents:', error);
       throw error;
@@ -156,11 +128,7 @@ class CalendarService {
     userId: number
   ): Promise<CalendarEvent | null> {
     try {
-      return (await (getEventById as any)(
-        id,
-        tenantId,
-        userId
-      )) as CalendarEvent | null;
+      return await getEventById(id, tenantId, userId);
     } catch (error) {
       console.error('Error in CalendarService.getEventById:', error);
       throw error;
@@ -176,7 +144,7 @@ class CalendarService {
     data: EventCreateData
   ): Promise<CalendarEvent | null> {
     try {
-      return (await createEvent(data)) as CalendarEvent | null;
+      return await createEvent(data);
     } catch (error) {
       console.error('Error in CalendarService.create:', error);
       throw error;
@@ -188,7 +156,7 @@ class CalendarService {
    */
   async createEvent(eventData: EventCreateData): Promise<CalendarEvent | null> {
     try {
-      return (await createEvent(eventData)) as CalendarEvent | null;
+      return await createEvent(eventData);
     } catch (error) {
       console.error('Error in CalendarService.createEvent:', error);
       throw error;
@@ -224,11 +192,7 @@ class CalendarService {
     tenantId: number
   ): Promise<CalendarEvent | null> {
     try {
-      return (await updateEvent(
-        id,
-        eventData,
-        tenantId
-      )) as CalendarEvent | null;
+      return await updateEvent(id, eventData, tenantId);
     } catch (error) {
       console.error('Error in CalendarService.updateEvent:', error);
       throw error;
@@ -310,7 +274,10 @@ class CalendarService {
   /**
    * Get event attendees
    */
-  async getEventAttendees(eventId: number, tenantId: number): Promise<any[]> {
+  async getEventAttendees(
+    eventId: number,
+    tenantId: number
+  ): Promise<EventAttendee[]> {
     try {
       return await getEventAttendees(eventId, tenantId);
     } catch (error) {
@@ -329,12 +296,7 @@ class CalendarService {
     limit?: number
   ): Promise<CalendarEvent[]> {
     try {
-      return (await (getDashboardEvents as any)(
-        tenantId,
-        userId,
-        days,
-        limit
-      )) as CalendarEvent[];
+      return await getDashboardEvents(tenantId, userId, days, limit);
     } catch (error) {
       console.error('Error in CalendarService.getDashboardEvents:', error);
       throw error;
@@ -347,10 +309,18 @@ class CalendarService {
   async canManageEvent(
     eventId: number,
     userId: number,
-    userInfo?: any
+    userInfo?: UserInfo
   ): Promise<boolean> {
     try {
-      return await canManageEvent(eventId, userId, userInfo);
+      return await canManageEvent(
+        eventId,
+        userId,
+        userInfo || {
+          role: null,
+          departmentId: null,
+          teamId: null,
+        }
+      );
     } catch (error) {
       console.error('Error in CalendarService.canManageEvent:', error);
       throw error;

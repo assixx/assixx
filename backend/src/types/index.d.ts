@@ -12,13 +12,13 @@ export type AsyncFunction<T = void> = () => Promise<T>;
 // Database query result types
 export interface QueryResult<T> {
   rows: T[];
-  fields?: any[];
+  fields?: unknown[];
   affectedRows?: number;
   insertId?: number;
 }
 
 // Common response patterns
-export interface SuccessResponse<T = any> {
+export interface SuccessResponse<T = unknown> {
   success: true;
   data: T;
   message?: string;
