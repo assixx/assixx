@@ -2557,7 +2557,7 @@ const unifiedNavigationCSS = `
     .user-info-card {
         display: flex;
         align-items: center;
-        gap: 30px;
+        gap: 15px;
         padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);

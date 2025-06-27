@@ -303,7 +303,7 @@
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         max-width: 500px;
-        width: 90%;
+        width: 100%;
         max-height: 90vh;
         overflow-y: auto;
         animation: fadeInUp 0.3s ease-out;
@@ -891,7 +891,7 @@
         }
       }
 
-      // Show success overlay animation
+      // Show success overlay animation - nach Design-Standards
       function showSuccessOverlay(text = 'Erfolgreich!') {
         const overlay = document.createElement('div');
         overlay.className = 'success-overlay';
@@ -907,7 +907,7 @@
         `;
         document.body.appendChild(overlay);
 
-        // Remove after animation
+        // Remove after animation - immer 2 Sekunden
         setTimeout(() => {
           overlay.remove();
         }, 2000);
@@ -949,6 +949,49 @@
         }
       }
 
+      // Delete tenant function - global scope
+      async function deleteTenant() {
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
+
+        try {
+          const response = await fetch('/api/root/delete-tenant', {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            // Success Overlay nach Design-Standards zeigen
+            showSuccessOverlay('Tenant wurde erfolgreich gelöscht!');
+            
+            // Modal schließen
+            closeDeleteModal();
+
+            // Clear all local storage
+            localStorage.clear();
+
+            // Redirect to login after 2 seconds (nach Success Overlay)
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 2000);
+          } else {
+            const error = await response.json();
+            showMessage(error.message || 'Fehler beim Löschen des Tenants', 'error');
+            confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
+            confirmBtn.disabled = false;
+          }
+        } catch (error) {
+          console.error('Error deleting tenant:', error);
+          showMessage('Fehler beim Löschen des Tenants', 'error');
+          confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
+          confirmBtn.disabled = false;
+        }
+      }
+
       // Initialize everything when DOM is ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
@@ -966,44 +1009,6 @@
             });
           }
 
-          // Delete tenant function
-          async function deleteTenant() {
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
-
-            try {
-              const response = await fetch('/api/root/delete-tenant', {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (response.ok) {
-                showMessage('Tenant wird gelöscht...', 'success');
-
-                // Clear all local storage
-                localStorage.clear();
-
-                // Redirect to login after 2 seconds
-                setTimeout(() => {
-                  window.location.href = '/login';
-                }, 2000);
-              } else {
-                const error = await response.json();
-                showMessage(error.message || 'Fehler beim Löschen des Tenants', 'error');
-                confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
-                confirmBtn.disabled = false;
-              }
-            } catch (error) {
-              console.error('Error deleting tenant:', error);
-              showMessage('Fehler beim Löschen des Tenants', 'error');
-              confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
-              confirmBtn.disabled = false;
-            }
-          }
 
           // Close modal on overlay click
           const deleteModal = document.getElementById('deleteModal');
