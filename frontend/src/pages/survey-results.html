@@ -322,11 +322,16 @@
     <!-- Navigation Container -->
     <div id="navigation-container"></div>
 
-    <!-- Main Layout -->
-    <div class="layout-container">
-      <!-- Main Content Area -->
-      <main class="main-content">
-        <div class="survey-results-container">
+    <!-- Layout Wrapper für Sidebar -->
+    <div class="layout-wrapper">
+      <!-- Main Layout -->
+      <div class="layout-container">
+        <!-- Main Content Area -->
+        <main class="main-content">
+          <div class="survey-results-container">
+          <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
+          <div id="breadcrumb-container"></div>
+          
           <div class="page-header">
             <h1 class="page-title">
               <i class="fas fa-chart-bar"></i>
@@ -342,6 +347,7 @@
           </div>
         </div>
       </main>
+    </div>
     </div>
 
     <script>

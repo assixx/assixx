@@ -1056,8 +1056,15 @@
           });
 
           if (response.ok) {
-            const surveys = await response.json();
-            displaySurveys(surveys);
+            const result = await response.json();
+            const surveys = result.data || result.surveys || result;
+            // Ensure surveys is an array
+            if (Array.isArray(surveys)) {
+              displaySurveys(surveys);
+            } else {
+              console.error('Invalid surveys data format:', surveys);
+              displaySurveys([]);
+            }
           }
         } catch (error) {
           console.error('Error loading surveys:', error);
@@ -1146,8 +1153,15 @@
           });
 
           if (response.ok) {
-            const templates = await response.json();
-            displayTemplates(templates);
+            const result = await response.json();
+            const templates = result.data || result.templates || result;
+            // Ensure templates is an array
+            if (Array.isArray(templates)) {
+              displayTemplates(templates);
+            } else {
+              console.error('Invalid templates data format:', templates);
+              displayTemplates([]);
+            }
           }
         } catch (error) {
           console.error('Error loading templates:', error);
@@ -1515,7 +1529,8 @@
           });
 
           if (response.ok) {
-            const survey = await response.json();
+            const result = await response.json();
+            const survey = result.data || result.survey || result;
             currentSurveyId = surveyId;
 
             // Show modal using modal manager
@@ -1534,7 +1549,7 @@
 
       // View results
       window.viewResults = function (surveyId) {
-        window.location.href = `/survey-results?id=${surveyId}`;
+        window.location.href = `/pages/survey-results.html?id=${surveyId}`;
       };
 
       // Delete survey

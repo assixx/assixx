@@ -18,7 +18,7 @@ const defaultConfig = {
   showIcons: true,
   homeLabel: 'Home',
   homeIcon: 'fa-home',
-  homeHref: '/'
+  homeHref: '/', // Will be dynamically updated based on user role
 };
 
 // URL zu Breadcrumb Mapping
@@ -58,29 +58,29 @@ const urlMappings = {
   '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/pages/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' },
-  '/pages/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' }
+  '/pages/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' },
 };
 
 // Section Mappings für Admin Dashboard
 const sectionMappings = {
-  'dashboard': { label: 'Übersicht', icon: 'fa-tachometer-alt' },
+  dashboard: { label: 'Übersicht', icon: 'fa-tachometer-alt' },
   'dashboard-section': { label: 'Übersicht', icon: 'fa-tachometer-alt' },
-  'employees': { label: 'Mitarbeiter', icon: 'fa-users' },
+  employees: { label: 'Mitarbeiter', icon: 'fa-users' },
   'employees-section': { label: 'Mitarbeiter', icon: 'fa-users' },
-  'storage': { label: 'Speicherplatz', icon: 'fa-hdd' },
+  storage: { label: 'Speicherplatz', icon: 'fa-hdd' },
   'storage-section': { label: 'Speicherplatz', icon: 'fa-hdd' },
-  'activities': { label: 'Aktivitäten', icon: 'fa-history' },
+  activities: { label: 'Aktivitäten', icon: 'fa-history' },
   'activities-section': { label: 'Aktivitäten', icon: 'fa-history' },
-  'config': { label: 'Konfiguration', icon: 'fa-cog' },
+  config: { label: 'Konfiguration', icon: 'fa-cog' },
   'config-section': { label: 'Konfiguration', icon: 'fa-cog' },
-  'blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
+  blackboard: { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
   'blackboard-section': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
-  'documents': { label: 'Dokumente', icon: 'fa-file-alt' },
+  documents: { label: 'Dokumente', icon: 'fa-file-alt' },
   'documents-section': { label: 'Dokumente', icon: 'fa-file-alt' },
-  'teams': { label: 'Teams', icon: 'fa-users-cog' },
+  teams: { label: 'Teams', icon: 'fa-users-cog' },
   'teams-section': { label: 'Teams', icon: 'fa-users-cog' },
-  'settings': { label: 'Einstellungen', icon: 'fa-sliders-h' },
-  'settings-section': { label: 'Einstellungen', icon: 'fa-sliders-h' }
+  settings: { label: 'Einstellungen', icon: 'fa-sliders-h' },
+  'settings-section': { label: 'Einstellungen', icon: 'fa-sliders-h' },
 };
 
 // CSS einmal einfügen
@@ -105,7 +105,7 @@ function injectStyles() {
         /*backdrop-filter: blur(20px) saturate(180%);*/
         -webkit-backdrop-filter: blur(20px) saturate(180%);
         border-radius: 12px;
-        box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);
+        /*box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);*/
         color: #fff;
         font-size: 14px;
         padding: 6px 20px;
@@ -221,46 +221,85 @@ function generateBreadcrumbsFromURL() {
   const section = urlParams.get('section');
   const items = [];
 
+  // Determine home URL based on user role
+  // Prüfe verschiedene mögliche Speicherorte für die Rolle
+  const userRole =
+    localStorage.getItem('userRole') ||
+    localStorage.getItem('role') ||
+    localStorage.getItem('activeRole') ||
+    sessionStorage.getItem('userRole') ||
+    sessionStorage.getItem('role');
+
+  let homeHref = '/';
+
+  // Rollenbasiertes Dashboard bestimmen
+  if (userRole === 'root') {
+    homeHref = '/pages/root-dashboard.html';
+  } else if (userRole === 'admin') {
+    homeHref = '/pages/admin-dashboard.html';
+  } else if (userRole === 'employee') {
+    homeHref = '/pages/employee-dashboard.html';
+  } else {
+    // Fallback: Versuche aus der aktuellen URL zu erkennen
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('root')) {
+      homeHref = '/pages/root-dashboard.html';
+    } else if (currentPath.includes('admin')) {
+      homeHref = '/pages/admin-dashboard.html';
+    } else if (currentPath.includes('employee')) {
+      homeHref = '/pages/employee-dashboard.html';
+    }
+  }
+
   // Home ist immer der erste Eintrag
   items.push({
     label: defaultConfig.homeLabel,
-    href: defaultConfig.homeHref,
-    icon: defaultConfig.homeIcon
+    href: homeHref,
+    icon: defaultConfig.homeIcon,
   });
 
   // Aktuelle Seite ermitteln
   const currentPage = path.replace(/\.html$/, '');
-  
+
   if (currentPage !== '/' && currentPage !== '/index' && currentPage !== '') {
     const mapping = urlMappings[currentPage];
-    
+
     if (mapping) {
       // Spezielle Behandlung für Unterseiten
       if (currentPage === '/survey-create' || currentPage === '/survey-results') {
         items.push({
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
-          icon: 'fa-tachometer-alt'
+          icon: 'fa-tachometer-alt',
         });
         items.push({
           label: 'Umfragen',
           href: '/survey-admin',
-          icon: 'fa-poll'
+          icon: 'fa-poll',
         });
-      } else if (currentPage === '/manage-users' || currentPage === '/manage-admins' || currentPage === '/admin-config') {
+      } else if (
+        currentPage === '/manage-users' ||
+        currentPage === '/manage-admins' ||
+        currentPage === '/admin-config'
+      ) {
         items.push({
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
-          icon: 'fa-tachometer-alt'
+          icon: 'fa-tachometer-alt',
         });
-      } else if (currentPage === '/documents' || currentPage === '/blackboard' || currentPage === '/chat' || currentPage === '/shifts') {
+      } else if (
+        currentPage === '/documents' ||
+        currentPage === '/blackboard' ||
+        currentPage === '/chat' ||
+        currentPage === '/shifts'
+      ) {
         // Prüfen ob Admin oder Employee
         const isAdmin = localStorage.getItem('userRole') === 'admin';
         if (!isAdmin) {
           items.push({
             label: 'Mitarbeiter Dashboard',
             href: '/employee-dashboard',
-            icon: 'fa-user'
+            icon: 'fa-user',
           });
         }
       }
@@ -272,20 +311,20 @@ function generateBreadcrumbsFromURL() {
         if (sectionMapping) {
           items.push({
             ...sectionMapping,
-            current: true
+            current: true,
           });
         } else {
           // Fallback für unbekannte Sections
           items.push({
             label: section.charAt(0).toUpperCase() + section.slice(1),
-            current: true
+            current: true,
           });
         }
       } else {
         // Normale Seite ohne Section
         items.push({
           ...mapping,
-          current: true
+          current: true,
         });
       }
     } else {
@@ -293,7 +332,7 @@ function generateBreadcrumbsFromURL() {
       const pageName = currentPage.split('/').pop().replace(/-/g, ' ');
       items.push({
         label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
-        current: true
+        current: true,
       });
     }
   }

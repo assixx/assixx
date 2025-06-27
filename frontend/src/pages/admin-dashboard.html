@@ -640,10 +640,9 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
         <div id="breadcrumb-container"></div>
-        
+
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section">
-
           <!-- Dashboard Stats Grid -->
           <div class="dashboard-grid">
             <div class="stat-card">
@@ -762,25 +761,6 @@
               </div>
             </div>
 
-            <!-- Blackboard Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Schwarzes Brett</h2>
-              </div>
-              <div class="compact-content">
-                <div class="blackboard-preview" id="blackboard-preview">
-                  <div class="loading-placeholder">
-                    <div class="skeleton skeleton-text"></div>
-                    <div class="skeleton skeleton-text"></div>
-                    <div class="skeleton skeleton-text"></div>
-                  </div>
-                </div>
-                <a href="/pages/blackboard.html" class="view-all-link">
-                  Alle anzeigen
-                  <span class="arrow">→</span>
-                </a>
-              </div>
-            </div>
           </div>
 
           <!-- Recently Added Section -->
@@ -1383,7 +1363,7 @@
     <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
-    
+
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
@@ -2196,10 +2176,13 @@
       // Logo und Übersicht verarbeiten
       document.addEventListener('DOMContentLoaded', () => {
         // Logo-Klick behandeln
-        document.querySelector('.logo-container').addEventListener('click', (e) => {
-          e.preventDefault();
-          window.location.href = '/pages/admin-dashboard.html';
-        });
+        const logoContainer = document.querySelector('.logo-container');
+        if (logoContainer) {
+          logoContainer.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/pages/admin-dashboard.html';
+          });
+        }
 
         // Übersicht-Link in der Seitennavigation
         const dashboardLink = document.querySelector('.sidebar-link[href="#dashboard"]');
