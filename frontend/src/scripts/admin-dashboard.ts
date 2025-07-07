@@ -4,7 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
-import { getAuthToken, showSuccess, showError, loadUserInfo } from './auth';
+import { getAuthToken, showSuccess, showError } from './auth';
 import { showSection } from './show-section';
 
 interface DashboardStats {

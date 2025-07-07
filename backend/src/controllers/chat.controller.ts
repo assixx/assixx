@@ -209,6 +209,11 @@ class ChatController {
       const conversationId = parseInt(req.params.id);
       const { userId } = req.body as { userId?: number };
 
+      if (!userId) {
+        res.status(400).json({ error: 'User ID is required' });
+        return;
+      }
+
       await chatService.addParticipant(
         conversationId,
         userId,

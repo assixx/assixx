@@ -212,7 +212,10 @@ export default [
     },
     rules: {
       'prettier/prettier': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
@@ -266,6 +269,13 @@ export default [
         HTMLElement: 'readonly',
         MutationObserver: 'readonly',
         IntersectionObserver: 'readonly',
+        // Additional browser globals
+        screen: 'readonly',
+        crypto: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        AudioContext: 'readonly',
+        webkitAudioContext: 'readonly',
         // Common libraries that might be used
         $: 'readonly',
         jQuery: 'readonly',
@@ -285,6 +295,14 @@ export default [
         showModal: 'readonly',
         hideModal: 'readonly',
       },
+    },
+    rules: {
+      'prettier/prettier': 'error',
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      'no-console': 'off',
     },
   },
 

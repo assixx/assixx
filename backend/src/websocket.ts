@@ -76,7 +76,10 @@ export class ChatWebSocketServer {
   ): Promise<void> {
     try {
       // Token aus Query-Parameter oder Header extrahieren
-      const url = new URL(request.url, `http://${request.headers.host}`);
+      const url = new URL(
+        request.url || '/',
+        `http://${request.headers.host || 'localhost'}`
+      );
       const token =
         url.searchParams.get('token') ||
         request.headers.authorization?.replace('Bearer ', '');

@@ -58,10 +58,12 @@ function setupEventListeners(): void {
   if (searchInput) {
     searchInput.addEventListener(
       'input',
-      debounce((e: Event) => {
-        const target = e.target as HTMLInputElement;
-        currentSearch = target.value.toLowerCase();
-        applyFilters();
+      debounce((e) => {
+        if (e instanceof Event) {
+          const target = e.target as HTMLInputElement;
+          currentSearch = target.value.toLowerCase();
+          applyFilters();
+        }
       }, 300),
     );
   }

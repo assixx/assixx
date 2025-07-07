@@ -1354,3 +1354,693 @@ Diese Lösung kombiniert das Beste aus der Enterprise-Welt (Microsoft/Google) mi
 - ✅ **In 1-2 Wochen** implementierbar
 
 Das ist die BESTE Lösung für ein professionelles Multi-Tenant SaaS System!
+
+!!!!
+Wichtig!
+
+
+💡 Potenzielle Optimierungen & Diskussionspunkte
+
+Dies sind keine "Fehler" im Plan, sondern Vorschläge, um ihn noch weiter zu verfeinern.
+
+## 🔧 WICHTIGE OPTIMIERUNGEN
+
+### 1. Query-Performance Optimierung
+Das Muster `DELETE FROM table WHERE user_id IN (SELECT ...)` ist bei großen Datenmengen suboptimal. Wir verwenden stattdessen DELETE mit JOIN:
+
+```sql
+-- OPTIMIERT: Alle DELETE Queries mit JOIN statt IN (SELECT)
+-- Beispiel für user_sessions
+DELETE s 
+FROM user_sessions s
+JOIN users u ON s.user_id = u.id
+WHERE u.tenant_id = ?;
+```
+
+Diese Optimierung wird in ALLEN Deletion Steps angewendet.
+
+### 2. Grace Period (30 Tage Wiederherstellung)
+Wie bei Microsoft 365 implementieren wir eine echte Grace Period:
+
+```sql
+-- Erweiterte tenant_deletion_queue Tabelle
+ALTER TABLE tenant_deletion_queue 
+  ADD COLUMN grace_period_days INT DEFAULT 30,
+  ADD COLUMN scheduled_deletion_date TIMESTAMP NULL,
+  ADD INDEX idx_scheduled_deletion (scheduled_deletion_date);
+
+-- Neue Status für tenants
+ALTER TABLE tenants 
+  MODIFY deletion_status ENUM('active', 'marked_for_deletion', 'suspended', 'deleting') DEFAULT 'active';
+```
+
+Der Worker prüft `scheduled_deletion_date` und beginnt erst nach Ablauf der Grace Period mit der Löschung.
+
+### 3. Globale Tenant-Status Middleware
+Alle API-Requests müssen den Tenant-Status prüfen:
+
+```typescript
+// backend/src/middleware/tenantStatus.ts
+export async function checkTenantStatus(req, res, next) {
+  const tenantId = req.user?.tenant_id;
+  if (!tenantId) return next();
+  
+  const [tenant] = await db.query(
+    'SELECT deletion_status FROM tenants WHERE id = ?',
+    [tenantId]
+  );
+  
+  if (tenant?.deletion_status !== 'active') {
+    return res.status(403).json({
+      error: 'Tenant is suspended or being deleted',
+      status: tenant.deletion_status
+    });
+  }
+  
+  next();
+}
+```
+
+### 4. Robuste Filesystem-Bereinigung
+Dateien müssen sicher gelöscht werden mit Fallback-Logging:
+
+```typescript
+// Erweiterter documents Handler
+{
+  name: 'documents_with_files',
+  description: 'Lösche Documents und Dateien',
+  critical: true,
+  handler: async (tenantId, conn) => {
+    // Erst Dateipfade sammeln
+    const files = await conn.query(
+      'SELECT id, file_path, file_name FROM documents WHERE tenant_id = ?',
+      [tenantId]
+    );
+    
+    const failedFiles = [];
+    
+    // Dateien löschen mit Error Handling
+    for (const file of files) {
+      try {
+        const fullPath = path.join(process.env.UPLOAD_DIR, file.file_path);
+        if (await fs.exists(fullPath)) {
+          await fs.unlink(fullPath);
+        }
+      } catch (error) {
+        failedFiles.push({
+          document_id: file.id,
+          path: file.file_path,
+          error: error.message
+        });
+      }
+    }
+    
+    // Failed files in separate table loggen für manuelle Bereinigung
+    if (failedFiles.length > 0) {
+      await conn.query(
+        'INSERT INTO failed_file_deletions (queue_id, file_data, created_at) VALUES (?, ?, NOW())',
+        [queueId, JSON.stringify(failedFiles)]
+      );
+    }
+    
+    // Dann DB-Einträge löschen
+    const result = await conn.query(
+      'DELETE FROM documents WHERE tenant_id = ?',
+      [tenantId]
+    );
+    
+    return result.affectedRows;
+  }
+}
+```
+
+### 5. Dedizierter Worker-Prozess (EMPFOHLEN)
+Statt Cron-Job verwenden wir einen dedizierten Worker:
+
+```typescript
+// backend/src/workers/deletionWorker.ts
+class DeletionWorker {
+  private isRunning = true;
+  private processingInterval = 30000; // 30 Sekunden
+  
+  async start() {
+    logger.info('Deletion Worker started');
+    
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      this.isRunning = false;
+      logger.info('Deletion Worker shutting down...');
+    });
+    
+    while (this.isRunning) {
+      try {
+        await this.checkAndProcessQueue();
+        await this.sleep(this.processingInterval);
+      } catch (error) {
+        logger.error('Worker error:', error);
+        await this.sleep(60000); // 1 Minute bei Fehler
+      }
+    }
+  }
+  
+  private async checkAndProcessQueue() {
+    // Prüfe ob Grace Period abgelaufen
+    const [nextItem] = await db.query(
+      `SELECT * FROM tenant_deletion_queue 
+       WHERE status = 'queued' 
+       AND (scheduled_deletion_date IS NULL OR scheduled_deletion_date <= NOW())
+       ORDER BY created_at ASC 
+       LIMIT 1`
+    );
+    
+    if (nextItem) {
+      await tenantDeletionService.processTenantDeletion(nextItem.id);
+    }
+  }
+  
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+// Start worker
+new DeletionWorker().start();
+```
+
+## ⚠️ KRITISCHE PUNKTE DIE WIR NICHT VERGESSEN DÜRFEN
+
+### 1. DSGVO/Datenschutz Compliance
+**PFLICHT:** Vor der Löschung muss ein Datenexport möglich sein!
+
+```typescript
+// Neuer Step VOR der Löschung
+{
+  name: 'create_data_export',
+  description: 'Erstelle finalen Datenexport',
+  critical: true,
+  handler: async (tenantId, conn) => {
+    // Erstelle ZIP mit allen Tenant-Daten
+    const exportPath = await createTenantDataExport(tenantId);
+    
+    // Speichere Export-Pfad für 90 Tage
+    await conn.query(
+      'INSERT INTO tenant_data_exports (tenant_id, file_path, created_at, expires_at) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 90 DAY))',
+      [tenantId, exportPath]
+    );
+    
+    return 1;
+  }
+}
+```
+
+### 2. Billing & Compliance Records
+**WICHTIG:** Rechnungen müssen 10 Jahre aufbewahrt werden (Steuerrecht)!
+
+```sql
+-- Neue Archiv-Tabellen für Compliance
+CREATE TABLE archived_tenant_invoices (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  original_tenant_id INT,
+  tenant_name VARCHAR(255),
+  invoice_data JSON,
+  archived_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  delete_after DATE, -- 10 Jahre später
+  INDEX idx_original_tenant (original_tenant_id)
+);
+
+-- VOR dem Löschen: Rechnungen archivieren
+INSERT INTO archived_tenant_invoices (original_tenant_id, tenant_name, invoice_data)
+SELECT t.id, t.company_name, JSON_OBJECT(...) 
+FROM tenants t WHERE t.id = ?;
+```
+
+### 3. Redis/Cache Cleanup
+```typescript
+{
+  name: 'redis_cleanup',
+  description: 'Lösche Redis Sessions und Cache',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    const redis = getRedisClient();
+    
+    // Lösche alle Sessions des Tenants
+    const userIds = await conn.query('SELECT id FROM users WHERE tenant_id = ?', [tenantId]);
+    for (const user of userIds) {
+      await redis.del(`session:${user.id}:*`);
+      await redis.del(`user:${user.id}:*`);
+    }
+    
+    // Lösche Tenant-spezifischen Cache
+    await redis.del(`tenant:${tenantId}:*`);
+    
+    return userIds.length;
+  }
+}
+```
+
+### 4. Email Notifications & Warnings
+```typescript
+// 30 Tage vor Löschung
+async function sendDeletionWarning(tenantId: number) {
+  const admins = await getTenantsAdmins(tenantId);
+  
+  for (const admin of admins) {
+    await emailService.sendEmail({
+      to: admin.email,
+      subject: 'Wichtig: Ihr Assixx-Konto wird in 30 Tagen gelöscht',
+      template: 'tenant-deletion-warning',
+      data: {
+        companyName: admin.company_name,
+        deletionDate: moment().add(30, 'days').format('DD.MM.YYYY'),
+        exportUrl: `${APP_URL}/export-data`
+      }
+    });
+  }
+}
+
+// Weitere Erinnerungen: 14 Tage, 7 Tage, 1 Tag vorher
+```
+
+### 5. Subdomain Freigabe
+```typescript
+{
+  name: 'release_subdomain',
+  description: 'Subdomain wieder verfügbar machen',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    // Subdomain für Neuregistrierung freigeben
+    await conn.query(
+      'INSERT INTO released_subdomains (subdomain, released_at) SELECT subdomain, NOW() FROM tenants WHERE id = ?',
+      [tenantId]
+    );
+    
+    return 1;
+  }
+}
+```
+
+### 6. Legal Hold Check
+```typescript
+// VOR dem Queuing prüfen
+async function checkLegalHold(tenantId: number): Promise<boolean> {
+  const [legalHold] = await db.query(
+    'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
+    [tenantId]
+  );
+  
+  if (legalHold) {
+    throw new Error('Tenant cannot be deleted due to legal hold');
+  }
+  
+  return true;
+}
+```
+
+### 7. Shared Resources Check
+```typescript
+// Prüfe ob Ressourcen mit anderen Tenants geteilt werden
+async function checkSharedResources(tenantId: number) {
+  // Cross-tenant document shares
+  const sharedDocs = await db.query(
+    'SELECT COUNT(*) as count FROM document_shares WHERE owner_tenant_id = ? AND shared_with_tenant_id != ?',
+    [tenantId, tenantId]
+  );
+  
+  if (sharedDocs[0].count > 0) {
+    // Benachrichtige andere Tenants oder verhindere Löschung
+    throw new Error('Tenant has shared documents with other tenants');
+  }
+}
+```
+
+### 8. Backup vor Löschung
+```typescript
+{
+  name: 'create_final_backup',
+  description: 'Erstelle finales Backup',
+  critical: true,
+  handler: async (tenantId, conn) => {
+    const backupFile = `tenant_${tenantId}_final_${Date.now()}.sql`;
+    
+    // Erstelle tenant-spezifisches Backup
+    await exec(`mysqldump --single-transaction --routines --triggers main --where="tenant_id=${tenantId}" > ${backupFile}`);
+    
+    // Speichere Backup-Info
+    await conn.query(
+      'INSERT INTO tenant_deletion_backups (tenant_id, backup_file, created_at) VALUES (?, ?, NOW())',
+      [tenantId, backupFile]
+    );
+    
+    return 1;
+  }
+}
+```
+
+### 9. Webhooks & External Services
+```typescript
+{
+  name: 'notify_external_services',
+  description: 'Benachrichtige externe Services',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    // Hole alle aktiven Webhooks
+    const webhooks = await conn.query(
+      'SELECT * FROM tenant_webhooks WHERE tenant_id = ? AND active = 1',
+      [tenantId]
+    );
+    
+    for (const webhook of webhooks) {
+      try {
+        await axios.post(webhook.url, {
+          event: 'tenant.deletion',
+          tenant_id: tenantId,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        logger.warn(`Webhook notification failed: ${webhook.url}`);
+      }
+    }
+    
+    return webhooks.length;
+  }
+}
+```
+
+### 10. Rollback-Möglichkeit
+```sql
+-- Tabelle für Rollback-Informationen
+CREATE TABLE tenant_deletion_rollback (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  queue_id INT,
+  rollback_data LONGTEXT, -- JSON mit allen gelöschten Daten
+  can_rollback BOOLEAN DEFAULT TRUE,
+  rollback_expires_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (queue_id) REFERENCES tenant_deletion_queue(id)
+);
+```
+
+## 📋 ERWEITERTE DELETION STEPS REIHENFOLGE
+
+Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
+
+1. **Pre-Deletion Phase**
+   - Legal Hold Check
+   - Shared Resources Check
+   - Create Data Export (DSGVO)
+   - Create Final Backup
+   - Archive Billing Records
+   - Send Final Notifications
+   - Notify External Services
+
+2. **Cache & Session Cleanup**
+   - Redis Sessions
+   - Redis Cache
+   - User Sessions (MySQL)
+
+3. **Main Deletion Phase**
+   - [Alle bisherigen Steps...]
+
+4. **Post-Deletion Phase**
+   - Release Subdomain
+   - Store Rollback Info
+   - Cleanup Temporary Files
+
+## 🚨 WEITERE KRITISCHE PUNKTE DIE WIR FAST VERGESSEN HÄTTEN
+
+### 11. Upload-Verzeichnisse bereinigen
+```bash
+# Tenant-spezifische Upload-Ordner
+/uploads/tenant_${tenantId}/
+/temp/tenant_${tenantId}/
+/exports/tenant_${tenantId}/
+/backups/tenant_${tenantId}/
+```
+
+### 12. Cronjobs & Scheduled Tasks
+```typescript
+{
+  name: 'cancel_scheduled_tasks',
+  description: 'Lösche geplante Tasks und Cronjobs',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    // Lösche alle geplanten Tasks
+    await conn.query(
+      'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
+      [tenantId]
+    );
+    
+    // Lösche recurring jobs
+    await conn.query(
+      'DELETE FROM recurring_jobs WHERE tenant_id = ?',
+      [tenantId]
+    );
+    
+    return 1;
+  }
+}
+```
+
+### 13. Email Queue bereinigen
+```typescript
+{
+  name: 'clear_email_queue',
+  description: 'Entferne ausstehende E-Mails aus Queue',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    // Verhindere dass nach Löschung noch E-Mails versendet werden
+    const result = await conn.query(
+      'DELETE FROM email_queue WHERE tenant_id = ? AND status = "pending"',
+      [tenantId]
+    );
+    
+    return result.affectedRows;
+  }
+}
+```
+
+### 14. OAuth Tokens & API Keys
+```typescript
+{
+  name: 'revoke_oauth_tokens',
+  description: 'Widerrufe alle OAuth Tokens und API Keys',
+  critical: true,
+  handler: async (tenantId, conn) => {
+    // OAuth Tokens
+    await conn.query(
+      'UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE tenant_id = ?',
+      [tenantId]
+    );
+    
+    // API Keys
+    await conn.query(
+      'UPDATE api_keys SET active = 0, deactivated_at = NOW() WHERE tenant_id = ?',
+      [tenantId]
+    );
+    
+    return 1;
+  }
+}
+```
+
+### 15. Zwei-Faktor-Authentifizierung
+```typescript
+{
+  name: 'remove_2fa_data',
+  description: 'Lösche 2FA Secrets und Backup Codes',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    // 2FA Secrets
+    const result1 = await conn.query(
+      'DELETE FROM user_2fa_secrets WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+      [tenantId]
+    );
+    
+    // Backup Codes
+    const result2 = await conn.query(
+      'DELETE FROM user_2fa_backup_codes WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+      [tenantId]
+    );
+    
+    return result1.affectedRows + result2.affectedRows;
+  }
+}
+```
+
+### 16. Audit Trail für Löschvorgang
+```typescript
+// WICHTIG: Wer hat was wann gelöscht?
+async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
+  const tenantInfo = await db.query(
+    'SELECT * FROM tenants WHERE id = ?',
+    [tenantId]
+  );
+  
+  const userInfo = await db.query(
+    'SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?',
+    [tenantId]
+  );
+  
+  await db.query(
+    `INSERT INTO deletion_audit_trail 
+     (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata, created_at) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [
+      tenantId,
+      tenantInfo[0].company_name,
+      userInfo[0].user_count,
+      requestedBy,
+      req.ip, // IP-Adresse des Löschenden
+      req.body.reason || 'No reason provided',
+      JSON.stringify({
+        subdomain: tenantInfo[0].subdomain,
+        created_at: tenantInfo[0].created_at,
+        plan: tenantInfo[0].current_plan_id
+      })
+    ]
+  );
+}
+```
+
+### 17. Notification an andere Admins
+```typescript
+// Root-User müssen über Tenant-Löschungen informiert werden
+async function notifyRootAdmins(tenantId: number, deletedBy: number) {
+  const rootUsers = await db.query(
+    'SELECT * FROM users WHERE role = "root" AND id != ?',
+    [deletedBy]
+  );
+  
+  for (const root of rootUsers) {
+    await emailService.sendEmail({
+      to: root.email,
+      subject: 'Tenant-Löschung eingeleitet',
+      template: 'admin-tenant-deletion-notice',
+      data: {
+        tenantName: tenantInfo.company_name,
+        deletedBy: deletedByUser.username,
+        scheduledDate: moment().add(30, 'days').format('DD.MM.YYYY')
+      }
+    });
+  }
+}
+```
+
+### 18. Externe Storage Services (S3, CDN)
+```typescript
+{
+  name: 'cleanup_external_storage',
+  description: 'Bereinige S3 Buckets und CDN',
+  critical: false,
+  handler: async (tenantId, conn) => {
+    // S3 Cleanup
+    if (process.env.USE_S3 === 'true') {
+      const s3 = new AWS.S3();
+      const prefix = `tenants/${tenantId}/`;
+      
+      // Liste alle Objekte
+      const objects = await s3.listObjectsV2({
+        Bucket: process.env.S3_BUCKET,
+        Prefix: prefix
+      }).promise();
+      
+      // Lösche alle Objekte
+      if (objects.Contents?.length > 0) {
+        await s3.deleteObjects({
+          Bucket: process.env.S3_BUCKET,
+          Delete: {
+            Objects: objects.Contents.map(obj => ({ Key: obj.Key }))
+          }
+        }).promise();
+      }
+    }
+    
+    // CDN Cache invalidieren
+    if (process.env.USE_CDN === 'true') {
+      await invalidateCDNCache(`/tenant/${tenantId}/*`);
+    }
+    
+    return 1;
+  }
+}
+```
+
+### 19. Backup Retention Policy
+```sql
+-- Automatisches Löschen alter Backups nach Retention Period
+CREATE TABLE backup_retention_policy (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  tenant_id INT,
+  backup_type ENUM('daily', 'weekly', 'monthly', 'deletion'),
+  retention_days INT DEFAULT 90,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Cleanup Job für alte Backups
+CREATE EVENT IF NOT EXISTS cleanup_old_backups
+ON SCHEDULE EVERY 1 DAY
+DO
+  DELETE FROM tenant_deletion_backups 
+  WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
+```
+
+### 20. Monitoring & Alerts
+```typescript
+// Alert wenn Löschung fehlschlägt
+async function sendDeletionFailureAlert(queueId: number, error: string) {
+  // Slack/Teams Notification
+  await sendSlackAlert({
+    channel: '#critical-alerts',
+    text: `🚨 Tenant Deletion Failed!`,
+    attachments: [{
+      color: 'danger',
+      fields: [
+        { title: 'Queue ID', value: queueId },
+        { title: 'Error', value: error },
+        { title: 'Time', value: new Date().toISOString() }
+      ]
+    }]
+  });
+  
+  // PagerDuty für kritische Fehler
+  if (error.includes('critical')) {
+    await triggerPagerDuty({
+      severity: 'critical',
+      summary: `Tenant deletion failed: ${error}`,
+      source: 'tenant-deletion-service'
+    });
+  }
+}
+```
+
+## 🎯 FINALE CHECKLISTE
+
+### Vor der Implementierung prüfen:
+- [ ] Alle Foreign Key Relationships dokumentiert?
+- [ ] Backup-Strategie definiert?
+- [ ] Rollback-Prozess getestet?
+- [ ] DSGVO-Compliance sichergestellt?
+- [ ] Steuerrechtliche Aufbewahrung (10 Jahre)?
+- [ ] Performance-Tests mit großen Tenants?
+- [ ] Monitoring & Alerting eingerichtet?
+- [ ] Dokumentation für Support-Team?
+- [ ] Legal Department Approval?
+- [ ] Disaster Recovery Plan?
+
+### Technische Voraussetzungen:
+- [ ] MySQL Event Scheduler aktiviert?
+- [ ] Genug Speicherplatz für Backups?
+- [ ] S3 Bucket Lifecycle Policies?
+- [ ] Redis Cluster Mode kompatibel?
+- [ ] Worker Process Monitoring?
+- [ ] Database Locks vermeiden?
+- [ ] Transaction Log Size beachten?
+- [ ] Replikation berücksichtigt?
+
+## 💡 ZUSÄTZLICHE SICHERHEITSMASSNAHMEN
+
+1. **Zwei-Personen-Prinzip**: Löschung braucht Bestätigung von zweitem Root-User
+2. **Cooling-Off Period**: 24h zwischen Lösch-Request und tatsächlicher Queuing
+3. **Dry-Run Modus**: Simulation ohne echte Löschung
+4. **Partial Deletion**: Möglichkeit nur bestimmte Daten zu löschen
+5. **Emergency Stop**: Notfall-Stop während Löschvorgang

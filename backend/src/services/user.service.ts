@@ -76,17 +76,21 @@ class UserService {
 
       if (user) {
         // Remove sensitive data
-        if ('password' in user) {
-          delete user.password;
-        }
+        const userWithoutPassword =
+          'password' in user
+            ? (() => {
+                const { password: _password, ...rest } = user;
+                return rest;
+              })()
+            : user;
 
         // Ensure tenant_id is present (required field)
-        if (!user.tenant_id) {
+        if (!userWithoutPassword.tenant_id) {
           logger.error(`User ${userId} has no tenant_id`);
           return null;
         }
 
-        return user as UserData;
+        return userWithoutPassword as UserData;
       }
 
       return null;
@@ -144,10 +148,13 @@ class UserService {
       const totalPages = Math.ceil(total / limit);
 
       const data = users.map((user: DbUser) => {
-        const userData = { ...user };
-        if ('password' in userData) {
-          delete userData.password;
-        }
+        const userData =
+          'password' in user
+            ? (() => {
+                const { password: _password, ...rest } = user;
+                return rest;
+              })()
+            : user;
         return userData as UserData;
       });
 

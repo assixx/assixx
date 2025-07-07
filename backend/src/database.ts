@@ -246,28 +246,18 @@ if (USE_MOCK_DB) {
     multipleStatements: false, // Sicherheitsverbesserung
     charset: 'utf8mb4',
     connectTimeout: 60000, // 60 seconds
-    typeCast(
-      field: {
-        type: string;
-        string: (encoding?: string) => string;
-        buffer: () => Buffer;
-      },
-      next: () => unknown
-    ) {
-      // Convert TEXT fields to strings
+    typeCast(field, next) {
+      // Convert string fields
       if (
-        field.type === 'TINY_TEXT' ||
-        field.type === 'TEXT' ||
-        field.type === 'MEDIUM_TEXT' ||
-        field.type === 'LONG_TEXT' ||
         field.type === 'VAR_STRING' ||
-        field.type === 'STRING'
+        field.type === 'STRING' ||
+        field.type === 'BLOB' ||
+        field.type === 'TINY_BLOB' ||
+        field.type === 'MEDIUM_BLOB' ||
+        field.type === 'LONG_BLOB'
       ) {
-        return field.string();
-      }
-      // Keep BLOB/BINARY fields as Buffers
-      if (field.type === 'BLOB' || field.type === 'BINARY') {
-        return field.buffer();
+        const value = field.string('utf8');
+        return value === null ? null : value;
       }
       // Use default handling for all other types
       return next();

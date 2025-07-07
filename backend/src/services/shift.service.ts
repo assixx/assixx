@@ -417,8 +417,8 @@ class ShiftService {
       start_time: string;
       end_time: string;
       position?: string | null;
-      template_name?: string;
-      plan_name?: string;
+      template_name?: string | null;
+      plan_name?: string | null;
     }>
   > {
     try {

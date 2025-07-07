@@ -154,14 +154,18 @@ class AuthService {
         throw new Error('Failed to retrieve created user');
       }
 
-      if (user && 'password' in user) {
-        delete user.password;
-      }
+      const userWithoutPassword =
+        user && 'password' in user
+          ? (() => {
+              const { password: _password, ...rest } = user;
+              return rest;
+            })()
+          : user;
 
       // Ensure tenant_id is present
       const userWithTenantId = {
-        ...user,
-        tenant_id: user.tenant_id || userData.tenant_id,
+        ...userWithoutPassword,
+        tenant_id: userWithoutPassword.tenant_id || userData.tenant_id,
       };
 
       return {
@@ -267,7 +271,7 @@ class AuthService {
     first_name: string;
     last_name: string;
     role: string;
-    tenant_id: number;
+    tenant_id: number | null;
     department_id?: number | null;
     is_active?: boolean | number | string;
     is_archived?: boolean;
@@ -288,17 +292,17 @@ class AuthService {
       last_name: dbUser.last_name,
       role: dbUser.role as 'admin' | 'employee' | 'root',
       tenant_id: dbUser.tenant_id,
-      department_id: dbUser.department_id,
+      department_id: dbUser.department_id ?? null,
       is_active:
         dbUser.is_active === true ||
         dbUser.is_active === 1 ||
         dbUser.is_active === '1',
       is_archived: dbUser.is_archived || false,
-      profile_picture: dbUser.profile_picture,
-      phone_number: dbUser.phone || null,
-      position: dbUser.position,
-      hire_date: dbUser.hire_date,
-      birth_date: dbUser.birthday || null,
+      profile_picture: dbUser.profile_picture ?? null,
+      phone_number: dbUser.phone ?? null,
+      position: dbUser.position ?? null,
+      hire_date: dbUser.hire_date ?? null,
+      birth_date: dbUser.birthday ?? null,
       created_at: dbUser.created_at || new Date(),
       updated_at: dbUser.updated_at || new Date(),
     };

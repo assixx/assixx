@@ -246,20 +246,14 @@ if (USE_MOCK_DB) {
     bigNumberStrings: false,
     dateStrings: false,
     debug: false,
-    typeCast: function (
-      field: {
-        type: string;
-        string: (encoding?: string) => string;
-        buffer: () => Buffer;
-      },
-      next: () => unknown
-    ) {
+    typeCast: function (field, next) {
       if (
         field.type === 'VAR_STRING' ||
         field.type === 'STRING' ||
         field.type === 'BLOB'
       ) {
-        return field.string('utf8');
+        const value = field.string('utf8');
+        return value === null ? null : value;
       }
       return next();
     },

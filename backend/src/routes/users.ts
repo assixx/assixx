@@ -618,6 +618,12 @@ router.put(
       } = req.body;
 
       // Validation is now handled by middleware
+      if (!availability_status) {
+        res
+          .status(400)
+          .json(errorResponse('Availability status is required', 400));
+        return;
+      }
 
       // Update user availability
       const success = await User.updateAvailability(

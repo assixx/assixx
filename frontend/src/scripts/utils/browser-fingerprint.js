@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 /**
  * Browser Fingerprinting Utility
  * Generates a unique fingerprint based on browser characteristics
@@ -46,7 +48,7 @@ export class BrowserFingerprint {
       // Get canvas data
       const canvasData = canvas.toDataURL();
       components.push(canvasData);
-    } catch (e) {
+    } catch {
       components.push('canvas-blocked');
     }
 
@@ -61,7 +63,7 @@ export class BrowserFingerprint {
           components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
         }
       }
-    } catch (e) {
+    } catch {
       components.push('webgl-blocked');
     }
 
@@ -95,7 +97,7 @@ export class BrowserFingerprint {
 
       oscillator.stop();
       audioContext.close();
-    } catch (e) {
+    } catch {
       components.push('audio-blocked');
     }
 
@@ -156,7 +158,7 @@ export class BrowserFingerprint {
   static getStored() {
     try {
       return localStorage.getItem('browser_fingerprint');
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -168,7 +170,7 @@ export class BrowserFingerprint {
   static store(fingerprint) {
     try {
       localStorage.setItem('browser_fingerprint', fingerprint);
-    } catch (e) {
+    } catch {
       console.warn('Could not store fingerprint in localStorage');
     }
   }

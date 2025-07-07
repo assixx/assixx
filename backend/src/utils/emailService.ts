@@ -171,6 +171,10 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     initializeTransporter();
   }
 
+  if (!transporter) {
+    throw new Error('Email transporter could not be initialized');
+  }
+
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
     const from: string =

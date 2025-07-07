@@ -169,6 +169,7 @@ class BlackboardController {
             ? req.body.tags.split(',')
             : req.body.tags
           : undefined,
+        color: req.body.color === null ? undefined : req.body.color,
       };
       const result = await blackboardService.create(req.tenantDb, createData);
       res.status(201).json(result);
@@ -205,6 +206,8 @@ class BlackboardController {
             ? req.body.tags.split(',')
             : req.body.tags
           : undefined,
+        color: req.body.color === null ? undefined : req.body.color,
+        category: req.body.category === null ? undefined : req.body.category,
       };
       const result = await blackboardService.update(
         req.tenantDb,

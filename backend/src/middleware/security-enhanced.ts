@@ -24,16 +24,8 @@ interface AuditEntry {
   success: boolean;
 }
 
-// Extended Request interface for better typing
-interface ExtendedRequest {
-  user?: { id: number; tenant_id: number };
-  tenant?: { id: number };
-  ip?: string;
-  headers: Request['headers'];
-  method: Request['method'];
-  path: Request['path'];
-  get: Request['get'];
-}
+// Type alias for requests with required properties
+type ExtendedRequest = Request;
 
 // CSRF Protection Configuration - Simplified implementation
 // const csrfSecret = process.env.CSRF_SECRET || 'assixx-csrf-secret-change-in-production';

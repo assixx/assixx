@@ -300,9 +300,10 @@ router.post(
       console.error('Error uploading profile picture:', getErrorMessage(error));
 
       // Clean up uploaded file on error
-      if ((req as AuthenticatedRequest).file) {
+      const authenticatedReq = req as AuthenticatedRequest;
+      if (authenticatedReq.file?.path) {
         try {
-          fs.unlinkSync((req as AuthenticatedRequest).file.path);
+          fs.unlinkSync(authenticatedReq.file.path);
         } catch (unlinkError) {
           console.error(
             'Error deleting temporary file:',
