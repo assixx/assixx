@@ -895,7 +895,7 @@ class UnifiedNavigation {
                         </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.email || 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
-                        <div class="user-employee-number" id="sidebar-employee-number" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;"></div>
+                        <div class="user-employee-number" id="sidebar-employee-number" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                         <span id="role-indicator" class="role-badge ${this.currentRole || ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
