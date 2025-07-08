@@ -157,7 +157,12 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
   }
 
   // Serve TypeScript file directly from src
-  const tsPath = path.join(srcPath, req.path);
+  // Note: req.path already includes /scripts/, so we need to join with srcPath directly
+  const tsPath = path.join(
+    srcPath,
+    'scripts',
+    req.path.replace(/^\/scripts\//, '')
+  );
 
   // Special handling for components subdirectory
   const mappings: { [key: string]: string } = {
@@ -178,8 +183,13 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     // Read the TypeScript file
     const tsContent = fs.readFileSync(actualTsPath, 'utf8');
 
-    // Transform import statements to add .ts extension
-    const transformedContent = tsContent
+    // Transform TypeScript to JavaScript-compatible code
+    let transformedContent = tsContent
+      // Remove TypeScript-only import type statements
+      .replace(/import\s+type\s+\{[^}]+\}\s+from\s+['""][^'""]+['""];?\s*/g, '')
+      // Remove declare global blocks (more robust regex)
+      .replace(/declare\s+global\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '')
+      // Transform regular imports to add .ts extension
       .replace(/from\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g, "from '$1.ts'")
       .replace(/import\s+['"](\.\.?\/[^'"]+)(?<!\.ts)['"]/g, "import '$1.ts'");
 
@@ -415,6 +425,11 @@ if (process.env.NODE_ENV === 'development') {
 // CSRF Protection - applied to all routes except specified exceptions
 console.log('[DEBUG] Applying CSRF protection');
 app.use(validateCSRFToken);
+
+// Tenant Status Middleware - check tenant deletion status
+import { checkTenantStatus } from './middleware/tenantStatus';
+console.log('[DEBUG] Applying tenant status middleware');
+app.use('/api', checkTenantStatus);
 
 // API Routes - Use centralized routing
 console.log('[DEBUG] Mounting main routes at /');

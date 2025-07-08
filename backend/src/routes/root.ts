@@ -19,7 +19,8 @@ import { typed } from '../utils/routeHandlers';
 import User from '../models/user';
 import AdminLog from '../models/adminLog';
 import Tenant from '../models/tenant';
-import { executeQuery } from '../database';
+import { executeQuery, execute } from '../database';
+import { query } from '../utils/db';
 
 const router: Router = express.Router();
 
@@ -666,70 +667,998 @@ router.get(
   })
 );
 
-// NEUE ROUTE: Tenant komplett löschen (Root-User löscht sich selbst und seinen Tenant)
-router.delete(
-  '/delete-tenant',
+// ========== TENANT DELETION ROUTES ==========
+// Import tenant deletion service
+import { tenantDeletionService } from '../services/tenantDeletion.service';
+
+// Get deletion status for all tenants
+router.get(
+  '/deletion-status',
   ...security.root(),
-  typed.auth(async (req, res) => {
+  typed.query<{}>(async (_req, res) => {
+    try {
+      const [deletions] = await executeQuery(
+        `SELECT 
+          q.*,
+          t.company_name,
+          t.subdomain,
+          u.username as requester_name,
+          u.email as requester_email
+        FROM tenant_deletion_queue q
+        JOIN tenants t ON t.id = q.tenant_id
+        JOIN users u ON u.id = q.created_by
+        ORDER BY q.created_at DESC`
+      );
+
+      res.json(successResponse(deletions));
+    } catch (error) {
+      logger.error('Error fetching deletion status:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen des Löschstatus'));
+    }
+  })
+);
+
+// NEW SECURE ROUTE: Delete current tenant (no ID needed - uses JWT token)
+router.delete(
+  '/tenants/current',
+  ...security.root(),
+  typed.body<{ reason?: string }>(async (req, res) => {
     const rootUser = req.user;
+    const tenantId = rootUser.tenant_id; // ALWAYS use tenant from JWT token
+
     logger.warn(
-      `Root user ${rootUser.username} attempting to delete entire tenant ${rootUser.tenant_id}`
+      `🔒 SECURE DELETE: Root user ${rootUser.username} (ID: ${rootUser.id}) requesting deletion of their own tenant ${tenantId}`
+    );
+
+    // Security audit log
+    await execute(
+      `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        rootUser.tenant_id,
+        rootUser.id,
+        'tenant_deletion_requested_secure',
+        'tenant',
+        tenantId,
+        JSON.stringify({
+          reason: req.body.reason || 'Keine Angabe',
+          user_agent: req.headers['user-agent'],
+          secure_route: true,
+        }),
+        req.ip,
+      ]
     );
 
     try {
-      // Bestätigung dass es der Root-User des Tenants ist
-      const tenant = await Tenant.findById(rootUser.tenant_id);
+      // Request tenant deletion (requires approval from second root user)
+      const queueId = await tenantDeletionService.requestTenantDeletion(
+        tenantId,
+        rootUser.id,
+        req.body.reason || 'Keine Angabe',
+        req.ip
+      );
 
-      if (!tenant) {
-        logger.error(`Tenant ${rootUser.tenant_id} not found`);
-        res.status(404).json(errorResponse('Tenant nicht gefunden', 404));
+      res.json(
+        successResponse(
+          {
+            queueId,
+            tenantId, // Return for confirmation only
+            scheduledDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            message:
+              'Löschung beantragt - Genehmigung durch zweiten Root-User erforderlich',
+            estimatedTime: '30 Tage Grace Period + 10-15 Minuten Löschvorgang',
+            approvalRequired: true,
+          },
+          'Löschung wurde beantragt und wartet auf Genehmigung'
+        )
+      );
+    } catch (error) {
+      logger.error(`Error queueing tenant ${tenantId} for deletion:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler beim Einplanen der Löschung',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Approve tenant deletion
+router.post(
+  '/deletion-approvals/:id/approve',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    try {
+      const queueId = parseInt(req.params.id);
+      const approverId = req.user.id;
+
+      await tenantDeletionService.approveDeletion(queueId, approverId);
+
+      res.json(successResponse({ message: 'Löschung genehmigt' }));
+    } catch (error: any) {
+      logger.error('Error approving deletion:', error);
+      res
+        .status(400)
+        .json(errorResponse(error.message || 'Fehler bei der Genehmigung'));
+    }
+  })
+);
+
+// Reject tenant deletion
+router.post(
+  '/deletion-approvals/:id/reject',
+  ...security.root(),
+  async (req: any, res) => {
+    try {
+      const queueId = parseInt(req.params.id);
+      const approverId = req.user.id;
+      const { reason } = req.body;
+
+      await tenantDeletionService.rejectDeletion(queueId, approverId, reason);
+
+      res.json(successResponse({ message: 'Löschung abgelehnt' }));
+    } catch (error: any) {
+      logger.error('Error rejecting deletion:', error);
+      res
+        .status(400)
+        .json(errorResponse(error.message || 'Fehler beim Ablehnen'));
+    }
+  }
+);
+
+// Emergency stop
+router.post(
+  '/deletion-emergency/:id/stop',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    try {
+      const queueId = parseInt(req.params.id);
+      const stoppedBy = req.user.id;
+
+      await tenantDeletionService.emergencyStop(queueId, stoppedBy);
+
+      res.json(successResponse({ message: 'Emergency Stop aktiviert!' }));
+    } catch (error: any) {
+      logger.error('Error emergency stop:', error);
+      res
+        .status(400)
+        .json(errorResponse(error.message || 'Fehler beim Emergency Stop'));
+    }
+  })
+);
+
+// LEGACY ROUTE: Delete tenant by ID (with enhanced security checks)
+router.delete(
+  '/tenants/:id',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req: any, res) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+
+    // SECURITY WARNING: This route uses tenant ID from URL
+    logger.warn(
+      `⚠️ LEGACY DELETE: Root user ${rootUser.username} requesting deletion of tenant ${tenantId} via URL parameter`
+    );
+
+    try {
+      // CRITICAL SECURITY CHECK: Verify the root user has permission to delete this tenant
+      if (rootUser.tenant_id !== tenantId) {
+        // Log security violation attempt
+        logger.error(
+          `🚨 SECURITY VIOLATION: User ${rootUser.username} (tenant ${rootUser.tenant_id}) attempted to delete tenant ${tenantId}`
+        );
+
+        await execute(
+          `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+          [
+            rootUser.tenant_id,
+            rootUser.id,
+            'security_violation_tenant_deletion',
+            'tenant',
+            tenantId,
+            JSON.stringify({
+              attempted_tenant_id: tenantId,
+              user_tenant_id: rootUser.tenant_id,
+              reason: 'Attempted to delete different tenant',
+              user_agent: req.headers['user-agent'],
+            }),
+            req.ip,
+          ]
+        );
+
+        res
+          .status(403)
+          .json(
+            errorResponse(
+              'ZUGRIFF VERWEIGERT: Sie können nur Ihren eigenen Tenant löschen',
+              403
+            )
+          );
         return;
       }
 
-      // Log this critical action
-      await AdminLog.create({
-        user_id: rootUser.id,
-        tenant_id: rootUser.tenant_id,
-        action: 'TENANT_DELETE_INITIATED',
-        ip_address: req.ip,
-        entity_type: 'tenant',
-        entity_id: rootUser.tenant_id,
-        new_values: {
-          tenant_name: tenant.company_name,
-          subdomain: tenant.subdomain,
-          initiated_by: rootUser.username,
-        },
-        user_agent: req.get('user-agent'),
-      });
+      // Additional paranoia check
+      if (isNaN(tenantId) || tenantId <= 0) {
+        res.status(400).json(errorResponse('Ungültige Tenant-ID', 400));
+        return;
+      }
 
-      // Delete the entire tenant (cascades to all related data)
-      const success = await Tenant.delete(rootUser.tenant_id);
+      // Request tenant deletion (requires approval from second root user)
+      const queueId = await tenantDeletionService.requestTenantDeletion(
+        tenantId,
+        rootUser.id,
+        req.body.reason,
+        req.ip
+      );
 
-      if (success) {
-        logger.warn(
-          `Tenant ${rootUser.tenant_id} and all associated data deleted successfully`
-        );
-        res.json(
-          successResponse(
-            { success: true },
-            'Tenant und alle zugehörigen Daten wurden erfolgreich gelöscht'
+      res.json(
+        successResponse(
+          {
+            queueId,
+            scheduledDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            message:
+              'Löschung beantragt - Genehmigung durch zweiten Root-User erforderlich',
+            estimatedTime: '30 Tage Grace Period + 10-15 Minuten Löschvorgang',
+            approvalRequired: true,
+          },
+          'Löschung wurde beantragt und wartet auf Genehmigung'
+        )
+      );
+    } catch (error) {
+      logger.error(`Error queueing tenant ${tenantId} for deletion:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler beim Einplanen der Löschung',
+            500
           )
         );
-      } else {
-        logger.error(`Failed to delete tenant ${rootUser.tenant_id}`);
+    }
+  })
+);
+
+// Get current tenant deletion status (SECURE)
+router.get(
+  '/tenants/current/deletion-status',
+  ...security.root(),
+  typed.auth(async (req, res) => {
+    const rootUser = req.user;
+    const tenantId = rootUser.tenant_id; // Always from JWT
+
+    logger.info(
+      `Root user ${rootUser.username} checking deletion status for their tenant ${tenantId}`
+    );
+
+    try {
+      const [deletionQueue] = await query(
+        `SELECT 
+          dq.*,
+          t.company_name,
+          u.username as requested_by_username
+        FROM deletion_queue dq
+        JOIN tenants t ON t.id = dq.tenant_id
+        JOIN users u ON u.id = dq.created_by
+        WHERE dq.tenant_id = ?
+        AND dq.status NOT IN ('cancelled', 'completed')
+        ORDER BY dq.created_at DESC
+        LIMIT 1`,
+        [tenantId]
+      );
+
+      if (!deletionQueue) {
         res
-          .status(500)
-          .json(errorResponse('Fehler beim Löschen des Tenants', 500));
+          .status(404)
+          .json(errorResponse('Keine aktive Löschung gefunden', 404));
+        return;
       }
+
+      res.json(successResponse(deletionQueue, 'Löschstatus abgerufen'));
+    } catch (error) {
+      logger.error('Error getting deletion status:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen des Löschstatus', 500));
+    }
+  })
+);
+
+// Get tenant deletion status by ID (LEGACY)
+router.get(
+  '/tenants/:id/deletion-status',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+
+    try {
+      // Verify the root user has permission to view this tenant's status
+      if (rootUser.tenant_id !== tenantId) {
+        res
+          .status(403)
+          .json(
+            errorResponse(
+              'Sie können nur Ihren eigenen Tenant-Status einsehen',
+              403
+            )
+          );
+        return;
+      }
+
+      const status = await tenantDeletionService.getDeletionStatus(tenantId);
+
+      if (!status) {
+        res
+          .status(404)
+          .json(errorResponse('Keine Löschung für diesen Tenant geplant', 404));
+        return;
+      }
+
+      res.json(successResponse(status));
     } catch (error) {
       logger.error(
-        `Critical error deleting tenant ${rootUser.tenant_id}:`,
+        `Error getting deletion status for tenant ${tenantId}:`,
         error
       );
       res
         .status(500)
-        .json(errorResponse('Kritischer Fehler beim Löschen des Tenants', 500));
+        .json(errorResponse('Fehler beim Abrufen des Löschstatus', 500));
     }
+  })
+);
+
+// Cancel current tenant deletion (SECURE)
+router.post(
+  '/tenants/current/cancel-deletion',
+  ...security.root(),
+  typed.auth(async (req, res) => {
+    const rootUser = req.user;
+    const tenantId = rootUser.tenant_id; // Always from JWT
+
+    logger.info(
+      `🔒 SECURE: Root user ${rootUser.username} cancelling deletion of their tenant ${tenantId}`
+    );
+
+    try {
+      await tenantDeletionService.cancelDeletion(tenantId, rootUser.id);
+
+      res.json(
+        successResponse({ tenantId }, 'Löschung erfolgreich abgebrochen')
+      );
+    } catch (error) {
+      logger.error('Error cancelling deletion:', error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler beim Abbrechen der Löschung',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Cancel tenant deletion by ID (LEGACY - with security checks)
+router.post(
+  '/tenants/:id/cancel-deletion',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+
+    logger.info(
+      `Root user ${rootUser.username} attempting to cancel deletion of tenant ${tenantId}`
+    );
+
+    try {
+      // Verify the root user has permission
+      if (rootUser.tenant_id !== tenantId) {
+        res
+          .status(403)
+          .json(
+            errorResponse('Sie können nur Ihre eigene Löschung abbrechen', 403)
+          );
+        return;
+      }
+
+      await tenantDeletionService.cancelDeletion(tenantId, rootUser.id);
+
+      res.json(
+        successResponse(
+          { cancelled: true },
+          'Löschung wurde erfolgreich abgebrochen'
+        )
+      );
+    } catch (error) {
+      logger.error(`Error cancelling deletion for tenant ${tenantId}:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler beim Abbrechen der Löschung',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Approve tenant deletion request
+router.post(
+  '/deletion-approvals/:queueId/approve',
+  ...security.root(),
+  typed.params<{ queueId: string }>(async (req: any, res) => {
+    const queueId = parseInt(req.params.queueId, 10);
+    const rootUser = req.user;
+
+    logger.info(
+      `Root user ${rootUser.username} approving deletion request ${queueId}`
+    );
+
+    try {
+      await tenantDeletionService.approveDeletion(
+        queueId,
+        rootUser.id,
+        req.body.comment
+      );
+
+      res.json(
+        successResponse(
+          { approved: true },
+          'Löschung wurde genehmigt und wird nach der Grace Period durchgeführt'
+        )
+      );
+    } catch (error) {
+      logger.error(`Error approving deletion ${queueId}:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler bei der Genehmigung',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Reject tenant deletion request
+router.post(
+  '/deletion-approvals/:queueId/reject',
+  ...security.root(),
+  typed.params<{ queueId: string }>(async (req: any, res) => {
+    const queueId = parseInt(req.params.queueId, 10);
+    const rootUser = req.user;
+
+    logger.info(
+      `Root user ${rootUser.username} rejecting deletion request ${queueId}`
+    );
+
+    try {
+      if (!req.body.reason) {
+        res
+          .status(400)
+          .json(errorResponse('Grund für Ablehnung ist erforderlich', 400));
+        return;
+      }
+
+      await tenantDeletionService.rejectDeletion(
+        queueId,
+        rootUser.id,
+        req.body.reason
+      );
+
+      res.json(successResponse({ rejected: true }, 'Löschung wurde abgelehnt'));
+    } catch (error) {
+      logger.error(`Error rejecting deletion ${queueId}:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler bei der Ablehnung',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Get pending deletion approvals
+router.get(
+  '/deletion-approvals/pending',
+  ...security.root(),
+  typed.auth(async (req, res) => {
+    const rootUser = req.user;
+
+    logger.info(
+      `Root user ${rootUser.username} requesting pending deletion approvals`
+    );
+
+    try {
+      // Get pending approvals from view
+      const pendingApprovals = await query(
+        `SELECT * FROM v_pending_deletion_approvals 
+         WHERE requester_id != ? 
+         ORDER BY requested_at DESC`,
+        [rootUser.id]
+      );
+
+      res.json(successResponse(pendingApprovals));
+    } catch (error) {
+      logger.error('Error getting pending approvals:', error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            'Fehler beim Abrufen der ausstehenden Genehmigungen',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Emergency stop deletion
+router.post(
+  '/deletion-queue/:queueId/emergency-stop',
+  ...security.root(),
+  typed.params<{ queueId: string }>(async (req, res) => {
+    const queueId = parseInt(req.params.queueId, 10);
+    const rootUser = req.user;
+
+    logger.error(
+      `🚨 EMERGENCY STOP: Root user ${rootUser.username} triggering emergency stop for deletion ${queueId}`
+    );
+
+    try {
+      await tenantDeletionService.triggerEmergencyStop(queueId, rootUser.id);
+
+      res.json(
+        successResponse(
+          { emergencyStopped: true },
+          'Emergency Stop ausgelöst - Löschung wird angehalten'
+        )
+      );
+    } catch (error) {
+      logger.error(`Error triggering emergency stop ${queueId}:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler beim Emergency Stop',
+            500
+          )
+        );
+    }
+  })
+);
+
+// Dry-run deletion simulation
+router.post(
+  '/tenants/:id/deletion-dry-run',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+
+    logger.info(
+      `Root user ${rootUser.username} requesting dry-run for tenant ${tenantId}`
+    );
+
+    try {
+      if (rootUser.tenant_id !== tenantId) {
+        res
+          .status(403)
+          .json(
+            errorResponse('Sie können nur Ihren eigenen Tenant simulieren', 403)
+          );
+        return;
+      }
+
+      const report = await tenantDeletionService.performDryRun(tenantId);
+
+      res.json(successResponse(report));
+    } catch (error) {
+      logger.error(`Error performing dry-run for tenant ${tenantId}:`, error);
+      res.status(500).json(errorResponse('Fehler bei der Simulation', 500));
+    }
+  })
+);
+
+// Retry failed deletion (admin only)
+router.post(
+  '/deletion-queue/:queueId/retry',
+  ...security.root(),
+  typed.params<{ queueId: string }>(async (req, res) => {
+    const queueId = parseInt(req.params.queueId, 10);
+    const rootUser = req.user;
+
+    logger.warn(
+      `Root user ${rootUser.username} retrying failed deletion ${queueId}`
+    );
+
+    try {
+      await tenantDeletionService.retryDeletion(queueId);
+
+      res.json(
+        successResponse({ retrying: true }, 'Löschung wird erneut versucht')
+      );
+    } catch (error) {
+      logger.error(`Error retrying deletion ${queueId}:`, error);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            getErrorMessage(error) || 'Fehler beim erneuten Versuch',
+            500
+          )
+        );
+    }
+  })
+);
+
+// ========================================
+// ROOT USER MANAGEMENT ROUTES
+// ========================================
+
+// Get all root users
+router.get(
+  '/users',
+  ...security.root(),
+  typed.auth(async (req, res) => {
+    const rootUser = req.user;
+
+    logger.info(`Root user ${rootUser.username} accessing root user list`);
+
+    try {
+      const [rootUsers] = await executeQuery<RowDataPacket[]>(
+        `SELECT 
+          id, username, email, first_name, last_name, 
+          position, notes, is_active, employee_id, created_at, updated_at
+        FROM users 
+        WHERE role = 'root' AND tenant_id = ?
+        ORDER BY created_at DESC`,
+        [rootUser.tenant_id]
+      );
+
+      res.json(successResponse({ users: rootUsers }));
+    } catch (error) {
+      logger.error('Error fetching root users:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Laden der Root-Benutzer', 500));
+    }
+  })
+);
+
+// Get single root user
+router.get(
+  '/users/:id',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    const userId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+
+    try {
+      const [users] = await executeQuery<RowDataPacket[]>(
+        `SELECT 
+          id, username, email, first_name, last_name, 
+          position, notes, is_active, created_at, updated_at
+        FROM users 
+        WHERE id = ? AND role = 'root' AND tenant_id = ?`,
+        [userId, rootUser.tenant_id]
+      );
+
+      if (users.length === 0) {
+        res
+          .status(404)
+          .json(errorResponse('Root-Benutzer nicht gefunden', 404));
+        return;
+      }
+
+      res.json(successResponse({ user: users[0] }));
+    } catch (error) {
+      logger.error('Error fetching root user:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Laden des Root-Benutzers', 500));
+    }
+  })
+);
+
+// Create new root user
+router.post(
+  '/users',
+  ...security.root(),
+  typed.body<{
+    username: string;
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    position?: string;
+    notes?: string;
+    is_active?: boolean;
+  }>(async (req, res) => {
+    const rootUser = req.user;
+    const {
+      username,
+      email,
+      password,
+      first_name,
+      last_name,
+      position,
+      notes,
+      is_active = true,
+    } = req.body;
+
+    logger.warn(
+      `Root user ${rootUser.username} creating new root user: ${email}`
+    );
+
+    try {
+      // Check if email already exists
+      const [existing] = await executeQuery<RowDataPacket[]>(
+        'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
+        [email, rootUser.tenant_id]
+      );
+
+      if (existing.length > 0) {
+        res
+          .status(400)
+          .json(errorResponse('E-Mail-Adresse wird bereits verwendet', 400));
+        return;
+      }
+
+      // Get tenant subdomain for employee_id generation
+      const [tenantData] = await executeQuery<RowDataPacket[]>(
+        'SELECT subdomain FROM tenants WHERE id = ?',
+        [rootUser.tenant_id]
+      );
+
+      const subdomain = tenantData[0]?.subdomain || 'DEFAULT';
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create root user (without employee_id first)
+      const [result] = await executeQuery<any>(
+        `INSERT INTO users (
+          username, email, password, first_name, last_name, 
+          role, position, notes, is_active, tenant_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          username || email,
+          email,
+          hashedPassword,
+          first_name,
+          last_name,
+          position,
+          notes,
+          is_active,
+          rootUser.tenant_id,
+        ]
+      );
+
+      // Generate and update employee_id
+      const { generateEmployeeId } = await import(
+        '../utils/employeeIdGenerator'
+      );
+      const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
+
+      await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [
+        employeeId,
+        result.insertId,
+      ]);
+
+      // Log the action
+      await executeQuery(
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          rootUser.tenant_id,
+          rootUser.id,
+          'root_user_created',
+          'user',
+          result.insertId,
+          JSON.stringify({
+            email,
+            created_by: rootUser.email,
+          }),
+          req.ip,
+        ]
+      );
+
+      logger.info(
+        `Root user created successfully: ${email} (ID: ${result.insertId})`
+      );
+
+      res.json(
+        successResponse(
+          { id: result.insertId },
+          'Root-Benutzer erfolgreich erstellt'
+        )
+      );
+    } catch (error) {
+      logger.error('Error creating root user:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Erstellen des Root-Benutzers', 500));
+    }
+  })
+);
+
+// Update root user
+router.put(
+  '/users/:id',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req: any, res) => {
+    const userId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+    const { first_name, last_name, email, position, notes, is_active } =
+      req.body;
+
+    try {
+      // Check if user exists and is root
+      const [users] = await executeQuery<RowDataPacket[]>(
+        "SELECT id FROM users WHERE id = ? AND role = 'root' AND tenant_id = ?",
+        [userId, rootUser.tenant_id]
+      );
+
+      if (users.length === 0) {
+        res
+          .status(404)
+          .json(errorResponse('Root-Benutzer nicht gefunden', 404));
+        return;
+      }
+
+      // Update user
+      await executeQuery(
+        `UPDATE users SET 
+          first_name = ?, last_name = ?, email = ?, 
+          position = ?, notes = ?, is_active = ?, updated_at = NOW()
+        WHERE id = ?`,
+        [first_name, last_name, email, position, notes, is_active, userId]
+      );
+
+      // Log the action
+      await executeQuery(
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          rootUser.tenant_id,
+          rootUser.id,
+          'root_user_updated',
+          'user',
+          userId,
+          JSON.stringify({
+            updated_by: rootUser.email,
+            changes: { first_name, last_name, email, position, is_active },
+          }),
+          req.ip,
+        ]
+      );
+
+      res.json(successResponse(null, 'Root-Benutzer erfolgreich aktualisiert'));
+    } catch (error) {
+      logger.error('Error updating root user:', error);
+      res
+        .status(500)
+        .json(
+          errorResponse('Fehler beim Aktualisieren des Root-Benutzers', 500)
+        );
+    }
+  })
+);
+
+// Delete root user
+router.delete(
+  '/users/:id',
+  ...security.root(),
+  typed.params<{ id: string }>(async (req, res) => {
+    const userId = parseInt(req.params.id, 10);
+    const rootUser = req.user;
+
+    try {
+      // Prevent self-deletion
+      if (userId === rootUser.id) {
+        res
+          .status(400)
+          .json(errorResponse('Sie können sich nicht selbst löschen', 400));
+        return;
+      }
+
+      // Check if user exists and is root
+      const [users] = await executeQuery<RowDataPacket[]>(
+        "SELECT email FROM users WHERE id = ? AND role = 'root' AND tenant_id = ?",
+        [userId, rootUser.tenant_id]
+      );
+
+      if (users.length === 0) {
+        res
+          .status(404)
+          .json(errorResponse('Root-Benutzer nicht gefunden', 404));
+        return;
+      }
+
+      const deletedEmail = users[0].email;
+
+      // Check if at least 2 root users will remain
+      const [rootCount] = await executeQuery<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = ? AND id != ?",
+        [rootUser.tenant_id, userId]
+      );
+
+      if (rootCount[0].count < 1) {
+        res
+          .status(400)
+          .json(
+            errorResponse(
+              'Es muss mindestens ein Root-Benutzer im System verbleiben',
+              400
+            )
+          );
+        return;
+      }
+
+      // Delete user
+      await executeQuery('DELETE FROM users WHERE id = ?', [userId]);
+
+      // Log the action
+      await executeQuery(
+        `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, old_values, ip_address, created_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          rootUser.tenant_id,
+          rootUser.id,
+          'root_user_deleted',
+          'user',
+          userId,
+          JSON.stringify({
+            deleted_email: deletedEmail,
+            deleted_by: rootUser.email,
+          }),
+          req.ip,
+        ]
+      );
+
+      logger.warn(`Root user deleted: ${deletedEmail} by ${rootUser.email}`);
+
+      res.json(successResponse(null, 'Root-Benutzer erfolgreich gelöscht'));
+    } catch (error) {
+      logger.error('Error deleting root user:', error);
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Löschen des Root-Benutzers', 500));
+    }
+  })
+);
+
+// LEGACY: Old synchronous delete route (DEPRECATED - kept for backward compatibility)
+router.delete(
+  '/delete-tenant',
+  ...security.root(),
+  typed.auth(async (_req, res) => {
+    logger.warn(
+      `DEPRECATED: Using old synchronous delete endpoint. Please use DELETE /tenants/:id instead`
+    );
+
+    // Redirect to new endpoint
+    res
+      .status(410)
+      .json(
+        errorResponse(
+          'Diese Route ist veraltet. Bitte verwenden Sie DELETE /api/root/tenants/:id',
+          410
+        )
+      );
   })
 );
 

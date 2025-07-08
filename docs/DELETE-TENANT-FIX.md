@@ -2044,3 +2044,489 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 3. **Dry-Run Modus**: Simulation ohne echte Löschung
 4. **Partial Deletion**: Möglichkeit nur bestimmte Daten zu löschen
 5. **Emergency Stop**: Notfall-Stop während Löschvorgang
+
+## 🐳 DOCKER SETUP FÜR DELETION WORKER
+
+### Worker Service starten:
+```bash
+cd /home/scs/projects/Assixx/docker
+
+# Nur den Deletion Worker starten
+docker-compose up -d deletion-worker
+
+# Oder alle Services inkl. Worker starten
+docker-compose up -d
+```
+
+### Worker Status prüfen:
+```bash
+# Container Status anzeigen
+docker-compose ps deletion-worker
+
+# Health Check Endpoint abfragen
+curl http://localhost:3001/health
+
+# Worker Logs in Echtzeit anzeigen
+docker-compose logs -f deletion-worker
+
+# Letzte 100 Log-Einträge
+docker-compose logs --tail=100 deletion-worker
+```
+
+### Worker Debugging:
+```bash
+# In den Container verbinden
+docker-compose exec deletion-worker sh
+
+# Worker Prozess überwachen
+docker-compose exec deletion-worker ps aux
+
+# Datenbankverbindung testen
+docker-compose exec deletion-worker node -e "
+  const mysql = require('mysql2');
+  const conn = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+  });
+  conn.connect(err => {
+    console.log(err ? 'DB Error: ' + err : 'DB Connected!');
+    process.exit(0);
+  });
+"
+```
+
+### Worker Management:
+```bash
+# Worker stoppen
+docker-compose stop deletion-worker
+
+# Worker neustarten
+docker-compose restart deletion-worker
+
+# Worker entfernen (Container löschen)
+docker-compose rm -f deletion-worker
+
+# Worker Logs aufräumen
+docker-compose logs --no-log-prefix deletion-worker > deletion-worker.log
+```
+
+### Environment Variables:
+Der Worker nutzt folgende Umgebungsvariablen (siehe docker-compose.yml):
+- `DELETION_WORKER_HEALTH_PORT`: Health Check Port (default: 3001)
+- `DB_*`: Datenbankverbindung (gleich wie Backend)
+- `REDIS_*`: Redis Verbindung für Session Cleanup
+- `SMTP_*`: Email-Versand für Löschbenachrichtigungen
+
+### Monitoring:
+```bash
+# Worker Health Status als JSON
+curl -s http://localhost:3001/health | jq '.'
+
+# Beispiel Output:
+{
+  "status": "healthy",
+  "uptime": 3600,
+  "timestamp": "2025-06-13T15:30:00Z",
+  "isProcessing": false,
+  "pid": 42
+}
+```
+
+### Troubleshooting:
+1. **Worker startet nicht**: 
+   - Prüfe ob MySQL und Redis laufen: `docker-compose ps`
+   - Prüfe Logs: `docker-compose logs deletion-worker`
+
+2. **Keine Verbindung zur DB**:
+   - Prüfe Environment Variables: `docker-compose exec deletion-worker env | grep DB_`
+   - Teste Netzwerk: `docker-compose exec deletion-worker ping mysql`
+
+3. **Worker verarbeitet keine Jobs**:
+   - Prüfe Queue Status in DB: `SELECT * FROM tenant_deletion_queue WHERE status = 'queued'`
+   - Prüfe Worker Logs auf Fehler
+
+## 🚨 NOCH NICHT IMPLEMENTIERTE FEATURES (Stand: 07.07.2025)
+
+### 1. Zwei-Personen-Prinzip (Two-Person Rule)
+
+**Was fehlt:**
+- Database Schema für zweite Bestätigung
+- API Endpoints für Approval-Workflow
+- UI für Genehmigungsprozess
+
+**Implementierung:**
+
+#### Database Migration:
+```sql
+-- Erweitere tenant_deletion_queue Tabelle
+ALTER TABLE tenant_deletion_queue 
+  ADD COLUMN approval_required BOOLEAN DEFAULT TRUE,
+  ADD COLUMN second_approver_id INT NULL,
+  ADD COLUMN approval_requested_at TIMESTAMP NULL,
+  ADD COLUMN approved_at TIMESTAMP NULL,
+  ADD COLUMN approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  ADD FOREIGN KEY (second_approver_id) REFERENCES users(id);
+
+-- Neue Tabelle für Approval-Historie
+CREATE TABLE tenant_deletion_approvals (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  queue_id INT NOT NULL,
+  approver_id INT NOT NULL,
+  action ENUM('requested', 'approved', 'rejected', 'cancelled'),
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (queue_id) REFERENCES tenant_deletion_queue(id),
+  FOREIGN KEY (approver_id) REFERENCES users(id)
+);
+```
+
+#### Service Erweiterung:
+```typescript
+// In TenantDeletionService
+async requestDeletionApproval(tenantId: number, requestedBy: number): Promise<number> {
+  // Erstelle Queue-Eintrag mit pending approval
+  const queueId = await this.createQueueEntry(tenantId, requestedBy, 'pending_approval');
+  
+  // Benachrichtige alle anderen Root-User
+  const otherRoots = await query(
+    'SELECT * FROM users WHERE role = "root" AND id != ?',
+    [requestedBy]
+  );
+  
+  for (const root of otherRoots) {
+    await emailService.sendEmail({
+      to: root.email,
+      subject: 'Genehmigung erforderlich: Tenant-Löschung',
+      template: 'deletion-approval-request',
+      data: {
+        tenantName: tenantInfo.company_name,
+        requestedBy: requestedByUser.name,
+        approvalUrl: `${APP_URL}/root/approvals/${queueId}`
+      }
+    });
+  }
+  
+  return queueId;
+}
+
+async approveDeletion(queueId: number, approverId: number): Promise<void> {
+  // Prüfe ob Approver != Requester
+  const [queue] = await query(
+    'SELECT * FROM tenant_deletion_queue WHERE id = ?',
+    [queueId]
+  );
+  
+  if (queue.created_by === approverId) {
+    throw new Error('Cannot approve own deletion request');
+  }
+  
+  // Update Queue Status
+  await execute(
+    `UPDATE tenant_deletion_queue 
+     SET second_approver_id = ?, approved_at = NOW(), 
+         approval_status = 'approved', status = 'queued'
+     WHERE id = ?`,
+    [approverId, queueId]
+  );
+  
+  // Log approval
+  await this.logApprovalAction(queueId, approverId, 'approved');
+}
+```
+
+### 2. Emergency Stop während Verarbeitung
+
+**Was fehlt:**
+- Interrupt-Mechanismus im Worker
+- Rollback während laufender Verarbeitung
+- Status-Recovery nach Emergency Stop
+
+**Implementierung:**
+
+#### Worker Erweiterung:
+```typescript
+// In DeletionWorker
+class DeletionWorker {
+  private emergencyStopRequested = false;
+  private currentQueueId: number | null = null;
+  
+  async checkEmergencyStop(): Promise<boolean> {
+    if (!this.currentQueueId) return false;
+    
+    const [stopRequest] = await query(
+      'SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?',
+      [this.currentQueueId]
+    );
+    
+    return stopRequest?.emergency_stop === true;
+  }
+  
+  async processWithEmergencyCheck(queueId: number): Promise<void> {
+    this.currentQueueId = queueId;
+    
+    try {
+      for (const step of this.steps) {
+        // Check emergency stop vor jedem Step
+        if (await this.checkEmergencyStop()) {
+          await this.handleEmergencyStop(queueId);
+          return;
+        }
+        
+        await this.executeStep(step);
+      }
+    } finally {
+      this.currentQueueId = null;
+    }
+  }
+  
+  async handleEmergencyStop(queueId: number): Promise<void> {
+    logger.warn(`🚨 EMERGENCY STOP requested for queue ${queueId}`);
+    
+    await execute(
+      `UPDATE tenant_deletion_queue 
+       SET status = 'emergency_stopped', 
+           error_message = 'Emergency stop requested by administrator'
+       WHERE id = ?`,
+      [queueId]
+    );
+    
+    // Trigger Rollback
+    await this.performEmergencyRollback(queueId);
+  }
+}
+```
+
+#### API Endpoint:
+```typescript
+// Emergency Stop Endpoint
+router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), async (req, res) => {
+  try {
+    const queueId = parseInt(req.params.id);
+    
+    // Set emergency stop flag
+    await execute(
+      'UPDATE tenant_deletion_queue SET emergency_stop = TRUE WHERE id = ?',
+      [queueId]
+    );
+    
+    // Log who triggered emergency stop
+    await execute(
+      `INSERT INTO tenant_deletion_log 
+       (queue_id, step_name, status, error_message) 
+       VALUES (?, 'EMERGENCY_STOP', 'triggered', ?)`,
+      [queueId, `Emergency stop by user ${req.user.id}`]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Emergency stop triggered. Worker will halt at next checkpoint.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+```
+
+### 3. Monitoring & Alerting System
+
+**Was fehlt:**
+- Slack/Teams Integration
+- PagerDuty für kritische Fehler
+- Echtzeit-Dashboard
+
+**Implementierung:**
+
+#### Alert Service:
+```typescript
+// backend/src/services/alerting.service.ts
+import axios from 'axios';
+
+export class AlertingService {
+  async sendSlackAlert(alert: {
+    channel: string;
+    severity: 'info' | 'warning' | 'critical';
+    title: string;
+    message: string;
+    fields?: Record<string, any>;
+  }): Promise<void> {
+    if (!process.env.SLACK_WEBHOOK_URL) return;
+    
+    const color = {
+      info: '#36a64f',
+      warning: '#ff9800',
+      critical: '#f44336'
+    }[alert.severity];
+    
+    await axios.post(process.env.SLACK_WEBHOOK_URL, {
+      channel: alert.channel,
+      attachments: [{
+        color,
+        title: alert.title,
+        text: alert.message,
+        fields: Object.entries(alert.fields || {}).map(([k, v]) => ({
+          title: k,
+          value: String(v),
+          short: true
+        })),
+        footer: 'Assixx Deletion System',
+        ts: Math.floor(Date.now() / 1000)
+      }]
+    });
+  }
+  
+  async sendPagerDutyAlert(incident: {
+    summary: string;
+    severity: 'critical' | 'error' | 'warning';
+    details: any;
+  }): Promise<void> {
+    if (!process.env.PAGERDUTY_TOKEN) return;
+    
+    await axios.post('https://api.pagerduty.com/incidents', {
+      incident: {
+        type: 'incident',
+        title: incident.summary,
+        urgency: incident.severity === 'critical' ? 'high' : 'low',
+        body: {
+          type: 'incident_body',
+          details: JSON.stringify(incident.details, null, 2)
+        }
+      }
+    }, {
+      headers: {
+        'Authorization': `Token token=${process.env.PAGERDUTY_TOKEN}`,
+        'Accept': 'application/vnd.pagerduty+json;version=2'
+      }
+    });
+  }
+}
+
+// Integration in TenantDeletionService
+private async alertOnFailure(queueId: number, error: Error): Promise<void> {
+  await alertingService.sendSlackAlert({
+    channel: '#alerts-critical',
+    severity: 'critical',
+    title: '🚨 Tenant Deletion Failed',
+    message: error.message,
+    fields: {
+      'Queue ID': queueId,
+      'Error Type': error.name,
+      'Timestamp': new Date().toISOString(),
+      'Environment': process.env.NODE_ENV
+    }
+  });
+  
+  // Bei kritischen Fehlern auch PagerDuty
+  if (error.message.includes('critical') || error.message.includes('database')) {
+    await alertingService.sendPagerDutyAlert({
+      summary: `Tenant deletion critical failure - Queue ${queueId}`,
+      severity: 'critical',
+      details: {
+        queueId,
+        error: error.message,
+        stack: error.stack
+      }
+    });
+  }
+}
+```
+
+### 4. Weitere fehlende Features
+
+#### 4.1 Dry-Run Modus:
+```typescript
+async performDryRun(tenantId: number): Promise<DryRunReport> {
+  const report: DryRunReport = {
+    tenantId,
+    estimatedDuration: 0,
+    affectedRecords: {},
+    warnings: [],
+    blockers: []
+  };
+  
+  // Simuliere alle Steps ohne Ausführung
+  for (const step of this.steps) {
+    const count = await this.estimateStepImpact(tenantId, step);
+    report.affectedRecords[step.name] = count;
+    report.estimatedDuration += count * 0.001; // 1ms pro Record
+  }
+  
+  return report;
+}
+```
+
+#### 4.2 Cronjobs Cleanup Step:
+```typescript
+{
+  name: 'scheduled_tasks_cleanup',
+  description: 'Lösche geplante Tasks und Cronjobs',
+  critical: false,
+  handler: async (tenantId: number, queueId: number, connection: any) => {
+    let deleted = 0;
+    
+    // Scheduled Tasks
+    const [tasks] = await connection.execute(
+      'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
+      [tenantId]
+    );
+    deleted += tasks.affectedRows || 0;
+    
+    // Recurring Jobs
+    const [jobs] = await connection.execute(
+      'DELETE FROM recurring_jobs WHERE tenant_id = ?',
+      [tenantId]
+    );
+    deleted += jobs.affectedRows || 0;
+    
+    return deleted;
+  }
+}
+```
+
+#### 4.3 MySQL Event für Backup Cleanup:
+```sql
+-- In Migration hinzufügen
+DELIMITER $$
+
+CREATE EVENT IF NOT EXISTS cleanup_old_tenant_backups
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+  -- Lösche Backups älter als 90 Tage
+  DELETE FROM tenant_deletion_backups 
+  WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
+  
+  -- Lösche Export-Dateien älter als 90 Tage
+  DELETE FROM tenant_data_exports 
+  WHERE expires_at < NOW();
+END$$
+
+DELIMITER ;
+
+-- Event Scheduler aktivieren (muss von Admin gemacht werden)
+-- SET GLOBAL event_scheduler = ON;
+```
+
+## 📋 IMPLEMENTIERUNGS-EMPFEHLUNG
+
+### Phase 1: Kritische Sicherheits-Features (1-2 Tage)
+1. **Zwei-Personen-Prinzip** implementieren
+2. **Emergency Stop** während Verarbeitung
+3. **24h Cooling-Off** enforcement
+
+### Phase 2: Monitoring & Operations (1 Tag)
+1. **Slack/Teams Integration**
+2. **Alert System** bei Fehlern
+3. **Monitoring Dashboard**
+
+### Phase 3: Nice-to-Have Features (1 Tag)
+1. **Dry-Run Modus**
+2. **Partial Deletion**
+3. **MySQL Events** für Cleanup
+
+### Priorisierung:
+- 🔴 **KRITISCH**: Zwei-Personen-Prinzip, Emergency Stop
+- 🟠 **WICHTIG**: Monitoring, 24h Cooling-Off
+- 🟡 **NICE**: Dry-Run, Partial Deletion

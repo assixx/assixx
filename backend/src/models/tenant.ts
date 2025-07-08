@@ -106,14 +106,10 @@ export class Tenant {
       // 3. Erstelle Root-Benutzer (Firmeninhaber)
       const hashedPassword = await bcrypt.hash(admin_password, 10);
 
-      // Generate employee_id: domain|role|userid|timestamp
-      // We'll add the user ID after insert
-      const timestamp = Date.now().toString().slice(-6);
-      const tempEmployeeId = `${subdomain.toUpperCase()}|ROOT|TEMP|${timestamp}`;
-
+      // Create user first without employee_id
       const [userResult] = await connection.query<ResultSetHeader>(
-        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, employee_id) 
-         VALUES (?, ?, ?, 'root', ?, ?, ?, ?)`,
+        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id) 
+         VALUES (?, ?, ?, 'root', ?, ?, ?)`,
         [
           admin_email,
           admin_email,
@@ -121,16 +117,20 @@ export class Tenant {
           admin_first_name,
           admin_last_name,
           tenantId,
-          tempEmployeeId,
         ]
       );
 
       const userId = userResult.insertId;
 
-      // Update employee_id with actual user ID
-      const finalEmployeeId = `${subdomain.toUpperCase()}|ROOT|${userId}|${timestamp}`;
+      // Generate employee_id using the same format as in root.ts
+      const { generateEmployeeId } = await import(
+        '../utils/employeeIdGenerator'
+      );
+      const employeeId = generateEmployeeId(subdomain, 'root', userId);
+
+      // Update user with generated employee_id
       await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [
-        finalEmployeeId,
+        employeeId,
         userId,
       ]);
 

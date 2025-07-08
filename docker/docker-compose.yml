@@ -44,11 +44,15 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
+      DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
     ports:
       - '3000:3000'
     volumes:
       - ../uploads:/app/uploads
       - ../backend/logs:/app/backend/logs
+      - ../exports:/exports
+      - ../backups:/backups
       # Live-Reload Volumes für Entwicklung
       - ../backend:/app/backend:delegated
       - ../frontend:/app/frontend:delegated
@@ -91,6 +95,66 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Tenant Deletion Worker
+  deletion-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: assixx-deletion-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${MYSQL_USER:-assixx_user}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      DB_NAME: ${MYSQL_DATABASE:-main}
+      JWT_SECRET: ${JWT_SECRET:-default-dev-jwt-secret}
+      SESSION_SECRET: ${SESSION_SECRET:-default-dev-session-secret}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DELETION_WORKER_HEALTH_PORT: 3001
+      DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
+      DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
+      # Email settings for deletion notifications
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
+    ports:
+      - '3001:3001'  # Health check port
+    volumes:
+      - ../backend:/app/backend:delegated
+      - ../package.json:/app/package.json:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../.env:/app/.env:ro
+      - /app/node_modules
+      - ../exports:/exports
+      - ../backups:/backups
+      # Worker specific logs
+      - ../backend/logs/deletion-worker:/app/backend/logs/deletion-worker
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Worker command - use tsx directly
+    command: ['pnpm', 'exec', 'tsx', '/app/backend/src/workers/deletionWorker.ts']
 
   # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
   phpmyadmin:
