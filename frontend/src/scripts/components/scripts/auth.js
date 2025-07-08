@@ -109,7 +109,7 @@ let userProfileCache = { data: null, timestamp: 0 };
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 // Promise cache to prevent concurrent requests
 let profileLoadingPromise = null;
-export async function loadUserInfo() {
+export function loadUserInfo() {
   try {
     // Check if we have cached data that's still fresh
     const now = Date.now();

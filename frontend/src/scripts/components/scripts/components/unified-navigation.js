@@ -2,6 +2,9 @@
  * Unified Navigation Component für alle Dashboards
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design
  */
+
+/* global HTMLAnchorElement */
+
 // Import role switch function
 import { switchRoleForRoot } from '../role-switch';
 // Import loadUserInfo for cached profile loading

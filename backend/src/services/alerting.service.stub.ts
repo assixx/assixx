@@ -11,7 +11,7 @@ interface SlackAlert {
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
-  fields?: Record<string, any>;
+  fields?: Record<string, string | number | boolean>;
 }
 
 interface TeamsAlert {
@@ -29,7 +29,7 @@ interface TeamsAlert {
 interface PagerDutyIncident {
   summary: string;
   severity: 'critical' | 'error' | 'warning' | 'info';
-  details: any;
+  details: Record<string, unknown>;
   component?: string;
   group?: string;
 }
@@ -86,7 +86,7 @@ export class AlertingService {
   async sendCriticalAlert(
     title: string,
     message: string,
-    details: Record<string, any>
+    details: Record<string, unknown>
   ): Promise<void> {
     logger.error(`[STUB] Critical Alert: ${title} - ${message}`, details);
 

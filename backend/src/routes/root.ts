@@ -5,14 +5,14 @@
 
 import express, { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { authenticateToken, authorizeRole } from '../auth';
+// import { authenticateToken, authorizeRole } from '../auth'; // Now using security.root()
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/errorHandler';
 import { security } from '../middleware/security';
 import { createValidation } from '../middleware/validation';
 import { param } from 'express-validator';
 import { successResponse, errorResponse } from '../types/response.types';
-import { RowDataPacket } from 'mysql2';
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
@@ -110,15 +110,27 @@ const updateAdminValidation = createValidation([
 // Admin-Benutzer erstellen - POST /admins endpoint
 router.post(
   '/admins',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.body<{
+    username: string;
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+    company?: string;
+    notes?: string;
+    role?: string;
+    tenant_id?: number;
+    is_active?: boolean;
+  }>(async (req, res) => {
     logger.info(
       `Attempt to create admin user by root user: ${req.user.username}`
     );
     try {
       const adminData = {
         ...req.body,
+        first_name: req.body.first_name || '',
+        last_name: req.body.last_name || '',
         role: 'admin',
         tenant_id: req.user.tenant_id,
         is_active: true, // Ensure new admins are active by default
@@ -159,21 +171,33 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 // Legacy endpoint for backward compatibility
 router.post(
   '/create-admin',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.body<{
+    username: string;
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+    company?: string;
+    notes?: string;
+    role?: string;
+    tenant_id?: number;
+    is_active?: boolean;
+  }>(async (req, res) => {
     logger.info(
       `Attempt to create admin user by root user: ${req.user.username}`
     );
     try {
       const adminData = {
         ...req.body,
+        first_name: req.body.first_name || '',
+        last_name: req.body.last_name || '',
         role: 'admin',
         tenant_id: req.user.tenant_id,
         is_active: true, // Ensure new admins are active by default
@@ -214,15 +238,14 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 // Liste aller Admin-Benutzer abrufen
 router.get(
   '/admins',
-  authenticateToken,
-  authorizeRole('root'),
-  async (req, res): Promise<void> => {
+  ...security.root(),
+  typed.auth(async (req, res) => {
     logger.info(
       `Fetching admin users list for root user: ${req.user.username}`
     );
@@ -253,7 +276,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 interface AdminUpdateData {
@@ -675,7 +698,7 @@ import { tenantDeletionService } from '../services/tenantDeletion.service';
 router.get(
   '/deletion-status',
   ...security.root(),
-  typed.query<{}>(async (_req, res) => {
+  typed.auth(async (_req, res) => {
     try {
       const [deletions] = await executeQuery(
         `SELECT 
@@ -780,11 +803,11 @@ router.post(
       await tenantDeletionService.approveDeletion(queueId, approverId);
 
       res.json(successResponse({ message: 'Löschung genehmigt' }));
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error approving deletion:', error);
-      res
-        .status(400)
-        .json(errorResponse(error.message || 'Fehler bei der Genehmigung'));
+      const message =
+        error instanceof Error ? error.message : 'Fehler bei der Genehmigung';
+      res.status(400).json(errorResponse(message));
     }
   })
 );
@@ -793,22 +816,26 @@ router.post(
 router.post(
   '/deletion-approvals/:id/reject',
   ...security.root(),
-  async (req: any, res) => {
+  typed.paramsBody<{ id: string }, { reason?: string }>(async (req, res) => {
     try {
       const queueId = parseInt(req.params.id);
       const approverId = req.user.id;
       const { reason } = req.body;
 
-      await tenantDeletionService.rejectDeletion(queueId, approverId, reason);
+      await tenantDeletionService.rejectDeletion(
+        queueId,
+        approverId,
+        reason || 'Keine Angabe'
+      );
 
       res.json(successResponse({ message: 'Löschung abgelehnt' }));
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Error rejecting deletion:', error);
-      res
-        .status(400)
-        .json(errorResponse(error.message || 'Fehler beim Ablehnen'));
+      const message =
+        error instanceof Error ? error.message : 'Fehler beim Ablehnen';
+      res.status(400).json(errorResponse(message));
     }
-  }
+  })
 );
 
 // Emergency stop
@@ -823,11 +850,11 @@ router.post(
       await tenantDeletionService.emergencyStop(queueId, stoppedBy);
 
       res.json(successResponse({ message: 'Emergency Stop aktiviert!' }));
-    } catch (error: any) {
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Fehler beim Emergency Stop';
       logger.error('Error emergency stop:', error);
-      res
-        .status(400)
-        .json(errorResponse(error.message || 'Fehler beim Emergency Stop'));
+      res.status(400).json(errorResponse(message));
     }
   })
 );
@@ -836,7 +863,7 @@ router.post(
 router.delete(
   '/tenants/:id',
   ...security.root(),
-  typed.params<{ id: string }>(async (req: any, res) => {
+  typed.paramsBody<{ id: string }, { reason?: string }>(async (req, res) => {
     const tenantId = parseInt(req.params.id, 10);
     const rootUser = req.user;
 
@@ -1094,80 +1121,86 @@ router.post(
 router.post(
   '/deletion-approvals/:queueId/approve',
   ...security.root(),
-  typed.params<{ queueId: string }>(async (req: any, res) => {
-    const queueId = parseInt(req.params.queueId, 10);
-    const rootUser = req.user;
+  typed.paramsBody<{ queueId: string }, { comment?: string }>(
+    async (req, res) => {
+      const queueId = parseInt(req.params.queueId, 10);
+      const rootUser = req.user;
 
-    logger.info(
-      `Root user ${rootUser.username} approving deletion request ${queueId}`
-    );
-
-    try {
-      await tenantDeletionService.approveDeletion(
-        queueId,
-        rootUser.id,
-        req.body.comment
+      logger.info(
+        `Root user ${rootUser.username} approving deletion request ${queueId}`
       );
 
-      res.json(
-        successResponse(
-          { approved: true },
-          'Löschung wurde genehmigt und wird nach der Grace Period durchgeführt'
-        )
-      );
-    } catch (error) {
-      logger.error(`Error approving deletion ${queueId}:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) || 'Fehler bei der Genehmigung',
-            500
+      try {
+        await tenantDeletionService.approveDeletion(
+          queueId,
+          rootUser.id,
+          req.body.comment
+        );
+
+        res.json(
+          successResponse(
+            { approved: true },
+            'Löschung wurde genehmigt und wird nach der Grace Period durchgeführt'
           )
         );
+      } catch (error) {
+        logger.error(`Error approving deletion ${queueId}:`, error);
+        res
+          .status(500)
+          .json(
+            errorResponse(
+              getErrorMessage(error) || 'Fehler bei der Genehmigung',
+              500
+            )
+          );
+      }
     }
-  })
+  )
 );
 
 // Reject tenant deletion request
 router.post(
   '/deletion-approvals/:queueId/reject',
   ...security.root(),
-  typed.params<{ queueId: string }>(async (req: any, res) => {
-    const queueId = parseInt(req.params.queueId, 10);
-    const rootUser = req.user;
+  typed.paramsBody<{ queueId: string }, { reason: string }>(
+    async (req, res) => {
+      const queueId = parseInt(req.params.queueId, 10);
+      const rootUser = req.user;
 
-    logger.info(
-      `Root user ${rootUser.username} rejecting deletion request ${queueId}`
-    );
-
-    try {
-      if (!req.body.reason) {
-        res
-          .status(400)
-          .json(errorResponse('Grund für Ablehnung ist erforderlich', 400));
-        return;
-      }
-
-      await tenantDeletionService.rejectDeletion(
-        queueId,
-        rootUser.id,
-        req.body.reason
+      logger.info(
+        `Root user ${rootUser.username} rejecting deletion request ${queueId}`
       );
 
-      res.json(successResponse({ rejected: true }, 'Löschung wurde abgelehnt'));
-    } catch (error) {
-      logger.error(`Error rejecting deletion ${queueId}:`, error);
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            getErrorMessage(error) || 'Fehler bei der Ablehnung',
-            500
-          )
+      try {
+        if (!req.body.reason) {
+          res
+            .status(400)
+            .json(errorResponse('Grund für Ablehnung ist erforderlich', 400));
+          return;
+        }
+
+        await tenantDeletionService.rejectDeletion(
+          queueId,
+          rootUser.id,
+          req.body.reason
         );
+
+        res.json(
+          successResponse({ rejected: true }, 'Löschung wurde abgelehnt')
+        );
+      } catch (error) {
+        logger.error(`Error rejecting deletion ${queueId}:`, error);
+        res
+          .status(500)
+          .json(
+            errorResponse(
+              getErrorMessage(error) || 'Fehler bei der Ablehnung',
+              500
+            )
+          );
+      }
     }
-  })
+  )
 );
 
 // Get pending deletion approvals
@@ -1429,7 +1462,7 @@ router.post(
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create root user (without employee_id first)
-      const [result] = await executeQuery<any>(
+      const [result] = await executeQuery<ResultSetHeader>(
         `INSERT INTO users (
           username, email, password, first_name, last_name, 
           role, position, notes, is_active, tenant_id, created_at, updated_at
@@ -1499,7 +1532,17 @@ router.post(
 router.put(
   '/users/:id',
   ...security.root(),
-  typed.params<{ id: string }>(async (req: any, res) => {
+  typed.paramsBody<
+    { id: string },
+    {
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      position?: string;
+      notes?: string;
+      is_active?: boolean;
+    }
+  >(async (req, res) => {
     const userId = parseInt(req.params.id, 10);
     const rootUser = req.user;
     const { first_name, last_name, email, position, notes, is_active } =

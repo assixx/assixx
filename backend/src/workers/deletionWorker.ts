@@ -9,6 +9,7 @@ import { tenantDeletionService } from '../services/tenantDeletion.service';
 import { logger } from '../utils/logger';
 import pool from '../database';
 import * as http from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 
 class DeletionWorker {
   private isRunning = true;
@@ -86,23 +87,25 @@ class DeletionWorker {
     // Simple HTTP server for health checks
     const healthPort = process.env.DELETION_WORKER_HEALTH_PORT || 3001;
 
-    const server = http.createServer((req: any, res: any) => {
-      if (req.url === '/health') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            status: 'healthy',
-            uptime: process.uptime(),
-            timestamp: new Date().toISOString(),
-            isProcessing: this.isProcessing,
-            pid: process.pid,
-          })
-        );
-      } else {
-        res.writeHead(404);
-        res.end('Not found');
+    const server = http.createServer(
+      (req: IncomingMessage, res: ServerResponse) => {
+        if (req.url === '/health') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              status: 'healthy',
+              uptime: process.uptime(),
+              timestamp: new Date().toISOString(),
+              isProcessing: this.isProcessing,
+              pid: process.pid,
+            })
+          );
+        } else {
+          res.writeHead(404);
+          res.end('Not found');
+        }
       }
-    });
+    );
 
     server.listen(healthPort, () => {
       logger.info(`📡 Health check endpoint listening on port ${healthPort}`);
@@ -132,8 +135,8 @@ class DeletionWorker {
     try {
       // Close database connections
       // Close database connections if pool has end method
-      if (typeof (pool as any).end === 'function') {
-        await (pool as any).end();
+      if ('end' in pool && typeof pool.end === 'function') {
+        await pool.end();
       }
       logger.info('✅ Database connections closed');
 

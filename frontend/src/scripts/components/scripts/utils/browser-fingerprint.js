@@ -2,6 +2,9 @@
  * Browser Fingerprinting for Session Security
  * Creates a unique identifier for the browser/device
  */
+
+/* global WebGLRenderingContext */
+
 export class BrowserFingerprint {
   /**
    * Generate a fingerprint based on browser characteristics
@@ -28,20 +31,18 @@ export class BrowserFingerprint {
       // Plugins (deprecated but still useful for fingerprinting)
       plugins: this.getPlugins(),
       // Canvas fingerprint
-      canvas: await this.getCanvasFingerprint(),
+      canvas: this.getCanvasFingerprint(),
       // WebGL
       webgl: this.getWebGLFingerprint(),
       // Audio (mit Error Handling)
-      audio: await this.getAudioFingerprint().catch(() => {
-        console.debug('[Fingerprint] Audio fingerprint error');
-        return 'audio-error';
-      }),
+      audio: this.getAudioFingerprint(),
       // Fonts
-      fonts: await this.getFontFingerprint(),
+      fonts: this.getFontFingerprint(),
     };
     // Create hash from fingerprint
     const fingerprintString = JSON.stringify(fingerprint);
-    return this.hashString(fingerprintString);
+    const hash = await this.hashString(fingerprintString);
+    return hash;
   }
   /**
    * Get installed plugins
@@ -59,7 +60,7 @@ export class BrowserFingerprint {
   /**
    * Canvas fingerprinting
    */
-  static async getCanvasFingerprint() {
+  static getCanvasFingerprint() {
     try {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -101,7 +102,7 @@ export class BrowserFingerprint {
   /**
    * Audio fingerprinting
    */
-  static async getAudioFingerprint() {
+  static getAudioFingerprint() {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -160,7 +161,7 @@ export class BrowserFingerprint {
   /**
    * Font fingerprinting
    */
-  static async getFontFingerprint() {
+  static getFontFingerprint() {
     const testFonts = [
       'Arial',
       'Verdana',

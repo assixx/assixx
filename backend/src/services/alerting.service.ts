@@ -12,7 +12,7 @@ interface SlackAlert {
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
-  fields?: Record<string, any>;
+  fields?: Record<string, string | number | boolean>;
 }
 
 interface TeamsAlert {
@@ -30,7 +30,7 @@ interface TeamsAlert {
 interface PagerDutyIncident {
   summary: string;
   severity: 'critical' | 'error' | 'warning' | 'info';
-  details: any;
+  details: Record<string, unknown>;
   component?: string;
   group?: string;
 }
@@ -81,7 +81,7 @@ export class AlertingService {
         alert.message,
         response.status
       );
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Failed to send Slack alert:', error);
       await this.logAlert(
         'slack',
@@ -90,7 +90,7 @@ export class AlertingService {
         alert.title,
         alert.message,
         0,
-        error.message
+        error instanceof Error ? error.message : String(error)
       );
       throw error;
     }
@@ -143,7 +143,7 @@ export class AlertingService {
         alert.message,
         response.status
       );
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Failed to send Teams alert:', error);
       await this.logAlert(
         'teams',
@@ -152,7 +152,7 @@ export class AlertingService {
         alert.title,
         alert.message,
         0,
-        error.message
+        error instanceof Error ? error.message : String(error)
       );
       throw error;
     }
@@ -221,7 +221,7 @@ export class AlertingService {
         JSON.stringify(incident.details),
         response.status
       );
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Failed to create PagerDuty incident:', error);
       await this.logAlert(
         'pagerduty',
@@ -230,7 +230,7 @@ export class AlertingService {
         incident.summary,
         JSON.stringify(incident.details),
         0,
-        error.message
+        error instanceof Error ? error.message : String(error)
       );
       throw error;
     }
@@ -242,7 +242,7 @@ export class AlertingService {
   async sendCriticalAlert(
     title: string,
     message: string,
-    details: Record<string, any>
+    details: Record<string, unknown>
   ): Promise<void> {
     const promises: Promise<void>[] = [];
 

@@ -55,7 +55,7 @@ export async function checkTenantStatus(
     }
 
     // Check tenant status
-    const tenantRows = await query<TenantStatusRow[]>(
+    const [tenantRows] = await query<TenantStatusRow[]>(
       'SELECT deletion_status, deletion_requested_at, company_name FROM tenants WHERE id = ?',
       [tenantId]
     );
@@ -72,7 +72,7 @@ export async function checkTenantStatus(
     }
 
     // Block access based on deletion status
-    switch ((tenant as any).deletion_status) {
+    switch (tenant.deletion_status) {
       case 'active':
         // Normal operation
         next();
@@ -81,8 +81,8 @@ export async function checkTenantStatus(
       case 'marked_for_deletion':
         // Still accessible but with warning header
         res.setHeader('X-Tenant-Status', 'marked-for-deletion');
-        if ((tenant as any).deletion_requested_at) {
-          const scheduledDate = new Date((tenant as any).deletion_requested_at);
+        if (tenant.deletion_requested_at) {
+          const scheduledDate = new Date(tenant.deletion_requested_at);
           scheduledDate.setDate(scheduledDate.getDate() + 30);
           res.setHeader('X-Tenant-Deletion-Date', scheduledDate.toISOString());
         }
@@ -96,7 +96,7 @@ export async function checkTenantStatus(
         res.status(403).json({
           error: 'Tenant is suspended and scheduled for deletion',
           code: 'TENANT_SUSPENDED',
-          status: (tenant as any).deletion_status,
+          status: tenant.deletion_status,
           message:
             'Ihr Konto wurde gesperrt und wird gelöscht. Bitte kontaktieren Sie den Support für weitere Informationen.',
         });
@@ -109,7 +109,7 @@ export async function checkTenantStatus(
         res.status(403).json({
           error: 'Tenant is currently being deleted',
           code: 'TENANT_DELETING',
-          status: (tenant as any).deletion_status,
+          status: tenant.deletion_status,
           message:
             'Ihr Konto wird gerade gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
         });
@@ -117,7 +117,7 @@ export async function checkTenantStatus(
 
       default:
         logger.error(
-          `Unknown tenant deletion status: ${(tenant as any).deletion_status}`
+          `Unknown tenant deletion status: ${tenant.deletion_status}`
         );
         next();
     }
@@ -136,7 +136,7 @@ export function requireActiveTenant(
   res: Response,
   next: NextFunction
 ): void {
-  checkTenantStatus(req, res, (err?: any) => {
+  checkTenantStatus(req, res, (err?: unknown) => {
     if (err) {
       next(err);
       return;
@@ -153,13 +153,13 @@ export function requireActiveTenant(
       'SELECT deletion_status FROM tenants WHERE id = ?',
       [authReq.user.tenant_id]
     )
-      .then((rows) => {
+      .then(([rows]) => {
         const tenant = rows[0];
-        if (tenant && (tenant as any).deletion_status !== 'active') {
+        if (tenant && tenant.deletion_status !== 'active') {
           res.status(403).json({
             error: 'This action requires an active tenant',
             code: 'TENANT_NOT_ACTIVE',
-            status: (tenant as any).deletion_status,
+            status: tenant.deletion_status,
           });
         } else {
           next();
@@ -179,7 +179,7 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
   daysRemaining?: number;
 } | null> {
   try {
-    const tenantRows = await query<TenantStatusRow[]>(
+    const [tenantRows] = await query<TenantStatusRow[]>(
       'SELECT deletion_status, deletion_requested_at FROM tenants WHERE id = ?',
       [tenantId]
     );
@@ -191,17 +191,17 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
     }
 
     const result = {
-      isScheduledForDeletion: (tenant as any).deletion_status !== 'active',
-      status: (tenant as any).deletion_status,
+      isScheduledForDeletion: tenant.deletion_status !== 'active',
+      status: tenant.deletion_status,
       deletionDate: undefined as Date | undefined,
       daysRemaining: undefined as number | undefined,
     };
 
     if (
-      (tenant as any).deletion_status === 'marked_for_deletion' &&
-      (tenant as any).deletion_requested_at
+      tenant.deletion_status === 'marked_for_deletion' &&
+      tenant.deletion_requested_at
     ) {
-      const scheduledDate = new Date((tenant as any).deletion_requested_at);
+      const scheduledDate = new Date(tenant.deletion_requested_at);
       scheduledDate.setDate(scheduledDate.getDate() + 30); // 30 day grace period
 
       result.deletionDate = scheduledDate;

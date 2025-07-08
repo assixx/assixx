@@ -4,7 +4,8 @@
  */
 
 import { execute, query, transaction } from '../utils/db';
-import { RowDataPacket } from 'mysql2/promise';
+import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import { DbUser } from '../models/user';
 import { logger } from '../utils/logger';
 import emailService from '../utils/emailService';
 import { alertingService } from './alerting.service.stub';
@@ -22,8 +23,14 @@ import { getRedisClient } from '../config/redis';
 const execAsync = promisify(exec);
 
 interface ConnectionWrapper {
-  query: (sql: string, params?: unknown[]) => Promise<any>;
-  execute?: (sql: string, params?: unknown[]) => Promise<any>;
+  query: <T = RowDataPacket[] | ResultSetHeader>(
+    sql: string,
+    params?: unknown[]
+  ) => Promise<[T, unknown]>;
+  execute?: <T = RowDataPacket[] | ResultSetHeader>(
+    sql: string,
+    params?: unknown[]
+  ) => Promise<[T, unknown]>;
 }
 
 interface CountResult extends RowDataPacket {
@@ -138,15 +145,19 @@ export class TenantDeletionService {
         name: 'archive_billing_records',
         description: 'Archiviere Rechnungen (10 Jahre Aufbewahrung)',
         critical: false, // Nicht kritisch, da invoices Tabelle optional ist
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           try {
             // Prüfe ob invoices Tabelle existiert
-            const [tables] = await conn.query(
-              "SHOW TABLES LIKE 'invoices'"
-            );
-            
+            const [tables] = await conn.query("SHOW TABLES LIKE 'invoices'");
+
             if (!tables || tables.length === 0) {
-              logger.info(`Invoices table not found, skipping archival for tenant ${tenantId}`);
+              logger.info(
+                `Invoices table not found, skipping archival for tenant ${tenantId}`
+              );
               return 0;
             }
 
@@ -179,7 +190,10 @@ export class TenantDeletionService {
 
             return result.affectedRows || 0;
           } catch (error) {
-            logger.warn(`Failed to archive billing records for tenant ${tenantId}:`, error);
+            logger.warn(
+              `Failed to archive billing records for tenant ${tenantId}:`,
+              error
+            );
             return 0; // Nicht kritisch, also 0 zurückgeben
           }
         },
@@ -189,18 +203,18 @@ export class TenantDeletionService {
         description: 'Sende finale Benachrichtigungen',
         critical: false,
         handler: async (tenantId: number) => {
-          const admins = await query(
+          const [admins] = await query<DbUser[]>(
             'SELECT u.* FROM users u WHERE u.tenant_id = ? AND u.role IN ("admin", "root")',
             [tenantId]
           );
 
           for (const admin of admins) {
             await emailService.sendEmail({
-              to: (admin as any).email,
+              to: admin.email,
               subject: 'Ihr Assixx-Konto wird gelöscht',
               html: `
                 <h2>Ihr Assixx-Konto wird endgültig gelöscht</h2>
-                <p>Sehr geehrte/r ${(admin as any).first_name} ${(admin as any).last_name},</p>
+                <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
                 <p>Ihr Assixx-Konto wird in Kürze endgültig gelöscht.</p>
                 <p>Falls Sie einen Datenexport benötigen, kontaktieren Sie bitte umgehend den Support.</p>
                 <p>Mit freundlichen Grüßen<br>Ihr Assixx-Team</p>
@@ -215,7 +229,11 @@ export class TenantDeletionService {
         name: 'notify_external_services',
         description: 'Benachrichtige externe Services',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const webhooks = await conn.query(
             'SELECT * FROM tenant_webhooks WHERE tenant_id = ? AND active = 1',
             [tenantId]
@@ -251,7 +269,11 @@ export class TenantDeletionService {
         name: 'redis_cleanup',
         description: 'Lösche Redis Sessions und Cache',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           let deletedKeys = 0;
 
           try {
@@ -262,23 +284,24 @@ export class TenantDeletionService {
             }
 
             // Hole alle User IDs des Tenants
-            const userIds = await conn.query(
+            interface UserIdRow extends RowDataPacket {
+              id: number;
+            }
+            const [userRows] = await conn.query<UserIdRow[]>(
               'SELECT id FROM users WHERE tenant_id = ?',
               [tenantId]
             );
 
-            for (const user of userIds as any[]) {
+            for (const user of userRows) {
               // Lösche alle Keys die mit user:id: beginnen
-              const keys = await redis.keys(`user:${(user as any).id}:*`);
+              const keys = await redis.keys(`user:${user.id}:*`);
               if (keys.length > 0) {
                 await redis.del(keys);
                 deletedKeys += keys.length;
               }
 
               // Lösche Session Keys
-              const sessionKeys = await redis.keys(
-                `session:${(user as any).id}:*`
-              );
+              const sessionKeys = await redis.keys(`session:${user.id}:*`);
               if (sessionKeys.length > 0) {
                 await redis.del(sessionKeys);
                 deletedKeys += sessionKeys.length;
@@ -302,7 +325,11 @@ export class TenantDeletionService {
         name: 'user_sessions',
         description: 'Lösche User Sessions',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE s FROM user_sessions s JOIN users u ON s.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -314,7 +341,11 @@ export class TenantDeletionService {
         name: 'user_chat_status',
         description: 'Lösche Chat Status',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE cs FROM user_chat_status cs JOIN users u ON cs.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -329,7 +360,11 @@ export class TenantDeletionService {
         name: 'chat_notifications',
         description: 'Lösche Chat Benachrichtigungen',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE cn FROM chat_notifications cn JOIN users u ON cn.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -341,7 +376,11 @@ export class TenantDeletionService {
         name: 'email_queue',
         description: 'Lösche ausstehende E-Mails',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM email_queue WHERE tenant_id = ? AND status = "pending"',
             [tenantId]
@@ -355,19 +394,27 @@ export class TenantDeletionService {
         name: 'activity_logs',
         description: 'Lösche Activity Logs',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
+          const [result] = await conn.query<ResultSetHeader>(
             'DELETE al FROM activity_logs al JOIN users u ON al.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return (result as any).affectedRows || 0;
+          return result.affectedRows || 0;
         },
       },
       {
         name: 'api_logs',
         description: 'Lösche API Logs',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE al FROM api_logs al JOIN users u ON al.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -379,7 +426,11 @@ export class TenantDeletionService {
         name: 'security_logs',
         description: 'Lösche Security Logs',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sl FROM security_logs sl JOIN users u ON sl.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -391,12 +442,16 @@ export class TenantDeletionService {
         name: 'admin_logs',
         description: 'Lösche Admin Logs',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
-          const result = await conn.query(
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
+          const [result] = await conn.query<ResultSetHeader>(
             'DELETE FROM admin_logs WHERE tenant_id = ?',
             [tenantId]
           );
-          return (result as any).affectedRows || 0;
+          return result.affectedRows || 0;
         },
       },
 
@@ -405,7 +460,11 @@ export class TenantDeletionService {
         name: 'revoke_oauth_tokens',
         description: 'Widerrufe OAuth Tokens',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           await conn.query(
             'UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE tenant_id = ?',
             [tenantId]
@@ -423,7 +482,11 @@ export class TenantDeletionService {
         name: 'revoke_api_keys',
         description: 'Deaktiviere API Keys',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           await conn.query(
             'UPDATE api_keys SET active = 0, deactivated_at = NOW() WHERE tenant_id = ?',
             [tenantId]
@@ -443,7 +506,11 @@ export class TenantDeletionService {
         name: 'remove_2fa_secrets',
         description: 'Lösche 2FA Secrets',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE s FROM user_2fa_secrets s JOIN users u ON s.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -455,7 +522,11 @@ export class TenantDeletionService {
         name: 'remove_2fa_backup_codes',
         description: 'Lösche 2FA Backup Codes',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE c FROM user_2fa_backup_codes c JOIN users u ON c.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -469,7 +540,11 @@ export class TenantDeletionService {
         name: 'message_read_receipts',
         description: 'Lösche Message Read Receipts',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE mr FROM message_read_receipts mr JOIN users u ON mr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -481,7 +556,11 @@ export class TenantDeletionService {
         name: 'message_status',
         description: 'Lösche Message Status',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ms FROM message_status ms JOIN users u ON ms.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -493,7 +572,11 @@ export class TenantDeletionService {
         name: 'messages',
         description: 'Lösche Messages',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE m FROM messages m JOIN users u ON m.sender_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -505,7 +588,11 @@ export class TenantDeletionService {
         name: 'conversation_participants',
         description: 'Lösche Conversation Participants',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE cp FROM conversation_participants cp JOIN users u ON cp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -517,7 +604,11 @@ export class TenantDeletionService {
         name: 'conversations',
         description: 'Lösche Conversations',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM conversations WHERE tenant_id = ?',
             [tenantId]
@@ -531,7 +622,11 @@ export class TenantDeletionService {
         name: 'document_read_status',
         description: 'Lösche Document Read Status',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE dr FROM document_read_status dr JOIN users u ON dr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -543,7 +638,11 @@ export class TenantDeletionService {
         name: 'documents_with_files',
         description: 'Lösche Documents und Dateien',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Erst Dateipfade sammeln
           const files = await conn.query(
             'SELECT id, file_path, filename FROM documents WHERE tenant_id = ?',
@@ -564,12 +663,16 @@ export class TenantDeletionService {
               try {
                 await fs.access(fullPath);
                 await fs.unlink(fullPath);
-              } catch (err: any) {
-                if (err.code !== 'ENOENT') {
+              } catch (err) {
+                if (
+                  err instanceof Error &&
+                  'code' in err &&
+                  err.code !== 'ENOENT'
+                ) {
                   throw err;
                 }
               }
-            } catch (error: any) {
+            } catch (error) {
               failedFiles.push({
                 document_id: file.id,
                 path: file.file_path,
@@ -606,7 +709,11 @@ export class TenantDeletionService {
         name: 'kvp_comments',
         description: 'Lösche KVP Comments',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE kc FROM kvp_comments kc JOIN users u ON kc.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -618,7 +725,11 @@ export class TenantDeletionService {
         name: 'kvp_ratings',
         description: 'Lösche KVP Ratings',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE kr FROM kvp_ratings kr JOIN users u ON kr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -630,7 +741,11 @@ export class TenantDeletionService {
         name: 'kvp_points',
         description: 'Lösche KVP Points',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE kp FROM kvp_points kp JOIN users u ON kp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -642,7 +757,11 @@ export class TenantDeletionService {
         name: 'kvp_status_history',
         description: 'Lösche KVP Status History',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ksh FROM kvp_status_history ksh JOIN users u ON ksh.changed_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -654,7 +773,11 @@ export class TenantDeletionService {
         name: 'kvp_attachments',
         description: 'Lösche KVP Attachments',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ka FROM kvp_attachments ka JOIN users u ON ka.uploaded_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -666,7 +789,11 @@ export class TenantDeletionService {
         name: 'kvp_suggestions',
         description: 'Lösche KVP Suggestions',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM kvp_suggestions WHERE tenant_id = ?',
             [tenantId]
@@ -680,7 +807,11 @@ export class TenantDeletionService {
         name: 'calendar_attendees',
         description: 'Lösche Calendar Attendees',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ca FROM calendar_attendees ca JOIN users u ON ca.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -692,7 +823,11 @@ export class TenantDeletionService {
         name: 'calendar_participants',
         description: 'Lösche Calendar Participants',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE cp FROM calendar_participants cp JOIN users u ON cp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -704,7 +839,11 @@ export class TenantDeletionService {
         name: 'calendar_reminders',
         description: 'Lösche Calendar Reminders',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE cr FROM calendar_reminders cr JOIN users u ON cr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -716,7 +855,11 @@ export class TenantDeletionService {
         name: 'calendar_shares',
         description: 'Lösche Calendar Shares',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE cs FROM calendar_shares cs JOIN users u1 ON cs.calendar_owner_id = u1.id JOIN users u2 ON cs.shared_with_id = u2.id WHERE u1.tenant_id = ? OR u2.tenant_id = ?',
             [tenantId, tenantId]
@@ -728,7 +871,11 @@ export class TenantDeletionService {
         name: 'calendar_events',
         description: 'Lösche Calendar Events',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM calendar_events WHERE tenant_id = ?',
             [tenantId]
@@ -742,7 +889,11 @@ export class TenantDeletionService {
         name: 'shift_assignments',
         description: 'Lösche Shift Assignments',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sa FROM shift_assignments sa JOIN users u ON sa.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -754,7 +905,11 @@ export class TenantDeletionService {
         name: 'shift_notes',
         description: 'Lösche Shift Notes',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sn FROM shift_notes sn JOIN users u ON sn.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -766,7 +921,11 @@ export class TenantDeletionService {
         name: 'weekly_shift_notes',
         description: 'Lösche Weekly Shift Notes',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE wsn FROM weekly_shift_notes wsn JOIN departments d ON wsn.department_id = d.id WHERE d.tenant_id = ?',
             [tenantId]
@@ -778,7 +937,11 @@ export class TenantDeletionService {
         name: 'shifts',
         description: 'Lösche Shifts',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM shifts WHERE tenant_id = ?',
             [tenantId]
@@ -792,7 +955,11 @@ export class TenantDeletionService {
         name: 'blackboard_confirmations',
         description: 'Lösche Blackboard Confirmations',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE bc FROM blackboard_confirmations bc JOIN users u ON bc.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -804,7 +971,11 @@ export class TenantDeletionService {
         name: 'blackboard_attachments',
         description: 'Lösche Blackboard Attachments',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ba FROM blackboard_attachments ba JOIN users u ON ba.uploaded_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -816,7 +987,11 @@ export class TenantDeletionService {
         name: 'blackboard_entries',
         description: 'Lösche Blackboard Entries',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM blackboard_entries WHERE tenant_id = ?',
             [tenantId]
@@ -830,7 +1005,11 @@ export class TenantDeletionService {
         name: 'survey_comments',
         description: 'Lösche Survey Comments',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sc FROM survey_comments sc JOIN users u ON sc.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -842,7 +1021,11 @@ export class TenantDeletionService {
         name: 'survey_responses',
         description: 'Lösche Survey Responses',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sr FROM survey_responses sr JOIN users u ON sr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -854,7 +1037,11 @@ export class TenantDeletionService {
         name: 'survey_participants',
         description: 'Lösche Survey Participants',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sp FROM survey_participants sp JOIN users u ON sp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -866,7 +1053,11 @@ export class TenantDeletionService {
         name: 'survey_assignments',
         description: 'Lösche Survey Assignments',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sa FROM survey_assignments sa JOIN users u ON sa.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -878,7 +1069,11 @@ export class TenantDeletionService {
         name: 'survey_questions',
         description: 'Lösche Survey Questions',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE sq FROM survey_questions sq JOIN surveys s ON sq.survey_id = s.id WHERE s.tenant_id = ?',
             [tenantId]
@@ -890,7 +1085,11 @@ export class TenantDeletionService {
         name: 'surveys',
         description: 'Lösche Surveys',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM surveys WHERE tenant_id = ?',
             [tenantId]
@@ -904,7 +1103,11 @@ export class TenantDeletionService {
         name: 'user_settings',
         description: 'Lösche User Settings',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE us FROM user_settings us JOIN users u ON us.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -916,7 +1119,11 @@ export class TenantDeletionService {
         name: 'notification_preferences',
         description: 'Lösche Notification Preferences',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE np FROM notification_preferences np JOIN users u ON np.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -930,7 +1137,11 @@ export class TenantDeletionService {
         name: 'scheduled_tasks',
         description: 'Lösche Scheduled Tasks',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
             [tenantId]
@@ -942,7 +1153,11 @@ export class TenantDeletionService {
         name: 'recurring_jobs',
         description: 'Lösche Recurring Jobs',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM recurring_jobs WHERE tenant_id = ?',
             [tenantId]
@@ -956,7 +1171,11 @@ export class TenantDeletionService {
         name: 'employee_availability',
         description: 'Lösche Employee Availability',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ea FROM employee_availability ea JOIN users u ON ea.employee_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -968,7 +1187,11 @@ export class TenantDeletionService {
         name: 'feature_usage_logs',
         description: 'Lösche Feature Usage Logs',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ful FROM feature_usage_logs ful JOIN users u ON ful.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -982,7 +1205,11 @@ export class TenantDeletionService {
         name: 'admin_permission_logs',
         description: 'Lösche Admin Permission Logs',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE apl FROM admin_permission_logs apl JOIN users u1 ON apl.admin_user_id = u1.id JOIN users u2 ON apl.changed_by = u2.id WHERE u1.tenant_id = ? OR u2.tenant_id = ?',
             [tenantId, tenantId]
@@ -994,7 +1221,11 @@ export class TenantDeletionService {
         name: 'admin_department_permissions',
         description: 'Lösche Admin Department Permissions',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE adp FROM admin_department_permissions adp JOIN users u ON adp.admin_user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -1006,7 +1237,11 @@ export class TenantDeletionService {
         name: 'admin_group_permissions',
         description: 'Lösche Admin Group Permissions',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE agp FROM admin_group_permissions agp JOIN users u ON agp.admin_user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -1020,7 +1255,11 @@ export class TenantDeletionService {
         name: 'user_teams',
         description: 'Lösche User Teams',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE ut FROM user_teams ut JOIN users u ON ut.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -1032,7 +1271,11 @@ export class TenantDeletionService {
         name: 'department_group_members',
         description: 'Lösche Department Group Members',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE dgm FROM department_group_members dgm JOIN users u ON dgm.added_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
@@ -1044,7 +1287,11 @@ export class TenantDeletionService {
         name: 'tenant_admins',
         description: 'Lösche Tenant Admins',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM tenant_admins WHERE tenant_id = ?',
             [tenantId]
@@ -1058,7 +1305,11 @@ export class TenantDeletionService {
         name: 'nullify_foreign_keys',
         description: 'Setze Foreign Keys auf NULL',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Teams
           await conn.query(
             'UPDATE teams SET team_lead_id = NULL WHERE tenant_id = ?',
@@ -1096,13 +1347,13 @@ export class TenantDeletionService {
             'UPDATE tenants SET created_by = NULL WHERE id = ?',
             [tenantId]
           );
-          
+
           // Tenant deletion_requested_by (wichtig vor User-Löschung!)
           await conn.query(
             'UPDATE tenants SET deletion_requested_by = NULL WHERE id = ?',
             [tenantId]
           );
-          
+
           // Tenant deletion queue - alle User-Referenzen auf NULL (wichtig vor User-Löschung!)
           await conn.query(
             'UPDATE tenant_deletion_queue SET second_approver_id = NULL, emergency_stopped_by = NULL WHERE tenant_id = ?',
@@ -1118,7 +1369,11 @@ export class TenantDeletionService {
         name: 'department_groups',
         description: 'Lösche Department Groups',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE dg FROM department_groups dg JOIN departments d ON dg.department_id = d.id WHERE d.tenant_id = ?',
             [tenantId]
@@ -1130,7 +1385,11 @@ export class TenantDeletionService {
         name: 'teams',
         description: 'Lösche Teams',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM teams WHERE tenant_id = ?',
             [tenantId]
@@ -1142,7 +1401,11 @@ export class TenantDeletionService {
         name: 'departments',
         description: 'Lösche Departments',
         critical: true,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM departments WHERE tenant_id = ?',
             [tenantId]
@@ -1154,12 +1417,16 @@ export class TenantDeletionService {
         name: 'deletion_approvals',
         description: 'Lösche Deletion Approvals',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Lösche alle Approval-Einträge für diesen Tenant
           const result = await conn.query(
             'DELETE ta FROM tenant_deletion_approvals ta ' +
-            'JOIN tenant_deletion_queue tdq ON ta.queue_id = tdq.id ' +
-            'WHERE tdq.tenant_id = ?',
+              'JOIN tenant_deletion_queue tdq ON ta.queue_id = tdq.id ' +
+              'WHERE tdq.tenant_id = ?',
             [tenantId]
           );
           return result.affectedRows || 0;
@@ -1169,7 +1436,11 @@ export class TenantDeletionService {
         name: 'deletion_queue_entries',
         description: 'Lösche alte Deletion Queue Einträge',
         critical: false,
-        handler: async (tenantId: number, queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Lösche alle Queue-Einträge außer dem aktuellen
           const result = await conn.query(
             'DELETE FROM tenant_deletion_queue WHERE tenant_id = ? AND id != ?',
@@ -1182,13 +1453,17 @@ export class TenantDeletionService {
         name: 'users',
         description: 'Lösche Users',
         critical: true,
-        handler: async (tenantId: number, queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Zuerst hole den User der die Queue erstellt hat
           const queueResult = await conn.query(
             'SELECT created_by FROM tenant_deletion_queue WHERE id = ?',
             [queueId]
           );
-          
+
           if (!queueResult || !queueResult[0] || !queueResult[0].created_by) {
             logger.warn(`No created_by found for queue ${queueId}`);
             // Lösche alle Users wenn kein created_by gefunden wurde
@@ -1198,7 +1473,7 @@ export class TenantDeletionService {
             );
             return result.affectedRows || 0;
           }
-          
+
           // Lösche alle Users AUSSER dem Queue-Ersteller
           const result = await conn.query(
             'DELETE FROM users WHERE tenant_id = ? AND id != ?',
@@ -1213,7 +1488,11 @@ export class TenantDeletionService {
         name: 'tenant_features',
         description: 'Lösche Tenant Features',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM tenant_features WHERE tenant_id = ?',
             [tenantId]
@@ -1225,7 +1504,11 @@ export class TenantDeletionService {
         name: 'tenant_plans',
         description: 'Lösche Tenant Plans',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM tenant_plans WHERE tenant_id = ?',
             [tenantId]
@@ -1239,22 +1522,26 @@ export class TenantDeletionService {
         name: 'scheduled_tasks_cleanup',
         description: 'Lösche geplante Tasks und Cronjobs',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           let deleted = 0;
 
           // Scheduled Tasks
-          const [tasks] = await conn.execute(
+          const tasksResult = await conn.query(
             'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
             [tenantId]
           );
-          deleted += tasks.affectedRows || 0;
+          deleted += tasksResult.affectedRows || 0;
 
           // Recurring Jobs
-          const [jobs] = await conn.execute(
+          const jobsResult = await conn.query(
             'DELETE FROM recurring_jobs WHERE tenant_id = ?',
             [tenantId]
           );
-          deleted += jobs.affectedRows || 0;
+          deleted += jobsResult.affectedRows || 0;
 
           return deleted;
         },
@@ -1265,7 +1552,11 @@ export class TenantDeletionService {
         name: 'tenant_webhooks',
         description: 'Lösche Tenant Webhooks',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           const result = await conn.query(
             'DELETE FROM tenant_webhooks WHERE tenant_id = ?',
             [tenantId]
@@ -1279,45 +1570,52 @@ export class TenantDeletionService {
         name: 'last_user',
         description: 'Lösche letzten User',
         critical: true,
-        handler: async (_tenantId: number, queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          _tenantId: number,
+          queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Hole den User der die Queue erstellt hat
           const queueResult = await conn.query(
             'SELECT created_by FROM tenant_deletion_queue WHERE id = ?',
             [queueId]
           );
-          
+
           if (!queueResult || !queueResult[0] || !queueResult[0].created_by) {
             logger.warn(`No created_by found for queue ${queueId}`);
             return 0;
           }
-          
+
           // Setze created_by auf NULL bevor wir den User löschen
           await conn.query(
             'UPDATE tenant_deletion_queue SET created_by = NULL WHERE id = ?',
             [queueId]
           );
-          
+
           // Jetzt können wir den Queue-Ersteller sicher löschen
-          const result = await conn.query(
-            'DELETE FROM users WHERE id = ?',
-            [queueResult[0].created_by]
-          );
+          const result = await conn.query('DELETE FROM users WHERE id = ?', [
+            queueResult[0].created_by,
+          ]);
           return result.affectedRows || 0;
         },
       },
-      
+
       // Level 23: Final - Tenant selbst
       {
         name: 'tenant',
         description: 'Lösche Tenant',
         critical: true,
-        handler: async (tenantId: number, queueId: number, conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          queueId: number,
+          conn: ConnectionWrapper
+        ) => {
           // Setze tenant_id auf NULL in tenant_deletion_queue bevor wir den Tenant löschen
           await conn.query(
             'UPDATE tenant_deletion_queue SET tenant_id = NULL WHERE id = ?',
             [queueId]
           );
-          
+
           // Jetzt können wir den Tenant sicher löschen
           const result = await conn.query('DELETE FROM tenants WHERE id = ?', [
             tenantId,
@@ -1331,10 +1629,16 @@ export class TenantDeletionService {
         name: 'release_subdomain',
         description: 'Subdomain wieder verfügbar machen',
         critical: false,
-        handler: async (tenantId: number, _queueId: number, _conn: ConnectionWrapper) => {
+        handler: async (
+          tenantId: number,
+          _queueId: number,
+          _conn: ConnectionWrapper
+        ) => {
           // Tenant ist bereits gelöscht, wir nutzen nur die ID
           // Subdomain-Release sollte eigentlich vorher in einem separaten Schritt passieren
-          logger.info(`Tenant ${tenantId} deletion completed - subdomain can be reused`);
+          logger.info(
+            `Tenant ${tenantId} deletion completed - subdomain can be reused`
+          );
           return 0;
         },
       },
@@ -1418,7 +1722,12 @@ export class TenantDeletionService {
   ): Promise<number> {
     return await transaction(async (connection) => {
       // 1. Check if tenant exists and is active
-      const [tenant] = await connection.query(
+      interface TenantRow extends RowDataPacket {
+        id: number;
+        deletion_status: string | null;
+        company_name: string;
+      }
+      const [[tenant]] = await connection.query<TenantRow[]>(
         'SELECT id, deletion_status, company_name FROM tenants WHERE id = ?',
         [tenantId]
       );
@@ -1428,7 +1737,7 @@ export class TenantDeletionService {
       }
 
       // If deletion_status is null/undefined, treat as 'active'
-      const currentStatus = (tenant as any).deletion_status || 'active';
+      const currentStatus = tenant.deletion_status || 'active';
 
       if (currentStatus !== 'active') {
         throw new Error(`Tenant is already ${currentStatus}`);
@@ -1451,18 +1760,20 @@ export class TenantDeletionService {
 
       // 4. Calculate scheduled deletion date (30 days grace period)
       // TESTPHASE: Grace Period kann über Umgebungsvariable gesetzt werden
-      const gracePeriodDays = process.env.DELETION_GRACE_PERIOD_DAYS 
-        ? parseInt(process.env.DELETION_GRACE_PERIOD_DAYS) 
+      const gracePeriodDays = process.env.DELETION_GRACE_PERIOD_DAYS
+        ? parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
         : 30;
       const scheduledDate = moment().add(gracePeriodDays, 'days').toDate();
 
       // 5. Create queue entry with pending approval status and 24h cooling-off
       // TESTPHASE: Cooling-off kann über Umgebungsvariable gesetzt werden
-      const coolingOffHours = process.env.DELETION_COOLING_OFF_HOURS 
+      const coolingOffHours = process.env.DELETION_COOLING_OFF_HOURS
         ? parseInt(process.env.DELETION_COOLING_OFF_HOURS)
-        : (process.env.NODE_ENV === 'development' ? 0 : 24);
+        : process.env.NODE_ENV === 'development'
+          ? 0
+          : 24;
 
-      const result = await connection.query(
+      const [result] = await connection.query<ResultSetHeader>(
         `INSERT INTO tenant_deletion_queue 
          (tenant_id, created_by, total_steps, grace_period_days, scheduled_deletion_date, 
           status, approval_status, approval_required, approval_requested_at, cooling_off_hours) 
@@ -1486,8 +1797,8 @@ export class TenantDeletionService {
       this.notifyRootAdminsForApproval(
         tenantId,
         requestedBy,
-        (tenant as any).company_name,
-        (result as any).insertId
+        tenant.company_name,
+        result.insertId
       ).catch((err) => {
         logger.error('Failed to notify root admins:', err);
       });
@@ -1496,7 +1807,7 @@ export class TenantDeletionService {
         `Tenant ${tenantId} deletion requested by user ${requestedBy}. Awaiting approval.`
       );
 
-      return (result as any).insertId;
+      return result.insertId;
     });
   }
 
@@ -1510,7 +1821,16 @@ export class TenantDeletionService {
   ): Promise<void> {
     return await transaction(async (connection) => {
       // Get queue item
-      const [queueResults] = await connection.query<RowDataPacket[]>(
+      interface QueueRow extends RowDataPacket {
+        id: number;
+        tenant_id: number;
+        created_by: number;
+        approval_status: string;
+        approval_requested_at: Date;
+        cooling_off_hours?: number;
+        scheduled_deletion_date?: Date;
+      }
+      const [queueResults] = await connection.query<QueueRow[]>(
         'SELECT * FROM tenant_deletion_queue WHERE id = ?',
         [queueId]
       );
@@ -1533,9 +1853,11 @@ export class TenantDeletionService {
       const requestedAt = new Date(queue.approval_requested_at);
       const hoursSinceRequest =
         (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
-      const coolingOffHours = queue.cooling_off_hours !== undefined && queue.cooling_off_hours !== null 
-        ? queue.cooling_off_hours 
-        : 24;
+      const coolingOffHours =
+        queue.cooling_off_hours !== undefined &&
+        queue.cooling_off_hours !== null
+          ? queue.cooling_off_hours
+          : 24;
 
       if (hoursSinceRequest < coolingOffHours) {
         const hoursRemaining = Math.ceil(coolingOffHours - hoursSinceRequest);
@@ -1564,15 +1886,15 @@ export class TenantDeletionService {
       // Update tenant status to suspended (immediate effect)
       await connection.query(
         'UPDATE tenants SET deletion_status = ? WHERE id = ?',
-        ['suspended', (queue as any).tenant_id]
+        ['suspended', queue.tenant_id]
       );
 
       logger.info(`Deletion request ${queueId} approved by user ${approverId}`);
 
       // Send notification to requester
       await this.notifyApprovalStatus(
-        (queue as any).tenant_id,
-        (queue as any).created_by,
+        queue.tenant_id,
+        queue.created_by,
         'approved',
         approverId
       );
@@ -1586,10 +1908,10 @@ export class TenantDeletionService {
           message: 'A tenant deletion request has been approved',
           fields: {
             'Queue ID': queueId,
-            'Tenant ID': (queue as any).tenant_id,
+            'Tenant ID': queue.tenant_id,
             'Approved By': `User ${approverId}`,
             'Scheduled Date': new Date(
-              (queue as any).scheduled_deletion_date
+              queue.scheduled_deletion_date
             ).toISOString(),
           },
         })
@@ -1615,7 +1937,7 @@ export class TenantDeletionService {
         throw new Error('Deletion request not found');
       }
 
-      if ((queue as any).approval_status !== 'pending') {
+      if (queue.approval_status !== 'pending') {
         throw new Error('Deletion request is not pending approval');
       }
 
@@ -1639,15 +1961,15 @@ export class TenantDeletionService {
       // Revert tenant status
       await connection.query(
         'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NULL, deletion_requested_by = NULL WHERE id = ?',
-        ['active', (queue as any).tenant_id]
+        ['active', queue.tenant_id]
       );
 
       logger.info(`Deletion request ${queueId} rejected by user ${approverId}`);
 
       // Send notification to requester
       await this.notifyApprovalStatus(
-        (queue as any).tenant_id,
-        (queue as any).created_by,
+        queue.tenant_id,
+        queue.created_by,
         'rejected',
         approverId,
         reason
@@ -1662,7 +1984,7 @@ export class TenantDeletionService {
           message: 'A tenant deletion request has been rejected',
           fields: {
             'Queue ID': queueId,
-            'Tenant ID': (queue as any).tenant_id,
+            'Tenant ID': queue.tenant_id,
             'Rejected By': `User ${approverId}`,
             Reason: reason,
           },
@@ -1688,7 +2010,12 @@ export class TenantDeletionService {
       );
 
       // Get tenant info for notifications
-      const [queueItem] = await query(
+      interface QueueItemWithTenant extends RowDataPacket {
+        id: number;
+        tenant_id: number;
+        company_name: string;
+      }
+      const [[queueItem]] = await query<QueueItemWithTenant[]>(
         `SELECT q.*, t.company_name 
          FROM tenant_deletion_queue q
          JOIN tenants t ON t.id = q.tenant_id
@@ -1698,15 +2025,11 @@ export class TenantDeletionService {
 
       if (queueItem) {
         // Notify about emergency stop
-        await this.notifyEmergencyStop(
-          (queueItem as any).tenant_id,
-          queueId,
-          stoppedBy
-        );
+        await this.notifyEmergencyStop(queueItem.tenant_id, queueId, stoppedBy);
 
         // Log the emergency stop
         logger.warn(
-          `EMERGENCY STOP activated for tenant ${(queueItem as any).tenant_id} deletion by user ${stoppedBy}`
+          `EMERGENCY STOP activated for tenant ${queueItem.tenant_id} deletion by user ${stoppedBy}`
         );
       }
     } catch (error) {
@@ -1793,12 +2116,15 @@ export class TenantDeletionService {
         const startTime = Date.now();
 
         // Check for emergency stop before each step
-        const [emergencyCheck] = await query(
+        interface EmergencyCheckRow extends RowDataPacket {
+          emergency_stop: boolean;
+        }
+        const [[emergencyCheck]] = await query<EmergencyCheckRow[]>(
           'SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?',
           [queueId]
         );
 
-        if (emergencyCheck && (emergencyCheck as any).emergency_stop) {
+        if (emergencyCheck && emergencyCheck.emergency_stop) {
           logger.warn(`Emergency stop detected for queue ${queueId}`);
           await this.handleEmergencyStop(queueId, tenantId);
           return;
@@ -1824,8 +2150,10 @@ export class TenantDeletionService {
 
           try {
             recordsDeleted = await transaction(async (stepConnection) => {
-              logger.debug(`Executing step ${step.name} for tenant ${tenantId}`);
-              
+              logger.debug(
+                `Executing step ${step.name} for tenant ${tenantId}`
+              );
+
               // Create a wrapper that handles the connection query format
               const connWrapper: ConnectionWrapper = {
                 query: async (sql: string, params?: unknown[]) => {
@@ -1835,13 +2163,16 @@ export class TenantDeletionService {
                 execute: async (sql: string, params?: unknown[]) => {
                   const [result] = await stepConnection.execute(sql, params);
                   return result;
-                }
+                },
               };
-              
+
               return await step.handler(tenantId, queueId, connWrapper);
             });
           } catch (stepError) {
-            logger.error(`Step ${step.name} failed for tenant ${tenantId}:`, stepError);
+            logger.error(
+              `Step ${step.name} failed for tenant ${tenantId}:`,
+              stepError
+            );
             throw stepError;
           }
 
@@ -1861,7 +2192,7 @@ export class TenantDeletionService {
           );
 
           completedSteps++;
-        } catch (error: any) {
+        } catch (error) {
           logger.error(`Error in deletion step ${step.name}:`, error);
 
           // Log failure
@@ -1875,7 +2206,7 @@ export class TenantDeletionService {
               step.name,
               Date.now() - startTime,
               'failed',
-              error.message,
+              error instanceof Error ? error.message : String(error),
             ]
           );
 
@@ -1894,13 +2225,17 @@ export class TenantDeletionService {
       );
 
       logger.info(`Tenant ${tenantId} deletion completed successfully`);
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Tenant deletion failed:', error);
 
       // Mark as failed
       await execute(
         'UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?',
-        ['failed', error.message, queueId]
+        [
+          'failed',
+          error instanceof Error ? error.message : String(error),
+          queueId,
+        ]
       );
 
       // Revert tenant status
@@ -1912,7 +2247,7 @@ export class TenantDeletionService {
       if (queueItem) {
         await execute('UPDATE tenants SET deletion_status = ? WHERE id = ?', [
           'active',
-          (queueItem as any).tenant_id,
+          queueItem.tenant_id,
         ]);
       }
 
@@ -2013,16 +2348,19 @@ export class TenantDeletionService {
     );
 
     // Notify admins
-    const [stoppedByUser] = await query(
+    interface StoppedByRow extends RowDataPacket {
+      emergency_stopped_by: number | null;
+    }
+    const [[stoppedByUser]] = await query<StoppedByRow[]>(
       'SELECT emergency_stopped_by FROM tenant_deletion_queue WHERE id = ?',
       [queueId]
     );
 
-    if (stoppedByUser && (stoppedByUser as any).emergency_stopped_by) {
+    if (stoppedByUser && stoppedByUser.emergency_stopped_by) {
       await this.notifyEmergencyStop(
         tenantId,
         queueId,
-        (stoppedByUser as any).emergency_stopped_by
+        stoppedByUser.emergency_stopped_by
       );
     }
   }
@@ -2030,7 +2368,7 @@ export class TenantDeletionService {
   /**
    * Get deletion status
    */
-  async getDeletionStatus(tenantId: number): Promise<any> {
+  async getDeletionStatus(tenantId: number): Promise<RowDataPacket | null> {
     const [status] = await query(
       `SELECT 
         q.*,
@@ -2091,7 +2429,7 @@ export class TenantDeletionService {
       // Cancel queue item
       await connection.query(
         'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW() WHERE id = ?',
-        ['cancelled', (queueItem as any).id]
+        ['cancelled', queueItem.id]
       );
 
       // Log cancellation
@@ -2100,7 +2438,7 @@ export class TenantDeletionService {
          (queue_id, step_name, status, error_message) 
          VALUES (?, ?, ?, ?)`,
         [
-          (queueItem as any).id,
+          queueItem.id,
           'deletion_cancelled',
           'success',
           `Cancelled by user ${cancelledBy}`,
@@ -2174,7 +2512,7 @@ export class TenantDeletionService {
     requestedBy: number,
     reason?: string,
     ipAddress?: string,
-    connection?: any
+    connection?: ConnectionWrapper
   ): Promise<void> {
     if (connection) {
       // If connection is provided, use it directly
@@ -2251,18 +2589,18 @@ export class TenantDeletionService {
     tenantId: number,
     scheduledDate: Date
   ): Promise<void> {
-    const admins = await query(
+    const [admins] = await query<DbUser[]>(
       'SELECT * FROM users WHERE tenant_id = ? AND role IN ("admin", "root")',
       [tenantId]
     );
 
     for (const admin of admins) {
       await emailService.sendEmail({
-        to: (admin as any).email,
+        to: admin.email,
         subject: 'Wichtig: Ihr Assixx-Konto wird in 30 Tagen gelöscht',
         html: `
           <h2>Ihr Assixx-Konto wird gelöscht</h2>
-          <p>Sehr geehrte/r ${(admin as any).first_name} ${(admin as any).last_name},</p>
+          <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
           <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${moment(scheduledDate).format('DD.MM.YYYY')}</strong> endgültig gelöscht.</p>
           <h3>Was Sie jetzt tun können:</h3>
           <ul>
@@ -2327,23 +2665,28 @@ export class TenantDeletionService {
     tenantName: string,
     queueId: number
   ): Promise<void> {
-    const rootUsers = await query(
+    const [rootUsers] = await query<DbUser[]>(
       'SELECT * FROM users WHERE role = "root" AND id != ?',
       [requestedBy]
     );
 
-    const [requestedByUser] = await query(
+    interface UserNameInfo extends RowDataPacket {
+      username: string;
+      first_name: string;
+      last_name: string;
+    }
+    const [[requestedByUser]] = await query<UserNameInfo[]>(
       'SELECT username, first_name, last_name FROM users WHERE id = ?',
       [requestedBy]
     );
 
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: (root as any).email,
+        to: root.email,
         subject: 'Genehmigung erforderlich: Tenant-Löschung',
         html: `
           <h2>Tenant-Löschung Genehmigung erforderlich</h2>
-          <p><strong>${(requestedByUser as any).first_name} ${(requestedByUser as any).last_name}</strong> (${(requestedByUser as any).username}) hat die Löschung des folgenden Tenants beantragt:</p>
+          <p><strong>${requestedByUser.first_name} ${requestedByUser.last_name}</strong> (${requestedByUser.username}) hat die Löschung des folgenden Tenants beantragt:</p>
           <ul>
             <li><strong>Firma:</strong> ${tenantName}</li>
             <li><strong>Tenant ID:</strong> ${tenantId}</li>
@@ -2370,13 +2713,21 @@ export class TenantDeletionService {
     approverId: number,
     reason?: string
   ): Promise<void> {
-    const [requester] = await query('SELECT * FROM users WHERE id = ?', [
-      requesterId,
-    ]);
-    const [approver] = await query('SELECT username FROM users WHERE id = ?', [
-      approverId,
-    ]);
-    const [tenant] = await query(
+    const [[requester]] = await query<DbUser[]>(
+      'SELECT * FROM users WHERE id = ?',
+      [requesterId]
+    );
+    interface ApproverRow extends RowDataPacket {
+      username: string;
+    }
+    const [[approver]] = await query<ApproverRow[]>(
+      'SELECT username FROM users WHERE id = ?',
+      [approverId]
+    );
+    interface TenantNameRow extends RowDataPacket {
+      company_name: string;
+    }
+    const [[tenant]] = await query<TenantNameRow[]>(
       'SELECT company_name FROM tenants WHERE id = ?',
       [tenantId]
     );
@@ -2388,15 +2739,15 @@ export class TenantDeletionService {
 
     const statusText =
       status === 'approved'
-        ? `<p style="color: green;"><strong>✅ Genehmigt von ${(approver as any).username}</strong></p>`
-        : `<p style="color: red;"><strong>❌ Abgelehnt von ${(approver as any).username}</strong></p>`;
+        ? `<p style="color: green;"><strong>✅ Genehmigt von ${approver.username}</strong></p>`
+        : `<p style="color: red;"><strong>❌ Abgelehnt von ${approver.username}</strong></p>`;
 
     await emailService.sendEmail({
-      to: (requester as any).email,
+      to: requester.email,
       subject,
       html: `
         <h2>${subject}</h2>
-        <p>Ihre Anfrage zur Löschung des Tenants <strong>${(tenant as any).company_name}</strong> wurde bearbeitet.</p>
+        <p>Ihre Anfrage zur Löschung des Tenants <strong>${tenant.company_name}</strong> wurde bearbeitet.</p>
         ${statusText}
         ${reason ? `<p><strong>Grund:</strong> ${reason}</p>` : ''}
         ${
@@ -2406,7 +2757,7 @@ export class TenantDeletionService {
           <p>Sie können den Status im Admin-Dashboard verfolgen.</p>
         `
             : `
-          <p>Der Tenant bleibt aktiv. Bei Fragen wenden Sie sich bitte an ${(approver as any).username}.</p>
+          <p>Der Tenant bleibt aktiv. Bei Fragen wenden Sie sich bitte an ${approver.username}.</p>
         `
         }
       `,
@@ -2415,24 +2766,27 @@ export class TenantDeletionService {
 
   /* Unused function - kept for future use
   private async _notifyRootAdmins(tenantId: number, deletedBy: number, tenantName: string): Promise<void> {
-    const rootUsers = await query(
+    const [rootUsers] = await query<DbUser[]>(
       'SELECT * FROM users WHERE role = "root" AND id != ?',
       [deletedBy]
     );
     
-    const [deletedByUser] = await query(
+    interface UsernameRow extends RowDataPacket {
+      username: string;
+    }
+    const [[deletedByUser]] = await query<UsernameRow[]>(
       'SELECT username FROM users WHERE id = ?',
       [deletedBy]
     );
     
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: (root as any).email,
+        to: root.email,
         subject: 'Tenant-Löschung eingeleitet',
         html: `
           <h2>Tenant-Löschung eingeleitet</h2>
           <p>Der Tenant <strong>${tenantName}</strong> (ID: ${tenantId}) wurde zur Löschung markiert.</p>
-          <p>Gelöscht von: ${(deletedByUser as any).username}</p>
+          <p>Gelöscht von: ${deletedByUser.username}</p>
           <p>Geplantes Löschdatum: ${moment().add(30, 'days').format('DD.MM.YYYY')}</p>
           <p>Sie können die Löschung im Admin-Dashboard überwachen oder abbrechen.</p>
         `
@@ -2449,7 +2803,7 @@ export class TenantDeletionService {
 
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: (root as any).email,
+        to: root.email,
         subject: '🚨 Kritischer Fehler: Tenant-Löschung fehlgeschlagen',
         html: `
           <h2>Tenant-Löschung fehlgeschlagen</h2>
@@ -2499,23 +2853,32 @@ export class TenantDeletionService {
     queueId: number,
     stoppedBy: number
   ): Promise<void> {
-    const [tenant] = await query(
+    interface TenantNameRow extends RowDataPacket {
+      company_name: string;
+    }
+    const [[tenant]] = await query<TenantNameRow[]>(
       'SELECT company_name FROM tenants WHERE id = ?',
       [tenantId]
     );
-    const [user] = await query('SELECT username FROM users WHERE id = ?', [
-      stoppedBy,
-    ]);
-    const rootUsers = await query('SELECT * FROM users WHERE role = "root"');
+    interface UsernameRow extends RowDataPacket {
+      username: string;
+    }
+    const [[user]] = await query<UsernameRow[]>(
+      'SELECT username FROM users WHERE id = ?',
+      [stoppedBy]
+    );
+    const [rootUsers] = await query<DbUser[]>(
+      'SELECT * FROM users WHERE role = "root"'
+    );
 
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: (root as any).email,
+        to: root.email,
         subject: '🚨 Emergency Stop: Tenant-Löschung angehalten',
         html: `
           <h2>Emergency Stop ausgelöst</h2>
-          <p>Die Löschung des Tenants <strong>${(tenant as any).company_name}</strong> wurde durch einen Emergency Stop angehalten.</p>
-          <p><strong>Gestoppt von:</strong> ${(user as any).username}</p>
+          <p>Die Löschung des Tenants <strong>${tenant.company_name}</strong> wurde durch einen Emergency Stop angehalten.</p>
+          <p><strong>Gestoppt von:</strong> ${user.username}</p>
           <p><strong>Queue ID:</strong> ${queueId}</p>
           <p><strong>Status:</strong> Der Tenant wurde auf "active" zurückgesetzt.</p>
           <p>Bitte prüfen Sie die Logs für weitere Details.</p>
@@ -2527,7 +2890,14 @@ export class TenantDeletionService {
   /**
    * Perform dry-run simulation
    */
-  async performDryRun(tenantId: number): Promise<any> {
+  async performDryRun(tenantId: number): Promise<{
+    tenantId: number;
+    estimatedDuration: number;
+    affectedRecords: Record<string, number>;
+    warnings: string[];
+    blockers: string[];
+    totalRecords: number;
+  }> {
     const report = {
       tenantId,
       estimatedDuration: 0,
@@ -2538,13 +2908,16 @@ export class TenantDeletionService {
     };
 
     // Check for blockers
-    const [legalHold] = await query(
+    interface LegalHoldRow extends RowDataPacket {
+      reason: string;
+    }
+    const [[legalHold]] = await query<LegalHoldRow[]>(
       'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
       [tenantId]
     );
 
     if (legalHold) {
-      report.blockers.push(`Legal hold active: ${(legalHold as any).reason}`);
+      report.blockers.push(`Legal hold active: ${legalHold.reason}`);
     }
 
     // Simulate each step
@@ -2558,28 +2931,31 @@ export class TenantDeletionService {
             'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?',
             [tenantId]
           );
-          count = (result as any).count;
+          const countResult = result as CountResult;
+          count = countResult.count;
         } else if (step.name.includes('documents')) {
           const [result] = await query(
             'SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?',
             [tenantId]
           );
-          count = (result as any).count;
+          const countResult = result as CountResult;
+          count = countResult.count;
         } else if (step.name.includes('messages')) {
           const [result] = await query(
             'SELECT COUNT(*) as count FROM messages WHERE sender_id IN (SELECT id FROM users WHERE tenant_id = ?)',
             [tenantId]
           );
-          count = (result as any).count;
+          const countResult = result as CountResult;
+          count = countResult.count;
         }
         // Add more estimations for other steps...
 
         report.affectedRecords[step.name] = count;
         report.totalRecords += count;
         report.estimatedDuration += count * 0.001; // 1ms per record estimate
-      } catch (error: any) {
+      } catch (error) {
         report.warnings.push(
-          `Could not estimate ${step.name}: ${error.message}`
+          `Could not estimate ${step.name}: ${error instanceof Error ? error.message : String(error)}`
         );
       }
     }

@@ -140,7 +140,18 @@ async function handleFormSubmit(event: Event) {
     return;
   }
 
-  const userData: any = {
+  interface UserData {
+    first_name: string;
+    last_name: string;
+    email: string;
+    position?: string;
+    notes?: string;
+    is_active?: boolean;
+    username?: string;
+    password?: string;
+  }
+
+  const userData: UserData = {
     first_name: firstName,
     last_name: lastName,
     email: email,
@@ -173,8 +184,8 @@ async function handleFormSubmit(event: Event) {
     showSuccess(currentEditId ? 'Root-Benutzer aktualisiert' : 'Root-Benutzer erstellt');
     closeRootModal();
     loadRootUsers();
-  } catch (error: any) {
-    showError(error.message || 'Fehler beim Speichern des Root-Benutzers');
+  } catch (error) {
+    showError(error instanceof Error ? error.message : 'Fehler beim Speichern des Root-Benutzers');
   }
 }
 
@@ -182,7 +193,10 @@ async function handleFormSubmit(event: Event) {
 
 // Close modal and reset
 function closeRootModal() {
-  document.getElementById('rootModal')!.classList.remove('active');
+  const modal = document.getElementById('rootModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
   currentEditId = null;
   (document.getElementById('rootForm') as HTMLFormElement).reset();
 }
@@ -199,14 +213,35 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Make functions available globally for onclick handlers
-(window as any).showAddRootModal = () => {
+declare global {
+  interface Window {
+    showAddRootModal: () => void;
+    closeRootModal: () => void;
+  }
+}
+
+window.showAddRootModal = () => {
   currentEditId = null;
-  document.getElementById('modalTitle')!.textContent = 'Root User hinzufügen';
-  (document.getElementById('rootForm') as HTMLFormElement).reset();
-  document.getElementById('positionDropdownDisplay')!.querySelector('span')!.textContent = 'Position auswählen...';
-  document.getElementById('passwordGroup')!.style.display = 'block';
-  document.getElementById('passwordConfirmGroup')!.style.display = 'block';
-  document.getElementById('activeStatusGroup')!.style.display = 'none';
-  document.getElementById('rootModal')!.classList.add('active');
+  const modalTitle = document.getElementById('modalTitle');
+  if (modalTitle) modalTitle.textContent = 'Root User hinzufügen';
+
+  const rootForm = document.getElementById('rootForm') as HTMLFormElement;
+  if (rootForm) rootForm.reset();
+
+  const positionDropdown = document.getElementById('positionDropdownDisplay');
+  const positionSpan = positionDropdown?.querySelector('span');
+  if (positionSpan) positionSpan.textContent = 'Position auswählen...';
+
+  const passwordGroup = document.getElementById('passwordGroup');
+  if (passwordGroup) passwordGroup.style.display = 'block';
+
+  const passwordConfirmGroup = document.getElementById('passwordConfirmGroup');
+  if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
+
+  const activeStatusGroup = document.getElementById('activeStatusGroup');
+  if (activeStatusGroup) activeStatusGroup.style.display = 'none';
+
+  const rootModal = document.getElementById('rootModal');
+  if (rootModal) rootModal.classList.add('active');
 };
-(window as any).closeRootModal = closeRootModal;
+window.closeRootModal = closeRootModal;
