@@ -936,11 +936,11 @@
             const dashboardLink = document.getElementById('dashboard-link');
             if (dashboardLink) {
               if (payload.role === 'employee' || payload.activeRole === 'employee') {
-                dashboardLink.href = '/pages/employee-dashboard.html';
+                dashboardLink.href = '/employee-dashboard';
               } else if (payload.role === 'admin') {
-                dashboardLink.href = '/pages/admin-dashboard.html';
+                dashboardLink.href = '/admin-dashboard';
               } else if (payload.role === 'root') {
-                dashboardLink.href = '/pages/root-dashboard.html';
+                dashboardLink.href = '/root-dashboard';
               }
             }
           } catch (e) {
@@ -953,7 +953,7 @@
     <!-- Redirect to new documents search page -->
     <script>
       // Fallback redirect if meta refresh doesn't work
-      window.location.href = '/pages/documents-search.html';
+      window.location.href = "/documents-search";
     </script>
   </body>
 </html>

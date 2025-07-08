@@ -78,7 +78,7 @@ class KvpDetailPage {
 
     if (!id || isNaN(parseInt(id))) {
       this.showError('Ungültige Vorschlags-ID');
-      setTimeout(() => (window.location.href = '/pages/kvp.html'), 2000);
+      setTimeout(() => (window.location.href = '/kvp'), 2000);
       return;
     }
 
@@ -146,7 +146,7 @@ class KvpDetailPage {
     } catch (error) {
       console.error('Error loading suggestion:', error);
       this.showError(error instanceof Error ? error.message : 'Fehler beim Laden des Vorschlags');
-      setTimeout(() => (window.location.href = '/pages/kvp.html'), 2000);
+      setTimeout(() => (window.location.href = '/kvp'), 2000);
     }
   }
 
@@ -616,7 +616,7 @@ class KvpDetailPage {
       this.showSuccess('Vorschlag wurde archiviert');
 
       // Navigate back to list
-      setTimeout(() => (window.location.href = '/pages/kvp.html'), 1500);
+      setTimeout(() => (window.location.href = '/kvp'), 1500);
     } catch (error) {
       console.error('Error archiving suggestion:', error);
       this.showError('Fehler beim Archivieren');

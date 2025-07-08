@@ -697,7 +697,7 @@
                 <div class="compact-list" id="recent-documents">
                   <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
                 </div>
-                <a href="/pages/documents-search.html" class="view-all-link" id="manage-documents-link">
+                <a href="/documents-search" class="view-all-link" id="manage-documents-link">
                   Verwalten
                   <span class="arrow">→</span>
                 </a>
@@ -710,7 +710,7 @@
                 <h2 class="card-title">Abteilungen</h2>
               </div>
               <div class="compact-content">
-                <a href="/pages/departments.html" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
+                <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
                 <div class="compact-list" id="department-list">
                   <!-- Wird dynamisch gefüllt -->
                 </div>
@@ -838,11 +838,11 @@
         <section id="documents-section" class="content-section" style="display: none">
           <div class="flex-between mb-3">
             <div>
-              <button class="btn btn-primary" onclick="window.location.href='/pages/document-upload.html'">
+              <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
                 <i class="fas fa-upload me-2"></i>
                 Dokument hochladen
               </button>
-              <a href="/pages/documents.html" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
+              <a href="/documents" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
             </div>
             <div class="search-container">
               <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
@@ -1493,7 +1493,7 @@
 
             if (href === '#departments') {
               e.preventDefault();
-              window.location.href = '/pages/departments.html';
+              window.location.href = "/departments";
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
@@ -2180,7 +2180,7 @@
         if (logoContainer) {
           logoContainer.addEventListener('click', (e) => {
             e.preventDefault();
-            window.location.href = '/pages/admin-dashboard.html';
+            window.location.href = "/admin-dashboard";
           });
         }
 
@@ -2436,7 +2436,7 @@
         window.loadDepartmentsTable = function () {
           console.log('loadDepartmentsTable called - redirecting to departments page');
           // Since we're using a separate departments page, just reload if needed
-          if (window.location.pathname.includes('departments.html')) {
+          if (window.location.pathname.includes('departments')) {
             window.location.reload();
           }
         };
@@ -2493,7 +2493,7 @@
       }
 
       function showAllDepartments() {
-        window.location.href = '/pages/departments.html';
+        window.location.href = "/departments";
       }
 
       function showAllTeams() {

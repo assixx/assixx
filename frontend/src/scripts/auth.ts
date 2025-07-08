@@ -89,7 +89,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   const token = getAuthToken();
 
   if (!token) {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('No authentication token');
   }
 
@@ -111,7 +111,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   // Handle authentication errors
   if (response.status === 401) {
     removeAuthToken();
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
 
@@ -123,13 +123,13 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     // Redirect to appropriate dashboard based on role
     switch (userRole) {
       case 'employee':
-        redirectUrl = '/pages/employee-dashboard.html';
+        redirectUrl = '/employee-dashboard';
         break;
       case 'admin':
-        redirectUrl = '/pages/admin-dashboard.html';
+        redirectUrl = '/admin-dashboard';
         break;
       case 'root':
-        redirectUrl = '/pages/root-dashboard.html';
+        redirectUrl = '/root-dashboard';
         break;
     }
 
@@ -274,7 +274,7 @@ export async function logout(): Promise<void> {
   profileLoadingPromise = null;
 
   // Redirect to login
-  window.location.href = '/pages/login.html';
+  window.location.href = '/login';
 }
 
 // Show success message
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
     console.info('[AUTH] No authentication token found, redirecting to login');
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 

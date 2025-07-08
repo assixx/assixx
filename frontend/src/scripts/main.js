@@ -56,7 +56,7 @@ window.Assixx = {
 
   initPageSpecific() {
     // Get current page
-    const page = window.location.pathname.split('/').pop().replace('.html', '');
+    const page = window.location.pathname.split('/').pop();
 
     // Load page-specific module
     switch (page) {

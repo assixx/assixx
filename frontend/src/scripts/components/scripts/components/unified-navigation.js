@@ -85,7 +85,7 @@ class UnifiedNavigation {
   }
   getSectionUrl(section) {
     // Check if we're on admin-dashboard page
-    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard.html');
+    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard');
     if (isOnAdminDashboard) {
       // If we're already on admin dashboard, use simple query parameter
       return `?section=${section}`;
@@ -762,7 +762,7 @@ class UnifiedNavigation {
     const storageWidget = this.currentRole === 'root' ? this.createStorageWidget() : '';
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
+                <button class="sidebar-title blackboard-button" onclick="window.location.href = "/blackboard"" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
                         <span class="pin-needle"></span>
@@ -934,7 +934,7 @@ class UnifiedNavigation {
         this.handleLogout().catch((error) => {
           console.error('Logout error:', error);
           // Fallback: redirect to login even if logout fails
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
         });
       }
     });
@@ -1756,7 +1756,7 @@ class UnifiedNavigation {
           </div>
           <div class="storage-percentage" id="storage-percentage">0% belegt</div>
         </div>
-        <button class="storage-upgrade-btn" onclick="window.location.href='/pages/storage-upgrade.html'">
+        <button class="storage-upgrade-btn" onclick="window.location.href = "/storage-upgrade"">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
           </svg>
@@ -2310,9 +2310,7 @@ const unifiedNavigationCSS = `
     }
 
     .user-info-card {
-        display: flex;
         align-items: center;
-        gap: 15px;
         padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -2377,7 +2375,7 @@ const unifiedNavigationCSS = `
     #sidebar-user-avatar,
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
-        display: block !important;
+        /*display: block !important;*/
         width: 38px !important;
         height: 38px !important;
         border-radius: 12px !important;

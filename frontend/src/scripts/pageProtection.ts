@@ -74,7 +74,7 @@ export function checkPageAccess(): void {
 
   if (!token) {
     console.warn('No token found, redirecting to login');
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -82,7 +82,7 @@ export function checkPageAccess(): void {
   const tokenData = parseJwt(token);
   if (!tokenData || !tokenData.role) {
     console.error('Invalid token data, redirecting to login');
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -133,7 +133,7 @@ export function initPageProtection(): void {
           const now = Date.now() / 1000;
           if (tokenData.exp < now) {
             console.warn('Token expired, redirecting to login');
-            window.location.href = '/pages/login.html';
+            window.location.href = '/login';
           }
         }
       }

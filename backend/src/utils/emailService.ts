@@ -293,7 +293,7 @@ async function sendNewDocumentNotification(
       documentName: document.file_name,
       documentCategory: document.category || 'Allgemein',
       documentDate: new Date(document.upload_date).toLocaleDateString('de-DE'),
-      dashboardUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/employee-dashboard.html`,
+      dashboardUrl: `${process.env.APP_URL || 'https://app.assixx.de'}/employee-dashboard`,
       unsubscribeUrl,
     };
 

@@ -500,7 +500,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     const token = localStorage.getItem('token');
     if (!token) {
       showError('Nicht angemeldet. Bitte melden Sie sich erneut an.');
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       return;
     }
 

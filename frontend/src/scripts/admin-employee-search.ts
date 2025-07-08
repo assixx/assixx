@@ -348,6 +348,6 @@ if (typeof window !== 'undefined') {
   const windowWithUpload = window as unknown as WindowWithUpload;
   windowWithUpload.uploadDocumentFor = (employeeId: string) => {
     // Redirect to upload page with pre-selected employee
-    window.location.href = `/pages/document-upload.html?userId=${employeeId}`;
+    window.location.href = `/document-upload?userId=${employeeId}`;
   };
 }

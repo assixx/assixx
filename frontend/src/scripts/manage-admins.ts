@@ -5,7 +5,7 @@
   const userRole = localStorage.getItem('userRole');
 
   if (!token || userRole !== 'root') {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 

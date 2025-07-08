@@ -104,7 +104,7 @@ function displayRootUsers(users: RootUser[]) {
     <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
       <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
         <i class="fas fa-info-circle" style="margin-right: 8px; color: var(--primary-color);"></i>
-        Root-User können ihr eigenes Profil über <a href="/pages/root-profile.html" style="color: var(--primary-color); text-decoration: underline;">Mein Profil</a> bearbeiten.
+        Root-User können ihr eigenes Profil über <a href="/root-profile" style="color: var(--primary-color); text-decoration: underline;">Mein Profil</a> bearbeiten.
       </p>
     </div>
   `;

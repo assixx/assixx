@@ -925,7 +925,7 @@ class ChatClient {
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       return;
     }
 
@@ -1071,7 +1071,7 @@ class ChatClient {
       case 'auth_error':
         console.error('❌ Authentication failed:', message.data);
         this.ws?.close();
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         break;
 
       case 'new_message': {

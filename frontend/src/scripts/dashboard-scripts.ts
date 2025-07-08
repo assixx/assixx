@@ -141,17 +141,17 @@ function setupUserAndLogout(): void {
         .catch((error) => {
           console.error('Fehler beim Laden der Benutzerdaten:', error);
           // Bei Fehler zur Login-Seite weiterleiten
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
         });
     } else {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     }
   }
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       removeAuthToken();
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     });
   }
 }

@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logout().catch((error) => {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       });
     });
   }
@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if unauthorized
         if (statsRes.status === 401) {
           console.error('Token expired or invalid, redirecting to login');
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
           return;
         }
 
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           return `
-          <div class="list-item" onclick="window.location.href='/pages/blackboard.html'">
+          <div class="list-item" onclick="window.location.href = "/blackboard"">
             <div class="list-item-content">
               <div class="list-item-title">${entry.title}</div>
               <div class="list-item-meta">

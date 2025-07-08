@@ -60,7 +60,7 @@ export function parseJwt(token) {
 export async function fetchWithAuth(url, options = {}) {
   const token = getAuthToken();
   if (!token) {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('No authentication token');
   }
   // Get browser fingerprint
@@ -78,23 +78,23 @@ export async function fetchWithAuth(url, options = {}) {
   // Handle authentication errors
   if (response.status === 401) {
     removeAuthToken();
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
   // Handle forbidden errors (wrong role)
   if (response.status === 403) {
     const userRole = localStorage.getItem('userRole');
-    let redirectUrl = '/pages/login.html';
+    let redirectUrl = '/login';
     // Redirect to appropriate dashboard based on role
     switch (userRole) {
       case 'employee':
-        redirectUrl = '/pages/employee-dashboard.html';
+        redirectUrl = '/employee-dashboard';
         break;
       case 'admin':
-        redirectUrl = '/pages/admin-dashboard.html';
+        redirectUrl = '/admin-dashboard';
         break;
       case 'root':
-        redirectUrl = '/pages/root-dashboard.html';
+        redirectUrl = '/root-dashboard';
         break;
     }
     console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
@@ -216,7 +216,7 @@ export async function logout() {
   userProfileCache = { data: null, timestamp: 0 };
   profileLoadingPromise = null;
   // Redirect to login
-  window.location.href = '/pages/login.html';
+  window.location.href = '/login';
 }
 // Show success message
 export function showSuccess(message) {
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
     console.info('[AUTH] No authentication token found, redirecting to login');
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
   // Load user info if on authenticated page

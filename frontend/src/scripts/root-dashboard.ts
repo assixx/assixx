@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide all content immediately
     document.body.style.display = 'none';
     // Redirect to login
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logout().catch((error) => {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       });
     });
   }
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       }
     }
   }
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 return `
-              <div class="log-entry" onclick="window.location.href='/pages/logs.html'">
+              <div class="log-entry" onclick="window.location.href = "/logs"">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
                   <div class="log-timestamp">${dateString} ${timeString}</div>

@@ -191,9 +191,9 @@ export class SessionManager {
 
     // Redirect to login with timeout parameter if applicable
     if (isTimeout) {
-      window.location.href = '/pages/login.html?timeout=true';
+      window.location.href = '/login?timeout=true';
     } else {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     }
   }
 

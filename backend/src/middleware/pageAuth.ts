@@ -24,117 +24,173 @@ interface DecodedToken {
 // Define which pages are accessible by which roles
 const pagePermissions: Record<string, PageConfig> = {
   // Admin pages
-  '/pages/admin-dashboard.html': {
+  '/admin-dashboard': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html',
+    redirectOnFail: '/employee-dashboard',
   },
-  '/pages/admin-profile.html': {
+  '/admin-profile': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-profile.html',
+    redirectOnFail: '/employee-profile',
   },
-  '/pages/admin-config.html': {
+  '/admin-config': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html',
+    redirectOnFail: '/employee-dashboard',
   },
-  '/pages/feature-management.html': {
+  '/feature-management': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html',
+    redirectOnFail: '/employee-dashboard',
   },
-  '/pages/documents.html': {
+  '/documents': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/survey-admin.html': {
+  '/survey-admin': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/survey-employee.html',
+    redirectOnFail: '/survey-employee',
   },
-  '/pages/org-management.html': {
+  '/org-management': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html',
+    redirectOnFail: '/employee-dashboard',
   },
-  '/pages/archived-employees.html': {
+  '/archived-employees': {
     allowedRoles: ['admin', 'root'],
-    redirectOnFail: '/pages/employee-dashboard.html',
+    redirectOnFail: '/employee-dashboard',
   },
 
   // Employee pages
-  '/pages/employee-dashboard.html': {
+  '/employee-dashboard': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/employee-profile.html': {
+  '/employee-profile': {
     allowedRoles: ['employee'],
-    redirectOnFail: '/pages/admin-profile.html',
+    redirectOnFail: '/admin-profile',
   },
-  '/pages/profile.html': {
+  '/profile': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/salary-documents.html': {
+  '/salary-documents': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/survey-employee.html': {
+  '/survey-employee': {
     allowedRoles: ['employee'],
-    redirectOnFail: '/pages/survey-admin.html',
+    redirectOnFail: '/survey-admin',
   },
 
   // Root pages
-  '/pages/root-dashboard.html': {
+  '/root-dashboard': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-dashboard.html',
+    redirectOnFail: '/admin-dashboard',
   },
-  '/pages/root-profile.html': {
+  '/root-profile': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-profile.html',
+    redirectOnFail: '/admin-profile',
   },
-  '/pages/root-features.html': {
+  '/root-features': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/feature-management.html',
+    redirectOnFail: '/feature-management',
   },
-  '/pages/manage-admins.html': {
+  '/manage-admins': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-dashboard.html',
+    redirectOnFail: '/admin-dashboard',
   },
-  '/pages/storage-upgrade.html': {
+  '/storage-upgrade': {
     allowedRoles: ['root'],
-    redirectOnFail: '/pages/admin-dashboard.html',
+    redirectOnFail: '/admin-dashboard',
+  },
+  '/manage-root-users': {
+    allowedRoles: ['root'],
+    redirectOnFail: '/root-dashboard',
+  },
+  '/account-settings': {
+    allowedRoles: ['root'],
+    redirectOnFail: '/root-dashboard',
+  },
+  '/tenant-deletion-status': {
+    allowedRoles: ['root'],
+    redirectOnFail: '/root-dashboard',
+  },
+  '/logs': {
+    allowedRoles: ['root'],
+    redirectOnFail: '/root-dashboard',
+  },
+  '/departments': {
+    allowedRoles: ['admin', 'root'],
+    redirectOnFail: '/admin-dashboard',
+  },
+  '/manage-department-groups': {
+    allowedRoles: ['admin', 'root'],
+    redirectOnFail: '/admin-dashboard',
   },
 
   // Shared pages (all authenticated users)
-  '/pages/blackboard.html': {
+  '/blackboard': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/calendar.html': {
+  '/calendar': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/chat.html': {
+  '/chat': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/shifts.html': {
+  '/shifts': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/kvp.html': {
+  '/kvp': {
     allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
+  },
+  '/kvp-detail': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
+  },
+  '/documents-personal': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
+  },
+  '/documents-payroll': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
+  },
+  '/documents-company': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
+  },
+  '/documents-department': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
+  },
+  '/documents-team': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
+  },
+  '/documents-search': {
+    allowedRoles: ['employee', 'admin', 'root'],
+    redirectOnFail: '/login',
   },
 
   // Public pages (no auth required)
-  '/pages/login.html': {
+  '/login': {
     allowedRoles: ['*'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/signup.html': {
+  '/signup': {
     allowedRoles: ['*'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
   },
-  '/pages/index.html': {
+  '/': {
     allowedRoles: ['*'],
-    redirectOnFail: '/pages/login.html',
+    redirectOnFail: '/login',
+  },
+  '/index': {
+    allowedRoles: ['*'],
+    redirectOnFail: '/login',
   },
 };
 
@@ -161,13 +217,13 @@ function getTokenFromRequest(req: Request): string | null {
 function getDashboardForRole(role: string): string {
   switch (role) {
     case 'employee':
-      return '/pages/employee-dashboard.html';
+      return '/employee-dashboard';
     case 'admin':
-      return '/pages/admin-dashboard.html';
+      return '/admin-dashboard';
     case 'root':
-      return '/pages/root-dashboard.html';
+      return '/root-dashboard';
     default:
-      return '/pages/login.html';
+      return '/login';
   }
 }
 
@@ -197,7 +253,7 @@ export function protectPage(
 
   if (!token) {
     logger.warn(`No token for protected page: ${pagePath}`);
-    return res.redirect('/pages/login.html');
+    return res.redirect('/login');
   }
 
   try {
@@ -222,7 +278,7 @@ export function protectPage(
     next();
   } catch (error) {
     logger.error('Token verification failed:', error);
-    res.redirect('/pages/login.html');
+    res.redirect('/login');
   }
 }
 
@@ -233,7 +289,8 @@ export function redirectToDashboard(req: Request, res: Response): void {
   const token = getTokenFromRequest(req);
 
   if (!token) {
-    return res.redirect('/pages/login.html');
+    // No token - redirect to landing page
+    return res.redirect('/index');
   }
 
   try {
@@ -245,7 +302,8 @@ export function redirectToDashboard(req: Request, res: Response): void {
     res.redirect(dashboardUrl);
   } catch (error) {
     logger.error('Token verification failed:', error);
-    res.redirect('/pages/login.html');
+    // Invalid token - redirect to landing page
+    res.redirect('/index');
   }
 }
 

@@ -135,7 +135,7 @@ router.get('/', async (req, res): Promise<void> => {
             <h1 class="success">Erfolgreich abgemeldet</h1>
             <p>Sie haben sich erfolgreich von ${notificationType === 'all' ? 'allen E-Mail-Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet.</p>
             <p>Sie können Ihre Einstellungen jederzeit in Ihrem Profil ändern.</p>
-            <p><a href="/login.html">Zum Login</a></p>
+            <p><a href="/login">Zum Login</a></p>
           </div>
         </body>
       </html>

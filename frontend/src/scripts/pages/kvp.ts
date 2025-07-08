@@ -410,7 +410,7 @@ class KvpPage {
 
   private viewSuggestion(id: number): void {
     // Navigate to detail view
-    window.location.href = `/pages/kvp-detail.html?id=${id}`;
+    window.location.href = `/kvp-detail?id=${id}`;
   }
 
   private async shareSuggestion(id: number): Promise<void> {

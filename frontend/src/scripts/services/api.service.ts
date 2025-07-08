@@ -111,7 +111,7 @@ export class ApiService {
       // Handle 401 Unauthorized
       if (response.status === 401) {
         this.setToken(null);
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         throw new Error('Unauthorized');
       }
 
@@ -171,7 +171,7 @@ export class ApiService {
       // Ignore logout errors
     } finally {
       this.setToken(null);
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     }
   }
 

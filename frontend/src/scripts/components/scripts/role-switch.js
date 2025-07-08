@@ -72,9 +72,9 @@ async function switchRole() {
       // If we're on a dashboard page, redirect to the appropriate dashboard
       if (currentPath.includes('dashboard')) {
         if (newRole === 'admin') {
-          window.location.href = '/pages/admin-dashboard.html';
+          window.location.href = '/admin-dashboard';
         } else if (newRole === 'employee') {
-          window.location.href = '/pages/employee-dashboard.html';
+          window.location.href = '/employee-dashboard';
         }
       } else {
         // For other pages (like KVP), just reload
@@ -248,11 +248,11 @@ export async function switchRoleForRoot(targetRole) {
       // If we're on a dashboard page, redirect to the appropriate dashboard
       if (currentPath.includes('dashboard')) {
         if (targetRole === 'root') {
-          window.location.href = '/pages/root-dashboard.html';
+          window.location.href = '/root-dashboard';
         } else if (targetRole === 'admin') {
-          window.location.href = '/pages/admin-dashboard.html';
+          window.location.href = '/admin-dashboard';
         } else if (targetRole === 'employee') {
-          window.location.href = '/pages/employee-dashboard.html';
+          window.location.href = '/employee-dashboard';
         }
       } else {
         // For other pages (like KVP), just reload

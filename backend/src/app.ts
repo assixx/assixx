@@ -61,6 +61,22 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Input sanitization middleware - apply globally to all routes
 app.use(sanitizeInputs);
 
+// Clean URLs redirect middleware - MUST BE BEFORE static files
+app.use((req: Request, res: Response, next: NextFunction): void => {
+  if (req.path.endsWith('.html') && req.path.startsWith('/pages/')) {
+    const cleanPath = req.path.replace('/pages/', '/').slice(0, -5);
+    res.redirect(
+      301,
+      cleanPath +
+        (req.originalUrl.includes('?')
+          ? req.originalUrl.substring(req.originalUrl.indexOf('?'))
+          : '')
+    );
+    return;
+  }
+  next();
+});
+
 // Protect HTML pages based on user role
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.path.endsWith('.html')) {
@@ -289,20 +305,8 @@ app.use('/api/login', authLimiter);
 app.use('/api/upload', uploadLimiter);
 
 // Clean URLs middleware - Redirect .html to clean paths
-app.use((req: Request, res: Response, next: NextFunction): void => {
-  if (req.path.endsWith('.html')) {
-    const cleanPath = req.path.slice(0, -5);
-    res.redirect(
-      301,
-      cleanPath +
-        (req.originalUrl.includes('?')
-          ? req.originalUrl.substring(req.originalUrl.indexOf('?'))
-          : '')
-    );
-    return;
-  }
-  next();
-});
+// Moved after HTML routes to prevent conflicts
+// Will be activated later in the middleware stack
 
 // Debug middleware to log all requests
 app.use((req: Request, _res: Response, next: NextFunction): void => {
@@ -313,10 +317,7 @@ app.use((req: Request, _res: Response, next: NextFunction): void => {
   next();
 });
 
-// Root redirect - redirect / to /pages/index.html
-app.get('/', (_req: Request, res: Response): void => {
-  res.redirect('/pages/index.html');
-});
+// Root redirect handled by HTML routes and redirectToDashboard below
 
 // Health check route - MUST BE BEFORE OTHER ROUTES
 app.get('/health', (_req: Request, res: Response): void => {
@@ -435,14 +436,14 @@ app.use('/api', checkTenantStatus);
 console.log('[DEBUG] Mounting main routes at /');
 app.use(routes);
 
-// HTML Routes - Serve pages
-import htmlRoutes from './routes/html.routes';
-app.use(htmlRoutes);
-
-// Root redirect - send users to appropriate dashboard based on role
+// Root and dashboard redirect - send users to appropriate dashboard or landing page
 import { redirectToDashboard } from './middleware/pageAuth';
 app.get('/', redirectToDashboard);
 app.get('/dashboard', redirectToDashboard);
+
+// HTML Routes - Serve pages (AFTER root redirect)
+import htmlRoutes from './routes/html.routes';
+app.use(htmlRoutes);
 
 // Error handling middleware
 app.use(

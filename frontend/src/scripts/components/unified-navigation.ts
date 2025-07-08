@@ -145,14 +145,14 @@ class UnifiedNavigation {
 
   private getSectionUrl(section: string): string {
     // Check if we're on admin-dashboard page
-    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard.html');
+    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard');
 
     if (isOnAdminDashboard) {
       // If we're already on admin dashboard, use simple query parameter
       return `?section=${section}`;
     } else {
       // If we're on another page, navigate to admin dashboard with section parameter
-      return `/pages/admin-dashboard.html?section=${section}`;
+      return `/admin-dashboard?section=${section}`;
     }
   }
 
@@ -286,12 +286,12 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '/pages/departments.html',
+          url: '/departments',
           children: [
             {
               id: 'departments-all',
               label: 'Alle Abteilungen',
-              url: '/pages/departments.html',
+              url: '/departments',
             },
           ],
         },
@@ -312,41 +312,41 @@ class UnifiedNavigation {
               id: 'documents-search',
               icon: this.getSVGIcon('search'),
               label: 'Dokumente suchen',
-              url: '/pages/documents-search.html',
+              url: '/documents-search',
             },
             {
               id: 'documents-company',
               icon: this.getSVGIcon('building'),
               label: 'Firmendokumente',
-              url: '/pages/documents-company.html',
+              url: '/documents-company',
               badgeId: 'badge-docs-company',
             },
             {
               id: 'documents-department',
               icon: this.getSVGIcon('sitemap'),
               label: 'Abteilungsdokumente',
-              url: '/pages/documents-department.html',
+              url: '/documents-department',
               badgeId: 'badge-docs-department',
             },
             {
               id: 'documents-team',
               icon: this.getSVGIcon('team'),
               label: 'Teamdokumente',
-              url: '/pages/documents-team.html',
+              url: '/documents-team',
               badgeId: 'badge-docs-team',
             },
             {
               id: 'documents-personal',
               icon: this.getSVGIcon('user'),
               label: 'Persönliche Dokumente',
-              url: '/pages/documents-personal.html',
+              url: '/documents-personal',
               badgeId: 'badge-docs-personal',
             },
             {
               id: 'documents-payroll',
               icon: this.getSVGIcon('money'),
               label: 'Gehaltsabrechnungen',
-              url: '/pages/documents-payroll.html',
+              url: '/documents-payroll',
               badgeId: 'badge-docs-payroll',
             },
           ],
@@ -355,7 +355,7 @@ class UnifiedNavigation {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
-          url: '/pages/calendar.html',
+          url: '/calendar',
         },
         {
           id: 'lean-management',
@@ -368,14 +368,14 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp.html',
+              url: '/kvp',
               badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
               icon: this.getSVGIcon('poll'),
               label: 'Umfragen',
-              url: '/pages/survey-admin.html',
+              url: '/survey-admin',
             },
             {
               id: 'tpm',
@@ -404,13 +404,13 @@ class UnifiedNavigation {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
-          url: '/pages/shifts.html',
+          url: '/shifts',
         },
         {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
-          url: '/pages/chat.html',
+          url: '/chat',
           badge: 'unread-messages',
         },
         {
@@ -425,14 +425,14 @@ class UnifiedNavigation {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Feature Management',
-          url: '/pages/feature-management.html',
+          url: '/feature-management',
         },
         */
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/pages/admin-profile.html',
+          url: '/admin-profile',
         },
       ],
 
@@ -442,7 +442,7 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Dashboard',
-          url: '/pages/employee-dashboard.html',
+          url: '/employee-dashboard',
         },
         {
           id: 'documents',
@@ -455,41 +455,41 @@ class UnifiedNavigation {
               id: 'documents-search',
               icon: this.getSVGIcon('search'),
               label: 'Dokumente suchen',
-              url: '/pages/documents-search.html',
+              url: '/documents-search',
             },
             {
               id: 'documents-company',
               icon: this.getSVGIcon('building'),
               label: 'Firmendokumente',
-              url: '/pages/documents-company.html',
+              url: '/documents-company',
               badgeId: 'badge-docs-company',
             },
             {
               id: 'documents-department',
               icon: this.getSVGIcon('sitemap'),
               label: 'Abteilungsdokumente',
-              url: '/pages/documents-department.html',
+              url: '/documents-department',
               badgeId: 'badge-docs-department',
             },
             {
               id: 'documents-team',
               icon: this.getSVGIcon('team'),
               label: 'Teamdokumente',
-              url: '/pages/documents-team.html',
+              url: '/documents-team',
               badgeId: 'badge-docs-team',
             },
             {
               id: 'documents-personal',
               icon: this.getSVGIcon('user'),
               label: 'Persönliche Dokumente',
-              url: '/pages/documents-personal.html',
+              url: '/documents-personal',
               badgeId: 'badge-docs-personal',
             },
             {
               id: 'documents-payroll',
               icon: this.getSVGIcon('money'),
               label: 'Gehaltsabrechnungen',
-              url: '/pages/documents-payroll.html',
+              url: '/documents-payroll',
               badgeId: 'badge-docs-payroll',
             },
           ],
@@ -498,7 +498,7 @@ class UnifiedNavigation {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
-          url: '/pages/calendar.html',
+          url: '/calendar',
         },
         {
           id: 'lean-management',
@@ -511,14 +511,14 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp.html',
+              url: '/kvp',
               badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
               icon: this.getSVGIcon('poll'),
               label: 'Umfragen',
-              url: '/pages/survey-employee.html',
+              url: '/survey-employee',
               badge: 'pending-surveys',
             },
             {
@@ -548,20 +548,20 @@ class UnifiedNavigation {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
-          url: '/pages/chat.html',
+          url: '/chat',
           badge: 'unread-messages',
         },
         {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
-          url: '/pages/shifts.html',
+          url: '/shifts',
         },
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/pages/profile.html',
+          url: '/profile',
         },
       ],
 
@@ -571,49 +571,49 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Root Dashboard',
-          url: '/pages/root-dashboard.html',
+          url: '/root-dashboard',
         },
         {
           id: 'root-users',
           icon: this.getSVGIcon('user-shield'),
           label: 'Root User',
-          url: '/pages/manage-root-users.html',
+          url: '/manage-root-users',
         },
         {
           id: 'admins',
           icon: this.getSVGIcon('admin'),
           label: 'Administratoren',
-          url: '/pages/manage-admins.html',
+          url: '/manage-admins',
         },
         {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '/pages/departments.html',
+          url: '/departments',
         },
         {
           id: 'department-groups',
           icon: this.getSVGIcon('folder-tree'),
           label: 'Abteilungsgruppen',
-          url: '/pages/manage-department-groups.html',
+          url: '/manage-department-groups',
         },
         {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Features',
-          url: '/pages/root-features.html',
+          url: '/root-features',
         },
         {
           id: 'logs',
           icon: this.getSVGIcon('logs'),
           label: 'System-Logs',
-          url: '/pages/logs.html',
+          url: '/logs',
         },
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/pages/root-profile.html',
+          url: '/root-profile',
         },
         {
           id: 'system',
@@ -625,7 +625,7 @@ class UnifiedNavigation {
               id: 'account-settings',
               icon: this.getSVGIcon('user-shield'),
               label: 'Kontoeinstellungen',
-              url: '/pages/account-settings.html',
+              url: '/account-settings',
             },
           ],
         },
@@ -741,10 +741,10 @@ class UnifiedNavigation {
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =
       storedUserRole === 'root'
-        ? '/pages/root-dashboard.html'
+        ? 'root-dashboard'
         : userRole === 'admin'
-          ? '/pages/admin-dashboard.html?section=dashboard'
-          : '/pages/employee-dashboard.html';
+          ? 'admin-dashboard?section=dashboard'
+          : 'employee-dashboard';
 
     // Determine which logo to use based on sidebar collapsed state
     const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
@@ -864,7 +864,7 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
+                <button class="sidebar-title blackboard-button" onclick="window.location.href='/blackboard'" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
                         <span class="pin-needle"></span>
@@ -1049,7 +1049,7 @@ class UnifiedNavigation {
         this.handleLogout().catch((error) => {
           console.error('Logout error:', error);
           // Fallback: redirect to login even if logout fails
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
         });
       }
     });
@@ -1923,16 +1923,16 @@ class UnifiedNavigation {
 
     logoContainers.forEach((container) => {
       // Determine the dashboard URL based on role
-      let dashboardUrl = '/pages/employee-dashboard.html'; // default
+      let dashboardUrl = 'employee-dashboard'; // default
       switch (currentRole) {
         case 'employee':
-          dashboardUrl = '/pages/employee-dashboard.html';
+          dashboardUrl = 'employee-dashboard';
           break;
         case 'admin':
-          dashboardUrl = '/pages/admin-dashboard.html?section=dashboard';
+          dashboardUrl = 'admin-dashboard?section=dashboard';
           break;
         case 'root':
-          dashboardUrl = '/pages/root-dashboard.html';
+          dashboardUrl = 'root-dashboard';
           break;
         default:
           console.warn('No user role found for logo navigation, defaulting to employee dashboard');
@@ -2009,7 +2009,7 @@ class UnifiedNavigation {
           </div>
           <div class="storage-percentage" id="storage-percentage">0% belegt</div>
         </div>
-        <button class="storage-upgrade-btn" onclick="window.location.href='/pages/storage-upgrade.html'">
+        <button class="storage-upgrade-btn" onclick="window.location.href='/storage-upgrade'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
           </svg>
@@ -2729,7 +2729,7 @@ const unifiedNavigationCSS = `
         letter-spacing: 2px;
     }
 
-    /* Role-specific badge colors - Exact match from logs.html */
+    /* Role-specific badge colors - Exact match from logs */
     .role-badge.root {
         background: rgba(156, 39, 176, 0.15);
         color: #9C27B0;

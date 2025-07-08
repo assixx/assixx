@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const userRole = localStorage.getItem('userRole');
 
   if (!token || userRole !== 'admin') {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -174,7 +174,7 @@ function setupFormHandlers(): void {
       } catch (error) {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       }
     }
   });

@@ -265,7 +265,7 @@ function initializeBlackboard() {
     })
     .catch((error) => {
       console.error('Error checking login:', error);
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     });
 }
 
@@ -601,7 +601,7 @@ async function loadEntries(): Promise<void> {
     // Get token from localStorage
     const token = getAuthToken();
     if (!token) {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       throw new Error('No token found');
     }
 
@@ -618,7 +618,7 @@ async function loadEntries(): Promise<void> {
     if (!response.ok) {
       if (response.status === 401) {
         // Redirect to login if unauthorized
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         throw new Error('Unauthorized');
       }
       throw new Error('Failed to load entries');

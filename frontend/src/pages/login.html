@@ -21,13 +21,13 @@
         // Redirect based on role (validation happens in background after redirect)
         switch (userRole) {
           case 'root':
-            window.location.replace('./root-dashboard.html');
+            window.location.replace('/root-dashboard');
             break;
           case 'admin':
-            window.location.replace('./admin-dashboard.html');
+            window.location.replace('/admin-dashboard');
             break;
           case 'employee':
-            window.location.replace('./employee-dashboard.html');
+            window.location.replace('/employee-dashboard');
             break;
         }
       }
@@ -207,13 +207,13 @@
             // Redirect based on role
             switch (data.role) {
               case 'root':
-                window.location.href = './root-dashboard.html';
+                window.location.href = '/root-dashboard';
                 break;
               case 'admin':
-                window.location.href = './admin-dashboard.html';
+                window.location.href = '/admin-dashboard';
                 break;
               case 'employee':
-                window.location.href = './employee-dashboard.html';
+                window.location.href = '/employee-dashboard';
                 break;
               default:
                 alert('Unknown role');
