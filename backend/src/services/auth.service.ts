@@ -239,6 +239,8 @@ class AuthService {
       is_archived: dbUser.is_archived,
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone_number,
+      landline: dbUser.landline || null,
+      employee_number: dbUser.employee_number || '',
       position: dbUser.position,
       hire_date: dbUser.hire_date,
       birth_date: dbUser.birth_date,
@@ -277,6 +279,8 @@ class AuthService {
     is_archived?: boolean;
     profile_picture?: string | null;
     phone?: string | null;
+    landline?: string | null;
+    employee_number?: string;
     position?: string | null;
     hire_date?: Date | null;
     birthday?: Date | null;
@@ -300,6 +304,8 @@ class AuthService {
       is_archived: dbUser.is_archived || false,
       profile_picture: dbUser.profile_picture ?? null,
       phone_number: dbUser.phone ?? null,
+      landline: dbUser.landline || null,
+      employee_number: dbUser.employee_number || '',
       position: dbUser.position ?? null,
       hire_date: dbUser.hire_date ?? null,
       birth_date: dbUser.birthday ?? null,

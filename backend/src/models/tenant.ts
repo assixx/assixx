@@ -108,8 +108,8 @@ export class Tenant {
 
       // Create user first without employee_id but WITH phone
       const [userResult] = await connection.query<ResultSetHeader>(
-        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone) 
-         VALUES (?, ?, ?, 'root', ?, ?, ?, ?)`,
+        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number) 
+         VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
         [
           admin_email,
           admin_email,
@@ -118,6 +118,7 @@ export class Tenant {
           admin_last_name,
           tenantId,
           phone,
+          '000001', // Temporäre Personalnummer für Root-User
         ]
       );
 

@@ -47,6 +47,8 @@ interface UserProfileResponse {
   profilePicture?: string;
   company_name?: string;
   subdomain?: string;
+  employee_number?: string;
+  employeeNumber?: string;
 }
 
 interface UnreadCountResponse {
@@ -200,6 +202,18 @@ class UnifiedNavigation {
         }
 
         // Birthdate removed as requested
+
+        // Update employee number
+        const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
+        if (sidebarEmployeeNumber) {
+          const employeeNumber = userData.employee_number || userData.data?.employee_number || userData.employeeNumber || (user as User).employeeNumber || '';
+          if (employeeNumber && employeeNumber !== '000001') {
+            sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
+          } else if (employeeNumber === '000001') {
+            sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
+            sidebarEmployeeNumber.style.color = 'var(--warning-color)';
+          }
+        }
 
         // Update header user name with full name
         const headerUserName = document.getElementById('user-name');
@@ -881,6 +895,7 @@ class UnifiedNavigation {
                         </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.email || 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
+                        <div class="user-employee-number" id="sidebar-employee-number" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;"></div>
                         <span id="role-indicator" class="role-badge ${this.currentRole || ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
@@ -2572,9 +2587,9 @@ const unifiedNavigationCSS = `
     }
 
     .user-info-card {
-        display: flex;
+        /*display: flex;*/
         align-items: center;
-        gap: 15px;
+        /*ap: 15px;*/
         padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -2639,7 +2654,7 @@ const unifiedNavigationCSS = `
     #sidebar-user-avatar,
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
-        display: block !important;
+        /*display: block !important;*/
         width: 38px !important;
         height: 38px !important;
         border-radius: 12px !important;
@@ -2654,6 +2669,13 @@ const unifiedNavigationCSS = `
     /* Avatar padding when sidebar is collapsed */
     .sidebar.collapsed .user-avatar {
         padding: 3px;
+    }
+    
+    /* Avatar margin adjustment when sidebar is collapsed */
+    .sidebar.collapsed #sidebar-user-avatar,
+    .sidebar.collapsed .user-avatar,
+    .sidebar.collapsed .user-info-card .user-avatar {
+        margin-left: -16px !important;
     }
 
     .user-info-card:hover .user-avatar {

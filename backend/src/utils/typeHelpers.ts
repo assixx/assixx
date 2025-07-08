@@ -19,6 +19,8 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     isArchived: dbUser.is_archived,
     profilePicture: dbUser.profile_picture,
     phoneNumber: dbUser.phone_number,
+    landline: dbUser.landline,
+    employeeNumber: dbUser.employee_number,
     position: dbUser.position,
     hireDate: dbUser.hire_date,
     birthDate: dbUser.birth_date,

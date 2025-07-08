@@ -735,6 +735,27 @@ router.delete(
       `🔒 SECURE DELETE: Root user ${rootUser.username} (ID: ${rootUser.id}) requesting deletion of their own tenant ${tenantId}`
     );
 
+    // Check if there are at least 2 root users
+    try {
+      const rootUsers = await User.findByRole('root', false, tenantId);
+      if (rootUsers.length < 2) {
+        logger.warn(
+          `Tenant deletion blocked: Only ${rootUsers.length} root user(s) exist for tenant ${tenantId}`
+        );
+        res
+          .status(400)
+          .json(
+            errorResponse(
+              'Tenant-Löschung nicht möglich: Es müssen mindestens 2 Root-Benutzer vorhanden sein, bevor der Tenant gelöscht werden kann.',
+              400
+            )
+          );
+        return;
+      }
+    } catch (error) {
+      logger.error('Error checking root users:', error);
+    }
+
     // Security audit log
     await execute(
       `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, ip_address, created_at) 

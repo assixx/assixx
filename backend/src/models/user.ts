@@ -29,6 +29,8 @@ export interface DbUser extends RowDataPacket {
   department_name?: string;
   position?: string;
   phone?: string;
+  landline?: string;
+  employee_number?: string;
   address?: string;
   birthday?: Date;
   hire_date?: Date;
@@ -62,6 +64,8 @@ interface UserCreateData {
   department_id?: number;
   position?: string;
   phone?: string;
+  landline?: string;
+  employee_number?: string;
   address?: string;
   birthday?: Date;
   hire_date?: Date;
@@ -285,7 +289,7 @@ export class User {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.created_at, u.department_id, 
-        u.position, u.phone, u.profile_picture, u.status, u.is_archived,
+        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
         d.name as department_name 
@@ -409,7 +413,7 @@ export class User {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.employee_id, u.created_at,
-        u.department_id, u.position, u.phone, u.status, u.is_archived,
+        u.department_id, u.position, u.phone, u.landline, u.employee_number, u.status, u.is_archived,
         u.is_active, u.last_login, u.availability_status,
         u.availability_start, u.availability_end, u.availability_notes,
         d.name as department_name
@@ -607,7 +611,7 @@ export class User {
       let query = `
         SELECT u.id, u.username, u.email, u.role, u.company, 
         u.first_name, u.last_name, u.created_at, u.department_id, 
-        u.position, u.phone, u.profile_picture, u.status,
+        u.position, u.phone, u.landline, u.employee_number, u.profile_picture, u.status,
         d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id

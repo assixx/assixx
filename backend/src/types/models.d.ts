@@ -13,6 +13,8 @@ export interface User {
   isArchived: boolean;
   profilePicture: string | null;
   phoneNumber: string | null;
+  landline: string | null;
+  employeeNumber: string;
   position: string | null;
   hireDate: Date | null;
   birthDate: Date | null;
@@ -35,6 +37,8 @@ export interface DatabaseUser {
   is_archived: boolean;
   profile_picture: string | null;
   phone_number: string | null;
+  landline: string | null;
+  employee_number: string;
   position: string | null;
   hire_date: Date | null;
   birth_date: Date | null;

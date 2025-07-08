@@ -49,6 +49,8 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
     is_archived: dbUser.is_archived || false,
     profile_picture: dbUser.profile_picture ?? null,
     phone_number: dbUser.phone || null,
+    landline: dbUser.landline || null,
+    employee_number: dbUser.employee_number || '',
     position: dbUser.position ?? null,
     hire_date: dbUser.hire_date ?? null,
     birth_date: dbUser.birthday || null,

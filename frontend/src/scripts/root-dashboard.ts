@@ -76,11 +76,90 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load user info in header
   loadHeaderUserInfo();
 
+  // Check if employee number needs to be set
+  checkEmployeeNumber();
+
   // Daten laden
   loadDashboardData();
   loadAdmins();
   loadDashboardStats();
   loadActivityLogs();
+
+  // Check if user has temporary employee number
+  async function checkEmployeeNumber(): Promise<void> {
+    try {
+      const response = await fetch('/api/users/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const user = data.data || data.user;
+        
+        // Check if user has temporary employee number
+        if (user.employeeNumber === '000001' || user.employee_number === '000001') {
+          showEmployeeNumberModal();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking employee number:', error);
+    }
+  }
+
+  // Show employee number modal
+  function showEmployeeNumberModal(): void {
+    const modal = document.getElementById('employeeNumberModal');
+    const form = document.getElementById('employeeNumberForm') as HTMLFormElement;
+    const input = document.getElementById('employeeNumberInput') as HTMLInputElement;
+
+    if (!modal || !form || !input) return;
+
+    modal.style.display = 'flex';
+    input.focus();
+
+    // Only allow numbers
+    input.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement;
+      target.value = target.value.replace(/[^0-9]/g, '');
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const employeeNumber = input.value;
+      
+      if (employeeNumber.length !== 6) {
+        alert('Die Personalnummer muss genau 6 Ziffern lang sein.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/users/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ employee_number: employeeNumber }),
+        });
+
+        if (response.ok) {
+          alert('Personalnummer erfolgreich gespeichert.');
+          modal.style.display = 'none';
+          // Reload to update UI
+          window.location.reload();
+        } else {
+          const error = await response.json();
+          alert(`Fehler: ${error.message || 'Personalnummer konnte nicht gespeichert werden.'}`);
+        }
+      } catch (error) {
+        console.error('Error updating employee number:', error);
+        alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      }
+    });
+  }
 
   // Admin erstellen
   async function createAdmin(e: Event): Promise<void> {
