@@ -72,7 +72,13 @@ const signupValidation = createValidation([
     .withMessage('Passwort muss mindestens 8 Zeichen lang sein'),
   body('admin_first_name').optional().trim(),
   body('admin_last_name').optional().trim(),
-  body('phone').optional().trim(),
+  body('phone')
+    .notEmpty()
+    .trim()
+    .matches(/^\+[0-9]{7,29}$/)
+    .withMessage(
+      'Telefonnummer muss mit + beginnen und 7-29 Ziffern enthalten (z.B. +491234567890)'
+    ),
 ]);
 
 const checkSubdomainValidation = createValidation([

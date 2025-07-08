@@ -96,7 +96,13 @@ export class AlertingService {
         severity: 'critical',
         title,
         message,
-        fields: details,
+        fields: Object.entries(details).reduce(
+          (acc, [key, value]) => {
+            acc[key] = String(value);
+            return acc;
+          },
+          {} as Record<string, string>
+        ),
       }),
       this.sendTeamsAlert({
         severity: 'critical',

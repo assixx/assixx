@@ -2,14 +2,25 @@
 
 ## 🚀 TL;DR - AKTUELLE PHASE (30 Sekunden Überblick)
 
-**Was:** Simon's systematisches Testing & Debugging  
-**Ziel:** Version 0.1.0 - Alle Features zu 100% funktionsfähig  
-**Status:** 1/12 Bereiche getestet (Schwarzes Brett teilweise)  
-**Branch:** debugging/v0.1.0 (bereits viele Fixes implementiert!)  
-**Fokus:** UI, Benutzerfreundlichkeit, Einfachheit, Design  
-**Nächster Schritt:** Authentication & Navigation testen
+**Was:** Kompletter Testdurchlauf v0.1.0 - Stabilität sichern  
+**Ziel:** Neuer Tenant erstellen und ALLE Features bis Tenant-Löschung testen  
+**Status:** Erster Testdurchlauf abgeschlossen ✅ - Jetzt systematisches Debugging  
+**Branch:** debugging/v0.1.0--R2Stable  
+**Fokus:** Stabilität, Debugging, Unit Tests einführen  
+**Nächster Schritt:** Neuen Tenant erstellen und kompletten Durchlauf starten
 
-## 🔥 DRINGENDE FIXES (Nr. 1 Priorität!)
+## 🔥 AKTUELLER FOKUS (08.06.2025)
+
+### 🧪 Neuer Testdurchlauf für Version 0.1.0 Stabilität
+
+- **Ziel:** Wiederholte Testdurchläufe bis alles stabil läuft
+- **Methode:** Neuen Tenant erstellen → Alle Features testen → Tenant löschen → Wiederholen
+- **Parallel:** Unit Tests einführen für automatisiertes Testing
+- **Fortschritt:** Nach jedem Test dokumentieren
+- **Code-Qualität während Tests beachten:**
+  - ⚠️ Keine TypeScript `any` types verwenden
+  - ⚠️ Regelmäßig `pnpm run typecheck` ausführen
+  - ⚠️ ESLint errors sofort beheben
 
 ### ✅ 1. **Express-Validator TypeScript Import Problem** (16.06.2025 - GELÖST!)
 

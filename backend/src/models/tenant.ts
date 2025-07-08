@@ -106,10 +106,10 @@ export class Tenant {
       // 3. Erstelle Root-Benutzer (Firmeninhaber)
       const hashedPassword = await bcrypt.hash(admin_password, 10);
 
-      // Create user first without employee_id
+      // Create user first without employee_id but WITH phone
       const [userResult] = await connection.query<ResultSetHeader>(
-        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id) 
-         VALUES (?, ?, ?, 'root', ?, ?, ?)`,
+        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone) 
+         VALUES (?, ?, ?, 'root', ?, ?, ?, ?)`,
         [
           admin_email,
           admin_email,
@@ -117,6 +117,7 @@ export class Tenant {
           admin_first_name,
           admin_last_name,
           tenantId,
+          phone,
         ]
       );
 

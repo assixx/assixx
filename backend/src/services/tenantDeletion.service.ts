@@ -19,22 +19,55 @@ import crypto from 'crypto';
 import axios from 'axios';
 import moment from 'moment';
 import { getRedisClient } from '../config/redis';
+import {
+  ConnectionWrapper as DbConnectionWrapper,
+  wrapConnection,
+} from '../utils/dbWrapper';
 
 const execAsync = promisify(exec);
 
-interface ConnectionWrapper {
-  query: <T = RowDataPacket[] | ResultSetHeader>(
-    sql: string,
-    params?: unknown[]
-  ) => Promise<[T, unknown]>;
-  execute?: <T = RowDataPacket[] | ResultSetHeader>(
-    sql: string,
-    params?: unknown[]
-  ) => Promise<[T, unknown]>;
-}
+type ConnectionWrapper = DbConnectionWrapper;
 
 interface CountResult extends RowDataPacket {
   count: number;
+}
+
+interface TenantInfoRow extends RowDataPacket {
+  id: number;
+  company_name: string;
+  subdomain: string;
+  tax_id?: string;
+  email?: string;
+  phone?: string;
+}
+
+interface QueueRow extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  approval_status: string;
+  created_by: number;
+}
+
+interface FileRow extends RowDataPacket {
+  id: number;
+  file_path: string;
+  file_name: string;
+}
+
+interface WebhookRow extends RowDataPacket {
+  url: string;
+  secret?: string;
+}
+
+interface DeletionStatusRow extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  approval_status: string;
+  status: string;
+  deletion_status: string;
+  deletion_requested_at: Date;
+  completed_steps: number;
+  failed_steps: number;
 }
 
 interface DeletionStep {
@@ -152,7 +185,9 @@ export class TenantDeletionService {
         ) => {
           try {
             // Prüfe ob invoices Tabelle existiert
-            const [tables] = await conn.query("SHOW TABLES LIKE 'invoices'");
+            const tables = await conn.query<RowDataPacket[]>(
+              "SHOW TABLES LIKE 'invoices'"
+            );
 
             if (!tables || tables.length === 0) {
               logger.info(
@@ -162,10 +197,11 @@ export class TenantDeletionService {
             }
 
             // Hole Tenant-Info für Archivierung
-            const [tenantInfo] = await conn.query(
+            const tenantInfoResult = await conn.query<TenantInfoRow[]>(
               'SELECT * FROM tenants WHERE id = ?',
               [tenantId]
             );
+            const tenantInfo = tenantInfoResult[0];
 
             // Archiviere alle Rechnungen (wenn vorhanden)
             const result = await conn.query(
@@ -188,7 +224,7 @@ export class TenantDeletionService {
               ]
             );
 
-            return result.affectedRows || 0;
+            return (result as unknown as ResultSetHeader).affectedRows || 0;
           } catch (error) {
             logger.warn(
               `Failed to archive billing records for tenant ${tenantId}:`,
@@ -239,10 +275,10 @@ export class TenantDeletionService {
             [tenantId]
           );
 
-          for (const webhook of webhooks) {
+          for (const webhook of webhooks as unknown as WebhookRow[]) {
             try {
               await axios.post(
-                webhook.url,
+                (webhook as unknown as WebhookRow).url,
                 {
                   event: 'tenant.deletion',
                   tenant_id: tenantId,
@@ -250,13 +286,17 @@ export class TenantDeletionService {
                 },
                 {
                   headers: {
-                    'X-Webhook-Secret': webhook.secret || '',
+                    'X-Webhook-Secret':
+                      (webhook as unknown as WebhookRow).secret || '',
                   },
                   timeout: 5000,
                 }
               );
             } catch (error) {
-              logger.warn(`Webhook notification failed: ${webhook.url}`, error);
+              logger.warn(
+                `Webhook notification failed: ${(webhook as unknown as WebhookRow).url}`,
+                error
+              );
             }
           }
 
@@ -287,7 +327,7 @@ export class TenantDeletionService {
             interface UserIdRow extends RowDataPacket {
               id: number;
             }
-            const [userRows] = await conn.query<UserIdRow[]>(
+            const userRows = await conn.query<UserIdRow[]>(
               'SELECT id FROM users WHERE tenant_id = ?',
               [tenantId]
             );
@@ -334,7 +374,7 @@ export class TenantDeletionService {
             'DELETE s FROM user_sessions s JOIN users u ON s.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -350,7 +390,7 @@ export class TenantDeletionService {
             'DELETE cs FROM user_chat_status cs JOIN users u ON cs.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -369,7 +409,7 @@ export class TenantDeletionService {
             'DELETE cn FROM chat_notifications cn JOIN users u ON cn.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -385,7 +425,7 @@ export class TenantDeletionService {
             'DELETE FROM email_queue WHERE tenant_id = ? AND status = "pending"',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -399,7 +439,7 @@ export class TenantDeletionService {
           _queueId: number,
           conn: ConnectionWrapper
         ) => {
-          const [result] = await conn.query<ResultSetHeader>(
+          const result = await conn.execute(
             'DELETE al FROM activity_logs al JOIN users u ON al.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
@@ -419,7 +459,7 @@ export class TenantDeletionService {
             'DELETE al FROM api_logs al JOIN users u ON al.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -435,7 +475,7 @@ export class TenantDeletionService {
             'DELETE sl FROM security_logs sl JOIN users u ON sl.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -447,7 +487,7 @@ export class TenantDeletionService {
           _queueId: number,
           conn: ConnectionWrapper
         ) => {
-          const [result] = await conn.query<ResultSetHeader>(
+          const result = await conn.execute(
             'DELETE FROM admin_logs WHERE tenant_id = ?',
             [tenantId]
           );
@@ -475,7 +515,7 @@ export class TenantDeletionService {
             [tenantId]
           );
 
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -497,7 +537,7 @@ export class TenantDeletionService {
             [tenantId]
           );
 
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -515,7 +555,7 @@ export class TenantDeletionService {
             'DELETE s FROM user_2fa_secrets s JOIN users u ON s.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -531,7 +571,7 @@ export class TenantDeletionService {
             'DELETE c FROM user_2fa_backup_codes c JOIN users u ON c.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -549,7 +589,7 @@ export class TenantDeletionService {
             'DELETE mr FROM message_read_receipts mr JOIN users u ON mr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -565,7 +605,7 @@ export class TenantDeletionService {
             'DELETE ms FROM message_status ms JOIN users u ON ms.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -581,7 +621,7 @@ export class TenantDeletionService {
             'DELETE m FROM messages m JOIN users u ON m.sender_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -597,7 +637,7 @@ export class TenantDeletionService {
             'DELETE cp FROM conversation_participants cp JOIN users u ON cp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -613,7 +653,7 @@ export class TenantDeletionService {
             'DELETE FROM conversations WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -631,7 +671,7 @@ export class TenantDeletionService {
             'DELETE dr FROM document_read_status dr JOIN users u ON dr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -654,10 +694,13 @@ export class TenantDeletionService {
 
           // Dateien löschen mit Error Handling
           for (const file of files) {
-            if (!file.file_path) continue;
+            if (!(file as unknown as FileRow).file_path) continue;
 
             try {
-              const fullPath = path.join(uploadDir, file.file_path);
+              const fullPath = path.join(
+                uploadDir,
+                (file as unknown as FileRow).file_path
+              );
 
               // Prüfe ob Datei existiert
               try {
@@ -674,9 +717,9 @@ export class TenantDeletionService {
               }
             } catch (error) {
               failedFiles.push({
-                document_id: file.id,
-                path: file.file_path,
-                name: file.file_name,
+                document_id: (file as unknown as FileRow).id,
+                path: (file as unknown as FileRow).file_path,
+                name: (file as unknown as FileRow).file_name,
                 error: error.message,
               });
             }
@@ -700,7 +743,7 @@ export class TenantDeletionService {
             [tenantId]
           );
 
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -718,7 +761,7 @@ export class TenantDeletionService {
             'DELETE kc FROM kvp_comments kc JOIN users u ON kc.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -734,7 +777,7 @@ export class TenantDeletionService {
             'DELETE kr FROM kvp_ratings kr JOIN users u ON kr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -750,7 +793,7 @@ export class TenantDeletionService {
             'DELETE kp FROM kvp_points kp JOIN users u ON kp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -766,7 +809,7 @@ export class TenantDeletionService {
             'DELETE ksh FROM kvp_status_history ksh JOIN users u ON ksh.changed_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -782,7 +825,7 @@ export class TenantDeletionService {
             'DELETE ka FROM kvp_attachments ka JOIN users u ON ka.uploaded_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -798,7 +841,7 @@ export class TenantDeletionService {
             'DELETE FROM kvp_suggestions WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -816,7 +859,7 @@ export class TenantDeletionService {
             'DELETE ca FROM calendar_attendees ca JOIN users u ON ca.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -832,7 +875,7 @@ export class TenantDeletionService {
             'DELETE cp FROM calendar_participants cp JOIN users u ON cp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -848,7 +891,7 @@ export class TenantDeletionService {
             'DELETE cr FROM calendar_reminders cr JOIN users u ON cr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -864,7 +907,7 @@ export class TenantDeletionService {
             'DELETE cs FROM calendar_shares cs JOIN users u1 ON cs.calendar_owner_id = u1.id JOIN users u2 ON cs.shared_with_id = u2.id WHERE u1.tenant_id = ? OR u2.tenant_id = ?',
             [tenantId, tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -880,7 +923,7 @@ export class TenantDeletionService {
             'DELETE FROM calendar_events WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -898,7 +941,7 @@ export class TenantDeletionService {
             'DELETE sa FROM shift_assignments sa JOIN users u ON sa.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -914,7 +957,7 @@ export class TenantDeletionService {
             'DELETE sn FROM shift_notes sn JOIN users u ON sn.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -930,7 +973,7 @@ export class TenantDeletionService {
             'DELETE wsn FROM weekly_shift_notes wsn JOIN departments d ON wsn.department_id = d.id WHERE d.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -946,7 +989,7 @@ export class TenantDeletionService {
             'DELETE FROM shifts WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -964,7 +1007,7 @@ export class TenantDeletionService {
             'DELETE bc FROM blackboard_confirmations bc JOIN users u ON bc.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -980,7 +1023,7 @@ export class TenantDeletionService {
             'DELETE ba FROM blackboard_attachments ba JOIN users u ON ba.uploaded_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -996,7 +1039,7 @@ export class TenantDeletionService {
             'DELETE FROM blackboard_entries WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1014,7 +1057,7 @@ export class TenantDeletionService {
             'DELETE sc FROM survey_comments sc JOIN users u ON sc.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1030,7 +1073,7 @@ export class TenantDeletionService {
             'DELETE sr FROM survey_responses sr JOIN users u ON sr.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1046,7 +1089,7 @@ export class TenantDeletionService {
             'DELETE sp FROM survey_participants sp JOIN users u ON sp.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1062,7 +1105,7 @@ export class TenantDeletionService {
             'DELETE sa FROM survey_assignments sa JOIN users u ON sa.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1078,7 +1121,7 @@ export class TenantDeletionService {
             'DELETE sq FROM survey_questions sq JOIN surveys s ON sq.survey_id = s.id WHERE s.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1094,7 +1137,7 @@ export class TenantDeletionService {
             'DELETE FROM surveys WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1112,7 +1155,7 @@ export class TenantDeletionService {
             'DELETE us FROM user_settings us JOIN users u ON us.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1128,7 +1171,7 @@ export class TenantDeletionService {
             'DELETE np FROM notification_preferences np JOIN users u ON np.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1146,7 +1189,7 @@ export class TenantDeletionService {
             'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1162,7 +1205,7 @@ export class TenantDeletionService {
             'DELETE FROM recurring_jobs WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1180,7 +1223,7 @@ export class TenantDeletionService {
             'DELETE ea FROM employee_availability ea JOIN users u ON ea.employee_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1196,7 +1239,7 @@ export class TenantDeletionService {
             'DELETE ful FROM feature_usage_logs ful JOIN users u ON ful.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1214,7 +1257,7 @@ export class TenantDeletionService {
             'DELETE apl FROM admin_permission_logs apl JOIN users u1 ON apl.admin_user_id = u1.id JOIN users u2 ON apl.changed_by = u2.id WHERE u1.tenant_id = ? OR u2.tenant_id = ?',
             [tenantId, tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1230,7 +1273,7 @@ export class TenantDeletionService {
             'DELETE adp FROM admin_department_permissions adp JOIN users u ON adp.admin_user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1246,7 +1289,7 @@ export class TenantDeletionService {
             'DELETE agp FROM admin_group_permissions agp JOIN users u ON agp.admin_user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1264,7 +1307,7 @@ export class TenantDeletionService {
             'DELETE ut FROM user_teams ut JOIN users u ON ut.user_id = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1280,7 +1323,7 @@ export class TenantDeletionService {
             'DELETE dgm FROM department_group_members dgm JOIN users u ON dgm.added_by = u.id WHERE u.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1296,7 +1339,7 @@ export class TenantDeletionService {
             'DELETE FROM tenant_admins WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1378,7 +1421,7 @@ export class TenantDeletionService {
             'DELETE dg FROM department_groups dg JOIN departments d ON dg.department_id = d.id WHERE d.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1394,7 +1437,7 @@ export class TenantDeletionService {
             'DELETE FROM teams WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1410,7 +1453,7 @@ export class TenantDeletionService {
             'DELETE FROM departments WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1429,7 +1472,7 @@ export class TenantDeletionService {
               'WHERE tdq.tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows || 0;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1446,7 +1489,7 @@ export class TenantDeletionService {
             'DELETE FROM tenant_deletion_queue WHERE tenant_id = ? AND id != ?',
             [tenantId, queueId]
           );
-          return result.affectedRows || 0;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1464,22 +1507,26 @@ export class TenantDeletionService {
             [queueId]
           );
 
-          if (!queueResult || !queueResult[0] || !queueResult[0].created_by) {
+          if (
+            !queueResult ||
+            !queueResult[0] ||
+            !(queueResult as unknown as QueueRow[])[0].created_by
+          ) {
             logger.warn(`No created_by found for queue ${queueId}`);
             // Lösche alle Users wenn kein created_by gefunden wurde
             const result = await conn.query(
               'DELETE FROM users WHERE tenant_id = ?',
               [tenantId]
             );
-            return result.affectedRows || 0;
+            return (result as unknown as ResultSetHeader).affectedRows || 0;
           }
 
           // Lösche alle Users AUSSER dem Queue-Ersteller
           const result = await conn.query(
             'DELETE FROM users WHERE tenant_id = ? AND id != ?',
-            [tenantId, queueResult[0].created_by]
+            [tenantId, (queueResult as unknown as QueueRow[])[0].created_by]
           );
-          return result.affectedRows || 0;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1497,7 +1544,7 @@ export class TenantDeletionService {
             'DELETE FROM tenant_features WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
       {
@@ -1513,7 +1560,7 @@ export class TenantDeletionService {
             'DELETE FROM tenant_plans WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1530,14 +1577,14 @@ export class TenantDeletionService {
           let deleted = 0;
 
           // Scheduled Tasks
-          const tasksResult = await conn.query(
+          const tasksResult = await conn.execute(
             'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
             [tenantId]
           );
           deleted += tasksResult.affectedRows || 0;
 
           // Recurring Jobs
-          const jobsResult = await conn.query(
+          const jobsResult = await conn.execute(
             'DELETE FROM recurring_jobs WHERE tenant_id = ?',
             [tenantId]
           );
@@ -1561,7 +1608,7 @@ export class TenantDeletionService {
             'DELETE FROM tenant_webhooks WHERE tenant_id = ?',
             [tenantId]
           );
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1581,7 +1628,11 @@ export class TenantDeletionService {
             [queueId]
           );
 
-          if (!queueResult || !queueResult[0] || !queueResult[0].created_by) {
+          if (
+            !queueResult ||
+            !queueResult[0] ||
+            !(queueResult as unknown as QueueRow[])[0].created_by
+          ) {
             logger.warn(`No created_by found for queue ${queueId}`);
             return 0;
           }
@@ -1594,9 +1645,9 @@ export class TenantDeletionService {
 
           // Jetzt können wir den Queue-Ersteller sicher löschen
           const result = await conn.query('DELETE FROM users WHERE id = ?', [
-            queueResult[0].created_by,
+            (queueResult as unknown as QueueRow[])[0].created_by,
           ]);
-          return result.affectedRows || 0;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1620,7 +1671,7 @@ export class TenantDeletionService {
           const result = await conn.query('DELETE FROM tenants WHERE id = ?', [
             tenantId,
           ]);
-          return result.affectedRows;
+          return (result as unknown as ResultSetHeader).affectedRows || 0;
         },
       },
 
@@ -1749,7 +1800,7 @@ export class TenantDeletionService {
         requestedBy,
         reason,
         ipAddress,
-        connection
+        wrapConnection(connection)
       );
 
       // 3. Mark tenant as marked_for_deletion
@@ -1841,11 +1892,11 @@ export class TenantDeletionService {
 
       const queue = queueResults[0];
 
-      if (queue.approval_status !== 'pending') {
+      if ((queue as unknown as QueueRow).approval_status !== 'pending') {
         throw new Error('Deletion request is not pending approval');
       }
 
-      if (queue.created_by === approverId) {
+      if ((queue as unknown as QueueRow).created_by === approverId) {
         throw new Error('Cannot approve own deletion request');
       }
 
@@ -1886,15 +1937,15 @@ export class TenantDeletionService {
       // Update tenant status to suspended (immediate effect)
       await connection.query(
         'UPDATE tenants SET deletion_status = ? WHERE id = ?',
-        ['suspended', queue.tenant_id]
+        ['suspended', (queue as unknown as QueueRow).tenant_id]
       );
 
       logger.info(`Deletion request ${queueId} approved by user ${approverId}`);
 
       // Send notification to requester
       await this.notifyApprovalStatus(
-        queue.tenant_id,
-        queue.created_by,
+        (queue as unknown as QueueRow).tenant_id,
+        (queue as unknown as QueueRow).created_by,
         'approved',
         approverId
       );
@@ -1908,7 +1959,7 @@ export class TenantDeletionService {
           message: 'A tenant deletion request has been approved',
           fields: {
             'Queue ID': queueId,
-            'Tenant ID': queue.tenant_id,
+            'Tenant ID': (queue as unknown as QueueRow).tenant_id,
             'Approved By': `User ${approverId}`,
             'Scheduled Date': new Date(
               queue.scheduled_deletion_date
@@ -1937,7 +1988,7 @@ export class TenantDeletionService {
         throw new Error('Deletion request not found');
       }
 
-      if (queue.approval_status !== 'pending') {
+      if ((queue as unknown as QueueRow).approval_status !== 'pending') {
         throw new Error('Deletion request is not pending approval');
       }
 
@@ -1961,15 +2012,15 @@ export class TenantDeletionService {
       // Revert tenant status
       await connection.query(
         'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NULL, deletion_requested_by = NULL WHERE id = ?',
-        ['active', queue.tenant_id]
+        ['active', (queue as unknown as QueueRow).tenant_id]
       );
 
       logger.info(`Deletion request ${queueId} rejected by user ${approverId}`);
 
       // Send notification to requester
       await this.notifyApprovalStatus(
-        queue.tenant_id,
-        queue.created_by,
+        (queue as unknown as QueueRow).tenant_id,
+        (queue as unknown as QueueRow).created_by,
         'rejected',
         approverId,
         reason
@@ -1984,7 +2035,7 @@ export class TenantDeletionService {
           message: 'A tenant deletion request has been rejected',
           fields: {
             'Queue ID': queueId,
-            'Tenant ID': queue.tenant_id,
+            'Tenant ID': (queue as unknown as QueueRow).tenant_id,
             'Rejected By': `User ${approverId}`,
             Reason: reason,
           },
@@ -2025,11 +2076,15 @@ export class TenantDeletionService {
 
       if (queueItem) {
         // Notify about emergency stop
-        await this.notifyEmergencyStop(queueItem.tenant_id, queueId, stoppedBy);
+        await this.notifyEmergencyStop(
+          (queueItem as unknown as QueueRow).tenant_id,
+          queueId,
+          stoppedBy
+        );
 
         // Log the emergency stop
         logger.warn(
-          `EMERGENCY STOP activated for tenant ${queueItem.tenant_id} deletion by user ${stoppedBy}`
+          `EMERGENCY STOP activated for tenant ${(queueItem as unknown as QueueRow).tenant_id} deletion by user ${stoppedBy}`
         );
       }
     } catch (error) {
@@ -2154,17 +2209,8 @@ export class TenantDeletionService {
                 `Executing step ${step.name} for tenant ${tenantId}`
               );
 
-              // Create a wrapper that handles the connection query format
-              const connWrapper: ConnectionWrapper = {
-                query: async (sql: string, params?: unknown[]) => {
-                  const [result] = await stepConnection.query(sql, params);
-                  return result;
-                },
-                execute: async (sql: string, params?: unknown[]) => {
-                  const [result] = await stepConnection.execute(sql, params);
-                  return result;
-                },
-              };
+              // Create a wrapper using the dbWrapper utility
+              const connWrapper = wrapConnection(stepConnection);
 
               return await step.handler(tenantId, queueId, connWrapper);
             });
@@ -2247,7 +2293,7 @@ export class TenantDeletionService {
       if (queueItem) {
         await execute('UPDATE tenants SET deletion_status = ? WHERE id = ?', [
           'active',
-          queueItem.tenant_id,
+          (queueItem as unknown as QueueRow).tenant_id,
         ]);
       }
 
@@ -2368,8 +2414,8 @@ export class TenantDeletionService {
   /**
    * Get deletion status
    */
-  async getDeletionStatus(tenantId: number): Promise<RowDataPacket | null> {
-    const [status] = await query(
+  async getDeletionStatus(tenantId: number): Promise<DeletionStatusRow | null> {
+    const [result] = await query<DeletionStatusRow[]>(
       `SELECT 
         q.*,
         t.deletion_status,
@@ -2384,7 +2430,7 @@ export class TenantDeletionService {
       [tenantId]
     );
 
-    return status;
+    return result[0] || null;
   }
 
   /**
@@ -2429,7 +2475,7 @@ export class TenantDeletionService {
       // Cancel queue item
       await connection.query(
         'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW() WHERE id = ?',
-        ['cancelled', queueItem.id]
+        ['cancelled', (queueItem as unknown as QueueRow).id]
       );
 
       // Log cancellation
@@ -2438,7 +2484,7 @@ export class TenantDeletionService {
          (queue_id, step_name, status, error_message) 
          VALUES (?, ?, ?, ?)`,
         [
-          queueItem.id,
+          (queueItem as unknown as QueueRow).id,
           'deletion_cancelled',
           'success',
           `Cancelled by user ${cancelledBy}`,
@@ -2682,7 +2728,7 @@ export class TenantDeletionService {
 
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: root.email,
+        to: (root as unknown as DbUser).email,
         subject: 'Genehmigung erforderlich: Tenant-Löschung',
         html: `
           <h2>Tenant-Löschung Genehmigung erforderlich</h2>
@@ -2781,7 +2827,7 @@ export class TenantDeletionService {
     
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: root.email,
+        to: (root as unknown as DbUser).email,
         subject: 'Tenant-Löschung eingeleitet',
         html: `
           <h2>Tenant-Löschung eingeleitet</h2>
@@ -2803,7 +2849,7 @@ export class TenantDeletionService {
 
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: root.email,
+        to: (root as unknown as DbUser).email,
         subject: '🚨 Kritischer Fehler: Tenant-Löschung fehlgeschlagen',
         html: `
           <h2>Tenant-Löschung fehlgeschlagen</h2>
@@ -2873,7 +2919,7 @@ export class TenantDeletionService {
 
     for (const root of rootUsers) {
       await emailService.sendEmail({
-        to: root.email,
+        to: (root as unknown as DbUser).email,
         subject: '🚨 Emergency Stop: Tenant-Löschung angehalten',
         html: `
           <h2>Emergency Stop ausgelöst</h2>
@@ -2931,21 +2977,21 @@ export class TenantDeletionService {
             'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?',
             [tenantId]
           );
-          const countResult = result as CountResult;
+          const countResult = result as unknown as CountResult;
           count = countResult.count;
         } else if (step.name.includes('documents')) {
           const [result] = await query(
             'SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?',
             [tenantId]
           );
-          const countResult = result as CountResult;
+          const countResult = result as unknown as CountResult;
           count = countResult.count;
         } else if (step.name.includes('messages')) {
           const [result] = await query(
             'SELECT COUNT(*) as count FROM messages WHERE sender_id IN (SELECT id FROM users WHERE tenant_id = ?)',
             [tenantId]
           );
-          const countResult = result as CountResult;
+          const countResult = result as unknown as CountResult;
           count = countResult.count;
         }
         // Add more estimations for other steps...

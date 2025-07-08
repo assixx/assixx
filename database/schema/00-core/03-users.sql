@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     -- Erweiterte Profildaten
     department_id INT,
     position VARCHAR(100),
-    phone VARCHAR(20),
+    phone VARCHAR(30) UNIQUE,  -- Unique international format e.g. +491234567890
     mobile VARCHAR(50),
     profile_picture VARCHAR(255),
     address TEXT,
