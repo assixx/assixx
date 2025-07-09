@@ -30,10 +30,17 @@
         z-index: -1;
       }
 
-      /* Page Container */
-      .page-container {
-        margin: 20px;
+      /* Container Styles */
+      .container {
+        padding: 20px;
         max-width: 1400px;
+      }
+      
+      /* Card Header with Button */
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
 
       /* Grid Layout */
@@ -223,19 +230,22 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <main class="main-content">
-        <div class="page-container">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
-            <div>
-              <h1>Abteilungsgruppen verwalten</h1>
-              <p class="text-secondary">Erstellen und verwalten Sie hierarchische Abteilungsgruppen</p>
+        <div class="container">
+          <h1>Abteilungsgruppen verwalten</h1>
+          
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Abteilungsgruppen verwalten</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Erstellen und verwalten Sie hierarchische Abteilungsgruppen</p>
+              </div>
+              <button class="btn btn-primary" onclick="showCreateGroupModal()">
+                <i class="fas fa-plus"></i>
+                Neue Gruppe
+              </button>
             </div>
-            <button class="btn btn-primary" onclick="showCreateGroupModal()">
-              <i class="fas fa-plus"></i>
-              Neue Gruppe
-            </button>
-          </div>
-
-          <div class="group-management-grid">
+            <div class="card-body">
+              <div class="group-management-grid">
             <!-- Group Tree Panel -->
             <div class="panel">
               <h3>Gruppenstruktur</h3>
@@ -260,6 +270,8 @@
                   <div>Wählen Sie eine Gruppe aus, um Details anzuzeigen</div>
                 </div>
               </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>

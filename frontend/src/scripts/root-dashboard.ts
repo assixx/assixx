@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok) {
         const data = await response.json();
         const user = data.data || data.user;
-        
+
         // Check if user has temporary employee number
         if (user.employeeNumber === '000001' || user.employee_number === '000001') {
           showEmployeeNumberModal();
@@ -127,9 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const employeeNumber = input.value;
-      
+
       if (employeeNumber.length !== 6) {
         alert('Die Personalnummer muss genau 6 Ziffern lang sein.');
         return;

@@ -42,17 +42,9 @@
         z-index: -1;
       }
 
-      /* Root User Table Container */
-      .root-table-container {
-        margin: 20px;
+      /* Container Styles */
+      .container {
         padding: 20px;
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.05);
       }
 
       /* Security Warning Box */
@@ -491,23 +483,30 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="root-table-container">
+        <div class="container">
           <h1>Root User Verwaltung</h1>
-          <p class="text-secondary">Übersicht aller Root-Benutzer des Systems</p>
-
-          <!-- Security Warning -->
-          <div class="security-warning">
-            <i class="fas fa-shield-alt"></i>
-            <div class="security-warning-text">
-              <strong>Sicherheitshinweis:</strong> Root-Benutzer haben vollständigen Systemzugriff. 
-              Das Zwei-Personen-Prinzip ist für kritische Operationen wie Tenant-Löschung aktiv.
-              Erstellen Sie Root-Benutzer nur für vertrauenswürdige Administratoren.
+          
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Root User Verwaltung</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Root-Benutzer des Systems</p>
             </div>
-          </div>
+            <div class="card-body">
+              <!-- Security Warning -->
+              <div class="security-warning">
+                <i class="fas fa-shield-alt"></i>
+                <div class="security-warning-text">
+                  <strong>Sicherheitshinweis:</strong> Root-Benutzer haben vollständigen Systemzugriff. 
+                  Das Zwei-Personen-Prinzip ist für kritische Operationen wie Tenant-Löschung aktiv.
+                  Erstellen Sie Root-Benutzer nur für vertrauenswürdige Administratoren.
+                </div>
+              </div>
 
-          <!-- Root User Table -->
-          <div id="rootTableContent">
-            <!-- Tabelle wird hier dynamisch eingefügt -->
+              <!-- Root User Table -->
+              <div id="rootTableContent">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+            </div>
           </div>
         </div>
       </main>

@@ -637,7 +637,7 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
-.sidebar-link {
+/*.sidebar-link {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -647,7 +647,7 @@ body {
   transition: all 0.3s ease;
   border-radius: var(--radius-sm);
   position: relative;
-}
+}*/
 
 .sidebar-link:hover {
   color: var(--text-primary);

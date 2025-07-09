@@ -206,7 +206,12 @@ class UnifiedNavigation {
         // Update employee number
         const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
         if (sidebarEmployeeNumber) {
-          const employeeNumber = userData.employee_number || userData.data?.employee_number || userData.employeeNumber || (user as User).employeeNumber || '';
+          const employeeNumber =
+            userData.employee_number ||
+            userData.data?.employee_number ||
+            userData.employeeNumber ||
+            (user as User).employeeNumber ||
+            '';
           if (employeeNumber && employeeNumber !== '000001') {
             sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
           } else if (employeeNumber === '000001') {
@@ -2176,9 +2181,9 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        transition: width 0.3s ease !important;
         overflow-y: auto;
         overflow-x: hidden;
+        transition: all .3s ease;
     }
 
     /* Scrollbar Styling */
@@ -2562,7 +2567,7 @@ const unifiedNavigationCSS = `
     .title-text,
     .user-details,
     .storage-widget {
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
     }
 
     /* Icon centering in collapsed state */
@@ -2599,7 +2604,7 @@ const unifiedNavigationCSS = `
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -2642,7 +2647,7 @@ const unifiedNavigationCSS = `
 
     .user-info-card:hover {
         background: rgba(255, 255, 255, 0.03);
-        transform: translateY(-5px);
+        /*transform: translateY(-5px);*/
         border-color: rgba(33, 150, 243, 0.3);
         box-shadow: 
             0 12px 40px rgba(0, 0, 0, 0.5),
@@ -2818,7 +2823,6 @@ const unifiedNavigationCSS = `
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
-        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
         border: 1px solid transparent;
@@ -2829,7 +2833,6 @@ const unifiedNavigationCSS = `
     .sidebar-link:hover {
         background: rgba(33, 150, 243, 0.1);
         color: var(--primary-color);
-        transform: translateY(-2px);
         /*box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);*/
     }
 

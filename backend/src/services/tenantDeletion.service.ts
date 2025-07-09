@@ -720,7 +720,7 @@ export class TenantDeletionService {
                 document_id: (file as unknown as FileRow).id,
                 path: (file as unknown as FileRow).file_path,
                 name: (file as unknown as FileRow).file_name,
-                error: error.message,
+                error: error instanceof Error ? error.message : String(error),
               });
             }
           }
@@ -1892,11 +1892,11 @@ export class TenantDeletionService {
 
       const queue = queueResults[0];
 
-      if ((queue as unknown as QueueRow).approval_status !== 'pending') {
+      if (queue.approval_status !== 'pending') {
         throw new Error('Deletion request is not pending approval');
       }
 
-      if ((queue as unknown as QueueRow).created_by === approverId) {
+      if (queue.created_by === approverId) {
         throw new Error('Cannot approve own deletion request');
       }
 
@@ -1937,15 +1937,15 @@ export class TenantDeletionService {
       // Update tenant status to suspended (immediate effect)
       await connection.query(
         'UPDATE tenants SET deletion_status = ? WHERE id = ?',
-        ['suspended', (queue as unknown as QueueRow).tenant_id]
+        ['suspended', queue.tenant_id]
       );
 
       logger.info(`Deletion request ${queueId} approved by user ${approverId}`);
 
       // Send notification to requester
       await this.notifyApprovalStatus(
-        (queue as unknown as QueueRow).tenant_id,
-        (queue as unknown as QueueRow).created_by,
+        queue.tenant_id,
+        queue.created_by,
         'approved',
         approverId
       );
@@ -1959,11 +1959,11 @@ export class TenantDeletionService {
           message: 'A tenant deletion request has been approved',
           fields: {
             'Queue ID': queueId,
-            'Tenant ID': (queue as unknown as QueueRow).tenant_id,
+            'Tenant ID': queue.tenant_id,
             'Approved By': `User ${approverId}`,
-            'Scheduled Date': new Date(
-              queue.scheduled_deletion_date
-            ).toISOString(),
+            'Scheduled Date': queue.scheduled_deletion_date
+              ? new Date(queue.scheduled_deletion_date).toISOString()
+              : 'Not scheduled',
           },
         })
         .catch((err) => logger.error('Failed to send approval alert:', err));
@@ -1979,16 +1979,18 @@ export class TenantDeletionService {
     reason: string
   ): Promise<void> {
     await transaction(async (connection) => {
-      const [queue] = await connection.query(
+      const [queueResults] = await connection.query<QueueRow[]>(
         'SELECT * FROM tenant_deletion_queue WHERE id = ?',
         [queueId]
       );
 
-      if (!queue) {
+      if (!queueResults || queueResults.length === 0) {
         throw new Error('Deletion request not found');
       }
 
-      if ((queue as unknown as QueueRow).approval_status !== 'pending') {
+      const queue = queueResults[0];
+
+      if (queue.approval_status !== 'pending') {
         throw new Error('Deletion request is not pending approval');
       }
 
@@ -2012,15 +2014,15 @@ export class TenantDeletionService {
       // Revert tenant status
       await connection.query(
         'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NULL, deletion_requested_by = NULL WHERE id = ?',
-        ['active', (queue as unknown as QueueRow).tenant_id]
+        ['active', queue.tenant_id]
       );
 
       logger.info(`Deletion request ${queueId} rejected by user ${approverId}`);
 
       // Send notification to requester
       await this.notifyApprovalStatus(
-        (queue as unknown as QueueRow).tenant_id,
-        (queue as unknown as QueueRow).created_by,
+        queue.tenant_id,
+        queue.created_by,
         'rejected',
         approverId,
         reason
@@ -2035,7 +2037,7 @@ export class TenantDeletionService {
           message: 'A tenant deletion request has been rejected',
           fields: {
             'Queue ID': queueId,
-            'Tenant ID': (queue as unknown as QueueRow).tenant_id,
+            'Tenant ID': queue.tenant_id,
             'Rejected By': `User ${approverId}`,
             Reason: reason,
           },
@@ -2258,7 +2260,7 @@ export class TenantDeletionService {
 
           if (step.critical) {
             throw new Error(
-              `Critical step ${step.name} failed: ${error.message}`
+              `Critical step ${step.name} failed: ${error instanceof Error ? error.message : String(error)}`
             );
           }
         }
@@ -2298,7 +2300,10 @@ export class TenantDeletionService {
       }
 
       // Send failure alert
-      await this.sendDeletionFailureAlert(queueId, error.message);
+      await this.sendDeletionFailureAlert(
+        queueId,
+        error instanceof Error ? error.message : String(error)
+      );
 
       // Send critical alert to all channels
       await alertingService.sendCriticalAlert(
@@ -2307,7 +2312,7 @@ export class TenantDeletionService {
         {
           'Queue ID': queueId,
           'Tenant ID': tenantId,
-          Error: error.message,
+          Error: error instanceof Error ? error.message : String(error),
           Environment: process.env.NODE_ENV || 'production',
         }
       );
