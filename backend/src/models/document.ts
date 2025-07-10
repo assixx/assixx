@@ -2,8 +2,8 @@ import {
   query as executeQuery,
   RowDataPacket,
   ResultSetHeader,
-} from '../utils/db';
-import { logger } from '../utils/logger';
+} from "../utils/db";
+import { logger } from "../utils/logger";
 
 // Database interfaces
 interface DbDocument extends RowDataPacket {
@@ -30,7 +30,7 @@ interface DocumentCreateData {
   userId?: number | null;
   teamId?: number | null;
   departmentId?: number | null;
-  recipientType?: 'user' | 'team' | 'department' | 'company';
+  recipientType?: "user" | "team" | "department" | "company";
   fileName: string;
   fileContent?: Buffer;
   category?: string;
@@ -63,7 +63,7 @@ interface DocumentFilters {
   recipientType?: string;
   recipientId?: number;
   orderBy?: string;
-  orderDirection?: 'ASC' | 'DESC';
+  orderDirection?: "ASC" | "DESC";
   limit?: number;
   offset?: number;
 }
@@ -83,11 +83,11 @@ export class Document {
     userId,
     teamId,
     departmentId,
-    recipientType = 'user',
+    recipientType = "user",
     fileName,
     fileContent,
-    category = 'other',
-    description = '',
+    category = "other",
+    description = "",
     year,
     month,
     tenant_id,
@@ -95,16 +95,16 @@ export class Document {
     // Log based on recipient type
     let logMessage = `Creating new document in category ${category} for `;
     switch (recipientType) {
-      case 'user':
+      case "user":
         logMessage += `user ${userId}`;
         break;
-      case 'team':
+      case "team":
         logMessage += `team ${teamId}`;
         break;
-      case 'department':
+      case "department":
         logMessage += `department ${departmentId}`;
         break;
-      case 'company':
+      case "company":
         logMessage += `entire company (tenant ${tenant_id})`;
         break;
     }
@@ -112,7 +112,7 @@ export class Document {
 
     // We need to also set default values for required fields
     const query =
-      'INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      "INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
         userId,
@@ -123,7 +123,7 @@ export class Document {
         fileName, // original_name - same as filename for now
         `/uploads/${fileName}`, // file_path
         fileContent ? fileContent.length : 0, // file_size
-        'application/octet-stream', // mime_type - default for now
+        "application/octet-stream", // mime_type - default for now
         fileContent,
         category,
         description,
@@ -143,14 +143,14 @@ export class Document {
   static async findByUserId(userId: number): Promise<DbDocument[]> {
     logger.info(`Fetching documents for user ${userId}`);
     const query =
-      'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? ORDER BY upload_date DESC';
+      "SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? ORDER BY upload_date DESC";
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [userId]);
       logger.info(`Retrieved ${rows.length} documents for user ${userId}`);
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching documents for user ${userId}: ${(error as Error).message}`
+        `Error fetching documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -159,10 +159,10 @@ export class Document {
   static async findByUserIdAndCategory(
     userId: number,
     category: string,
-    archived = false
+    archived = false,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Fetching ${category} documents for user ${userId} (archived: ${archived})`
+      `Fetching ${category} documents for user ${userId} (archived: ${archived})`,
     );
     const query =
       'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
@@ -173,12 +173,12 @@ export class Document {
         archived,
       ]);
       logger.info(
-        `Retrieved ${rows.length} ${category} documents for user ${userId}`
+        `Retrieved ${rows.length} ${category} documents for user ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching ${category} documents for user ${userId}: ${(error as Error).message}`
+        `Error fetching ${category} documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -186,7 +186,7 @@ export class Document {
 
   static async findById(id: number): Promise<DbDocument | null> {
     logger.info(`Fetching document with ID ${id}`);
-    const query = 'SELECT * FROM documents WHERE id = ?';
+    const query = "SELECT * FROM documents WHERE id = ?";
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [id]);
       if (rows.length === 0) {
@@ -197,7 +197,7 @@ export class Document {
       return rows[0];
     } catch (error) {
       logger.error(
-        `Error fetching document ${id}: ${(error as Error).message}`
+        `Error fetching document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -206,7 +206,7 @@ export class Document {
   static async incrementDownloadCount(id: number): Promise<boolean> {
     logger.info(`Incrementing download count for document ${id}`);
     const query =
-      'UPDATE documents SET download_count = COALESCE(download_count, 0) + 1, last_downloaded = NOW() WHERE id = ?';
+      "UPDATE documents SET download_count = COALESCE(download_count, 0) + 1, last_downloaded = NOW() WHERE id = ?";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [id]);
       if (result.affectedRows === 0) {
@@ -217,7 +217,7 @@ export class Document {
       return true;
     } catch (error) {
       logger.error(
-        `Error incrementing download count for document ${id}: ${(error as Error).message}`
+        `Error incrementing download count for document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -233,39 +233,39 @@ export class Document {
       year,
       month,
       isArchived,
-    }: DocumentUpdateData
+    }: DocumentUpdateData,
   ): Promise<boolean> {
     logger.info(`Updating document ${id}`);
-    let query = 'UPDATE documents SET ';
+    let query = "UPDATE documents SET ";
     const params: unknown[] = [];
     const updates: string[] = [];
 
     if (fileName !== undefined) {
-      updates.push('file_name = ?');
+      updates.push("file_name = ?");
       params.push(fileName);
     }
     if (fileContent !== undefined) {
-      updates.push('file_content = ?');
+      updates.push("file_content = ?");
       params.push(fileContent);
     }
     if (category !== undefined) {
-      updates.push('category = ?');
+      updates.push("category = ?");
       params.push(category);
     }
     if (description !== undefined) {
-      updates.push('description = ?');
+      updates.push("description = ?");
       params.push(description);
     }
     if (year !== undefined) {
-      updates.push('year = ?');
+      updates.push("year = ?");
       params.push(year);
     }
     if (month !== undefined) {
-      updates.push('month = ?');
+      updates.push("month = ?");
       params.push(month);
     }
     if (isArchived !== undefined) {
-      updates.push('is_archived = ?');
+      updates.push("is_archived = ?");
       params.push(isArchived);
     }
 
@@ -274,7 +274,7 @@ export class Document {
       return false;
     }
 
-    query += `${updates.join(', ')} WHERE id = ?`;
+    query += `${updates.join(", ")} WHERE id = ?`;
     params.push(id);
 
     try {
@@ -287,7 +287,7 @@ export class Document {
       return true;
     } catch (error) {
       logger.error(
-        `Error updating document ${id}: ${(error as Error).message}`
+        `Error updating document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -305,7 +305,7 @@ export class Document {
 
   static async delete(id: number): Promise<boolean> {
     logger.info(`Deleting document ${id}`);
-    const query = 'DELETE FROM documents WHERE id = ?';
+    const query = "DELETE FROM documents WHERE id = ?";
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [id]);
       if (result.affectedRows === 0) {
@@ -316,7 +316,7 @@ export class Document {
       return true;
     } catch (error) {
       logger.error(
-        `Error deleting document ${id}: ${(error as Error).message}`
+        `Error deleting document ${id}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -324,7 +324,7 @@ export class Document {
 
   static async findAll(category: string | null = null): Promise<DbDocument[]> {
     logger.info(
-      `Fetching all documents${category ? ` of category ${category}` : ''}`
+      `Fetching all documents${category ? ` of category ${category}` : ""}`,
     );
     let query = `
       SELECT d.*, u.first_name, u.last_name, 
@@ -335,16 +335,16 @@ export class Document {
     const params: unknown[] = [];
 
     if (category) {
-      query += ' WHERE d.category = ?';
+      query += " WHERE d.category = ?";
       params.push(category);
     }
 
-    query += ' ORDER BY d.uploaded_at DESC';
+    query += " ORDER BY d.uploaded_at DESC";
 
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, params);
       logger.info(
-        `Retrieved ${rows.length} documents${category ? ` of category ${category}` : ''}`
+        `Retrieved ${rows.length} documents${category ? ` of category ${category}` : ""}`,
       );
       return rows;
     } catch (error) {
@@ -355,13 +355,13 @@ export class Document {
 
   static async search(
     userId: number,
-    searchTerm: string
+    searchTerm: string,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Searching documents for user ${userId} with term: ${searchTerm}`
+      `Searching documents for user ${userId} with term: ${searchTerm}`,
     );
     const query =
-      'SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND (file_name LIKE ? OR description LIKE ?)';
+      "SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND (file_name LIKE ? OR description LIKE ?)";
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [
         userId,
@@ -369,12 +369,12 @@ export class Document {
         `%${searchTerm}%`,
       ]);
       logger.info(
-        `Found ${rows.length} documents matching search for user ${userId}`
+        `Found ${rows.length} documents matching search for user ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error searching documents for user ${userId}: ${(error as Error).message}`
+        `Error searching documents for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -384,10 +384,10 @@ export class Document {
   static async searchWithEmployeeAccess(
     userId: number,
     tenant_id: number,
-    searchTerm: string
+    searchTerm: string,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Searching accessible documents for employee ${userId} with term: ${searchTerm}`
+      `Searching accessible documents for employee ${userId} with term: ${searchTerm}`,
     );
 
     const query = `
@@ -440,12 +440,12 @@ export class Document {
         tenant_id,
       ]);
       logger.info(
-        `Found ${rows.length} accessible documents matching search for employee ${userId}`
+        `Found ${rows.length} accessible documents matching search for employee ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error searching accessible documents for employee ${userId}: ${(error as Error).message}`
+        `Error searching accessible documents for employee ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -457,33 +457,33 @@ export class Document {
     if (!filters || Object.keys(filters).length === 0) {
       try {
         const [rows] = await executeQuery<RowDataPacket[]>(
-          'SELECT COUNT(*) as count FROM documents',
-          []
+          "SELECT COUNT(*) as count FROM documents",
+          [],
         );
         return rows[0]?.count || 0;
       } catch (error) {
         logger.error(
-          `Error counting all documents: ${(error as Error).message}`
+          `Error counting all documents: ${(error as Error).message}`,
         );
         return 0;
       }
     }
 
     // Count with filters
-    logger.info('Counting documents with filters');
-    let query = 'SELECT COUNT(*) as total FROM documents WHERE 1=1';
+    logger.info("Counting documents with filters");
+    let query = "SELECT COUNT(*) as total FROM documents WHERE 1=1";
     const params: unknown[] = [];
 
     if (filters.userId) {
-      query += ' AND user_id = ?';
+      query += " AND user_id = ?";
       params.push(filters.userId);
     }
     if (filters.category) {
-      query += ' AND category = ?';
+      query += " AND category = ?";
       params.push(filters.category);
     }
     if (filters.isArchived !== undefined) {
-      query += ' AND is_archived = ?';
+      query += " AND is_archived = ?";
       params.push(filters.isArchived);
     }
 
@@ -505,10 +505,10 @@ export class Document {
   // Find all documents accessible to an employee (personal, team, department, company)
   static async findByEmployeeWithAccess(
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<DbDocument[]> {
     logger.info(
-      `Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`
+      `Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`,
     );
 
     const query = `
@@ -558,12 +558,12 @@ export class Document {
         tenant_id,
       ]);
       logger.info(
-        `Retrieved ${rows.length} accessible documents for employee ${userId}`
+        `Retrieved ${rows.length} accessible documents for employee ${userId}`,
       );
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`
+        `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -573,13 +573,13 @@ export class Document {
   static async countByTenant(tenant_id: number): Promise<number> {
     try {
       const [rows] = await executeQuery<RowDataPacket[]>(
-        'SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?',
-        [tenant_id]
+        "SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?",
+        [tenant_id],
       );
       return rows[0]?.count || 0;
     } catch (error) {
       logger.error(
-        `Error counting documents by tenant: ${(error as Error).message}`
+        `Error counting documents by tenant: ${(error as Error).message}`,
       );
       return 0;
     }
@@ -590,15 +590,15 @@ export class Document {
     logger.info(`Calculating total storage used by tenant ${tenant_id}`);
     try {
       const [rows] = await executeQuery<RowDataPacket[]>(
-        'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?',
-        [tenant_id]
+        "SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?",
+        [tenant_id],
       );
       const totalSize = rows[0]?.total_size || 0;
       logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
       return totalSize;
     } catch (error) {
       logger.error(
-        `Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`
+        `Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`,
       );
       return 0;
     }
@@ -606,9 +606,9 @@ export class Document {
 
   // Find documents with flexible filters
   static async findWithFilters(
-    filters: DocumentFilters
+    filters: DocumentFilters,
   ): Promise<DbDocument[]> {
-    logger.info('Finding documents with filters', filters);
+    logger.info("Finding documents with filters", filters);
 
     let query = `
       SELECT d.*, u.first_name, u.last_name, 
@@ -621,76 +621,76 @@ export class Document {
 
     // Add filters
     if (filters.userId) {
-      query += ' AND d.user_id = ?';
+      query += " AND d.user_id = ?";
       params.push(filters.userId);
     }
 
     if (filters.tenant_id) {
-      query += ' AND d.tenant_id = ?';
+      query += " AND d.tenant_id = ?";
       params.push(filters.tenant_id);
     }
 
     if (filters.category) {
-      query += ' AND d.category = ?';
+      query += " AND d.category = ?";
       params.push(filters.category);
     }
 
     if (filters.year) {
-      query += ' AND d.year = ?';
+      query += " AND d.year = ?";
       params.push(filters.year);
     }
 
     if (filters.month) {
-      query += ' AND d.month = ?';
+      query += " AND d.month = ?";
       params.push(filters.month);
     }
 
     if (filters.isArchived !== undefined) {
-      query += ' AND d.is_archived = ?';
+      query += " AND d.is_archived = ?";
       params.push(filters.isArchived);
     }
 
     if (filters.searchTerm) {
-      query += ' AND (d.file_name LIKE ? OR d.description LIKE ?)';
+      query += " AND (d.file_name LIKE ? OR d.description LIKE ?)";
       params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
     }
 
     // Add date range filters
     if (filters.uploadDateFrom) {
-      query += ' AND d.uploaded_at >= ?';
+      query += " AND d.uploaded_at >= ?";
       params.push(filters.uploadDateFrom);
     }
 
     if (filters.uploadDateTo) {
-      query += ' AND d.uploaded_at <= ?';
+      query += " AND d.uploaded_at <= ?";
       params.push(filters.uploadDateTo);
     }
 
     // Add ordering
     if (filters.orderBy) {
       const validOrderFields = [
-        'uploaded_at',
-        'filename',
-        'category',
-        'year',
-        'month',
+        "uploaded_at",
+        "filename",
+        "category",
+        "year",
+        "month",
       ];
       const orderField = validOrderFields.includes(filters.orderBy)
         ? filters.orderBy
-        : 'uploaded_at';
-      const orderDirection = filters.orderDirection === 'ASC' ? 'ASC' : 'DESC';
+        : "uploaded_at";
+      const orderDirection = filters.orderDirection === "ASC" ? "ASC" : "DESC";
       query += ` ORDER BY d.${orderField} ${orderDirection}`;
     } else {
-      query += ' ORDER BY d.uploaded_at DESC';
+      query += " ORDER BY d.uploaded_at DESC";
     }
 
     // Add pagination
     if (filters.limit) {
-      query += ' LIMIT ?';
+      query += " LIMIT ?";
       params.push(filters.limit);
 
       if (filters.offset) {
-        query += ' OFFSET ?';
+        query += " OFFSET ?";
         params.push(filters.offset);
       }
     }
@@ -701,7 +701,7 @@ export class Document {
       return rows;
     } catch (error) {
       logger.error(
-        `Error finding documents with filters: ${(error as Error).message}`
+        `Error finding documents with filters: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -711,7 +711,7 @@ export class Document {
   static async markAsRead(
     documentId: number,
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<void> {
     const query = `
       INSERT INTO document_read_status (document_id, user_id, tenant_id)
@@ -725,7 +725,7 @@ export class Document {
   static async isReadByUser(
     documentId: number,
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<boolean> {
     const query = `
       SELECT 1 FROM document_read_status
@@ -743,7 +743,7 @@ export class Document {
   // Get unread documents count for a user
   static async getUnreadCountForUser(
     userId: number,
-    tenant_id: number
+    tenant_id: number,
   ): Promise<number> {
     const query = `
       SELECT COUNT(DISTINCT d.id) as unread_count

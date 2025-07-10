@@ -485,7 +485,7 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div class="card">
             <div class="card-header">
@@ -497,9 +497,9 @@
               <div class="security-warning">
                 <i class="fas fa-shield-alt"></i>
                 <div class="security-warning-text">
-                  <strong>Sicherheitshinweis:</strong> Root-Benutzer haben vollständigen Systemzugriff. 
-                  Das Zwei-Personen-Prinzip ist für kritische Operationen wie Tenant-Löschung aktiv.
-                  Erstellen Sie Root-Benutzer nur für vertrauenswürdige Administratoren.
+                  <strong>Sicherheitshinweis:</strong>
+                  Root-Benutzer haben vollständigen Systemzugriff. Das Zwei-Personen-Prinzip ist für kritische Operationen wie
+                  Tenant-Löschung aktiv. Erstellen Sie Root-Benutzer nur für vertrauenswürdige Administratoren.
                 </div>
               </div>
 
@@ -558,15 +558,9 @@
                 </svg>
               </div>
               <div class="dropdown-options" id="positionDropdownDropdown">
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'ceo', 'CEO')">
-                  CEO
-                </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cto', 'CTO')">
-                  CTO
-                </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cfo', 'CFO')">
-                  CFO
-                </div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'ceo', 'CEO')">CEO</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cto', 'CTO')">CTO</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cfo', 'CFO')">CFO</div>
                 <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">
                   Geschäftsführer
                 </div>
@@ -585,7 +579,7 @@
             <label class="form-label">Notizen</label>
             <textarea id="rootNotes" class="form-control" rows="3"></textarea>
           </div>
-          
+
           <div class="form-group" id="activeStatusGroup" style="display: none">
             <label class="form-label">
               <input type="checkbox" id="rootIsActive" />
@@ -595,7 +589,7 @@
               Deaktivierte Root-User können sich nicht anmelden
             </div>
           </div>
-          
+
           <div class="button-group">
             <button type="button" class="btn btn-secondary" onclick="closeRootModal()">Abbrechen</button>
             <button type="submit" class="btn btn-primary">Speichern</button>
@@ -658,7 +652,7 @@
         document.getElementById('rootModal').classList.remove('active');
       }
     </script>
-    
+
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';

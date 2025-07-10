@@ -7,18 +7,18 @@
  *   description: Event and calendar management
  */
 
-import express, { Router } from 'express';
-import { security } from '../middleware/security';
-import { body, param, query } from 'express-validator';
-import { createValidation } from '../middleware/validation';
-import { successResponse, errorResponse } from '../types/response.types';
-import { typed } from '../utils/routeHandlers';
-import { AuthenticatedRequest } from '../types/request.types';
+import express, { Router } from "express";
+import { security } from "../middleware/security";
+import { body, param, query } from "express-validator";
+import { createValidation } from "../middleware/validation";
+import { successResponse, errorResponse } from "../types/response.types";
+import { typed } from "../utils/routeHandlers";
+import { AuthenticatedRequest } from "../types/request.types";
 
 // Import calendar model (keeping require pattern for compatibility)
-import calendarModel from '../models/calendar';
-import type { EventUpdateData } from '../models/calendar';
-import { getErrorMessage } from '../utils/errorHandler';
+import calendarModel from "../models/calendar";
+import type { EventUpdateData } from "../models/calendar";
+import { getErrorMessage } from "../utils/errorHandler";
 
 const router: Router = express.Router();
 
@@ -47,81 +47,81 @@ interface CalendarEventRequest extends AuthenticatedRequest {
 
 // Query interfaces
 interface CalendarQueryOptions {
-  status: 'active' | 'cancelled';
-  filter: 'all' | 'company' | 'department' | 'team' | 'personal';
+  status: "active" | "cancelled";
+  filter: "all" | "company" | "department" | "team" | "personal";
   search: string;
   start_date?: string;
   end_date?: string;
   page: number;
   limit: number;
   sortBy: string;
-  sortDir: 'ASC' | 'DESC';
+  sortDir: "ASC" | "DESC";
 }
 
 // Extended Request interfaces for middleware
 // EventManagementRequest was removed as it's no longer needed with typed handlers
 
 // Helper function to get tenant ID from user object
-function getTenantId(user: AuthenticatedRequest['user']): number {
+function getTenantId(user: AuthenticatedRequest["user"]): number {
   return user.tenant_id || 1;
 }
 
 // Validation schemas
 const getEventsValidation = createValidation([
-  query('status')
+  query("status")
     .optional()
-    .isIn(['active', 'cancelled'])
-    .withMessage('Status muss active oder cancelled sein'),
-  query('filter')
+    .isIn(["active", "cancelled"])
+    .withMessage("Status muss active oder cancelled sein"),
+  query("filter")
     .optional()
-    .isIn(['all', 'company', 'department', 'team', 'personal'])
-    .withMessage('Ungültiger Filter'),
-  query('search').optional().isString().trim(),
-  query('start_date').optional().isISO8601(),
-  query('end_date').optional().isISO8601(),
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('sortBy')
+    .isIn(["all", "company", "department", "team", "personal"])
+    .withMessage("Ungültiger Filter"),
+  query("search").optional().isString().trim(),
+  query("start_date").optional().isISO8601(),
+  query("end_date").optional().isISO8601(),
+  query("page").optional().isInt({ min: 1 }),
+  query("limit").optional().isInt({ min: 1, max: 100 }),
+  query("sortBy")
     .optional()
-    .isIn(['start_date', 'end_date', 'title', 'created_at']),
-  query('sortDir').optional().isIn(['ASC', 'DESC']),
+    .isIn(["start_date", "end_date", "title", "created_at"]),
+  query("sortDir").optional().isIn(["ASC", "DESC"]),
 ]);
 
 const createEventValidation = createValidation([
-  body('title').notEmpty().trim().withMessage('Titel ist erforderlich'),
-  body('start_time').isISO8601().withMessage('Ungültiges Startdatum'),
-  body('end_time').isISO8601().withMessage('Ungültiges Enddatum'),
-  body('all_day').optional().isBoolean(),
-  body('org_level')
+  body("title").notEmpty().trim().withMessage("Titel ist erforderlich"),
+  body("start_time").isISO8601().withMessage("Ungültiges Startdatum"),
+  body("end_time").isISO8601().withMessage("Ungültiges Enddatum"),
+  body("all_day").optional().isBoolean(),
+  body("org_level")
     .optional()
-    .isIn(['company', 'department', 'team', 'personal']),
-  body('org_id').optional().isInt({ min: 1 }),
-  body('description').optional().trim(),
-  body('location').optional().trim(),
-  body('reminder_time').optional().isInt({ min: 0 }),
-  body('color')
+    .isIn(["company", "department", "team", "personal"]),
+  body("org_id").optional().isInt({ min: 1 }),
+  body("description").optional().trim(),
+  body("location").optional().trim(),
+  body("reminder_time").optional().isInt({ min: 0 }),
+  body("color")
     .optional()
     .matches(/^#[0-9A-F]{6}$/i)
-    .withMessage('Ungültiges Farbformat'),
+    .withMessage("Ungültiges Farbformat"),
 ]);
 
 const updateEventValidation = createValidation([
-  param('id').isInt({ min: 1 }).withMessage('Ungültige Event-ID'),
-  body('title').optional().notEmpty().trim(),
-  body('start_time').optional().isISO8601(),
-  body('end_time').optional().isISO8601(),
-  body('all_day').optional().isBoolean(),
-  body('org_level')
+  param("id").isInt({ min: 1 }).withMessage("Ungültige Event-ID"),
+  body("title").optional().notEmpty().trim(),
+  body("start_time").optional().isISO8601(),
+  body("end_time").optional().isISO8601(),
+  body("all_day").optional().isBoolean(),
+  body("org_level")
     .optional()
-    .isIn(['company', 'department', 'team', 'personal']),
-  body('org_id').optional().isInt({ min: 1 }),
-  body('description').optional().trim(),
-  body('location').optional().trim(),
-  body('reminder_time').optional().isInt({ min: 0 }),
-  body('color')
+    .isIn(["company", "department", "team", "personal"]),
+  body("org_id").optional().isInt({ min: 1 }),
+  body("description").optional().trim(),
+  body("location").optional().trim(),
+  body("reminder_time").optional().isInt({ min: 0 }),
+  body("color")
     .optional()
     .matches(/^#[0-9A-F]{6}$/i),
-  body('status').optional().isIn(['active', 'cancelled']),
+  body("status").optional().isIn(["active", "cancelled"]),
 ]);
 
 // Helper function to check if user can manage the event
@@ -141,7 +141,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
     const canManage = await calendarModel.canManageEvent(
       parseInt(eventId, 10),
       req.user.id,
-      userInfo
+      userInfo,
     );
 
     if (!canManage) {
@@ -149,9 +149,9 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
         .status(403)
         .json(
           errorResponse(
-            'Sie haben keine Berechtigung, dieses Event zu verwalten',
-            403
-          )
+            "Sie haben keine Berechtigung, dieses Event zu verwalten",
+            403,
+          ),
         );
       return;
     }
@@ -160,11 +160,11 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
     const event = await calendarModel.getEventById(
       parseInt(eventId, 10),
       tenantId,
-      req.user.id
+      req.user.id,
     );
 
     if (!event) {
-      res.status(404).json(errorResponse('Event nicht gefunden', 404));
+      res.status(404).json(errorResponse("Event nicht gefunden", 404));
       return;
     }
 
@@ -173,10 +173,10 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
     next();
   } catch (error) {
     console.error(
-      'Error in canManageEvent middleware:',
-      getErrorMessage(error)
+      "Error in canManageEvent middleware:",
+      getErrorMessage(error),
     );
-    res.status(500).json(errorResponse('Interner Serverfehler', 500));
+    res.status(500).json(errorResponse("Interner Serverfehler", 500));
   }
 });
 
@@ -295,46 +295,46 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
  * @desc Get all calendar events visible to the user
  */
 router.get(
-  '/',
+  "/",
   ...security.user(getEventsValidation),
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
 
       const options: CalendarQueryOptions = {
-        status: (req.query.status as 'active' | 'cancelled') || 'active',
+        status: (req.query.status as "active" | "cancelled") || "active",
         filter:
           (req.query.filter as
-            | 'all'
-            | 'company'
-            | 'department'
-            | 'team'
-            | 'personal') || 'all',
-        search: (req.query.search as string) || '',
+            | "all"
+            | "company"
+            | "department"
+            | "team"
+            | "personal") || "all",
+        search: (req.query.search as string) || "",
         start_date: (req.query.start || req.query.start_date) as
           | string
           | undefined,
         end_date: (req.query.end || req.query.end_date) as string | undefined,
-        page: parseInt((req.query.page as string) || '1', 10),
-        limit: parseInt((req.query.limit as string) || '50', 10),
-        sortBy: (req.query.sortBy as string) || 'start_date',
-        sortDir: (req.query.sortDir as 'ASC' | 'DESC') || 'ASC',
+        page: parseInt((req.query.page as string) || "1", 10),
+        limit: parseInt((req.query.limit as string) || "50", 10),
+        sortBy: (req.query.sortBy as string) || "start_date",
+        sortDir: (req.query.sortDir as "ASC" | "DESC") || "ASC",
       };
 
       const result = await calendarModel.getAllEvents(
         tenantId,
         req.user.id,
-        options
+        options,
       );
 
       res.json(successResponse(result));
     } catch (error) {
-      console.error('Error in GET /api/calendar:', getErrorMessage(error));
+      console.error("Error in GET /api/calendar:", getErrorMessage(error));
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen der Kalendereinträge', 500));
+        .json(errorResponse("Fehler beim Abrufen der Kalendereinträge", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -342,38 +342,38 @@ router.get(
  * @desc Get upcoming events for dashboard widget
  */
 router.get(
-  '/dashboard',
+  "/dashboard",
   ...security.user(
     createValidation([
-      query('days').optional().isInt({ min: 1, max: 365 }),
-      query('limit').optional().isInt({ min: 1, max: 50 }),
-    ])
+      query("days").optional().isInt({ min: 1, max: 365 }),
+      query("limit").optional().isInt({ min: 1, max: 50 }),
+    ]),
   ),
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
 
-      const days = parseInt((req.query.days as string) || '7', 10);
-      const limit = parseInt((req.query.limit as string) || '5', 10);
+      const days = parseInt((req.query.days as string) || "7", 10);
+      const limit = parseInt((req.query.limit as string) || "5", 10);
 
       const events = await calendarModel.getDashboardEvents(
         tenantId,
         req.user.id,
         days,
-        limit
+        limit,
       );
 
       res.json(successResponse(events));
     } catch (error) {
       console.error(
-        'Error in GET /api/calendar/dashboard:',
-        getErrorMessage(error)
+        "Error in GET /api/calendar/dashboard:",
+        getErrorMessage(error),
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen der Dashboard-Events', 500));
+        .json(errorResponse("Fehler beim Abrufen der Dashboard-Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -381,11 +381,11 @@ router.get(
  * @desc Get a specific calendar event
  */
 router.get(
-  '/:id',
+  "/:id",
   ...security.user(
     createValidation([
-      param('id').isInt({ min: 1 }).withMessage('Ungültige Event-ID'),
-    ])
+      param("id").isInt({ min: 1 }).withMessage("Ungültige Event-ID"),
+    ]),
   ),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -394,22 +394,22 @@ router.get(
       const event = await calendarModel.getEventById(
         parseInt(req.params.id, 10),
         tenantId,
-        req.user.id
+        req.user.id,
       );
 
       if (!event) {
-        res.status(404).json(errorResponse('Event nicht gefunden', 404));
+        res.status(404).json(errorResponse("Event nicht gefunden", 404));
         return;
       }
 
       res.json(successResponse(event));
     } catch (error) {
-      console.error('Error in GET /api/calendar/:id:', getErrorMessage(error));
+      console.error("Error in GET /api/calendar/:id:", getErrorMessage(error));
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen des Events', 500));
+        .json(errorResponse("Fehler beim Abrufen des Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -417,7 +417,7 @@ router.get(
  * @desc Create a new calendar event
  */
 router.post(
-  '/',
+  "/",
   ...security.user(createEventValidation),
   typed.body<CalendarEventBody>(async (req, res) => {
     try {
@@ -425,7 +425,7 @@ router.post(
 
       // Convert org_id to number if it's a string
       let org_id = req.body.org_id;
-      if (typeof org_id === 'string') {
+      if (typeof org_id === "string") {
         org_id = parseInt(org_id, 10);
       }
 
@@ -438,10 +438,10 @@ router.post(
         end_time: req.body.end_time,
         all_day: req.body.all_day,
         org_level: req.body.org_level as
-          | 'company'
-          | 'team'
-          | 'department'
-          | 'personal',
+          | "company"
+          | "team"
+          | "department"
+          | "personal",
         org_id,
         created_by: req.user.id,
         reminder_time: req.body.reminder_time,
@@ -452,14 +452,14 @@ router.post(
       const event = await calendarModel.createEvent(eventData);
       res
         .status(201)
-        .json(successResponse(event, 'Event erfolgreich erstellt'));
+        .json(successResponse(event, "Event erfolgreich erstellt"));
     } catch (error) {
-      console.error('Error in POST /api/calendar:', getErrorMessage(error));
+      console.error("Error in POST /api/calendar:", getErrorMessage(error));
       res
         .status(500)
-        .json(errorResponse('Fehler beim Erstellen des Events', 500));
+        .json(errorResponse("Fehler beim Erstellen des Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -467,7 +467,7 @@ router.post(
  * @desc Update a calendar event
  */
 router.put(
-  '/:id',
+  "/:id",
   ...security.user(updateEventValidation),
   canManageEvent,
   typed.paramsBody<{ id: string }, CalendarEventBody>(async (req, res) => {
@@ -480,17 +480,17 @@ router.put(
         end_time: req.body.end_time,
         all_day: req.body.all_day,
         org_level: req.body.org_level as
-          | 'company'
-          | 'department'
-          | 'team'
-          | 'personal'
+          | "company"
+          | "department"
+          | "team"
+          | "personal"
           | undefined,
         org_id: req.body.org_id
           ? parseInt(String(req.body.org_id), 10)
           : undefined,
         reminder_time: req.body.reminder_time,
         color: req.body.color,
-        status: req.body.status as 'active' | 'cancelled' | undefined,
+        status: req.body.status as "active" | "cancelled" | undefined,
         recurrence_rule: req.body.recurring ? req.body.recurring_pattern : null,
       };
 
@@ -498,17 +498,17 @@ router.put(
       const updatedEvent = await calendarModel.updateEvent(
         parseInt(req.params.id, 10),
         eventData,
-        tenantId
+        tenantId,
       );
 
-      res.json(successResponse(updatedEvent, 'Event erfolgreich aktualisiert'));
+      res.json(successResponse(updatedEvent, "Event erfolgreich aktualisiert"));
     } catch (error) {
-      console.error('Error in PUT /api/calendar/:id:', getErrorMessage(error));
+      console.error("Error in PUT /api/calendar/:id:", getErrorMessage(error));
       res
         .status(500)
-        .json(errorResponse('Fehler beim Aktualisieren des Events', 500));
+        .json(errorResponse("Fehler beim Aktualisieren des Events", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -516,11 +516,11 @@ router.put(
  * @desc Delete a calendar event
  */
 router.delete(
-  '/:id',
+  "/:id",
   ...security.user(
     createValidation([
-      param('id').isInt({ min: 1 }).withMessage('Ungültige Event-ID'),
-    ])
+      param("id").isInt({ min: 1 }).withMessage("Ungültige Event-ID"),
+    ]),
   ),
   canManageEvent,
   typed.params<{ id: string }>(async (req, res) => {
@@ -528,25 +528,25 @@ router.delete(
       const tenantId = getTenantId(req.user);
       const success = await calendarModel.deleteEvent(
         parseInt(req.params.id, 10),
-        tenantId
+        tenantId,
       );
 
       if (!success) {
-        res.status(404).json(errorResponse('Event nicht gefunden', 404));
+        res.status(404).json(errorResponse("Event nicht gefunden", 404));
         return;
       }
 
-      res.json(successResponse(null, 'Event erfolgreich gelöscht'));
+      res.json(successResponse(null, "Event erfolgreich gelöscht"));
     } catch (error) {
       console.error(
-        'Error in DELETE /api/calendar/:id:',
-        getErrorMessage(error)
+        "Error in DELETE /api/calendar/:id:",
+        getErrorMessage(error),
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Löschen des Events', 500));
+        .json(errorResponse("Fehler beim Löschen des Events", 500));
     }
-  })
+  }),
 );
 
 export default router;

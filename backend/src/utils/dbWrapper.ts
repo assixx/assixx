@@ -2,16 +2,16 @@
  * Database wrapper utilities for proper TypeScript types
  */
 
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 export interface DbConnection {
   query(
     sql: string,
-    params?: unknown[]
+    params?: unknown[],
   ): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
   execute(
     sql: string,
-    params?: unknown[]
+    params?: unknown[],
   ): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
   beginTransaction(): Promise<void>;
   commit(): Promise<void>;
@@ -24,7 +24,7 @@ export class ConnectionWrapper {
 
   async query<T extends RowDataPacket[] = RowDataPacket[]>(
     sql: string,
-    params?: unknown[]
+    params?: unknown[],
   ): Promise<T> {
     const [result] = await this.conn.query(sql, params);
     return result as T;

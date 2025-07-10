@@ -461,7 +461,7 @@
       const userRole = localStorage.getItem('userRole');
 
       if (!token || (userRole !== 'root' && userRole !== 'admin')) {
-        window.location.href = "/login";
+        window.location.href = '/login';
       }
 
       // Load departments

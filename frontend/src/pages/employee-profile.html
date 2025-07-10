@@ -211,184 +211,183 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
-
-      <div class="profile-header">
-        <div class="profile-picture" id="profile-image">
-          <!-- Wird dynamisch gefüllt -->
-          JD
-        </div>
-        <div class="profile-info">
-          <p class="profile-name" id="profile-name">John Doe</p>
-          <p class="profile-position" id="profile-position">Software Entwickler</p>
-          <p id="profile-department">
-            IT Abteilung
-            <span class="badge">Team Entwicklung</span>
-          </p>
-        </div>
-      </div>
-
-      <div class="tab-container">
-        <button class="tab active" onclick="showTab('personal-info')">Persönliche Informationen</button>
-        <button class="tab" onclick="showTab('work-info')">Arbeitsinformationen</button>
-        <button class="tab" onclick="showTab('documents')">Dokumente</button>
-        <button class="tab" onclick="showTab('settings')">Einstellungen</button>
-      </div>
-
-      <div id="personal-info" class="tab-content active">
-        <h2>Persönliche Informationen</h2>
-
-        <form id="personal-info-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="first_name">Vorname</label>
-              <input type="text" id="first_name" name="first_name" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="last_name">Nachname</label>
-              <input type="text" id="last_name" name="last_name" class="form-control" required />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="email">E-Mail</label>
-              <input type="email" id="email" name="email" class="form-control" required />
-            </div>
-            <div class="form-group">
-              <label for="phone">Telefon</label>
-              <input type="tel" id="phone" name="phone" class="form-control" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="address">Adresse</label>
-            <textarea id="address" name="address" class="form-control" rows="3"></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="birthday">Geburtstag</label>
-              <input type="date" id="birthday" name="birthday" class="form-control" />
-            </div>
-            <div class="form-group">
-              <label for="emergency_contact">Notfallkontakt</label>
-              <input type="text" id="emergency_contact" name="emergency_contact" class="form-control" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="profile_picture">Profilbild ändern</label>
-            <div class="upload-btn-wrapper">
-              <button class="btn btn-secondary">Bild auswählen</button>
-              <input type="file" id="profile_picture" name="profile_picture" accept="image/*" />
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Speichern</button>
-        </form>
-      </div>
-
-      <div id="work-info" class="tab-content">
-        <h2>Arbeitsinformationen</h2>
-
-        <form id="work-info-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="employee_id">Mitarbeiter-ID</label>
-              <input type="text" id="employee_id" name="employee_id" class="form-control" readonly />
-            </div>
-            <div class="form-group">
-              <label for="position">Position</label>
-              <input type="text" id="position" name="position" class="form-control" readonly />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="department">Abteilung</label>
-              <input type="text" id="department" name="department" class="form-control" readonly />
-            </div>
-            <div class="form-group">
-              <label for="hire_date">Einstellungsdatum</label>
-              <input type="date" id="hire_date" name="hire_date" class="form-control" readonly />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="teams">Teams</label>
-            <div id="teams" class="form-control" style="min-height: 50px; background-color: #f9f9f9">
+          <div class="profile-header">
+            <div class="profile-picture" id="profile-image">
               <!-- Wird dynamisch gefüllt -->
+              JD
+            </div>
+            <div class="profile-info">
+              <p class="profile-name" id="profile-name">John Doe</p>
+              <p class="profile-position" id="profile-position">Software Entwickler</p>
+              <p id="profile-department">
+                IT Abteilung
+                <span class="badge">Team Entwicklung</span>
+              </p>
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="notes">Notizen</label>
-            <textarea id="notes" name="notes" class="form-control" rows="3" readonly></textarea>
+          <div class="tab-container">
+            <button class="tab active" onclick="showTab('personal-info')">Persönliche Informationen</button>
+            <button class="tab" onclick="showTab('work-info')">Arbeitsinformationen</button>
+            <button class="tab" onclick="showTab('documents')">Dokumente</button>
+            <button class="tab" onclick="showTab('settings')">Einstellungen</button>
           </div>
-        </form>
-      </div>
 
-      <div id="documents" class="tab-content">
-        <h2>Meine Dokumente</h2>
+          <div id="personal-info" class="tab-content active">
+            <h2>Persönliche Informationen</h2>
 
-        <div class="form-group">
-          <input type="text" id="document-search" class="form-control" placeholder="Dokumente durchsuchen..." />
+            <form id="personal-info-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="first_name">Vorname</label>
+                  <input type="text" id="first_name" name="first_name" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label for="last_name">Nachname</label>
+                  <input type="text" id="last_name" name="last_name" class="form-control" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="email">E-Mail</label>
+                  <input type="email" id="email" name="email" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label for="phone">Telefon</label>
+                  <input type="tel" id="phone" name="phone" class="form-control" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="address">Adresse</label>
+                <textarea id="address" name="address" class="form-control" rows="3"></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="birthday">Geburtstag</label>
+                  <input type="date" id="birthday" name="birthday" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label for="emergency_contact">Notfallkontakt</label>
+                  <input type="text" id="emergency_contact" name="emergency_contact" class="form-control" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="profile_picture">Profilbild ändern</label>
+                <div class="upload-btn-wrapper">
+                  <button class="btn btn-secondary">Bild auswählen</button>
+                  <input type="file" id="profile_picture" name="profile_picture" accept="image/*" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Speichern</button>
+            </form>
+          </div>
+
+          <div id="work-info" class="tab-content">
+            <h2>Arbeitsinformationen</h2>
+
+            <form id="work-info-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="employee_id">Mitarbeiter-ID</label>
+                  <input type="text" id="employee_id" name="employee_id" class="form-control" readonly />
+                </div>
+                <div class="form-group">
+                  <label for="position">Position</label>
+                  <input type="text" id="position" name="position" class="form-control" readonly />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="department">Abteilung</label>
+                  <input type="text" id="department" name="department" class="form-control" readonly />
+                </div>
+                <div class="form-group">
+                  <label for="hire_date">Einstellungsdatum</label>
+                  <input type="date" id="hire_date" name="hire_date" class="form-control" readonly />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="teams">Teams</label>
+                <div id="teams" class="form-control" style="min-height: 50px; background-color: #f9f9f9">
+                  <!-- Wird dynamisch gefüllt -->
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="notes">Notizen</label>
+                <textarea id="notes" name="notes" class="form-control" rows="3" readonly></textarea>
+              </div>
+            </form>
+          </div>
+
+          <div id="documents" class="tab-content">
+            <h2>Meine Dokumente</h2>
+
+            <div class="form-group">
+              <input type="text" id="document-search" class="form-control" placeholder="Dokumente durchsuchen..." />
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Dateiname</th>
+                  <th>Hochgeladen am</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="document-table-body">
+                <!-- Wird dynamisch gefüllt -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="settings" class="tab-content">
+            <h2>Einstellungen</h2>
+
+            <form id="settings-form">
+              <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" class="form-control" readonly />
+              </div>
+
+              <div class="form-group">
+                <label for="new_password">Neues Passwort</label>
+                <input type="password" id="new_password" name="new_password" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label for="confirm_password">Passwort bestätigen</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" />
+              </div>
+
+              <div class="form-group">
+                <label>Benachrichtigungseinstellungen</label>
+                <div>
+                  <input type="checkbox" id="notify_documents" name="notify_documents" checked />
+                  <label for="notify_documents">Bei neuen Dokumenten benachrichtigen</label>
+                </div>
+                <div>
+                  <input type="checkbox" id="notify_messages" name="notify_messages" checked />
+                  <label for="notify_messages">Bei neuen Nachrichten benachrichtigen</label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
+              <button type="button" class="btn btn-danger" onclick="deleteAccount()">Konto löschen</button>
+            </form>
+          </div>
+
+          <button class="btn btn-secondary back-btn" onclick="goBack()">Zurück zum Dashboard</button>
         </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Dateiname</th>
-              <th>Hochgeladen am</th>
-              <th>Aktionen</th>
-            </tr>
-          </thead>
-          <tbody id="document-table-body">
-            <!-- Wird dynamisch gefüllt -->
-          </tbody>
-        </table>
-      </div>
-
-      <div id="settings" class="tab-content">
-        <h2>Einstellungen</h2>
-
-        <form id="settings-form">
-          <div class="form-group">
-            <label for="username">Benutzername</label>
-            <input type="text" id="username" name="username" class="form-control" readonly />
-          </div>
-
-          <div class="form-group">
-            <label for="new_password">Neues Passwort</label>
-            <input type="password" id="new_password" name="new_password" class="form-control" />
-          </div>
-
-          <div class="form-group">
-            <label for="confirm_password">Passwort bestätigen</label>
-            <input type="password" id="confirm_password" name="confirm_password" class="form-control" />
-          </div>
-
-          <div class="form-group">
-            <label>Benachrichtigungseinstellungen</label>
-            <div>
-              <input type="checkbox" id="notify_documents" name="notify_documents" checked />
-              <label for="notify_documents">Bei neuen Dokumenten benachrichtigen</label>
-            </div>
-            <div>
-              <input type="checkbox" id="notify_messages" name="notify_messages" checked />
-              <label for="notify_messages">Bei neuen Nachrichten benachrichtigen</label>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
-          <button type="button" class="btn btn-danger" onclick="deleteAccount()">Konto löschen</button>
-        </form>
-      </div>
-
-      <button class="btn btn-secondary back-btn" onclick="goBack()">Zurück zum Dashboard</button>
-    </div>
       </main>
     </div>
 

@@ -1,6 +1,6 @@
 // TypeScript Utility Functions for Type Safety
 
-import { User, DatabaseUser } from '../types/models';
+import { User, DatabaseUser } from "../types/models";
 
 /**
  * Converts database user format to application user format
@@ -12,7 +12,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     email: dbUser.email,
     firstName: dbUser.first_name,
     lastName: dbUser.last_name,
-    role: dbUser.role as User['role'],
+    role: dbUser.role as User["role"],
     tenant_id: dbUser.tenant_id,
     departmentId: dbUser.department_id,
     isActive: dbUser.is_active,
@@ -32,8 +32,8 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
 /**
  * Type guard to check if a value is a valid user role
  */
-export function isValidUserRole(role: string): role is User['role'] {
-  return ['admin', 'employee', 'root'].includes(role);
+export function isValidUserRole(role: string): role is User["role"] {
+  return ["admin", "employee", "root"].includes(role);
 }
 
 /**
@@ -53,7 +53,7 @@ export function safeJsonParse<T>(json: string, defaultValue: T): T {
 export function createApiResponse<T>(
   success: boolean,
   data?: T,
-  error?: string
+  error?: string,
 ) {
   return {
     success,
@@ -88,7 +88,7 @@ export function snakeToCamel<T = unknown>(obj: unknown): T {
     return obj.map((item) => snakeToCamel(item)) as T;
   }
 
-  if (typeof obj !== 'object' || obj instanceof Date) {
+  if (typeof obj !== "object" || obj instanceof Date) {
     return obj as T;
   }
 
@@ -114,7 +114,7 @@ export function camelToSnake<T = unknown>(obj: unknown): T {
     return obj.map((item) => camelToSnake(item)) as T;
   }
 
-  if (typeof obj !== 'object' || obj instanceof Date) {
+  if (typeof obj !== "object" || obj instanceof Date) {
     return obj as T;
   }
 
@@ -133,16 +133,16 @@ export function camelToSnake<T = unknown>(obj: unknown): T {
  * MySQL returns 0/1 for boolean fields, this converts them properly
  */
 export function normalizeMySQLBoolean(value: unknown): boolean {
-  if (typeof value === 'boolean') {
+  if (typeof value === "boolean") {
     return value;
   }
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     return value === 1;
   }
 
-  if (typeof value === 'string') {
-    return value === '1' || value.toLowerCase() === 'true';
+  if (typeof value === "string") {
+    return value === "1" || value.toLowerCase() === "true";
   }
 
   return false;

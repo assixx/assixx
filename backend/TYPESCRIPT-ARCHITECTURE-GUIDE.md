@@ -35,34 +35,34 @@ interface QueryRequest<Q = any> extends AuthenticatedRequest {
 Due to Express.js type incompatibilities, we use wrapper functions:
 
 ```typescript
-import { typed } from '../utils/routeHandlers';
+import { typed } from "../utils/routeHandlers";
 
 // For authenticated routes
 router.get(
-  '/profile',
+  "/profile",
   ...security.user(),
   typed.auth(async (req, res) => {
     // req is AuthenticatedRequest
     // req.user is fully typed
-  })
+  }),
 );
 
 // For routes with params
 router.get(
-  '/user/:id',
+  "/user/:id",
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
     const userId = req.params.id; // typed as string
-  })
+  }),
 );
 
 // For routes with body
 router.post(
-  '/create',
+  "/create",
   ...security.admin(validateCreateUser),
   typed.body<CreateUserBody>(async (req, res) => {
     const { email, password } = req.body; // fully typed
-  })
+  }),
 );
 ```
 
@@ -72,16 +72,16 @@ Pre-configured security stacks for different endpoint types:
 
 ```typescript
 // Public endpoints (no auth, rate limited)
-router.get('/public', ...security.public(), handler);
+router.get("/public", ...security.public(), handler);
 
 // Authenticated user endpoints
-router.get('/profile', ...security.user(), handler);
+router.get("/profile", ...security.user(), handler);
 
 // Admin-only endpoints
-router.get('/admin/users', ...security.admin(), handler);
+router.get("/admin/users", ...security.admin(), handler);
 
 // With validation
-router.post('/user', ...security.admin(validateCreateUser), handler);
+router.post("/user", ...security.admin(validateCreateUser), handler);
 ```
 
 ## Implementation Guidelines
@@ -91,10 +91,10 @@ router.post('/user', ...security.admin(validateCreateUser), handler);
 1. Import required components:
 
 ```typescript
-import { Router } from 'express';
-import { security } from '../middleware/security';
-import { typed } from '../utils/routeHandlers';
-import { successResponse, errorResponse } from '../types/response.types';
+import { Router } from "express";
+import { security } from "../middleware/security";
+import { typed } from "../utils/routeHandlers";
+import { successResponse, errorResponse } from "../types/response.types";
 ```
 
 2. Define request interfaces if needed:
@@ -111,7 +111,7 @@ interface CreateUserBody {
 
 ```typescript
 router.post(
-  '/users',
+  "/users",
   ...security.admin(validateCreateUser),
   typed.body<CreateUserBody>(async (req, res) => {
     try {
@@ -122,9 +122,9 @@ router.post(
 
       res.json(successResponse(result));
     } catch (error) {
-      res.status(500).json(errorResponse('Server error', 500));
+      res.status(500).json(errorResponse("Server error", 500));
     }
-  })
+  }),
 );
 ```
 
@@ -133,22 +133,35 @@ router.post(
 **IMPORTANT**: Due to TypeScript union type issues between mysql2 Pool and MockDatabase, always use the centralized database utilities from `/src/utils/db.ts`:
 
 ```typescript
-import { execute, query, getConnection, transaction, RowDataPacket, ResultSetHeader } from '../utils/db';
+import {
+  execute,
+  query,
+  getConnection,
+  transaction,
+  RowDataPacket,
+  ResultSetHeader,
+} from "../utils/db";
 
 // SELECT queries - use execute or query
-const [rows] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE id = ?', [userId]);
+const [rows] = await execute<RowDataPacket[]>(
+  "SELECT * FROM users WHERE id = ?",
+  [userId],
+);
 
 // INSERT/UPDATE/DELETE queries
-const [result] = await execute<ResultSetHeader>('INSERT INTO users (email, password) VALUES (?, ?)', [
-  email,
-  hashedPassword,
-]);
+const [result] = await execute<ResultSetHeader>(
+  "INSERT INTO users (email, password) VALUES (?, ?)",
+  [email, hashedPassword],
+);
 const insertId = result.insertId;
 
 // Transactions
 await transaction(async (connection) => {
-  await connection.execute('INSERT INTO users (email) VALUES (?)', [email]);
-  await connection.execute('INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())', []);
+  await connection.execute("INSERT INTO users (email) VALUES (?)", [email]);
+  await connection.execute(
+    "INSERT INTO profiles (user_id) VALUES (LAST_INSERT_ID())",
+    [],
+  );
 });
 ```
 
@@ -161,12 +174,12 @@ await transaction(async (connection) => {
 Use the standardized error handler:
 
 ```typescript
-import { getErrorMessage } from '../utils/errorHandler';
+import { getErrorMessage } from "../utils/errorHandler";
 
 try {
   // Your code
 } catch (error) {
-  console.error('Operation failed:', error);
+  console.error("Operation failed:", error);
   const message = getErrorMessage(error);
   res.status(500).json(errorResponse(message, 500));
 }
@@ -177,20 +190,25 @@ try {
 ### Old Pattern:
 
 ```typescript
-router.post('/endpoint', authenticateToken as any, authorizeRole('admin') as any, async (req: any, res: any) => {
-  // Untyped implementation
-});
+router.post(
+  "/endpoint",
+  authenticateToken as any,
+  authorizeRole("admin") as any,
+  async (req: any, res: any) => {
+    // Untyped implementation
+  },
+);
 ```
 
 ### New Pattern:
 
 ```typescript
 router.post(
-  '/endpoint',
+  "/endpoint",
   ...security.admin(validationRules),
   typed.body<RequestBody>(async (req, res) => {
     // Fully typed implementation
-  })
+  }),
 );
 ```
 
@@ -235,27 +253,27 @@ backend/src/
 ### Multi-tenant Query Pattern
 
 ```typescript
-import { execute, RowDataPacket } from '../utils/db';
+import { execute, RowDataPacket } from "../utils/db";
 
-const [users] = await execute<RowDataPacket[]>('SELECT * FROM users WHERE tenant_id = ? AND role = ?', [
-  req.user.tenant_id,
-  'employee',
-]);
+const [users] = await execute<RowDataPacket[]>(
+  "SELECT * FROM users WHERE tenant_id = ? AND role = ?",
+  [req.user.tenant_id, "employee"],
+);
 ```
 
 ### File Upload Pattern
 
 ```typescript
 router.post(
-  '/upload',
+  "/upload",
   ...security.user(),
-  upload.single('file'),
+  upload.single("file"),
   typed.auth(async (req, res) => {
     if (!req.file) {
-      return res.status(400).json(errorResponse('No file uploaded', 400));
+      return res.status(400).json(errorResponse("No file uploaded", 400));
     }
     // Process file
-  })
+  }),
 );
 ```
 
@@ -268,13 +286,13 @@ interface PaginationQuery {
 }
 
 router.get(
-  '/items',
+  "/items",
   ...security.user(),
   typed.query<PaginationQuery>(async (req, res) => {
-    const page = parseInt(req.query.page || '1');
-    const limit = parseInt(req.query.limit || '10');
+    const page = parseInt(req.query.page || "1");
+    const limit = parseInt(req.query.limit || "10");
     // Implementation
-  })
+  }),
 );
 ```
 
@@ -283,16 +301,19 @@ router.get(
 When testing typed routes, use proper type assertions:
 
 ```typescript
-import request from 'supertest';
-import app from '../app';
+import request from "supertest";
+import app from "../app";
 
-describe('User Routes', () => {
-  it('should create user with proper types', async () => {
-    const response = await request(app).post('/api/users').set('Authorization', `Bearer ${token}`).send({
-      email: 'test@example.com',
-      password: 'SecurePass123',
-      role: 'employee',
-    });
+describe("User Routes", () => {
+  it("should create user with proper types", async () => {
+    const response = await request(app)
+      .post("/api/users")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        email: "test@example.com",
+        password: "SecurePass123",
+        role: "employee",
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);

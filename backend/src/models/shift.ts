@@ -7,25 +7,25 @@ import {
   query as executeQuery,
   RowDataPacket,
   ResultSetHeader,
-} from '../utils/db';
-import User from './user';
+} from "../utils/db";
+import User from "./user";
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
  */
 export function formatDateForMysql(
-  dateString: string | Date | null
+  dateString: string | Date | null,
 ): string | null {
   if (!dateString) return null;
   const date = new Date(dateString);
-  return date.toISOString().slice(0, 19).replace('T', ' ');
+  return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
 /**
  * Format date only for MySQL
  */
 export function formatDateOnlyForMysql(
-  dateString: string | Date | null
+  dateString: string | Date | null,
 ): string | null {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -58,7 +58,7 @@ interface DbShiftPlan extends RowDataPacket {
   end_date: Date;
   department_id?: number | null;
   team_id?: number | null;
-  status: 'draft' | 'published' | 'archived';
+  status: "draft" | "published" | "archived";
   created_by: number;
   created_at: Date;
   updated_at: Date;
@@ -95,7 +95,7 @@ interface DbShiftAssignment extends RowDataPacket {
   tenant_id: number;
   shift_id: number;
   user_id: number;
-  status: 'A' | 'R';
+  status: "A" | "R";
   assigned_by: number;
   assigned_at: Date;
   // Extended fields from joins
@@ -109,7 +109,7 @@ interface DbEmployeeAvailability extends RowDataPacket {
   tenant_id: number;
   user_id: number;
   date: Date;
-  availability_type: 'available' | 'unavailable' | 'partial';
+  availability_type: "available" | "unavailable" | "partial";
   start_time?: string | null;
   end_time?: string | null;
   notes?: string | null;
@@ -138,10 +138,10 @@ interface DbShiftExchangeRequest extends RowDataPacket {
   shift_id: number;
   requester_id: number;
   target_user_id?: number | null;
-  exchange_type: 'swap' | 'giveaway';
+  exchange_type: "swap" | "giveaway";
   target_shift_id?: number | null;
   message?: string | null;
-  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  status: "pending" | "approved" | "rejected" | "cancelled";
   created_at: Date;
   updated_at: Date;
   // Extended fields from joins
@@ -160,13 +160,13 @@ interface ShiftPlanFilters {
   team_id?: number;
   start_date?: string | Date;
   end_date?: string | Date;
-  status?: 'draft' | 'published' | 'archived';
+  status?: "draft" | "published" | "archived";
   page?: number;
   limit?: number;
 }
 
 interface ShiftExchangeFilters {
-  status?: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  status?: "pending" | "approved" | "rejected" | "cancelled";
   limit?: number;
 }
 
@@ -215,7 +215,7 @@ interface EmployeeAvailabilityData {
   tenant_id: number;
   user_id: number;
   date: string | Date;
-  availability_type: 'available' | 'unavailable' | 'partial';
+  availability_type: "available" | "unavailable" | "partial";
   start_time?: string | null;
   end_time?: string | null;
   notes?: string | null;
@@ -226,7 +226,7 @@ interface ShiftExchangeRequestData {
   shift_id: number;
   requester_id: number;
   target_user_id?: number | null;
-  exchange_type: 'swap' | 'giveaway';
+  exchange_type: "swap" | "giveaway";
   target_shift_id?: number | null;
   message?: string | null;
 }
@@ -239,7 +239,7 @@ interface CountResult extends RowDataPacket {
  * Get all shift templates for a tenant
  */
 export async function getShiftTemplates(
-  tenantId: number
+  tenantId: number,
 ): Promise<DbShiftTemplate[]> {
   try {
     const query = `
@@ -253,7 +253,7 @@ export async function getShiftTemplates(
     ]);
     return templates;
   } catch (error) {
-    console.error('Error in getShiftTemplates:', error);
+    console.error("Error in getShiftTemplates:", error);
     throw error;
   }
 }
@@ -262,7 +262,7 @@ export async function getShiftTemplates(
  * Create a new shift template
  */
 export async function createShiftTemplate(
-  templateData: ShiftTemplateData
+  templateData: ShiftTemplateData,
 ): Promise<DbShiftTemplate> {
   try {
     const {
@@ -286,7 +286,7 @@ export async function createShiftTemplate(
       !duration_hours ||
       !created_by
     ) {
-      throw new Error('Missing required fields');
+      throw new Error("Missing required fields");
     }
 
     const query = `
@@ -304,19 +304,19 @@ export async function createShiftTemplate(
       end_time,
       duration_hours,
       break_duration_minutes || 0,
-      color || '#3498db',
+      color || "#3498db",
       created_by,
     ]);
 
     // Get the created template
     const [created] = await executeQuery<DbShiftTemplate[]>(
-      'SELECT * FROM shift_templates WHERE id = ?',
-      [result.insertId]
+      "SELECT * FROM shift_templates WHERE id = ?",
+      [result.insertId],
     );
 
     return created[0];
   } catch (error) {
-    console.error('Error in createShiftTemplate:', error);
+    console.error("Error in createShiftTemplate:", error);
     throw error;
   }
 }
@@ -327,7 +327,7 @@ export async function createShiftTemplate(
 export async function getShiftPlans(
   tenantId: number,
   userId: number,
-  options: ShiftPlanFilters = {}
+  options: ShiftPlanFilters = {},
 ): Promise<{
   plans: DbShiftPlan[];
   pagination: {
@@ -343,7 +343,7 @@ export async function getShiftPlans(
       team_id,
       start_date,
       end_date,
-      status = 'draft',
+      status = "draft",
       page = 1,
       limit = 50,
     } = options;
@@ -365,12 +365,12 @@ export async function getShiftPlans(
     const queryParams: unknown[] = [tenantId];
 
     // Apply access control for non-admin users
-    if (role !== 'admin' && role !== 'root') {
-      if (role === 'manager') {
-        query += ' AND sp.department_id = ?';
+    if (role !== "admin" && role !== "root") {
+      if (role === "manager") {
+        query += " AND sp.department_id = ?";
         queryParams.push(departmentId);
-      } else if (role === 'team_lead') {
-        query += ' AND sp.team_id = ?';
+      } else if (role === "team_lead") {
+        query += " AND sp.team_id = ?";
         queryParams.push(teamId);
       } else {
         // Regular employees can only see published plans for their department/team
@@ -382,33 +382,33 @@ export async function getShiftPlans(
 
     // Apply filters
     if (department_id) {
-      query += ' AND sp.department_id = ?';
+      query += " AND sp.department_id = ?";
       queryParams.push(department_id);
     }
 
     if (team_id) {
-      query += ' AND sp.team_id = ?';
+      query += " AND sp.team_id = ?";
       queryParams.push(team_id);
     }
 
     if (start_date) {
-      query += ' AND sp.end_date >= ?';
+      query += " AND sp.end_date >= ?";
       queryParams.push(start_date);
     }
 
     if (end_date) {
-      query += ' AND sp.start_date <= ?';
+      query += " AND sp.start_date <= ?";
       queryParams.push(end_date);
     }
 
     if (status) {
-      query += ' AND sp.status = ?';
+      query += " AND sp.status = ?";
       queryParams.push(status);
     }
 
     // Apply pagination
     const offset = (page - 1) * limit;
-    query += ' ORDER BY sp.start_date DESC LIMIT ? OFFSET ?';
+    query += " ORDER BY sp.start_date DESC LIMIT ? OFFSET ?";
     queryParams.push(parseInt(limit.toString(), 10), offset);
 
     const [plans] = await executeQuery<DbShiftPlan[]>(query, queryParams);
@@ -421,12 +421,12 @@ export async function getShiftPlans(
     const countParams: unknown[] = [tenantId];
 
     // Apply same access control for count
-    if (role !== 'admin' && role !== 'root') {
-      if (role === 'manager') {
-        countQuery += ' AND sp.department_id = ?';
+    if (role !== "admin" && role !== "root") {
+      if (role === "manager") {
+        countQuery += " AND sp.department_id = ?";
         countParams.push(departmentId);
-      } else if (role === 'team_lead') {
-        countQuery += ' AND sp.team_id = ?';
+      } else if (role === "team_lead") {
+        countQuery += " AND sp.team_id = ?";
         countParams.push(teamId);
       } else {
         countQuery +=
@@ -437,33 +437,33 @@ export async function getShiftPlans(
 
     // Apply same filters for count
     if (department_id) {
-      countQuery += ' AND sp.department_id = ?';
+      countQuery += " AND sp.department_id = ?";
       countParams.push(department_id);
     }
 
     if (team_id) {
-      countQuery += ' AND sp.team_id = ?';
+      countQuery += " AND sp.team_id = ?";
       countParams.push(team_id);
     }
 
     if (start_date) {
-      countQuery += ' AND sp.end_date >= ?';
+      countQuery += " AND sp.end_date >= ?";
       countParams.push(start_date);
     }
 
     if (end_date) {
-      countQuery += ' AND sp.start_date <= ?';
+      countQuery += " AND sp.start_date <= ?";
       countParams.push(end_date);
     }
 
     if (status) {
-      countQuery += ' AND sp.status = ?';
+      countQuery += " AND sp.status = ?";
       countParams.push(status);
     }
 
     const [countResult] = await executeQuery<CountResult[]>(
       countQuery,
-      countParams
+      countParams,
     );
     const total = countResult[0].total;
 
@@ -477,7 +477,7 @@ export async function getShiftPlans(
       },
     };
   } catch (error) {
-    console.error('Error in getShiftPlans:', error);
+    console.error("Error in getShiftPlans:", error);
     throw error;
   }
 }
@@ -486,7 +486,7 @@ export async function getShiftPlans(
  * Create a new shift plan
  */
 export async function createShiftPlan(
-  planData: ShiftPlanData
+  planData: ShiftPlanData,
 ): Promise<DbShiftPlan> {
   try {
     const {
@@ -502,12 +502,12 @@ export async function createShiftPlan(
 
     // Validate required fields
     if (!tenant_id || !name || !start_date || !end_date || !created_by) {
-      throw new Error('Missing required fields');
+      throw new Error("Missing required fields");
     }
 
     // Validate date range
     if (new Date(start_date) > new Date(end_date)) {
-      throw new Error('Start date must be before end date');
+      throw new Error("Start date must be before end date");
     }
 
     const query = `
@@ -529,13 +529,13 @@ export async function createShiftPlan(
 
     // Get the created plan
     const [created] = await executeQuery<DbShiftPlan[]>(
-      'SELECT * FROM shift_plans WHERE id = ?',
-      [result.insertId]
+      "SELECT * FROM shift_plans WHERE id = ?",
+      [result.insertId],
     );
 
     return created[0];
   } catch (error) {
-    console.error('Error in createShiftPlan:', error);
+    console.error("Error in createShiftPlan:", error);
     throw error;
   }
 }
@@ -546,13 +546,13 @@ export async function createShiftPlan(
 export async function getShiftsByPlan(
   planId: number,
   tenantId: number,
-  userId: number
+  userId: number,
 ): Promise<DbShift[]> {
   try {
     // Check if user can access this plan
     const planAccess = await canAccessShiftPlan(planId, userId);
     if (!planAccess) {
-      throw new Error('Access denied to this shift plan');
+      throw new Error("Access denied to this shift plan");
     }
 
     const query = `
@@ -576,9 +576,9 @@ export async function getShiftsByPlan(
     shifts.forEach((shift) => {
       if (shift.assignments) {
         shift.assignedEmployees = shift.assignments
-          .split('; ')
+          .split("; ")
           .map((assignment) => {
-            const [name, status] = assignment.split(':');
+            const [name, status] = assignment.split(":");
             return { name, status };
           });
       } else {
@@ -589,7 +589,7 @@ export async function getShiftsByPlan(
 
     return shifts;
   } catch (error) {
-    console.error('Error in getShiftsByPlan:', error);
+    console.error("Error in getShiftsByPlan:", error);
     throw error;
   }
 }
@@ -619,7 +619,7 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
       !end_time ||
       !created_by
     ) {
-      throw new Error('Missing required fields');
+      throw new Error("Missing required fields");
     }
 
     const query = `
@@ -642,13 +642,13 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
 
     // Get the created shift
     const [created] = await executeQuery<DbShift[]>(
-      'SELECT * FROM shifts WHERE id = ?',
-      [result.insertId]
+      "SELECT * FROM shifts WHERE id = ?",
+      [result.insertId],
     );
 
     return created[0];
   } catch (error) {
-    console.error('Error in createShift:', error);
+    console.error("Error in createShift:", error);
     throw error;
   }
 }
@@ -657,30 +657,30 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
  * Assign employee to a shift
  */
 export async function assignEmployeeToShift(
-  assignmentData: ShiftAssignmentData
+  assignmentData: ShiftAssignmentData,
 ): Promise<DbShiftAssignment> {
   try {
     const { tenant_id, shift_id, user_id, assigned_by } = assignmentData;
 
     // Validate required fields
     if (!tenant_id || !shift_id || !user_id || !assigned_by) {
-      throw new Error('Missing required fields');
+      throw new Error("Missing required fields");
     }
 
     // Check if already assigned to this specific shift
     const [existing] = await executeQuery<RowDataPacket[]>(
-      'SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?',
-      [shift_id, user_id]
+      "SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?",
+      [shift_id, user_id],
     );
 
     if (existing.length > 0) {
-      throw new Error('Employee already assigned to this shift');
+      throw new Error("Employee already assigned to this shift");
     }
 
     // Check if employee is already assigned to another shift on the same day
     const [shiftInfo] = await executeQuery<DbShift[]>(
-      'SELECT date FROM shifts WHERE id = ?',
-      [shift_id]
+      "SELECT date FROM shifts WHERE id = ?",
+      [shift_id],
     );
 
     if (shiftInfo.length > 0) {
@@ -693,12 +693,12 @@ export async function assignEmployeeToShift(
         JOIN shifts s ON sa.shift_id = s.id
         WHERE sa.user_id = ? AND s.date = ? AND s.tenant_id = ?
       `,
-        [user_id, shiftDate, tenant_id]
+        [user_id, shiftDate, tenant_id],
       );
 
       if (dayAssignments.length > 0) {
         throw new Error(
-          'Employee is already assigned to another shift on this day'
+          "Employee is already assigned to another shift on this day",
         );
       }
     }
@@ -724,12 +724,12 @@ export async function assignEmployeeToShift(
       JOIN users u ON sa.user_id = u.id
       WHERE sa.id = ?
     `,
-      [result.insertId]
+      [result.insertId],
     );
 
     return created[0];
   } catch (error) {
-    console.error('Error in assignEmployeeToShift:', error);
+    console.error("Error in assignEmployeeToShift:", error);
     throw error;
   }
 }
@@ -741,7 +741,7 @@ export async function getEmployeeAvailability(
   tenantId: number,
   userId: number,
   startDate: string | Date,
-  endDate: string | Date
+  endDate: string | Date,
 ): Promise<DbEmployeeAvailability[]> {
   try {
     const query = `
@@ -760,7 +760,7 @@ export async function getEmployeeAvailability(
 
     return availability;
   } catch (error) {
-    console.error('Error in getEmployeeAvailability:', error);
+    console.error("Error in getEmployeeAvailability:", error);
     throw error;
   }
 }
@@ -769,7 +769,7 @@ export async function getEmployeeAvailability(
  * Set employee availability
  */
 export async function setEmployeeAvailability(
-  availabilityData: EmployeeAvailabilityData
+  availabilityData: EmployeeAvailabilityData,
 ): Promise<DbEmployeeAvailability> {
   try {
     const {
@@ -784,13 +784,13 @@ export async function setEmployeeAvailability(
 
     // Validate required fields
     if (!tenant_id || !user_id || !date || !availability_type) {
-      throw new Error('Missing required fields');
+      throw new Error("Missing required fields");
     }
 
     // Check if availability already exists for this date
     const [existing] = await executeQuery<DbEmployeeAvailability[]>(
-      'SELECT * FROM employee_availability WHERE tenant_id = ? AND user_id = ? AND date = ?',
-      [tenant_id, user_id, formatDateOnlyForMysql(date)]
+      "SELECT * FROM employee_availability WHERE tenant_id = ? AND user_id = ? AND date = ?",
+      [tenant_id, user_id, formatDateOnlyForMysql(date)],
     );
 
     if (existing.length > 0) {
@@ -835,14 +835,14 @@ export async function setEmployeeAvailability(
       ]);
 
       const [created] = await executeQuery<DbEmployeeAvailability[]>(
-        'SELECT * FROM employee_availability WHERE id = ?',
-        [result.insertId]
+        "SELECT * FROM employee_availability WHERE id = ?",
+        [result.insertId],
       );
 
       return created[0];
     }
   } catch (error) {
-    console.error('Error in setEmployeeAvailability:', error);
+    console.error("Error in setEmployeeAvailability:", error);
     throw error;
   }
 }
@@ -853,10 +853,10 @@ export async function setEmployeeAvailability(
 export async function getShiftExchangeRequests(
   tenantId: number,
   userId: number,
-  options: ShiftExchangeFilters = {}
+  options: ShiftExchangeFilters = {},
 ): Promise<DbShiftExchangeRequest[]> {
   try {
-    const { status = 'pending', limit = 50 } = options;
+    const { status = "pending", limit = 50 } = options;
 
     const query = `
       SELECT ser.*, 
@@ -884,7 +884,7 @@ export async function getShiftExchangeRequests(
     ]);
     return requests;
   } catch (error) {
-    console.error('Error in getShiftExchangeRequests:', error);
+    console.error("Error in getShiftExchangeRequests:", error);
     throw error;
   }
 }
@@ -893,7 +893,7 @@ export async function getShiftExchangeRequests(
  * Create shift exchange request
  */
 export async function createShiftExchangeRequest(
-  requestData: ShiftExchangeRequestData
+  requestData: ShiftExchangeRequestData,
 ): Promise<DbShiftExchangeRequest> {
   try {
     const {
@@ -908,7 +908,7 @@ export async function createShiftExchangeRequest(
 
     // Validate required fields
     if (!tenant_id || !shift_id || !requester_id || !exchange_type) {
-      throw new Error('Missing required fields');
+      throw new Error("Missing required fields");
     }
 
     const query = `
@@ -929,13 +929,13 @@ export async function createShiftExchangeRequest(
 
     // Get the created request
     const [created] = await executeQuery<DbShiftExchangeRequest[]>(
-      'SELECT * FROM shift_exchange_requests WHERE id = ?',
-      [result.insertId]
+      "SELECT * FROM shift_exchange_requests WHERE id = ?",
+      [result.insertId],
     );
 
     return created[0];
   } catch (error) {
-    console.error('Error in createShiftExchangeRequest:', error);
+    console.error("Error in createShiftExchangeRequest:", error);
     throw error;
   }
 }
@@ -945,7 +945,7 @@ export async function createShiftExchangeRequest(
  */
 export async function canAccessShiftPlan(
   planId: number,
-  userId: number
+  userId: number,
 ): Promise<boolean> {
   try {
     // Get user info and plan info
@@ -953,8 +953,8 @@ export async function canAccessShiftPlan(
       await User.getUserDepartmentAndTeam(userId);
 
     const [plans] = await executeQuery<DbShiftPlan[]>(
-      'SELECT * FROM shift_plans WHERE id = ?',
-      [planId]
+      "SELECT * FROM shift_plans WHERE id = ?",
+      [planId],
     );
 
     if (plans.length === 0) {
@@ -964,23 +964,23 @@ export async function canAccessShiftPlan(
     const plan = plans[0];
 
     // Admins can access all plans
-    if (role === 'admin' || role === 'root') {
+    if (role === "admin" || role === "root") {
       return true;
     }
 
     // Managers can access department plans
-    if (role === 'manager' && plan.department_id === departmentId) {
+    if (role === "manager" && plan.department_id === departmentId) {
       return true;
     }
 
     // Team leads can access team plans
-    if (role === 'team_lead' && plan.team_id === teamId) {
+    if (role === "team_lead" && plan.team_id === teamId) {
       return true;
     }
 
     // Employees can access published plans for their department/team
     if (
-      plan.status === 'published' &&
+      plan.status === "published" &&
       (plan.department_id === departmentId || plan.team_id === teamId)
     ) {
       return true;
@@ -988,7 +988,7 @@ export async function canAccessShiftPlan(
 
     return false;
   } catch (error) {
-    console.error('Error in canAccessShiftPlan:', error);
+    console.error("Error in canAccessShiftPlan:", error);
     throw error;
   }
 }
@@ -1000,7 +1000,7 @@ export async function getEmployeeShifts(
   tenantId: number,
   userId: number,
   startDate: string | Date,
-  endDate: string | Date
+  endDate: string | Date,
 ): Promise<DbShift[]> {
   try {
     const query = `
@@ -1025,7 +1025,7 @@ export async function getEmployeeShifts(
 
     return shifts;
   } catch (error) {
-    console.error('Error in getEmployeeShifts:', error);
+    console.error("Error in getEmployeeShifts:", error);
     throw error;
   }
 }
@@ -1034,7 +1034,7 @@ export async function getEmployeeShifts(
 async function getShiftsForDateRange(
   tenantId: number,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<ShiftQueryResult[]> {
   try {
     const query = `
@@ -1063,7 +1063,7 @@ async function getShiftsForDateRange(
     ]);
     return rows;
   } catch (error) {
-    console.error('Error in getShiftsForDateRange:', error);
+    console.error("Error in getShiftsForDateRange:", error);
     throw error;
   }
 }
@@ -1072,7 +1072,7 @@ async function getShiftsForDateRange(
 async function getWeekNotes(
   tenantId: number,
   weekStart: string,
-  weekEnd: string
+  weekEnd: string,
 ): Promise<Record<string, string>> {
   try {
     const query = `
@@ -1099,7 +1099,7 @@ async function getWeekNotes(
 
     return notesByDate;
   } catch (error) {
-    console.error('Error in getWeekNotes:', error);
+    console.error("Error in getWeekNotes:", error);
     // Return empty object if table doesn't exist yet
     return {};
   }

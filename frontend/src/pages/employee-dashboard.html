@@ -472,7 +472,6 @@
         margin-bottom: var(--spacing-xl);
       }
 
-
       .main-content {
         padding: var(--spacing-lg);
       }
@@ -1011,24 +1010,24 @@
       const token = localStorage.getItem('token');
       let activeRole = null;
       let userRole = localStorage.getItem('userRole');
-      
+
       // Parse the JWT token to get the actual active role
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           activeRole = payload.activeRole || payload.role;
           userRole = payload.role;
-          
+
           // Update localStorage to match token
           localStorage.setItem('activeRole', activeRole);
           if (userRole) {
             localStorage.setItem('userRole', userRole);
           }
-          
-          console.log('[Employee Dashboard] Token analysis:', { 
-            tokenRole: payload.role, 
+
+          console.log('[Employee Dashboard] Token analysis:', {
+            tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole 
+            finalActiveRole: activeRole,
           });
         } catch (e) {
           console.error('[Employee Dashboard] Error parsing token:', e);
@@ -1037,7 +1036,7 @@
       } else {
         activeRole = localStorage.getItem('activeRole') || userRole;
       }
-      
+
       // All users can access employee dashboard when in employee mode
       if (activeRole === 'employee') {
         // User is correctly on employee dashboard
@@ -1055,13 +1054,13 @@
         console.log('[Employee Dashboard] No user role - redirecting to login');
         window.location.replace('/login');
       }
-      
+
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
         localStorage.removeItem('activeNavigation');
       });
     </script>
-    
+
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';

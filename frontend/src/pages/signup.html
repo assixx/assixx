@@ -718,7 +718,14 @@
           <!-- Erste Zeile -->
           <div class="form-group">
             <label class="form-label">Firmenname *</label>
-            <input type="text" name="company_name" class="form-control" required placeholder="Ihre Firma GmbH" autocomplete="organization" />
+            <input
+              type="text"
+              name="company_name"
+              class="form-control"
+              required
+              placeholder="Ihre Firma GmbH"
+              autocomplete="organization"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">Subdomain *</label>
@@ -775,7 +782,14 @@
                 </div>
               </div>
               <input type="hidden" id="countryCode" value="+49" />
-              <input type="tel" name="phone" class="form-control phone-number" placeholder="123 456789" autocomplete="tel-national" required />
+              <input
+                type="tel"
+                name="phone"
+                class="form-control phone-number"
+                placeholder="123 456789"
+                autocomplete="tel-national"
+                required
+              />
               <div id="phoneError" class="error-message">Bitte geben Sie eine gültige Telefonnummer ein (ohne führende 0)</div>
             </div>
           </div>
@@ -783,7 +797,15 @@
           <!-- Dritte Zeile -->
           <div class="form-group">
             <label class="form-label">Passwort *</label>
-            <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min. 8 Zeichen" autocomplete="new-password" />
+            <input
+              type="password"
+              name="password"
+              class="form-control"
+              required
+              minlength="8"
+              placeholder="Min. 8 Zeichen"
+              autocomplete="new-password"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">Passwort bestätigen *</label>
@@ -1101,7 +1123,7 @@
       phoneInput.addEventListener('input', () => {
         const phoneValue = phoneInput.value.trim();
         const countryCode = document.getElementById('countryCode').value;
-        
+
         // Check if phone starts with 0 for Germany/Austria/Switzerland
         if ((countryCode === '+49' || countryCode === '+43' || countryCode === '+41') && phoneValue.startsWith('0')) {
           phoneError.textContent = 'Bitte ohne führende 0 eingeben (die Ländervorwahl ersetzt die 0)';
@@ -1173,7 +1195,7 @@
           phoneInput.focus();
           return;
         }
-        
+
         // Check for leading 0 in DACH countries
         if ((currentCountryCode === '+49' || currentCountryCode === '+43' || currentCountryCode === '+41') && phoneValue.startsWith('0')) {
           phoneError.textContent = 'Bitte ohne führende 0 eingeben (die Ländervorwahl ersetzt die 0)';

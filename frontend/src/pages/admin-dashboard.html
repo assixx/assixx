@@ -765,7 +765,6 @@
                 </a>
               </div>
             </div>
-
           </div>
 
           <!-- Recently Added Section -->
@@ -1386,24 +1385,24 @@
       const token = localStorage.getItem('token');
       let activeRole = null;
       let userRole = localStorage.getItem('userRole');
-      
+
       // Parse the JWT token to get the actual active role
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           activeRole = payload.activeRole || payload.role;
           userRole = payload.role;
-          
+
           // Update localStorage to match token
           localStorage.setItem('activeRole', activeRole);
           if (userRole) {
             localStorage.setItem('userRole', userRole);
           }
-          
-          console.log('[Admin Dashboard] Token analysis:', { 
-            tokenRole: payload.role, 
+
+          console.log('[Admin Dashboard] Token analysis:', {
+            tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole 
+            finalActiveRole: activeRole,
           });
         } catch (e) {
           console.error('[Admin Dashboard] Error parsing token:', e);
@@ -1412,7 +1411,7 @@
       } else {
         activeRole = localStorage.getItem('activeRole') || userRole;
       }
-      
+
       // Admin and root users can access admin dashboard when in admin mode
       if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
         // User is correctly on admin dashboard
@@ -1434,7 +1433,7 @@
         console.log('[Admin Dashboard] No user role - redirecting to login');
         window.location.replace('/login');
       }
-      
+
       // Ensure dashboard section is shown on page load
       document.addEventListener('DOMContentLoaded', () => {
         // Small delay to ensure all modules are loaded
@@ -1555,7 +1554,7 @@
 
             if (href === '#departments') {
               e.preventDefault();
-              window.location.href = "/departments";
+              window.location.href = '/departments';
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
@@ -2242,7 +2241,7 @@
         if (logoContainer) {
           logoContainer.addEventListener('click', (e) => {
             e.preventDefault();
-            window.location.href = "/admin-dashboard";
+            window.location.href = '/admin-dashboard';
           });
         }
 
@@ -2555,7 +2554,7 @@
       }
 
       function showAllDepartments() {
-        window.location.href = "/departments";
+        window.location.href = '/departments';
       }
 
       function showAllTeams() {

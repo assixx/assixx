@@ -862,30 +862,30 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Summary Bar -->
-      <div class="summary-bar">
-        <div class="summary-content">
-          <div class="summary-items">
-            <div class="summary-item">
-              <span class="summary-label">Aktueller Plan</span>
-              <span class="summary-value" id="summary-plan">Enterprise</span>
+        <!-- Summary Bar -->
+        <div class="summary-bar">
+          <div class="summary-content">
+            <div class="summary-items">
+              <div class="summary-item">
+                <span class="summary-label">Aktueller Plan</span>
+                <span class="summary-value" id="summary-plan">Enterprise</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Aktive Features</span>
+                <span class="summary-value" id="summary-features">9 / 9</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Monatliche Kosten</span>
+                <span class="summary-value" id="summary-cost">299,00€</span>
+              </div>
             </div>
-            <div class="summary-item">
-              <span class="summary-label">Aktive Features</span>
-              <span class="summary-value" id="summary-features">9 / 9</span>
+            <div class="summary-actions">
+              <button class="btn-save" onclick="saveChanges()">
+                <i class="fas fa-save"></i>
+                Änderungen speichern
+              </button>
             </div>
-            <div class="summary-item">
-              <span class="summary-label">Monatliche Kosten</span>
-              <span class="summary-value" id="summary-cost">299,00€</span>
-            </div>
-          </div>
-          <div class="summary-actions">
-            <button class="btn-save" onclick="saveChanges()">
-              <i class="fas fa-save"></i>
-              Änderungen speichern
-            </button>
           </div>
         </div>
       </main>
@@ -1028,7 +1028,7 @@
       // Initialize
       document.addEventListener('DOMContentLoaded', async () => {
         if (!token) {
-          window.location.href = "/login";
+          window.location.href = '/login';
           return;
         }
 
@@ -1478,7 +1478,7 @@
         }
       }
     </script>
-    
+
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';

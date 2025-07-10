@@ -6,7 +6,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'employee' | 'root';
+  role: "admin" | "employee" | "root";
   tenant_id: number | null;
   departmentId: number | null;
   isActive: boolean;
@@ -20,7 +20,7 @@ export interface User {
   birthDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  availabilityStatus?: 'available' | 'unavailable' | 'vacation' | 'sick';
+  availabilityStatus?: "available" | "unavailable" | "vacation" | "sick";
 }
 
 export interface DatabaseUser {
@@ -30,7 +30,7 @@ export interface DatabaseUser {
   password_hash: string;
   first_name: string;
   last_name: string;
-  role: 'admin' | 'employee' | 'root';
+  role: "admin" | "employee" | "root";
   tenant_id: number | null;
   department_id: number | null;
   is_active: boolean;
@@ -44,7 +44,7 @@ export interface DatabaseUser {
   birth_date: Date | null;
   created_at: Date;
   updated_at: Date;
-  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
+  availability_status?: "available" | "unavailable" | "vacation" | "sick";
 }
 
 export interface Tenant {
@@ -69,7 +69,7 @@ export interface DatabaseTenant {
   phone: string | null;
   address: string | null;
   is_active: boolean;
-  status: 'active' | 'trial' | 'suspended' | 'cancelled';
+  status: "active" | "trial" | "suspended" | "cancelled";
   current_plan: string | null;
   features: string;
   created_at: Date;
@@ -180,7 +180,7 @@ export interface ChatMessage {
   roomId: string;
   senderId: number;
   content: string;
-  type: 'text' | 'file' | 'image' | 'system';
+  type: "text" | "file" | "image" | "system";
   attachmentUrl: string | null;
   isEdited: boolean;
   isDeleted: boolean;
@@ -196,8 +196,8 @@ export interface KvpSuggestion {
   category: string;
   submittedBy: number;
   tenant_id: number;
-  status: 'pending' | 'in_review' | 'approved' | 'rejected' | 'implemented';
-  priority: 'low' | 'medium' | 'high';
+  status: "pending" | "in_review" | "approved" | "rejected" | "implemented";
+  priority: "low" | "medium" | "high";
   attachments: string | null;
   reviewedBy: number | null;
   reviewNotes: string | null;
@@ -252,12 +252,12 @@ export interface EmployeeAvailability {
   employeeId: number;
   tenant_id: number;
   status:
-    | 'available'
-    | 'unavailable'
-    | 'vacation'
-    | 'sick'
-    | 'training'
-    | 'other';
+    | "available"
+    | "unavailable"
+    | "vacation"
+    | "sick"
+    | "training"
+    | "other";
   startDate: Date | string;
   endDate: Date | string;
   reason?: string;
@@ -272,12 +272,12 @@ export interface DatabaseEmployeeAvailability {
   employee_id: number;
   tenant_id: number;
   status:
-    | 'available'
-    | 'unavailable'
-    | 'vacation'
-    | 'sick'
-    | 'training'
-    | 'other';
+    | "available"
+    | "unavailable"
+    | "vacation"
+    | "sick"
+    | "training"
+    | "other";
   start_date: Date | string;
   end_date: Date | string;
   reason?: string;

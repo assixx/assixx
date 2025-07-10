@@ -457,30 +457,30 @@
         align-items: center;
         gap: var(--spacing-sm);
       }
-      
+
       .approval-required-info {
         border-color: rgba(0, 142, 255, 0.3);
         background: rgba(0, 142, 255, 0.05);
       }
-      
+
       .approval-required-info i {
         color: var(--primary-color);
       }
-      
+
       .cooling-off-info {
         border-color: rgba(255, 193, 7, 0.3);
         background: rgba(255, 193, 7, 0.05);
       }
-      
+
       .cooling-off-info i {
         color: #ffc107;
       }
-      
+
       .grace-period-info {
         border-color: rgba(76, 175, 80, 0.3);
         background: rgba(76, 175, 80, 0.05);
       }
-      
+
       .grace-period-info i {
         color: #4caf50;
       }
@@ -493,25 +493,25 @@
         padding: var(--spacing-lg);
         margin-bottom: var(--spacing-xl);
       }
-      
+
       .approval-header {
         display: flex;
         align-items: center;
         gap: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
       }
-      
+
       .approval-header i {
         font-size: 24px;
         color: #ffc107;
       }
-      
+
       .approval-list {
         display: flex;
         flex-direction: column;
         gap: var(--spacing-md);
       }
-      
+
       .approval-item {
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -519,28 +519,28 @@
         padding: var(--spacing-md);
         transition: all 0.3s ease;
       }
-      
+
       .approval-item:hover {
         background: rgba(255, 255, 255, 0.05);
         transform: translateY(-2px);
       }
-      
+
       .approval-item-header {
         display: flex;
         justify-content: space-between;
         align-items: start;
         margin-bottom: var(--spacing-sm);
       }
-      
+
       .approval-item-info {
         flex: 1;
       }
-      
+
       .approval-item-actions {
         display: flex;
         gap: var(--spacing-sm);
       }
-      
+
       .approval-status {
         display: inline-block;
         padding: 4px 12px;
@@ -549,12 +549,12 @@
         font-weight: 600;
         text-transform: uppercase;
       }
-      
+
       .approval-status.pending {
         background: rgba(255, 193, 7, 0.2);
         color: #ffc107;
       }
-      
+
       .cooling-off-warning {
         background: rgba(255, 152, 0, 0.1);
         border: 1px solid rgba(255, 152, 0, 0.3);
@@ -566,11 +566,11 @@
         gap: var(--spacing-sm);
         font-size: 13px;
       }
-      
+
       .cooling-off-warning i {
         color: #ff9800;
       }
-      
+
       /* Deletion Status Modal Styles - Glassmorphismus Design Standards */
       .deletion-status-container {
         display: flex;
@@ -603,7 +603,8 @@
       }
 
       @keyframes pulse {
-        0%, 100% {
+        0%,
+        100% {
           transform: scale(1);
           opacity: 1;
         }
@@ -764,14 +765,13 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
-        <div class="profile-container">
 
+        <div class="profile-container">
           <!-- Success/Error Messages -->
           <div id="message-container"></div>
-          
+
           <!-- Pending Approvals Section -->
-          <div id="approvalSection" class="approval-section" style="display: none;">
+          <div id="approvalSection" class="approval-section" style="display: none">
             <div class="approval-header">
               <i class="fas fa-hourglass-half"></i>
               <div>
@@ -868,11 +868,9 @@
               </button>
             </form>
           </div>
-
         </div>
       </main>
     </div>
-
 
     <!-- Font Awesome für Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -1152,27 +1150,26 @@
         }
       }, 500);
 
-      
       // Approval Functions
       async function loadPendingApprovals() {
         try {
           const response = await fetch('/api/deletion-approvals/pending', {
             headers: {
-              Authorization: `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           });
-          
+
           if (!response.ok) throw new Error('Failed to load approvals');
-          
+
           const data = await response.json();
           const approvals = data.data;
-          
+
           const approvalSection = document.getElementById('approvalSection');
           const approvalList = document.getElementById('approvalList');
-          
+
           if (approvals && approvals.length > 0) {
             approvalSection.style.display = 'block';
-            approvalList.innerHTML = approvals.map(approval => createApprovalItem(approval)).join('');
+            approvalList.innerHTML = approvals.map((approval) => createApprovalItem(approval)).join('');
           } else {
             approvalSection.style.display = 'none';
           }
@@ -1180,13 +1177,13 @@
           console.error('Error loading approvals:', error);
         }
       }
-      
+
       function createApprovalItem(approval) {
         const requestedAt = new Date(approval.requested_at);
         const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
         const coolingOffRemaining = Math.max(0, 24 - hoursSince);
         const canApprove = coolingOffRemaining === 0;
-        
+
         return `
           <div class="approval-item">
             <div class="approval-item-header">
@@ -1198,40 +1195,52 @@
                 <span class="approval-status pending">Ausstehend</span>
               </div>
               <div class="approval-item-actions">
-                ${canApprove ? `
+                ${
+                  canApprove
+                    ? `
                   <button class="btn btn-success" onclick="approveDeletion(${approval.queue_id})">
                     <i class="fas fa-check"></i> Genehmigen
                   </button>
-                ` : ''}
+                `
+                    : ''
+                }
                 <button class="btn btn-danger" onclick="rejectDeletion(${approval.queue_id})">
                   <i class="fas fa-times"></i> Ablehnen
                 </button>
               </div>
             </div>
-            ${!canApprove ? `
+            ${
+              !canApprove
+                ? `
               <div class="cooling-off-warning">
                 <i class="fas fa-clock"></i>
                 <span>Cooling-off Periode: Noch ${Math.ceil(coolingOffRemaining)} Stunden warten</span>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
         `;
       }
-      
+
       async function approveDeletion(queueId) {
-        if (!confirm('Möchten Sie diese Löschung wirklich genehmigen?\n\nDer Tenant wird nach der 30-tägigen Grace Period endgültig gelöscht.')) {
+        if (
+          !confirm(
+            'Möchten Sie diese Löschung wirklich genehmigen?\n\nDer Tenant wird nach der 30-tägigen Grace Period endgültig gelöscht.',
+          )
+        ) {
           return;
         }
-        
+
         try {
           const response = await fetch(`/api/deletion-approvals/${queueId}/approve`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+            },
           });
-          
+
           if (response.ok) {
             showSuccessOverlay('Löschung genehmigt!');
             await loadPendingApprovals();
@@ -1244,21 +1253,21 @@
           showMessage('Fehler bei der Genehmigung', 'error');
         }
       }
-      
+
       async function rejectDeletion(queueId) {
         const reason = prompt('Bitte geben Sie einen Grund für die Ablehnung an:');
         if (!reason) return;
-        
+
         try {
           const response = await fetch(`/api/deletion-approvals/${queueId}/reject`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ reason })
+            body: JSON.stringify({ reason }),
           });
-          
+
           if (response.ok) {
             showSuccessOverlay('Löschung abgelehnt!');
             await loadPendingApprovals();
@@ -1271,7 +1280,7 @@
           showMessage('Fehler bei der Ablehnung', 'error');
         }
       }
-      
+
       // Make functions globally available
       window.approveDeletion = approveDeletion;
       window.rejectDeletion = rejectDeletion;
@@ -1293,7 +1302,6 @@
               }
             });
           }
-
 
           // Close modal on overlay click
           const deleteModal = document.getElementById('deleteModal');

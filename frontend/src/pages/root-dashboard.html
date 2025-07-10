@@ -540,29 +540,32 @@
     <div id="navigation-container"></div>
 
     <!-- Employee Number Modal -->
-    <div id="employeeNumberModal" class="modal" style="display: none;">
-      <div class="modal-content" style="max-width: 400px;">
+    <div id="employeeNumberModal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 400px">
         <div class="modal-header">
           <h2 class="modal-title">Personalnummer eingeben</h2>
         </div>
         <div class="modal-body">
-          <p style="margin-bottom: 20px;">Bitte geben Sie Ihre Personalnummer ein. Diese muss 6 Ziffern lang sein (000001-999999).</p>
+          <p style="margin-bottom: 20px">Bitte geben Sie Ihre Personalnummer ein. Diese muss 6 Ziffern lang sein (000001-999999).</p>
           <form id="employeeNumberForm">
             <div class="form-group">
-              <label class="form-label">Personalnummer <span style="color: var(--error-color);">*</span></label>
-              <input 
-                type="text" 
-                id="employeeNumberInput" 
-                class="form-control" 
-                placeholder="z.B. 000042" 
-                maxlength="6" 
-                pattern="[0-9]{6}" 
+              <label class="form-label">
+                Personalnummer
+                <span style="color: var(--error-color)">*</span>
+              </label>
+              <input
+                type="text"
+                id="employeeNumberInput"
+                class="form-control"
+                placeholder="z.B. 000042"
+                maxlength="6"
+                pattern="[0-9]{6}"
                 required
-                style="text-align: center; font-size: 24px; letter-spacing: 2px;"
+                style="text-align: center; font-size: 24px; letter-spacing: 2px"
               />
-              <small class="form-text" style="color: var(--text-secondary);">Nur Zahlen erlaubt, genau 6 Stellen</small>
+              <small class="form-text" style="color: var(--text-secondary)">Nur Zahlen erlaubt, genau 6 Stellen</small>
             </div>
-            <div class="form-actions" style="margin-top: 24px;">
+            <div class="form-actions" style="margin-top: 24px">
               <button type="submit" class="btn btn-primary btn-block">Personalnummer speichern</button>
             </div>
           </form>
@@ -576,7 +579,7 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <!-- Dashboard Data Container -->
           <div id="dashboard-data"></div>
@@ -627,24 +630,24 @@
       const token = localStorage.getItem('token');
       let activeRole = null;
       let userRole = localStorage.getItem('userRole');
-      
+
       // Parse the JWT token to get the actual active role
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           activeRole = payload.activeRole || payload.role;
           userRole = payload.role;
-          
+
           // Update localStorage to match token
           localStorage.setItem('activeRole', activeRole);
           if (userRole) {
             localStorage.setItem('userRole', userRole);
           }
-          
-          console.log('[Root Dashboard] Token analysis:', { 
-            tokenRole: payload.role, 
+
+          console.log('[Root Dashboard] Token analysis:', {
+            tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole 
+            finalActiveRole: activeRole,
           });
         } catch (e) {
           console.error('[Root Dashboard] Error parsing token:', e);
@@ -653,7 +656,7 @@
       } else {
         activeRole = localStorage.getItem('activeRole') || userRole;
       }
-      
+
       // Only root users can access root dashboard when in root mode
       if (userRole === 'root' && activeRole === 'root') {
         // User is correctly on root dashboard
@@ -671,7 +674,7 @@
         console.log('[Root Dashboard] Non-root user detected - redirecting to login');
         window.location.replace('/login');
       }
-      
+
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
         localStorage.removeItem('activeNavigation');
@@ -685,7 +688,7 @@
         if (logoContainer) {
           logoContainer.addEventListener('click', (e) => {
             e.preventDefault();
-            window.location.href = "/root-dashboard";
+            window.location.href = '/root-dashboard';
           });
         }
       });
@@ -738,7 +741,7 @@
         }
       });
     </script>
-    
+
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';

@@ -56,9 +56,11 @@ services:
       # Live-Reload Volumes für Entwicklung
       - ../backend:/app/backend:delegated
       - ../frontend:/app/frontend:delegated
-      - ../package.json:/app/package.json:ro
-      - ../tsconfig.json:/app/tsconfig.json:ro
-      - ../eslint.config.js:/app/eslint.config.js:ro
+      - ../package.json:/app/package.json:delegated
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
+      - ../tsconfig.json:/app/tsconfig.json:delegated
+      - ../eslint.config.js:/app/eslint.config.js:delegated
       - ../.env:/app/.env:ro
       - /app/node_modules
     depends_on:
@@ -127,8 +129,10 @@ services:
       - '3001:3001'  # Health check port
     volumes:
       - ../backend:/app/backend:delegated
-      - ../package.json:/app/package.json:ro
-      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../package.json:/app/package.json:delegated
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
+      - ../tsconfig.json:/app/tsconfig.json:delegated
       - ../.env:/app/.env:ro
       - /app/node_modules
       - ../exports:/exports

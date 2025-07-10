@@ -10,7 +10,7 @@
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/user-info-update.css');
-      
+
       /* Glassmorphismus Background */
       body {
         position: relative;
@@ -37,7 +37,6 @@
         margin: 0 auto;
         padding: 24px;
       }
-
 
       /* Status Cards */
       .status-grid {
@@ -283,7 +282,7 @@
         <div class="container">
           <!-- Breadcrumb Navigation -->
           <div id="breadcrumb-container"></div>
-          
+
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Tenant Löschstatus</h2>
@@ -324,7 +323,7 @@
 
       function displayStatus() {
         const container = document.getElementById('statusContent');
-        
+
         if (statusData.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
@@ -337,7 +336,7 @@
           return;
         }
 
-        container.innerHTML = statusData.map(item => createStatusCard(item)).join('');
+        container.innerHTML = statusData.map((item) => createStatusCard(item)).join('');
       }
 
       function createStatusCard(item) {
@@ -359,7 +358,9 @@
               <span class="status-badge ${item.status}">${getStatusText(item.status)}</span>
             </div>
 
-            ${item.approval_status === 'pending' && coolingOffRemaining > 0 ? `
+            ${
+              item.approval_status === 'pending' && coolingOffRemaining > 0
+                ? `
               <div class="cooling-off-warning">
                 <i class="fas fa-clock"></i>
                 <div>
@@ -367,9 +368,13 @@
                   Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich
                 </div>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
 
-            ${item.status === 'processing' ? `
+            ${
+              item.status === 'processing'
+                ? `
               <div class="progress-section">
                 <h4>Fortschritt</h4>
                 <div class="progress-bar-container">
@@ -379,45 +384,59 @@
                 </div>
                 <p class="text-secondary">${item.current_step || 'Vorbereitung...'}</p>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             <div class="timeline">
               <h4>Status Timeline</h4>
               ${createTimeline(item)}
             </div>
 
-            ${item.approval_status === 'pending' && item.created_by !== getCurrentUserId() ? `
+            ${
+              item.approval_status === 'pending' && item.created_by !== getCurrentUserId()
+                ? `
               <div class="action-buttons">
-                ${coolingOffRemaining === 0 ? `
+                ${
+                  coolingOffRemaining === 0
+                    ? `
                   <button class="btn btn-approve" onclick="approveDeletion(${item.id})">
                     <i class="fas fa-check"></i> Genehmigen
                   </button>
-                ` : ''}
+                `
+                    : ''
+                }
                 <button class="btn btn-reject" onclick="rejectDeletion(${item.id})">
                   <i class="fas fa-times"></i> Ablehnen
                 </button>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
 
-            ${item.status === 'processing' ? `
+            ${
+              item.status === 'processing'
+                ? `
               <div class="action-buttons">
                 <button class="btn btn-emergency" onclick="emergencyStop(${item.id})">
                   <i class="fas fa-stop-circle"></i> Emergency Stop
                 </button>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
         `;
       }
 
       function getStatusText(status) {
         const statusMap = {
-          'pending_approval': 'Genehmigung ausstehend',
-          'queued': 'In Warteschlange',
-          'processing': 'In Bearbeitung',
-          'completed': 'Abgeschlossen',
-          'failed': 'Fehlgeschlagen',
-          'cancelled': 'Abgebrochen'
+          pending_approval: 'Genehmigung ausstehend',
+          queued: 'In Warteschlange',
+          processing: 'In Bearbeitung',
+          completed: 'Abgeschlossen',
+          failed: 'Fehlgeschlagen',
+          cancelled: 'Abgebrochen',
         };
         return statusMap[status] || status;
       }
@@ -433,13 +452,13 @@
 
       function createTimeline(item) {
         const timeline = [];
-        
+
         // Request created
         timeline.push({
           icon: 'fa-plus-circle',
           title: 'Löschung beantragt',
           date: new Date(item.created_at),
-          completed: true
+          completed: true,
         });
 
         // Approval
@@ -448,7 +467,7 @@
             icon: 'fa-check-circle',
             title: 'Genehmigt',
             date: item.approved_at ? new Date(item.approved_at) : null,
-            completed: true
+            completed: true,
           });
         }
 
@@ -458,7 +477,7 @@
             icon: 'fa-cog',
             title: 'Löschvorgang gestartet',
             date: new Date(item.started_at),
-            completed: true
+            completed: true,
           });
         }
 
@@ -468,7 +487,7 @@
             icon: 'fa-check-double',
             title: 'Löschung abgeschlossen',
             date: new Date(item.completed_at),
-            completed: true
+            completed: true,
           });
         }
 
@@ -478,11 +497,13 @@
             icon: 'fa-calendar-check',
             title: 'Geplante Löschung',
             date: new Date(item.scheduled_deletion_date),
-            completed: false
+            completed: false,
           });
         }
 
-        return timeline.map(item => `
+        return timeline
+          .map(
+            (item) => `
           <div class="timeline-item">
             <div class="timeline-icon ${item.completed ? 'completed' : 'pending'}">
               <i class="fas ${item.icon}"></i>
@@ -492,14 +513,16 @@
               <p>${item.date ? item.date.toLocaleString('de-DE') : 'Ausstehend'}</p>
             </div>
           </div>
-        `).join('');
+        `,
+          )
+          .join('');
       }
 
       function getCurrentUserId() {
         // Get from JWT token
         const token = localStorage.getItem('token');
         if (!token) return null;
-        
+
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           return payload.id;
@@ -508,14 +531,14 @@
         }
       }
 
-      window.approveDeletion = async function(queueId) {
+      window.approveDeletion = async function (queueId) {
         if (!confirm('Möchten Sie diese Löschung wirklich genehmigen?')) return;
-        
+
         try {
           const response = await fetchWithAuth(`/api/root/deletion-approvals/${queueId}/approve`, {
-            method: 'POST'
+            method: 'POST',
           });
-          
+
           if (response.ok) {
             showSuccess('Löschung genehmigt!');
             await loadDeletionStatus();
@@ -529,16 +552,16 @@
         }
       };
 
-      window.rejectDeletion = async function(queueId) {
+      window.rejectDeletion = async function (queueId) {
         const reason = prompt('Grund für die Ablehnung:');
         if (!reason) return;
-        
+
         try {
           const response = await fetchWithAuth(`/api/root/deletion-approvals/${queueId}/reject`, {
             method: 'POST',
-            body: JSON.stringify({ reason })
+            body: JSON.stringify({ reason }),
           });
-          
+
           if (response.ok) {
             showSuccess('Löschung abgelehnt!');
             await loadDeletionStatus();
@@ -552,14 +575,14 @@
         }
       };
 
-      window.emergencyStop = async function(queueId) {
+      window.emergencyStop = async function (queueId) {
         if (!confirm('WARNUNG: Emergency Stop aktivieren?\n\nDies stoppt die Löschung sofort!')) return;
-        
+
         try {
           const response = await fetchWithAuth(`/api/root/deletion-emergency/${queueId}/stop`, {
-            method: 'POST'
+            method: 'POST',
           });
-          
+
           if (response.ok) {
             showSuccess('Emergency Stop aktiviert!');
             await loadDeletionStatus();
@@ -576,7 +599,7 @@
       // Load status on page load
       document.addEventListener('DOMContentLoaded', () => {
         loadDeletionStatus();
-        
+
         // Refresh every 10 seconds
         setInterval(loadDeletionStatus, 10000);
       });

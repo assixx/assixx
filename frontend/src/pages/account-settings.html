@@ -38,7 +38,6 @@
         padding: 24px;
       }
 
-
       /* Glassmorphismus Cards */
       .settings-card {
         background: rgba(255, 255, 255, 0.02);
@@ -152,9 +151,15 @@
       }
 
       @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
       }
 
       .deletion-info {
@@ -226,8 +231,12 @@
 
       /* Animations */
       @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       @keyframes fadeInUp {
@@ -271,7 +280,7 @@
         <div class="settings-container">
           <!-- Breadcrumb Navigation -->
           <div id="breadcrumb-container"></div>
-          
+
           <!-- Danger Zone Card -->
           <div class="settings-card" style="border-color: rgba(244, 67, 54, 0.3)">
             <h2 class="card-title" style="color: #f44336">Gefahrenzone</h2>
@@ -294,17 +303,11 @@
                 <li>Die gesamte Firmenstruktur</li>
               </ul>
               <div class="button-group">
-                <button
-                  class="btn btn-danger"
-                  onclick="showDeleteModal()"
-                >
+                <button class="btn btn-danger" onclick="showDeleteModal()">
                   <i class="fas fa-trash-alt"></i>
                   Tenant komplett löschen
                 </button>
-                <button
-                  class="btn btn-info"
-                  onclick="window.location.href='/tenant-deletion-status'"
-                >
+                <button class="btn btn-info" onclick="window.location.href='/tenant-deletion-status'">
                   <i class="fas fa-tasks"></i>
                   Löschstatus anzeigen
                 </button>
@@ -362,7 +365,14 @@
               class="form-control"
               rows="3"
               placeholder="Bitte geben Sie einen Grund an..."
-              style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-primary); padding: 12px; border-radius: var(--radius-sm);"
+              style="
+                width: 100%;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: var(--text-primary);
+                padding: 12px;
+                border-radius: var(--radius-sm);
+              "
             ></textarea>
           </div>
         </div>
@@ -387,27 +397,38 @@
           <i class="fas fa-hourglass-half fa-2x" style="color: var(--primary-color)"></i>
           <h3 style="color: var(--primary-color)">Tenant wird zur Löschung vorbereitet</h3>
         </div>
-        
+
         <div class="deletion-status-content">
           <div class="deletion-status-icon">
             <i class="fas fa-shield-alt"></i>
           </div>
-          
+
           <h4 style="color: var(--text-primary); margin-bottom: 16px">Zwei-Personen-Prinzip aktiv</h4>
-          
+
           <div class="deletion-info">
-            <p><strong>Status:</strong> Warte auf Genehmigung</p>
-            <p><strong>Queue ID:</strong> <span id="queueIdDisplay">-</span></p>
-            <p><strong>Tenant ID:</strong> <span id="tenantIdDisplay">-</span></p>
-            <p><strong>Geplante Löschung:</strong> <span id="scheduledDateDisplay">-</span></p>
+            <p>
+              <strong>Status:</strong>
+              Warte auf Genehmigung
+            </p>
+            <p>
+              <strong>Queue ID:</strong>
+              <span id="queueIdDisplay">-</span>
+            </p>
+            <p>
+              <strong>Tenant ID:</strong>
+              <span id="tenantIdDisplay">-</span>
+            </p>
+            <p>
+              <strong>Geplante Löschung:</strong>
+              <span id="scheduledDateDisplay">-</span>
+            </p>
           </div>
-          
-          <p style="color: var(--text-secondary); margin: 20px 0;">
-            Die Löschung muss von einem zweiten Root-Benutzer genehmigt werden.
-            Nach der Genehmigung beginnt eine 30-tägige Nachfrist.
+
+          <p style="color: var(--text-secondary); margin: 20px 0">
+            Die Löschung muss von einem zweiten Root-Benutzer genehmigt werden. Nach der Genehmigung beginnt eine 30-tägige Nachfrist.
           </p>
-          
-          <div class="button-group" style="justify-content: center;">
+
+          <div class="button-group" style="justify-content: center">
             <button class="btn btn-secondary" onclick="closeDeletionStatusModal()">
               <i class="fas fa-times"></i>
               Schließen
@@ -435,57 +456,59 @@
       }
 
       // Modal functions
-      window.showDeleteModal = async function() {
+      window.showDeleteModal = async function () {
         // First check if there are at least 2 root users
         try {
           const response = await fetchWithAuth('/api/root/users');
           if (response.ok) {
             const data = await response.json();
-            const rootUsers = data.data.filter(user => user.role === 'root');
-            
+            const rootUsers = data.data.filter((user) => user.role === 'root');
+
             if (rootUsers.length < 2) {
-              showError('Tenant-Löschung nicht möglich: Es müssen mindestens 2 Root-Benutzer vorhanden sein, bevor der Tenant gelöscht werden kann.');
+              showError(
+                'Tenant-Löschung nicht möglich: Es müssen mindestens 2 Root-Benutzer vorhanden sein, bevor der Tenant gelöscht werden kann.',
+              );
               return;
             }
           }
         } catch (error) {
           console.error('Error checking root users:', error);
         }
-        
+
         document.getElementById('deleteModal').classList.add('active');
         document.getElementById('deleteConfirmation').value = '';
         document.getElementById('confirmDeleteBtn').disabled = true;
       };
 
-      window.closeDeleteModal = function() {
+      window.closeDeleteModal = function () {
         document.getElementById('deleteModal').classList.remove('active');
       };
 
-      window.showDeletionStatusModal = function(queueId, tenantId) {
+      window.showDeletionStatusModal = function (queueId, tenantId) {
         document.getElementById('deletionStatusModal').classList.add('active');
         document.getElementById('queueIdDisplay').textContent = queueId || '-';
         document.getElementById('tenantIdDisplay').textContent = tenantId || '-';
-        
+
         const scheduledDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         document.getElementById('scheduledDateDisplay').textContent = scheduledDate.toLocaleDateString('de-DE', {
           year: 'numeric',
           month: 'long',
-          day: 'numeric'
+          day: 'numeric',
         });
       };
 
-      window.closeDeletionStatusModal = function() {
+      window.closeDeletionStatusModal = function () {
         document.getElementById('deletionStatusModal').classList.remove('active');
       };
 
       // Delete confirmation input
-      document.getElementById('deleteConfirmation').addEventListener('input', function(e) {
+      document.getElementById('deleteConfirmation').addEventListener('input', function (e) {
         const confirmBtn = document.getElementById('confirmDeleteBtn');
         confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
       });
 
       // Delete tenant function
-      window.deleteTenant = async function() {
+      window.deleteTenant = async function () {
         const confirmBtn = document.getElementById('confirmDeleteBtn');
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
@@ -494,19 +517,18 @@
           const response = await fetchWithAuth('/api/root/tenants/current', {
             method: 'DELETE',
             body: JSON.stringify({
-              reason: document.getElementById('deleteReason')?.value || 'Keine Angabe'
-            })
+              reason: document.getElementById('deleteReason')?.value || 'Keine Angabe',
+            }),
           });
 
           if (response.ok) {
             const data = await response.json();
-            
+
             // Show status modal with tenant ID from server response
             showDeletionStatusModal(data.data.queueId, data.data.tenantId);
-            
+
             // Close delete confirmation modal
             closeDeleteModal();
-            
           } else {
             const error = await response.json();
             showError(error.error || 'Fehler beim Löschen des Tenants');
@@ -522,7 +544,7 @@
       };
 
       // Close modals on escape key
-      document.addEventListener('keydown', function(e) {
+      document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
           closeDeleteModal();
           closeDeletionStatusModal();
