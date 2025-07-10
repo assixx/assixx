@@ -239,9 +239,9 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="container main-content">
+        <div id="breadcrumb-container"></div>
         <div class="flex flex-between mb-4">
           <div>
-            <h1 class="card-title mb-2">Blackboard</h1>
             <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
           </div>
           <div style="display: flex !important; gap: 1rem; align-items: center">
@@ -851,6 +851,9 @@
         await import('/scripts/auth.ts');
         // Then load unified navigation
         await import('/scripts/components/unified-navigation.ts');
+        // Load breadcrumb
+        const { initBreadcrumb } = await import('/scripts/components/breadcrumb.js');
+        initBreadcrumb();
         // Finally load blackboard after a small delay
         setTimeout(() => {
           import('/scripts/blackboard.ts');

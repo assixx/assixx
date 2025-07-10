@@ -1382,6 +1382,59 @@
 
     <!-- Initialize dashboard on page load -->
     <script type="module">
+      // Check if user should be on admin dashboard by reading from JWT token
+      const token = localStorage.getItem('token');
+      let activeRole = null;
+      let userRole = localStorage.getItem('userRole');
+      
+      // Parse the JWT token to get the actual active role
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          activeRole = payload.activeRole || payload.role;
+          userRole = payload.role;
+          
+          // Update localStorage to match token
+          localStorage.setItem('activeRole', activeRole);
+          if (userRole) {
+            localStorage.setItem('userRole', userRole);
+          }
+          
+          console.log('[Admin Dashboard] Token analysis:', { 
+            tokenRole: payload.role, 
+            tokenActiveRole: payload.activeRole,
+            finalActiveRole: activeRole 
+          });
+        } catch (e) {
+          console.error('[Admin Dashboard] Error parsing token:', e);
+          activeRole = localStorage.getItem('activeRole') || userRole;
+        }
+      } else {
+        activeRole = localStorage.getItem('activeRole') || userRole;
+      }
+      
+      // Admin and root users can access admin dashboard when in admin mode
+      if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
+        // User is correctly on admin dashboard
+        console.log('[Admin Dashboard] User has admin access');
+      } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'employee') {
+        // User has switched to employee role - redirect
+        console.log('[Admin Dashboard] User has switched to employee - redirecting');
+        window.location.replace('/employee-dashboard');
+      } else if (userRole === 'root' && activeRole === 'root') {
+        // Root user is in root mode - redirect to root dashboard
+        console.log('[Admin Dashboard] Root user in root mode - redirecting to root dashboard');
+        window.location.replace('/root-dashboard');
+      } else if (userRole === 'employee') {
+        // Employee trying to access admin dashboard - redirect
+        console.log('[Admin Dashboard] Employee detected - redirecting to employee dashboard');
+        window.location.replace('/employee-dashboard');
+      } else if (!userRole) {
+        // No user role - redirect to login
+        console.log('[Admin Dashboard] No user role - redirecting to login');
+        window.location.replace('/login');
+      }
+      
       // Ensure dashboard section is shown on page load
       document.addEventListener('DOMContentLoaded', () => {
         // Small delay to ensure all modules are loaded

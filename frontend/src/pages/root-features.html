@@ -622,12 +622,15 @@
     <!-- Layout Container -->
     <div class="layout-container">
       <!-- Main Content -->
-      <div class="main-content">
+      <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+
         <!-- Current Plan Header -->
         <div class="plan-header">
           <div class="current-plan-info">
             <div>
-              <h1 class="plan-title">Plan & Feature Management</h1>
+              <p class="plan-title">Plan & Feature Management</p>
               <p style="color: var(--text-secondary); margin-top: 8px">
                 Verwalten Sie Ihren Plan und aktivieren Sie Features für
                 <strong id="tenant-name">Ihre Organisation</strong>
@@ -885,7 +888,7 @@
             </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
     <!-- End main-content -->
 
@@ -1474,6 +1477,13 @@
           alert('Fehler beim Speichern der Änderungen');
         }
       }
+    </script>
+    
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

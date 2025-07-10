@@ -59,6 +59,54 @@ const urlMappings = {
   '/pages/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' },
   '/pages/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' },
+  '/manage-root-users': { label: 'Root User Verwaltung', icon: 'fa-user-lock' },
+  '/pages/manage-root-users': { label: 'Root User Verwaltung', icon: 'fa-user-lock' },
+  '/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
+  '/pages/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
+  '/root-features': { label: 'Root Features', icon: 'fa-tools' },
+  '/pages/root-features': { label: 'Root Features', icon: 'fa-tools' },
+  '/tenant-deletion-status': { label: 'Tenant Löschstatus', icon: 'fa-trash-alt' },
+  '/pages/tenant-deletion-status': { label: 'Tenant Löschstatus', icon: 'fa-trash-alt' },
+  '/feature-management': { label: 'Feature Management', icon: 'fa-toggle-on' },
+  '/pages/feature-management': { label: 'Feature Management', icon: 'fa-toggle-on' },
+  '/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
+  '/pages/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
+  '/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
+  '/pages/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
+  '/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
+  '/pages/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
+  '/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },
+  '/pages/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },
+  '/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
+  '/pages/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
+  '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
+  '/pages/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
+  '/survey-details': { label: 'Umfrage-Details', icon: 'fa-info-circle' },
+  '/pages/survey-details': { label: 'Umfrage-Details', icon: 'fa-info-circle' },
+  '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+  '/pages/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+  '/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
+  '/pages/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
+  '/documents-search': { label: 'Dokumente durchsuchen', icon: 'fa-search' },
+  '/pages/documents-search': { label: 'Dokumente durchsuchen', icon: 'fa-search' },
+  '/documents-personal': { label: 'Persönliche Dokumente', icon: 'fa-user-circle' },
+  '/pages/documents-personal': { label: 'Persönliche Dokumente', icon: 'fa-user-circle' },
+  '/documents-company': { label: 'Firmendokumente', icon: 'fa-building' },
+  '/pages/documents-company': { label: 'Firmendokumente', icon: 'fa-building' },
+  '/documents-department': { label: 'Abteilungsdokumente', icon: 'fa-sitemap' },
+  '/pages/documents-department': { label: 'Abteilungsdokumente', icon: 'fa-sitemap' },
+  '/documents-team': { label: 'Team-Dokumente', icon: 'fa-users' },
+  '/pages/documents-team': { label: 'Team-Dokumente', icon: 'fa-users' },
+  '/documents-payroll': { label: 'Gehaltsabrechnungen', icon: 'fa-money-check' },
+  '/pages/documents-payroll': { label: 'Gehaltsabrechnungen', icon: 'fa-money-check' },
+  '/employee-documents': { label: 'Mitarbeiter-Dokumente', icon: 'fa-file-alt' },
+  '/pages/employee-documents': { label: 'Mitarbeiter-Dokumente', icon: 'fa-file-alt' },
+  '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
+  '/pages/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
+  '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
+  '/pages/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
+  '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
+  '/pages/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
 };
 
 // Section Mappings für Admin Dashboard
@@ -288,6 +336,21 @@ function generateBreadcrumbsFromURL() {
           icon: 'fa-tachometer-alt',
         });
       } else if (
+        currentPage === '/manage-root-users' ||
+        currentPage === '/pages/manage-root-users' ||
+        currentPage === '/root-features' ||
+        currentPage === '/pages/root-features' ||
+        currentPage === '/tenant-deletion-status' ||
+        currentPage === '/pages/tenant-deletion-status' ||
+        currentPage === '/feature-management' ||
+        currentPage === '/pages/feature-management'
+      ) {
+        items.push({
+          label: 'Root Dashboard',
+          href: '/root-dashboard',
+          icon: 'fa-shield-alt',
+        });
+      } else if (
         currentPage === '/documents' ||
         currentPage === '/blackboard' ||
         currentPage === '/chat' ||
@@ -296,6 +359,62 @@ function generateBreadcrumbsFromURL() {
         // Prüfen ob Admin oder Employee
         const isAdmin = localStorage.getItem('userRole') === 'admin';
         if (!isAdmin) {
+          items.push({
+            label: 'Mitarbeiter Dashboard',
+            href: '/employee-dashboard',
+            icon: 'fa-user',
+          });
+        }
+      } else if (currentPage.includes('/documents-') || currentPage.includes('/employee-documents')) {
+        // Dokument-Unterseiten
+        items.push({
+          label: 'Dokumente',
+          href: '/documents',
+          icon: 'fa-file-alt',
+        });
+      } else if (currentPage === '/archived-employees' || currentPage === '/pages/archived-employees') {
+        items.push({
+          label: 'Admin Dashboard',
+          href: '/admin-dashboard',
+          icon: 'fa-tachometer-alt',
+        });
+        items.push({
+          label: 'Benutzer verwalten',
+          href: '/manage-users',
+          icon: 'fa-users',
+        });
+      } else if (currentPage === '/manage-department-groups' || currentPage === '/pages/manage-department-groups') {
+        items.push({
+          label: 'Admin Dashboard',
+          href: '/admin-dashboard',
+          icon: 'fa-tachometer-alt',
+        });
+        items.push({
+          label: 'Abteilungen',
+          href: '/departments',
+          icon: 'fa-sitemap',
+        });
+      } else if (
+        currentPage === '/account-settings' ||
+        currentPage === '/pages/account-settings' ||
+        currentPage === '/storage-upgrade' ||
+        currentPage === '/pages/storage-upgrade'
+      ) {
+        // Diese Seiten können von verschiedenen Dashboards aus erreicht werden
+        const userRole = localStorage.getItem('userRole');
+        if (userRole === 'root') {
+          items.push({
+            label: 'Root Dashboard',
+            href: '/root-dashboard',
+            icon: 'fa-shield-alt',
+          });
+        } else if (userRole === 'admin') {
+          items.push({
+            label: 'Admin Dashboard',
+            href: '/admin-dashboard',
+            icon: 'fa-tachometer-alt',
+          });
+        } else {
           items.push({
             label: 'Mitarbeiter Dashboard',
             href: '/employee-dashboard',

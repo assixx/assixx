@@ -696,10 +696,6 @@
       <main class="main-content">
         <div class="survey-container">
           <div class="survey-header">
-            <h1 class="survey-title">
-              <i class="fas fa-poll"></i>
-              Meine Umfragen
-            </h1>
             <p class="survey-subtitle">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
           </div>
 
@@ -725,6 +721,8 @@
             </div>
           </div>
         </div>
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
       </main>
     </div>
 
@@ -760,6 +758,7 @@
     </div>
 
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
     <script>
       let currentSurvey = null;
       let answers = {};

@@ -2,9 +2,41 @@
  * Role Switch Functionality
  * Ermöglicht Admins zwischen Admin und Employee View zu wechseln
  */
+
+/* global BroadcastChannel */
+
 // Check if user is admin or root
 const userRole = localStorage.getItem('userRole');
 let currentView = localStorage.getItem('activeRole') || userRole;
+
+// Create BroadcastChannel for multi-tab synchronization
+const roleChannel = new BroadcastChannel('role_switch_channel');
+
+// Listen for role switch events from other tabs
+roleChannel.onmessage = (event) => {
+  if (event.data.type === 'ROLE_SWITCHED') {
+    console.log('[RoleSwitch] Received role switch notification from another tab');
+
+    // Update local storage
+    localStorage.setItem('activeRole', event.data.newRole);
+    localStorage.setItem('token', event.data.token);
+
+    // Redirect to appropriate dashboard
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('dashboard')) {
+      if (event.data.newRole === 'root') {
+        window.location.href = '/root-dashboard';
+      } else if (event.data.newRole === 'admin') {
+        window.location.href = '/admin-dashboard';
+      } else if (event.data.newRole === 'employee') {
+        window.location.href = '/employee-dashboard';
+      }
+    } else {
+      // For non-dashboard pages, reload
+      window.location.reload();
+    }
+  }
+};
 // Role switch handler
 async function switchRole() {
   const switchBtn = document.getElementById('role-switch-btn');
@@ -61,6 +93,15 @@ async function switchRole() {
     currentView = data.user.activeRole;
     // Update UI immediately before redirect
     updateRoleUI();
+
+    // Notify other tabs about the role switch
+    roleChannel.postMessage({
+      type: 'ROLE_SWITCHED',
+      newRole: data.user.activeRole,
+      token: data.token,
+      timestamp: Date.now(),
+    });
+
     // Show success message
     const message = isCurrentlyEmployee ? 'Wechsel zur Admin-Ansicht...' : 'Wechsel zur Mitarbeiter-Ansicht...';
     // Create toast notification
@@ -239,6 +280,15 @@ export async function switchRoleForRoot(targetRole) {
     }
     // Update currentView immediately
     currentView = data.user.activeRole;
+
+    // Notify other tabs about the role switch
+    roleChannel.postMessage({
+      type: 'ROLE_SWITCHED',
+      newRole: data.user.activeRole,
+      token: data.token,
+      timestamp: Date.now(),
+    });
+
     // Show success message
     const message = `Wechsel zur ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
     showToast(message, 'success');

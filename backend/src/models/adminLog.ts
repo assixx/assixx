@@ -9,7 +9,7 @@ import { logger } from '../utils/logger';
 interface DbAdminLog extends RowDataPacket {
   id: number;
   tenant_id: number;
-  admin_id: number;
+  user_id: number; // Changed from admin_id to match database schema
   action: string;
   entity_type?: string;
   entity_id?: number;
@@ -17,6 +17,7 @@ interface DbAdminLog extends RowDataPacket {
   new_values?: string | Record<string, unknown> | null;
   ip_address?: string;
   user_agent?: string;
+  was_role_switched?: boolean;
   created_at: Date;
 }
 
@@ -30,6 +31,7 @@ interface AdminLogCreateData {
   old_values?: Record<string, unknown>;
   new_values?: Record<string, unknown>;
   user_agent?: string;
+  was_role_switched?: boolean;
 }
 
 export class AdminLog {
@@ -44,10 +46,11 @@ export class AdminLog {
       old_values,
       new_values,
       user_agent,
+      was_role_switched,
     } = logData;
 
-    const query = `INSERT INTO admin_logs (tenant_id, admin_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO admin_logs (tenant_id, user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent, was_role_switched) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -60,6 +63,7 @@ export class AdminLog {
         new_values ? JSON.stringify(new_values) : null,
         ip_address || null,
         user_agent || null,
+        was_role_switched || false,
       ]);
       return result.insertId;
     } catch (error) {
@@ -69,7 +73,7 @@ export class AdminLog {
   }
 
   static async getByUserId(userId: number, days = 0): Promise<DbAdminLog[]> {
-    let query = `SELECT * FROM admin_logs WHERE admin_id = ?`;
+    let query = `SELECT * FROM admin_logs WHERE user_id = ?`;
     const params: unknown[] = [userId];
 
     // Wenn days > 0, dann nur Logs der letzten X Tage abrufen
@@ -94,7 +98,7 @@ export class AdminLog {
 
   static async getLastLogin(userId: number): Promise<DbAdminLog | null> {
     const query = `SELECT * FROM admin_logs 
-                   WHERE admin_id = ? AND action = 'login' 
+                   WHERE user_id = ? AND action = 'login' 
                    ORDER BY created_at DESC LIMIT 1`;
 
     try {

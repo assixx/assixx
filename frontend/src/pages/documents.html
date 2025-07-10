@@ -700,28 +700,6 @@
       .page-header {
         margin-bottom: var(--spacing-xl);
       }
-
-      .breadcrumb {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: var(--spacing-sm);
-      }
-
-      .breadcrumb a {
-        color: var(--primary-color);
-        text-decoration: none;
-      }
-
-      .breadcrumb a:hover {
-        text-decoration: underline;
-      }
-
-      .page-header h1 {
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-      }
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -792,11 +770,6 @@
       <main class="main-content">
         <!-- Page Header -->
         <div class="page-header">
-          <div class="breadcrumb">
-            <a href="#" id="dashboard-link">Dashboard</a>
-            / Dokumente
-          </div>
-          <h1>Dokumentenverwaltung</h1>
         </div>
 
         <!-- Stats Bar -->
@@ -923,6 +896,8 @@
             </div>
           </div>
         </div>
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
       </main>
     </div>
 
@@ -956,5 +931,8 @@
       // Fallback redirect if meta refresh doesn't work
       window.location.href = "/documents-search";
     </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

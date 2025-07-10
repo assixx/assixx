@@ -230,9 +230,10 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+        
         <div class="container">
-          <h1>Abteilungsgruppen verwalten</h1>
-          
           <div class="card">
             <div class="card-header">
               <div>
@@ -323,5 +324,12 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-department-groups.ts"></script>
+    
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
   </body>
 </html>

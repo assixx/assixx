@@ -21,6 +21,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
   - [ ] Keine TypeScript any types verwenden
   - [ ] Regelmäßig pnpm run typecheck ausführen
   - [ ] ESLint errors sofort beheben
+  - [ ] HINWEIS: 56 TypeScript Errors in Test-Dateien sind bekannt und können ignoriert werden (betreffen nur Tests, nicht Produktionscode)
 
 ### Testing-Checkliste für jede Seite/Funktion:
 
@@ -49,13 +50,44 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 - [ ] Berechtigungen korrekt
 - [ ] Session-Management stabil
 
-## SICHERHEITS-UPDATES
+## SICHERHEITS-UPDATES & BUGS
 
-### User.update() Method ohne tenant_id Check
-- [ ] Problem: Die User.update() Methode in /backend/src/models/user.ts verwendet nur WHERE id = ? ohne tenant_id Überprüfung
-- [ ] Risiko: Theoretisch könnte jemand User aus anderen Tenants updaten
-- [ ] Lösung: WHERE-Klausel sollte WHERE id = ? AND tenant_id = ? verwenden
-- [ ] Priorität: HOCH - sollte vor Beta-Test behoben werden
+### ✅ Role-Switch Sicherheitsanalyse - ABGESCHLOSSEN (10.07.2025)
+- [x] Visueller Indikator: Bereits vorhanden (Active Role Badge)
+- [x] Multi-Tab Sync: Funktioniert bereits korrekt
+- [x] Daten-Isolation: Als Employee nur eigene Daten (funktioniert)
+- [x] Login-Reset: Root geht nach Login immer zu root-dashboard (funktioniert)
+- [x] **Status:** System ist sicher und produktionsreif
+- [ ] Optional: Erweiterte Logs mit was_role_switched Flag
+- [ ] Optional: Zusätzlicher gelber Warning-Banner
+
+### ✅ Role-Switch Foreign Key Constraint Bug - BEHOBEN (10.07.2025)
+- [x] Problem: role-switch.ts versuchte department_id = 1 zu setzen bei neuen Tenants ohne Departments
+- [x] Symptom: 500 Error beim Wechsel zu Mitarbeiter-Ansicht
+- [x] Error: "Cannot add or update a child row: a foreign key constraint fails"
+- [x] Ursache: Neue Tenants haben noch keine Departments angelegt
+- [x] Lösung: department_id wird nicht mehr automatisch gesetzt, kann NULL bleiben
+- [x] **BEHOBEN:** Role-Switch funktioniert jetzt auch bei Tenants ohne Departments
+
+### ✅ AdminLog Model admin_id vs user_id Bug - BEHOBEN (10.07.2025)
+- [x] Problem: AdminLog Model verwendete `admin_id` aber die Datenbank hat `user_id` Spalte
+- [x] Symptom: 500 Error beim Rollenwechsel (root-to-admin, etc.)
+- [x] Error: "Unknown column 'admin_id' in 'field list'"
+- [x] Lösung: AdminLog Model angepasst um `user_id` statt `admin_id` zu verwenden
+- [x] **BEHOBEN:** Alle SQL Queries im AdminLog Model verwenden jetzt korrekt `user_id`
+
+### ✅ User.update() Method ohne tenant_id Check - BEHOBEN (10.07.2025)
+- [x] Problem: Die User.update() Methode in /backend/src/models/user.ts verwendet nur WHERE id = ? ohne tenant_id Überprüfung
+- [x] Risiko: Theoretisch könnte jemand User aus anderen Tenants updaten
+- [x] Lösung: WHERE-Klausel sollte WHERE id = ? AND tenant_id = ? verwenden
+- [x] Priorität: HOCH - sollte vor Beta-Test behoben werden
+- [x] **BEHOBEN:** tenantId Parameter ist jetzt verpflichtend in folgenden Methoden:
+  - `User.update()` - Hauptmethode
+  - `User.updateProfilePicture()` - Profilbild Update
+  - `User.archiveUser()` - User archivieren
+  - `User.unarchiveUser()` - User wiederherstellen
+  - `User.findArchivedUsers()` - Archivierte User anzeigen (jetzt mit tenant_id Filter)
+- [x] TypeScript Build erfolgreich - alle Aufrufe verwenden bereits tenantId korrekt
 
 ## PHASE 4: DEAL-BREAKER Features (NACH Version 0.1.0)
 

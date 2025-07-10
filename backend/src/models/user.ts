@@ -351,7 +351,7 @@ export class User {
   static async update(
     id: number,
     userData: Partial<UserCreateData>,
-    tenantId?: number
+    tenantId: number // SECURITY FIX: Made tenantId mandatory to prevent cross-tenant updates
   ): Promise<boolean> {
     try {
       // Dynamisch Query aufbauen basierend auf den zu aktualisierenden Feldern
@@ -385,14 +385,10 @@ export class User {
 
       // ID und tenant_id für die WHERE-Klausel anhängen
       values.push(id);
+      values.push(tenantId);
 
-      let query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
-
-      // Add tenant_id check if provided for additional security
-      if (tenantId !== undefined) {
-        query += ` AND tenant_id = ?`;
-        values.push(tenantId);
-      }
+      // SECURITY: Always include tenant_id in WHERE clause
+      const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ? AND tenant_id = ?`;
 
       logger.info(`Executing update query: ${query}`);
       logger.info(`With values: ${JSON.stringify(values)}`);
@@ -514,16 +510,12 @@ export class User {
   static async updateProfilePicture(
     userId: number,
     picturePath: string,
-    tenantId?: number
+    tenantId: number // SECURITY FIX: Made tenantId mandatory
   ): Promise<boolean> {
     try {
-      let query = `UPDATE users SET profile_picture = ? WHERE id = ?`;
-      const values = [picturePath, userId];
-
-      if (tenantId !== undefined) {
-        query += ` AND tenant_id = ?`;
-        values.push(tenantId);
-      }
+      // SECURITY: Always include tenant_id in WHERE clause
+      const query = `UPDATE users SET profile_picture = ? WHERE id = ? AND tenant_id = ?`;
+      const values = [picturePath, userId, tenantId];
 
       const [result] = await executeQuery<ResultSetHeader>(query, values);
       return result.affectedRows > 0;
@@ -588,7 +580,7 @@ export class User {
   // Neue Methode: Benutzer archivieren
   static async archiveUser(
     userId: number,
-    tenantId?: number
+    tenantId: number // SECURITY FIX: Made tenantId mandatory
   ): Promise<boolean> {
     logger.info(`Archiving user ${userId}`);
     return this.update(userId, { is_archived: true }, tenantId);
@@ -597,7 +589,7 @@ export class User {
   // Neue Methode: Benutzer aus dem Archiv wiederherstellen
   static async unarchiveUser(
     userId: number,
-    tenantId?: number
+    tenantId: number // SECURITY FIX: Made tenantId mandatory
   ): Promise<boolean> {
     logger.info(`Unarchiving user ${userId}`);
     return this.update(userId, { is_archived: false }, tenantId);
@@ -605,6 +597,7 @@ export class User {
 
   // Neue Methode: Alle archivierten Benutzer auflisten
   static async findArchivedUsers(
+    tenantId: number, // SECURITY FIX: Added mandatory tenantId parameter
     role: string | null = null
   ): Promise<DbUser[]> {
     try {
@@ -615,10 +608,10 @@ export class User {
         d.name as department_name 
         FROM users u
         LEFT JOIN departments d ON u.department_id = d.id
-        WHERE u.is_archived = true
+        WHERE u.is_archived = true AND u.tenant_id = ?
       `;
 
-      const params: unknown[] = [];
+      const params: unknown[] = [tenantId];
 
       if (role) {
         query += ` AND u.role = ?`;

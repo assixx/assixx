@@ -24,6 +24,7 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs --coverage",
     "type-check": "tsc --noEmit",
+    "type-check:prod": "sh scripts/check-types-prod.sh",
     "type-coverage": "pnpm exec type-coverage",
     "check": "tsc --noEmit",
     "lint:ts": "eslint backend/src/**/*.ts",

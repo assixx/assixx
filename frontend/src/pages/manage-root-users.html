@@ -483,9 +483,10 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+        
         <div class="container">
-          <h1>Root User Verwaltung</h1>
-          
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Root User Verwaltung</h2>
@@ -656,6 +657,13 @@
       function closeRootModal() {
         document.getElementById('rootModal').classList.remove('active');
       }
+    </script>
+    
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

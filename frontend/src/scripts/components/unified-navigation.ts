@@ -59,6 +59,93 @@ interface PendingCountResponse {
   pendingCount?: number;
 }
 
+// Access Control Map - Definiert welche Rollen auf welche Seiten zugreifen dürfen
+const accessControlMap: Record<string, Array<'root' | 'admin' | 'employee'>> = {
+  // Root-only pages
+  '/root-dashboard': ['root'],
+  '/pages/root-dashboard': ['root'],
+  '/manage-root-users': ['root'],
+  '/pages/manage-root-users': ['root'],
+  '/root-features': ['root'],
+  '/pages/root-features': ['root'],
+  '/root-profile': ['root'],
+  '/pages/root-profile': ['root'],
+  '/tenant-deletion-status': ['root'],
+  '/pages/tenant-deletion-status': ['root'],
+  '/storage-upgrade': ['root'],
+  '/pages/storage-upgrade': ['root'],
+  '/logs': ['root'],
+  '/pages/logs': ['root'],
+  
+  // Admin and Root pages
+  '/admin-dashboard': ['admin', 'root'],
+  '/pages/admin-dashboard': ['admin', 'root'],
+  '/manage-admins': ['admin', 'root'],
+  '/pages/manage-admins': ['admin', 'root'],
+  '/manage-users': ['admin', 'root'],
+  '/pages/manage-users': ['admin', 'root'],
+  '/departments': ['admin', 'root'],
+  '/pages/departments': ['admin', 'root'],
+  '/manage-department-groups': ['admin', 'root'],
+  '/pages/manage-department-groups': ['admin', 'root'],
+  '/blackboard': ['admin', 'root'],
+  '/pages/blackboard': ['admin', 'root'],
+  '/document-upload': ['admin', 'root'],
+  '/pages/document-upload': ['admin', 'root'],
+  '/survey-admin': ['admin', 'root'],
+  '/pages/survey-admin': ['admin', 'root'],
+  '/survey-create': ['admin', 'root'],
+  '/pages/survey-create': ['admin', 'root'],
+  '/survey-details': ['admin', 'root'],
+  '/pages/survey-details': ['admin', 'root'],
+  '/survey-results': ['admin', 'root'],
+  '/pages/survey-results': ['admin', 'root'],
+  '/archived-employees': ['admin', 'root'],
+  '/pages/archived-employees': ['admin', 'root'],
+  '/admin-profile': ['admin', 'root'],
+  '/pages/admin-profile': ['admin', 'root'],
+  
+  // Employee pages (accessible by all)
+  '/employee-dashboard': ['employee', 'admin', 'root'],
+  '/pages/employee-dashboard': ['employee', 'admin', 'root'],
+  '/profile': ['employee', 'admin', 'root'],
+  '/pages/profile': ['employee', 'admin', 'root'],
+  '/employee-profile': ['employee', 'admin', 'root'],
+  '/pages/employee-profile': ['employee', 'admin', 'root'],
+  '/kvp': ['employee', 'admin', 'root'],
+  '/pages/kvp': ['employee', 'admin', 'root'],
+  '/kvp-detail': ['employee', 'admin', 'root'],
+  '/pages/kvp-detail': ['employee', 'admin', 'root'],
+  '/calendar': ['employee', 'admin', 'root'],
+  '/pages/calendar': ['employee', 'admin', 'root'],
+  '/shifts': ['employee', 'admin', 'root'],
+  '/pages/shifts': ['employee', 'admin', 'root'],
+  '/chat': ['employee', 'admin', 'root'],
+  '/pages/chat': ['employee', 'admin', 'root'],
+  '/survey-employee': ['employee', 'admin', 'root'],
+  '/pages/survey-employee': ['employee', 'admin', 'root'],
+  '/documents': ['employee', 'admin', 'root'],
+  '/pages/documents': ['employee', 'admin', 'root'],
+  '/documents-search': ['employee', 'admin', 'root'],
+  '/pages/documents-search': ['employee', 'admin', 'root'],
+  '/documents-company': ['employee', 'admin', 'root'],
+  '/pages/documents-company': ['employee', 'admin', 'root'],
+  '/documents-department': ['employee', 'admin', 'root'],
+  '/pages/documents-department': ['employee', 'admin', 'root'],
+  '/documents-team': ['employee', 'admin', 'root'],
+  '/pages/documents-team': ['employee', 'admin', 'root'],
+  '/documents-personal': ['employee', 'admin', 'root'],
+  '/pages/documents-personal': ['employee', 'admin', 'root'],
+  '/documents-payroll': ['employee', 'admin', 'root'],
+  '/pages/documents-payroll': ['employee', 'admin', 'root'],
+  '/salary-documents': ['employee', 'admin', 'root'],
+  '/pages/salary-documents': ['employee', 'admin', 'root'],
+  '/employee-documents': ['employee', 'admin', 'root'],
+  '/pages/employee-documents': ['employee', 'admin', 'root'],
+  '/account-settings': ['employee', 'admin', 'root'],
+  '/pages/account-settings': ['employee', 'admin', 'root'],
+};
+
 class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
   private currentRole: 'admin' | 'employee' | 'root' | null = null;
@@ -78,6 +165,59 @@ class UnifiedNavigation {
     this.init();
   }
 
+  /**
+   * Prüft ob eine Rolle auf eine bestimmte Seite zugreifen darf
+   */
+  public canAccessPage(path: string, role: 'admin' | 'employee' | 'root'): boolean {
+    // Normalisiere den Pfad (entferne Query-Parameter und Hash)
+    const normalizedPath = path.split('?')[0].split('#')[0];
+    
+    // Prüfe exakten Pfad
+    const allowedRoles = accessControlMap[normalizedPath];
+    if (allowedRoles) {
+      return allowedRoles.includes(role);
+    }
+    
+    // Wenn Seite nicht in der Map ist, erlaube Zugriff für alle
+    // (für öffentliche Seiten wie Login, etc.)
+    return true;
+  }
+
+  /**
+   * Gibt die passende Dashboard-URL für eine Rolle zurück
+   */
+  public getDashboardForRole(role: 'admin' | 'employee' | 'root'): string {
+    switch (role) {
+      case 'root':
+        return '/root-dashboard';
+      case 'admin':
+        return '/admin-dashboard';
+      case 'employee':
+        return '/employee-dashboard';
+      default:
+        return '/employee-dashboard';
+    }
+  }
+
+  /**
+   * Prüft die aktuelle Seite und leitet bei fehlendem Zugriff weiter
+   */
+  public enforcePageAccess(): void {
+    const currentPath = window.location.pathname;
+    const activeRole = (localStorage.getItem('activeRole') || localStorage.getItem('userRole') || 'employee') as 'admin' | 'employee' | 'root';
+    
+    console.log(`[UnifiedNav] Checking access: Role '${activeRole}' accessing '${currentPath}'`);
+    
+    if (!this.canAccessPage(currentPath, activeRole)) {
+      console.warn(`[UnifiedNav] Access denied: Role '${activeRole}' cannot access '${currentPath}'`);
+      const dashboard = this.getDashboardForRole(activeRole);
+      console.log(`[UnifiedNav] Redirecting to dashboard: ${dashboard}`);
+      window.location.href = dashboard;
+    } else {
+      console.log(`[UnifiedNav] Access granted: Role '${activeRole}' can access '${currentPath}'`);
+    }
+  }
+
   private init(): void {
     // Inject CSS styles first
     this.injectCSS();
@@ -90,6 +230,9 @@ class UnifiedNavigation {
     if (currentPath.includes('dashboard')) {
       localStorage.removeItem('openSubmenu');
     }
+    
+    // Enforce page access based on current role
+    this.enforcePageAccess();
 
     this.loadUserInfo();
     this.injectNavigationHTML();
@@ -115,6 +258,64 @@ class UnifiedNavigation {
       this.updateUnreadDocuments();
       this.updateNewKvpSuggestions();
     }, 30000);
+
+    // Listen for BroadcastChannel messages to update navigation
+    const roleChannel = new BroadcastChannel('role_switch_channel');
+    roleChannel.onmessage = (event) => {
+      if (event.data.type === 'ROLE_SWITCHED') {
+        console.log('[UnifiedNav] Received role switch notification from another tab');
+
+        // Update local storage with new role data
+        if (event.data.newRole) {
+          localStorage.setItem('activeRole', event.data.newRole);
+        }
+        if (event.data.token) {
+          localStorage.setItem('token', event.data.token);
+        }
+
+        // Refresh the entire navigation with new role
+        this.refresh();
+      }
+    };
+
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
+        console.log('[UnifiedNav] Storage event: activeRole changed from', event.oldValue, 'to', event.newValue);
+
+        // Check if we need to redirect based on current page
+        const currentPath = window.location.pathname;
+        const userRole = localStorage.getItem('userRole');
+        const newActiveRole = event.newValue;
+
+        // Determine if redirect is needed
+        if (currentPath.includes('/root-dashboard') && newActiveRole !== 'root') {
+          console.log('[UnifiedNav] Redirecting from root-dashboard due to role change');
+          if (newActiveRole === 'admin') {
+            window.location.replace('/admin-dashboard');
+          } else if (newActiveRole === 'employee') {
+            window.location.replace('/employee-dashboard');
+          }
+        } else if (currentPath.includes('/admin-dashboard') && newActiveRole !== 'admin') {
+          console.log('[UnifiedNav] Redirecting from admin-dashboard due to role change');
+          if (newActiveRole === 'root' && userRole === 'root') {
+            window.location.replace('/root-dashboard');
+          } else if (newActiveRole === 'employee') {
+            window.location.replace('/employee-dashboard');
+          }
+        } else if (currentPath.includes('/employee-dashboard') && newActiveRole !== 'employee') {
+          console.log('[UnifiedNav] Redirecting from employee-dashboard due to role change');
+          if (newActiveRole === 'root' && userRole === 'root') {
+            window.location.replace('/root-dashboard');
+          } else if (newActiveRole === 'admin') {
+            window.location.replace('/admin-dashboard');
+          }
+        }
+
+        // Also refresh navigation
+        this.refresh();
+      }
+    });
   }
 
   private loadUserInfo(): void {
@@ -122,20 +323,53 @@ class UnifiedNavigation {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload;
+        const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload & {
+          activeRole?: string;
+          isRoleSwitched?: boolean;
+        };
         this.currentUser = payload;
 
-        // Check for role switch - if admin has switched to employee role
-        const activeRole = localStorage.getItem('activeRole');
-        if (payload.role === 'admin' && activeRole === 'employee') {
+        // Determine role based on current dashboard page
+        const currentPath = window.location.pathname;
+        const storedUserRole = localStorage.getItem('userRole');
+
+        // If we're on a specific dashboard, that determines the active role
+        if (currentPath.includes('/root-dashboard')) {
+          this.currentRole = 'root';
+          // Only root users can access root dashboard
+          if (storedUserRole === 'root') {
+            localStorage.setItem('activeRole', 'root');
+          }
+        } else if (currentPath.includes('/admin-dashboard')) {
+          this.currentRole = 'admin';
+          // Root or admin can access admin dashboard
+          if (storedUserRole === 'root' || storedUserRole === 'admin') {
+            localStorage.setItem('activeRole', 'admin');
+          }
+        } else if (currentPath.includes('/employee-dashboard')) {
           this.currentRole = 'employee';
-        } else if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
-          // Use activeRole if it's valid
-          this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+          localStorage.setItem('activeRole', 'employee');
         } else {
-          // Default to user's actual role
-          this.currentRole = payload.role;
+          // Not on a dashboard page, use token or localStorage
+          if (payload.activeRole) {
+            this.currentRole = payload.activeRole as 'root' | 'admin' | 'employee';
+          } else {
+            const activeRole = localStorage.getItem('activeRole');
+            if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
+              this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+            } else {
+              this.currentRole = payload.role;
+            }
+          }
         }
+
+        console.log('[UnifiedNav] Role determined:', {
+          currentPath,
+          storedUserRole,
+          tokenRole: payload.role,
+          activeRole: localStorage.getItem('activeRole'),
+          finalRole: this.currentRole,
+        });
 
         // Also try to load full user profile
         this.loadFullUserProfile();
@@ -768,6 +1002,27 @@ class UnifiedNavigation {
     // Determine which logo to use based on sidebar collapsed state
     const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
 
+    // Check if user has switched roles
+    const isRoleSwitched = storedUserRole !== activeRole && activeRole !== null;
+    const warningBanner = isRoleSwitched
+      ? `
+      <!-- Role Switch Warning Banner -->
+      <div class="role-switch-banner" id="role-switch-warning-banner">
+        <div class="role-switch-banner-content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <span>Sie agieren derzeit als <strong>${activeRole === 'employee' ? 'Mitarbeiter' : activeRole === 'admin' ? 'Admin' : 'Root'}</strong>. Ihre ursprüngliche Rolle ist <strong>${storedUserRole === 'root' ? 'Root' : storedUserRole === 'admin' ? 'Admin' : 'Mitarbeiter'}</strong>.</span>
+          <button class="role-switch-banner-close" onclick="document.getElementById('role-switch-warning-banner').style.display='none';" title="Banner schließen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `
+      : '';
+
     return `
       <!-- Header -->
       <header class="header">
@@ -823,6 +1078,8 @@ class UnifiedNavigation {
           </div>
         </div>
       </header>
+
+      ${warningBanner}
 
       <!-- Sidebar -->
       <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
@@ -1322,6 +1579,7 @@ class UnifiedNavigation {
             }
 
             // Call the role switch function
+            console.log('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
             await switchRoleForRoot(selectedRole);
           });
         });
@@ -1592,17 +1850,40 @@ class UnifiedNavigation {
 
   // Public method to refresh navigation
   public refresh(): void {
-    this.loadUserInfo();
-    this.injectNavigationHTML();
-    this.attachEventListeners();
+    console.log('[UnifiedNav] Refreshing navigation');
 
-    // Restore sidebar state after refresh
-    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (isCollapsed) {
-      const sidebar = document.querySelector('.sidebar');
-      const mainContent = document.querySelector('.main-content');
-      sidebar?.classList.add('collapsed');
-      mainContent?.classList.add('sidebar-collapsed');
+    // Reload user info from token
+    this.loadUserInfo();
+
+    // Get the navigation container
+    const navigationContainer = document.getElementById('navigation-container');
+    if (navigationContainer) {
+      // Clear and recreate entire navigation structure
+      const fullNavigation = this.createFullNavigationStructure();
+      navigationContainer.innerHTML = fullNavigation;
+
+      // Re-attach event listeners after DOM update
+      setTimeout(() => {
+        this.attachEventListeners();
+        this.updateActiveNavigation();
+        this.updateUnreadMessages();
+        this.updatePendingSurveys();
+        this.updateUnreadDocuments();
+        this.updateNewKvpSuggestions();
+
+        // Restore sidebar state
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+          const sidebar = navigationContainer.querySelector('.sidebar');
+          const mainContent = document.querySelector('.main-content');
+          sidebar?.classList.add('collapsed');
+          mainContent?.classList.add('sidebar-collapsed');
+        }
+      }, 100);
+    } else {
+      // Fallback for pages without navigation-container
+      this.injectNavigationHTML();
+      this.updateActiveNavigation();
     }
   }
 
@@ -2172,6 +2453,62 @@ const unifiedNavigationCSS = `
         font-size: 0.9rem;
     }
 
+    /* Role Switch Warning Banner */
+    .role-switch-banner {
+        position: fixed;
+        top: 60px; /* Unter der Navigation */
+        left: 0;
+        right: 0;
+        background: rgba(255, 193, 7, 0.1);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+        padding: 8px 20px;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(255, 193, 7, 0.2);
+    }
+
+    .role-switch-banner-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ff9800;
+        font-size: 14px;
+        max-width: 1200px;
+        width: 100%;
+        position: relative;
+    }
+
+    .role-switch-banner-content strong {
+        color: #ffb74d;
+        font-weight: 600;
+    }
+
+    .role-switch-banner-close {
+        position: absolute;
+        right: 0;
+        background: none;
+        border: none;
+        color: #ff9800;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .role-switch-banner-close:hover {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffb74d;
+    }
+
+    /* Adjust sidebar and main content when banner is visible */
+    .role-switch-banner ~ .sidebar {
+        top: 100px !important; /* 60px header + 40px banner */
+        height: calc(100vh - 100px) !important;
+    }
+
     .sidebar {
         width: 280px !important;
         background: rgba(255, 255, 255, 0);
@@ -2609,7 +2946,7 @@ const unifiedNavigationCSS = `
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
-        animation: fadeInUp 0.6s ease-out;
+        /*animation: fadeInUp 0.6s ease-out;*/
         margin-top: 39px;
     }
 

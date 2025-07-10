@@ -238,7 +238,8 @@
       <!-- Main Content Area -->
       <main class="main-content">
         <div class="container">
-          <h1 class="text-center mb-4">Speicherplatz erweitern</h1>
+          <!-- Breadcrumb Navigation -->
+          <div id="breadcrumb-container"></div>
 
           <!-- Current Usage -->
           <div class="current-usage">
@@ -464,6 +465,13 @@
       document.addEventListener('DOMContentLoaded', () => {
         loadStorageInfo();
       });
+    </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

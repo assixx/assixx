@@ -330,6 +330,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize session manager for authenticated users
     SessionManager.getInstance();
     console.info('[AUTH] Session manager initialized');
+
+    // Enforce page access based on role - use UnifiedNavigation if available
+    const unifiedNav = (window as any).unifiedNav;
+    if (unifiedNav && typeof unifiedNav.enforcePageAccess === 'function') {
+      unifiedNav.enforcePageAccess();
+      console.info('[AUTH] Page access enforced via UnifiedNavigation');
+    } else {
+      // UnifiedNavigation will handle this when it initializes
+      console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
+    }
   }
 });
 

@@ -17,6 +17,7 @@ interface AdminLogData extends Omit<DbAdminLog, 'tenant_id'> {
   tenant_id: number;
   user_name?: string;
   user_role?: string;
+  was_role_switched?: boolean;
 }
 
 interface AdminLogFilters {
@@ -32,6 +33,7 @@ interface AdminLogFilters {
 interface AdminLogCreateData
   extends Omit<ModelAdminLogCreateData, 'tenant_id'> {
   tenant_id: number;
+  was_role_switched?: boolean;
 }
 
 interface AdminLogUpdateData {
@@ -91,6 +93,7 @@ class AdminLogService {
         old_values: data.old_values,
         new_values: data.new_values,
         user_agent: data.user_agent,
+        was_role_switched: data.was_role_switched,
       };
       const id = await AdminLog.create(modelData);
       // Return the data without trying to match RowDataPacket structure
@@ -105,6 +108,7 @@ class AdminLogService {
         new_values: modelData.new_values,
         ip_address: modelData.ip_address,
         user_agent: modelData.user_agent,
+        was_role_switched: modelData.was_role_switched,
         created_at: new Date(),
       } as AdminLogData;
     } catch (error) {

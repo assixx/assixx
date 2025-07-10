@@ -38,23 +38,24 @@ router.post(
         return;
       }
 
-      // Prüfen ob Employee-Daten vollständig sind (department_id und position)
-      const needsEmployeeData = !user.department_id || !user.position;
+      // Prüfen ob Employee-Daten vollständig sind (nur position - department_id ist optional)
+      const needsEmployeeData = !user.position;
 
       if (needsEmployeeData) {
         // Update nur fehlende Employee-Daten (keine neue employee_id!)
         const updateData: Record<string, unknown> = {};
 
-        if (!user.department_id) {
-          updateData.department_id = 1; // Default department
-        }
+        // WICHTIG: department_id NICHT setzen wenn keine Departments existieren
+        // department_id kann NULL bleiben bis Departments angelegt werden
 
         if (!user.position) {
           updateData.position = 'Mitarbeiter'; // Default position
         }
 
-        // Update nur die fehlenden Daten
-        await User.update(req.user.id, updateData, req.user.tenant_id);
+        // Update nur die fehlenden Daten (wenn überhaupt welche vorhanden sind)
+        if (Object.keys(updateData).length > 0) {
+          await User.update(req.user.id, updateData, req.user.tenant_id);
+        }
       }
 
       // Neues JWT mit dual role info erstellen
@@ -84,6 +85,7 @@ router.post(
           to_role: 'employee',
           timestamp: new Date(),
         },
+        was_role_switched: true,
       });
 
       res.json({
@@ -160,6 +162,7 @@ router.post(
           to_role: 'admin',
           timestamp: new Date(),
         },
+        was_role_switched: true,
       });
 
       res.json({
@@ -234,6 +237,7 @@ router.post(
           to_role: 'root',
           timestamp: new Date(),
         },
+        was_role_switched: true,
       });
 
       res.json({
@@ -306,6 +310,7 @@ router.post(
           to_role: 'admin',
           timestamp: new Date(),
         },
+        was_role_switched: true,
       });
 
       res.json({

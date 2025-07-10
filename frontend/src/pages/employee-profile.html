@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Erweitertes Mitarbeiterprofil</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
+      @import url('/styles/dashboard-theme.css');
       body {
         font-family: Arial, sans-serif;
         background-color: #f7f7f7;
@@ -198,8 +202,17 @@
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>Mitarbeiterprofil</h1>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+        
+        <div class="container">
 
       <div class="profile-header">
         <div class="profile-picture" id="profile-image">
@@ -375,6 +388,8 @@
       </div>
 
       <button class="btn btn-secondary back-btn" onclick="goBack()">Zurück zum Dashboard</button>
+    </div>
+      </main>
     </div>
 
     <script>
@@ -728,5 +743,7 @@
         }
       });
     </script>
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

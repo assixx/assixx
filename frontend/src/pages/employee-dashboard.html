@@ -472,16 +472,6 @@
         margin-bottom: var(--spacing-xl);
       }
 
-      .breadcrumb {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: var(--spacing-sm);
-      }
-
-      .breadcrumb a {
-        color: var(--primary-color);
-        text-decoration: none;
-      }
 
       .main-content {
         padding: var(--spacing-lg);
@@ -621,13 +611,8 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-          <div class="breadcrumb">
-            <a href="/employee-dashboard">Dashboard</a>
-            / Übersicht
-          </div>
-        </div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
         <!-- Welcome Hero Section -->
         <div class="welcome-hero">
@@ -639,7 +624,7 @@
           </div>
 
           <div class="welcome-content">
-            <h1 class="welcome-title">Willkommen zurück!</h1>
+            <p class="welcome-title">Willkommen zurück!</p>
             <p class="welcome-subtitle">
               Schön, dass Sie da sind,
               <span id="employee-name" class="pulse">Mitarbeiter</span>
@@ -1022,10 +1007,66 @@
 
     <!-- Force dashboard to be active on page load -->
     <script type="module">
+      // Check if user should be on employee dashboard by reading from JWT token
+      const token = localStorage.getItem('token');
+      let activeRole = null;
+      let userRole = localStorage.getItem('userRole');
+      
+      // Parse the JWT token to get the actual active role
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          activeRole = payload.activeRole || payload.role;
+          userRole = payload.role;
+          
+          // Update localStorage to match token
+          localStorage.setItem('activeRole', activeRole);
+          if (userRole) {
+            localStorage.setItem('userRole', userRole);
+          }
+          
+          console.log('[Employee Dashboard] Token analysis:', { 
+            tokenRole: payload.role, 
+            tokenActiveRole: payload.activeRole,
+            finalActiveRole: activeRole 
+          });
+        } catch (e) {
+          console.error('[Employee Dashboard] Error parsing token:', e);
+          activeRole = localStorage.getItem('activeRole') || userRole;
+        }
+      } else {
+        activeRole = localStorage.getItem('activeRole') || userRole;
+      }
+      
+      // All users can access employee dashboard when in employee mode
+      if (activeRole === 'employee') {
+        // User is correctly on employee dashboard
+        console.log('[Employee Dashboard] User in employee mode');
+      } else if (userRole === 'root' && activeRole === 'root') {
+        // Root user in root mode - redirect to root dashboard
+        console.log('[Employee Dashboard] Root user in root mode - redirecting');
+        window.location.replace('/root-dashboard');
+      } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
+        // Admin/Root user in admin mode - redirect to admin dashboard
+        console.log('[Employee Dashboard] User in admin mode - redirecting');
+        window.location.replace('/admin-dashboard');
+      } else if (!userRole) {
+        // No user role - redirect to login
+        console.log('[Employee Dashboard] No user role - redirecting to login');
+        window.location.replace('/login');
+      }
+      
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
         localStorage.removeItem('activeNavigation');
       });
+    </script>
+    
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

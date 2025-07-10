@@ -574,9 +574,10 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+        
         <div class="container">
-          <h1 class="text-center mb-4">Root Dashboard</h1>
-
           <!-- Dashboard Data Container -->
           <div id="dashboard-data"></div>
 
@@ -622,6 +623,55 @@
 
     <!-- Force dashboard to be active on page load -->
     <script type="module">
+      // Check if user should be on root dashboard by reading from JWT token
+      const token = localStorage.getItem('token');
+      let activeRole = null;
+      let userRole = localStorage.getItem('userRole');
+      
+      // Parse the JWT token to get the actual active role
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          activeRole = payload.activeRole || payload.role;
+          userRole = payload.role;
+          
+          // Update localStorage to match token
+          localStorage.setItem('activeRole', activeRole);
+          if (userRole) {
+            localStorage.setItem('userRole', userRole);
+          }
+          
+          console.log('[Root Dashboard] Token analysis:', { 
+            tokenRole: payload.role, 
+            tokenActiveRole: payload.activeRole,
+            finalActiveRole: activeRole 
+          });
+        } catch (e) {
+          console.error('[Root Dashboard] Error parsing token:', e);
+          activeRole = localStorage.getItem('activeRole') || userRole;
+        }
+      } else {
+        activeRole = localStorage.getItem('activeRole') || userRole;
+      }
+      
+      // Only root users can access root dashboard when in root mode
+      if (userRole === 'root' && activeRole === 'root') {
+        // User is correctly on root dashboard
+        console.log('[Root Dashboard] User has root access');
+      } else if (userRole === 'root' && activeRole !== 'root') {
+        // Root user has switched to another role - redirect
+        console.log('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
+        if (activeRole === 'admin') {
+          window.location.replace('/admin-dashboard');
+        } else if (activeRole === 'employee') {
+          window.location.replace('/employee-dashboard');
+        }
+      } else if (userRole !== 'root') {
+        // Non-root user trying to access root dashboard - redirect to login
+        console.log('[Root Dashboard] Non-root user detected - redirecting to login');
+        window.location.replace('/login');
+      }
+      
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
         localStorage.removeItem('activeNavigation');
@@ -687,6 +737,13 @@
           });
         }
       });
+    </script>
+    
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

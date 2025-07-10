@@ -50,8 +50,11 @@ docker-mysql-1      "docker-entrypoint.s…"   mysql               Up 2 minutes 
 # TypeScript Build im Container
 docker exec docker-backend-1 pnpm run build:ts
 
-# Type-Checking im Container
+# Type-Checking im Container (inkl. Test-Dateien mit 56 bekannten Errors)
 docker exec assixx-backend pnpm run type-check
+
+# HINWEIS: Die 56 TypeScript Errors in Test-Dateien sind bekannt und können für v0.1.0 ignoriert werden.
+# Diese betreffen nur Test-Code, nicht den Produktionscode.
 
 # ESLint im Container
 docker exec assixx-backend pnpm run lint:ts

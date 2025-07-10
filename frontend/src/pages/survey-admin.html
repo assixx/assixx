@@ -691,12 +691,15 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <main class="main-content">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
+
         <div class="survey-container">
           <div class="survey-header">
-            <h1 class="survey-title">
+            <div class="survey-title">
               <i class="fas fa-poll"></i>
               Umfrage-Verwaltung
-            </h1>
+            </div>
             <button class="btn btn-primary" onclick="showCreateModal()">
               <i class="fas fa-plus"></i>
               Neue Umfrage
@@ -838,6 +841,8 @@
     </div>
 
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
     <script type="module">
       import { modalManager } from '/scripts/utils/modal-manager.ts';
 

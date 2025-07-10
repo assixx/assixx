@@ -844,9 +844,9 @@
     <!-- Main Layout -->
     <div class="layout-container">
       <main class="main-content">
+        <div id="breadcrumb-container"></div>
         <!-- Page Header -->
         <div class="page-header">
-          <h1>KVP System</h1>
           <p>Kontinuierlicher Verbesserungsprozess</p>
         </div>
 
@@ -1301,5 +1301,12 @@
     <script type="module" src="/scripts/utils/modal-manager.ts"></script>
     <script type="module" src="/scripts/pages/kvp.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
   </body>
 </html>
