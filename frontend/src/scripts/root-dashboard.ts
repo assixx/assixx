@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user has temporary employee number
   async function checkEmployeeNumber(): Promise<void> {
     try {
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch('/api/users/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        const response = await fetch('/api/users/profile', {
+        const response = await fetch('/api/users/me', {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

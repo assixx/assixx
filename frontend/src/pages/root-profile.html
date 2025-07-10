@@ -32,7 +32,7 @@
 
       /* Profil Container */
       .profile-container {
-        max-width: 800px;
+        
         margin: 0 auto;
         padding: 24px;
       }
@@ -1153,7 +1153,7 @@
       // Approval Functions
       async function loadPendingApprovals() {
         try {
-          const response = await fetch('/api/deletion-approvals/pending', {
+          const response = await fetch('/api/root/deletion-approvals/pending', {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -1162,16 +1162,26 @@
           if (!response.ok) throw new Error('Failed to load approvals');
 
           const data = await response.json();
-          const approvals = data.data;
+          console.log('Deletion approvals response:', data);
+          
+          let approvals = [];
+          if (data && data.success && Array.isArray(data.data)) {
+            approvals = data.data;
+          } else if (Array.isArray(data)) {
+            approvals = data;
+          }
+          
+          console.log('Processed approvals:', approvals);
 
           const approvalSection = document.getElementById('approvalSection');
           const approvalList = document.getElementById('approvalList');
 
-          if (approvals && approvals.length > 0) {
+          if (approvals.length > 0) {
             approvalSection.style.display = 'block';
             approvalList.innerHTML = approvals.map((approval) => createApprovalItem(approval)).join('');
           } else {
             approvalSection.style.display = 'none';
+            approvalList.innerHTML = ''; // Clear any existing content
           }
         } catch (error) {
           console.error('Error loading approvals:', error);
@@ -1179,6 +1189,12 @@
       }
 
       function createApprovalItem(approval) {
+        // Validate approval object
+        if (!approval || !approval.queue_id) {
+          console.error('Invalid approval object:', approval);
+          return '';
+        }
+        
         const requestedAt = new Date(approval.requested_at);
         const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
         const coolingOffRemaining = Math.max(0, 24 - hoursSince);
@@ -1233,7 +1249,7 @@
         }
 
         try {
-          const response = await fetch(`/api/deletion-approvals/${queueId}/approve`, {
+          const response = await fetch(`/api/root/deletion-approvals/${queueId}/approve`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1259,7 +1275,7 @@
         if (!reason) return;
 
         try {
-          const response = await fetch(`/api/deletion-approvals/${queueId}/reject`, {
+          const response = await fetch(`/api/root/deletion-approvals/${queueId}/reject`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,

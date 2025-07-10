@@ -1062,8 +1062,11 @@
             throw new Error('Failed to load plans');
           }
 
-          allPlans = await plansResponse.json();
-          console.log('Loaded plans:', allPlans);
+          const plansData = await plansResponse.json();
+          console.log('Loaded plans response:', plansData);
+
+          // Extract the data array from the response
+          allPlans = plansData.data || plansData;
 
           // Check if response is an array
           if (!Array.isArray(allPlans)) {
@@ -1150,7 +1153,11 @@
           const response = await fetch('/api/features/my-features', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          const features = await response.json();
+          const featuresData = await response.json();
+          console.log('Loaded tenant features response:', featuresData);
+          
+          // Extract the data array from the response
+          const features = featuresData.data || featuresData;
 
           // Update feature states in categories
           Object.values(featureCategories).forEach((category) => {
