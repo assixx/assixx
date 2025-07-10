@@ -46,7 +46,7 @@ export function isValidEmail(email: string): boolean {
  */
 export function isValidPhone(phone: string): boolean {
   // Remove spaces and special characters
-  const cleaned = phone.replace(/[\s\-()]/g, "");
+  const cleaned = phone.replace(/[\s\-()]/g, '');
   // Check for German phone number format
   const phoneRegex = /^(\+49|0049|0)[1-9]\d{1,14}$/;
   return phoneRegex.test(cleaned);
@@ -65,17 +65,17 @@ export function validatePassword(password: string): ValidationResult {
     errors.push(`Password must be at least ${minLength} characters long`);
   }
   if (!/[A-Z]/.test(password)) {
-    errors.push("Password must contain at least one uppercase letter");
+    errors.push('Password must contain at least one uppercase letter');
   }
   if (!/[a-z]/.test(password)) {
-    errors.push("Password must contain at least one lowercase letter");
+    errors.push('Password must contain at least one lowercase letter');
   }
   if (!/[0-9]/.test(password)) {
-    errors.push("Password must contain at least one number");
+    errors.push('Password must contain at least one number');
   }
   if (!/[!@#$%^&*]/.test(password)) {
     errors.push(
-      "Password must contain at least one special character (!@#$%^&*)",
+      'Password must contain at least one special character (!@#$%^&*)'
     );
   }
 
@@ -94,14 +94,14 @@ export function validateUsername(username: string): UsernameValidationResult {
   const errors: string[] = [];
 
   if (username.length < 3) {
-    errors.push("Username must be at least 3 characters long");
+    errors.push('Username must be at least 3 characters long');
   }
   if (username.length > 30) {
-    errors.push("Username must not exceed 30 characters");
+    errors.push('Username must not exceed 30 characters');
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
     errors.push(
-      "Username can only contain letters, numbers, underscores, and hyphens",
+      'Username can only contain letters, numbers, underscores, and hyphens'
     );
   }
 
@@ -132,9 +132,9 @@ export function isValidDate(date: string): boolean {
  */
 export function isValidFileType(
   filename: string,
-  allowedTypes: string[],
+  allowedTypes: string[]
 ): boolean {
-  const ext = filename.split(".").pop()?.toLowerCase();
+  const ext = filename.split('.').pop()?.toLowerCase();
   return ext ? allowedTypes.includes(ext) : false;
 }
 
@@ -144,19 +144,19 @@ export function isValidFileType(
  * @returns Validation result
  */
 export function validateSubdomain(
-  subdomain: string,
+  subdomain: string
 ): SubdomainValidationResult {
   const errors: string[] = [];
 
   if (subdomain.length < 3) {
-    errors.push("Subdomain must be at least 3 characters long");
+    errors.push('Subdomain must be at least 3 characters long');
   }
   if (subdomain.length > 63) {
-    errors.push("Subdomain must not exceed 63 characters");
+    errors.push('Subdomain must not exceed 63 characters');
   }
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(subdomain)) {
     errors.push(
-      "Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)",
+      'Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)'
     );
   }
 
@@ -174,14 +174,14 @@ export function validateSubdomain(
  */
 export function validateRequiredFields(
   data: DataObject,
-  requiredFields: string[],
+  requiredFields: string[]
 ): RequiredFieldsValidationResult {
   const missingFields: string[] = [];
 
   requiredFields.forEach((field: string) => {
     if (
       !data[field] ||
-      (typeof data[field] === "string" && data[field].trim() === "")
+      (typeof data[field] === 'string' && data[field].trim() === '')
     ) {
       missingFields.push(field);
     }
@@ -210,7 +210,7 @@ export function isInRange(value: number, min: number, max: number): boolean {
  * @returns True if valid
  */
 export function isPositiveInteger(value: unknown): boolean {
-  return typeof value === "number" && Number.isInteger(value) && value > 0;
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
 // Default export for CommonJS compatibility

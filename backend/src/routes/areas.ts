@@ -3,9 +3,9 @@
  * API endpoints for area/location management
  */
 
-import express, { Router } from "express";
-import { authenticateToken } from "../auth";
-import { getErrorMessage } from "../utils/errorHandler";
+import express, { Router } from 'express';
+import { authenticateToken } from '../auth';
+import { getErrorMessage } from '../utils/errorHandler';
 
 const router: Router = express.Router();
 
@@ -26,52 +26,52 @@ interface Area {
  * Get all areas
  * GET /api/areas
  */
-router.get("/", authenticateToken, async (req, res): Promise<void> => {
+router.get('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     // For now, return dummy area data
     // In production, this would query the areas table
     const areas: Area[] = [
       {
         id: 1,
-        name: "Halle A",
-        description: "Produktionsbereich A",
-        type: "production",
+        name: 'Halle A',
+        description: 'Produktionsbereich A',
+        type: 'production',
       },
       {
         id: 2,
-        name: "Halle B",
-        description: "Produktionsbereich B",
-        type: "production",
+        name: 'Halle B',
+        description: 'Produktionsbereich B',
+        type: 'production',
       },
       {
         id: 3,
-        name: "Lager Nord",
-        description: "Eingangslager",
-        type: "warehouse",
+        name: 'Lager Nord',
+        description: 'Eingangslager',
+        type: 'warehouse',
       },
       {
         id: 4,
-        name: "Lager Süd",
-        description: "Ausgangslager",
-        type: "warehouse",
+        name: 'Lager Süd',
+        description: 'Ausgangslager',
+        type: 'warehouse',
       },
       {
         id: 5,
-        name: "Bürobereich",
-        description: "Verwaltung und Büros",
-        type: "office",
+        name: 'Bürobereich',
+        description: 'Verwaltung und Büros',
+        type: 'office',
       },
       {
         id: 6,
-        name: "Qualitätsprüfung",
-        description: "QS-Bereich",
-        type: "quality",
+        name: 'Qualitätsprüfung',
+        description: 'QS-Bereich',
+        type: 'quality',
       },
       {
         id: 7,
-        name: "Wartung",
-        description: "Werkstatt und Wartung",
-        type: "maintenance",
+        name: 'Wartung',
+        description: 'Werkstatt und Wartung',
+        type: 'maintenance',
       },
     ];
 
@@ -88,10 +88,10 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
       areas: filteredAreas,
     });
   } catch (error) {
-    console.error("Error fetching areas:", getErrorMessage(error));
+    console.error('Error fetching areas:', getErrorMessage(error));
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden der Bereiche",
+      message: 'Fehler beim Laden der Bereiche',
     });
   }
 });
@@ -100,7 +100,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
  * Get area by ID
  * GET /api/areas/:id
  */
-router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
+router.get('/:id', authenticateToken, async (req, res): Promise<void> => {
   try {
     const areaId = parseInt(req.params.id);
 
@@ -108,10 +108,10 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
     const area: Area = {
       id: areaId,
       name: `Bereich ${areaId}`,
-      description: "Automatisch generierter Bereich",
-      type: "production",
+      description: 'Automatisch generierter Bereich',
+      type: 'production',
       capacity: 50,
-      supervisor: "Max Mustermann",
+      supervisor: 'Max Mustermann',
     };
 
     res.json({
@@ -119,10 +119,10 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
       area,
     });
   } catch (error) {
-    console.error("Error fetching area:", getErrorMessage(error));
+    console.error('Error fetching area:', getErrorMessage(error));
     res.status(500).json({
       success: false,
-      message: "Fehler beim Laden des Bereichs",
+      message: 'Fehler beim Laden des Bereichs',
     });
   }
 });
@@ -131,13 +131,13 @@ router.get("/:id", authenticateToken, async (req, res): Promise<void> => {
  * Create new area (Admin only)
  * POST /api/areas
  */
-router.post("/", authenticateToken, async (req, res): Promise<void> => {
+router.post('/', authenticateToken, async (req, res): Promise<void> => {
   try {
     // Check admin permission
-    if (!["admin", "root", "manager"].includes(req.user.role)) {
+    if (!['admin', 'root', 'manager'].includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        message: "Keine Berechtigung zum Erstellen von Bereichen",
+        message: 'Keine Berechtigung zum Erstellen von Bereichen',
       });
       return;
     }
@@ -147,7 +147,7 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
     if (!name) {
       res.status(400).json({
         success: false,
-        message: "Name ist erforderlich",
+        message: 'Name ist erforderlich',
       });
       return;
     }
@@ -157,21 +157,21 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       id: Date.now(),
       name,
       description: description || undefined,
-      type: type || "production",
+      type: type || 'production',
       capacity: capacity || undefined,
       created_at: new Date(),
     };
 
     res.status(201).json({
       success: true,
-      message: "Bereich erfolgreich erstellt",
+      message: 'Bereich erfolgreich erstellt',
       area,
     });
   } catch (error) {
-    console.error("Error creating area:", getErrorMessage(error));
+    console.error('Error creating area:', getErrorMessage(error));
     res.status(500).json({
       success: false,
-      message: "Fehler beim Erstellen des Bereichs",
+      message: 'Fehler beim Erstellen des Bereichs',
     });
   }
 });

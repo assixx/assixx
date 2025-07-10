@@ -3,10 +3,10 @@
  * Serves frontend pages
  */
 
-import express, { Router, Request, Response } from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { authenticateToken, authorizeRole } from "../middleware/auth";
+import express, { Router, Request, Response } from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { authenticateToken, authorizeRole } from '../middleware/auth';
 
 const router: Router = express.Router();
 
@@ -23,216 +23,216 @@ const servePage =
     // Always serve from dist directory (built files)
     const distPath = path.join(
       __dirname,
-      "../../../frontend/dist/pages",
-      `${pageName}.html`,
+      '../../../frontend/dist/pages',
+      `${pageName}.html`
     );
     res.sendFile(distPath);
   };
 
 // Public pages
 // Root '/' is handled by redirectToDashboard middleware in app.ts
-router.get("/index", servePage("index"));
-router.get("/pages/index", (_req: Request, res: Response) =>
-  res.redirect("/index"),
+router.get('/index', servePage('index'));
+router.get('/pages/index', (_req: Request, res: Response) =>
+  res.redirect('/index')
 ); // Redirect old URL
-router.get("/login", servePage("login"));
-router.get("/signup", servePage("signup"));
-router.get("/design-standards", servePage("design-standards"));
+router.get('/login', servePage('login'));
+router.get('/signup', servePage('signup'));
+router.get('/design-standards', servePage('design-standards'));
 
 // Authenticated pages - All users
-router.get("/dashboard", authenticateToken, servePage("dashboard"));
-router.get("/profile", authenticateToken, servePage("profile"));
-router.get("/profile-picture", authenticateToken, servePage("profile-picture"));
-router.get("/settings", authenticateToken, servePage("settings"));
-router.get("/hilfe", authenticateToken, servePage("hilfe"));
-router.get("/chat", authenticateToken, servePage("chat"));
-router.get("/blackboard", authenticateToken, servePage("blackboard"));
-router.get("/calendar", authenticateToken, servePage("calendar"));
-router.get("/kvp", authenticateToken, servePage("kvp"));
-router.get("/kvp-detail", authenticateToken, servePage("kvp-detail"));
-router.get("/documents", authenticateToken, servePage("documents"));
+router.get('/dashboard', authenticateToken, servePage('dashboard'));
+router.get('/profile', authenticateToken, servePage('profile'));
+router.get('/profile-picture', authenticateToken, servePage('profile-picture'));
+router.get('/settings', authenticateToken, servePage('settings'));
+router.get('/hilfe', authenticateToken, servePage('hilfe'));
+router.get('/chat', authenticateToken, servePage('chat'));
+router.get('/blackboard', authenticateToken, servePage('blackboard'));
+router.get('/calendar', authenticateToken, servePage('calendar'));
+router.get('/kvp', authenticateToken, servePage('kvp'));
+router.get('/kvp-detail', authenticateToken, servePage('kvp-detail'));
+router.get('/documents', authenticateToken, servePage('documents'));
 router.get(
-  "/documents-personal",
+  '/documents-personal',
   authenticateToken,
-  servePage("documents-personal"),
+  servePage('documents-personal')
 );
 router.get(
-  "/documents-payroll",
+  '/documents-payroll',
   authenticateToken,
-  servePage("documents-payroll"),
+  servePage('documents-payroll')
 );
 router.get(
-  "/documents-company",
+  '/documents-company',
   authenticateToken,
-  servePage("documents-company"),
+  servePage('documents-company')
 );
 router.get(
-  "/documents-department",
+  '/documents-department',
   authenticateToken,
-  servePage("documents-department"),
+  servePage('documents-department')
 );
-router.get("/documents-team", authenticateToken, servePage("documents-team"));
+router.get('/documents-team', authenticateToken, servePage('documents-team'));
 router.get(
-  "/documents-search",
+  '/documents-search',
   authenticateToken,
-  servePage("documents-search"),
+  servePage('documents-search')
 );
 
 // Employee pages
 router.get(
-  "/employee-dashboard",
+  '/employee-dashboard',
   authenticateToken,
-  servePage("employee-dashboard"),
+  servePage('employee-dashboard')
 );
 router.get(
-  "/employee-profile",
+  '/employee-profile',
   authenticateToken,
-  servePage("employee-profile"),
+  servePage('employee-profile')
 );
 router.get(
-  "/employee-documents",
+  '/employee-documents',
   authenticateToken,
-  servePage("employee-documents"),
+  servePage('employee-documents')
 );
 router.get(
-  "/salary-documents",
+  '/salary-documents',
   authenticateToken,
-  servePage("salary-documents"),
+  servePage('salary-documents')
 );
-router.get("/survey-employee", authenticateToken, servePage("survey-employee"));
-router.get("/shifts", authenticateToken, servePage("shifts"));
+router.get('/survey-employee', authenticateToken, servePage('survey-employee'));
+router.get('/shifts', authenticateToken, servePage('shifts'));
 
 // Admin pages
 router.get(
-  "/admin-dashboard",
+  '/admin-dashboard',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("admin-dashboard"),
+  authorizeRole('admin'),
+  servePage('admin-dashboard')
 );
 router.get(
-  "/admin-config",
+  '/admin-config',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("admin-config"),
+  authorizeRole('admin'),
+  servePage('admin-config')
 );
 router.get(
-  "/org-management",
+  '/org-management',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("org-management"),
+  authorizeRole('admin'),
+  servePage('org-management')
 );
 router.get(
-  "/document-upload",
+  '/document-upload',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("document-upload"),
+  authorizeRole('admin'),
+  servePage('document-upload')
 );
 router.get(
-  "/archived-employees",
+  '/archived-employees',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("archived-employees"),
+  authorizeRole('admin'),
+  servePage('archived-employees')
 );
 router.get(
-  "/departments",
+  '/departments',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("departments"),
+  authorizeRole('admin'),
+  servePage('departments')
 );
 router.get(
-  "/admin-profile",
+  '/admin-profile',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("admin-profile"),
+  authorizeRole('admin'),
+  servePage('admin-profile')
 );
 router.get(
-  "/manage-admins",
+  '/manage-admins',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("manage-admins"),
+  authorizeRole('admin'),
+  servePage('manage-admins')
 );
 router.get(
-  "/manage-department-groups",
+  '/manage-department-groups',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("manage-department-groups"),
+  authorizeRole('admin'),
+  servePage('manage-department-groups')
 );
 router.get(
-  "/storage-upgrade",
+  '/storage-upgrade',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("storage-upgrade"),
+  authorizeRole('admin'),
+  servePage('storage-upgrade')
 );
 router.get(
-  "/feature-management",
+  '/feature-management',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("feature-management"),
+  authorizeRole('admin'),
+  servePage('feature-management')
 );
 router.get(
-  "/survey-admin",
+  '/survey-admin',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("survey-admin"),
+  authorizeRole('admin'),
+  servePage('survey-admin')
 );
 router.get(
-  "/survey-results",
+  '/survey-results',
   authenticateToken,
-  authorizeRole("admin"),
-  servePage("survey-results"),
+  authorizeRole('admin'),
+  servePage('survey-results')
 );
-router.get("/survey-details", authenticateToken, servePage("survey-details"));
+router.get('/survey-details', authenticateToken, servePage('survey-details'));
 
 // Root pages
 router.get(
-  "/root-dashboard",
+  '/root-dashboard',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("root-dashboard"),
+  authorizeRole('root'),
+  servePage('root-dashboard')
 );
 router.get(
-  "/root-features",
+  '/root-features',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("root-features"),
+  authorizeRole('root'),
+  servePage('root-features')
 );
 router.get(
-  "/root-profile",
+  '/root-profile',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("root-profile"),
+  authorizeRole('root'),
+  servePage('root-profile')
 );
 router.get(
-  "/manage-root-users",
+  '/manage-root-users',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("manage-root-users"),
+  authorizeRole('root'),
+  servePage('manage-root-users')
 );
 router.get(
-  "/account-settings",
+  '/account-settings',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("account-settings"),
+  authorizeRole('root'),
+  servePage('account-settings')
 );
 router.get(
-  "/tenant-deletion-status",
+  '/tenant-deletion-status',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("tenant-deletion-status"),
+  authorizeRole('root'),
+  servePage('tenant-deletion-status')
 );
 router.get(
-  "/logs",
+  '/logs',
   authenticateToken,
-  authorizeRole("root"),
-  servePage("logs"),
+  authorizeRole('root'),
+  servePage('logs')
 );
 
 // Development only pages
-if (process.env.NODE_ENV !== "production") {
-  router.get("/api-test", servePage("api-test"));
-  router.get("/test-db", servePage("test-db"));
-  router.get("/debug-dashboard", servePage("debug-dashboard"));
-  router.get("/token-debug", servePage("token-debug"));
+if (process.env.NODE_ENV !== 'production') {
+  router.get('/api-test', servePage('api-test'));
+  router.get('/test-db', servePage('test-db'));
+  router.get('/debug-dashboard', servePage('debug-dashboard'));
+  router.get('/token-debug', servePage('token-debug'));
 }
 
 export default router;

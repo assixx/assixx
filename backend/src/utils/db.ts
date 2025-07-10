@@ -8,8 +8,8 @@ import {
   ResultSetHeader,
   FieldPacket,
   PoolConnection,
-} from "mysql2/promise";
-import pool from "../database";
+} from 'mysql2/promise';
+import pool from '../database';
 
 /**
  * Type-safe database query function
@@ -19,12 +19,12 @@ import pool from "../database";
  */
 export async function query<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: unknown[],
+  params?: unknown[]
 ): Promise<[T, FieldPacket[]]> {
   // Handle both Pool and MockDatabase
-  if ("query" in pool && typeof pool.query === "function") {
+  if ('query' in pool && typeof pool.query === 'function') {
     const result = await (
-      pool as unknown as import("mysql2/promise").Pool
+      pool as unknown as import('mysql2/promise').Pool
     ).query(sql, params);
 
     // MySQL2 always returns [rows, fields] tuple
@@ -36,7 +36,7 @@ export async function query<T extends RowDataPacket[] | ResultSetHeader>(
     return [result as unknown as T, []];
   }
 
-  throw new Error("Database pool not properly initialized");
+  throw new Error('Database pool not properly initialized');
 }
 
 /**
@@ -47,12 +47,12 @@ export async function query<T extends RowDataPacket[] | ResultSetHeader>(
  */
 export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
   sql: string,
-  params?: unknown[],
+  params?: unknown[]
 ): Promise<[T, FieldPacket[]]> {
   // Handle both Pool and MockDatabase
-  if ("execute" in pool && typeof pool.execute === "function") {
+  if ('execute' in pool && typeof pool.execute === 'function') {
     const result = await (
-      pool as unknown as import("mysql2/promise").Pool
+      pool as unknown as import('mysql2/promise').Pool
     ).execute(sql, params);
 
     // MySQL2 always returns [rows, fields] tuple
@@ -73,11 +73,11 @@ export async function execute<T extends RowDataPacket[] | ResultSetHeader>(
  * @returns Promise with PoolConnection
  */
 export async function getConnection(): Promise<PoolConnection> {
-  if ("getConnection" in pool && typeof pool.getConnection === "function") {
+  if ('getConnection' in pool && typeof pool.getConnection === 'function') {
     return (await pool.getConnection()) as PoolConnection;
   }
 
-  throw new Error("Database pool does not support connections");
+  throw new Error('Database pool does not support connections');
 }
 
 /**
@@ -86,7 +86,7 @@ export async function getConnection(): Promise<PoolConnection> {
  * @returns Promise with transaction result
  */
 export async function transaction<T>(
-  callback: (connection: PoolConnection) => Promise<T>,
+  callback: (connection: PoolConnection) => Promise<T>
 ): Promise<T> {
   const connection = await getConnection();
 

@@ -3,18 +3,18 @@
  * Handles authentication business logic
  */
 
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import UserModel from "../models/user";
-import { authenticateUser as authUser, generateToken } from "../auth";
-import { logger } from "../utils/logger";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import UserModel from '../models/user';
+import { authenticateUser as authUser, generateToken } from '../auth';
+import { logger } from '../utils/logger';
 import {
   AuthResult,
   UserRegistrationData,
   TokenValidationResult,
-} from "../types/auth.types";
-import { DatabaseUser } from "../types/models";
-import { execute, ResultSetHeader } from "../utils/db";
+} from '../types/auth.types';
+import { DatabaseUser } from '../types/models';
+import { execute, ResultSetHeader } from '../utils/db';
 
 class AuthService {
   /**
@@ -26,7 +26,7 @@ class AuthService {
   async authenticateUser(
     username: string,
     password: string,
-    fingerprint?: string,
+    fingerprint?: string
   ): Promise<AuthResult> {
     try {
       // Use existing auth function
@@ -34,14 +34,14 @@ class AuthService {
 
       if (!result.user) {
         // Provide specific error messages based on error type
-        let message = "Invalid username or password";
-        if (result.error === "USER_INACTIVE") {
+        let message = 'Invalid username or password';
+        if (result.error === 'USER_INACTIVE') {
           message =
-            "Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.";
-        } else if (result.error === "USER_NOT_FOUND") {
-          message = "Benutzer nicht gefunden";
-        } else if (result.error === "INVALID_PASSWORD") {
-          message = "Falsches Passwort";
+            'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
+        } else if (result.error === 'USER_NOT_FOUND') {
+          message = 'Benutzer nicht gefunden';
+        } else if (result.error === 'INVALID_PASSWORD') {
+          message = 'Falsches Passwort';
         }
 
         return {
@@ -61,18 +61,18 @@ class AuthService {
       if (fingerprint) {
         try {
           await execute<ResultSetHeader>(
-            "INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
-            [result.user.id, sessionId, fingerprint],
+            'INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))',
+            [result.user.id, sessionId, fingerprint]
           );
         } catch (error) {
-          logger.warn("Failed to store session info:", error);
+          logger.warn('Failed to store session info:', error);
           // Continue anyway - session will work without stored fingerprint
         }
       }
 
       // Convert database user to app user format and remove sensitive data
       const userWithoutPassword = { ...result.user };
-      if ("password" in userWithoutPassword) {
+      if ('password' in userWithoutPassword) {
         delete userWithoutPassword.password;
       }
 
@@ -80,11 +80,11 @@ class AuthService {
         success: true,
         token,
         user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(userWithoutPassword),
-        ) as unknown as AuthResult["user"],
+          this.dbUserToDatabaseUser(userWithoutPassword)
+        ) as unknown as AuthResult['user'],
       };
     } catch (error) {
-      logger.error("Authentication error:", error);
+      logger.error('Authentication error:', error);
       throw error;
     }
   }
@@ -102,7 +102,7 @@ class AuthService {
         email,
         vorname,
         nachname,
-        role = "employee",
+        role = 'employee',
       } = userData;
 
       // Check if user already exists
@@ -111,7 +111,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: "Username already exists",
+          message: 'Username already exists',
         };
       }
 
@@ -121,7 +121,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: "Email already exists",
+          message: 'Email already exists',
         };
       }
 
@@ -130,7 +130,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: "Tenant ID is required",
+          message: 'Tenant ID is required',
         };
       }
 
@@ -151,11 +151,11 @@ class AuthService {
       // Get created user (without password)
       const user = await UserModel.findById(userId, userData.tenant_id);
       if (!user) {
-        throw new Error("Failed to retrieve created user");
+        throw new Error('Failed to retrieve created user');
       }
 
       const userWithoutPassword =
-        user && "password" in user
+        user && 'password' in user
           ? (() => {
               const { password: _password, ...rest } = user;
               return rest;
@@ -171,11 +171,11 @@ class AuthService {
       return {
         success: true,
         user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(userWithTenantId),
-        ) as unknown as AuthResult["user"],
+          this.dbUserToDatabaseUser(userWithTenantId)
+        ) as unknown as AuthResult['user'],
       };
     } catch (error) {
-      logger.error("Registration error:", error);
+      logger.error('Registration error:', error);
       throw error;
     }
   }
@@ -189,7 +189,7 @@ class AuthService {
     try {
       const secret = process.env.JWT_SECRET;
       if (!secret) {
-        throw new Error("JWT_SECRET not configured");
+        throw new Error('JWT_SECRET not configured');
       }
       const decoded = jwt.verify(token, secret);
       return {
@@ -197,10 +197,10 @@ class AuthService {
         user: decoded as unknown as DatabaseUser,
       };
     } catch (error) {
-      logger.error("Token verification error:", error);
+      logger.error('Token verification error:', error);
       return {
         valid: false,
-        error: error instanceof Error ? error.message : "Invalid token",
+        error: error instanceof Error ? error.message : 'Invalid token',
       };
     }
   }
@@ -211,7 +211,7 @@ class AuthService {
    */
   private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<
     DatabaseUser,
-    "password_hash"
+    'password_hash'
   > & {
     firstName: string;
     lastName: string;
@@ -232,7 +232,7 @@ class AuthService {
       email: dbUser.email,
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
-      role: dbUser.role as "admin" | "root" | "employee",
+      role: dbUser.role as 'admin' | 'root' | 'employee',
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id,
       is_active: dbUser.is_active,
@@ -240,7 +240,7 @@ class AuthService {
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone_number,
       landline: dbUser.landline || null,
-      employee_number: dbUser.employee_number || "",
+      employee_number: dbUser.employee_number || '',
       position: dbUser.position,
       hire_date: dbUser.hire_date,
       birth_date: dbUser.birth_date,
@@ -291,21 +291,21 @@ class AuthService {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
-      password_hash: dbUser.password || "",
+      password_hash: dbUser.password || '',
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
-      role: dbUser.role as "admin" | "employee" | "root",
+      role: dbUser.role as 'admin' | 'employee' | 'root',
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id ?? null,
       is_active:
         dbUser.is_active === true ||
         dbUser.is_active === 1 ||
-        dbUser.is_active === "1",
+        dbUser.is_active === '1',
       is_archived: dbUser.is_archived || false,
       profile_picture: dbUser.profile_picture ?? null,
       phone_number: dbUser.phone ?? null,
       landline: dbUser.landline || null,
-      employee_number: dbUser.employee_number || "",
+      employee_number: dbUser.employee_number || '',
       position: dbUser.position ?? null,
       hire_date: dbUser.hire_date ?? null,
       birth_date: dbUser.birthday ?? null,

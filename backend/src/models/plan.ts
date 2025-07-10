@@ -2,8 +2,8 @@ import {
   execute as executeQuery,
   RowDataPacket,
   ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger";
+} from '../utils/db';
+import { logger } from '../utils/logger';
 
 export interface DbPlan extends RowDataPacket {
   id: number;
@@ -34,21 +34,21 @@ export interface DbTenantPlan extends RowDataPacket {
   plan_id: number;
   plan_code: string;
   plan_name: string;
-  status: "active" | "trial" | "cancelled" | "expired";
+  status: 'active' | 'trial' | 'cancelled' | 'expired';
   started_at: Date;
   expires_at?: Date;
   custom_price?: number;
-  billing_cycle: "monthly" | "yearly";
+  billing_cycle: 'monthly' | 'yearly';
 }
 
 export interface DbTenantAddon extends RowDataPacket {
   id: number;
   tenant_id: number;
-  addon_type: "employees" | "admins" | "storage_gb";
+  addon_type: 'employees' | 'admins' | 'storage_gb';
   quantity: number;
   unit_price: number;
   total_price: number;
-  status: "active" | "cancelled";
+  status: 'active' | 'cancelled';
 }
 
 export interface PlanChangeRequest {
@@ -86,7 +86,7 @@ export class Plan {
   // Get plan by code
   static async findByCode(code: string): Promise<DbPlan | null> {
     try {
-      const query = "SELECT * FROM plans WHERE code = ? AND is_active = true";
+      const query = 'SELECT * FROM plans WHERE code = ? AND is_active = true';
       const [plans] = await executeQuery<DbPlan[]>(query, [code]);
       return plans.length > 0 ? plans[0] : null;
     } catch (error) {
@@ -157,20 +157,20 @@ export class Plan {
         `UPDATE tenant_plans 
          SET status = 'cancelled', cancelled_at = NOW() 
          WHERE tenant_id = ? AND status IN ('active', 'trial')`,
-        [request.tenantId],
+        [request.tenantId]
       );
 
       // Create new plan subscription
       await executeQuery<ResultSetHeader>(
         `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at) 
          VALUES (?, ?, 'active', ?)`,
-        [request.tenantId, newPlan.id, effectiveDate],
+        [request.tenantId, newPlan.id, effectiveDate]
       );
 
       // Update tenant's current_plan_id
       await executeQuery<ResultSetHeader>(
-        "UPDATE tenants SET current_plan_id = ? WHERE id = ?",
-        [newPlan.id, request.tenantId],
+        'UPDATE tenants SET current_plan_id = ? WHERE id = ?',
+        [newPlan.id, request.tenantId]
       );
 
       // Deactivate features not included in new plan
@@ -184,13 +184,13 @@ export class Plan {
           `UPDATE tenant_features 
            SET is_active = FALSE 
            WHERE tenant_id = ? 
-           AND feature_id NOT IN (${includedFeatureIds.map(() => "?").join(",")})`,
-          [request.tenantId, ...includedFeatureIds],
+           AND feature_id NOT IN (${includedFeatureIds.map(() => '?').join(',')})`,
+          [request.tenantId, ...includedFeatureIds]
         );
       }
 
       logger.info(
-        `Tenant ${request.tenantId} changed plan to ${request.newPlanCode}`,
+        `Tenant ${request.tenantId} changed plan to ${request.newPlanCode}`
       );
       return true;
     } catch (error) {
@@ -217,14 +217,14 @@ export class Plan {
 
   // Update tenant's addons
   static async updateTenantAddons(
-    request: AddonUpdateRequest,
+    request: AddonUpdateRequest
   ): Promise<boolean> {
     try {
       const updates = [];
 
       if (request.addons.employees !== undefined) {
         updates.push({
-          type: "employees",
+          type: 'employees',
           quantity: request.addons.employees,
           unitPrice: 5.0,
         });
@@ -232,7 +232,7 @@ export class Plan {
 
       if (request.addons.admins !== undefined) {
         updates.push({
-          type: "admins",
+          type: 'admins',
           quantity: request.addons.admins,
           unitPrice: 10.0,
         });
@@ -240,7 +240,7 @@ export class Plan {
 
       if (request.addons.storage_gb !== undefined) {
         updates.push({
-          type: "storage_gb",
+          type: 'storage_gb',
           quantity: request.addons.storage_gb,
           unitPrice: 0.1,
         });
@@ -254,7 +254,7 @@ export class Plan {
            quantity = VALUES(quantity),
            unit_price = VALUES(unit_price),
            updated_at = NOW()`,
-          [request.tenantId, update.type, update.quantity, update.unitPrice],
+          [request.tenantId, update.type, update.quantity, update.unitPrice]
         );
       }
 
@@ -300,7 +300,7 @@ export class Plan {
       };
     } catch (error) {
       logger.error(
-        `Error calculating tenant cost: ${(error as Error).message}`,
+        `Error calculating tenant cost: ${(error as Error).message}`
       );
       throw error;
     }

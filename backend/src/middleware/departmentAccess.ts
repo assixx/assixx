@@ -3,9 +3,9 @@
  * Checks if admin users have permission to access specific departments
  */
 
-import { Request, Response, NextFunction } from "express";
-import adminPermissionService from "../services/adminPermission.service.js";
-import { logger } from "../utils/logger.js";
+import { Request, Response, NextFunction } from 'express';
+import adminPermissionService from '../services/adminPermission.service.js';
+import { logger } from '../utils/logger.js';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -28,23 +28,23 @@ interface AuthenticatedRequest extends Request {
 export const checkDepartmentAccess = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   const authReq = req as AuthenticatedRequest;
   const { user } = authReq;
 
   if (!user) {
-    res.status(401).json({ error: "Nicht authentifiziert" });
+    res.status(401).json({ error: 'Nicht authentifiziert' });
     return;
   }
 
   // Root and employees bypass department checks
-  if (user.role === "root" || user.role === "employee") {
+  if (user.role === 'root' || user.role === 'employee') {
     return next();
   }
 
   // For admin users, check department permissions
-  if (user.role === "admin") {
+  if (user.role === 'admin') {
     // Extract department_id from various sources
     let department_id: number | undefined;
 
@@ -72,27 +72,27 @@ export const checkDepartmentAccess = async (
     // If department_id is found, check access
     if (department_id && !isNaN(department_id)) {
       // Determine required permission level based on HTTP method
-      let requiredPermission: "read" | "write" | "delete" = "read";
+      let requiredPermission: 'read' | 'write' | 'delete' = 'read';
 
-      if (req.method === "DELETE") {
-        requiredPermission = "delete";
-      } else if (["POST", "PUT", "PATCH"].includes(req.method)) {
-        requiredPermission = "write";
+      if (req.method === 'DELETE') {
+        requiredPermission = 'delete';
+      } else if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        requiredPermission = 'write';
       }
 
       const hasAccess = await adminPermissionService.hasAccess(
         user.id,
         department_id,
         user.tenant_id,
-        requiredPermission,
+        requiredPermission
       );
 
       if (!hasAccess) {
         logger.warn(
-          `Admin ${user.id} attempted to access department ${department_id} without permission (${requiredPermission})`,
+          `Admin ${user.id} attempted to access department ${department_id} without permission (${requiredPermission})`
         );
         res.status(403).json({
-          error: "Keine Berechtigung für diese Abteilung",
+          error: 'Keine Berechtigung für diese Abteilung',
           details: `Sie benötigen ${requiredPermission}-Rechte für diese Abteilung`,
         });
         return;
@@ -113,24 +113,24 @@ export const checkDepartmentAccess = async (
 export const filterDepartmentResults = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   const authReq = req as AuthenticatedRequest;
   const { user } = authReq;
 
-  if (!user || user.role !== "admin") {
+  if (!user || user.role !== 'admin') {
     return next();
   }
 
   // Type assertion for user with proper check
-  if (!user.id || typeof user.tenant_id !== "number") {
+  if (!user.id || typeof user.tenant_id !== 'number') {
     return next();
   }
 
   // Get departments upfront for the admin
   const { departments } = await adminPermissionService.getAdminDepartments(
     user.id,
-    user.tenant_id,
+    user.tenant_id
   );
   const allowedDeptIds = new Set(departments.map((d) => d.id));
 
@@ -139,23 +139,23 @@ export const filterDepartmentResults = async (
 
   // Override the json method to filter results - type cast required for complex override
   (res as Response & { json: (data: unknown) => Response }).json = function (
-    data: unknown,
+    data: unknown
   ): Response {
     // If data is an array of items with department_id
     if (Array.isArray(data)) {
       // Filter items based on department access
       const filteredData = data.filter((item) => {
-        if (typeof item === "object" && item !== null) {
+        if (typeof item === 'object' && item !== null) {
           const deptItem = item as Record<string, unknown>;
           if (
-            "department_id" in deptItem &&
-            typeof deptItem.department_id === "number"
+            'department_id' in deptItem &&
+            typeof deptItem.department_id === 'number'
           ) {
             return allowedDeptIds.has(deptItem.department_id);
           }
           if (
-            "departmentId" in deptItem &&
-            typeof deptItem.departmentId === "number"
+            'departmentId' in deptItem &&
+            typeof deptItem.departmentId === 'number'
           ) {
             return allowedDeptIds.has(deptItem.departmentId);
           }
@@ -180,11 +180,11 @@ export const filterDepartmentResults = async (
  */
 export const getAllowedDepartmentIds = async (
   userId: number,
-  tenantId: number,
+  tenantId: number
 ): Promise<number[]> => {
   const { departments } = await adminPermissionService.getAdminDepartments(
     userId,
-    tenantId,
+    tenantId
   );
 
   return departments.map((d) => d.id);

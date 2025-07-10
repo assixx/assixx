@@ -7,31 +7,31 @@
  *   description: Document management operations
  */
 
-import express, { Router } from "express";
-import multer from "multer";
-import path from "path";
-import fs from "fs/promises";
+import express, { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
 // Authentication is handled via security middleware
-import { checkDocumentAccess } from "../middleware/documentAccess";
-import { logger } from "../utils/logger";
-import { getErrorMessage } from "../utils/errorHandler";
-import { security } from "../middleware/security";
-import { rateLimiter } from "../middleware/rateLimiter";
+import { checkDocumentAccess } from '../middleware/documentAccess';
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
+import { security } from '../middleware/security';
+import { rateLimiter } from '../middleware/rateLimiter';
 import {
   validateDocumentUpload,
   validatePaginationQuery,
   validateFileUpload,
-} from "../middleware/validators";
-import { AuthenticatedRequest, PaginatedRequest } from "../types/request.types";
-import { successResponse, errorResponse } from "../types/response.types";
-import { typed } from "../utils/routeHandlers";
+} from '../middleware/validators';
+import { AuthenticatedRequest, PaginatedRequest } from '../types/request.types';
+import { successResponse, errorResponse } from '../types/response.types';
+import { typed } from '../utils/routeHandlers';
 
 // Import models and services (now ES modules)
-import Document from "../models/document";
-import User from "../models/user";
-import Feature from "../models/feature";
-import emailService from "../utils/emailService";
-import documentController from "../controllers/document.controller";
+import Document from '../models/document';
+import User from '../models/user';
+import Feature from '../models/feature';
+import emailService from '../utils/emailService';
+import documentController from '../controllers/document.controller';
 
 const router: Router = express.Router();
 
@@ -68,7 +68,7 @@ interface DocumentAccessRequest extends AuthenticatedRequest {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    cb(null, "uploads/documents/");
+    cb(null, 'uploads/documents/');
   },
   filename(_req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname)); // Filename with timestamp
@@ -79,10 +79,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === "application/pdf") {
+    if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error("Nur PDF-Dateien sind erlaubt!"));
+      cb(new Error('Nur PDF-Dateien sind erlaubt!'));
     }
   },
 });
@@ -191,11 +191,11 @@ const upload = multer({
  */
 // Upload document
 router.post(
-  "/upload",
+  '/upload',
   ...security.admin(validateDocumentUpload),
   rateLimiter.upload,
-  upload.single("document"),
-  validateFileUpload(["pdf"], 5 * 1024 * 1024),
+  upload.single('document'),
+  validateFileUpload(['pdf'], 5 * 1024 * 1024),
   typed.auth(async (req, res) => {
     const uploadReq = req as DocumentUploadRequest;
     const adminId = uploadReq.user.id;
@@ -203,7 +203,7 @@ router.post(
 
     try {
       if (!uploadReq.file) {
-        res.status(400).json(errorResponse("Keine Datei hochgeladen", 400));
+        res.status(400).json(errorResponse('Keine Datei hochgeladen', 400));
         return;
       }
 
@@ -226,36 +226,36 @@ router.post(
         team_id: number | null;
         department_id: number | null;
       } = {
-        recipient_type: recipientType || "user",
+        recipient_type: recipientType || 'user',
         user_id: null,
         team_id: null,
         department_id: null,
       };
 
       switch (recipientType) {
-        case "user":
+        case 'user':
           if (!userId) {
-            throw new Error("Kein Benutzer ausgewählt");
+            throw new Error('Kein Benutzer ausgewählt');
           }
           recipientData.user_id = parseInt(userId, 10);
           break;
-        case "team":
+        case 'team':
           if (!teamId) {
-            throw new Error("Kein Team ausgewählt");
+            throw new Error('Kein Team ausgewählt');
           }
           recipientData.team_id = parseInt(teamId, 10);
           break;
-        case "department":
+        case 'department':
           if (!departmentId) {
-            throw new Error("Keine Abteilung ausgewählt");
+            throw new Error('Keine Abteilung ausgewählt');
           }
           recipientData.department_id = parseInt(departmentId, 10);
           break;
-        case "company":
+        case 'company':
           // No specific ID needed for company-wide documents
           break;
         default:
-          throw new Error("Ungültiger Empfänger-Typ");
+          throw new Error('Ungültiger Empfänger-Typ');
       }
 
       // Read file content
@@ -267,13 +267,13 @@ router.post(
         teamId: recipientData.team_id,
         departmentId: recipientData.department_id,
         recipientType: recipientData.recipient_type as
-          | "company"
-          | "user"
-          | "team"
-          | "department",
+          | 'company'
+          | 'user'
+          | 'team'
+          | 'department',
         fileContent,
-        category: category || "other",
-        description: description || "",
+        category: category || 'other',
+        description: description || '',
         year: year ? parseInt(year, 10) : undefined,
         month: month || undefined,
         tenant_id: uploadReq.user.tenant_id,
@@ -283,77 +283,77 @@ router.post(
       await fs.unlink(filePath);
 
       logger.info(
-        `Admin ${adminId} successfully uploaded document ${documentId} for user ${userId}`,
+        `Admin ${adminId} successfully uploaded document ${documentId} for user ${userId}`
       );
 
       // Send email notification if feature is enabled
       try {
         const isEmailFeatureEnabled = await Feature.isEnabledForTenant(
-          "email_notifications",
-          uploadReq.user.tenant_id,
+          'email_notifications',
+          uploadReq.user.tenant_id
         );
 
         if (isEmailFeatureEnabled) {
           const documentInfo = {
             file_name: originalname,
-            category: category || "other",
+            category: category || 'other',
             upload_date: new Date(),
           };
 
           switch (recipientType) {
-            case "user":
+            case 'user':
               // Send to individual user
               if (userId) {
                 const user = await User.findById(
                   parseInt(userId, 10),
-                  uploadReq.user.tenant_id,
+                  uploadReq.user.tenant_id
                 );
                 if (user && user.email) {
                   await emailService.sendNewDocumentNotification(
                     user,
-                    documentInfo,
+                    documentInfo
                   );
                   logger.info(
-                    `Email notification sent to ${user.email} for document ${documentId}`,
+                    `Email notification sent to ${user.email} for document ${documentId}`
                   );
                 }
               }
               break;
 
-            case "team":
+            case 'team':
               // TODO: Send to all team members
               logger.info(
-                `Team notifications not yet implemented for document ${documentId}`,
+                `Team notifications not yet implemented for document ${documentId}`
               );
               break;
 
-            case "department":
+            case 'department':
               // TODO: Send to all department members
               logger.info(
-                `Department notifications not yet implemented for document ${documentId}`,
+                `Department notifications not yet implemented for document ${documentId}`
               );
               break;
 
-            case "company":
+            case 'company':
               // TODO: Send to all company members
               logger.info(
-                `Company-wide notifications not yet implemented for document ${documentId}`,
+                `Company-wide notifications not yet implemented for document ${documentId}`
               );
               break;
           }
         }
       } catch (emailError) {
         logger.warn(
-          `Could not send email notification: ${getErrorMessage(emailError)}`,
+          `Could not send email notification: ${getErrorMessage(emailError)}`
         );
       }
 
       res.status(201).json(
         successResponse({
-          message: "Dokument erfolgreich hochgeladen",
+          message: 'Dokument erfolgreich hochgeladen',
           documentId,
           fileName: originalname,
-        }),
+        })
       );
     } catch (error) {
       logger.error(`Error uploading document: ${getErrorMessage(error)}`);
@@ -364,16 +364,16 @@ router.post(
           await fs.unlink(uploadReq.file.path);
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
           );
         }
       }
 
       res
         .status(500)
-        .json(errorResponse("Fehler beim Hochladen des Dokuments", 500));
+        .json(errorResponse('Fehler beim Hochladen des Dokuments', 500));
     }
-  }),
+  })
 );
 
 // Get documents (admin only)
@@ -473,7 +473,7 @@ router.post(
  *               $ref: '#/components/schemas/Error'
  */
 router.get(
-  "/",
+  '/',
   ...security.admin(),
   validatePaginationQuery,
   typed.auth(async (req, res) => {
@@ -484,8 +484,8 @@ router.get(
         userId,
         year,
         month,
-        page = "1",
-        limit = "20",
+        page = '1',
+        limit = '20',
         archived,
       } = queryReq.query;
 
@@ -494,7 +494,7 @@ router.get(
         userId: userId ? parseInt(userId, 10) : undefined,
         year: year ? parseInt(year, 10) : undefined,
         month,
-        archived: archived === "true",
+        archived: archived === 'true',
         tenant_id: queryReq.user.tenant_id,
       };
 
@@ -514,15 +514,15 @@ router.get(
             hasNext: pageNum * limitNum < total,
             hasPrev: pageNum > 1,
           },
-        }),
+        })
       );
     } catch (error) {
       logger.error(`Error retrieving documents: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Dokumente", 500));
+        .json(errorResponse('Fehler beim Abrufen der Dokumente', 500));
     }
-  }),
+  })
 );
 
 /**
@@ -597,7 +597,7 @@ router.get(
  */
 // Preview document (for iframe display)
 router.get(
-  "/preview/:documentId",
+  '/preview/:documentId',
   ...security.user(),
   checkDocumentAccess({
     allowAdmin: true,
@@ -611,7 +611,7 @@ router.get(
         (await Document.findById(parseInt(req.params.documentId, 10)));
 
       if (!document) {
-        res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
+        res.status(404).json(errorResponse('Dokument nicht gefunden', 404));
         return;
       }
 
@@ -624,11 +624,11 @@ router.get(
       }
 
       const doc = document as DocumentWithContent;
-      const fileName = doc.fileName || doc.file_name || "document.pdf";
+      const fileName = doc.fileName || doc.file_name || 'document.pdf';
 
       // Set headers for inline display (not download)
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
 
       // Handle different possible buffer/content formats
       let contentBuffer: Buffer;
@@ -637,30 +637,30 @@ router.get(
       } else if (doc.file_content) {
         contentBuffer = doc.file_content;
       } else {
-        res.status(500).json(errorResponse("Dokument hat keinen Inhalt", 500));
+        res.status(500).json(errorResponse('Dokument hat keinen Inhalt', 500));
         return;
       }
 
-      res.setHeader("Content-Length", contentBuffer.length.toString());
+      res.setHeader('Content-Length', contentBuffer.length.toString());
 
       // Send file content
       res.send(contentBuffer);
 
       logger.info(
-        `Document ${req.params.documentId} previewed by user ${req.user.id}`,
+        `Document ${req.params.documentId} previewed by user ${req.user.id}`
       );
     } catch (error) {
       logger.error(`Error previewing document: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse("Fehler beim Anzeigen des Dokuments", 500));
+        .json(errorResponse('Fehler beim Anzeigen des Dokuments', 500));
     }
-  }),
+  })
 );
 
 // Download document
 router.get(
-  "/download/:documentId",
+  '/download/:documentId',
   ...security.user(),
   checkDocumentAccess({
     allowAdmin: true,
@@ -674,7 +674,7 @@ router.get(
         (await Document.findById(parseInt(req.params.documentId, 10)));
 
       if (!document) {
-        res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
+        res.status(404).json(errorResponse('Dokument nicht gefunden', 404));
         return;
       }
 
@@ -687,13 +687,13 @@ router.get(
       }
 
       const doc = document as DocumentWithContent;
-      const fileName = doc.fileName || doc.file_name || "document.pdf";
+      const fileName = doc.fileName || doc.file_name || 'document.pdf';
 
       // Set headers for file download
-      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${fileName}"`,
+        'Content-Disposition',
+        `attachment; filename="${fileName}"`
       );
 
       // Handle different possible buffer/content formats
@@ -703,119 +703,119 @@ router.get(
       } else if (doc.file_content) {
         contentBuffer = doc.file_content;
       } else {
-        res.status(500).json(errorResponse("Dokument hat keinen Inhalt", 500));
+        res.status(500).json(errorResponse('Dokument hat keinen Inhalt', 500));
         return;
       }
 
-      res.setHeader("Content-Length", contentBuffer.length.toString());
+      res.setHeader('Content-Length', contentBuffer.length.toString());
 
       // Send file content
       res.send(contentBuffer);
 
       logger.info(
-        `Document ${req.params.documentId} downloaded by user ${req.user.id}`,
+        `Document ${req.params.documentId} downloaded by user ${req.user.id}`
       );
     } catch (error) {
       logger.error(`Error downloading document: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse("Fehler beim Herunterladen des Dokuments", 500));
+        .json(errorResponse('Fehler beim Herunterladen des Dokuments', 500));
     }
-  }),
+  })
 );
 
 // Archive document
 router.put(
-  "/archive/:documentId",
+  '/archive/:documentId',
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
       const success = await Document.archiveDocument(
-        parseInt(req.params.documentId, 10),
+        parseInt(req.params.documentId, 10)
       );
 
       if (!success) {
-        res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
+        res.status(404).json(errorResponse('Dokument nicht gefunden', 404));
         return;
       }
 
       logger.info(
-        `Document ${req.params.documentId} archived by admin ${req.user.id}`,
+        `Document ${req.params.documentId} archived by admin ${req.user.id}`
       );
-      res.json(successResponse({ message: "Dokument erfolgreich archiviert" }));
+      res.json(successResponse({ message: 'Dokument erfolgreich archiviert' }));
     } catch (error) {
       logger.error(`Error archiving document: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse("Fehler beim Archivieren des Dokuments", 500));
+        .json(errorResponse('Fehler beim Archivieren des Dokuments', 500));
     }
-  }),
+  })
 );
 
 // Delete document
 router.delete(
-  "/:documentId",
+  '/:documentId',
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
       const success = await Document.delete(
-        parseInt(req.params.documentId, 10),
+        parseInt(req.params.documentId, 10)
       );
 
       if (!success) {
-        res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
+        res.status(404).json(errorResponse('Dokument nicht gefunden', 404));
         return;
       }
 
       logger.info(
-        `Document ${req.params.documentId} deleted by admin ${req.user.id}`,
+        `Document ${req.params.documentId} deleted by admin ${req.user.id}`
       );
-      res.json(successResponse({ message: "Dokument erfolgreich gelöscht" }));
+      res.json(successResponse({ message: 'Dokument erfolgreich gelöscht' }));
     } catch (error) {
       logger.error(`Error deleting document: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse("Fehler beim Löschen des Dokuments", 500));
+        .json(errorResponse('Fehler beim Löschen des Dokuments', 500));
     }
-  }),
+  })
 );
 
 // NEW ROUTES WITH CONTROLLER
 
 // Get documents with scope-based filtering
 router.get(
-  "/v2",
+  '/v2',
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.getDocuments(req, res);
-  }),
+  })
 );
 
 // Get document by ID
 router.get(
-  "/v2/:id",
+  '/v2/:id',
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.getDocumentById(req, res);
-  }),
+  })
 );
 
 // Download document
 router.get(
-  "/:id/download",
+  '/:id/download',
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.downloadDocument(req, res);
-  }),
+  })
 );
 
 // Mark document as read
 router.post(
-  "/:id/read",
+  '/:id/read',
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.markDocumentAsRead(req, res);
-  }),
+  })
 );
 
 export default router;

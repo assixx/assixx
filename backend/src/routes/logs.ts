@@ -1,10 +1,10 @@
-import express, { Router } from "express";
-import { authenticateToken, authorizeRole } from "../auth.js";
-import { executeQuery } from "../config/database.js";
-import { logger } from "../utils/logger.js";
-import { query, body, validationResult } from "express-validator";
-import bcrypt from "bcryptjs";
-import { ResultSetHeader, RowDataPacket } from "mysql2";
+import express, { Router } from 'express';
+import { authenticateToken, authorizeRole } from '../auth.js';
+import { executeQuery } from '../config/database.js';
+import { logger } from '../utils/logger.js';
+import { query, body, validationResult } from 'express-validator';
+import bcrypt from 'bcryptjs';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 interface LogEntry extends RowDataPacket {
   id: number;
@@ -37,33 +37,33 @@ const router: Router = express.Router();
 
 // Logs abrufen (nur für Root)
 router.get(
-  "/",
+  '/',
   authenticateToken,
-  authorizeRole("root"),
-  query("limit")
+  authorizeRole('root'),
+  query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
-    .withMessage("Limit muss zwischen 1 und 100 liegen"),
-  query("offset")
+    .withMessage('Limit muss zwischen 1 und 100 liegen'),
+  query('offset')
     .optional()
     .isInt({ min: 0 })
-    .withMessage("Offset muss positiv sein"),
-  query("user_id")
+    .withMessage('Offset muss positiv sein'),
+  query('user_id')
     .optional()
     .isInt({ min: 1 })
-    .withMessage("Ungültige User ID"),
-  query("action")
+    .withMessage('Ungültige User ID'),
+  query('action')
     .optional()
     .isString()
-    .withMessage("Action muss ein String sein"),
-  query("entity_type")
+    .withMessage('Action muss ein String sein'),
+  query('entity_type')
     .optional()
     .isString()
-    .withMessage("Entity Type muss ein String sein"),
-  query("timerange")
+    .withMessage('Entity Type muss ein String sein'),
+  query('timerange')
     .optional()
     .isString()
-    .withMessage("Timerange muss ein String sein"),
+    .withMessage('Timerange muss ein String sein'),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -86,52 +86,52 @@ router.get(
       const params: (string | number | null)[] = [];
 
       // WICHTIG: Immer nach tenant_id filtern!
-      conditions.push("al.tenant_id = ?");
+      conditions.push('al.tenant_id = ?');
       params.push(req.user.tenant_id);
 
       if (userId) {
-        conditions.push("al.user_id = ?");
+        conditions.push('al.user_id = ?');
         params.push(userId);
       }
 
       if (action) {
-        conditions.push("al.action = ?");
+        conditions.push('al.action = ?');
         params.push(action);
       }
 
       if (entityType) {
-        conditions.push("al.entity_type = ?");
+        conditions.push('al.entity_type = ?');
         params.push(entityType);
       }
 
       if (timerange) {
-        let dateCondition = "";
+        let dateCondition = '';
 
         switch (timerange) {
-          case "today":
-            dateCondition = "DATE(al.created_at) = CURDATE()";
+          case 'today':
+            dateCondition = 'DATE(al.created_at) = CURDATE()';
             break;
-          case "yesterday":
+          case 'yesterday':
             dateCondition =
-              "DATE(al.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
+              'DATE(al.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
             break;
-          case "week":
-            dateCondition = "al.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          case 'week':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
             break;
-          case "month":
+          case 'month':
             dateCondition =
-              "al.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+              'al.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)';
             break;
-          case "3months":
+          case '3months':
             dateCondition =
-              "al.created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)";
+              'al.created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)';
             break;
-          case "6months":
+          case '6months':
             dateCondition =
-              "al.created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
+              'al.created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)';
             break;
-          case "year":
-            dateCondition = "al.created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+          case 'year':
+            dateCondition = 'al.created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
             break;
         }
 
@@ -141,7 +141,7 @@ router.get(
       }
 
       const whereClause =
-        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       // Logs mit User-Informationen abrufen
       const [logs] = await executeQuery<LogEntry[]>(
@@ -165,7 +165,7 @@ router.get(
         ORDER BY al.created_at DESC
         LIMIT ? OFFSET ?
       `,
-        [...params, limit, offset],
+        [...params, limit, offset]
       );
 
       // Total count für Pagination
@@ -175,7 +175,7 @@ router.get(
         FROM activity_logs al
         ${whereClause}
       `,
-        params,
+        params
       );
 
       const total = countResult[0]?.total || 0;
@@ -185,15 +185,15 @@ router.get(
         ...log,
         details:
           log.details &&
-          typeof log.details === "object" &&
+          typeof log.details === 'object' &&
           Buffer.isBuffer(log.details)
-            ? log.details.toString("utf8")
+            ? log.details.toString('utf8')
             : log.details,
         user_name:
           log.user_name &&
-          typeof log.user_name === "object" &&
+          typeof log.user_name === 'object' &&
           Buffer.isBuffer(log.user_name)
-            ? (log.user_name as Buffer).toString("utf8")
+            ? (log.user_name as Buffer).toString('utf8')
             : log.user_name || null,
       }));
 
@@ -210,40 +210,40 @@ router.get(
         },
       });
     } catch (error) {
-      logger.error("Error fetching logs:", error);
+      logger.error('Error fetching logs:', error);
       res.status(500).json({
         success: false,
-        error: "Fehler beim Abrufen der Logs",
+        error: 'Fehler beim Abrufen der Logs',
       });
     }
-  },
+  }
 );
 
 // Logs löschen (nur für Root)
 router.delete(
-  "/",
+  '/',
   authenticateToken,
-  authorizeRole("root"),
-  query("user_id")
+  authorizeRole('root'),
+  query('user_id')
     .optional()
     .isInt({ min: 1 })
-    .withMessage("Ungültige User ID"),
-  query("action")
+    .withMessage('Ungültige User ID'),
+  query('action')
     .optional()
     .isString()
-    .withMessage("Action muss ein String sein"),
-  query("entity_type")
+    .withMessage('Action muss ein String sein'),
+  query('entity_type')
     .optional()
     .isString()
-    .withMessage("Entity Type muss ein String sein"),
-  query("timerange")
+    .withMessage('Entity Type muss ein String sein'),
+  query('timerange')
     .optional()
     .isString()
-    .withMessage("Timerange muss ein String sein"),
-  body("password")
+    .withMessage('Timerange muss ein String sein'),
+  body('password')
     .optional()
     .isString()
-    .withMessage("Passwort muss ein String sein"),
+    .withMessage('Passwort muss ein String sein'),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -267,7 +267,7 @@ router.delete(
       if (!password) {
         res.status(403).json({
           success: false,
-          error: "Root-Passwort erforderlich für das Löschen aller Logs",
+          error: 'Root-Passwort erforderlich für das Löschen aller Logs',
         });
         return;
       }
@@ -276,33 +276,33 @@ router.delete(
       try {
         const [rootUser] = await executeQuery<RootUser[]>(
           'SELECT password FROM users WHERE id = ? AND role = "root"',
-          [req.user.id],
+          [req.user.id]
         );
 
         if (!rootUser.length) {
           res.status(403).json({
             success: false,
-            error: "Zugriff verweigert",
+            error: 'Zugriff verweigert',
           });
           return;
         }
 
         const passwordMatch = await bcrypt.compare(
           password,
-          rootUser[0].password,
+          rootUser[0].password
         );
         if (!passwordMatch) {
           res.status(403).json({
             success: false,
-            error: "Ungültiges Root-Passwort",
+            error: 'Ungültiges Root-Passwort',
           });
           return;
         }
       } catch (error) {
-        logger.error("Error verifying root password:", error);
+        logger.error('Error verifying root password:', error);
         res.status(500).json({
           success: false,
-          error: "Fehler bei der Passwortverifizierung",
+          error: 'Fehler bei der Passwortverifizierung',
         });
         return;
       }
@@ -314,49 +314,49 @@ router.delete(
       const params: (string | number | null)[] = [];
 
       // WICHTIG: Immer nach tenant_id filtern!
-      conditions.push("tenant_id = ?");
+      conditions.push('tenant_id = ?');
       params.push(req.user.tenant_id);
 
       if (userId) {
-        conditions.push("user_id = ?");
+        conditions.push('user_id = ?');
         params.push(userId);
       }
 
       if (action) {
-        conditions.push("action = ?");
+        conditions.push('action = ?');
         params.push(action);
       }
 
       if (entityType) {
-        conditions.push("entity_type = ?");
+        conditions.push('entity_type = ?');
         params.push(entityType);
       }
 
       if (timerange) {
-        let dateCondition = "";
+        let dateCondition = '';
 
         switch (timerange) {
-          case "today":
-            dateCondition = "DATE(created_at) = CURDATE()";
+          case 'today':
+            dateCondition = 'DATE(created_at) = CURDATE()';
             break;
-          case "yesterday":
+          case 'yesterday':
             dateCondition =
-              "DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
+              'DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)';
             break;
-          case "week":
-            dateCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          case 'week':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
             break;
-          case "month":
-            dateCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+          case 'month':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)';
             break;
-          case "3months":
-            dateCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)";
+          case '3months':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)';
             break;
-          case "6months":
-            dateCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)";
+          case '6months':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)';
             break;
-          case "year":
-            dateCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+          case 'year':
+            dateCondition = 'created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
             break;
         }
 
@@ -366,7 +366,7 @@ router.delete(
       }
 
       const whereClause =
-        conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+        conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       // Delete logs matching the filters
       const [result] = await executeQuery<ResultSetHeader>(
@@ -374,7 +374,7 @@ router.delete(
         DELETE FROM activity_logs
         ${whereClause}
       `,
-        params,
+        params
       );
 
       const deletedCount = result.affectedRows || 0;
@@ -385,24 +385,24 @@ router.delete(
         // Get username for the filter
         const [userInfo] = await executeQuery<UserInfo[]>(
           'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = ?',
-          [userId],
+          [userId]
         );
         filterDescriptions.push(
-          `Benutzer: ${userInfo[0]?.name || `ID ${userId}`}`,
+          `Benutzer: ${userInfo[0]?.name || `ID ${userId}`}`
         );
       }
       if (action) {
         const actionLabels: { [key: string]: string } = {
-          login: "Anmeldungen",
-          logout: "Abmeldungen",
-          create: "Erstellungen",
-          update: "Aktualisierungen",
-          delete: "Löschungen",
-          upload: "Uploads",
-          download: "Downloads",
-          view: "Ansichten",
-          assign: "Zuweisungen",
-          unassign: "Entfernungen",
+          login: 'Anmeldungen',
+          logout: 'Abmeldungen',
+          create: 'Erstellungen',
+          update: 'Aktualisierungen',
+          delete: 'Löschungen',
+          upload: 'Uploads',
+          download: 'Downloads',
+          view: 'Ansichten',
+          assign: 'Zuweisungen',
+          unassign: 'Entfernungen',
         };
         filterDescriptions.push(`Aktion: ${actionLabels[action] || action}`);
       }
@@ -411,36 +411,36 @@ router.delete(
       }
       if (timerange) {
         const timeLabels: { [key: string]: string } = {
-          today: "Heute",
-          yesterday: "Gestern",
-          week: "Letzte 7 Tage",
-          month: "Letzter Monat",
-          "3months": "Letzte 3 Monate",
-          "6months": "Letzte 6 Monate",
-          year: "Letztes Jahr",
+          today: 'Heute',
+          yesterday: 'Gestern',
+          week: 'Letzte 7 Tage',
+          month: 'Letzter Monat',
+          '3months': 'Letzte 3 Monate',
+          '6months': 'Letzte 6 Monate',
+          year: 'Letztes Jahr',
         };
         filterDescriptions.push(
-          `Zeitraum: ${timeLabels[timerange] || timerange}`,
+          `Zeitraum: ${timeLabels[timerange] || timerange}`
         );
       }
 
-      const detailsText = `${deletedCount} Logs gelöscht. Filter: ${filterDescriptions.join(", ")}`;
+      const detailsText = `${deletedCount} Logs gelöscht. Filter: ${filterDescriptions.join(', ')}`;
 
       // Log this deletion action with better details
       await createLog(
         req.user.id,
         req.user.tenant_id,
-        "delete",
-        "logs",
+        'delete',
+        'logs',
         undefined,
         detailsText,
         req.ip,
-        req.get("user-agent"),
+        req.get('user-agent')
       );
 
       logger.info(
         `User ${req.user.id} deleted ${deletedCount} logs with filters:`,
-        { userId, action, entityType, timerange },
+        { userId, action, entityType, timerange }
       );
 
       res.json({
@@ -449,13 +449,13 @@ router.delete(
         message: `${deletedCount} Logs wurden erfolgreich gelöscht.`,
       });
     } catch (error) {
-      logger.error("Error deleting logs:", error);
+      logger.error('Error deleting logs:', error);
       res.status(500).json({
         success: false,
-        error: "Fehler beim Löschen der Logs",
+        error: 'Fehler beim Löschen der Logs',
       });
     }
-  },
+  }
 );
 
 // Log-Eintrag erstellen (interne Funktion)
@@ -467,7 +467,7 @@ export async function createLog(
   entityId?: number,
   details?: string,
   ipAddress?: string,
-  userAgent?: string,
+  userAgent?: string
 ) {
   try {
     await executeQuery(
@@ -485,10 +485,10 @@ export async function createLog(
         details,
         ipAddress,
         userAgent,
-      ],
+      ]
     );
   } catch (error) {
-    logger.error("Error creating log entry:", error);
+    logger.error('Error creating log entry:', error);
   }
 }
 

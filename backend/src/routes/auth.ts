@@ -6,16 +6,16 @@
  *   description: User authentication and authorization endpoints
  */
 
-import express, { Router } from "express";
-import { security } from "../middleware/security";
-import { validationSchemas } from "../middleware/validation";
-import { successResponse, errorResponse } from "../types/response.types";
-import { logger } from "../utils/logger";
-import authController from "../controllers/auth.controller";
-import { typed } from "../utils/routeHandlers";
+import express, { Router } from 'express';
+import { security } from '../middleware/security';
+import { validationSchemas } from '../middleware/validation';
+import { successResponse, errorResponse } from '../types/response.types';
+import { logger } from '../utils/logger';
+import authController from '../controllers/auth.controller';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
-import User from "../models/user";
+import User from '../models/user';
 
 const router: Router = express.Router();
 
@@ -64,7 +64,7 @@ const router: Router = express.Router();
  *         description: Server error
  */
 router.get(
-  "/validate",
+  '/validate',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -80,16 +80,16 @@ router.get(
               tenant_id: req.user.tenant_id,
             },
           },
-          "Token is valid",
-        ),
+          'Token is valid'
+        )
       );
     } catch (error) {
-      logger.error("Token validation error:", error);
+      logger.error('Token validation error:', error);
       res
         .status(500)
-        .json(errorResponse("Fehler bei der Token-Validierung", 500));
+        .json(errorResponse('Fehler bei der Token-Validierung', 500));
     }
-  }),
+  })
 );
 
 /**
@@ -98,14 +98,14 @@ router.get(
  * @access Private
  */
 router.get(
-  "/user",
+  '/user',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       const user = await User.findById(req.user.id, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json(errorResponse("User not found", 404));
+        res.status(404).json(errorResponse('User not found', 404));
         return;
       }
 
@@ -115,10 +115,10 @@ router.get(
 
       res.json(successResponse(userWithoutPassword));
     } catch (error) {
-      console.error("Error in get user profile:", error);
-      res.status(500).json(errorResponse("Server error", 500));
+      console.error('Error in get user profile:', error);
+      res.status(500).json(errorResponse('Server error', 500));
     }
-  }),
+  })
 );
 
 /**
@@ -202,9 +202,9 @@ router.get(
  *         description: Server error
  */
 router.post(
-  "/login",
+  '/login',
   ...security.auth(validationSchemas.login),
-  authController.login,
+  authController.login
 );
 
 /**
@@ -279,9 +279,9 @@ router.post(
  *         description: Server error
  */
 router.post(
-  "/register",
+  '/register',
   ...security.auth(validationSchemas.signup),
-  authController.register,
+  authController.register
 );
 
 /**
@@ -310,7 +310,7 @@ router.post(
  *                   type: string
  *                   example: Logout successful
  */
-router.post("/logout", ...security.user(), typed.auth(authController.logout));
+router.post('/logout', ...security.user(), typed.auth(authController.logout));
 
 /**
  * @route GET /api/auth/logout
@@ -318,11 +318,11 @@ router.post("/logout", ...security.user(), typed.auth(authController.logout));
  * @access Public
  */
 router.get(
-  "/logout",
+  '/logout',
   ...security.public(),
   typed.public((_req, res) => {
-    res.json(successResponse(null, "Logout successful"));
-  }),
+    res.json(successResponse(null, 'Logout successful'));
+  })
 );
 
 export default router;

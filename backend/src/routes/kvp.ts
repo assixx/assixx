@@ -7,21 +7,21 @@
  *   description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess)
  */
 
-import express, { Router } from "express";
-import multer from "multer";
-import path from "path";
-import { authenticateToken } from "../auth.js";
-import kvpController from "../controllers/kvp.controller.js";
+import express, { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import { authenticateToken } from '../auth.js';
+import kvpController from '../controllers/kvp.controller.js';
 
 const router: Router = express.Router();
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    cb(null, "uploads/kvp/");
+    cb(null, 'uploads/kvp/');
   },
   filename(_req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
@@ -30,11 +30,11 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Nur JPG, JPEG und PNG Dateien sind erlaubt!"));
+      cb(new Error('Nur JPG, JPEG und PNG Dateien sind erlaubt!'));
     }
   },
 });
@@ -125,7 +125,7 @@ router.use(authenticateToken);
  *               $ref: '#/components/schemas/Error'
  */
 // KVP Routes
-router.get("/", kvpController.getAll);
+router.get('/', kvpController.getAll);
 
 /**
  * @swagger
@@ -153,7 +153,7 @@ router.get("/", kvpController.getAll);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/categories", kvpController.getCategories);
+router.get('/categories', kvpController.getCategories);
 
 /**
  * @swagger
@@ -200,7 +200,7 @@ router.get("/categories", kvpController.getCategories);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/stats", kvpController.getStatistics);
+router.get('/stats', kvpController.getStatistics);
 
 /**
  * @swagger
@@ -242,7 +242,7 @@ router.get("/stats", kvpController.getStatistics);
  *                   type: string
  *                   example: Vorschlag nicht gefunden
  */
-router.get("/:id", kvpController.getById);
+router.get('/:id', kvpController.getById);
 
 /**
  * @swagger
@@ -314,14 +314,14 @@ router.get("/:id", kvpController.getById);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/", kvpController.create);
+router.post('/', kvpController.create);
 
-router.put("/:id", kvpController.update);
-router.delete("/:id", kvpController.delete);
+router.put('/:id', kvpController.update);
+router.delete('/:id', kvpController.delete);
 
 // Share/unshare routes
-router.post("/:id/share", kvpController.shareSuggestion);
-router.post("/:id/unshare", kvpController.unshareSuggestion);
+router.post('/:id/share', kvpController.shareSuggestion);
+router.post('/:id/unshare', kvpController.unshareSuggestion);
 
 /**
  * @swagger
@@ -444,19 +444,19 @@ router.post("/:id/unshare", kvpController.unshareSuggestion);
  *         description: Suggestion not found
  */
 // Comments
-router.get("/:id/comments", kvpController.getComments);
-router.post("/:id/comments", kvpController.addComment);
+router.get('/:id/comments', kvpController.getComments);
+router.post('/:id/comments', kvpController.addComment);
 
 // Attachments
-router.get("/:id/attachments", kvpController.getAttachments);
+router.get('/:id/attachments', kvpController.getAttachments);
 router.post(
-  "/:id/attachments",
-  upload.array("photos", 5),
-  kvpController.uploadAttachment as unknown as express.RequestHandler, // Multer adds files to request
+  '/:id/attachments',
+  upload.array('photos', 5),
+  kvpController.uploadAttachment as unknown as express.RequestHandler // Multer adds files to request
 ); // Max 5 photos
 router.get(
-  "/attachments/:attachmentId/download",
-  kvpController.downloadAttachment,
+  '/attachments/:attachmentId/download',
+  kvpController.downloadAttachment
 );
 
 export default router;
