@@ -284,9 +284,10 @@ app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
 app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
   // Exempt /api/auth/user from general rate limiting
   if (req.path === '/auth/user' || req.path === '/auth/check') {
-    return next();
+    next();
+    return;
   }
-  return generalLimiter(req, res, next);
+  generalLimiter(req, res, next);
 });
 
 // Auth endpoints have stricter limits, but exempt /api/auth/user
@@ -295,9 +296,10 @@ app.use(
   (req: Request, res: Response, next: NextFunction): void => {
     // Exempt /api/auth/user and /api/auth/check from auth rate limiting
     if (req.path === '/user' || req.path === '/check') {
-      return next();
+      next();
+      return;
     }
-    return authLimiter(req, res, next);
+    authLimiter(req, res, next);
   }
 );
 

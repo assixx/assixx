@@ -36,7 +36,7 @@ export async function connectRedis(): Promise<RedisClientType> {
 
 export async function disconnectRedis() {
   if (redisClient) {
-    await redisClient.disconnect();
+    await redisClient.destroy();
     redisClient = null;
     logger.info('Redis disconnected');
   }

@@ -76,7 +76,7 @@ const accessControlMap: Record<string, Array<'root' | 'admin' | 'employee'>> = {
   '/pages/storage-upgrade': ['root'],
   '/logs': ['root'],
   '/pages/logs': ['root'],
-  
+
   // Admin and Root pages
   '/admin-dashboard': ['admin', 'root'],
   '/pages/admin-dashboard': ['admin', 'root'],
@@ -104,7 +104,7 @@ const accessControlMap: Record<string, Array<'root' | 'admin' | 'employee'>> = {
   '/pages/archived-employees': ['admin', 'root'],
   '/admin-profile': ['admin', 'root'],
   '/pages/admin-profile': ['admin', 'root'],
-  
+
   // Employee pages (accessible by all)
   '/employee-dashboard': ['employee', 'admin', 'root'],
   '/pages/employee-dashboard': ['employee', 'admin', 'root'],
@@ -171,13 +171,13 @@ class UnifiedNavigation {
   public canAccessPage(path: string, role: 'admin' | 'employee' | 'root'): boolean {
     // Normalisiere den Pfad (entferne Query-Parameter und Hash)
     const normalizedPath = path.split('?')[0].split('#')[0];
-    
+
     // Prüfe exakten Pfad
     const allowedRoles = accessControlMap[normalizedPath];
     if (allowedRoles) {
       return allowedRoles.includes(role);
     }
-    
+
     // Wenn Seite nicht in der Map ist, erlaube Zugriff für alle
     // (für öffentliche Seiten wie Login, etc.)
     return true;
@@ -204,10 +204,13 @@ class UnifiedNavigation {
    */
   public enforcePageAccess(): void {
     const currentPath = window.location.pathname;
-    const activeRole = (localStorage.getItem('activeRole') || localStorage.getItem('userRole') || 'employee') as 'admin' | 'employee' | 'root';
-    
+    const activeRole = (localStorage.getItem('activeRole') || localStorage.getItem('userRole') || 'employee') as
+      | 'admin'
+      | 'employee'
+      | 'root';
+
     console.log(`[UnifiedNav] Checking access: Role '${activeRole}' accessing '${currentPath}'`);
-    
+
     if (!this.canAccessPage(currentPath, activeRole)) {
       console.warn(`[UnifiedNav] Access denied: Role '${activeRole}' cannot access '${currentPath}'`);
       const dashboard = this.getDashboardForRole(activeRole);
@@ -230,7 +233,7 @@ class UnifiedNavigation {
     if (currentPath.includes('dashboard')) {
       localStorage.removeItem('openSubmenu');
     }
-    
+
     // Enforce page access based on current role
     this.enforcePageAccess();
 

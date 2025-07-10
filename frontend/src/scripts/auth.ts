@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.info('[AUTH] Session manager initialized');
 
     // Enforce page access based on role - use UnifiedNavigation if available
-    const unifiedNav = (window as any).unifiedNav;
+    const unifiedNav = window.unifiedNav;
     if (unifiedNav && typeof unifiedNav.enforcePageAccess === 'function') {
       unifiedNav.enforcePageAccess();
       console.info('[AUTH] Page access enforced via UnifiedNavigation');

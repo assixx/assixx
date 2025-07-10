@@ -8,7 +8,7 @@ import TenantModel from '../models/tenant';
 import { logger } from '../utils/logger';
 import { TenantInfo } from '../types/tenant.types';
 
-// Request interface is already extended in types/express.d.ts
+// Request interface is already extended in types/express-extensions.d.ts
 
 /**
  * Extrahiert den Tenant aus der Subdomain

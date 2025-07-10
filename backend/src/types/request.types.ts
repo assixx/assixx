@@ -34,7 +34,7 @@ export interface AuthenticatedRequest
   userId?: number; // Convenience property
 }
 
-// Use Express.Multer.File from express.d.ts
+// Use Express.Multer.File from express-extensions.d.ts
 // Using global Express namespace
 // FileUploadRequest is removed - use AuthenticatedRequest directly
 // since file and files are already defined in Express.Request

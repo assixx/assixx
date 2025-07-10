@@ -17,7 +17,6 @@ import { promisify } from 'util';
 // import archiver from 'archiver/index.js';
 import crypto from 'crypto';
 import axios from 'axios';
-import moment from 'moment';
 import { getRedisClient } from '../config/redis';
 import {
   ConnectionWrapper as DbConnectionWrapper,
@@ -1814,7 +1813,8 @@ export class TenantDeletionService {
       const gracePeriodDays = process.env.DELETION_GRACE_PERIOD_DAYS
         ? parseInt(process.env.DELETION_GRACE_PERIOD_DAYS)
         : 30;
-      const scheduledDate = moment().add(gracePeriodDays, 'days').toDate();
+      const scheduledDate = new Date();
+      scheduledDate.setDate(scheduledDate.getDate() + gracePeriodDays);
 
       // 5. Create queue entry with pending approval status and 24h cooling-off
       // TESTPHASE: Cooling-off kann über Umgebungsvariable gesetzt werden
@@ -2652,7 +2652,7 @@ export class TenantDeletionService {
         html: `
           <h2>Ihr Assixx-Konto wird gelöscht</h2>
           <p>Sehr geehrte/r ${admin.first_name} ${admin.last_name},</p>
-          <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${moment(scheduledDate).format('DD.MM.YYYY')}</strong> endgültig gelöscht.</p>
+          <p>Ihr Assixx-Konto wurde zur Löschung markiert und wird am <strong>${scheduledDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</strong> endgültig gelöscht.</p>
           <h3>Was Sie jetzt tun können:</h3>
           <ul>
             <li>Laden Sie Ihre Daten herunter über das <a href="${process.env.APP_URL}/export-data">Export-Tool</a></li>
@@ -2691,9 +2691,8 @@ export class TenantDeletionService {
     ];
 
     for (const reminder of reminders) {
-      const reminderDate = moment(scheduledDate)
-        .subtract(reminder.days, 'days')
-        .toDate();
+      const reminderDate = new Date(scheduledDate);
+      reminderDate.setDate(reminderDate.getDate() - reminder.days);
 
       await execute(
         'INSERT INTO scheduled_tasks (tenant_id, task_type, task_data, scheduled_at) VALUES (?, ?, ?, ?)',
@@ -2741,7 +2740,15 @@ export class TenantDeletionService {
           <ul>
             <li><strong>Firma:</strong> ${tenantName}</li>
             <li><strong>Tenant ID:</strong> ${tenantId}</li>
-            <li><strong>Geplantes Löschdatum:</strong> ${moment().add(30, 'days').format('DD.MM.YYYY')}</li>
+            <li><strong>Geplantes Löschdatum:</strong> ${(() => {
+              const d = new Date();
+              d.setDate(d.getDate() + 30);
+              return d.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
+            })()}</li>
           </ul>
           <h3>Aktion erforderlich:</h3>
           <p>Als zweiter Root-User müssen Sie diese Löschung genehmigen oder ablehnen.</p>
@@ -2838,7 +2845,7 @@ export class TenantDeletionService {
           <h2>Tenant-Löschung eingeleitet</h2>
           <p>Der Tenant <strong>${tenantName}</strong> (ID: ${tenantId}) wurde zur Löschung markiert.</p>
           <p>Gelöscht von: ${deletedByUser.username}</p>
-          <p>Geplantes Löschdatum: ${moment().add(30, 'days').format('DD.MM.YYYY')}</p>
+          <p>Geplantes Löschdatum: ${(() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }); })()}</p>
           <p>Sie können die Löschung im Admin-Dashboard überwachen oder abbrechen.</p>
         `
       });

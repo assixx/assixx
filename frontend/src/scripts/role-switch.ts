@@ -90,7 +90,7 @@ async function switchRole(): Promise<void> {
 
       // Check if the new role can access the current page
       // We'll use the UnifiedNavigation instance to check access
-      const unifiedNav = (window as any).unifiedNav;
+      const unifiedNav = window.unifiedNav;
       if (unifiedNav && typeof unifiedNav.canAccessPage === 'function') {
         if (unifiedNav.canAccessPage(currentPath, newRole)) {
           // If they can access the current page, reload it
@@ -318,7 +318,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
 
       // Check if the new role can access the current page
       // We'll use the UnifiedNavigation instance to check access
-      const unifiedNav = (window as any).unifiedNav;
+      const unifiedNav = window.unifiedNav;
       if (unifiedNav && typeof unifiedNav.canAccessPage === 'function') {
         if (unifiedNav.canAccessPage(currentPath, targetRole)) {
           // If they can access the current page, reload it
