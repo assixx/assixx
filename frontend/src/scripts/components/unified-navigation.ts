@@ -3192,6 +3192,9 @@ const unifiedNavigationCSS = `
     .sidebar-link .label {
         font-weight: 500;
         flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .nav-indicator {
