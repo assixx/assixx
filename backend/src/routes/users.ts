@@ -3,7 +3,7 @@
  * Handles user profile operations and profile picture uploads
  */
 
-import express, { Router, Response } from 'express';
+import express, { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -374,7 +374,7 @@ router.delete(
 router.get(
   '/profile',
   ...security.user(),
-  async (req: AuthenticatedRequest, res: Response) => {
+  typed.auth(async (req, res) => {
     try {
       // Debug logging
       console.log('[DEBUG] /api/users/profile - req.user:', req.user);
@@ -415,7 +415,7 @@ router.get(
         .status(500)
         .json(errorResponse('Fehler beim Abrufen des Profils', 500));
     }
-  }
+  })
 );
 
 // Configure multer for profile picture uploads

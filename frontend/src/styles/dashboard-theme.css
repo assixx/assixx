@@ -452,6 +452,7 @@ body {
 
 .flex-between {
   justify-content: space-between;
+  margin-bottom: 20px;
 }
 
 .flex-center {

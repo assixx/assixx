@@ -239,33 +239,8 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="container main-content">
+      <main class="main-content">
         <div id="breadcrumb-container"></div>
-        <div class="flex flex-between mb-4">
-          <div>
-            <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
-          </div>
-          <div style="display: flex !important; gap: 1rem; align-items: center">
-            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
-              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
-                <i class="fas fa-plus"></i>
-              </button>
-              <span id="zoomLevel" class="zoom-level">100%</span>
-              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
-                <i class="fas fa-minus"></i>
-              </button>
-            </div>
-            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
-              <i class="fas fa-plus me-2"></i>
-              Neuer Eintrag
-            </button>
-            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
-              <i class="fas fa-paperclip me-2"></i>
-              Bild/PDF anheften
-            </button>
-          </div>
-        </div>
-
         <!-- Filterleiste -->
         <div class="card mb-4">
           <div class="card-header" style="cursor: pointer" id="filterToggle">
@@ -321,6 +296,29 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Controls unter der Filterleiste -->
+        <div class="flex flex-between mb-4">
+          <div style="display: flex !important; gap: 1rem; align-items: center">
+            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
+              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
+                <i class="fas fa-plus"></i>
+              </button>
+              <span id="zoomLevel" class="zoom-level">100%</span>
+              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
+              <i class="fas fa-plus me-2"></i>
+              Neuer Eintrag
+            </button>
+            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
+              <i class="fas fa-paperclip me-2"></i>
+              Bild/PDF anheften
+            </button>
           </div>
         </div>
 
@@ -842,6 +840,17 @@
       }
       #filterToggle {
         transition: background 0.3s ease;
+      }
+      
+      /* Override breadcrumb alignment for blackboard page */
+      body #breadcrumb-container + .card,
+      body #breadcrumb-container + * {
+        margin-top: -15px !important;
+      }
+      
+      /* Breadcrumb linksbündig machen für blackboard */
+      .breadcrumb {
+        padding-left: 0 !important;
       }
     </style>
     <!-- Scripts with dynamic loading to prevent race condition -->

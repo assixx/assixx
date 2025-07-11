@@ -30,7 +30,8 @@ main.container.main-content.sidebar-collapsed {
 
 /* Pinnwand Container */
 .blackboard-container {
-  width: 99%;
+  width: 101%;
+  margin-left: -13px;
   min-height: calc(100vh - 120px);
   background:
     linear-gradient(45deg, #0000 25%, transparent 0), linear-gradient(-45deg, #1f1f1f 25%, transparent 0),

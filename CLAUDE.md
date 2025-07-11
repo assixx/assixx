@@ -20,6 +20,7 @@
 - BEI UNSICHERHEIT nachfragen - besonders bei kritischen Änderungen
 - BEHUTSAM vorgehen - lieber zweimal prüfen als einmal bereuen
 - VERMEIDE error  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+- TUE genau was ich sage und frag immer erst wenn du mehr machen sollst als verlangt.
 ## START-TRIGGER
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
