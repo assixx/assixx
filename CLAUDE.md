@@ -19,7 +19,7 @@
 - IMMER langfristig denken - keine Quick-Fixes die später Probleme machen
 - BEI UNSICHERHEIT nachfragen - besonders bei kritischen Änderungen
 - BEHUTSAM vorgehen - lieber zweimal prüfen als einmal bereuen
-
+- VERMEIDE error  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
 ## START-TRIGGER
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
