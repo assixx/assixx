@@ -17,6 +17,28 @@ import { RowDataPacket } from 'mysql2';
 
 const router: Router = express.Router();
 
+// Allowed fields for user profile update
+interface UserUpdateFields {
+  email?: string;
+  company?: string;
+  notes?: string;
+  first_name?: string;
+  last_name?: string;
+  age?: number;
+  iban?: string;
+  department_id?: number;
+  position?: string;
+  phone?: string;
+  landline?: string;
+  employee_number?: string;
+  address?: string;
+  birthday?: Date;
+  hire_date?: Date;
+  emergency_contact?: string;
+  profile_picture?: string;
+  availability_status?: 'available' | 'unavailable' | 'vacation' | 'sick';
+}
+
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
   destination: async (_req, _file, cb) => {
@@ -165,7 +187,7 @@ router.put('/profile', authenticateToken, async (req, res): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
     const { id } = authReq.user;
-    const updates = { ...(req.body as Record<string, any>) };
+    const updates = { ...(req.body as UserUpdateFields) };
 
     // Don't allow updating critical fields
     if ('id' in updates) delete updates.id;

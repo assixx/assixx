@@ -3,7 +3,7 @@
  * Handles user profile operations and profile picture uploads
  */
 
-import express, { Router } from 'express';
+import express, { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
@@ -371,46 +371,52 @@ router.delete(
  *         description: Server error
  */
 // Get logged-in user's profile data
-router.get('/profile', ...security.user(), async (req: any, res: any) => {
-  try {
-    // Debug logging
-    console.log('[DEBUG] /api/users/profile - req.user:', req.user);
-    console.log('[DEBUG] /api/users/profile - req.user.id:', req.user?.id);
-    console.log(
-      '[DEBUG] /api/users/profile - typeof req.user.id:',
-      typeof req.user?.id
-    );
+router.get(
+  '/profile',
+  ...security.user(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      // Debug logging
+      console.log('[DEBUG] /api/users/profile - req.user:', req.user);
+      console.log('[DEBUG] /api/users/profile - req.user.id:', req.user?.id);
+      console.log(
+        '[DEBUG] /api/users/profile - typeof req.user.id:',
+        typeof req.user?.id
+      );
 
-    // Use the same logic as /me route which works
-    if (!req.user || !req.user.id) {
-      logger.error('No user object or user.id in request');
-      res.status(401).json({ message: 'User not authenticated' });
-      return;
+      // Use the same logic as /me route which works
+      if (!req.user || !req.user.id) {
+        logger.error('No user object or user.id in request');
+        res.status(401).json({ message: 'User not authenticated' });
+        return;
+      }
+
+      const userId = parseInt(req.user.id.toString(), 10);
+      const tenantId = req.user.tenant_id;
+
+      console.log('[DEBUG] Parsed userId:', userId, 'tenantId:', tenantId);
+
+      const user = await User.findById(userId, tenantId);
+      if (!user) {
+        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        return;
+      }
+
+      // Remove password from response
+      const { password: _password, ...userProfile } = user;
+
+      logger.info(`User ${userId} retrieved their profile`);
+      res.json(successResponse(userProfile));
+    } catch (error) {
+      logger.error(
+        `Error retrieving profile for user: ${getErrorMessage(error)}`
+      );
+      res
+        .status(500)
+        .json(errorResponse('Fehler beim Abrufen des Profils', 500));
     }
-
-    const userId = parseInt(req.user.id.toString(), 10);
-    const tenantId = req.user.tenant_id;
-
-    console.log('[DEBUG] Parsed userId:', userId, 'tenantId:', tenantId);
-
-    const user = await User.findById(userId, tenantId);
-    if (!user) {
-      res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
-      return;
-    }
-
-    // Remove password from response
-    const { password: _password, ...userProfile } = user;
-
-    logger.info(`User ${userId} retrieved their profile`);
-    res.json(successResponse(userProfile));
-  } catch (error) {
-    logger.error(
-      `Error retrieving profile for user: ${getErrorMessage(error)}`
-    );
-    res.status(500).json(errorResponse('Fehler beim Abrufen des Profils', 500));
   }
-});
+);
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({

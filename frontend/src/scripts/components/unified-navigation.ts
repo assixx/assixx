@@ -3565,11 +3565,19 @@ const setupPeriodicUpdates = () => {
 // Call setup after initialization
 setTimeout(setupPeriodicUpdates, 100);
 
+// Extend Window interface for global functions
+declare global {
+  interface Window {
+    UnifiedNavigation: typeof UnifiedNavigation;
+    dismissRoleSwitchBanner: () => void;
+  }
+}
+
 // Export to window for legacy support
 window.UnifiedNavigation = UnifiedNavigation;
 
 // Global function to dismiss role switch banner
-(window as any).dismissRoleSwitchBanner = function () {
+window.dismissRoleSwitchBanner = function () {
   const banner = document.getElementById('role-switch-warning-banner');
   if (banner) {
     banner.style.display = 'none';
