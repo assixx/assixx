@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
 
@@ -43,7 +44,7 @@
       /* Layout Container - Standard Assixx Layout */
       .layout-container {
         display: flex;
-        margin-top: 60px; /* Header height */
+        min-height: 100vh;
       }
 
       /* Main Content Area - innerhalb layout-container */
@@ -72,6 +73,7 @@
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         width: 100%;
         box-sizing: border-box;
+        margin-top: -14px !important;
       }
 
       .current-plan-info {

@@ -101,7 +101,7 @@ body {
 
 /* Container */
 .container {
-  /*max-width: 1200px;*/
+  /*max-width: 1200px;*/ /* Commented out - width handled by parent containers */
   margin: 0 auto;
   padding: var(--spacing-lg);
 }
@@ -259,7 +259,7 @@ body {
 .table {
   width: 100%;
   border-collapse: collapse;
-  /*background-color: var(--background-light);*/
+  /*background-color: var(--background-light);*/ /* Commented - tables inherit background */
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -437,9 +437,11 @@ body {
 .mb-3 {
   margin-bottom: var(--spacing-md);
 }
+/* REDUNDANT - Empty class with no function
 .mb-4 {
-  /*margin-bottom: var(--spacing-lg);*/
+  margin-bottom: var(--spacing-lg);
 }
+*/
 .mb-5 {
   margin-bottom: var(--spacing-xl);
 }
@@ -649,6 +651,8 @@ body {
   position: relative;
 }*/
 
+/* NOTE: sidebar-link base is commented out above, but these related styles
+   are still used in some pages (3 occurrences found) */
 .sidebar-link:hover {
   color: var(--text-primary);
   background-color: rgba(255, 255, 255, 0.05);
@@ -685,10 +689,12 @@ body {
   transition: margin-left 0.3s ease;
 }
 
-/*.content-section {
+/* REDUNDANT - content-section not actively used
+.content-section {
   max-width: 1200px;
   margin: 0 auto;
-}*/
+}
+*/
 
 /* Employee deletion dialog styles */
 .alert {

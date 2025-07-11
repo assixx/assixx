@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/styles/calendar.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
 
       /* Glassmorphismus Design-Standards */
 
@@ -328,6 +329,11 @@
       .search-input:not(:placeholder-shown) ~ .search-button {
         color: var(--primary-color);
       }
+      
+      /* Override breadcrumb alignment for calendar page */
+      #breadcrumb-container + .card {
+        margin-top: -15px !important;
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -342,28 +348,24 @@
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
-        <div class="flex flex-between mb-4">
-          <div>
-            <p class="text-secondary">Alle Termine und Veranstaltungen auf einen Blick</p>
-          </div>
-          <div class="flex gap-2">
-            <div class="btn-group view-selector">
-              <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
-              <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
-              <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
-              <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
-            </div>
-            <button id="newEventBtn" class="btn btn-primary">
-              <i class="fas fa-plus"></i>
-              Neuer Termin
-            </button>
-          </div>
-        </div>
-
         <!-- Filterleiste -->
         <div class="card mb-4">
           <div class="card-header">
-            <h3 class="card-title">Filter & Anzeige</h3>
+            <div class="flex flex-between align-center">
+              <h3 class="card-title">Filter & Anzeige</h3>
+              <div class="flex gap-2">
+                <div class="btn-group view-selector">
+                  <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
+                  <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
+                  <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
+                  <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
+                </div>
+                <button id="newEventBtn" class="btn btn-primary">
+                  <i class="fas fa-plus"></i>
+                  Neuer Termin
+                </button>
+              </div>
+            </div>
           </div>
           <div class="card-body">
             <div class="flex gap-4 flex-wrap">

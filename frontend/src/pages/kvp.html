@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       @import url('/styles/user-info-update.css');
 
       /* Dramatischer Hintergrund-Gradient */
@@ -834,6 +835,11 @@
           max-width: 95%;
         }
       }
+      
+      /* Override breadcrumb alignment for KVP page */
+      #breadcrumb-container + .admin-info-box {
+        margin-top: -15px !important;
+      }
     </style>
   </head>
 
@@ -845,10 +851,6 @@
     <div class="layout-container">
       <main class="main-content">
         <div id="breadcrumb-container"></div>
-        <!-- Page Header -->
-        <div class="page-header">
-          <p>Kontinuierlicher Verbesserungsprozess</p>
-        </div>
 
         <!-- Admin Info Box -->
         <div class="admin-info-box" id="adminInfoBox" style="display: none">

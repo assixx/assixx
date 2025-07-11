@@ -20,6 +20,7 @@
     </script>
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Fix for sidebar title alignment */
@@ -62,6 +63,17 @@
         background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
+      }
+
+      /* Align ALL content sections with sidebar user-info-card 
+         Admin-dashboard needs positive margin unlike other pages */
+      body .content-section {
+        margin-top: 25px !important;
+      }
+      
+      /* Override the universal rule from breadcrumb-alignment.css */
+      body #breadcrumb-container + .content-section {
+        margin-top: 25px !important;
       }
 
       /* Glassmorphismus für Stat-Cards */
@@ -800,11 +812,13 @@
 
         <!-- Employees Section -->
         <section id="employees-section" class="content-section" style="display: none">
-          <button class="btn btn-primary mb-3" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Mitarbeiterübersicht</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Alle Mitarbeiter verwalten und bearbeiten</p>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h2 class="card-title">Mitarbeiterübersicht</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Alle Mitarbeiter verwalten und bearbeiten</p>
+              </div>
+              <button class="btn btn-primary" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
             </div>
             <div class="flex-between mb-3">
               <div class="filter-buttons">
@@ -892,11 +906,13 @@
 
         <!-- Teams Section -->
         <section id="teams-section" class="content-section" style="display: none">
-          <button class="btn btn-primary mb-3" onclick="showTeamModal()">Neues Team</button>
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Teamübersicht</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Teams und Mitgliedschaften verwalten</p>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h2 class="card-title">Teamübersicht</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Teams und Mitgliedschaften verwalten</p>
+              </div>
+              <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
             </div>
             <div class="table-responsive">
               <table class="table">

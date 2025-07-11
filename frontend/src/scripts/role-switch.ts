@@ -74,6 +74,11 @@ async function switchRole(): Promise<void> {
     // Update currentView immediately
     currentView = data.user.activeRole;
 
+    // Clear all role switch banner dismissal states when switching roles
+    ['root', 'admin', 'employee'].forEach((role) => {
+      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+    });
+
     // Update UI immediately before redirect
     updateRoleUI();
 
@@ -83,33 +88,17 @@ async function switchRole(): Promise<void> {
     // Create toast notification
     showToast(message, 'success');
 
-    // Redirect to appropriate dashboard after short delay
+    // Always redirect to the appropriate dashboard
     setTimeout(() => {
-      const currentPath = window.location.pathname;
       const newRole = data.user.activeRole;
 
-      // Check if the new role can access the current page
-      // We'll use the UnifiedNavigation instance to check access
-      const unifiedNav = window.unifiedNav;
-      if (unifiedNav && typeof unifiedNav.canAccessPage === 'function') {
-        if (unifiedNav.canAccessPage(currentPath, newRole)) {
-          // If they can access the current page, reload it
-          window.location.reload();
-        } else {
-          // If they cannot access the current page, redirect to their dashboard
-          const dashboardUrl = unifiedNav.getDashboardForRole(newRole);
-          console.log(`Role ${newRole} cannot access ${currentPath}, redirecting to ${dashboardUrl}`);
-          window.location.href = dashboardUrl;
-        }
+      // Direct redirect to dashboard based on role
+      if (newRole === 'admin') {
+        window.location.href = '/admin-dashboard';
+      } else if (newRole === 'employee') {
+        window.location.href = '/employee-dashboard';
       } else {
-        // Fallback: Always redirect to dashboard
-        if (newRole === 'admin') {
-          window.location.href = '/admin-dashboard';
-        } else if (newRole === 'employee') {
-          window.location.href = '/employee-dashboard';
-        } else {
-          window.location.href = '/root-dashboard';
-        }
+        window.location.href = '/root-dashboard';
       }
     }, 1000);
   } catch (error) {
@@ -308,36 +297,24 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     // Update currentView immediately
     currentView = data.user.activeRole;
 
+    // Clear all role switch banner dismissal states when switching roles
+    ['root', 'admin', 'employee'].forEach((role) => {
+      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+    });
+
     // Show success message
     const message = `Wechsel zur ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
     showToast(message, 'success');
 
-    // Redirect to appropriate dashboard after short delay
+    // Always redirect to the appropriate dashboard
     setTimeout(() => {
-      const currentPath = window.location.pathname;
-
-      // Check if the new role can access the current page
-      // We'll use the UnifiedNavigation instance to check access
-      const unifiedNav = window.unifiedNav;
-      if (unifiedNav && typeof unifiedNav.canAccessPage === 'function') {
-        if (unifiedNav.canAccessPage(currentPath, targetRole)) {
-          // If they can access the current page, reload it
-          window.location.reload();
-        } else {
-          // If they cannot access the current page, redirect to their dashboard
-          const dashboardUrl = unifiedNav.getDashboardForRole(targetRole);
-          console.log(`Role ${targetRole} cannot access ${currentPath}, redirecting to ${dashboardUrl}`);
-          window.location.href = dashboardUrl;
-        }
-      } else {
-        // Fallback: Always redirect to dashboard
-        if (targetRole === 'root') {
-          window.location.href = '/root-dashboard';
-        } else if (targetRole === 'admin') {
-          window.location.href = '/admin-dashboard';
-        } else if (targetRole === 'employee') {
-          window.location.href = '/employee-dashboard';
-        }
+      // Direct redirect to dashboard based on target role
+      if (targetRole === 'root') {
+        window.location.href = '/root-dashboard';
+      } else if (targetRole === 'admin') {
+        window.location.href = '/admin-dashboard';
+      } else if (targetRole === 'employee') {
+        window.location.href = '/employee-dashboard';
       }
     }, 1000);
   } catch (error) {

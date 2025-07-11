@@ -1005,10 +1005,14 @@ class UnifiedNavigation {
     // Determine which logo to use based on sidebar collapsed state
     const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
 
-    // Check if user has switched roles
+    // Check if user has switched roles and banner hasn't been dismissed
     const isRoleSwitched = storedUserRole !== activeRole && activeRole !== null;
-    const warningBanner = isRoleSwitched
-      ? `
+    const bannerDismissedKey = `roleSwitchBannerDismissed_${activeRole}`;
+    const isBannerDismissed = localStorage.getItem(bannerDismissedKey) === 'true';
+
+    const warningBanner =
+      isRoleSwitched && !isBannerDismissed
+        ? `
       <!-- Role Switch Warning Banner -->
       <div class="role-switch-banner" id="role-switch-warning-banner">
         <div class="role-switch-banner-content">
@@ -1016,7 +1020,7 @@ class UnifiedNavigation {
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
           </svg>
           <span>Sie agieren derzeit als <strong>${activeRole === 'employee' ? 'Mitarbeiter' : activeRole === 'admin' ? 'Admin' : 'Root'}</strong>. Ihre ursprüngliche Rolle ist <strong>${storedUserRole === 'root' ? 'Root' : storedUserRole === 'admin' ? 'Admin' : 'Mitarbeiter'}</strong>.</span>
-          <button class="role-switch-banner-close" onclick="document.getElementById('role-switch-warning-banner').style.display='none';" title="Banner schließen">
+          <button class="role-switch-banner-close" onclick="window.dismissRoleSwitchBanner();" title="Banner schließen">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
             </svg>
@@ -1024,7 +1028,7 @@ class UnifiedNavigation {
         </div>
       </div>
     `
-      : '';
+        : '';
 
     return `
       <!-- Header -->
@@ -2507,7 +2511,7 @@ const unifiedNavigationCSS = `
     }
 
     /* Adjust sidebar and main content when banner is visible */
-    .role-switch-banner ~ .sidebar {
+    .role-switch-banner:not([style*="display: none"]) ~ .sidebar {
         top: 100px !important; /* 60px header + 40px banner */
         height: calc(100vh - 100px) !important;
     }
@@ -3563,6 +3567,28 @@ setTimeout(setupPeriodicUpdates, 100);
 
 // Export to window for legacy support
 window.UnifiedNavigation = UnifiedNavigation;
+
+// Global function to dismiss role switch banner
+(window as any).dismissRoleSwitchBanner = function () {
+  const banner = document.getElementById('role-switch-warning-banner');
+  if (banner) {
+    banner.style.display = 'none';
+
+    // Save dismissal state
+    const activeRole = localStorage.getItem('activeRole');
+    if (activeRole) {
+      const bannerDismissedKey = `roleSwitchBannerDismissed_${activeRole}`;
+      localStorage.setItem(bannerDismissedKey, 'true');
+    }
+
+    // Reset sidebar position
+    const sidebar = document.querySelector('.sidebar') as HTMLElement;
+    if (sidebar) {
+      sidebar.style.top = '';
+      sidebar.style.height = '';
+    }
+  }
+};
 
 // Export for ES modules
 export default UnifiedNavigation;

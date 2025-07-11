@@ -1,0 +1,104 @@
+/**
+ * Breadcrumb Alignment Styles
+ * Aligns the first element after breadcrumb-container with -21px margin-top
+ */
+
+/* All pages with .container after breadcrumb (except root-dashboard) */
+#breadcrumb-container + .container {
+  margin-top: -34px !important;
+}
+
+
+/* Blackboard page */
+#breadcrumb-container + .flex {
+  margin-top: -34px !important;
+}
+
+/* Document upload page */
+#breadcrumb-container + #upload-success {
+  margin-top: -34px !important;
+}
+
+/* Document pages (company, department, payroll, personal, team) - no direct next element */
+/* These pages have breadcrumb as last element in main, so no adjustment needed */
+
+/* Document search page */
+#breadcrumb-container + .page-header {
+  margin-top: -34px !important;
+}
+
+/* Survey admin page */
+#breadcrumb-container + .survey-container {
+  margin-top: -34px !important;
+}
+
+/* Survey details page */
+#breadcrumb-container + #content-area {
+  margin-top: -34px !important;
+}
+
+/* KVP page */
+#breadcrumb-container + .page-header {
+  margin-top: -15px !important;
+}
+
+/* KVP detail page */
+#breadcrumb-container + .detail-container {
+  margin-top: -34px !important;
+}
+
+/* Shifts page */
+#breadcrumb-container + .shift-planning-container {
+  margin-top: -15px !important;
+}
+
+/* Calendar page */
+#breadcrumb-container + .flex {
+  margin-top: -15px !important;
+}
+
+/* Profile page */
+#breadcrumb-container + .profile-container {
+  margin-top: -34px !important;
+}
+
+/* Account settings page */
+#breadcrumb-container + .settings-card {
+  margin-top: -34px !important;
+}
+
+/* Storage upgrade page */
+#breadcrumb-container + .current-usage {
+  margin-top: -34px !important;
+}
+
+/* Tenant deletion status page */
+#breadcrumb-container + .card {
+  margin-top: -34px !important;
+}
+
+/* Root features page - special case needs less margin */
+#breadcrumb-container + .plan-header {
+  margin-top: -14px !important;
+}
+
+/* Root profile and admin profile pages */
+#breadcrumb-container + .profile-container {
+  margin-top: -34px !important;
+}
+
+/* Archived employees page */
+#breadcrumb-container + .card {
+  margin-top: -34px !important;
+}
+
+/* General fallback for any direct sibling after breadcrumb */
+#breadcrumb-container + * {
+  margin-top: -34px !important;
+}
+
+/* Special override for documents-search page - must come after general rule */
+.documents-section ~ * #breadcrumb-container + .page-header,
+#search-container ~ * #breadcrumb-container + .page-header {
+  margin-top: -19px !important;
+}

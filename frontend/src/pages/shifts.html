@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -768,6 +769,12 @@
           flex-direction: column;
           gap: 10px;
         }
+      }
+      
+      /* Override breadcrumb alignment for shifts page */
+      body #breadcrumb-container + .shift-planning-container,
+      body #breadcrumb-container + * {
+        margin-top: -15px !important;
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />

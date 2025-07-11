@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Feature Management - Assixx</title>
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -26,6 +27,11 @@
         background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
+      }
+
+      /* Align first container with sidebar user-info-card */
+      .container {
+        margin-top: -34px !important;
       }
 
       /* Glassmorphismus für Cards */

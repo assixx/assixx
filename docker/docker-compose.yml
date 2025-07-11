@@ -56,6 +56,7 @@ services:
       # Live-Reload Volumes für Entwicklung
       - ../backend:/app/backend:delegated
       - ../frontend:/app/frontend:delegated
+      - ../scripts:/app/scripts:delegated
       - ../package.json:/app/package.json:delegated
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
@@ -129,6 +130,7 @@ services:
       - '3001:3001'  # Health check port
     volumes:
       - ../backend:/app/backend:delegated
+      - ../scripts:/app/scripts:delegated
       - ../package.json:/app/package.json:delegated
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated

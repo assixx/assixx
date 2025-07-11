@@ -24,6 +24,7 @@ RUN pnpm install --frozen-lockfile
 
 # Scripts directory für ESM support
 COPY scripts/package.json ./scripts/
+COPY scripts/fix-esm-imports.js ./scripts/
 
 # Der Rest wird über Volumes gemountet
 
