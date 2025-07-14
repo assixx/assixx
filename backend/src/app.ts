@@ -261,10 +261,22 @@ app.use(
       console.warn(
         `[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`,
       );
+      
+      // Escape filename to prevent XSS
+      const escapedFilename = filename
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t')
+        .replace(/</g, '\\x3C')
+        .replace(/>/g, '\\x3E');
+      
       res
         .type("application/javascript")
         .send(
-          `// Empty module for ${filename}\nconsole.warn('Module ${filename} not found, loaded empty placeholder');`,
+          `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`,
         );
     }
   },

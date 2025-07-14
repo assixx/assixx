@@ -4,12 +4,21 @@
 
 import express, { Router } from "express";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { logger } from "../utils/logger";
 import { getErrorMessage } from "../utils/errorHandler";
-import { rateLimiter } from "../middleware/rateLimiter";
 
 // Import models (keeping require pattern for compatibility)
 import User from "../models/user";
+
+// Explicit rate limiter for unsubscribe endpoint
+const unsubscribeRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per IP
+  message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router: Router = express.Router();
 
@@ -40,7 +49,7 @@ interface NotificationSettings {
  * GET /unsubscribe
  * Verarbeitet Abmeldungen von E-Mail-Benachrichtigungen
  */
-router.get("/", rateLimiter.public, async (req, res): Promise<void> => {
+router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
   try {
     const token = req.query.token as string;
 

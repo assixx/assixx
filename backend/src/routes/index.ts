@@ -34,6 +34,7 @@ import availabilityRoutes from "./availability";
 import adminPermissionsRoutes from "./admin-permissions.js";
 import departmentGroupsRoutes from "./department-groups.js";
 import logsRoutes from "./logs.js";
+import unsubscribeRoutes from "./unsubscribe";
 
 // API Version prefix
 const API_PREFIX = "/api";
@@ -42,6 +43,7 @@ const API_PREFIX = "/api";
 console.log("[DEBUG] Mounting auth routes at /api/auth");
 router.use("/api/auth", authRoutes);
 router.use("/api", signupRoutes); // Signup routes at /api/signup
+router.use("/unsubscribe", unsubscribeRoutes); // Unsubscribe routes at /unsubscribe
 
 // Protected routes with prefix
 router.use(`${API_PREFIX}/users`, userRoutes);
