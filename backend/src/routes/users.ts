@@ -12,7 +12,6 @@ import { security } from '../middleware/security';
 import { createValidation } from '../middleware/validation';
 import { param } from 'express-validator';
 import { logger } from '../utils/logger';
-import { rateLimiter } from '../middleware/rateLimiter';
 
 // Import User model (keeping require pattern for compatibility)
 import User, { DbUser } from '../models/user';

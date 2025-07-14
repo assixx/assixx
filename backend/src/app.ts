@@ -285,7 +285,7 @@ app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
 app.use(generalLimiter);
 
 // Additional rate limiting for API routes with exemptions
-app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
+app.use('/api', (req: Request, _res: Response, next: NextFunction): void => {
   // Exempt /api/auth/user from additional API rate limiting
   if (req.path === '/auth/user' || req.path === '/auth/check') {
     next();
