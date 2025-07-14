@@ -1625,24 +1625,51 @@ class ChatClient {
 
       const isImage = file.type.startsWith('image/');
 
-      preview.innerHTML = `
-        <div class="file-icon">
-          ${isImage ? `<img src="${URL.createObjectURL(file)}" alt="${this.escapeHtml(file.name)}" />` : '<i class="fas fa-file"></i>'}
-        </div>
-        <div class="file-info">
-          <div class="file-name">${this.escapeHtml(file.name)}</div>
-          <div class="file-size">${this.formatFileSize(file.size)}</div>
-        </div>
-        <button class="remove-file" data-index="${index}">
-          <i class="fas fa-times"></i>
-        </button>
-      `;
-
-      preview.querySelector('.remove-file')?.addEventListener('click', (e) => {
+      // Create preview elements safely to prevent XSS
+      const fileIconDiv = document.createElement('div');
+      fileIconDiv.className = 'file-icon';
+      
+      if (isImage) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = file.name;
+        fileIconDiv.appendChild(img);
+      } else {
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-file';
+        fileIconDiv.appendChild(icon);
+      }
+      
+      const fileInfoDiv = document.createElement('div');
+      fileInfoDiv.className = 'file-info';
+      
+      const fileName = document.createElement('div');
+      fileName.className = 'file-name';
+      fileName.textContent = file.name;
+      
+      const fileSize = document.createElement('div');
+      fileSize.className = 'file-size';
+      fileSize.textContent = this.formatFileSize(file.size);
+      
+      fileInfoDiv.appendChild(fileName);
+      fileInfoDiv.appendChild(fileSize);
+      
+      const removeButton = document.createElement('button');
+      removeButton.className = 'remove-file';
+      removeButton.dataset.index = index.toString();
+      const removeIcon = document.createElement('i');
+      removeIcon.className = 'fas fa-times';
+      removeButton.appendChild(removeIcon);
+      
+      removeButton.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement | null;
         const fileIndex = parseInt(target?.dataset.index || '0');
         this.removeFile(fileIndex);
       });
+      
+      preview.appendChild(fileIconDiv);
+      preview.appendChild(fileInfoDiv);
+      preview.appendChild(removeButton);
 
       previewContainer.appendChild(preview);
     });

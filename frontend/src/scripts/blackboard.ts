@@ -6,6 +6,7 @@
 import type { User } from '../types/api.types';
 import { getAuthToken, showSuccess, showError } from './auth';
 import { closeModal as dashboardCloseModal } from './dashboard-scripts';
+import { escapeHtml } from './common';
 
 interface BlackboardEntry {
   id: number;
@@ -1683,12 +1684,16 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
-      // Display image
-      previewContent.innerHTML = `
-        <div class="text-center">
-          <img src="${blobUrl}" alt="${fileName}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        </div>
-      `;
+      // Display image safely to prevent XSS
+      previewContent.innerHTML = '';
+      const centerDiv = document.createElement('div');
+      centerDiv.className = 'text-center';
+      const img = document.createElement('img');
+      img.src = blobUrl;
+      img.alt = fileName;
+      img.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);';
+      centerDiv.appendChild(img);
+      previewContent.appendChild(centerDiv);
 
       // Clean up blob URL when modal is closed
       const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
@@ -1757,14 +1762,27 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
         btn.addEventListener('click', () => URL.revokeObjectURL(blobUrl), { once: true });
       });
     } else {
-      // Unsupported file type
-      previewContent.innerHTML = `
-        <div class="text-center" style="padding: 40px;">
-          <i class="fas fa-file fa-5x" style="color: var(--text-secondary); margin-bottom: 20px;"></i>
-          <p>Vorschau für diesen Dateityp nicht verfügbar.</p>
-          <p class="text-muted">${fileName}</p>
-        </div>
-      `;
+      // Unsupported file type - create elements safely
+      previewContent.innerHTML = '';
+      const unsupportedDiv = document.createElement('div');
+      unsupportedDiv.className = 'text-center';
+      unsupportedDiv.style.padding = '40px';
+      
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-file fa-5x';
+      icon.style.cssText = 'color: var(--text-secondary); margin-bottom: 20px;';
+      
+      const p1 = document.createElement('p');
+      p1.textContent = 'Vorschau für diesen Dateityp nicht verfügbar.';
+      
+      const p2 = document.createElement('p');
+      p2.className = 'text-muted';
+      p2.textContent = fileName;
+      
+      unsupportedDiv.appendChild(icon);
+      unsupportedDiv.appendChild(p1);
+      unsupportedDiv.appendChild(p2);
+      previewContent.appendChild(unsupportedDiv);
     }
   } catch (error) {
     console.error('Error loading preview:', error);
@@ -1996,7 +2014,13 @@ function handleDirectAttachFile(file: File): void {
   if (file.type.startsWith('image/')) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      previewImage.innerHTML = `<img src="${e.target?.result}" alt="${file.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`;
+      // Create img element safely to prevent XSS
+      previewImage.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = e.target?.result as string;
+      img.alt = file.name;
+      img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain;';
+      previewImage.appendChild(img);
     };
     reader.readAsDataURL(file);
   } else if (file.type === 'application/pdf') {
