@@ -142,7 +142,16 @@ app.use('/js', (req: Request, res: Response): void => {
   }
 
   // If no mapping found, try to find it in dist
-  const distJsPath = path.join(distPath, 'js', req.path.substring(1));
+  // Sanitize the path to prevent directory traversal
+  const sanitizedReqPath = req.path.substring(1).replace(/\.\./g, '').replace(/\/+/g, '/');
+  const distJsPath = path.resolve(distPath, 'js', sanitizedReqPath);
+  
+  // Validate that the resolved path is within the expected directory
+  if (!distJsPath.startsWith(path.resolve(distPath, 'js'))) {
+    res.status(403).send('Forbidden');
+    return;
+  }
+  
   if (fs.existsSync(distJsPath)) {
     res.type('application/javascript').sendFile(distJsPath);
     return;
@@ -162,10 +171,18 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
     return next();
   }
 
-  const filename = req.path.slice(1, -3); // Remove leading / and .ts extension
+  // Sanitize the path to prevent directory traversal
+  const sanitizedPath = req.path.replace(/\.\./g, '').replace(/\/+/g, '/');
+  const filename = sanitizedPath.slice(1, -3); // Remove leading / and .ts extension
 
   // In development, check if compiled JS exists first
-  const jsPath = path.join(distPath, 'js', `${filename}.js`);
+  const jsPath = path.resolve(distPath, 'js', `${filename}.js`);
+  // Validate that the resolved path is within the expected directory
+  if (!jsPath.startsWith(path.resolve(distPath, 'js'))) {
+    res.status(403).send('Forbidden');
+    return;
+  }
+  
   if (fs.existsSync(jsPath)) {
     console.log(`[DEBUG] Serving compiled JS instead of TS: ${jsPath}`);
     res.type('application/javascript').sendFile(jsPath);
@@ -173,24 +190,26 @@ app.use('/scripts', (req: Request, res: Response, next: NextFunction): void => {
   }
 
   // Serve TypeScript file directly from src
-  // Note: req.path already includes /scripts/, so we need to join with srcPath directly
-  const tsPath = path.join(
-    srcPath,
-    'scripts',
-    req.path.replace(/^\/scripts\//, '')
-  );
-
+  const requestPath = sanitizedPath.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
+  
   // Special handling for components subdirectory
   const mappings: { [key: string]: string } = {
     'components/unified-navigation': 'scripts/components/unified-navigation.ts',
   };
 
-  let actualTsPath = tsPath;
-
+  let actualTsPath: string;
+  
   // Check if we need to map the path
-  const requestPath = req.path.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
   if (mappings[requestPath]) {
-    actualTsPath = path.join(srcPath, mappings[requestPath]);
+    actualTsPath = path.resolve(srcPath, mappings[requestPath]);
+  } else {
+    actualTsPath = path.resolve(srcPath, 'scripts', sanitizedPath.replace(/^\/scripts\//, ''));
+  }
+
+  // Validate that the resolved path is within the src directory
+  if (!actualTsPath.startsWith(path.resolve(srcPath))) {
+    res.status(403).send('Forbidden');
+    return;
   }
 
   if (fs.existsSync(actualTsPath)) {
