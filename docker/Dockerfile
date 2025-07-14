@@ -53,6 +53,9 @@ RUN pnpm install --frozen-lockfile --prod && \
 # Source Code kopieren
 COPY --from=builder --chown=nodejs:nodejs /app/backend ./backend
 
+# Scripts kopieren (für build:ts command)
+COPY --chown=nodejs:nodejs scripts/ ./scripts/
+
 # Environment
 ENV NODE_ENV=production
 

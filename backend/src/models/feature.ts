@@ -1,18 +1,5 @@
-import pool from '../database';
+import { query as executeQuery, RowDataPacket } from '../utils/db';
 import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 // Database interfaces
 interface DbFeature extends RowDataPacket {
@@ -48,7 +35,7 @@ interface DbTenantFeature extends RowDataPacket {
 interface FeatureActivationOptions {
   activatedBy?: number | null;
   expiresAt?: Date | string | null;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 interface FeatureUsageStat extends RowDataPacket {
@@ -89,7 +76,7 @@ export class Feature {
 
   // Prüfen ob Tenant ein Feature hat
   static async checkTenantAccess(
-    tenantId: number,
+    tenant_id: number,
     featureCode: string
   ): Promise<boolean> {
     try {
@@ -104,7 +91,7 @@ export class Feature {
       `;
 
       const [results] = await executeQuery<DbTenantFeature[]>(query, [
-        tenantId,
+        tenant_id,
         featureCode,
       ]);
 
@@ -122,7 +109,7 @@ export class Feature {
         feature.current_usage >= feature.usage_limit
       ) {
         logger.warn(
-          `Feature ${featureCode} usage limit reached for tenant ${tenantId}`
+          `Feature ${featureCode} usage limit reached for tenant ${tenant_id}`
         );
         return false;
       }
@@ -138,7 +125,7 @@ export class Feature {
 
   // Feature für Tenant aktivieren
   static async activateForTenant(
-    tenantId: number,
+    tenant_id: number,
     featureCode: string,
     options: FeatureActivationOptions = {}
   ): Promise<boolean> {
@@ -163,7 +150,7 @@ export class Feature {
       `;
 
       await executeQuery(query, [
-        tenantId,
+        tenant_id,
         feature.id,
         true, // is_active
         activatedBy,
@@ -171,7 +158,7 @@ export class Feature {
         config ? JSON.stringify(config) : null,
       ]);
 
-      logger.info(`Feature ${featureCode} activated for tenant ${tenantId}`);
+      logger.info(`Feature ${featureCode} activated for tenant ${tenant_id}`);
       return true;
     } catch (error) {
       logger.error(
@@ -183,7 +170,7 @@ export class Feature {
 
   // Feature für Tenant deaktivieren
   static async deactivateForTenant(
-    tenantId: number,
+    tenant_id: number,
     featureCode: string
   ): Promise<boolean> {
     try {
@@ -198,8 +185,8 @@ export class Feature {
         WHERE tenant_id = ? AND feature_id = ?
       `;
 
-      await executeQuery(query, [tenantId, feature.id]);
-      logger.info(`Feature ${featureCode} deactivated for tenant ${tenantId}`);
+      await executeQuery(query, [tenant_id, feature.id]);
+      logger.info(`Feature ${featureCode} deactivated for tenant ${tenant_id}`);
       return true;
     } catch (error) {
       logger.error(
@@ -211,10 +198,10 @@ export class Feature {
 
   // Feature-Nutzung protokollieren
   static async logUsage(
-    tenantId: number,
+    tenant_id: number,
     featureCode: string,
     userId: number | null = null,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ): Promise<boolean> {
     try {
       const feature = await this.findByCode(featureCode);
@@ -225,13 +212,13 @@ export class Feature {
       // Log erstellen
       await executeQuery(
         'INSERT INTO feature_usage_logs (tenant_id, feature_id, user_id, usage_date, metadata) VALUES (?, ?, ?, CURDATE(), ?)',
-        [tenantId, feature.id, userId, JSON.stringify(metadata)]
+        [tenant_id, feature.id, userId, JSON.stringify(metadata)]
       );
 
       // Current usage erhöhen
       await executeQuery(
         'UPDATE tenant_features SET current_usage = current_usage + 1 WHERE tenant_id = ? AND feature_id = ?',
-        [tenantId, feature.id]
+        [tenant_id, feature.id]
       );
 
       return true;
@@ -242,7 +229,9 @@ export class Feature {
   }
 
   // Alle Features eines Tenants abrufen
-  static async getTenantFeatures(tenantId: number): Promise<DbTenantFeature[]> {
+  static async getTenantFeatures(
+    tenant_id: number
+  ): Promise<DbTenantFeature[]> {
     try {
       const query = `
         SELECT 
@@ -262,7 +251,7 @@ export class Feature {
       `;
 
       const [features] = await executeQuery<DbTenantFeature[]>(query, [
-        tenantId,
+        tenant_id,
       ]);
       return features;
     } catch (error) {
@@ -275,7 +264,7 @@ export class Feature {
 
   // Feature-Nutzungsstatistiken abrufen
   static async getUsageStats(
-    tenantId: number,
+    tenant_id: number,
     featureCode: string,
     startDate: Date | string,
     endDate: Date | string
@@ -300,7 +289,7 @@ export class Feature {
       `;
 
       const [stats] = await executeQuery<FeatureUsageStat[]>(query, [
-        tenantId,
+        tenant_id,
         feature.id,
         startDate,
         endDate,
@@ -315,14 +304,14 @@ export class Feature {
   // Check if a feature is enabled for a specific tenant
   static async isEnabledForTenant(
     featureKey: string,
-    tenantId: number
+    tenant_id: number
   ): Promise<boolean> {
     try {
       // Use the existing checkTenantAccess method which does exactly what we need
-      return await this.checkTenantAccess(tenantId, featureKey);
+      return await this.checkTenantAccess(tenant_id, featureKey);
     } catch (error) {
       logger.error(
-        `Error checking if feature ${featureKey} is enabled for tenant ${tenantId}: ${(error as Error).message}`
+        `Error checking if feature ${featureKey} is enabled for tenant ${tenant_id}: ${(error as Error).message}`
       );
       return false;
     }

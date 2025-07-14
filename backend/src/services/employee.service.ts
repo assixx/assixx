@@ -93,7 +93,7 @@ class UserService {
     data: EmployeeUpdateData
   ): Promise<EmployeeData | null> {
     try {
-      const success = await User.update(id, data);
+      const success = await User.update(id, data, tenantId);
       if (success) {
         const updated = await User.findById(id, tenantId);
         return updated || null;

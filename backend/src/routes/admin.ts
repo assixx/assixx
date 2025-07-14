@@ -7,16 +7,18 @@
  *   description: Admin-specific operations and management
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { authenticateToken, authorizeRole } from '../auth';
+import { security } from '../middleware/security';
 import {
   validateCreateEmployee,
   validateUpdateEmployee,
 } from '../middleware/validators';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
 import User from '../models/user';
@@ -210,21 +212,18 @@ const upload = multer({
 // Create employee
 router.post(
   '/employees',
-  authenticateToken,
-  authorizeRole('admin'),
-  ...validateCreateEmployee,
-  async (req: Request, res: Response): Promise<void> => {
-    const typedReq = req as EmployeeCreateRequest;
-    const adminId = typedReq.user.id;
+  ...security.admin(validateCreateEmployee),
+  typed.body<EmployeeCreateRequest['body']>(async (req, res) => {
+    const adminId = req.user.id;
     logger.info(`Admin ${adminId} attempting to create a new employee`);
 
     try {
       const employeeData = {
-        ...typedReq.body,
-        first_name: typedReq.body.first_name || '',
-        last_name: typedReq.body.last_name || '',
+        ...req.body,
+        first_name: req.body.first_name || '',
+        last_name: req.body.last_name || '',
         role: 'employee',
-        tenant_id: typedReq.user.tenant_id,
+        tenant_id: req.user.tenant_id,
       };
       const employeeId = await User.create(employeeData);
       logger.info(
@@ -235,11 +234,12 @@ router.post(
         message: 'Mitarbeiter erfolgreich erstellt',
         employeeId,
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error creating employee by Admin ${adminId}: ${error.message}`
+        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`
       );
-      if (error.code === 'ER_DUP_ENTRY') {
+      const dbError = error as { code?: string };
+      if (dbError.code === 'ER_DUP_ENTRY') {
         res.status(409).json({
           message:
             'Ein Mitarbeiter mit diesem Benutzernamen oder dieser E-Mail existiert bereits.',
@@ -248,10 +248,10 @@ router.post(
       }
       res.status(500).json({
         message: 'Fehler beim Erstellen des Mitarbeiters',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 /**
@@ -315,30 +315,28 @@ router.post(
 // Get all employees
 router.get(
   '/employees',
-  authenticateToken,
-  authorizeRole('admin'),
-  async (req, res): Promise<void> => {
+  ...security.admin(),
+  typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedAdminRequest;
       const employees = await User.findByRole(
         'employee',
         false,
-        authReq.user.tenant_id
+        req.user.tenant_id
       );
 
       console.log(`Retrieved ${employees.length} employees:`, employees);
       logger.info(`Retrieved ${employees.length} employees`);
 
       res.json(employees);
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Error retrieving employees from DB:`, error);
-      logger.error(`Error retrieving employees: ${error.message}`);
+      logger.error(`Error retrieving employees: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: 'Fehler beim Abrufen der Mitarbeiter',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 /**
@@ -396,17 +394,15 @@ router.get(
 // Get single employee
 router.get(
   '/employees/:id',
-  authenticateToken,
-  authorizeRole('admin'),
-  async (req, res): Promise<void> => {
-    const authReq = req as AuthenticatedAdminRequest;
-    const adminId = authReq.user.id;
+  ...security.admin(),
+  typed.params<{ id: string }>(async (req, res) => {
+    const adminId = req.user.id;
     const employeeId = parseInt(req.params.id, 10);
 
     logger.info(`Admin ${adminId} requesting employee ${employeeId}`);
 
     try {
-      const employee = await User.findById(employeeId, authReq.user.tenant_id);
+      const employee = await User.findById(employeeId, req.user.tenant_id);
 
       if (!employee) {
         res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
@@ -414,16 +410,16 @@ router.get(
       }
 
       res.json(employee);
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${error.message}`
+        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`
       );
       res.status(500).json({
         message: 'Fehler beim Abrufen des Mitarbeiters',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 /**
@@ -527,18 +523,19 @@ router.get(
 // Update employee
 router.put(
   '/employees/:id',
-  authenticateToken,
-  authorizeRole('admin'),
+  ...security.admin(),
   ...validateUpdateEmployee,
-  async (req, res): Promise<void> => {
-    const authReq = req as EmployeeUpdateRequest;
-    const adminId = authReq.user.id;
+  typed.paramsBody<
+    EmployeeUpdateRequest['params'],
+    EmployeeUpdateRequest['body']
+  >(async (req, res) => {
+    const adminId = req.user.id;
     const employeeId = parseInt(req.params.id, 10);
 
     logger.info(`Admin ${adminId} attempting to update employee ${employeeId}`);
 
     try {
-      const employee = await User.findById(employeeId, authReq.user.tenant_id);
+      const employee = await User.findById(employeeId, req.user.tenant_id);
 
       if (!employee) {
         res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
@@ -552,7 +549,11 @@ router.put(
         return;
       }
 
-      const success = await User.update(employeeId, req.body);
+      const success = await User.update(
+        employeeId,
+        req.body,
+        req.user.tenant_id
+      );
 
       if (success) {
         logger.info(
@@ -569,17 +570,17 @@ router.put(
           success: false,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error updating employee ${employeeId} by Admin ${adminId}: ${error.message}`
+        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
       );
       res.status(500).json({
         message: 'Fehler beim Aktualisieren des Mitarbeiters',
-        error: error.message,
+        error: getErrorMessage(error),
         success: false,
       });
     }
-  }
+  })
 );
 
 /**
@@ -689,12 +690,13 @@ router.put(
 // Upload document for employee
 router.post(
   '/upload-document/:employeeId',
-  authenticateToken,
-  authorizeRole('admin'),
+  ...security.admin(),
   upload.single('document'),
-  async (req, res): Promise<void> => {
-    const authReq = req as DocumentUploadRequest;
-    const adminId = authReq.user.id;
+  typed.paramsBody<
+    DocumentUploadRequest['params'],
+    DocumentUploadRequest['body']
+  >(async (req, res) => {
+    const adminId = req.user.id;
     const employeeId = parseInt(req.params.employeeId, 10);
 
     logger.info(
@@ -707,7 +709,7 @@ router.post(
         return;
       }
 
-      const employee = await User.findById(employeeId, authReq.user.tenant_id);
+      const employee = await User.findById(employeeId, req.user.tenant_id);
       if (!employee) {
         await fs.unlink(req.file.path);
         res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
@@ -721,7 +723,7 @@ router.post(
         userId: employeeId,
         fileName: req.file.originalname,
         fileContent,
-        tenant_id: authReq.user.tenant_id,
+        tenant_id: req.user.tenant_id,
       });
 
       await fs.unlink(filePath);
@@ -733,25 +735,27 @@ router.post(
         message: 'Dokument erfolgreich hochgeladen',
         documentId,
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${error.message}`
+        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
       );
 
       if (req.file?.path) {
         try {
           await fs.unlink(req.file.path);
-        } catch (unlinkError: any) {
-          logger.error(`Error deleting temporary file: ${unlinkError.message}`);
+        } catch (unlinkError) {
+          logger.error(
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
+          );
         }
       }
 
       res.status(500).json({
         message: 'Fehler beim Hochladen des Dokuments',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 /**
@@ -813,13 +817,12 @@ router.post(
 // Get dashboard stats
 router.get(
   '/dashboard-stats',
-  authenticateToken,
-  authorizeRole('admin'),
-  async (req, res): Promise<void> => {
+  ...security.admin(),
+  typed.auth(async (req, res) => {
     try {
       const employeeCount = await User.count({
         role: 'employee',
-        tenant_id: (req as AuthenticatedAdminRequest).user.tenant_id,
+        tenant_id: req.user.tenant_id,
       });
       let departmentCount = 0;
       let teamCount = 0;
@@ -828,33 +831,27 @@ router.get(
       // Department count
       try {
         if (typeof Department.countByTenant === 'function') {
-          departmentCount = await Department.countByTenant(
-            (req as AuthenticatedAdminRequest).user.tenant_id
-          );
+          departmentCount = await Department.countByTenant(req.user.tenant_id);
         }
-      } catch (e: any) {
-        logger.warn(`Could not count departments: ${e.message}`);
+      } catch (e) {
+        logger.warn(`Could not count departments: ${getErrorMessage(e)}`);
       }
 
       // Team count (using Department model)
       try {
         if (typeof Department.countTeamsByTenant === 'function') {
-          teamCount = await Department.countTeamsByTenant(
-            (req as AuthenticatedAdminRequest).user.tenant_id
-          );
+          teamCount = await Department.countTeamsByTenant(req.user.tenant_id);
         }
-      } catch (e: any) {
-        logger.warn(`Could not count teams: ${e.message}`);
+      } catch (e) {
+        logger.warn(`Could not count teams: ${getErrorMessage(e)}`);
       }
 
       try {
         if (typeof Document.countByTenant === 'function') {
-          documentCount = await Document.countByTenant(
-            (req as AuthenticatedAdminRequest).user.tenant_id
-          );
+          documentCount = await Document.countByTenant(req.user.tenant_id);
         }
-      } catch (e: any) {
-        logger.warn(`Could not count documents: ${e.message}`);
+      } catch (e) {
+        logger.warn(`Could not count documents: ${getErrorMessage(e)}`);
       }
 
       res.json({
@@ -862,16 +859,16 @@ router.get(
         departmentCount,
         teamCount,
         documentCount,
-        adminName: (req as AuthenticatedAdminRequest).user.username,
+        adminName: req.user.username,
       });
-    } catch (error: any) {
-      logger.error(`Error fetching dashboard stats: ${error.message}`);
+    } catch (error) {
+      logger.error(`Error fetching dashboard stats: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: 'Fehler beim Abrufen der Dashboard-Daten',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 // Note: Dashboard statistics endpoint removed - duplicate of above route
@@ -882,23 +879,19 @@ router.get(
 // Get all documents for admin
 router.get(
   '/documents',
-  authenticateToken,
-  authorizeRole('admin'),
-  async (req, res): Promise<void> => {
+  ...security.admin(),
+  typed.auth(async (req, res) => {
     try {
-      const authReq = req as AuthenticatedAdminRequest;
-      const documents = await Document.findAll(
-        authReq.user.tenant_id.toString()
-      );
+      const documents = await Document.findAll(req.user.tenant_id.toString());
       res.json(documents);
-    } catch (error: any) {
-      logger.error(`Error retrieving documents: ${error.message}`);
+    } catch (error) {
+      logger.error(`Error retrieving documents: ${getErrorMessage(error)}`);
       res.status(500).json({
         message: 'Fehler beim Abrufen der Dokumente',
-        error: error.message,
+        error: getErrorMessage(error),
       });
     }
-  }
+  })
 );
 
 export default router;

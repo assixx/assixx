@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -49,7 +50,6 @@
 
       /* Custom styles for shift planning interface - Glassmorphismus Design */
       .shift-planning-container {
-        max-width: 1400px;
         margin: 0 auto;
         padding: var(--spacing-lg);
         background: rgba(255, 255, 255, 0.02);
@@ -59,7 +59,7 @@
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
         overflow: visible;
       }
 
@@ -339,7 +339,7 @@
         border-radius: var(--radius-lg);
         margin: var(--spacing-xl) auto;
         max-width: 600px;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -770,6 +770,12 @@
           gap: 10px;
         }
       }
+      
+      /* Override breadcrumb alignment for shifts page */
+      body #breadcrumb-container + .shift-planning-container,
+      body #breadcrumb-container + * {
+        margin-top: -15px !important;
+      }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -781,10 +787,10 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
-        <div class="shift-planning-container">
-          <!-- Title -->
-          <h1 class="shift-title">Schichtplanung</h1>
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
 
+        <div class="shift-planning-container">
           <!-- Info Row -->
           <div class="shift-info-row">
             <div class="info-item">
@@ -1089,5 +1095,7 @@
     <script type="module" src="/scripts/shifts.ts"></script>
     <script type="module" src="/scripts/utils/modal-manager.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

@@ -1,18 +1,9 @@
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 // Database interfaces
 interface DbTeam extends RowDataPacket {
@@ -65,7 +56,7 @@ export class Team {
     logger.info(`Creating new team: ${name}`);
 
     const query = `
-      INSERT INTO teams (name, description, department_id, leader_id, tenant_id) 
+      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id) 
       VALUES (?, ?, ?, ?, ?)
     `;
 
@@ -139,7 +130,7 @@ export class Team {
 
     const query = `
       UPDATE teams 
-      SET name = ?, description = ?, department_id = ?, leader_id = ? 
+      SET name = ?, description = ?, department_id = ?, team_lead_id = ? 
       WHERE id = ?
     `;
 

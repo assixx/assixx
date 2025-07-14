@@ -8,6 +8,13 @@
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <style>
+      /* Align first container with sidebar user-info-card */
+      .container {
+        margin-top: -34px !important;
+      }
+    </style>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -17,14 +24,17 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
+
         <div class="container">
-          <h1 class="text-center mb-4">Admin Konfiguration</h1>
           <p class="text-center mb-4" id="admin-name"></p>
 
           <!-- Passwort zurücksetzen Karte -->
           <div class="card mb-4">
             <div class="card-header">
               <h2 class="card-title">Passwort zurücksetzen</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Ändern Sie Ihr Admin-Passwort</p>
             </div>
             <form id="resetPasswordForm">
               <div class="form-group">
@@ -43,6 +53,7 @@
           <div class="card mb-4">
             <div class="card-header">
               <h2 class="card-title">Admin-Details</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Persönliche Informationen verwalten</p>
             </div>
             <form id="updateDetailsForm">
               <div class="form-group">
@@ -69,6 +80,7 @@
           <div class="card mb-4">
             <div class="card-header">
               <h2 class="card-title">Berechtigungen</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Ihre administrativen Zugriffsrechte</p>
             </div>
             <div id="permissions-section">
               <div class="form-check">
@@ -94,6 +106,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Anmelde-Historie</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht Ihrer Login-Aktivitäten</p>
             </div>
 
             <!-- Tab Navigation -->
@@ -168,5 +181,7 @@
     </div>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

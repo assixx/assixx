@@ -117,7 +117,7 @@
         height: 40px;
         width: auto;
         filter: none;
-        animation: subtle-pulse 3s ease-in-out infinite;
+        /* animation: subtle-pulse 3s ease-in-out infinite; */
       }
 
       @keyframes subtle-pulse {
@@ -221,7 +221,7 @@
         text-align: center;
         max-width: 800px;
         margin: 0 auto;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       @keyframes fadeInUp {
@@ -456,7 +456,7 @@
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .modal-content h2 {
@@ -681,11 +681,11 @@
           /* Innerer dunkler Rand unten */ inset 0 -2px 4px rgba(0, 0, 0, 0.3);
 
         /* Basis Animation */
-        animation:
+        /* animation:
           badge-float 4s ease-in-out infinite,
-          badge-intro 1s ease-out; /* Einmalige Intro-Animation */
+          badge-intro 1s ease-out; */ /* Einmalige Intro-Animation */
 
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        /* transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); */
       }
 
       /* Pseudo-Element für extra Glanz-Effekt */
@@ -698,7 +698,7 @@
         height: 100%;
         border-radius: 30px;
         background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.15) 55%, transparent 60%);
-        animation: badge-shine 1.5s ease-out 0.8s forwards; /* Nur einmal mit forwards */
+        /* animation: badge-shine 1.5s ease-out 0.8s forwards; */ /* Nur einmal mit forwards */
         pointer-events: none;
       }
 
@@ -828,8 +828,8 @@
           <a href="#features">Features</a>
           <a href="#security">Sicherheit</a>
           <a href="#pricing">Preise</a>
-          <a href="./login.html">Anmelden</a>
-          <a href="./signup.html" class="btn btn-primary" style="background: none">Registrieren</a>
+          <a href="/login">Anmelden</a>
+          <a href="/signup" class="btn btn-primary" style="background: none">Registrieren</a>
         </div>
       </nav>
     </header>
@@ -839,7 +839,7 @@
       <p>
         Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung. Dokumentenverwaltung, Kommunikation und mehr - alles in einer Plattform.
       </p>
-      <a href="./signup.html" class="btn btn-primary" style="background: none">Jetzt registrieren</a>
+      <a href="/signup" class="btn btn-primary" style="background: none">Jetzt registrieren</a>
     </section>
 
     <section class="features" id="features">
@@ -1026,7 +1026,7 @@
             </div>
           </div>
           <a
-            href="./signup.html?plan=enterprise"
+            href="/signup?plan=enterprise"
             class="btn btn-primary"
             style="background: none; font-size: 1.1rem; padding: var(--spacing-md) calc(var(--spacing-xl) * 1.5)"
           >
@@ -1096,7 +1096,7 @@
           </ul>
           <div style="margin-top: auto; padding-top: var(--spacing-lg)">
             <a
-              href="./signup.html?plan=basic"
+              href="/signup?plan=basic"
               class="btn btn-secondary"
               style="width: 100%; padding: var(--spacing-md) var(--spacing-xl); font-size: 16px; font-weight: 600"
             >
@@ -1123,7 +1123,7 @@
           </ul>
           <div style="margin-top: auto; padding-top: var(--spacing-lg)">
             <a
-              href="./signup.html?plan=professional"
+              href="/signup?plan=professional"
               class="btn btn-primary"
               style="width: 100%; padding: var(--spacing-md) var(--spacing-xl); font-size: 16px; font-weight: 600; background: none"
             >
@@ -1150,7 +1150,7 @@
           </ul>
           <div style="margin-top: auto; padding-top: var(--spacing-lg)">
             <a
-              href="./signup.html?plan=enterprise"
+              href="/signup?plan=enterprise"
               class="btn btn-secondary"
               style="width: 100%; padding: var(--spacing-md) var(--spacing-xl); font-size: 16px; font-weight: 600"
             >

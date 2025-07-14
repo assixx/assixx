@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
           console.error('Logout error:', error);
           // Fallback
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
         }
       }
     });

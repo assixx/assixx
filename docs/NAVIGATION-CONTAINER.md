@@ -25,7 +25,6 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    ```
 
 2. **TypeScript generiert alles**:
-
    - `unified-navigation.ts` erstellt Header + Sidebar dynamisch
    - Rolle-basierte Menüs werden automatisch geladen
    - Badges, Avatar, User-Info werden zentral verwaltet
@@ -286,13 +285,11 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 ### Migrations-Priorität
 
 1. **Hohe Priorität** (Hauptseiten):
-
    - admin-dashboard.html
    - employee-dashboard.html
    - root-dashboard.html
 
 2. **Mittlere Priorität** (Häufig genutzte Features):
-
    - blackboard.html
    - calendar.html
    - chat.html

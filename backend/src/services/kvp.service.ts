@@ -34,8 +34,16 @@ import { Pool } from 'mysql2/promise';
 interface KvpEntry {
   id: number;
   tenant_id: number;
-  // Add other KVP-specific fields as needed
-  [key: string]: any;
+  title: string;
+  description: string;
+  category_id: number;
+  org_level: 'company' | 'department' | 'team';
+  org_id: number;
+  submitted_by: number;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  status: 'new' | 'in_progress' | 'implemented' | 'rejected';
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface KvpFilters {
@@ -43,18 +51,34 @@ interface KvpFilters {
   category_id?: number;
   priority?: string;
   org_level?: string;
-  [key: string]: any;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortDir?: 'ASC' | 'DESC';
 }
 
 interface KvpCreateData {
   tenant_id: number;
-  // Add other required fields for KVP entries
-  [key: string]: any;
+  title: string;
+  description: string;
+  category_id: number;
+  org_level: 'company' | 'department' | 'team';
+  org_id: number;
+  submitted_by: number;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  expected_benefit?: string;
+  estimated_cost?: number;
 }
 
 interface KvpUpdateData {
-  // Add updateable fields for KVP entries
-  [key: string]: any;
+  title?: string;
+  description?: string;
+  category_id?: number;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  status?: 'new' | 'in_progress' | 'implemented' | 'rejected';
+  assigned_to?: number;
+  actual_savings?: number;
 }
 
 // Additional interfaces for actual KVP functionality
@@ -219,9 +243,20 @@ class KvpService {
   /**
    * Create a new suggestion
    */
-  async createSuggestion(data: any): Promise<any> {
+  async createSuggestion(data: KvpCreateData): Promise<Suggestion> {
     try {
-      return await KVPModel.createSuggestion(data);
+      const created = await KVPModel.createSuggestion(data);
+      // Get the full suggestion with all fields
+      const suggestion = await KVPModel.getSuggestionById(
+        created.id,
+        data.tenant_id,
+        data.submitted_by, // Using submitted_by as userId
+        'employee' // Default role, should be passed from controller
+      );
+      if (!suggestion) {
+        throw new Error('Failed to retrieve created suggestion');
+      }
+      return suggestion as Suggestion;
     } catch (error) {
       console.error('Error in KvpService.createSuggestion:', error);
       throw error;
@@ -231,9 +266,35 @@ class KvpService {
   /**
    * Get dashboard statistics
    */
-  async getDashboardStats(tenantId: number): Promise<any> {
+  async getDashboardStats(tenantId: number): Promise<{
+    totalSuggestions: number;
+    implementedSuggestions: number;
+    totalSavings: number;
+    suggestionsByCategory: Record<string, number>;
+    suggestionsByStatus: Record<string, number>;
+    topContributors: Array<{
+      userId: number;
+      userName: string;
+      points: number;
+    }>;
+  }> {
     try {
-      return await KVPModel.getDashboardStats(tenantId);
+      const stats = await KVPModel.getDashboardStats(tenantId);
+
+      // Transform DbDashboardStats to expected format
+      return {
+        totalSuggestions: stats.total_suggestions,
+        implementedSuggestions: stats.implemented,
+        totalSavings: stats.avg_savings || 0,
+        suggestionsByCategory: {}, // TODO: Implement category breakdown
+        suggestionsByStatus: {
+          new: stats.new_suggestions,
+          in_progress: stats.in_progress,
+          implemented: stats.implemented,
+          rejected: stats.rejected,
+        },
+        topContributors: [], // TODO: Implement top contributors
+      };
     } catch (error) {
       console.error('Error in KvpService.getDashboardStats:', error);
       throw error;

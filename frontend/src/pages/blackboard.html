@@ -10,6 +10,7 @@
       @import url('/styles/blackboard.css');
       @import url('/styles/blackboard-update.css');
       @import url('/styles/user-info-update.css');
+      @import url('/styles/breadcrumb-alignment.css');
 
       /* Glassmorphismus Design-Standards */
 
@@ -41,7 +42,7 @@
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       /* Modal Overlays - Glassmorphismus */
@@ -57,7 +58,7 @@
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       /* Form Controls mit Glassmorphismus */
@@ -238,39 +239,14 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="container main-content">
-        <div class="flex flex-between mb-4">
-          <div>
-            <h1 class="card-title mb-2">Blackboard</h1>
-            <p class="text-secondary">Alle Ankündigungen und wichtigen Informationen</p>
-          </div>
-          <div style="display: flex !important; gap: 1rem; align-items: center">
-            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
-              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
-                <i class="fas fa-plus"></i>
-              </button>
-              <span id="zoomLevel" class="zoom-level">100%</span>
-              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
-                <i class="fas fa-minus"></i>
-              </button>
-            </div>
-            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
-              <i class="fas fa-plus me-2"></i>
-              Neuer Eintrag
-            </button>
-            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
-              <i class="fas fa-paperclip me-2"></i>
-              Bild/PDF anheften
-            </button>
-          </div>
-        </div>
-
+      <main class="main-content">
+        <div id="breadcrumb-container"></div>
         <!-- Filterleiste -->
         <div class="card mb-4">
           <div class="card-header" style="cursor: pointer" id="filterToggle">
             <div style="display: flex; justify-content: space-between; align-items: center">
               <h3 class="card-title" style="margin: 0">Filter & Suche</h3>
-              <i class="fas fa-chevron-down" id="filterToggleIcon" style="transition: transform 0.3s ease"></i>
+              <i class="fas fa-chevron-down" id="filterToggleIcon" style="/* transition: transform 0.3s ease */"></i>
             </div>
           </div>
           <div class="card-body" id="filterContent" style="display: none">
@@ -323,6 +299,29 @@
           </div>
         </div>
 
+        <!-- Controls unter der Filterleiste -->
+        <div class="flex flex-between mb-4">
+          <div style="display: flex !important; gap: 1rem; align-items: center">
+            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
+              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
+                <i class="fas fa-plus"></i>
+              </button>
+              <span id="zoomLevel" class="zoom-level">100%</span>
+              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
+                <i class="fas fa-minus"></i>
+              </button>
+            </div>
+            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
+              <i class="fas fa-plus me-2"></i>
+              Neuer Eintrag
+            </button>
+            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
+              <i class="fas fa-paperclip me-2"></i>
+              Bild/PDF anheften
+            </button>
+          </div>
+        </div>
+
         <!-- Pinnwand Container -->
         <div class="blackboard-container" id="blackboardContainer">
           <!-- Initial Load Button -->
@@ -346,9 +345,9 @@
             <div class="pinboard-item">
               <div class="pinboard-sticky color-yellow text-center">
                 <div class="pushpin pushpin-red"></div>
-                <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0.5"></i>
-                <h4>Noch keine Einträge</h4>
-                <p>Das Schwarze Brett ist noch leer.</p>
+                <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0.5; color: #000"></i>
+                <h4 style="color: #000">Noch keine Einträge</h4>
+                <p style="color: #000">Das Schwarze Brett ist noch leer.</p>
                 <button id="retryLoadBtn" class="btn btn-sm btn-outline-dark mt-3">
                   <i class="fas fa-redo"></i>
                   Erneut versuchen
@@ -842,6 +841,17 @@
       #filterToggle {
         transition: background 0.3s ease;
       }
+      
+      /* Override breadcrumb alignment for blackboard page */
+      body #breadcrumb-container + .card,
+      body #breadcrumb-container + * {
+        margin-top: -15px !important;
+      }
+      
+      /* Breadcrumb linksbündig machen für blackboard */
+      .breadcrumb {
+        padding-left: 0 !important;
+      }
     </style>
     <!-- Scripts with dynamic loading to prevent race condition -->
     <script type="module">
@@ -851,6 +861,9 @@
         await import('/scripts/auth.ts');
         // Then load unified navigation
         await import('/scripts/components/unified-navigation.ts');
+        // Load breadcrumb
+        const { initBreadcrumb } = await import('/scripts/components/breadcrumb.js');
+        initBreadcrumb();
         // Finally load blackboard after a small delay
         setTimeout(() => {
           import('/scripts/blackboard.ts');

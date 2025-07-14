@@ -21,6 +21,7 @@
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -57,13 +58,15 @@
         padding: var(--spacing-lg) var(--spacing-xl);
         color: white;
         margin-bottom: var(--spacing-xl);
+        /* Align with sidebar user-info-card */
+        margin-top: -34px !important;
         position: relative;
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: space-between;
         min-height: 120px;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       .welcome-hero::before {
@@ -88,7 +91,7 @@
         height: 200px;
         background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
         transform: rotate(45deg);
-        animation: shimmer 3s infinite;
+        /* animation: shimmer 3s infinite; */
       }
 
       @keyframes shimmer {
@@ -189,7 +192,7 @@
         height: 4px;
         background: rgba(255, 255, 255, 0.6);
         border-radius: 50%;
-        animation: float 6s infinite ease-in-out;
+        /* animation: float 6s infinite ease-in-out; */
       }
 
       .floating-dot:nth-child(1) {
@@ -245,7 +248,7 @@
         cursor: pointer;
         position: relative;
         overflow: hidden;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       .feature-card:hover {
@@ -255,7 +258,6 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.15);
         border-color: rgba(0, 142, 255, 0.5);
         background: rgba(255, 255, 255, 0.03);
-        animation: subtle-pulse 2s infinite;
       }
 
       .feature-card::before {
@@ -351,7 +353,7 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
         margin-bottom: var(--spacing-xl);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       .stats-header {
@@ -411,7 +413,7 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       .activity-item {
@@ -473,17 +475,6 @@
         margin-bottom: var(--spacing-xl);
       }
 
-      .breadcrumb {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: var(--spacing-sm);
-      }
-
-      .breadcrumb a {
-        color: var(--primary-color);
-        text-decoration: none;
-      }
-
       .main-content {
         padding: var(--spacing-lg);
       }
@@ -530,7 +521,7 @@
       }
 
       .pulse {
-        animation: pulse 2s infinite;
+        /* animation: pulse 2s infinite; */
       }
 
       @keyframes pulse {
@@ -610,9 +601,19 @@
       .btn:hover::after {
         transform: rotate(45deg) translate(-30%, -30%);
       }
+      
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <style>
+      /* Override breadcrumb alignment for employee dashboard - muss nach allen CSS imports kommen */
+      body #breadcrumb-container + .container,
+      body #breadcrumb-container + *,
+      body #breadcrumb-container + .card,
+      body #breadcrumb-container + .profile-container {
+        margin-top: -15px !important;
+      }
+    </style>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -622,13 +623,8 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-          <div class="breadcrumb">
-            <a href="/employee-dashboard">Dashboard</a>
-            / Übersicht
-          </div>
-        </div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
         <!-- Welcome Hero Section -->
         <div class="welcome-hero">
@@ -640,7 +636,7 @@
           </div>
 
           <div class="welcome-content">
-            <h1 class="welcome-title">Willkommen zurück!</h1>
+            <p class="welcome-title">Willkommen zurück!</p>
             <p class="welcome-subtitle">
               Schön, dass Sie da sind,
               <span id="employee-name" class="pulse">Mitarbeiter</span>
@@ -686,7 +682,7 @@
         <!-- Quick Access Features -->
         <div class="dashboard-grid">
           <!-- Documents Card -->
-          <div class="feature-card" onclick="window.location.href='/pages/documents.html'">
+          <div class="feature-card" onclick="window.location.href='/documents'">
             <div class="feature-icon">📄</div>
             <h3 class="feature-title">Meine Dokumente</h3>
             <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
@@ -710,7 +706,7 @@
           </div>
 
           <!-- KVP Card -->
-          <div class="feature-card" onclick="window.location.href='/pages/kvp.html'">
+          <div class="feature-card" onclick="window.location.href='/kvp'">
             <div class="feature-icon">💡</div>
             <h3 class="feature-title">Verbesserungsvorschläge</h3>
             <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
@@ -1023,10 +1019,66 @@
 
     <!-- Force dashboard to be active on page load -->
     <script type="module">
+      // Check if user should be on employee dashboard by reading from JWT token
+      const token = localStorage.getItem('token');
+      let activeRole = null;
+      let userRole = localStorage.getItem('userRole');
+
+      // Parse the JWT token to get the actual active role
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          activeRole = payload.activeRole || payload.role;
+          userRole = payload.role;
+
+          // Update localStorage to match token
+          localStorage.setItem('activeRole', activeRole);
+          if (userRole) {
+            localStorage.setItem('userRole', userRole);
+          }
+
+          console.log('[Employee Dashboard] Token analysis:', {
+            tokenRole: payload.role,
+            tokenActiveRole: payload.activeRole,
+            finalActiveRole: activeRole,
+          });
+        } catch (e) {
+          console.error('[Employee Dashboard] Error parsing token:', e);
+          activeRole = localStorage.getItem('activeRole') || userRole;
+        }
+      } else {
+        activeRole = localStorage.getItem('activeRole') || userRole;
+      }
+
+      // All users can access employee dashboard when in employee mode
+      if (activeRole === 'employee') {
+        // User is correctly on employee dashboard
+        console.log('[Employee Dashboard] User in employee mode');
+      } else if (userRole === 'root' && activeRole === 'root') {
+        // Root user in root mode - redirect to root dashboard
+        console.log('[Employee Dashboard] Root user in root mode - redirecting');
+        window.location.replace('/root-dashboard');
+      } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
+        // Admin/Root user in admin mode - redirect to admin dashboard
+        console.log('[Employee Dashboard] User in admin mode - redirecting');
+        window.location.replace('/admin-dashboard');
+      } else if (!userRole) {
+        // No user role - redirect to login
+        console.log('[Employee Dashboard] No user role - redirecting to login');
+        window.location.replace('/login');
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
         localStorage.removeItem('activeNavigation');
       });
+    </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

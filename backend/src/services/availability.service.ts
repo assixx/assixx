@@ -3,31 +3,15 @@
  * Handles employee availability management (vacation, sick leave, etc.)
  */
 
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-import pool from '../database';
+import { execute, RowDataPacket, ResultSetHeader } from '../utils/db';
 import {
   EmployeeAvailability,
   DatabaseEmployeeAvailability,
 } from '../types/models';
 import { snakeToCamel, camelToSnake } from '../utils/typeHelpers';
 
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  // Use any to bypass TypeScript union type issues
-  const result = await (pool as any).query(sql, params);
-  // MySQL2 returns [rows, fields] or result could be T directly from mock
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  // Mock database returns the data directly
-  return [result as T, null];
-}
-
 interface AvailabilityFilter {
-  tenantId: number;
+  tenant_id: number;
   employeeId?: number;
   status?: string;
   startDate?: string;
@@ -52,7 +36,7 @@ class AvailabilityService {
         LEFT JOIN users creator ON ea.created_by = creator.id
         WHERE ea.tenant_id = ?
       `;
-      const params: any[] = [filter.tenantId];
+      const params: unknown[] = [filter.tenant_id];
 
       if (filter.employeeId) {
         query += ' AND ea.employee_id = ?';
@@ -79,7 +63,7 @@ class AvailabilityService {
 
       query += ' ORDER BY ea.start_date DESC';
 
-      const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+      const [rows] = await execute<RowDataPacket[]>(query, params);
       return rows.map((row) => snakeToCamel(row) as EmployeeAvailability);
     } catch (error) {
       console.error('Error in AvailabilityService.getAll:', error);
@@ -90,7 +74,7 @@ class AvailabilityService {
   /**
    * Get current availability status for all employees
    */
-  async getCurrentStatus(tenantId: number): Promise<any[]> {
+  async getCurrentStatus(tenantId: number): Promise<RowDataPacket[]> {
     try {
       const query = `
         SELECT 
@@ -109,7 +93,7 @@ class AvailabilityService {
         ORDER BY u.first_name, u.last_name
       `;
 
-      const [rows] = await executeQuery<RowDataPacket[]>(query, [tenantId]);
+      const [rows] = await execute<RowDataPacket[]>(query, [tenantId]);
       return rows.map((row) => snakeToCamel(row));
     } catch (error) {
       console.error('Error in AvailabilityService.getCurrentStatus:', error);
@@ -129,7 +113,7 @@ class AvailabilityService {
         SELECT * FROM employee_availability 
         WHERE id = ? AND tenant_id = ?
       `;
-      const [rows] = await executeQuery<RowDataPacket[]>(query, [id, tenantId]);
+      const [rows] = await execute<RowDataPacket[]>(query, [id, tenantId]);
 
       if (rows.length === 0) {
         return null;
@@ -155,7 +139,7 @@ class AvailabilityService {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      const [result] = await executeQuery<ResultSetHeader>(query, [
+      const [result] = await execute<ResultSetHeader>(query, [
         dbData.employee_id,
         dbData.tenant_id,
         dbData.status || 'unavailable',
@@ -223,7 +207,7 @@ class AvailabilityService {
         WHERE id = ? AND tenant_id = ?
       `;
 
-      const [result] = await executeQuery<ResultSetHeader>(query, values);
+      const [result] = await execute<ResultSetHeader>(query, values);
 
       if (result.affectedRows > 0) {
         // Update user's availability status
@@ -247,10 +231,7 @@ class AvailabilityService {
         DELETE FROM employee_availability 
         WHERE id = ? AND tenant_id = ?
       `;
-      const [result] = await executeQuery<ResultSetHeader>(query, [
-        id,
-        tenantId,
-      ]);
+      const [result] = await execute<ResultSetHeader>(query, [id, tenantId]);
 
       if (result.affectedRows > 0) {
         // Update user's availability status
@@ -270,9 +251,7 @@ class AvailabilityService {
    */
   private async updateUserAvailabilityStatus(): Promise<void> {
     try {
-      await executeQuery<ResultSetHeader>(
-        'CALL UpdateUserAvailabilityStatus()'
-      );
+      await execute<ResultSetHeader>('CALL UpdateUserAvailabilityStatus()');
     } catch (error) {
       console.error('Error updating user availability status:', error);
       // Don't throw, just log - this is a background update
@@ -286,7 +265,7 @@ class AvailabilityService {
     tenantId: number,
     startDate: string,
     endDate: string
-  ): Promise<any> {
+  ): Promise<RowDataPacket[]> {
     try {
       const query = `
         SELECT 
@@ -301,7 +280,7 @@ class AvailabilityService {
         GROUP BY ea.status
       `;
 
-      const [rows] = await executeQuery<RowDataPacket[]>(query, [
+      const [rows] = await execute<RowDataPacket[]>(query, [
         tenantId,
         startDate,
         endDate,

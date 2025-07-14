@@ -52,6 +52,14 @@ interface Department {
   name: string;
 }
 
+interface KvpWindow extends Window {
+  selectCategory: (id: string, name: string) => void;
+  selectDepartment: (id: string, name: string) => void;
+  showCreateModal: () => void;
+  hideCreateModal: () => void;
+  selectedPhotos?: File[];
+}
+
 class KvpPage {
   private currentUser: User | null = null;
   private currentFilter: string = 'all';
@@ -140,19 +148,19 @@ class KvpPage {
     // Check effective role instead of actual role
     if (effectiveRole === 'admin' || effectiveRole === 'root') {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
-      adminInfoBox!.style.display = '';
-      statsOverview!.style.display = '';
+      if (adminInfoBox) adminInfoBox.style.display = '';
+      if (statsOverview) statsOverview.style.display = '';
     } else {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = 'none'));
-      adminInfoBox!.style.display = 'none';
-      statsOverview!.style.display = 'none';
+      if (adminInfoBox) adminInfoBox.style.display = 'none';
+      if (statsOverview) statsOverview.style.display = 'none';
     }
 
     // Show create button for employees (including role-switched admins)
     if (effectiveRole === 'employee') {
-      createBtn!.style.display = '';
+      if (createBtn) createBtn.style.display = '';
     } else {
-      createBtn!.style.display = 'none';
+      if (createBtn) createBtn.style.display = 'none';
     }
   }
 
@@ -181,7 +189,7 @@ class KvpPage {
         this.categories.forEach((category) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
-          option.onclick = () => (window as any).selectCategory(category.id.toString(), category.name);
+          option.onclick = () => (window as unknown as KvpWindow).selectCategory(category.id.toString(), category.name);
           option.textContent = category.name;
           categoryDropdown.appendChild(option);
         });
@@ -219,7 +227,7 @@ class KvpPage {
         this.departments.forEach((dept) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
-          option.onclick = () => (window as any).selectDepartment(dept.id.toString(), dept.name);
+          option.onclick = () => (window as unknown as KvpWindow).selectDepartment(dept.id.toString(), dept.name);
           option.textContent = dept.name;
           departmentDropdown.appendChild(option);
         });
@@ -267,8 +275,10 @@ class KvpPage {
   }
 
   private renderSuggestions(): void {
-    const container = document.getElementById('suggestionsContainer')!;
-    const emptyState = document.getElementById('emptyState')!;
+    const container = document.getElementById('suggestionsContainer');
+    const emptyState = document.getElementById('emptyState');
+
+    if (!container || !emptyState) return;
 
     if (this.suggestions.length === 0) {
       container.innerHTML = '';
@@ -400,7 +410,7 @@ class KvpPage {
 
   private viewSuggestion(id: number): void {
     // Navigate to detail view
-    window.location.href = `/pages/kvp-detail.html?id=${id}`;
+    window.location.href = `/kvp-detail?id=${id}`;
   }
 
   private async shareSuggestion(id: number): Promise<void> {
@@ -460,17 +470,20 @@ class KvpPage {
       const data = await response.json();
 
       // Update statistics display
-      document.getElementById('totalSuggestions')!.textContent = data.company.total.toString();
-      document.getElementById('openSuggestions')!.textContent = (
-        (data.company.byStatus.new || 0) + (data.company.byStatus.in_review || 0)
-      ).toString();
-      document.getElementById('implementedSuggestions')!.textContent = (
-        data.company.byStatus.implemented || 0
-      ).toString();
-      document.getElementById('totalSavings')!.textContent = new Intl.NumberFormat('de-DE', {
-        style: 'currency',
-        currency: 'EUR',
-      }).format(data.company.totalSavings || 0);
+      const totalEl = document.getElementById('totalSuggestions');
+      const openEl = document.getElementById('openSuggestions');
+      const implementedEl = document.getElementById('implementedSuggestions');
+      const savingsEl = document.getElementById('totalSavings');
+
+      if (totalEl) totalEl.textContent = data.company.total.toString();
+      if (openEl)
+        openEl.textContent = ((data.company.byStatus.new || 0) + (data.company.byStatus.in_review || 0)).toString();
+      if (implementedEl) implementedEl.textContent = (data.company.byStatus.implemented || 0).toString();
+      if (savingsEl)
+        savingsEl.textContent = new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: 'EUR',
+        }).format(data.company.totalSavings || 0);
     } catch (error) {
       console.error('Error loading statistics:', error);
     }
@@ -487,11 +500,17 @@ class KvpPage {
     };
 
     // Update badge counts
-    document.getElementById('badgeAll')!.textContent = counts.all.toString();
-    document.getElementById('badgeMine')!.textContent = counts.mine.toString();
-    document.getElementById('badgeDepartment')!.textContent = counts.department.toString();
-    document.getElementById('badgeCompany')!.textContent = counts.company.toString();
-    document.getElementById('badgeArchived')!.textContent = counts.archived.toString();
+    const badgeAll = document.getElementById('badgeAll');
+    const badgeMine = document.getElementById('badgeMine');
+    const badgeDepartment = document.getElementById('badgeDepartment');
+    const badgeCompany = document.getElementById('badgeCompany');
+    const badgeArchived = document.getElementById('badgeArchived');
+
+    if (badgeAll) badgeAll.textContent = counts.all.toString();
+    if (badgeMine) badgeMine.textContent = counts.mine.toString();
+    if (badgeDepartment) badgeDepartment.textContent = counts.department.toString();
+    if (badgeCompany) badgeCompany.textContent = counts.company.toString();
+    if (badgeArchived) badgeArchived.textContent = counts.archived.toString();
   }
 
   private setupEventListeners(): void {
@@ -587,7 +606,7 @@ class KvpPage {
     }
 
     // Show modal
-    (window as any).showCreateModal();
+    (window as unknown as KvpWindow).showCreateModal();
   }
 
   private async createSuggestion(): Promise<void> {
@@ -634,9 +653,9 @@ class KvpPage {
       const suggestionId = result.suggestion.id;
 
       // Upload photos if any
-      const selectedPhotos = (window as any).selectedPhotos;
+      const selectedPhotos = (window as unknown as KvpWindow).selectedPhotos;
       console.log('Check selectedPhotos:', selectedPhotos);
-      console.log('Window.selectedPhotos type:', typeof (window as any).selectedPhotos);
+      console.log('Window.selectedPhotos type:', typeof (window as unknown as KvpWindow).selectedPhotos);
       console.log('Photos count:', selectedPhotos ? selectedPhotos.length : 0);
 
       if (selectedPhotos && selectedPhotos.length > 0) {
@@ -648,10 +667,10 @@ class KvpPage {
 
       // Success
       this.showSuccess('Ihr Vorschlag wurde erfolgreich eingereicht');
-      (window as any).hideCreateModal();
+      (window as unknown as KvpWindow).hideCreateModal();
 
       // Clear photo selection
-      (window as any).selectedPhotos = [];
+      (window as unknown as KvpWindow).selectedPhotos = [];
       const photoPreview = document.getElementById('photoPreview');
       if (photoPreview) photoPreview.innerHTML = '';
 

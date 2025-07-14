@@ -7,6 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
 
@@ -30,10 +31,18 @@
         z-index: -1;
       }
 
-      /* Page Container */
-      .page-container {
-        margin: 20px;
+      /* Container Styles */
+      .container {
+        padding: 20px;
         max-width: 1400px;
+        margin-top: -34px !important; /* Align first container with sidebar user-info-card */
+      }
+
+      /* Card Header with Button */
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
 
       /* Grid Layout */
@@ -223,41 +232,47 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <main class="main-content">
-        <div class="page-container">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
-            <div>
-              <h1>Abteilungsgruppen verwalten</h1>
-              <p class="text-secondary">Erstellen und verwalten Sie hierarchische Abteilungsgruppen</p>
-            </div>
-            <button class="btn btn-primary" onclick="showCreateGroupModal()">
-              <i class="fas fa-plus"></i>
-              Neue Gruppe
-            </button>
-          </div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
-          <div class="group-management-grid">
-            <!-- Group Tree Panel -->
-            <div class="panel">
-              <h3>Gruppenstruktur</h3>
-              <div id="groupTree" class="group-tree">
-                <div class="empty-state">
-                  <div class="empty-state-icon">
-                    <i class="fas fa-folder-tree"></i>
-                  </div>
-                  <div>Lade Gruppen...</div>
-                </div>
+        <div class="container">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Abteilungsgruppen verwalten</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Erstellen und verwalten Sie hierarchische Abteilungsgruppen</p>
               </div>
+              <button class="btn btn-primary" onclick="showCreateGroupModal()">
+                <i class="fas fa-plus"></i>
+                Neue Gruppe
+              </button>
             </div>
-
-            <!-- Group Details Panel -->
-            <div class="panel">
-              <h3>Gruppendetails</h3>
-              <div id="groupDetails">
-                <div class="empty-state">
-                  <div class="empty-state-icon">
-                    <i class="fas fa-info-circle"></i>
+            <div class="card-body">
+              <div class="group-management-grid">
+                <!-- Group Tree Panel -->
+                <div class="panel">
+                  <h3>Gruppenstruktur</h3>
+                  <div id="groupTree" class="group-tree">
+                    <div class="empty-state">
+                      <div class="empty-state-icon">
+                        <i class="fas fa-folder-tree"></i>
+                      </div>
+                      <div>Lade Gruppen...</div>
+                    </div>
                   </div>
-                  <div>Wählen Sie eine Gruppe aus, um Details anzuzeigen</div>
+                </div>
+
+                <!-- Group Details Panel -->
+                <div class="panel">
+                  <h3>Gruppendetails</h3>
+                  <div id="groupDetails">
+                    <div class="empty-state">
+                      <div class="empty-state-icon">
+                        <i class="fas fa-info-circle"></i>
+                      </div>
+                      <div>Wählen Sie eine Gruppe aus, um Details anzuzeigen</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -311,5 +326,12 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-department-groups.ts"></script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
   </body>
 </html>

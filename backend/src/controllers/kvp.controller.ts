@@ -6,7 +6,8 @@
 import { Request, Response } from 'express';
 import { Pool } from 'mysql2/promise';
 import kvpPermissionService from '../services/kvpPermission.service.js';
-import pool from '../config/database.js';
+import pool, { executeQuery } from '../config/database.js';
+import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 // Extended Request interface with tenant database and user
 interface TenantRequest extends Request {
@@ -120,13 +121,13 @@ class KvpController {
 
       // Apply filter logic
       let additionalWhere = '';
-      const additionalParams: any[] = [];
+      const additionalParams: (string | number)[] = [];
 
       if (filter === 'mine') {
         additionalWhere = ' AND s.submitted_by = ?';
         additionalParams.push(userId);
       } else if (filter === 'department' && role !== 'root') {
-        const [userInfo] = await (pool as any).query(
+        const [userInfo] = await executeQuery<RowDataPacket[]>(
           'SELECT department_id FROM users WHERE id = ?',
           [userId]
         );
@@ -174,28 +175,39 @@ class KvpController {
       // Use query method with proper encoding
       const connection = await pool.getConnection();
       await connection.query('SET NAMES utf8mb4');
-      const [suggestions] = await connection.query(query, allParams);
+      const [suggestions] = (await connection.query(query, allParams)) as [
+        RowDataPacket[],
+        unknown,
+      ];
       connection.release();
 
       // Transform the results to include shared_by_name and convert Buffers to strings
-      const transformedSuggestions = suggestions.map((s: any) => ({
-        ...s,
-        description: Buffer.isBuffer(s.description)
-          ? s.description.toString('utf8')
-          : s.description,
-        expected_benefit: Buffer.isBuffer(s.expected_benefit)
-          ? s.expected_benefit.toString('utf8')
-          : s.expected_benefit,
-        rejection_reason: Buffer.isBuffer(s.rejection_reason)
-          ? s.rejection_reason.toString('utf8')
-          : s.rejection_reason,
-        shared_by_name:
-          s.shared_by_firstname && s.shared_by_lastname
-            ? `${s.shared_by_firstname} ${s.shared_by_lastname}`
-            : null,
-        shared_by_firstname: undefined,
-        shared_by_lastname: undefined,
-      }));
+      interface KvpSuggestionRow {
+        description?: Buffer | string;
+        expected_benefit?: Buffer | string;
+        rejection_reason?: Buffer | string;
+        shared_by_firstname?: string;
+        shared_by_lastname?: string;
+        [key: string]: unknown;
+      }
+      const transformedSuggestions = (suggestions as KvpSuggestionRow[]).map(
+        (s) => ({
+          ...s,
+          description: Buffer.isBuffer(s.description)
+            ? s.description.toString('utf8')
+            : s.description,
+          expected_benefit: Buffer.isBuffer(s.expected_benefit)
+            ? s.expected_benefit.toString('utf8')
+            : s.expected_benefit,
+          rejection_reason: Buffer.isBuffer(s.rejection_reason)
+            ? s.rejection_reason.toString('utf8')
+            : s.rejection_reason,
+          shared_by_name:
+            s.shared_by_firstname && s.shared_by_lastname
+              ? `${s.shared_by_firstname} ${s.shared_by_lastname}`
+              : null,
+        })
+      );
 
       // Get total count
       const countQuery = `
@@ -204,7 +216,7 @@ class KvpController {
         WHERE ${whereClause}${additionalWhere}
       `;
 
-      const [countResult] = await (pool as any).query(countQuery, [
+      const [countResult] = await executeQuery<RowDataPacket[]>(countQuery, [
         ...queryParams,
         ...additionalParams,
       ]);
@@ -258,7 +270,7 @@ class KvpController {
       }
 
       // Get suggestion with details
-      const [suggestions] = await (pool as any).query(
+      const [suggestions] = await executeQuery<RowDataPacket[]>(
         `SELECT s.*,
                 u.first_name as submitted_by_name,
                 u.last_name as submitted_by_lastname,
@@ -308,7 +320,7 @@ class KvpController {
       const { id: userId, tenant_id: tenantId } = req.user;
 
       // Get user's department
-      const [userInfo] = await (pool as any).query(
+      const [userInfo] = await executeQuery<RowDataPacket[]>(
         'SELECT department_id FROM users WHERE id = ?',
         [userId]
       );
@@ -316,7 +328,7 @@ class KvpController {
       const departmentId = req.body.department_id || userInfo[0]?.department_id;
 
       // Create suggestion
-      const [result] = await (pool as any).query(
+      const [result] = await executeQuery<ResultSetHeader>(
         `INSERT INTO kvp_suggestions 
          (tenant_id, title, description, category_id, department_id, 
           org_level, org_id, submitted_by, status, priority, 
@@ -339,7 +351,7 @@ class KvpController {
       );
 
       // Get created suggestion
-      const [newSuggestion] = await (pool as any).query(
+      const [newSuggestion] = await executeQuery<RowDataPacket[]>(
         `SELECT s.*,
                 u.first_name as submitted_by_name,
                 u.last_name as submitted_by_lastname,
@@ -356,7 +368,7 @@ class KvpController {
       );
 
       // Log the creation
-      await (pool as any).query(
+      await executeQuery<ResultSetHeader>(
         `INSERT INTO activity_logs 
          (user_id, action, entity_type, entity_id, details, ip_address, user_agent) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -420,7 +432,7 @@ class KvpController {
 
       // Build update query dynamically
       const updateFields: string[] = [];
-      const updateValues: any[] = [];
+      const updateValues: (string | number | null | Date)[] = [];
 
       if (req.body.title !== undefined) {
         updateFields.push('title = ?');
@@ -485,13 +497,13 @@ class KvpController {
 
       updateValues.push(id);
 
-      await (pool as any).query(
+      await executeQuery<ResultSetHeader>(
         `UPDATE kvp_suggestions SET ${updateFields.join(', ')} WHERE id = ?`,
         updateValues
       );
 
       // Get updated suggestion
-      const [updated] = await (pool as any).query(
+      const [updated] = await executeQuery<RowDataPacket[]>(
         `SELECT s.*,
                 u.first_name as submitted_by_name,
                 u.last_name as submitted_by_lastname,
@@ -551,7 +563,7 @@ class KvpController {
       }
 
       // Archive instead of delete
-      await (pool as any).query(
+      await executeQuery<ResultSetHeader>(
         'UPDATE kvp_suggestions SET status = ? WHERE id = ?',
         ['archived', id]
       );
@@ -607,13 +619,13 @@ class KvpController {
       }
 
       // Get suggestion details for logging
-      const [suggestions] = await (pool as any).query(
+      const [suggestions] = await executeQuery<RowDataPacket[]>(
         'SELECT title, department_id FROM kvp_suggestions WHERE id = ?',
         [id]
       );
 
       // Update to company-wide visibility
-      await (pool as any).query(
+      await executeQuery<ResultSetHeader>(
         `UPDATE kvp_suggestions 
          SET org_level = 'company',
              org_id = ?,
@@ -633,7 +645,7 @@ class KvpController {
       );
 
       // Log the sharing action
-      await (pool as any).query(
+      await executeQuery<ResultSetHeader>(
         `INSERT INTO activity_logs 
          (user_id, action, entity_type, entity_id, details, ip_address, user_agent) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -685,7 +697,7 @@ class KvpController {
       }
 
       // Get suggestion details
-      const [suggestions] = await (pool as any).query(
+      const [suggestions] = await executeQuery<RowDataPacket[]>(
         'SELECT department_id, shared_by, org_level FROM kvp_suggestions WHERE id = ?',
         [id]
       );
@@ -714,7 +726,7 @@ class KvpController {
       }
 
       // Revert to department level
-      await (pool as any).query(
+      await executeQuery<ResultSetHeader>(
         `UPDATE kvp_suggestions 
          SET org_level = 'department',
              org_id = department_id,
@@ -781,10 +793,15 @@ class KvpController {
       );
 
       // Get department stats
-      const departmentStats: any[] = [];
+      interface DepartmentStat {
+        department_id: number;
+        department_name: string;
+        [key: string]: unknown;
+      }
+      const departmentStats: DepartmentStat[] = [];
       if (role === 'root') {
         // Get all departments
-        const [departments] = await (pool as any).query(
+        const [departments] = await executeQuery<RowDataPacket[]>(
           'SELECT id, name FROM departments WHERE tenant_id = ?',
           [tenantId]
         );
@@ -804,7 +821,7 @@ class KvpController {
       } else {
         // Get only admin's departments
         for (const deptId of departmentIds) {
-          const [deptInfo] = await (pool as any).query(
+          const [deptInfo] = await executeQuery<RowDataPacket[]>(
             'SELECT name FROM departments WHERE id = ?',
             [deptId]
           );
@@ -848,7 +865,7 @@ class KvpController {
         return;
       }
 
-      const [categories] = await (pool as any).query(
+      const [categories] = await executeQuery<RowDataPacket[]>(
         'SELECT * FROM kvp_categories ORDER BY name'
       );
 
@@ -913,7 +930,7 @@ class KvpController {
 
       query += ' ORDER BY c.created_at DESC';
 
-      const [comments] = await (pool as any).query(query, [id]);
+      const [comments] = await executeQuery<RowDataPacket[]>(query, [id]);
 
       res.json({
         success: true,
@@ -975,7 +992,7 @@ class KvpController {
       const isInternal =
         is_internal && (req.user.role === 'admin' || req.user.role === 'root');
 
-      const [result] = await (pool as any).query(
+      const [result] = await executeQuery<ResultSetHeader>(
         'INSERT INTO kvp_comments (suggestion_id, user_id, comment, is_internal) VALUES (?, ?, ?, ?)',
         [id, req.user.id, comment.trim(), isInternal ? 1 : 0]
       );
@@ -1024,7 +1041,7 @@ class KvpController {
         return;
       }
 
-      const [attachments] = await (pool as any).query(
+      const [attachments] = await executeQuery<RowDataPacket[]>(
         `SELECT a.*,
                 u.first_name as uploaded_by_name,
                 u.last_name as uploaded_by_lastname
@@ -1052,7 +1069,13 @@ class KvpController {
    * Upload photo attachments for a KVP suggestion
    * POST /api/kvp/:id/attachments
    */
-  async uploadAttachment(req: any, res: Response): Promise<void> {
+  async uploadAttachment(
+    req: TenantRequest & {
+      params: { id: string };
+      files?: Express.Multer.File[];
+    },
+    res: Response
+  ): Promise<void> {
     try {
       console.log('=== KVP Upload Attachment Start ===');
       console.log('User:', req.user);
@@ -1104,7 +1127,7 @@ class KvpController {
           path: file.path,
         });
 
-        const [result] = await (pool as any).query(
+        const [result] = await executeQuery<ResultSetHeader>(
           `INSERT INTO kvp_attachments 
            (suggestion_id, file_name, file_path, file_type, file_size, uploaded_by) 
            VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1145,7 +1168,10 @@ class KvpController {
    * Download a KVP attachment
    * GET /api/kvp/attachments/:attachmentId/download
    */
-  async downloadAttachment(req: any, res: Response): Promise<void> {
+  async downloadAttachment(
+    req: TenantRequest & { params: { attachmentId: string } },
+    res: Response
+  ): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({ error: 'Unauthorized' });
@@ -1155,7 +1181,7 @@ class KvpController {
       const attachmentId = parseInt(req.params.attachmentId);
 
       // Get attachment details
-      const [attachments] = await (pool as any).query(
+      const [attachments] = await executeQuery<RowDataPacket[]>(
         `SELECT ka.*, ks.tenant_id 
          FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id

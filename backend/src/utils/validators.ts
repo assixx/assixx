@@ -26,7 +26,7 @@ interface RequiredFieldsValidationResult {
 
 // Data object interface for required fields validation
 interface DataObject {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -209,8 +209,8 @@ export function isInRange(value: number, min: number, max: number): boolean {
  * @param value - Value to validate
  * @returns True if valid
  */
-export function isPositiveInteger(value: any): boolean {
-  return Number.isInteger(value) && value > 0;
+export function isPositiveInteger(value: unknown): boolean {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
 // Default export for CommonJS compatibility

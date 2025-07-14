@@ -65,7 +65,7 @@ interface Conversation extends RowDataPacket {
   } | null;
   profile_image_url?: string | null;
   unread_count: number;
-  participants?: any[];
+  participants?: Participant[];
 }
 
 interface Message extends RowDataPacket {
@@ -331,7 +331,7 @@ class ChatService {
 
       // Transform the results to match the expected format
       const conversationsWithParticipants = await Promise.all(
-        conversations.map(async (conv: any) => {
+        conversations.map(async (conv) => {
           const participants = await this.getConversationParticipants(
             conv.id,
             numericTenantId
@@ -847,7 +847,7 @@ class ChatService {
   async getConversationParticipants(
     conversationId: number,
     tenantId: number
-  ): Promise<any[]> {
+  ): Promise<Participant[]> {
     const query = `
       SELECT u.id, u.username, u.first_name, u.last_name, u.email,
              u.profile_picture as profile_image_url, cp.joined_at, cp.is_admin
@@ -859,8 +859,8 @@ class ChatService {
 
     const [participants] = await db
       .promise()
-      .execute(query, [conversationId, tenantId]);
-    return participants as any[];
+      .execute<Participant[]>(query, [conversationId, tenantId]);
+    return participants;
   }
 
   // Add participant to conversation

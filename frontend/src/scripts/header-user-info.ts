@@ -112,7 +112,7 @@ async function loadDepartmentBadge(): Promise<void> {
           } else if (data.departments && data.departments.length > 0) {
             badgeSpan.className = 'badge badge-info';
             badgeSpan.textContent = `${data.departments.length} Abteilungen`;
-            (badgeSpan as HTMLElement).title = data.departments.map((d: any) => d.name).join(', ');
+            (badgeSpan as HTMLElement).title = data.departments.map((d: { name: string }) => d.name).join(', ');
           }
         }
       }

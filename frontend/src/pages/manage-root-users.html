@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Root User Verwaltung - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const root = document.documentElement;
+        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+      })();
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
+
+      /* Glassmorphismus Background */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Container Styles */
+      .container {
+        padding: 20px;
+        margin-top: -34px !important; /* Align first container with sidebar user-info-card */
+      }
+
+      /* Security Warning Box */
+      .security-warning {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .security-warning i {
+        color: #f44336;
+        font-size: 20px;
+      }
+
+      .security-warning-text {
+        flex: 1;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      /* Table Styles */
+      .root-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      .root-table th {
+        background: rgba(33, 150, 243, 0.1);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .root-table td {
+        padding: 12px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .root-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      /* Action Buttons */
+      .action-btn {
+        padding: 6px 12px;
+        margin: 0 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 12px;
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+      }
+
+      .action-btn.edit {
+        border-color: rgba(33, 150, 243, 0.3);
+      }
+
+      .action-btn.edit:hover {
+        background: rgba(33, 150, 243, 0.2);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .action-btn.delete {
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .action-btn.delete:hover {
+        background: rgba(244, 67, 54, 0.2);
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      /* Add Root Button */
+      .add-root-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: rgba(33, 150, 243, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--primary-color);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+      }
+
+      .add-root-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
+      }
+
+      /* Modal für Root User hinzufügen/bearbeiten */
+      .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        /* animation: fadeInUp 0.3s ease-out; */
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .modal-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        transition: all 0.3s ease;
+      }
+
+      .modal-close:hover {
+        background-color: var(--background-dark);
+        color: var(--error-color);
+      }
+
+      .modal form {
+        padding: var(--spacing-lg);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      /* Custom Dropdown */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .dropdown-display {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .dropdown-display:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-display svg {
+        transition: transform 0.3s ease;
+      }
+
+      .dropdown-display.active svg {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(18, 18, 18, 0.8);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius-sm);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+      }
+
+      .dropdown-options.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-option {
+        padding: 10px 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .dropdown-option:hover {
+        background: rgba(33, 150, 243, 0.2);
+        color: white;
+        padding-left: 16px;
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      /* Modal Actions */
+      .button-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .btn {
+        padding: 10px 24px;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        box-shadow:
+          0 1px 4px rgba(33, 150, 243, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow:
+          0 6px 20px rgba(33, 150, 243, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--primary-color);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(5px);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-color);
+        transform: translateY(-1px);
+      }
+
+      /* Status Badge */
+      .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        display: block ruby;
+      }
+
+      .status-badge.active {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .status-badge.inactive {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .empty-state-text {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .empty-state-subtext {
+        font-size: 14px;
+        opacity: 0.7;
+      }
+
+      /* Two-Person Approval Badge */
+      .approval-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background: rgba(33, 150, 243, 0.1);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 12px;
+        font-size: 11px;
+        color: #2196f3;
+      }
+
+      .approval-badge i {
+        font-size: 10px;
+      }
+    </style>
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+  </head>
+  <body>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+
+        <div class="container">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Root User Verwaltung</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Root-Benutzer des Systems</p>
+            </div>
+            <div class="card-body">
+              <!-- Security Warning -->
+              <div class="security-warning">
+                <i class="fas fa-shield-alt"></i>
+                <div class="security-warning-text">
+                  <strong>Sicherheitshinweis:</strong>
+                  Root-Benutzer haben vollständigen Systemzugriff. Das Zwei-Personen-Prinzip ist für kritische Operationen wie
+                  Tenant-Löschung aktiv. Erstellen Sie Root-Benutzer nur für vertrauenswürdige Administratoren.
+                </div>
+              </div>
+
+              <!-- Root User Table -->
+              <div id="rootTableContent">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Add Root Button -->
+    <button class="add-root-btn" onclick="showAddRootModal()">+</button>
+
+    <!-- Root User Modal -->
+    <div class="modal" id="rootModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modalTitle">Root User hinzufügen</h3>
+          <button class="modal-close" onclick="closeRootModal()">&times;</button>
+        </div>
+        <form id="rootForm">
+          <div class="form-group">
+            <label class="form-label">Vorname *</label>
+            <input type="text" id="rootFirstName" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nachname *</label>
+            <input type="text" id="rootLastName" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-Mail *</label>
+            <input type="email" id="rootEmail" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-Mail wiederholen *</label>
+            <input type="email" id="rootEmailConfirm" class="form-control" required />
+          </div>
+          <div class="form-group" id="passwordGroup">
+            <label class="form-label">Passwort *</label>
+            <input type="password" id="rootPassword" class="form-control" />
+          </div>
+          <div class="form-group" id="passwordConfirmGroup">
+            <label class="form-label">Passwort wiederholen *</label>
+            <input type="password" id="rootPasswordConfirm" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position *</label>
+            <div class="custom-dropdown">
+              <div class="dropdown-display" id="positionDropdownDisplay" onclick="toggleDropdown('positionDropdown')">
+                <span>Position auswählen...</span>
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="dropdown-options" id="positionDropdownDropdown">
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'ceo', 'CEO')">CEO</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cto', 'CTO')">CTO</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cfo', 'CFO')">CFO</div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">
+                  Geschäftsführer
+                </div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'it-administrator', 'IT-Administrator')">
+                  IT-Administrator
+                </div>
+                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'systemadministrator', 'Systemadministrator')">
+                  Systemadministrator
+                </div>
+              </div>
+              <input type="hidden" name="position" id="positionDropdownValue" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notizen</label>
+            <textarea id="rootNotes" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div class="form-group" id="activeStatusGroup" style="display: none">
+            <label class="form-label">
+              <input type="checkbox" id="rootIsActive" />
+              <span style="margin-left: 8px">Aktiv</span>
+            </label>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px">
+              Deaktivierte Root-User können sich nicht anmelden
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button type="button" class="btn btn-secondary" onclick="closeRootModal()">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/manage-root-users.ts"></script>
+
+    <!-- Custom Dropdown Functions -->
+    <script>
+      // Toggle Dropdown
+      function toggleDropdown(type) {
+        const display = document.getElementById(type + 'Display');
+        const dropdown = document.getElementById(type + 'Dropdown');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-display').forEach((d) => {
+          if (d !== display) d.classList.remove('active');
+        });
+        document.querySelectorAll('.dropdown-options').forEach((d) => {
+          if (d !== dropdown) d.classList.remove('active');
+        });
+
+        display.classList.toggle('active');
+        dropdown.classList.toggle('active');
+      }
+
+      // Select Option
+      function selectOption(type, value, text) {
+        document.getElementById(type + 'Display').querySelector('span').textContent = text;
+        document.getElementById(type + 'Value').value = value;
+        document.getElementById(type + 'Display').classList.remove('active');
+        document.getElementById(type + 'Dropdown').classList.remove('active');
+      }
+
+      // Click outside to close
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Modal Functions
+      function showAddRootModal() {
+        document.getElementById('modalTitle').textContent = 'Root User hinzufügen';
+        document.getElementById('rootForm').reset();
+        document.getElementById('positionDropdownDisplay').querySelector('span').textContent = 'Position auswählen...';
+        document.getElementById('passwordGroup').style.display = 'block';
+        document.getElementById('passwordConfirmGroup').style.display = 'block';
+        document.getElementById('activeStatusGroup').style.display = 'none';
+        document.getElementById('rootModal').classList.add('active');
+      }
+
+      function closeRootModal() {
+        document.getElementById('rootModal').classList.remove('active');
+      }
+    </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
+  </body>
+</html>

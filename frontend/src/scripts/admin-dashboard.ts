@@ -4,7 +4,7 @@
  */
 
 import type { User, Document } from '../types/api.types';
-import { getAuthToken, showSuccess, showError, loadUserInfo } from './auth';
+import { getAuthToken, showSuccess, showError } from './auth';
 import { showSection } from './show-section';
 
 interface DashboardStats {
@@ -109,7 +109,9 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
       optionDiv.setAttribute('data-value', dept.id.toString());
       optionDiv.textContent = dept.name;
       optionDiv.onclick = () => {
-        (window as any).selectDropdownOption('employee-department', dept.id.toString(), dept.name);
+        if ('selectDropdownOption' in window && typeof window.selectDropdownOption === 'function') {
+          window.selectDropdownOption('employee-department', dept.id.toString(), dept.name);
+        }
       };
       dropdownOptions.appendChild(optionDiv);
     });
@@ -121,7 +123,7 @@ const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
 
 // Show New Employee Modal (defined globally)
 const showNewEmployeeModal = function (): void {
-  const modal = document.getElementById('employee-modal') as HTMLElement;
+  const modal = document.getElementById('employee-modal');
   if (modal) {
     // Formular zurücksetzen, falls es bereits benutzt wurde
     const form = document.getElementById('create-employee-form') as HTMLFormElement;
@@ -129,8 +131,8 @@ const showNewEmployeeModal = function (): void {
       form.reset();
 
       // Fehler-Anzeigen zurücksetzen
-      const emailError = document.getElementById('email-error') as HTMLElement;
-      const passwordError = document.getElementById('password-error') as HTMLElement;
+      const emailError = document.getElementById('email-error');
+      const passwordError = document.getElementById('password-error');
 
       if (emailError) emailError.style.display = 'none';
       if (passwordError) passwordError.style.display = 'none';
@@ -163,32 +165,32 @@ document.addEventListener('DOMContentLoaded', () => {
     token = 'test-mode';
   }
 
-  // Load user info in header
-  loadHeaderUserInfo();
+  // User info in header is handled by unified-navigation.ts
+  // loadHeaderUserInfo(); // Removed to avoid redundancy
 
   // Event Listeners for forms
-  const createEmployeeForm = document.getElementById('create-employee-form') as CreateEmployeeForm;
+  const createEmployeeForm = document.getElementById('create-employee-form') as CreateEmployeeForm | null;
   // const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
-  const departmentForm = document.getElementById('department-form') as HTMLFormElement;
-  const teamForm = document.getElementById('team-form') as HTMLFormElement;
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
+  const departmentForm = document.getElementById('department-form') as HTMLFormElement | null;
+  const teamForm = document.getElementById('team-form') as HTMLFormElement | null;
+  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null;
 
   // Buttons für Mitarbeiter-Modal
-  const newEmployeeBtn = document.getElementById('new-employee-button') as HTMLButtonElement;
-  const employeesSectionNewBtn = document.getElementById('employees-section-new-button') as HTMLButtonElement;
+  const newEmployeeBtn = document.getElementById('new-employee-button') as HTMLButtonElement | null;
+  const employeesSectionNewBtn = document.getElementById('employees-section-new-button') as HTMLButtonElement | null;
 
   // Event-Listener für Formulare
   if (createEmployeeForm) {
     createEmployeeForm.addEventListener('submit', createEmployee);
 
     // Live-Validierung für E-Mail und Passwort hinzufügen
-    const emailInput = document.getElementById('email') as HTMLInputElement;
-    const emailConfirmInput = document.getElementById('email_confirm') as HTMLInputElement;
-    const emailError = document.getElementById('email-error') as HTMLElement;
+    const emailInput = document.getElementById('email') as HTMLInputElement | null;
+    const emailConfirmInput = document.getElementById('email_confirm') as HTMLInputElement | null;
+    const emailError = document.getElementById('email-error');
 
-    const passwordInput = document.getElementById('password') as HTMLInputElement;
-    const passwordConfirmInput = document.getElementById('password_confirm') as HTMLInputElement;
-    const passwordError = document.getElementById('password-error') as HTMLElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+    const passwordConfirmInput = document.getElementById('password_confirm') as HTMLInputElement | null;
+    const passwordError = document.getElementById('password-error');
 
     // E-Mail-Validierung
     if (emailInput && emailConfirmInput && emailError) {
@@ -229,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logout().catch((error) => {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       });
     });
   }
@@ -332,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if unauthorized
         if (statsRes.status === 401) {
           console.error('Token expired or invalid, redirecting to login');
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
           return;
         }
 
@@ -465,9 +467,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Render entries
       const entriesHtml = entries
-        .map((entry: any) => {
+        .map((entry: { id: number; title: string; priority?: string; created_at: string }) => {
           const priorityClass = `priority-${entry.priority || 'normal'}`;
-          const priorityLabel = getPriorityLabel(entry.priority);
+          const priorityLabel = getPriorityLabel(entry.priority || 'normal');
           const createdDate = new Date(entry.created_at).toLocaleDateString('de-DE', {
             day: '2-digit',
             month: '2-digit',
@@ -475,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           return `
-          <div class="list-item" onclick="window.location.href='/pages/blackboard.html'">
+          <div class="list-item" onclick="window.location.href = "/blackboard"">
             <div class="list-item-content">
               <div class="list-item-title">${entry.title}</div>
               <div class="list-item-meta">
@@ -525,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const employeeData = Object.fromEntries(formData.entries()) as unknown as EmployeeFormData;
 
     // E-Mail-Übereinstimmung prüfen
-    const emailError = document.getElementById('email-error') as HTMLElement;
+    const emailError = document.getElementById('email-error');
     if (employeeData.email !== employeeData.email_confirm) {
       if (emailError) emailError.style.display = 'block';
 
@@ -536,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Passwort-Übereinstimmung prüfen
-    const passwordError = document.getElementById('password-error') as HTMLElement;
+    const passwordError = document.getElementById('password-error');
     if (employeeData.password !== employeeData.password_confirm) {
       if (passwordError) passwordError.style.display = 'block';
 
@@ -577,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createEmployeeForm.reset();
 
         // Modal schließen
-        const modal = document.getElementById('employee-modal') as HTMLElement;
+        const modal = document.getElementById('employee-modal');
         if (modal) modal.style.display = 'none';
 
         // Listen neu laden
@@ -598,37 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Load Header User Info
-  async function loadHeaderUserInfo(): Promise<void> {
-    try {
-      const token = getAuthToken();
-      if (!token) return;
-
-      // Use cached loadUserInfo from auth module
-      console.info('[Admin Dashboard] Using cached loadUserInfo');
-      const userData = await loadUserInfo();
-
-      const userNameElement = document.getElementById('user-name') as HTMLElement;
-      const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
-
-      if (userNameElement) {
-        const fullName =
-          userData.first_name && userData.last_name
-            ? `${userData.first_name} ${userData.last_name}`
-            : userData.username;
-        userNameElement.textContent = fullName;
-      }
-
-      if (userAvatar && userData.profile_picture) {
-        userAvatar.src = userData.profile_picture;
-        userAvatar.onerror = function () {
-          this.src = '/assets/images/default-avatar.svg';
-        };
-      }
-    } catch (error) {
-      console.error('Error loading user info:', error);
-    }
-  }
+  // loadHeaderUserInfo function removed - handled by unified-navigation.ts
 
   // Logout function
   async function logout(): Promise<void> {
@@ -713,7 +685,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      const documents = Array.isArray(data) ? data : data.documents || data.data || [];
+      const documents = Array.isArray(data)
+        ? data
+        : data.documents
+          ? Array.isArray(data.documents)
+            ? data.documents
+            : []
+          : data.data?.documents
+            ? Array.isArray(data.data.documents)
+              ? data.data.documents
+              : []
+            : [];
 
       // Fill compact card
       const documentCard = document.getElementById('recent-documents');
@@ -785,25 +767,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      departments.slice(0, 5).forEach((dept: any) => {
-        // Convert Buffer to String if needed
-        let description = '';
-        if (dept.description) {
-          if (dept.description.type === 'Buffer' && dept.description.data) {
-            description = String.fromCharCode(...dept.description.data);
-          } else if (typeof dept.description === 'string') {
-            description = dept.description;
+      departments
+        .slice(0, 5)
+        .forEach((dept: { id: number; name: string; description?: string | { type: string; data: number[] } }) => {
+          // Convert Buffer to String if needed
+          let description = '';
+          if (dept.description) {
+            if (
+              typeof dept.description === 'object' &&
+              dept.description !== null &&
+              'type' in dept.description &&
+              dept.description.type === 'Buffer' &&
+              'data' in dept.description &&
+              Array.isArray(dept.description.data)
+            ) {
+              description = String.fromCharCode(...dept.description.data);
+            } else if (typeof dept.description === 'string') {
+              description = dept.description;
+            }
           }
-        }
 
-        const item = document.createElement('div');
-        item.className = 'compact-item';
-        item.innerHTML = `
+          const item = document.createElement('div');
+          item.className = 'compact-item';
+          item.innerHTML = `
           <span class="compact-item-name">${dept.name}</span>
           <span class="compact-item-count">${description}</span>
         `;
-        departmentList.appendChild(item);
-      });
+          departmentList.appendChild(item);
+        });
     } catch (error) {
       console.error('Error loading departments:', error);
     }
@@ -947,6 +938,7 @@ declare global {
     showNewEmployeeModal: typeof showNewEmployeeModal;
     loadDepartmentsForEmployeeSelect: typeof loadDepartmentsForEmployeeSelect;
     showSection: typeof showSection;
+    selectDropdownOption?: (dropdownName: string, value: string, label: string) => void;
     loadRecentEmployees?: () => Promise<void>;
     loadDashboardStats?: () => Promise<void>;
     loadEmployeesTable?: () => Promise<void>;

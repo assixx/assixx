@@ -1,7 +1,12 @@
-import pool from '../database';
+import {
+  query as executeQuery,
+  getConnection,
+  RowDataPacket,
+  ResultSetHeader,
+  PoolConnection,
+} from '../utils/db';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcryptjs';
-import { RowDataPacket, ResultSetHeader, PoolConnection } from 'mysql2/promise';
 import { DatabaseTenant } from '../types/models';
 import { TenantTrialStatus } from '../types/tenant.types';
 import * as fs from 'fs/promises';
@@ -10,18 +15,6 @@ import * as path from 'path';
 // Extended interface for internal use
 interface TenantTrialStatusComplete extends TenantTrialStatus {
   isInTrial: boolean;
-}
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
 }
 
 // Database interfaces
@@ -62,7 +55,7 @@ export class Tenant {
     tenantData: TenantCreateData
   ): Promise<TenantCreateResult> {
     logger.info('[DEBUG] Starting tenant creation...');
-    const connection = (await (pool as any).getConnection()) as PoolConnection;
+    const connection = await getConnection();
     logger.info('[DEBUG] Got database connection');
 
     try {
@@ -113,14 +106,10 @@ export class Tenant {
       // 3. Erstelle Root-Benutzer (Firmeninhaber)
       const hashedPassword = await bcrypt.hash(admin_password, 10);
 
-      // Generate employee_id: domain|role|userid|timestamp
-      // We'll add the user ID after insert
-      const timestamp = Date.now().toString().slice(-6);
-      const tempEmployeeId = `${subdomain.toUpperCase()}|ROOT|TEMP|${timestamp}`;
-
+      // Create user first without employee_id but WITH phone
       const [userResult] = await connection.query<ResultSetHeader>(
-        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, employee_id) 
-         VALUES (?, ?, ?, 'root', ?, ?, ?, ?)`,
+        `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number) 
+         VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
         [
           admin_email,
           admin_email,
@@ -128,16 +117,22 @@ export class Tenant {
           admin_first_name,
           admin_last_name,
           tenantId,
-          tempEmployeeId,
+          phone,
+          '000001', // Temporäre Personalnummer für Root-User
         ]
       );
 
       const userId = userResult.insertId;
 
-      // Update employee_id with actual user ID
-      const finalEmployeeId = `${subdomain.toUpperCase()}|ROOT|${userId}|${timestamp}`;
+      // Generate employee_id using the same format as in root.ts
+      const { generateEmployeeId } = await import(
+        '../utils/employeeIdGenerator'
+      );
+      const employeeId = generateEmployeeId(subdomain, 'root', userId);
+
+      // Update user with generated employee_id
       await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [
-        finalEmployeeId,
+        employeeId,
         userId,
       ]);
 
@@ -200,15 +195,17 @@ export class Tenant {
     tenantId: number,
     connection: PoolConnection | null = null
   ): Promise<void> {
-    const conn = connection || pool;
+    const conn = connection || (await getConnection());
 
     // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
     // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
-    const [features] = await (conn as any).query(`SELECT id FROM features`);
+    const [features] = await conn.query<RowDataPacket[]>(
+      `SELECT id FROM features`
+    );
 
     // Aktiviere alle Features für 14 Tage Trial
     for (const feature of features) {
-      await (conn as any).query(
+      await conn.query(
         `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at) 
          VALUES (?, ?, TRUE, DATE_ADD(NOW(), INTERVAL 14 DAY))`,
         [tenantId, feature.id]
@@ -376,12 +373,16 @@ export class Tenant {
   private static async safeDelete(
     connection: PoolConnection,
     query: string,
-    params: any[]
+    params: unknown[]
   ): Promise<void> {
     try {
       await connection.query(query, params);
-    } catch (error: any) {
-      if (error.code === 'ER_NO_SUCH_TABLE') {
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as Error & { code: string }).code === 'ER_NO_SUCH_TABLE'
+      ) {
         logger.debug(`Table not found, skipping: ${error.message}`);
       } else {
         throw error;
@@ -391,7 +392,7 @@ export class Tenant {
 
   // Tenant komplett löschen - ACHTUNG: Löscht ALLE Daten unwiderruflich!
   static async delete(tenantId: number): Promise<boolean> {
-    const connection = (await (pool as any).getConnection()) as PoolConnection;
+    const connection = await getConnection();
 
     try {
       await connection.beginTransaction();
@@ -665,8 +666,8 @@ export class Tenant {
       await fs.access(dirPath);
       await fs.rm(dirPath, { recursive: true, force: true });
       logger.info(`Removed directory: ${dirPath}`);
-    } catch (error: any) {
-      if (error.code !== 'ENOENT') {
+    } catch (error) {
+      if ((error as globalThis.NodeJS.ErrnoException).code !== 'ENOENT') {
         // Only log if it's not a "directory doesn't exist" error
         logger.error(`Error removing directory ${dirPath}:`, error);
       }

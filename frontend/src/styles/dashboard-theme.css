@@ -101,7 +101,7 @@ body {
 
 /* Container */
 .container {
-  /*max-width: 1200px;*/
+  /*max-width: 1200px;*/ /* Commented out - width handled by parent containers */
   margin: 0 auto;
   padding: var(--spacing-lg);
 }
@@ -118,6 +118,8 @@ body {
   margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
+  backdrop-filter: blur(20px) saturate(180%);
+  background: hsla(0,0%,100%,.02);
 }
 
 .card-header {
@@ -141,7 +143,7 @@ body {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -184,7 +186,7 @@ body {
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 152, 0, 0.3);
   color: #ff9800;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   position: relative;
   overflow: hidden;
 }
@@ -230,7 +232,7 @@ body {
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 14px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .form-control:hover {
@@ -259,7 +261,7 @@ body {
 .table {
   width: 100%;
   border-collapse: collapse;
-  /*background-color: var(--background-light);*/
+  /*background-color: var(--background-light);*/ /* Commented - tables inherit background */
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -347,7 +349,7 @@ body {
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
 }
 
 .stat-card:hover {
@@ -392,7 +394,7 @@ body {
 }
 
 /* Animations */
-@keyframes fadeIn {
+/* @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -401,10 +403,10 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
+} */
 
 .fade-in {
-  animation: fadeIn 0.3s ease;
+  /* animation: fadeIn 0.3s ease; */
 }
 
 /* Utility Classes */
@@ -437,9 +439,11 @@ body {
 .mb-3 {
   margin-bottom: var(--spacing-md);
 }
+/* REDUNDANT - Empty class with no function
 .mb-4 {
-  /*margin-bottom: var(--spacing-lg);*/
+  margin-bottom: var(--spacing-lg);
 }
+*/
 .mb-5 {
   margin-bottom: var(--spacing-xl);
 }
@@ -450,6 +454,7 @@ body {
 
 .flex-between {
   justify-content: space-between;
+  margin-bottom: 20px;
 }
 
 .flex-center {
@@ -489,7 +494,7 @@ body {
   padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
 }
@@ -637,7 +642,7 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
-.sidebar-link {
+/*.sidebar-link {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -647,8 +652,10 @@ body {
   transition: all 0.3s ease;
   border-radius: var(--radius-sm);
   position: relative;
-}
+}*/
 
+/* NOTE: sidebar-link base is commented out above, but these related styles
+   are still used in some pages (3 occurrences found) */
 .sidebar-link:hover {
   color: var(--text-primary);
   background-color: rgba(255, 255, 255, 0.05);
@@ -682,13 +689,15 @@ body {
   padding: var(--spacing-lg);
   /* Use CSS custom properties for dynamic layout */
   margin-left: var(--content-margin, 250px);
-  transition: margin-left 0.3s ease;
+  /* transition: margin-left 0.3s ease; */
 }
 
-/*.content-section {
+/* REDUNDANT - content-section not actively used
+.content-section {
   max-width: 1200px;
   margin: 0 auto;
-}*/
+}
+*/
 
 /* Employee deletion dialog styles */
 .alert {
@@ -737,7 +746,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   position: relative;
   overflow: hidden;
 }
@@ -751,7 +760,7 @@ body {
 
 .btn-role-switch i {
   font-size: 1rem;
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
 }
 
 .btn-role-switch:hover i {
@@ -783,7 +792,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .role-switch-dropdown .dropdown-display:hover {
@@ -798,7 +807,7 @@ body {
 }
 
 .role-switch-dropdown .dropdown-display svg {
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
   width: 12px;
   height: 8px;
 }
@@ -821,7 +830,7 @@ body {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   z-index: 1001;
   margin-right: -14px;
 }
@@ -838,7 +847,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* transition: all 0.2s ease; */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import type { Router as ExpressRouter } from 'express';
+import type { Router as ExpressRouter, RequestHandler } from 'express';
 import kvpController from '../controllers/kvp.controller';
 import { authenticateToken } from '../middleware/auth';
 import { checkRole } from '../middleware/role.middleware';
@@ -47,7 +47,10 @@ router.post('/:id/comments', kvpController.addComment);
 
 // Attachments
 router.get('/:id/attachments', kvpController.getAttachments);
-router.post('/:id/attachments', kvpController.uploadAttachment);
+router.post(
+  '/:id/attachments',
+  kvpController.uploadAttachment as unknown as RequestHandler
+);
 router.get(
   '/attachments/:attachmentId/download',
   kvpController.downloadAttachment

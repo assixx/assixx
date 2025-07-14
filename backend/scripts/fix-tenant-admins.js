@@ -1,5 +1,5 @@
-import pool from '../src/database.js';
-import { logger } from '../src/utils/logger.js';
+import pool from "../src/database.js";
+import { logger } from "../src/utils/logger.js";
 
 /**
  * Fix tenant_admins table by adding all admin users
@@ -23,14 +23,14 @@ async function fixTenantAdmins() {
     `);
 
     logger.info(
-      `Found ${missingAdmins.length} admin users not in tenant_admins table`
+      `Found ${missingAdmins.length} admin users not in tenant_admins table`,
     );
 
     if (missingAdmins.length > 0) {
-      console.log('\nMissing admins:');
+      console.log("\nMissing admins:");
       missingAdmins.forEach((admin) => {
         console.log(
-          `- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`
+          `- ${admin.username} (${admin.email}) - Tenant ${admin.tenant_id}`,
         );
       });
 
@@ -39,16 +39,16 @@ async function fixTenantAdmins() {
         await connection.query(
           `INSERT INTO tenant_admins (tenant_id, user_id, is_primary) 
            VALUES (?, ?, FALSE)`,
-          [admin.tenant_id, admin.id]
+          [admin.tenant_id, admin.id],
         );
         logger.info(`Added admin ${admin.username} to tenant_admins`);
       }
 
       console.log(
-        `\n✅ Added ${missingAdmins.length} admins to tenant_admins table`
+        `\n✅ Added ${missingAdmins.length} admins to tenant_admins table`,
       );
     } else {
-      console.log('\n✅ All admins are already in tenant_admins table');
+      console.log("\n✅ All admins are already in tenant_admins table");
     }
 
     // 3. Show current state
@@ -60,21 +60,21 @@ async function fixTenantAdmins() {
       ORDER BY ta.tenant_id, ta.is_primary DESC
     `);
 
-    console.log('\nCurrent tenant_admins state:');
+    console.log("\nCurrent tenant_admins state:");
     console.table(
       allTenantAdmins.map((ta) => ({
         tenant: ta.subdomain,
         user: ta.username,
         email: ta.email,
         role: ta.role,
-        is_primary: ta.is_primary ? 'YES' : 'NO',
-      }))
+        is_primary: ta.is_primary ? "YES" : "NO",
+      })),
     );
 
     await connection.commit();
   } catch (error) {
     await connection.rollback();
-    logger.error('Error fixing tenant_admins:', error);
+    logger.error("Error fixing tenant_admins:", error);
     throw error;
   } finally {
     connection.release();
@@ -84,6 +84,6 @@ async function fixTenantAdmins() {
 
 // Run the fix
 fixTenantAdmins().catch((error) => {
-  console.error('Failed to fix tenant_admins:', error);
+  console.error("Failed to fix tenant_admins:", error);
   process.exit(1);
 });

@@ -1,27 +1,36 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import Feature from '../models/feature.js';
 import { logger } from '../utils/logger.js';
-import db from '../database.js';
+import { query, RowDataPacket } from '../utils/db.js';
 import { AuthenticatedRequest } from '../types/request.types.js';
-import { RowDataPacket } from 'mysql2/promise';
 
 export interface FeatureCheckOptions {
   sendUpgradeHint?: boolean;
   customErrorMessage?: string;
 }
 
+// Type guard to check if request is authenticated
+function isAuthenticated(req: Request): req is AuthenticatedRequest {
+  return 'user' in req && req.user != null;
+}
+
 // Middleware um zu prüfen ob ein Tenant ein bestimmtes Feature hat
 export const checkFeature =
   (featureCode: string, options: FeatureCheckOptions = {}) =>
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Tenant ID aus Request holen
       // Priorität: req.tenantId (von tenant middleware) > req.user.tenant_id (von JWT)
       let numericTenantId: number;
 
+      // Check if request is authenticated
+      if (!isAuthenticated(req)) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
       // Debug logging
       logger.info(
-        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenantId: req.user.tenantId, tenant_id: (req.user as any).tenant_id } : null)}`
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenant_id: req.user.tenant_id } : null)}`
       );
 
       if (req.tenantId) {
@@ -30,10 +39,11 @@ export const checkFeature =
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
-          const [tenantRows] = (await (db as any).query(
+          // Use database query
+          const [tenantRows] = await query<RowDataPacket[]>(
             'SELECT id FROM tenants WHERE subdomain = ?',
             [req.tenantId]
-          )) as [RowDataPacket[], any];
+          );
 
           if (tenantRows.length === 0) {
             return res.status(404).json({
@@ -44,12 +54,9 @@ export const checkFeature =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (
-        req.user &&
-        (req.user.tenantId || (req.user as any).tenant_id)
-      ) {
-        // Fallback: Verwende tenantId aus JWT Token (unterstützt beide Schreibweisen)
-        numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
+      } else if (req.user && req.user.tenant_id) {
+        // Fallback: Verwende tenant_id aus JWT Token
+        numericTenantId = req.user.tenant_id;
       } else {
         return res.status(400).json({
           error: 'Keine Tenant-ID gefunden',
@@ -75,7 +82,11 @@ export const checkFeature =
           `Feature '${featureCode}' not available for tenant ${numericTenantId}`
         );
 
-        const response: any = {
+        const response: {
+          error: string;
+          feature_required: string;
+          upgrade_required?: boolean;
+        } = {
           error: errorMessage,
           feature_required: featureCode,
         };
@@ -112,10 +123,11 @@ export const checkAnyFeature =
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
-          const [tenantRows] = (await (db as any).query(
+          // Use database query
+          const [tenantRows] = await query<RowDataPacket[]>(
             'SELECT id FROM tenants WHERE subdomain = ?',
             [req.tenantId]
-          )) as [RowDataPacket[], any];
+          );
 
           if (tenantRows.length === 0) {
             return res.status(404).json({
@@ -126,11 +138,8 @@ export const checkAnyFeature =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (
-        req.user &&
-        (req.user.tenantId || (req.user as any).tenant_id)
-      ) {
-        numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
+      } else if (req.user && req.user.tenant_id) {
+        numericTenantId = req.user.tenant_id;
       } else {
         return res.status(400).json({
           error: 'Keine Tenant-ID gefunden',
@@ -190,10 +199,11 @@ export const checkAllFeatures =
           numericTenantId = Number(req.tenantId);
         } else {
           // Otherwise it's a subdomain, look it up
-          const [tenantRows] = (await (db as any).query(
+          // Use database query
+          const [tenantRows] = await query<RowDataPacket[]>(
             'SELECT id FROM tenants WHERE subdomain = ?',
             [req.tenantId]
-          )) as [RowDataPacket[], any];
+          );
 
           if (tenantRows.length === 0) {
             return res.status(404).json({
@@ -204,11 +214,8 @@ export const checkAllFeatures =
 
           numericTenantId = tenantRows[0].id;
         }
-      } else if (
-        req.user &&
-        (req.user.tenantId || (req.user as any).tenant_id)
-      ) {
-        numericTenantId = req.user.tenantId || (req.user as any).tenant_id;
+      } else if (req.user && req.user.tenant_id) {
+        numericTenantId = req.user.tenant_id;
       } else {
         return res.status(400).json({
           error: 'Keine Tenant-ID gefunden',

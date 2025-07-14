@@ -16,17 +16,13 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="page-header">
-          <h1 class="page-title">Archivierte Mitarbeiter</h1>
-          <p class="text-secondary">
-            Hier finden Sie alle archivierten Mitarbeiter, die nicht mehr aktiv sind, aber deren Daten und Dokumente noch erhalten bleiben
-            sollen.
-          </p>
-        </div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">Archivierte Mitarbeiter</h2>
+            <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht inaktiver Mitarbeiter mit erhaltenen Daten</p>
           </div>
           <div class="table-responsive">
             <table class="table">
@@ -85,6 +81,7 @@
     <!-- Modal Style -->
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       .modal {
         position: fixed;
         z-index: 1000;
@@ -111,7 +108,7 @@
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .modal-header {
@@ -300,5 +297,12 @@
     </script>
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
   </body>
 </html>

@@ -99,12 +99,14 @@ class ModalManager {
 
     // Use requestAnimationFrame to ensure smooth animation
     window.requestAnimationFrame(() => {
-      modal!.classList.add('active');
-      console.log(`[ModalManager] Modal classes after show: ${modal!.className}`);
+      if (!modal) return;
+      modal.classList.add('active');
+      console.log(`[ModalManager] Modal classes after show: ${modal.className}`);
 
       // Double-check visibility after a frame
       window.requestAnimationFrame(() => {
-        const styles = window.getComputedStyle(modal!);
+        if (!modal) return;
+        const styles = window.getComputedStyle(modal);
         console.log(`[ModalManager] Modal computed style visibility:`, styles.visibility);
         console.log(`[ModalManager] Modal computed style opacity:`, styles.opacity);
         console.log(`[ModalManager] Modal computed style display:`, styles.display);
@@ -119,9 +121,9 @@ class ModalManager {
           styles.display === 'none'
         ) {
           console.warn('[ModalManager] Modal not visible, forcing visibility');
-          modal!.style.opacity = '1';
-          modal!.style.visibility = 'visible';
-          modal!.style.display = 'flex';
+          modal.style.opacity = '1';
+          modal.style.visibility = 'visible';
+          modal.style.display = 'flex';
         }
       });
     });
@@ -278,5 +280,8 @@ export function closeModal(modalId?: string): void {
 
 // Also export for window access
 if (typeof window !== 'undefined') {
-  (window as any).modalManager = modalManager;
+  interface ModalWindow extends Window {
+    modalManager: ModalManager;
+  }
+  (window as unknown as ModalWindow).modalManager = modalManager;
 }

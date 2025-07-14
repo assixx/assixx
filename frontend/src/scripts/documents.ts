@@ -58,10 +58,12 @@ function setupEventListeners(): void {
   if (searchInput) {
     searchInput.addEventListener(
       'input',
-      debounce((e: Event) => {
-        const target = e.target as HTMLInputElement;
-        currentSearch = target.value.toLowerCase();
-        applyFilters();
+      debounce((e) => {
+        if (e instanceof Event) {
+          const target = e.target as HTMLInputElement;
+          currentSearch = target.value.toLowerCase();
+          applyFilters();
+        }
       }, 300),
     );
   }
@@ -498,7 +500,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     const token = localStorage.getItem('token');
     if (!token) {
       showError('Nicht angemeldet. Bitte melden Sie sich erneut an.');
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       return;
     }
 
@@ -586,7 +588,10 @@ window.selectSort = function (value: SortOption, text: string): void {
   const input = document.getElementById('sortValue') as HTMLInputElement;
 
   if (display && dropdown && input) {
-    display.querySelector('span')!.textContent = text;
+    const span = display.querySelector('span');
+    if (span) {
+      span.textContent = text;
+    }
     input.value = value;
     display.classList.remove('active');
     dropdown.classList.remove('active');
@@ -640,7 +645,7 @@ function escapeHtml(text: string): string {
 /**
  * Debounce function
  */
-function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (...args: Parameters<T>) => void {
+function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: number): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null;
 
   return function executedFunction(...args: Parameters<T>) {

@@ -7,9 +7,14 @@ import type { User } from '../types/api.types';
 import { getAuthToken } from './auth';
 // import { showSuccess, showError } from './auth';
 
+// Import UnifiedNavigation type
+import type UnifiedNavigation from './components/unified-navigation';
+
 declare global {
   interface Window {
     chatClient?: ChatClient;
+    selectChatDropdownOption?: (type: string, id: number, name: string, meta?: string) => void;
+    unifiedNav: UnifiedNavigation;
   }
 }
 
@@ -920,7 +925,7 @@ class ChatClient {
     // Check if token exists
     if (!this.token) {
       console.error('❌ No authentication token found');
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       return;
     }
 
@@ -960,7 +965,7 @@ class ChatClient {
       if (response.ok) {
         const conversations = await response.json();
         // Stelle sicher, dass jede Konversation ein participants Array hat
-        this.conversations = conversations.map((conv: any) => ({
+        this.conversations = conversations.map((conv: Conversation) => ({
           ...conv,
           participants: conv.participants || [],
         }));
@@ -1066,7 +1071,7 @@ class ChatClient {
       case 'auth_error':
         console.error('❌ Authentication failed:', message.data);
         this.ws?.close();
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         break;
 
       case 'new_message': {
@@ -1111,13 +1116,22 @@ class ChatClient {
     const { message, conversationId } = data;
 
     // Ensure message has proper sender object structure
-    if (!message.sender && (message as any).sender_id) {
+    interface MessageWithExtra extends Message {
+      sender_name?: string;
+      username?: string;
+      first_name?: string;
+      last_name?: string;
+      profile_image_url?: string;
+      profile_picture_url?: string;
+    }
+    const msgWithExtra = message as MessageWithExtra;
+    if (!message.sender && msgWithExtra.sender_id) {
       message.sender = {
-        id: (message as any).sender_id,
-        username: (message as any).username || (message as any).sender_name || 'Unknown',
-        first_name: (message as any).first_name,
-        last_name: (message as any).last_name,
-        profile_picture_url: (message as any).profile_image_url || (message as any).profile_picture_url,
+        id: msgWithExtra.sender_id,
+        username: msgWithExtra.username || msgWithExtra.sender_name || 'Unknown',
+        first_name: msgWithExtra.first_name,
+        last_name: msgWithExtra.last_name,
+        profile_picture_url: msgWithExtra.profile_image_url || msgWithExtra.profile_picture_url,
         role: 'employee', // Default role
         tenant_id: 0, // Will be set by backend
         email: '',
@@ -1492,7 +1506,7 @@ class ChatClient {
 
   async sendMessage(content?: string): Promise<void> {
     console.log('sendMessage called');
-    const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement;
+    const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement | null;
     const messageContent = content || messageInput?.value.trim();
 
     console.log('Message content:', messageContent);
@@ -1625,8 +1639,8 @@ class ChatClient {
       `;
 
       preview.querySelector('.remove-file')?.addEventListener('click', (e) => {
-        const target = e.currentTarget as HTMLElement;
-        const fileIndex = parseInt(target.dataset.index || '0');
+        const target = e.currentTarget as HTMLElement | null;
+        const fileIndex = parseInt(target?.dataset.index || '0');
         this.removeFile(fileIndex);
       });
 
@@ -1677,7 +1691,7 @@ class ChatClient {
   }
 
   insertEmoji(emoji: string): void {
-    const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement;
+    const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement | null;
     if (!messageInput) return;
 
     const start = messageInput.selectionStart;
@@ -1921,7 +1935,8 @@ class ChatClient {
     const tabs = document.querySelectorAll('.chat-type-tab');
     tabs.forEach((tab) => {
       tab.addEventListener('click', (e) => {
-        const target = e.currentTarget as HTMLElement;
+        const target = e.currentTarget as HTMLElement | null;
+        if (!target) return;
         const type = target.dataset.type;
 
         // Update active tab
@@ -1959,11 +1974,13 @@ class ChatClient {
         if (dropdown) {
           dropdown.innerHTML = '';
 
-          departments.forEach((dept: any) => {
+          departments.forEach((dept: { id: number; name: string }) => {
             const option = document.createElement('div');
             option.className = 'dropdown-option';
             option.onclick = () => {
-              (window as any).selectChatDropdownOption('department', dept.id, dept.name);
+              if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
+                window.selectChatDropdownOption('department', dept.id, dept.name);
+              }
             };
             option.innerHTML = `
               <div class="option-info">
@@ -2001,7 +2018,9 @@ class ChatClient {
           option.className = 'dropdown-option';
           option.onclick = () => {
             const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
-            (window as any).selectChatDropdownOption('employee', employee.id, name, employee.department || '');
+            if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
+              window.selectChatDropdownOption('employee', employee.id, name, employee.department || '');
+            }
           };
           option.innerHTML = `
             <div class="option-info">
@@ -2030,7 +2049,9 @@ class ChatClient {
         option.className = 'dropdown-option';
         option.onclick = () => {
           const name = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || admin.username;
-          (window as any).selectChatDropdownOption('admin', admin.id, name, admin.role);
+          if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
+            window.selectChatDropdownOption('admin', admin.id, name, admin.role);
+          }
         };
         option.innerHTML = `
           <div class="option-info">
@@ -2061,16 +2082,16 @@ class ChatClient {
 
     try {
       // Get selected recipient based on active tab
-      const activeTab = document.querySelector('.chat-type-tab.active') as HTMLElement;
+      const activeTab = document.querySelector('.chat-type-tab.active') as HTMLElement | null;
       const tabType = activeTab?.dataset.type;
 
       let selectedUserId: number | null = null;
 
       if (tabType === 'employee') {
-        const employeeInput = document.getElementById('selectedEmployee') as HTMLInputElement;
+        const employeeInput = document.getElementById('selectedEmployee') as HTMLInputElement | null;
         selectedUserId = employeeInput?.value ? parseInt(employeeInput.value) : null;
       } else if (tabType === 'admin') {
-        const adminInput = document.getElementById('selectedAdmin') as HTMLInputElement;
+        const adminInput = document.getElementById('selectedAdmin') as HTMLInputElement | null;
         selectedUserId = adminInput?.value ? parseInt(adminInput.value) : null;
       }
 
@@ -2082,7 +2103,7 @@ class ChatClient {
 
       // For now, we only support 1:1 chats
       const isGroup = false;
-      const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement;
+      const groupNameInput = document.getElementById('groupChatName') as HTMLInputElement | null;
       const groupName = isGroup && groupNameInput ? groupNameInput.value.trim() : null;
       const response = await fetch('/api/chat/conversations', {
         method: 'POST',
@@ -2170,7 +2191,7 @@ class ChatClient {
 
   initializeEventListeners(): void {
     // Message input
-    const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement;
+    const messageInput = document.getElementById('messageInput') as HTMLTextAreaElement | null;
     if (messageInput) {
       // Enter key to send
       messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
@@ -2199,7 +2220,7 @@ class ChatClient {
     }
 
     // File upload handler
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement | null;
     const attachmentBtn = document.getElementById('attachmentBtn');
 
     if (attachmentBtn && fileInput) {
@@ -2211,8 +2232,8 @@ class ChatClient {
 
     if (fileInput) {
       fileInput.addEventListener('change', (event) => {
-        const target = event.target as HTMLInputElement;
-        const files = target.files;
+        const target = event.target as HTMLInputElement | null;
+        const files = target?.files;
         if (files && files.length > 0) {
           this.handleFileUpload(files);
           fileInput.value = '';
@@ -2233,7 +2254,8 @@ class ChatClient {
     const emojiCategories = document.querySelectorAll<HTMLElement>('.emoji-category');
     emojiCategories.forEach((category) => {
       category.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
         const categoryName = target.dataset.category;
         if (categoryName) {
           this.showEmojiCategory(categoryName);
@@ -2390,7 +2412,7 @@ class ChatClient {
   }
 
   resizeTextarea(): void {
-    const textarea = document.getElementById('messageInput') as HTMLTextAreaElement;
+    const textarea = document.getElementById('messageInput') as HTMLTextAreaElement | null;
     if (!textarea) return;
 
     textarea.style.height = 'auto';
@@ -2447,7 +2469,7 @@ class ChatClient {
     let typingTimer: NodeJS.Timeout | null = null;
     let isTyping = false;
 
-    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
+    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement | null;
     if (!messageInput) return;
 
     messageInput.addEventListener('input', () => {
@@ -2493,7 +2515,21 @@ class ChatClient {
   }
 
   // Transform WebSocket message to ensure proper structure
-  transformWebSocketMessage(data: any): Message {
+  transformWebSocketMessage(data: {
+    id: number;
+    conversation_id: number;
+    sender_id: number;
+    content: string;
+    created_at: string;
+    is_read?: boolean;
+    type?: string;
+    attachments?: Attachment[];
+    sender?: ChatUser;
+    username?: string;
+    sender_name?: string;
+    first_name?: string;
+    last_name?: string;
+  }): Message {
     return {
       id: data.id,
       conversation_id: data.conversation_id,
@@ -2501,19 +2537,22 @@ class ChatClient {
       content: data.content,
       created_at: data.created_at,
       is_read: data.is_read || false,
-      type: data.type || 'text',
+      type: (data.type || 'text') as 'text' | 'file' | 'system',
       attachments: data.attachments || [],
-      sender: data.sender || {
-        id: data.sender_id,
-        username: data.username || data.sender_name || 'Unknown',
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: '',
-        role: 'employee',
-        tenant_id: 0,
-        created_at: '',
-        updated_at: '',
-      },
+      sender:
+        data.sender ||
+        ({
+          id: data.sender_id,
+          username: data.username || data.sender_name || 'Unknown',
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: '',
+          role: 'employee' as const,
+          tenant_id: 0,
+          created_at: '',
+          updated_at: '',
+          is_active: true,
+        } as ChatUser),
     };
   }
 

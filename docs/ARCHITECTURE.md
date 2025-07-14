@@ -16,7 +16,6 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickel
   - Maximale Performance
   - Direkte DOM-Manipulation
 - **CSS-Architektur**
-
   - Glassmorphismus Design-System
   - CSS Custom Properties (Variables)
   - Mobile-First Responsive Design
@@ -30,7 +29,6 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickel
 ### Backend
 
 - **Node.js v18+ & Express.js mit TypeScript**
-
   - TypeScript für Type-Safety und bessere Entwicklererfahrung
   - MVC-Architektur (Model-View-Controller)
   - RESTful API Design
@@ -40,7 +38,6 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickel
   - Strict TypeScript Konfiguration für maximale Sicherheit
 
 - **Datenbank**
-
   - MySQL 8.0+
   - Multi-Tenant Architektur (Schema-Separation)
   - Connection Pooling
@@ -54,7 +51,6 @@ Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen, entwickel
 ### Sicherheit
 
 - **Authentifizierung**
-
   - JWT (JSON Web Tokens)
   - Bcrypt für Passwort-Hashing
   - 24-Stunden Token-Expiration
@@ -73,14 +69,12 @@ Assixx nutzt eine Multi-Container Docker-Architektur für konsistente Entwicklun
 #### Container-Übersicht
 
 1. **MySQL Container** (`assixx-db`)
-
    - MySQL 8.0 Server
    - Persistente Volumes für Datenspeicherung
    - Automatisches Schema-Setup beim ersten Start
    - Health-Checks für Verfügbarkeit
 
 2. **Backend Container** (`assixx-backend`)
-
    - Node.js 18 Alpine Linux
    - Express.js TypeScript Anwendung
    - Abhängig vom MySQL Container

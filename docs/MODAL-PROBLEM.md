@@ -19,7 +19,6 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
 ### Ursachenanalyse
 
 1. **Critical CSS Interferenz** (Erste Ursache)
-
    - In `calendar.html` existierte Critical CSS mit `!important` Regeln:
 
    ```css
@@ -29,7 +28,6 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
      visibility: hidden !important;
    }
    ```
-
    - Diese Regeln überschrieben alle anderen CSS-Definitionen
 
 2. **DOM Attachment Problem** (Hauptursache)
@@ -53,7 +51,6 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
      document.body.appendChild(modal);
    }
    ```
-
    - Diese Prüfung erkannte nicht, dass das Modal in einem temporären Container war
 
 2. **CSS Animation Timing**
@@ -138,17 +135,14 @@ requestAnimationFrame(() => {
 ## Lessons Learned
 
 1. **DOM Context ist kritisch**
-
    - Elemente müssen im sichtbaren DOM (`document.body`) sein, um korrekte computed styles zu haben
    - Ein `parentElement` Check allein reicht nicht aus
 
 2. **Template Parsing Fallstricke**
-
    - Bei `div.innerHTML = template; return div.firstElementChild` bleibt das Element im temporären Container
    - Explizites Verschieben zu `document.body` ist notwendig
 
 3. **Critical CSS Vorsicht**
-
    - `!important` Regeln können schwer zu debuggende Probleme verursachen
    - Bei dynamischen Komponenten sollte Critical CSS vermieden werden
 
@@ -176,12 +170,10 @@ Nach der Implementierung erfolgreich getestet:
 ## Präventionsmaßnahmen
 
 1. **Modal Manager als Standard verwenden**
-
    - Keine statischen Modals mehr in HTML
    - Alle Modals über den zentralen Modal Manager
 
 2. **DOM Attachment explizit prüfen**
-
    - Immer prüfen ob Element in `document.body` ist
    - Nicht nur auf `parentElement` verlassen
 

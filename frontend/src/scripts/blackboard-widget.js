@@ -53,7 +53,7 @@ class BlackboardWidget {
                         <i class="fas fa-thumbtack"></i>
                         Schwarzes Brett
                     </h3>
-                    <a href="/pages/blackboard.html" class="blackboard-widget-link">
+                    <a href="/blackboard" class="blackboard-widget-link">
                         Alle anzeigen <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -274,7 +274,7 @@ class BlackboardWidget {
 
   openEntry(entryId) {
     // Navigate to blackboard page with entry ID
-    window.location.href = `/pages/blackboard.html?entry=${entryId}`;
+    window.location.href = `/blackboard?entry=${entryId}`;
   }
 
   escapeHtml(text) {

@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (backBtn) {
     backBtn.addEventListener('click', () => {
-      window.location.href = '/pages/root-dashboard.html';
+      window.location.href = '/root-dashboard';
     });
   }
 

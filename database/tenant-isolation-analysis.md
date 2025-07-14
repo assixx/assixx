@@ -52,7 +52,6 @@ The views don't consistently filter by tenant_id:
 ### Core Module Issues
 
 1. **user_teams table**
-
    - No tenant_id column
    - Users could be assigned to teams from different tenants
    - **Fix**: Add tenant_id and unique constraint
@@ -64,13 +63,11 @@ The views don't consistently filter by tenant_id:
 ### Chat Module Issues
 
 1. **messages table**
-
    - No tenant_id column
    - Users from different tenants could message each other
    - **Fix**: Add tenant_id, enforce sender/receiver same tenant
 
 2. **user_chat_status table**
-
    - No tenant_id column
    - Online status visible across tenants
    - **Fix**: Add tenant_id column
@@ -95,12 +92,10 @@ The views don't consistently filter by tenant_id:
 ### Admin/Logging Issues
 
 1. **admin_logs table**
-
    - Has tenant_id but admin_id not verified
    - Admin from one tenant could have logs in another
 
 2. **security_logs table**
-
    - No tenant_id at all
    - Login attempts visible across all tenants
    - **Fix**: Add tenant_id column

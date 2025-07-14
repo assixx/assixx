@@ -27,7 +27,14 @@ const logDir = path.join(__dirname, '../../../backend/logs');
 
 // Custom metadata interface
 interface LogMetadata {
-  [key: string]: any;
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | null
+    | undefined
+    | object
+    | Array<unknown>;
 }
 
 // Custom format for better readability
@@ -63,7 +70,7 @@ const logger: winston.Logger = winston.createLogger({
     winston.format.splat(),
     customFormat
   ),
-  defaultMeta: { service: 'assixx-backend' },
+  defaultMeta: { service: 'assixx-backend' } as LogMetadata,
   transports: [
     // Error logs
     new winston.transports.File({

@@ -1,16 +1,32 @@
-# 📖 Assixx Project Instructions for Claude AI
+# Assixx Project Instructions for Claude AI
 
-## 🎯 START-TRIGGER (WICHTIGSTE SEKTION!)
+## QUICK REFERENCE
+- Projekt: Multi-Tenant SaaS für Industriefirmen
+- GitHub: https://github.com/SCS-Technik/Assixx
+- Aktueller Branch: debugging/v0.1.0--R2Stable  
+- Tech Stack: TypeScript, Express, MySQL, Docker, Redis, Vite
+- Dev URL: http://localhost:3000
+- Docker Dir: /home/scs/projects/Assixx/docker
+- Package Manager: pnpm
+- Datenbank: MySQL (Port 3307), Redis (Port 6379)
+- Projektstruktur: docs/PROJEKTSTRUKTUR.md
 
-FYI: für Datenbankzugang lies immer DATABASE-MIGRATION-GUIDE.md in /docs
-wir benutzen docker und pnpm
-Wichtig! niemals comitten oder pushen ohne Erlaubnis oder Nachfrage vom user
-NIEMALS Fast-Forwar merge durchführen!!!!!!!
+## KRITISCHE REGELN
+- NIEMALS committen oder pushen ohne Erlaubnis vom User
+- NIEMALS Fast-Forward merge durchführen
+- IMMER existierende Dateien bearbeiten statt neue erstellen
+- IMMER Docker aus /home/scs/projects/Assixx/docker starten
+- IMMER langfristig denken - keine Quick-Fixes die später Probleme machen
+- BEI UNSICHERHEIT nachfragen - besonders bei kritischen Änderungen
+- BEHUTSAM vorgehen - lieber zweimal prüfen als einmal bereuen
+- VERMEIDE error  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
+- TUE genau was ich sage und frag immer erst wenn du mehr machen sollst als verlangt.
+## START-TRIGGER
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
 
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen
-- **Prozess:** Alle Starttasks, TodoWrite mit 9 Punkten, komplette Checks
+- **Prozess:** Alle Starttasks, TodoWrite mit 10 Punkten, komplette Checks
 - **Ziel:** Sicherstellen, dass alles korrekt läuft
 
 ### Trigger 2: "weitermachen mit Assixx und skip" (Quick-Start-Modus)
@@ -24,14 +40,8 @@ NIEMALS Fast-Forwar merge durchführen!!!!!!!
   5. Direkt startbereit und auf Anweisungen warten
 - **Ziel:** Schneller Start für erfahrene Entwicklung
 
-## ⛔ KRITISCH: PFLICHT-REIHENFOLGE BEACHTEN!
 
-> **WARNUNG:** Die folgenden 5 Schritte MÜSSEN in EXAKTER Reihenfolge ausgeführt werden!
-> **Bei Missachtung:** Entwicklungsumgebung kann instabil sein, TypeScript-Fehler, API-Probleme!
-
-## 🚀 START HIER - PFLICHTLEKTÜRE VOR ARBEITSBEGINN
-
-## 🐳 DOCKER QUICK-CHECK (30 Sekunden)
+## DOCKER QUICK-CHECK
 
 **IMMER ZUERST ausführen:**
 
@@ -40,301 +50,117 @@ NIEMALS Fast-Forwar merge durchführen!!!!!!!
 cd /home/scs/projects/Assixx/docker
 
 # Alles in einem Befehl:
-docker-compose ps && curl -s http://localhost:3000/health | jq '.' && echo "✅ Ready to develop!"
+docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 # ODER nutze das neue Status-Script (empfohlen):
 /home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
-## ⚠️ BEKANNTE STOLPERFALLEN
+## HÄUFIGE TASKS
 
-**Diese Fehler treten häufig auf - hier die Lösungen:**
+### Frontend-Änderung
+1. docker exec assixx-backend pnpm run build:ts
+2. Browser Cache leeren (Ctrl+Shift+R)
+3. Testen auf http://localhost:3000
 
-1. **docker-compose nicht gefunden**
-   → IMMER aus `/home/scs/projects/Assixx/docker` ausführen!
+### Backend API-Änderung  
+1. docker exec assixx-backend pnpm run type-check
+2. docker-compose restart backend
+3. Logs prüfen: docker logs -f assixx-backend
 
-2. **TypeScript Test-Fehler (56 errors)**
-   → Normal für v0.1.0, können ignoriert werden
-   → Tests werden später aktualisiert
+### Datenbank-Migration
+1. Backup: bash scripts/quick-backup.sh "before_migration"
+2. Migration kopieren: docker cp migration.sql assixx-mysql:/tmp/
+3. Ausführen: docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main < /tmp/migration.sql
 
-3. **SMTP Warnings beim Docker Start**
-   → Können ignoriert werden (Email-Config optional)
+### TypeScript Fehler beheben
+1. docker exec assixx-backend pnpm run lint:fix
+2. docker exec assixx-backend pnpm run format
+3. docker exec assixx-backend pnpm run type-check
 
-4. **Port 3000 bereits belegt**
-   → `lsof -i :3000` und dann `kill -9 <PID>`
-   → Oder: `docker-compose down` vorher ausführen
+## WENN-DANN ANWEISUNGEN
 
-## ⛔ STOP! PFLICHT-CHECKLISTE VOR ENTWICKLUNG
+WENN User fragt nach Feature-Status
+- TODO.md prüfen, dann FEATURES.md
 
-**DIESE SCHRITTE MÜSSEN IN EXAKTER REIHENFOLGE AUSGEFÜHRT WERDEN:**
+WENN TypeScript Error bei Route Handler
+- typed.auth oder typed.body wrapper verwenden
+- Siehe backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md
 
-- [ ] ✅ Docker Quick-Check ausgeführt
-- [ ] ✅ TODO.md gelesen (nur "AKTUELLE PHASE" Section)
-- [ ] ✅ CLAUDE.md gelesen
-- [ ] ✅ docs/PROJEKTSTRUKTUR.md gelesen
-- [ ] ✅ docs/DESIGN-STANDARDS.md gelesen
-- [ ] ✅ docs/TYPESCRIPT-STANDARDS.md gelesen
-- [ ] ✅ README.md gelesen
-- [ ] ✅ docs/DATABASE-MIGRATION-GUIDE.md gelesen
-- [ ] ⚠️ **docs/BEFORE-STARTING-DEV.md AUSGEFÜHRT** (NICHT NUR GELESEN!)
-- [ ] ✅ Erst DANN: Mit Entwicklung beginnen
+WENN User will committen/pushen
+- IMMER nachfragen: "Soll ich die Änderungen committen?"
+- NIE automatisch committen
 
-**🚫 KEINE ENTWICKLUNG OHNE ABGESCHLOSSENE CHECKLISTE!**
+WENN Neue Datei erstellen
+- STOPP! Erst prüfen ob existierende Datei bearbeitet werden kann
 
-### 1️⃣ TODO-LISTE (ERSTE PRIORITÄT!)
+WENN Database Error
+- Foreign Key Constraints prüfen
+- Siehe DATABASE-MIGRATION-GUIDE.md
 
-```bash
-# IMMER als erste Aktion ausführen:
-cat /home/scs/projects/Assixx/TODO.md
-```
+WENN Docker Container nicht startet
+- docker-compose down && docker-compose up -d
+- Logs prüfen: docker-compose logs
 
-**Warum?**
+## BEKANNTE ISSUES
+- TypeScript Test-Fehler (56 errors) - ignorieren, betrifft nur Tests
+- SMTP Warnings beim Start - optional, ignorieren
+- Port 3000 belegt - lsof -i :3000 && kill -9 PID
 
-- ✅ Zeigt alle aktuellen und erledigten Aufgaben
-- 📊 Zeigt Prioritäten und aktuelle Arbeitsstände
-- 🚫 Verhindert doppelte Arbeit
-- 🗺️ Gibt Überblick über das gesamte Projekt
+## PFLICHT-CHECKLISTE (TodoWrite mit 10 Punkten)
+1. Docker-Check
+2. TODO.md (AKTUELLE PHASE)
+3. CLAUDE.md
+4. TypeScript Architecture Guide (bei Backend)
+5. Design Standards
+6. TypeScript Standards
+7. README.md
+8. Database Migration Guide
+9. BEFORE-STARTING-DEV ausführen
+10. Entwicklung beginnen
 
-### 2️⃣ PROJEKTSTRUKTUR (ZWEITE PRIORITÄT!)
+## ZENTRALE DOKUMENTATION
 
-```bash
-# Projektstruktur überprüfen und bei Bedarf aktualisieren:
-cat /home/scs/projects/Assixx/docs/PROJEKTSTRUKTUR.md
-```
+KERN-DOKUMENTE (Täglich relevant):
+- docs/PROJEKTSTRUKTUR.md - Vollständige Verzeichnisstruktur
+- backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md - TypeScript Patterns (PFLICHT bei Backend)
+- docs/DATABASE-MIGRATION-GUIDE.md - DB Änderungen (PFLICHT bei Migrationen)
+- docs/DESIGN-STANDARDS.md - Glassmorphismus UI/UX
 
-**Warum?**
+ARBEITS-DOKUMENTE:
+- TODO.md - Aktuelle Aufgaben und Status
+- docs/BEFORE-STARTING-DEV.md - Tägliche Dev Checks
+- docs/FEATURES.md - Feature-Liste mit Preisen
+- docs/DATABASE-SETUP-README.md - DB Schema Referenz
 
-- 📁 Zeigt die aktuelle Ordnerstruktur
-- 🔍 Hilft beim Finden von Dateien
-- ⚠️ Zeigt was fehlt oder migriert werden muss
-- 📝 Muss bei Strukturänderungen aktualisiert werden
+REFERENZ (Bei Bedarf):
+- docs/ARCHITECTURE.md - System-Übersicht
+- docs/ROADMAP.md - Zukünftige Features
+- CLAUDE.local.md - Lokale Notizen
 
-### 3️⃣ DESIGN-STANDARDS (DRITTE PRIORITÄT!)
+## CODE-STANDARDS
+- Kommentiere WARUM, nicht WAS
+- Jede Funktion braucht JSDoc
+- Komplexe Logik erklären
+- TypeScript statt any verwenden
+- Siehe TYPESCRIPT-STANDARDS.md für Details
 
-```bash
-# Design-Standards für konsistentes UI/UX:
-cat /home/scs/projects/Assixx/docs/DESIGN-STANDARDS.md
-```
+## WORKFLOW
 
-**Enthält:**
+### Bei "weitermachen mit Assixx"
+1. TodoWrite mit 10 Punkten erstellen (siehe PFLICHT-CHECKLISTE)
+2. Alle Checks durchführen
+3. Zusammenfassung erstellen
 
-- 🎨 Alle Glassmorphismus-Standards
-- 🎨 Farbpalette und CSS-Variablen
-- 📐 UI-Komponenten Dokumentation
-- 🔽 Custom Dropdown Pattern
+### Dokumentation aktualisieren bei
+- DB-Änderungen: DATABASE-SETUP-README.md
+- Neue Features: FEATURES.md  
+- UI-Änderungen: DESIGN-STANDARDS.md
+- Struktur-Änderungen: PROJEKTSTRUKTUR.md
 
-### 4️⃣ BEFORE-STARTING-DEV (VIERTE PRIORITÄT!) ⛔ PFLICHT-AUSFÜHRUNG!
+### MERGE-STRATEGIE FÜR MASTER BRANCH
 
-```bash
-# ⚠️ NICHT NUR LESEN - ALLE CHECKS MÜSSEN AUSGEFÜHRT WERDEN!
-cat /home/scs/projects/Assixx/docs/BEFORE-STARTING-DEV.md
-# DANN: Alle Befehle aus der Datei ausführen!
-```
-
-**⛔ STOP! Ohne diese Checks:**
-
-- TypeScript Builds können fehlschlagen
-- APIs könnten nicht erreichbar sein
-- Sicherheitslücken bleiben unentdeckt
-- Entwicklung auf fehlerhafter Basis!
-
-**Warum?**
-
-- ✅ TypeScript Build & Checks
-- ✅ API & System Health Tests
-- ✅ Dependencies & Security Updates
-- ✅ Projekt-Status Review
-- ⏱️ Dauert nur 5-10 Minuten
-- 🚨 Verhindert Entwicklung auf fehlerhafter Basis
-
-**WICHTIG:** Diese Checkliste MUSS bei jedem Entwicklungsstart durchgeführt werden!
-
-### 5️⃣ WEITERE WICHTIGE DOKUMENTE
-
-- **Entwickler-Guidelines**: [DEVELOPMENT-GUIDE.md](./docs/DEVELOPMENT-GUIDE.md)
-- **Architektur**: [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-- **Features**: [FEATURES.md](./docs/FEATURES.md)
-- **Datenbank**: [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)
-- **🆕 Migration Guide**: [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
-- **Setup Guides**:
-  - 🪟 [Windows (WSL)](./docs/SETUP-WINDOWS-WSL.md)
-  - 🐧 [Ubuntu/Linux](./docs/SETUP-UBUNTU-LINUX.md)
-  - 🍎 [macOS](./docs/SETUP-MACOS.md)
-
----
-
-## 📝 CODE-KOMMENTIERUNG STANDARDS
-
-### ✅ WAS MUSS KOMMENTIERT WERDEN:
-
-#### 1. JavaScript Funktionen
-
-```javascript
-// Validiert die Subdomain-Eingabe und zeigt Fehler an
-// @param {string} value - Die eingegebene Subdomain
-// @returns {boolean} - True wenn gültig, false wenn ungültig
-function validateSubdomain(value) {
-```
-
-#### 2. CSS Strukturen
-
-```css
-/* ========================================
-   HEADER SECTION - Glassmorphismus Design
-   ======================================== */
-.header {
-    /* Transparenter Hintergrund mit Blur für Glaseffekt */
-    background: rgba(255, 255, 255, 0.02);
-```
-
-#### 3. Komplexe Logik
-
-```javascript
-// Prüft zuerst ob Passwörter übereinstimmen
-// Dann sammelt alle Features die ausgewählt wurden
-// Fügt Ländervorwahl zur Telefonnummer hinzu
-// Sendet alles als JSON an Backend
-```
-
-#### 4. HTML Strukturen
-
-```html
-<!-- Signup Form - 3 Spalten Layout für 16-Zoll Monitore -->
-<!-- Erste Zeile: Firma, Subdomain, Email -->
-<div class="form-grid"></div>
-```
-
-### 📋 KOMMENTIERUNGS-CHECKLISTE:
-
-- ✓ JEDE Funktion (Was, Parameter, Return)
-- ✓ Komplexe CSS-Eigenschaften (Warum dieser Wert?)
-- ✓ Wichtige HTML-Strukturen
-- ✓ API-Calls und Datenverarbeitung
-- ✓ Berechnungen und Algorithmen
-
-### ❌ VERMEIDEN:
-
-- Offensichtliche Kommentare (`// Button Klick`)
-- Jede einzelne CSS-Zeile kommentieren
-- Fokus auf WAS statt WARUM
-
----
-
-## 🔧 WORKFLOW-ANWEISUNGEN
-
-### 🚀 PROJEKTSTART-PROZESS
-
-#### Wenn Simon sagt "weiter machen mit Assixx Projekt":
-
-0. **🤖 AUTOMATISCH:** TodoWrite mit Pflicht-Checkliste erstellen!
-
-   ```json
-   [
-     {
-       "id": "1",
-       "content": "Docker Quick-Check ausführen",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "2",
-       "content": "TODO.md lesen (nur TL;DR Section)",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "3",
-       "content": "CLAUDE.md lesen",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "4",
-       "content": "docs/PROJEKTSTRUKTUR.md lesen",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "5",
-       "content": "docs/DESIGN-STANDARDS.md lesen",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "6",
-       "content": "README.md lesen",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "7",
-       "content": "docs/DATABASE-MIGRATION-GUIDE.md lesen",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "8",
-       "content": "docs/BEFORE-STARTING-DEV.md AUSFÜHREN",
-       "status": "pending",
-       "priority": "high"
-     },
-     {
-       "id": "9",
-       "content": "Mit Entwicklung beginnen",
-       "status": "pending",
-       "priority": "medium"
-     }
-   ]
-   ```
-
-   - TODO.md lesen
-   - CLAUDE.md lesen
-   - docs/PROJEKTSTRUKTUR.md lesen
-   - docs/BEFORE-STARTING-DEV.md AUSFÜHREN (alle Checks!)
-   - Erst nach allen Checks: Mit Entwicklung beginnen
-
-1. **📚 PFLICHTLEKTÜRE** (IMMER in dieser Reihenfolge):
-
-   ```bash
-   # WICHTIG: Diese Reihenfolge IMMER einhalten!
-   cat TODO.md           # 1. Aktuelle Aufgaben (ERSTE PRIORITÄT!)
-   cat CLAUDE.md         # 2. Diese Anweisungen
-   cat docs/PROJEKTSTRUKTUR.md # 3. Projekt-Struktur prüfen/aktualisieren
-   cat docs/BEFORE-STARTING-DEV.md # 4. PFLICHT-AUSFÜHRUNG der Checks!
-   cat README.md         # 5. Projekt-Übersicht
-   cat docs/ROADMAP.md   # 6. Zukünftige Features
-   cat docs/DATABASE-SETUP-README.md  # 7. DB-Struktur (optional)
-   ```
-
-2. **📊 ZUSAMMENFASSUNG ERSTELLEN**:
-
-   ```
-   ✅ Erreicht: [Was wurde fertiggestellt]
-   🔴 Probleme: [Aktuelle Herausforderungen]
-   🔍 Prüfen: [Was muss getestet werden]
-   ```
-
-3. **✔️ DOPPELTE BESTÄTIGUNG**:
-
-   - Frage 1: "Sind Sie sicher, dass wir anfangen sollen?"
-   - Nach Ja: Konkrete Aufgabenliste zeigen
-   - Frage 2: "Welche Aufgabe möchten Sie beginnen?"
-
-4. **🔍 CHECKUP-PROTOKOLL**:
-
-   - **VOR Arbeitsbeginn**: "Haben Sie Backups/Tests durchgeführt?"
-   - **NACH Fertigstellung**: "Haben Sie die Änderungen getestet?"
-
-5. **📝 DOKUMENTATIONS-PFLICHT**:
-   - Bei DB-Änderungen → docs/DATABASE-SETUP-README.md aktualisieren
-   - **🆕 Bei DB-Migrationen → ZUERST docs/DATABASE-MIGRATION-GUIDE.md lesen!**
-   - Bei neuen Features → docs/FEATURES.md ergänzen
-   - Bei UI-Änderungen → docs/DESIGN-STANDARDS.md prüfen
-   - Bei Struktur-Änderungen → docs/PROJEKTSTRUKTUR.md aktualisieren
-
-### 🔀 MERGE-STRATEGIE FÜR MASTER BRANCH
-
-**⚠️ WICHTIG: Keine Fast-Forward Merges in master!**
+**WICHTIG: Keine Fast-Forward Merges in master!**
 
 Wenn ein Branch in master gemerged werden soll:
 
@@ -361,105 +187,52 @@ Wenn ein Branch in master gemerged werden soll:
    - "Hast du die Änderungen in [Dateiname] gesehen?"
 
 **Warum kein Fast-Forward:**
-
 - Merge-Historie bleibt sichtbar
 - Einfacheres Rollback bei Problemen
-- Verhindert versehentliche Änderungen (wie bei CLAUDE.md)
+- Verhindert versehentliche Änderungen
 
-### 🎯 AKTUELLE ENTWICKLUNGSSTRATEGIE (06.06.2025)
+## QUICK COMMANDS
 
-#### Version 0.1.0 - Stabilität vor Features!
+### Docker
+cd /home/scs/projects/Assixx/docker
+docker-compose ps
+docker-compose up -d
+docker-compose down
+docker-compose restart backend
+docker logs -f assixx-backend
 
-- **Fokus:** Systematisches Testing & Debugging
-- **Verantwortlich:** Simon testet jede Seite einzeln
-- **Ziel:** Alle bestehenden Features zu 100% funktionsfähig machen
-- **Zeitrahmen:** 2-3 Wochen
+### TypeScript
+docker exec assixx-backend pnpm run type-check
+docker exec assixx-backend pnpm run lint:fix
+docker exec assixx-backend pnpm run format
+docker exec assixx-backend pnpm run build:ts
 
-#### Version 1.0.0 - Beta-Features
+### Git
+git status
+git log --oneline -5
+git diff --stat
+git merge --no-ff branch-name
 
-- **Erst NACH Version 0.1.0**
-- **Deal-Breaker Features:** Urlaub, Gehalt, TPM
-- **Zeitrahmen:** 4-5 Wochen
+## GOLDENE REGELN
 
-#### Docker ist Standard!
+DO WHAT'S ASKED - Nicht mehr, nicht weniger
+EDIT > CREATE - Vorhandene Dateien bearbeiten statt neue erstellen  
+ASK BEFORE COMMIT - Niemals automatisch committen/pushen
+THINK LONG-TERM - Keine Hacks die später Probleme machen
+BE CAREFUL - Behutsam vorgehen, besonders bei kritischen Änderungen
 
-- **Entwicklung:** docker-compose up
-- **Keine lokale Installation mehr nötig**
-- **Backup-System läuft automatisch**
+NIEMALS:
+- Unnötige Dateien erstellen
+- Proaktiv Dokumentation schreiben
+- Mehr tun als angefragt
+- Committen ohne Erlaubnis
+- Fast-Forward merge (immer --no-ff)
+- Redundanten Code/Dateien erstellen
 
-### 📌 WICHTIGE UPDATES (06.06.2025)
-
-- ✅ Docker Setup komplett (01.06.2025)
-- ✅ Multi-Tenant Isolation behoben (01.06.2025)
-- ✅ Automatisches Backup-System aktiv (01.06.2025)
-- ✅ debugging/v0.1.0 Branch mit vielen Fixes (02-04.06.2025)
-- ✅ Schwarzes Brett teilweise getestet (04.06.2025)
-- ✅ DATABASE-MIGRATION-GUIDE.md erstellt (02.06.2025)
-- 🔥 AKTUELL: Systematisches Testing für v0.1.0 (1/12 Bereiche)
-
-### 📊 PROJEKT-ÜBERSICHT
-
-| Kategorie      | Information                               |
-| -------------- | ----------------------------------------- |
-| **Projekt**    | Multi-Tenant SaaS für Industriefirmen     |
-| **Tech Stack** | [ARCHITECTURE.md](./docs/ARCHITECTURE.md) |
-| **Features**   | [FEATURES.md](./docs/FEATURES.md)         |
-| **GitHub**     | https://github.com/SCS-Technik/Assixx     |
-| **Lokale Dev** | http://localhost:3000                     |
-
-### 📌 AKTUELLE SCHWERPUNKTE
-
-1. ✅ TypeScript Backend Migration (30.05.2025 - ABGESCHLOSSEN)
-2. ✅ Survey Tool komplett fertiggestellt (29.01.2025)
-3. ✅ Security & Stabilität Phase (ERLEDIGT)
-   - Cookie vulnerability gepatcht
-   - CSRF-Protection modernisiert
-   - Rate Limiting implementiert
-   - Input Validation verstärkt
-4. ✅ Docker Setup (01.06.2025 - ERLEDIGT)
-5. 🔥 Systematisches Testing & Debugging (AKTUELL - 1/12 Bereiche)
-
-### 🚨 KRITISCHE BETA-PRIORITÄTEN (Stand: 06.06.2025)
-
-1. **✅ Docker Setup** - ERLEDIGT (01.06.2025)
-2. **🔥 Version 0.1.0 Testing** (2-3 Wochen) - AKTUELL
-3. **🌴 Urlaubsantrag-System** (Nach v0.1.0) - DEAL-BREAKER Feature
-4. **💰 Gehaltsabrechnung Upload** (Nach v0.1.0) - DEAL-BREAKER Feature
-5. **🔧 TPM-System** (Nach v0.1.0) - DEAL-BREAKER Feature
-6. **📱 Mobile/PWA** (Parallel) - Kritisch für Industriearbeiter
-
----
-
-## 🔗 WEITERE STANDARDS & DOKUMENTATION
-
-- **💬 Chat System**: Siehe [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md#-chat-system-design-standards)
-- **🎨 UI/UX Design**: Siehe [DESIGN-STANDARDS.md](./docs/DESIGN-STANDARDS.md)
-- **📊 Datenbank**: Siehe [DATABASE-SETUP-README.md](./docs/DATABASE-SETUP-README.md)
-
----
-
-## ⚠️ WICHTIGE REGELN FÜR CLAUDE AI
-
-### 🎯 GOLDENE REGELN:
-
-1. **DO WHAT'S ASKED** - Nicht mehr, nicht weniger
-2. **EDIT > CREATE** - Immer vorhandene Dateien bearbeiten statt neue erstellen
-3. **NO PROACTIVE DOCS** - Keine Dokumentation ohne explizite Anfrage
-4. **CLEAN UP** - Test-/Debug-Dateien nach Gebrauch löschen
-5. **UPDATE DB README** - Bei Datenbankänderungen immer aktualisieren
-
-### 🚫 NIEMALS:
-
-- Dateien erstellen, die nicht absolut notwendig sind
-- Proaktiv README oder .md Dateien erstellen
-- Mehr tun als explizit angefragt wurde
-- Fast-Forward Merges in master Branch verwenden
-
-### ✅ IMMER:
-
-- Existierende Dateien bevorzugen
-- Nur das tun, was angefragt wurde
+IMMER:
+- Existierende Dateien nutzen
+- Bei DB-Änderungen DATABASE-SETUP-README.md updaten
 - Temporäre Dateien aufräumen
-- docs/DATABASE-SETUP-README.md bei DB-Änderungen aktualisieren
-- Bei Merges in master: `git merge --no-ff <branch>` verwenden
-- Vor jedem Merge alle Dateien prüfen mit `git diff master..<branch>`
+- TypeScript types verwenden (kein any)
+- Im Zweifel nachfragen
+- Langfristige Wartbarkeit bedenken

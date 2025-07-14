@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       @import url('/styles/user-info-update.css');
 
       /* Dramatischer Hintergrund-Gradient */
@@ -573,13 +574,15 @@
     <!-- Main Layout -->
     <div class="layout-container">
       <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
         <!-- Detail Container -->
         <div class="detail-container">
           <!-- Main Content -->
           <div class="detail-main">
             <div class="detail-header">
               <div>
-                <h1 class="detail-title" id="suggestionTitle">Lädt...</h1>
+                <div class="detail-title" id="suggestionTitle">Lädt...</div>
                 <div class="detail-meta">
                   <span>
                     <i class="fas fa-user"></i>
@@ -842,5 +845,6 @@
         }
       });
     </script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

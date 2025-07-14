@@ -18,7 +18,7 @@ const defaultConfig = {
   showIcons: true,
   homeLabel: 'Home',
   homeIcon: 'fa-home',
-  homeHref: '/'
+  homeHref: '/', // Will be dynamically updated based on user role
 };
 
 // URL zu Breadcrumb Mapping
@@ -58,29 +58,77 @@ const urlMappings = {
   '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/pages/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' },
-  '/pages/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' }
+  '/pages/kvp-admin': { label: 'KVP Verwaltung', icon: 'fa-tasks' },
+  '/manage-root-users': { label: 'Root User Verwaltung', icon: 'fa-user-lock' },
+  '/pages/manage-root-users': { label: 'Root User Verwaltung', icon: 'fa-user-lock' },
+  '/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
+  '/pages/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
+  '/root-features': { label: 'Root Features', icon: 'fa-tools' },
+  '/pages/root-features': { label: 'Root Features', icon: 'fa-tools' },
+  '/tenant-deletion-status': { label: 'Tenant Löschstatus', icon: 'fa-trash-alt' },
+  '/pages/tenant-deletion-status': { label: 'Tenant Löschstatus', icon: 'fa-trash-alt' },
+  '/feature-management': { label: 'Feature Management', icon: 'fa-toggle-on' },
+  '/pages/feature-management': { label: 'Feature Management', icon: 'fa-toggle-on' },
+  '/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
+  '/pages/org-management': { label: 'Organisation Verwaltung', icon: 'fa-building' },
+  '/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
+  '/pages/departments': { label: 'Abteilungen', icon: 'fa-sitemap' },
+  '/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
+  '/pages/manage-department-groups': { label: 'Abteilungsgruppen', icon: 'fa-layer-group' },
+  '/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },
+  '/pages/archived-employees': { label: 'Archivierte Mitarbeiter', icon: 'fa-archive' },
+  '/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
+  '/pages/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
+  '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
+  '/pages/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
+  '/survey-details': { label: 'Umfrage-Details', icon: 'fa-info-circle' },
+  '/pages/survey-details': { label: 'Umfrage-Details', icon: 'fa-info-circle' },
+  '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+  '/pages/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+  '/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
+  '/pages/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
+  '/documents-search': { label: 'Dokumente durchsuchen', icon: 'fa-search' },
+  '/pages/documents-search': { label: 'Dokumente durchsuchen', icon: 'fa-search' },
+  '/documents-personal': { label: 'Persönliche Dokumente', icon: 'fa-user-circle' },
+  '/pages/documents-personal': { label: 'Persönliche Dokumente', icon: 'fa-user-circle' },
+  '/documents-company': { label: 'Firmendokumente', icon: 'fa-building' },
+  '/pages/documents-company': { label: 'Firmendokumente', icon: 'fa-building' },
+  '/documents-department': { label: 'Abteilungsdokumente', icon: 'fa-sitemap' },
+  '/pages/documents-department': { label: 'Abteilungsdokumente', icon: 'fa-sitemap' },
+  '/documents-team': { label: 'Team-Dokumente', icon: 'fa-users' },
+  '/pages/documents-team': { label: 'Team-Dokumente', icon: 'fa-users' },
+  '/documents-payroll': { label: 'Gehaltsabrechnungen', icon: 'fa-money-check' },
+  '/pages/documents-payroll': { label: 'Gehaltsabrechnungen', icon: 'fa-money-check' },
+  '/employee-documents': { label: 'Mitarbeiter-Dokumente', icon: 'fa-file-alt' },
+  '/pages/employee-documents': { label: 'Mitarbeiter-Dokumente', icon: 'fa-file-alt' },
+  '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
+  '/pages/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
+  '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
+  '/pages/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
+  '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
+  '/pages/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
 };
 
 // Section Mappings für Admin Dashboard
 const sectionMappings = {
-  'dashboard': { label: 'Übersicht', icon: 'fa-tachometer-alt' },
+  dashboard: { label: 'Übersicht', icon: 'fa-tachometer-alt' },
   'dashboard-section': { label: 'Übersicht', icon: 'fa-tachometer-alt' },
-  'employees': { label: 'Mitarbeiter', icon: 'fa-users' },
+  employees: { label: 'Mitarbeiter', icon: 'fa-users' },
   'employees-section': { label: 'Mitarbeiter', icon: 'fa-users' },
-  'storage': { label: 'Speicherplatz', icon: 'fa-hdd' },
+  storage: { label: 'Speicherplatz', icon: 'fa-hdd' },
   'storage-section': { label: 'Speicherplatz', icon: 'fa-hdd' },
-  'activities': { label: 'Aktivitäten', icon: 'fa-history' },
+  activities: { label: 'Aktivitäten', icon: 'fa-history' },
   'activities-section': { label: 'Aktivitäten', icon: 'fa-history' },
-  'config': { label: 'Konfiguration', icon: 'fa-cog' },
+  config: { label: 'Konfiguration', icon: 'fa-cog' },
   'config-section': { label: 'Konfiguration', icon: 'fa-cog' },
-  'blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
+  blackboard: { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
   'blackboard-section': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
-  'documents': { label: 'Dokumente', icon: 'fa-file-alt' },
+  documents: { label: 'Dokumente', icon: 'fa-file-alt' },
   'documents-section': { label: 'Dokumente', icon: 'fa-file-alt' },
-  'teams': { label: 'Teams', icon: 'fa-users-cog' },
+  teams: { label: 'Teams', icon: 'fa-users-cog' },
   'teams-section': { label: 'Teams', icon: 'fa-users-cog' },
-  'settings': { label: 'Einstellungen', icon: 'fa-sliders-h' },
-  'settings-section': { label: 'Einstellungen', icon: 'fa-sliders-h' }
+  settings: { label: 'Einstellungen', icon: 'fa-sliders-h' },
+  'settings-section': { label: 'Einstellungen', icon: 'fa-sliders-h' },
 };
 
 // CSS einmal einfügen
@@ -105,7 +153,7 @@ function injectStyles() {
         /*backdrop-filter: blur(20px) saturate(180%);*/
         -webkit-backdrop-filter: blur(20px) saturate(180%);
         border-radius: 12px;
-        box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);
+        /*box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);*/
         color: #fff;
         font-size: 14px;
         padding: 6px 20px;
@@ -120,7 +168,7 @@ function injectStyles() {
       .breadcrumb-link {
         color: var(--text-secondary);
         text-decoration: none;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         padding: 4px 8px;
         border-radius: 6px;
       }
@@ -221,46 +269,156 @@ function generateBreadcrumbsFromURL() {
   const section = urlParams.get('section');
   const items = [];
 
+  // Determine home URL based on user role
+  // Prüfe verschiedene mögliche Speicherorte für die Rolle
+  const userRole =
+    localStorage.getItem('userRole') ||
+    localStorage.getItem('role') ||
+    localStorage.getItem('activeRole') ||
+    sessionStorage.getItem('userRole') ||
+    sessionStorage.getItem('role');
+
+  let homeHref = '/';
+
+  // Rollenbasiertes Dashboard bestimmen
+  if (userRole === 'root') {
+    homeHref = '/pages/root-dashboard.html';
+  } else if (userRole === 'admin') {
+    homeHref = '/pages/admin-dashboard.html';
+  } else if (userRole === 'employee') {
+    homeHref = '/pages/employee-dashboard.html';
+  } else {
+    // Fallback: Versuche aus der aktuellen URL zu erkennen
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('root')) {
+      homeHref = '/pages/root-dashboard.html';
+    } else if (currentPath.includes('admin')) {
+      homeHref = '/pages/admin-dashboard.html';
+    } else if (currentPath.includes('employee')) {
+      homeHref = '/pages/employee-dashboard.html';
+    }
+  }
+
   // Home ist immer der erste Eintrag
   items.push({
     label: defaultConfig.homeLabel,
-    href: defaultConfig.homeHref,
-    icon: defaultConfig.homeIcon
+    href: homeHref,
+    icon: defaultConfig.homeIcon,
   });
 
   // Aktuelle Seite ermitteln
   const currentPage = path.replace(/\.html$/, '');
-  
+
   if (currentPage !== '/' && currentPage !== '/index' && currentPage !== '') {
     const mapping = urlMappings[currentPage];
-    
+
     if (mapping) {
       // Spezielle Behandlung für Unterseiten
       if (currentPage === '/survey-create' || currentPage === '/survey-results') {
         items.push({
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
-          icon: 'fa-tachometer-alt'
+          icon: 'fa-tachometer-alt',
         });
         items.push({
           label: 'Umfragen',
           href: '/survey-admin',
-          icon: 'fa-poll'
+          icon: 'fa-poll',
         });
-      } else if (currentPage === '/manage-users' || currentPage === '/manage-admins' || currentPage === '/admin-config') {
+      } else if (
+        currentPage === '/manage-users' ||
+        currentPage === '/manage-admins' ||
+        currentPage === '/admin-config'
+      ) {
         items.push({
           label: 'Admin Dashboard',
           href: '/admin-dashboard',
-          icon: 'fa-tachometer-alt'
+          icon: 'fa-tachometer-alt',
         });
-      } else if (currentPage === '/documents' || currentPage === '/blackboard' || currentPage === '/chat' || currentPage === '/shifts') {
+      } else if (
+        currentPage === '/manage-root-users' ||
+        currentPage === '/pages/manage-root-users' ||
+        currentPage === '/root-features' ||
+        currentPage === '/pages/root-features' ||
+        currentPage === '/tenant-deletion-status' ||
+        currentPage === '/pages/tenant-deletion-status' ||
+        currentPage === '/feature-management' ||
+        currentPage === '/pages/feature-management'
+      ) {
+        items.push({
+          label: 'Root Dashboard',
+          href: '/root-dashboard',
+          icon: 'fa-shield-alt',
+        });
+      } else if (
+        currentPage === '/documents' ||
+        currentPage === '/blackboard' ||
+        currentPage === '/chat' ||
+        currentPage === '/shifts'
+      ) {
         // Prüfen ob Admin oder Employee
         const isAdmin = localStorage.getItem('userRole') === 'admin';
         if (!isAdmin) {
           items.push({
             label: 'Mitarbeiter Dashboard',
             href: '/employee-dashboard',
-            icon: 'fa-user'
+            icon: 'fa-user',
+          });
+        }
+      } else if (currentPage.includes('/documents-') || currentPage.includes('/employee-documents')) {
+        // Dokument-Unterseiten
+        items.push({
+          label: 'Dokumente',
+          href: '/documents',
+          icon: 'fa-file-alt',
+        });
+      } else if (currentPage === '/archived-employees' || currentPage === '/pages/archived-employees') {
+        items.push({
+          label: 'Admin Dashboard',
+          href: '/admin-dashboard',
+          icon: 'fa-tachometer-alt',
+        });
+        items.push({
+          label: 'Benutzer verwalten',
+          href: '/manage-users',
+          icon: 'fa-users',
+        });
+      } else if (currentPage === '/manage-department-groups' || currentPage === '/pages/manage-department-groups') {
+        items.push({
+          label: 'Admin Dashboard',
+          href: '/admin-dashboard',
+          icon: 'fa-tachometer-alt',
+        });
+        items.push({
+          label: 'Abteilungen',
+          href: '/departments',
+          icon: 'fa-sitemap',
+        });
+      } else if (
+        currentPage === '/account-settings' ||
+        currentPage === '/pages/account-settings' ||
+        currentPage === '/storage-upgrade' ||
+        currentPage === '/pages/storage-upgrade'
+      ) {
+        // Diese Seiten können von verschiedenen Dashboards aus erreicht werden
+        const userRole = localStorage.getItem('userRole');
+        if (userRole === 'root') {
+          items.push({
+            label: 'Root Dashboard',
+            href: '/root-dashboard',
+            icon: 'fa-shield-alt',
+          });
+        } else if (userRole === 'admin') {
+          items.push({
+            label: 'Admin Dashboard',
+            href: '/admin-dashboard',
+            icon: 'fa-tachometer-alt',
+          });
+        } else {
+          items.push({
+            label: 'Mitarbeiter Dashboard',
+            href: '/employee-dashboard',
+            icon: 'fa-user',
           });
         }
       }
@@ -272,20 +430,20 @@ function generateBreadcrumbsFromURL() {
         if (sectionMapping) {
           items.push({
             ...sectionMapping,
-            current: true
+            current: true,
           });
         } else {
           // Fallback für unbekannte Sections
           items.push({
             label: section.charAt(0).toUpperCase() + section.slice(1),
-            current: true
+            current: true,
           });
         }
       } else {
         // Normale Seite ohne Section
         items.push({
           ...mapping,
-          current: true
+          current: true,
         });
       }
     } else {
@@ -293,7 +451,7 @@ function generateBreadcrumbsFromURL() {
       const pageName = currentPage.split('/').pop().replace(/-/g, ' ');
       items.push({
         label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
-        current: true
+        current: true,
       });
     }
   }

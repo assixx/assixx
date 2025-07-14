@@ -15,6 +15,11 @@ interface AuthenticatedRequest extends Request {
     email: string;
     role: string;
   };
+  body: {
+    department_id?: string | number;
+    departmentId?: string | number;
+    [key: string]: unknown;
+  };
 }
 
 /**
@@ -44,8 +49,8 @@ export const checkDepartmentAccess = async (
     let department_id: number | undefined;
 
     // Check body
-    if (req.body && req.body.department_id) {
-      department_id = parseInt(req.body.department_id);
+    if (req.body && authReq.body.department_id) {
+      department_id = parseInt(String(authReq.body.department_id));
     }
     // Check query parameters
     else if (req.query && req.query.department_id) {
@@ -117,36 +122,55 @@ export const filterDepartmentResults = async (
     return next();
   }
 
-  // Store the original json method
-  const originalJson = res.json;
+  // Type assertion for user with proper check
+  if (!user.id || typeof user.tenant_id !== 'number') {
+    return next();
+  }
 
-  // Override the json method to filter results
-  res.json = async function (this: Response, data: any): Promise<any> {
+  // Get departments upfront for the admin
+  const { departments } = await adminPermissionService.getAdminDepartments(
+    user.id,
+    user.tenant_id
+  );
+  const allowedDeptIds = new Set(departments.map((d) => d.id));
+
+  // Store the original json method
+  const originalJson = res.json.bind(res);
+
+  // Override the json method to filter results - type cast required for complex override
+  (res as Response & { json: (data: unknown) => Response }).json = function (
+    data: unknown
+  ): Response {
     // If data is an array of items with department_id
     if (Array.isArray(data)) {
-      const { departments } = await adminPermissionService.getAdminDepartments(
-        user.id,
-        user.tenant_id
-      );
-
-      const allowedDeptIds = new Set(departments.map((d) => d.id));
-
       // Filter items based on department access
-      data = data.filter((item) => {
-        if (item.department_id) {
-          return allowedDeptIds.has(item.department_id);
-        }
-        if (item.departmentId) {
-          return allowedDeptIds.has(item.departmentId);
+      const filteredData = data.filter((item) => {
+        if (typeof item === 'object' && item !== null) {
+          const deptItem = item as Record<string, unknown>;
+          if (
+            'department_id' in deptItem &&
+            typeof deptItem.department_id === 'number'
+          ) {
+            return allowedDeptIds.has(deptItem.department_id);
+          }
+          if (
+            'departmentId' in deptItem &&
+            typeof deptItem.departmentId === 'number'
+          ) {
+            return allowedDeptIds.has(deptItem.departmentId);
+          }
         }
         // If no department field, include the item
         return true;
       });
+
+      // Call the original json method with filtered data
+      return originalJson(filteredData);
     }
 
-    // Call the original json method with filtered data
-    return originalJson.call(this, data);
-  } as any;
+    // Call the original json method with original data
+    return originalJson(data);
+  };
 
   next();
 };

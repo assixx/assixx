@@ -89,7 +89,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   const token = getAuthToken();
 
   if (!token) {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('No authentication token');
   }
 
@@ -111,7 +111,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   // Handle authentication errors
   if (response.status === 401) {
     removeAuthToken();
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('Unauthorized');
   }
 
@@ -123,13 +123,13 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     // Redirect to appropriate dashboard based on role
     switch (userRole) {
       case 'employee':
-        redirectUrl = '/pages/employee-dashboard.html';
+        redirectUrl = '/employee-dashboard';
         break;
       case 'admin':
-        redirectUrl = '/pages/admin-dashboard.html';
+        redirectUrl = '/admin-dashboard';
         break;
       case 'root':
-        redirectUrl = '/pages/root-dashboard.html';
+        redirectUrl = '/root-dashboard';
         break;
     }
 
@@ -178,8 +178,8 @@ export async function loadUserInfo(): Promise<User> {
         // The API returns the user object directly, not wrapped in data.user
         const user: User = data.user || data;
 
-        // Update user display
-        const userName = document.getElementById('userName');
+        // Update user display - check both element IDs for compatibility
+        const userName = document.getElementById('userName') || document.getElementById('user-name');
         if (userName) {
           const firstName = user.first_name || 'Admin';
           const lastName = user.last_name || '';
@@ -274,7 +274,7 @@ export async function logout(): Promise<void> {
   profileLoadingPromise = null;
 
   // Redirect to login
-  window.location.href = '/pages/login.html';
+  window.location.href = '/login';
 }
 
 // Show success message
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if user is authenticated
   if (!isAuthenticated() && !window.location.pathname.includes('login')) {
     console.info('[AUTH] No authentication token found, redirecting to login');
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -330,6 +330,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize session manager for authenticated users
     SessionManager.getInstance();
     console.info('[AUTH] Session manager initialized');
+
+    // Enforce page access based on role - use UnifiedNavigation if available
+    const unifiedNav = window.unifiedNav;
+    if (unifiedNav && typeof unifiedNav.enforcePageAccess === 'function') {
+      unifiedNav.enforcePageAccess();
+      console.info('[AUTH] Page access enforced via UnifiedNavigation');
+    } else {
+      // UnifiedNavigation will handle this when it initializes
+      console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
+    }
   }
 });
 

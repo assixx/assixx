@@ -3,7 +3,12 @@
  * Handles department and group permissions for admin users
  */
 
-import pool from '../config/database.js';
+import {
+  execute,
+  getConnection,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger.js';
 
 interface Permission {
@@ -33,7 +38,7 @@ class AdminPermissionService {
   ): Promise<boolean> {
     try {
       // First check direct department permissions
-      const [directPermissions] = await (pool as any).execute(
+      const [directPermissions] = await execute<RowDataPacket[]>(
         `SELECT can_read, can_write, can_delete 
          FROM admin_department_permissions 
          WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
@@ -46,7 +51,7 @@ class AdminPermissionService {
       }
 
       // Check group permissions
-      const [groupPermissions] = await (pool as any).execute(
+      const [groupPermissions] = await execute<RowDataPacket[]>(
         `SELECT agp.can_read, agp.can_write, agp.can_delete
          FROM admin_group_permissions agp
          JOIN department_group_members dgm ON agp.group_id = dgm.group_id
@@ -58,7 +63,7 @@ class AdminPermissionService {
 
       if (groupPermissions.length > 0) {
         // Check if any group grants the required permission
-        return groupPermissions.some((perm: any) =>
+        return groupPermissions.some((perm: RowDataPacket) =>
           this.checkPermissionLevel(perm, requiredPermission)
         );
       }
@@ -71,7 +76,7 @@ class AdminPermissionService {
   }
 
   private checkPermissionLevel(
-    permission: any,
+    permission: RowDataPacket,
     requiredLevel: 'read' | 'write' | 'delete'
   ): boolean {
     switch (requiredLevel) {
@@ -98,13 +103,13 @@ class AdminPermissionService {
   }> {
     try {
       // Check if admin has access to all departments
-      const [adminInfo] = await (pool as any).execute(
+      const [adminInfo] = await execute<RowDataPacket[]>(
         `SELECT COUNT(*) as dept_count FROM admin_department_permissions 
          WHERE admin_user_id = ? AND tenant_id = ?`,
         [adminId, tenantId]
       );
 
-      const [totalDepts] = await (pool as any).execute(
+      const [totalDepts] = await execute<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM departments WHERE tenant_id = ?`,
         [tenantId]
       );
@@ -114,7 +119,7 @@ class AdminPermissionService {
         totalDepts[0].total > 0;
 
       // Get direct department permissions
-      const [directDepts] = await (pool as any).execute(
+      const [directDepts] = await execute<RowDataPacket[]>(
         `SELECT d.id, d.name, d.description, 
                 adp.can_read, adp.can_write, adp.can_delete
          FROM departments d
@@ -124,7 +129,7 @@ class AdminPermissionService {
       );
 
       // Get departments via group permissions
-      const [groupDepts] = await (pool as any).execute(
+      const [groupDepts] = await execute<RowDataPacket[]>(
         `SELECT DISTINCT d.id, d.name, d.description,
                 MAX(agp.can_read) as can_read,
                 MAX(agp.can_write) as can_write,
@@ -141,7 +146,7 @@ class AdminPermissionService {
       const departmentMap = new Map<number, DepartmentWithPermission>();
 
       // Add direct permissions
-      directDepts.forEach((dept: any) => {
+      directDepts.forEach((dept) => {
         departmentMap.set(dept.id, {
           id: dept.id,
           name: dept.name,
@@ -153,7 +158,7 @@ class AdminPermissionService {
       });
 
       // Add/update with group permissions (taking maximum permissions)
-      groupDepts.forEach((dept: any) => {
+      groupDepts.forEach((dept) => {
         const existing = departmentMap.get(dept.id);
         if (existing) {
           // Take maximum permissions
@@ -196,7 +201,7 @@ class AdminPermissionService {
       can_delete: false,
     }
   ): Promise<boolean> {
-    const connection = await pool.getConnection();
+    const connection = await getConnection();
 
     try {
       logger.info(`[DEBUG] setPermissions called:`, {
@@ -279,9 +284,9 @@ class AdminPermissionService {
       await connection.rollback();
       logger.error('Error setting admin permissions:', error);
       logger.error('[DEBUG] Error details:', {
-        message: (error as any).message,
-        code: (error as any).code,
-        sqlMessage: (error as any).sqlMessage,
+        message: (error as Error).message,
+        code: (error as { code?: string }).code,
+        sqlMessage: (error as { sqlMessage?: string }).sqlMessage,
       });
       return false;
     } finally {
@@ -303,7 +308,7 @@ class AdminPermissionService {
       can_delete: false,
     }
   ): Promise<boolean> {
-    const connection = await pool.getConnection();
+    const connection = await getConnection();
 
     try {
       await connection.beginTransaction();
@@ -359,7 +364,7 @@ class AdminPermissionService {
     tenantId: number
   ): Promise<boolean> {
     try {
-      const [result] = await (pool as any).execute(
+      const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_department_permissions 
          WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
         [adminId, departmentId, tenantId]
@@ -381,7 +386,7 @@ class AdminPermissionService {
     tenantId: number
   ): Promise<boolean> {
     try {
-      const [result] = await (pool as any).execute(
+      const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_group_permissions 
          WHERE admin_user_id = ? AND group_id = ? AND tenant_id = ?`,
         [adminId, groupId, tenantId]
@@ -404,11 +409,11 @@ class AdminPermissionService {
     targetType: 'department' | 'group',
     changedBy: number,
     tenantId: number,
-    oldPermissions?: any,
-    newPermissions?: any
+    oldPermissions?: unknown,
+    newPermissions?: unknown
   ): Promise<void> {
     try {
-      await (pool as any).execute(
+      await execute<ResultSetHeader>(
         `INSERT INTO admin_permission_logs 
          (tenant_id, action, admin_user_id, target_id, target_type, changed_by, old_permissions, new_permissions) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

@@ -57,8 +57,8 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': 'off',
     },
   },
@@ -124,8 +124,8 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': 'off',
     },
   },
@@ -171,8 +171,8 @@ export default [
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
       'prettier/prettier': 'error',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -212,7 +212,10 @@ export default [
     },
     rules: {
       'prettier/prettier': 'error',
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
@@ -266,6 +269,13 @@ export default [
         HTMLElement: 'readonly',
         MutationObserver: 'readonly',
         IntersectionObserver: 'readonly',
+        // Additional browser globals
+        screen: 'readonly',
+        crypto: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        AudioContext: 'readonly',
+        webkitAudioContext: 'readonly',
         // Common libraries that might be used
         $: 'readonly',
         jQuery: 'readonly',
@@ -285,6 +295,14 @@ export default [
         showModal: 'readonly',
         hideModal: 'readonly',
       },
+    },
+    rules: {
+      'prettier/prettier': 'error',
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      'no-console': 'off',
     },
   },
 
@@ -349,6 +367,8 @@ export default [
       'frontend/src/styles/lib/**',
       'frontend/public/**',
       'backend/logs/**',
+      // TypeScript Declaration Files
+      '**/*.d.ts',
       // Backend Scripts - bleiben CommonJS
       'backend/scripts/**/*.js',
       'backend/src/utils/scripts/**/*.js',

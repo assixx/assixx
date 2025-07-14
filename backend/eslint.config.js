@@ -51,8 +51,8 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': 'off',
       // Disable base rules that are handled by TypeScript
       'no-unused-vars': 'off',
@@ -113,6 +113,7 @@ export default [
       '.env.*',
       'scripts/**',
       'src/database/migrations/**',
+      '**/*.d.ts',
     ],
   },
 ];

@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -345,7 +346,7 @@
         border: 3px solid rgba(255, 255, 255, 0.1);
         border-top-color: var(--primary-color);
         border-radius: 50%;
-        animation: spin 1s linear infinite;
+        /* animation: spin 1s linear infinite; */
       }
 
       @keyframes spin {
@@ -700,28 +701,6 @@
       .page-header {
         margin-bottom: var(--spacing-xl);
       }
-
-      .breadcrumb {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: var(--spacing-sm);
-      }
-
-      .breadcrumb a {
-        color: var(--primary-color);
-        text-decoration: none;
-      }
-
-      .breadcrumb a:hover {
-        text-decoration: underline;
-      }
-
-      .page-header h1 {
-        font-size: 2rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-      }
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -791,13 +770,7 @@
       <!-- Main Content -->
       <main class="main-content">
         <!-- Page Header -->
-        <div class="page-header">
-          <div class="breadcrumb">
-            <a href="#" id="dashboard-link">Dashboard</a>
-            / Dokumente
-          </div>
-          <h1>Dokumentenverwaltung</h1>
-        </div>
+        <div class="page-header"></div>
 
         <!-- Stats Bar -->
         <div
@@ -833,6 +806,7 @@
               <i class="fas fa-folder-open me-2"></i>
               Dokumente
             </h2>
+            <p class="text-secondary" style="margin: 0; margin-top: 4px">Ihre Dokumente filtern und durchsuchen</p>
           </div>
           <div class="card-body">
             <!-- Filter Section -->
@@ -922,6 +896,8 @@
             </div>
           </div>
         </div>
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
       </main>
     </div>
 
@@ -936,11 +912,11 @@
             const dashboardLink = document.getElementById('dashboard-link');
             if (dashboardLink) {
               if (payload.role === 'employee' || payload.activeRole === 'employee') {
-                dashboardLink.href = '/pages/employee-dashboard.html';
+                dashboardLink.href = '/employee-dashboard';
               } else if (payload.role === 'admin') {
-                dashboardLink.href = '/pages/admin-dashboard.html';
+                dashboardLink.href = '/admin-dashboard';
               } else if (payload.role === 'root') {
-                dashboardLink.href = '/pages/root-dashboard.html';
+                dashboardLink.href = '/root-dashboard';
               }
             }
           } catch (e) {
@@ -953,7 +929,10 @@
     <!-- Redirect to new documents search page -->
     <script>
       // Fallback redirect if meta refresh doesn't work
-      window.location.href = '/pages/documents-search.html';
+      window.location.href = '/documents-search';
     </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

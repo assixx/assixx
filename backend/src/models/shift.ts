@@ -3,21 +3,12 @@
  * Handles database operations for shift planning system
  */
 
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import User from './user';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
@@ -124,6 +115,21 @@ interface DbEmployeeAvailability extends RowDataPacket {
   notes?: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+interface ShiftQueryResult extends RowDataPacket {
+  id: number;
+  assigned_user_name?: string;
+  first_name?: string;
+  last_name?: string;
+  department_name?: string;
+  team_name?: string;
+  [key: string]: unknown;
+}
+
+interface ShiftNoteRow extends RowDataPacket {
+  date: string;
+  notes: string;
 }
 
 interface DbShiftExchangeRequest extends RowDataPacket {
@@ -356,7 +362,7 @@ export async function getShiftPlans(
       WHERE sp.tenant_id = ?
     `;
 
-    const queryParams: any[] = [tenantId];
+    const queryParams: unknown[] = [tenantId];
 
     // Apply access control for non-admin users
     if (role !== 'admin' && role !== 'root') {
@@ -412,7 +418,7 @@ export async function getShiftPlans(
       SELECT COUNT(*) as total FROM shift_plans sp
       WHERE sp.tenant_id = ?
     `;
-    const countParams: any[] = [tenantId];
+    const countParams: unknown[] = [tenantId];
 
     // Apply same access control for count
     if (role !== 'admin' && role !== 'root') {
@@ -1029,7 +1035,7 @@ async function getShiftsForDateRange(
   tenantId: number,
   startDate: string,
   endDate: string
-): Promise<any[]> {
+): Promise<ShiftQueryResult[]> {
   try {
     const query = `
       SELECT 
@@ -1050,7 +1056,7 @@ async function getShiftsForDateRange(
       ORDER BY s.date, s.start_time
     `;
 
-    const [rows] = await executeQuery<any[]>(query, [
+    const [rows] = await executeQuery<ShiftQueryResult[]>(query, [
       tenantId,
       startDate,
       endDate,
@@ -1079,7 +1085,7 @@ async function getWeekNotes(
       ORDER BY date
     `;
 
-    const [rows] = await executeQuery<any[]>(query, [
+    const [rows] = await executeQuery<ShiftNoteRow[]>(query, [
       tenantId,
       weekStart,
       weekEnd,
@@ -1087,7 +1093,7 @@ async function getWeekNotes(
 
     // Convert to object keyed by date
     const notesByDate: Record<string, string> = {};
-    rows.forEach((row: any) => {
+    rows.forEach((row) => {
       notesByDate[row.date] = row.notes;
     });
 

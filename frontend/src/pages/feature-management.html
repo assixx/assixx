@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Feature Management - Assixx</title>
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
       /* Glassmorphismus Design-Standards */
@@ -28,6 +29,11 @@
         z-index: -1;
       }
 
+      /* Align first container with sidebar user-info-card */
+      .container {
+        margin-top: -34px !important;
+      }
+
       /* Glassmorphismus für Cards */
       .card {
         background: rgba(255, 255, 255, 0.02);
@@ -36,7 +42,7 @@
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       /* Form Controls mit Glassmorphismus */
@@ -162,13 +168,15 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
-        <div class="container">
-          <h1>Feature Management</h1>
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
 
+        <div class="container">
           <!-- Tenant Auswahl -->
           <div class="card mb-4">
             <div class="card-header">
-              <h2>Tenant Auswahl</h2>
+              <h2 class="card-title">Tenant Auswahl</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Wählen Sie einen Tenant zur Feature-Verwaltung</p>
             </div>
             <div class="card-body">
               <select id="tenant-select" class="form-control" onchange="loadTenantFeatures()">
@@ -181,7 +189,8 @@
           <div id="features-container" style="display: none">
             <div class="card mb-4">
               <div class="card-header">
-                <h2>Verfügbare Features</h2>
+                <h2 class="card-title">Verfügbare Features</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Features und deren Aktivierungsstatus</p>
               </div>
               <div class="card-body">
                 <table class="table">
@@ -207,7 +216,8 @@
             <!-- Feature Aktivierung -->
             <div class="card">
               <div class="card-header">
-                <h2>Feature Aktivierung</h2>
+                <h2 class="card-title">Feature Aktivierung</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Features aktivieren oder deaktivieren</p>
               </div>
               <div class="card-body">
                 <form id="activate-feature-form">
@@ -479,5 +489,7 @@
     </div>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

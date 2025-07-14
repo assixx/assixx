@@ -6,10 +6,9 @@
 import { Request, Response, NextFunction } from 'express';
 import TenantModel from '../models/tenant';
 import { logger } from '../utils/logger';
-import { TenantInfo, TenantTrialStatus } from '../types/tenant.types';
-import { DatabaseTenant } from '../types/models';
+import { TenantInfo } from '../types/tenant.types';
 
-// Request interface is already extended in types/express.d.ts
+// Request interface is already extended in types/express-extensions.d.ts
 
 /**
  * Extrahiert den Tenant aus der Subdomain
@@ -65,8 +64,8 @@ export async function tenantMiddleware(
     }
 
     // Fallback: Wenn User eingeloggt ist, verwende tenant_id aus JWT
-    if (!tenantSubdomain && req.user && req.user.tenantId) {
-      const tenant = await TenantModel.findById(req.user.tenantId);
+    if (!tenantSubdomain && req.user && req.user.tenant_id) {
+      const tenant = await TenantModel.findById(req.user.tenant_id);
       if (tenant) {
         tenantSubdomain = tenant.subdomain;
       }
@@ -81,8 +80,7 @@ export async function tenantMiddleware(
     }
 
     // 2. Tenant aus Datenbank laden
-    const tenant: DatabaseTenant | null =
-      await TenantModel.findBySubdomain(tenantSubdomain);
+    const tenant = await TenantModel.findBySubdomain(tenantSubdomain);
 
     if (!tenant) {
       res.status(404).json({
@@ -102,8 +100,7 @@ export async function tenantMiddleware(
     }
 
     // 4. Trial-Status prüfen
-    const trialStatus: TenantTrialStatus | null =
-      await TenantModel.checkTrialStatus(tenant.id);
+    const trialStatus = await TenantModel.checkTrialStatus(tenant.id);
     if (trialStatus && trialStatus.isExpired && tenant.status === 'trial') {
       res.status(402).json({
         error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
@@ -117,7 +114,7 @@ export async function tenantMiddleware(
       id: tenant.id,
       subdomain: tenant.subdomain,
       name: tenant.company_name,
-      status: tenant.status as TenantInfo['status'],
+      status: tenant.status as 'active' | 'trial' | 'cancelled' | 'suspended',
       plan: tenant.current_plan,
       trialStatus: trialStatus || undefined,
     };
@@ -127,7 +124,13 @@ export async function tenantMiddleware(
     req.tenantId = tenant.id;
 
     // 6. Wenn User eingeloggt ist, prüfe ob er zu diesem Tenant gehört
-    if (req.user && req.user.tenantId && req.user.tenantId !== tenant.id) {
+    if (
+      'user' in req &&
+      req.user &&
+      'tenant_id' in req.user &&
+      typeof req.user.tenant_id === 'number' &&
+      req.user.tenant_id !== tenant.id
+    ) {
       res.status(403).json({
         error: 'Sie haben keinen Zugriff auf diese Firma.',
       });

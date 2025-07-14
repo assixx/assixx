@@ -3,22 +3,13 @@
  * Handles database operations for the calendar events and attendees
  */
 
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import User from './user';
 import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)
@@ -132,7 +123,7 @@ export class Calendar {
    * Get all calendar events visible to the user
    */
   static async getAllEvents(
-    tenantId: number,
+    tenant_id: number,
     userId: number,
     options: EventQueryOptions = {}
   ) {
@@ -166,7 +157,7 @@ export class Calendar {
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-      const queryParams: any[] = [userId, tenantId, dbStatus];
+      const queryParams: unknown[] = [userId, tenant_id, dbStatus];
 
       // Apply org level filter (map to type)
       if (filter !== 'all') {
@@ -259,7 +250,7 @@ export class Calendar {
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-      const countParams: any[] = [tenantId, dbStatus];
+      const countParams: unknown[] = [tenant_id, dbStatus];
 
       // Apply org level filter for count (map to type)
       if (filter !== 'all') {
@@ -325,7 +316,7 @@ export class Calendar {
    */
   static async getEventById(
     id: number,
-    tenantId: number,
+    tenant_id: number,
     userId: number
   ): Promise<DbCalendarEvent | null> {
     try {
@@ -346,7 +337,7 @@ export class Calendar {
       const [events] = await executeQuery<DbCalendarEvent[]>(query, [
         userId,
         id,
-        tenantId,
+        tenant_id,
       ]);
 
       if (events.length === 0) {
@@ -509,7 +500,7 @@ export class Calendar {
   static async updateEvent(
     id: number,
     eventData: EventUpdateData,
-    tenantId: number
+    tenant_id: number
   ): Promise<DbCalendarEvent | null> {
     try {
       const {
@@ -527,7 +518,7 @@ export class Calendar {
 
       // Build query dynamically based on provided fields
       let query = 'UPDATE calendar_events SET updated_at = NOW()';
-      const queryParams: any[] = [];
+      const queryParams: unknown[] = [];
 
       if (title !== undefined) {
         query += ', title = ?';
@@ -593,7 +584,7 @@ export class Calendar {
 
       // Finish query
       query += ' WHERE id = ? AND tenant_id = ?';
-      queryParams.push(id, tenantId);
+      queryParams.push(id, tenant_id);
 
       // Execute update
       await executeQuery(query, queryParams);
@@ -601,7 +592,7 @@ export class Calendar {
       // Get the updated event
       const updatedEvent = await this.getEventById(
         id,
-        tenantId,
+        tenant_id,
         eventData.created_by || 0
       );
       return updatedEvent;
@@ -614,14 +605,14 @@ export class Calendar {
   /**
    * Delete a calendar event
    */
-  static async deleteEvent(id: number, tenantId: number): Promise<boolean> {
+  static async deleteEvent(id: number, tenant_id: number): Promise<boolean> {
     try {
       // Delete event
       const query =
         'DELETE FROM calendar_events WHERE id = ? AND tenant_id = ?';
       const [result] = await executeQuery<ResultSetHeader>(query, [
         id,
-        tenantId,
+        tenant_id,
       ]);
 
       return result.affectedRows > 0;
@@ -726,7 +717,7 @@ export class Calendar {
    */
   static async getEventAttendees(
     eventId: number,
-    tenantId: number
+    tenant_id: number
   ): Promise<DbEventAttendee[]> {
     try {
       const query = `
@@ -741,7 +732,7 @@ export class Calendar {
 
       const [attendees] = await executeQuery<DbEventAttendee[]>(query, [
         eventId,
-        tenantId,
+        tenant_id,
       ]);
       return attendees;
     } catch (error) {
@@ -754,7 +745,7 @@ export class Calendar {
    * Get upcoming events for a user's dashboard
    */
   static async getDashboardEvents(
-    tenantId: number,
+    tenant_id: number,
     userId: number,
     days = 7,
     limit = 5
@@ -784,7 +775,7 @@ export class Calendar {
         AND e.start_date >= ? AND e.start_date <= ?
       `;
 
-      const queryParams: any[] = [userId, tenantId, todayStr, endDateStr];
+      const queryParams: unknown[] = [userId, tenant_id, todayStr, endDateStr];
 
       // Apply access control for non-admin users
       if (role !== 'admin' && role !== 'root') {
@@ -1020,6 +1011,14 @@ export const {
   getDashboardEvents,
   canManageEvent,
 } = Calendar;
+
+// Type exports
+export type {
+  DbCalendarEvent,
+  EventQueryOptions,
+  EventCreateData,
+  EventUpdateData,
+};
 
 // Default export
 export default Calendar;

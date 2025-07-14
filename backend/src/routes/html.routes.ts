@@ -20,13 +20,21 @@ const __dirname = path.dirname(__filename);
 const servePage =
   (pageName: string) =>
   (_req: Request, res: Response): void => {
-    res.sendFile(
-      path.join(__dirname, '../../../frontend/src/pages', `${pageName}.html`)
+    // Always serve from dist directory (built files)
+    const distPath = path.join(
+      __dirname,
+      '../../../frontend/dist/pages',
+      `${pageName}.html`
     );
+    res.sendFile(distPath);
   };
 
 // Public pages
-router.get('/', servePage('index'));
+// Root '/' is handled by redirectToDashboard middleware in app.ts
+router.get('/index', servePage('index'));
+router.get('/pages/index', (_req: Request, res: Response) =>
+  res.redirect('/index')
+); // Redirect old URL
 router.get('/login', servePage('login'));
 router.get('/signup', servePage('signup'));
 router.get('/design-standards', servePage('design-standards'));
@@ -41,6 +49,34 @@ router.get('/chat', authenticateToken, servePage('chat'));
 router.get('/blackboard', authenticateToken, servePage('blackboard'));
 router.get('/calendar', authenticateToken, servePage('calendar'));
 router.get('/kvp', authenticateToken, servePage('kvp'));
+router.get('/kvp-detail', authenticateToken, servePage('kvp-detail'));
+router.get('/documents', authenticateToken, servePage('documents'));
+router.get(
+  '/documents-personal',
+  authenticateToken,
+  servePage('documents-personal')
+);
+router.get(
+  '/documents-payroll',
+  authenticateToken,
+  servePage('documents-payroll')
+);
+router.get(
+  '/documents-company',
+  authenticateToken,
+  servePage('documents-company')
+);
+router.get(
+  '/documents-department',
+  authenticateToken,
+  servePage('documents-department')
+);
+router.get('/documents-team', authenticateToken, servePage('documents-team'));
+router.get(
+  '/documents-search',
+  authenticateToken,
+  servePage('documents-search')
+);
 
 // Employee pages
 router.get(
@@ -98,6 +134,36 @@ router.get(
   servePage('archived-employees')
 );
 router.get(
+  '/departments',
+  authenticateToken,
+  authorizeRole('admin'),
+  servePage('departments')
+);
+router.get(
+  '/admin-profile',
+  authenticateToken,
+  authorizeRole('admin'),
+  servePage('admin-profile')
+);
+router.get(
+  '/manage-admins',
+  authenticateToken,
+  authorizeRole('admin'),
+  servePage('manage-admins')
+);
+router.get(
+  '/manage-department-groups',
+  authenticateToken,
+  authorizeRole('admin'),
+  servePage('manage-department-groups')
+);
+router.get(
+  '/storage-upgrade',
+  authenticateToken,
+  authorizeRole('admin'),
+  servePage('storage-upgrade')
+);
+router.get(
   '/feature-management',
   authenticateToken,
   authorizeRole('admin'),
@@ -135,6 +201,30 @@ router.get(
   authenticateToken,
   authorizeRole('root'),
   servePage('root-profile')
+);
+router.get(
+  '/manage-root-users',
+  authenticateToken,
+  authorizeRole('root'),
+  servePage('manage-root-users')
+);
+router.get(
+  '/account-settings',
+  authenticateToken,
+  authorizeRole('root'),
+  servePage('account-settings')
+);
+router.get(
+  '/tenant-deletion-status',
+  authenticateToken,
+  authorizeRole('root'),
+  servePage('tenant-deletion-status')
+);
+router.get(
+  '/logs',
+  authenticateToken,
+  authorizeRole('root'),
+  servePage('logs')
 );
 
 // Development only pages

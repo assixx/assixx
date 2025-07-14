@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -33,7 +34,7 @@
 
       /* Profil Container */
       .profile-container {
-        max-width: 800px;
+        /*max-width: 800px;*/
         margin: 0 auto;
         padding: 24px;
       }
@@ -42,7 +43,7 @@
         color: var(--primary-color);
         margin-bottom: 32px;
         font-size: 2.5rem;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       /* Glassmorphismus Cards */
@@ -56,7 +57,7 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
         margin-bottom: var(--spacing-lg);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       /* Card Title with accent bar */
@@ -216,7 +217,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        animation: slideDown 0.3s ease-out;
+        /* animation: slideDown 0.3s ease-out; */
       }
 
       .alert-success {
@@ -266,7 +267,7 @@
         justify-content: center;
         align-items: center;
         z-index: 2000;
-        animation: fadeIn 0.3s ease-out;
+        /* animation: fadeIn 0.3s ease-out; */
       }
 
       .success-message {
@@ -276,14 +277,14 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
         text-align: center;
-        animation: scaleIn 0.5s ease-out;
+        /* animation: scaleIn 0.5s ease-out; */
       }
 
       .success-icon {
         font-size: 4rem;
         color: #4caf50;
         margin-bottom: var(--spacing-lg);
-        animation: checkmark 0.6s ease-out 0.3s both;
+        /* animation: checkmark 0.6s ease-out 0.3s both; */
       }
 
       .success-text {
@@ -373,9 +374,10 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="profile-container">
-          <h1>Mein Profil</h1>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
+        <div class="profile-container">
           <!-- Success/Error Messages -->
           <div id="message-container"></div>
 
@@ -448,7 +450,14 @@
             <form id="password-form" autocomplete="off">
               <div class="form-group">
                 <label class="form-label">Aktuelles Passwort</label>
-                <input type="password" id="current_password" name="current_password" class="form-control" autocomplete="current-password" required />
+                <input
+                  type="password"
+                  id="current_password"
+                  name="current_password"
+                  class="form-control"
+                  autocomplete="current-password"
+                  required
+                />
               </div>
               <div class="form-group">
                 <label class="form-label">Neues Passwort</label>
@@ -456,7 +465,14 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Neues Passwort bestätigen</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" autocomplete="new-password" required />
+                <input
+                  type="password"
+                  id="confirm_password"
+                  name="confirm_password"
+                  class="form-control"
+                  autocomplete="new-password"
+                  required
+                />
               </div>
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-key"></i>
@@ -471,5 +487,6 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/admin-profile.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

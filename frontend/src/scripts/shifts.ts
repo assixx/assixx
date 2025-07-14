@@ -58,12 +58,23 @@ interface WeeklyShifts {
   };
 }
 
+interface ShiftsWindow extends Window {
+  selectOption: (type: string, value: string, text: string) => void;
+}
+
 class ShiftPlanningSystem {
   private currentWeek: Date;
   private selectedEmployee: Employee | null;
   private employees: Employee[];
   private weeklyShifts: WeeklyShifts;
-  private shiftDetails: { [key: string]: any };
+  private shiftDetails: {
+    [key: string]: {
+      employee_id: number;
+      first_name: string;
+      last_name: string;
+      username: string;
+    };
+  };
   private isAdmin: boolean;
   private userRole: string;
   private currentUserId: number | null;
@@ -164,9 +175,14 @@ class ShiftPlanningSystem {
 
   async checkUserRole(): Promise<void> {
     try {
+      // First check localStorage for active role (for role switching)
+      const activeRole = localStorage.getItem('activeRole');
+      const storedRole = localStorage.getItem('userRole');
+
       const user = await this.getStoredUserData();
       if (user) {
-        this.userRole = user.role || 'employee';
+        // Use activeRole if available (for role switching), otherwise use API role or stored role
+        this.userRole = activeRole || user.role || storedRole || 'employee';
         this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
         this.currentUserId = user.id;
 
@@ -496,7 +512,10 @@ class ShiftPlanningSystem {
       option.className = 'dropdown-option';
       option.textContent = dept.name;
       option.onclick = () => {
-        (window as any).selectOption('department', dept.id.toString(), dept.name);
+        interface ShiftsWindow extends Window {
+          selectOption: (type: string, value: string, text: string) => void;
+        }
+        (window as unknown as ShiftsWindow).selectOption('department', dept.id.toString(), dept.name);
       };
       dropdown.appendChild(option);
     });
@@ -521,7 +540,7 @@ class ShiftPlanningSystem {
       option.className = 'dropdown-option';
       option.textContent = machine.name;
       option.onclick = () => {
-        (window as any).selectOption('machine', machine.id.toString(), machine.name);
+        (window as unknown as ShiftsWindow).selectOption('machine', machine.id.toString(), machine.name);
       };
       dropdown.appendChild(option);
     });
@@ -538,7 +557,11 @@ class ShiftPlanningSystem {
       option.className = 'dropdown-option';
       option.textContent = leader.name || leader.username;
       option.onclick = () => {
-        (window as any).selectOption('teamLeader', leader.id.toString(), leader.name || leader.username);
+        (window as unknown as ShiftsWindow).selectOption(
+          'teamLeader',
+          leader.id.toString(),
+          leader.name || leader.username,
+        );
       };
       dropdown.appendChild(option);
     });
@@ -657,7 +680,9 @@ class ShiftPlanningSystem {
 
         // Update employees with availability status
         this.employees = this.employees.map((emp) => {
-          const availability = availabilityData.find((a: any) => a.employeeId === emp.id);
+          const availability = availabilityData.find(
+            (a: { employeeId: number; availabilityStatus?: string }) => a.employeeId === emp.id,
+          );
           if (availability) {
             emp.availability_status = availability.availabilityStatus || 'available';
           }
@@ -971,7 +996,16 @@ class ShiftPlanningSystem {
     }
   }
 
-  processShiftData(shifts: any[]): void {
+  processShiftData(
+    shifts: Array<{
+      date: string;
+      shift_type: string;
+      employee_id: number;
+      first_name: string;
+      last_name: string;
+      username: string;
+    }>,
+  ): void {
     this.weeklyShifts = {};
     this.shiftDetails = {}; // Store full shift details including names
     console.log('[SHIFTS DEBUG] Processing shifts:', shifts);
@@ -1160,12 +1194,19 @@ class ShiftPlanningSystem {
                 assignmentDiv.appendChild(employeeCard);
               } else if (shiftDetail) {
                 // Create a temporary employee object from shift details
-                const tempEmployee: any = {
+                const tempEmployee: Employee = {
                   id: shiftDetail.employee_id,
                   first_name: shiftDetail.first_name,
                   last_name: shiftDetail.last_name,
                   username: shiftDetail.username,
                   position: 'Mitarbeiter',
+                  email: '',
+                  role: 'employee' as const,
+                  tenant_id: 0,
+                  created_at: '',
+                  updated_at: '',
+                  is_active: true,
+                  is_archived: false,
                 };
                 const employeeCard = this.createEmployeeCard(tempEmployee);
                 assignmentDiv.appendChild(employeeCard);

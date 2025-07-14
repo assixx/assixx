@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide all content immediately
     document.body.style.display = 'none';
     // Redirect to login
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logout().catch((error) => {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       });
     });
   }
@@ -76,11 +76,90 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load user info in header
   loadHeaderUserInfo();
 
+  // Check if employee number needs to be set
+  checkEmployeeNumber();
+
   // Daten laden
   loadDashboardData();
   loadAdmins();
   loadDashboardStats();
   loadActivityLogs();
+
+  // Check if user has temporary employee number
+  async function checkEmployeeNumber(): Promise<void> {
+    try {
+      const response = await fetch('/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const user = data.data || data.user;
+
+        // Check if user has temporary employee number
+        if (user.employeeNumber === '000001' || user.employee_number === '000001') {
+          showEmployeeNumberModal();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking employee number:', error);
+    }
+  }
+
+  // Show employee number modal
+  function showEmployeeNumberModal(): void {
+    const modal = document.getElementById('employeeNumberModal');
+    const form = document.getElementById('employeeNumberForm') as HTMLFormElement;
+    const input = document.getElementById('employeeNumberInput') as HTMLInputElement;
+
+    if (!modal || !form || !input) return;
+
+    modal.style.display = 'flex';
+    input.focus();
+
+    // Only allow numbers
+    input.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement;
+      target.value = target.value.replace(/[^0-9]/g, '');
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const employeeNumber = input.value;
+
+      if (employeeNumber.length !== 6) {
+        alert('Die Personalnummer muss genau 6 Ziffern lang sein.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/users/me', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ employee_number: employeeNumber }),
+        });
+
+        if (response.ok) {
+          alert('Personalnummer erfolgreich gespeichert.');
+          modal.style.display = 'none';
+          // Reload to update UI
+          window.location.reload();
+        } else {
+          const error = await response.json();
+          alert(`Fehler: ${error.message || 'Personalnummer konnte nicht gespeichert werden.'}`);
+        }
+      } catch (error) {
+        console.error('Error updating employee number:', error);
+        alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      }
+    });
+  }
 
   // Admin erstellen
   async function createAdmin(e: Event): Promise<void> {
@@ -181,16 +260,23 @@ document.addEventListener('DOMContentLoaded', () => {
       ]);
 
       if (adminsResponse.ok && usersResponse.ok) {
-        const admins: AdminUser[] = await adminsResponse.json();
-        const users: User[] = await usersResponse.json();
+        const adminsData = await adminsResponse.json();
+        const usersData = await usersResponse.json();
+
+        const admins: AdminUser[] = adminsData.data || adminsData || [];
+        const users: User[] = usersData.data || usersData || [];
 
         // Update counters
         const adminCount = document.getElementById('admin-count');
         const userCount = document.getElementById('user-count');
         const tenantCount = document.getElementById('tenant-count');
 
-        if (adminCount) adminCount.textContent = admins.length.toString();
-        if (userCount) userCount.textContent = users.length.toString();
+        if (adminCount && Array.isArray(admins)) {
+          adminCount.textContent = admins.length.toString();
+        }
+        if (userCount && Array.isArray(users)) {
+          userCount.textContent = users.length.toString();
+        }
         if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
       }
     } catch (error) {
@@ -209,13 +295,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.ok) {
-        const admins: AdminUser[] = await response.json();
+        const data = await response.json();
+        const admins: AdminUser[] = data.data || data || [];
         console.info('Loaded admins:', admins);
         displayAdmins(admins);
 
         // Update admin count
         const adminCount = document.getElementById('admin-count');
-        if (adminCount) {
+        if (adminCount && Array.isArray(admins)) {
           adminCount.textContent = admins.length.toString();
         }
       } else {
@@ -244,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error('Logout error:', error);
         // Fallback
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       }
     }
   }
@@ -327,17 +414,18 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           logsContainer.innerHTML = logs
-            .map((log: any) => {
-              const date = new Date(log.created_at);
-              const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-              const dateString = date.toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              });
+            .map(
+              (log: { created_at: string; action: string; user_name: string; user_role: string; details?: string }) => {
+                const date = new Date(log.created_at);
+                const timeString = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                const dateString = date.toLocaleDateString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                });
 
-              return `
-              <div class="log-entry" onclick="window.location.href='/pages/logs.html'">
+                return `
+              <div class="log-entry" onclick="window.location.href = "/logs"">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
                   <div class="log-timestamp">${dateString} ${timeString}</div>
@@ -349,7 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
             `;
-            })
+              },
+            )
             .join('');
         }
       }

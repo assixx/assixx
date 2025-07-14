@@ -47,6 +47,8 @@ interface UserProfileResponse {
   profilePicture?: string;
   company_name?: string;
   subdomain?: string;
+  employee_number?: string;
+  employeeNumber?: string;
 }
 
 interface UnreadCountResponse {
@@ -56,6 +58,93 @@ interface UnreadCountResponse {
 interface PendingCountResponse {
   pendingCount?: number;
 }
+
+// Access Control Map - Definiert welche Rollen auf welche Seiten zugreifen dürfen
+const accessControlMap: Record<string, Array<'root' | 'admin' | 'employee'>> = {
+  // Root-only pages
+  '/root-dashboard': ['root'],
+  '/pages/root-dashboard': ['root'],
+  '/manage-root-users': ['root'],
+  '/pages/manage-root-users': ['root'],
+  '/root-features': ['root'],
+  '/pages/root-features': ['root'],
+  '/root-profile': ['root'],
+  '/pages/root-profile': ['root'],
+  '/tenant-deletion-status': ['root'],
+  '/pages/tenant-deletion-status': ['root'],
+  '/storage-upgrade': ['root'],
+  '/pages/storage-upgrade': ['root'],
+  '/logs': ['root'],
+  '/pages/logs': ['root'],
+
+  // Admin and Root pages
+  '/admin-dashboard': ['admin', 'root'],
+  '/pages/admin-dashboard': ['admin', 'root'],
+  '/manage-admins': ['admin', 'root'],
+  '/pages/manage-admins': ['admin', 'root'],
+  '/manage-users': ['admin', 'root'],
+  '/pages/manage-users': ['admin', 'root'],
+  '/departments': ['admin', 'root'],
+  '/pages/departments': ['admin', 'root'],
+  '/manage-department-groups': ['admin', 'root'],
+  '/pages/manage-department-groups': ['admin', 'root'],
+  '/blackboard': ['admin', 'root'],
+  '/pages/blackboard': ['admin', 'root'],
+  '/document-upload': ['admin', 'root'],
+  '/pages/document-upload': ['admin', 'root'],
+  '/survey-admin': ['admin', 'root'],
+  '/pages/survey-admin': ['admin', 'root'],
+  '/survey-create': ['admin', 'root'],
+  '/pages/survey-create': ['admin', 'root'],
+  '/survey-details': ['admin', 'root'],
+  '/pages/survey-details': ['admin', 'root'],
+  '/survey-results': ['admin', 'root'],
+  '/pages/survey-results': ['admin', 'root'],
+  '/archived-employees': ['admin', 'root'],
+  '/pages/archived-employees': ['admin', 'root'],
+  '/admin-profile': ['admin', 'root'],
+  '/pages/admin-profile': ['admin', 'root'],
+
+  // Employee pages (accessible by all)
+  '/employee-dashboard': ['employee', 'admin', 'root'],
+  '/pages/employee-dashboard': ['employee', 'admin', 'root'],
+  '/profile': ['employee', 'admin', 'root'],
+  '/pages/profile': ['employee', 'admin', 'root'],
+  '/employee-profile': ['employee', 'admin', 'root'],
+  '/pages/employee-profile': ['employee', 'admin', 'root'],
+  '/kvp': ['employee', 'admin', 'root'],
+  '/pages/kvp': ['employee', 'admin', 'root'],
+  '/kvp-detail': ['employee', 'admin', 'root'],
+  '/pages/kvp-detail': ['employee', 'admin', 'root'],
+  '/calendar': ['employee', 'admin', 'root'],
+  '/pages/calendar': ['employee', 'admin', 'root'],
+  '/shifts': ['employee', 'admin', 'root'],
+  '/pages/shifts': ['employee', 'admin', 'root'],
+  '/chat': ['employee', 'admin', 'root'],
+  '/pages/chat': ['employee', 'admin', 'root'],
+  '/survey-employee': ['employee', 'admin', 'root'],
+  '/pages/survey-employee': ['employee', 'admin', 'root'],
+  '/documents': ['employee', 'admin', 'root'],
+  '/pages/documents': ['employee', 'admin', 'root'],
+  '/documents-search': ['employee', 'admin', 'root'],
+  '/pages/documents-search': ['employee', 'admin', 'root'],
+  '/documents-company': ['employee', 'admin', 'root'],
+  '/pages/documents-company': ['employee', 'admin', 'root'],
+  '/documents-department': ['employee', 'admin', 'root'],
+  '/pages/documents-department': ['employee', 'admin', 'root'],
+  '/documents-team': ['employee', 'admin', 'root'],
+  '/pages/documents-team': ['employee', 'admin', 'root'],
+  '/documents-personal': ['employee', 'admin', 'root'],
+  '/pages/documents-personal': ['employee', 'admin', 'root'],
+  '/documents-payroll': ['employee', 'admin', 'root'],
+  '/pages/documents-payroll': ['employee', 'admin', 'root'],
+  '/salary-documents': ['employee', 'admin', 'root'],
+  '/pages/salary-documents': ['employee', 'admin', 'root'],
+  '/employee-documents': ['employee', 'admin', 'root'],
+  '/pages/employee-documents': ['employee', 'admin', 'root'],
+  '/account-settings': ['employee', 'admin', 'root'],
+  '/pages/account-settings': ['employee', 'admin', 'root'],
+};
 
 class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
@@ -76,6 +165,62 @@ class UnifiedNavigation {
     this.init();
   }
 
+  /**
+   * Prüft ob eine Rolle auf eine bestimmte Seite zugreifen darf
+   */
+  public canAccessPage(path: string, role: 'admin' | 'employee' | 'root'): boolean {
+    // Normalisiere den Pfad (entferne Query-Parameter und Hash)
+    const normalizedPath = path.split('?')[0].split('#')[0];
+
+    // Prüfe exakten Pfad
+    const allowedRoles = accessControlMap[normalizedPath];
+    if (allowedRoles) {
+      return allowedRoles.includes(role);
+    }
+
+    // Wenn Seite nicht in der Map ist, erlaube Zugriff für alle
+    // (für öffentliche Seiten wie Login, etc.)
+    return true;
+  }
+
+  /**
+   * Gibt die passende Dashboard-URL für eine Rolle zurück
+   */
+  public getDashboardForRole(role: 'admin' | 'employee' | 'root'): string {
+    switch (role) {
+      case 'root':
+        return '/root-dashboard';
+      case 'admin':
+        return '/admin-dashboard';
+      case 'employee':
+        return '/employee-dashboard';
+      default:
+        return '/employee-dashboard';
+    }
+  }
+
+  /**
+   * Prüft die aktuelle Seite und leitet bei fehlendem Zugriff weiter
+   */
+  public enforcePageAccess(): void {
+    const currentPath = window.location.pathname;
+    const activeRole = (localStorage.getItem('activeRole') || localStorage.getItem('userRole') || 'employee') as
+      | 'admin'
+      | 'employee'
+      | 'root';
+
+    console.log(`[UnifiedNav] Checking access: Role '${activeRole}' accessing '${currentPath}'`);
+
+    if (!this.canAccessPage(currentPath, activeRole)) {
+      console.warn(`[UnifiedNav] Access denied: Role '${activeRole}' cannot access '${currentPath}'`);
+      const dashboard = this.getDashboardForRole(activeRole);
+      console.log(`[UnifiedNav] Redirecting to dashboard: ${dashboard}`);
+      window.location.href = dashboard;
+    } else {
+      console.log(`[UnifiedNav] Access granted: Role '${activeRole}' can access '${currentPath}'`);
+    }
+  }
+
   private init(): void {
     // Inject CSS styles first
     this.injectCSS();
@@ -88,6 +233,9 @@ class UnifiedNavigation {
     if (currentPath.includes('dashboard')) {
       localStorage.removeItem('openSubmenu');
     }
+
+    // Enforce page access based on current role
+    this.enforcePageAccess();
 
     this.loadUserInfo();
     this.injectNavigationHTML();
@@ -113,6 +261,64 @@ class UnifiedNavigation {
       this.updateUnreadDocuments();
       this.updateNewKvpSuggestions();
     }, 30000);
+
+    // Listen for BroadcastChannel messages to update navigation
+    const roleChannel = new BroadcastChannel('role_switch_channel');
+    roleChannel.onmessage = (event) => {
+      if (event.data.type === 'ROLE_SWITCHED') {
+        console.log('[UnifiedNav] Received role switch notification from another tab');
+
+        // Update local storage with new role data
+        if (event.data.newRole) {
+          localStorage.setItem('activeRole', event.data.newRole);
+        }
+        if (event.data.token) {
+          localStorage.setItem('token', event.data.token);
+        }
+
+        // Refresh the entire navigation with new role
+        this.refresh();
+      }
+    };
+
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
+        console.log('[UnifiedNav] Storage event: activeRole changed from', event.oldValue, 'to', event.newValue);
+
+        // Check if we need to redirect based on current page
+        const currentPath = window.location.pathname;
+        const userRole = localStorage.getItem('userRole');
+        const newActiveRole = event.newValue;
+
+        // Determine if redirect is needed
+        if (currentPath.includes('/root-dashboard') && newActiveRole !== 'root') {
+          console.log('[UnifiedNav] Redirecting from root-dashboard due to role change');
+          if (newActiveRole === 'admin') {
+            window.location.replace('/admin-dashboard');
+          } else if (newActiveRole === 'employee') {
+            window.location.replace('/employee-dashboard');
+          }
+        } else if (currentPath.includes('/admin-dashboard') && newActiveRole !== 'admin') {
+          console.log('[UnifiedNav] Redirecting from admin-dashboard due to role change');
+          if (newActiveRole === 'root' && userRole === 'root') {
+            window.location.replace('/root-dashboard');
+          } else if (newActiveRole === 'employee') {
+            window.location.replace('/employee-dashboard');
+          }
+        } else if (currentPath.includes('/employee-dashboard') && newActiveRole !== 'employee') {
+          console.log('[UnifiedNav] Redirecting from employee-dashboard due to role change');
+          if (newActiveRole === 'root' && userRole === 'root') {
+            window.location.replace('/root-dashboard');
+          } else if (newActiveRole === 'admin') {
+            window.location.replace('/admin-dashboard');
+          }
+        }
+
+        // Also refresh navigation
+        this.refresh();
+      }
+    });
   }
 
   private loadUserInfo(): void {
@@ -120,20 +326,53 @@ class UnifiedNavigation {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload;
+        const payload = JSON.parse(atob(token.split('.')[1])) as TokenPayload & {
+          activeRole?: string;
+          isRoleSwitched?: boolean;
+        };
         this.currentUser = payload;
 
-        // Check for role switch - if admin has switched to employee role
-        const activeRole = localStorage.getItem('activeRole');
-        if (payload.role === 'admin' && activeRole === 'employee') {
+        // Determine role based on current dashboard page
+        const currentPath = window.location.pathname;
+        const storedUserRole = localStorage.getItem('userRole');
+
+        // If we're on a specific dashboard, that determines the active role
+        if (currentPath.includes('/root-dashboard')) {
+          this.currentRole = 'root';
+          // Only root users can access root dashboard
+          if (storedUserRole === 'root') {
+            localStorage.setItem('activeRole', 'root');
+          }
+        } else if (currentPath.includes('/admin-dashboard')) {
+          this.currentRole = 'admin';
+          // Root or admin can access admin dashboard
+          if (storedUserRole === 'root' || storedUserRole === 'admin') {
+            localStorage.setItem('activeRole', 'admin');
+          }
+        } else if (currentPath.includes('/employee-dashboard')) {
           this.currentRole = 'employee';
-        } else if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
-          // Use activeRole if it's valid
-          this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+          localStorage.setItem('activeRole', 'employee');
         } else {
-          // Default to user's actual role
-          this.currentRole = payload.role;
+          // Not on a dashboard page, use token or localStorage
+          if (payload.activeRole) {
+            this.currentRole = payload.activeRole as 'root' | 'admin' | 'employee';
+          } else {
+            const activeRole = localStorage.getItem('activeRole');
+            if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
+              this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+            } else {
+              this.currentRole = payload.role;
+            }
+          }
         }
+
+        console.log('[UnifiedNav] Role determined:', {
+          currentPath,
+          storedUserRole,
+          tokenRole: payload.role,
+          activeRole: localStorage.getItem('activeRole'),
+          finalRole: this.currentRole,
+        });
 
         // Also try to load full user profile
         this.loadFullUserProfile();
@@ -145,14 +384,14 @@ class UnifiedNavigation {
 
   private getSectionUrl(section: string): string {
     // Check if we're on admin-dashboard page
-    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard.html');
+    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard');
 
     if (isOnAdminDashboard) {
       // If we're already on admin dashboard, use simple query parameter
       return `?section=${section}`;
     } else {
       // If we're on another page, navigate to admin dashboard with section parameter
-      return `/pages/admin-dashboard.html?section=${section}`;
+      return `/admin-dashboard?section=${section}`;
     }
   }
 
@@ -163,31 +402,36 @@ class UnifiedNavigation {
 
       // Use cached loadUserInfo from auth module instead of making a separate call
       console.info('[UnifiedNav] Using cached loadUserInfo');
-      const userData = (await loadUserInfoFromAuth()) as any;
+      const userData = (await loadUserInfoFromAuth()) as UserProfileResponse & { data?: UserProfileResponse };
       if (userData) {
         const user = userData.user || userData;
 
         // Update company info (new)
         const companyElement = document.getElementById('sidebar-company-name');
-        if (companyElement && userData.company_name) {
-          companyElement.textContent = userData.company_name;
+        if (companyElement) {
+          const companyName = userData.company_name || userData.data?.company_name || 'Firmenname';
+          companyElement.textContent = companyName;
         }
 
         const domainElement = document.getElementById('sidebar-domain');
-        if (domainElement && userData.subdomain) {
-          domainElement.textContent = `${userData.subdomain}.assixx.de`;
+        if (domainElement) {
+          const subdomain = userData.subdomain || userData.data?.subdomain || 'demo';
+          domainElement.textContent = `${subdomain}.assixx.de`;
         }
 
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          sidebarUserName.textContent = userData.email || user.email || this.currentUser?.email || 'User';
+          const email = userData.email || userData.data?.email || user.email || this.currentUser?.email || 'User';
+          sidebarUserName.textContent = email;
         }
 
         const sidebarFullName = document.getElementById('sidebar-user-fullname');
         if (sidebarFullName) {
-          const firstName = userData.first_name || userData.firstName || (user as User).firstName || '';
-          const lastName = userData.last_name || userData.lastName || (user as User).lastName || '';
+          const firstName =
+            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName =
+            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             sidebarFullName.textContent = fullName;
@@ -196,33 +440,68 @@ class UnifiedNavigation {
 
         // Birthdate removed as requested
 
+        // Update employee number
+        const sidebarEmployeeNumber = document.getElementById('sidebar-employee-number');
+        if (sidebarEmployeeNumber) {
+          const employeeNumber =
+            userData.employee_number ||
+            userData.data?.employee_number ||
+            userData.employeeNumber ||
+            (user as User).employeeNumber ||
+            '';
+          if (employeeNumber && employeeNumber !== '000001') {
+            sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
+          } else if (employeeNumber === '000001') {
+            sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
+            sidebarEmployeeNumber.style.color = 'var(--warning-color)';
+          }
+        }
+
         // Update header user name with full name
         const headerUserName = document.getElementById('user-name');
         if (headerUserName) {
-          const firstName = userData.first_name || userData.firstName || (user as User).firstName || '';
-          const lastName = userData.last_name || userData.lastName || (user as User).lastName || '';
+          // Same logic as sidebar-user-fullname which works correctly
+          const firstName =
+            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName =
+            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+          console.log('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
+
           if (firstName || lastName) {
             const fullName = `${firstName} ${lastName}`.trim();
             headerUserName.textContent = fullName;
+            console.log('[UnifiedNav] Set header name to:', fullName);
+          } else {
+            // Fallback auf Email oder Username wenn keine Namen vorhanden
+            const email = userData.email || userData.data?.email || user.email || this.currentUser?.email;
+            const username = userData.username || user.username || this.currentUser?.username;
+            headerUserName.textContent = email || username || 'User';
+            console.log('[UnifiedNav] Fallback to email/username:', email || username);
           }
         }
 
         // Update avatar if we have profile picture
         const sidebarAvatar = document.getElementById('sidebar-user-avatar') as HTMLImageElement;
         if (sidebarAvatar) {
-          const profilePic = userData.profile_picture || userData.profilePicture || (user as User).profilePicture;
-          if (profilePic) {
-            sidebarAvatar.src = profilePic;
-          }
+          const profilePic =
+            userData.profile_picture ||
+            userData.data?.profile_picture ||
+            userData.profilePicture ||
+            (user as User).profilePicture ||
+            '/assets/images/default-avatar.svg';
+          sidebarAvatar.src = profilePic;
         }
 
         // Also update header avatar
         const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
         if (headerAvatar) {
-          const profilePic = userData.profile_picture || userData.profilePicture || (user as User).profilePicture;
-          if (profilePic) {
-            headerAvatar.src = profilePic;
-          }
+          const profilePic =
+            userData.profile_picture ||
+            userData.data?.profile_picture ||
+            userData.profilePicture ||
+            (user as User).profilePicture ||
+            '/assets/images/default-avatar.svg';
+          headerAvatar.src = profilePic;
         }
 
         // Store profile data
@@ -263,12 +542,12 @@ class UnifiedNavigation {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '/pages/departments.html',
+          url: '/departments',
           children: [
             {
               id: 'departments-all',
               label: 'Alle Abteilungen',
-              url: '/pages/departments.html',
+              url: '/departments',
             },
           ],
         },
@@ -289,41 +568,41 @@ class UnifiedNavigation {
               id: 'documents-search',
               icon: this.getSVGIcon('search'),
               label: 'Dokumente suchen',
-              url: '/pages/documents-search.html',
+              url: '/documents-search',
             },
             {
               id: 'documents-company',
               icon: this.getSVGIcon('building'),
               label: 'Firmendokumente',
-              url: '/pages/documents-company.html',
+              url: '/documents-company',
               badgeId: 'badge-docs-company',
             },
             {
               id: 'documents-department',
               icon: this.getSVGIcon('sitemap'),
               label: 'Abteilungsdokumente',
-              url: '/pages/documents-department.html',
+              url: '/documents-department',
               badgeId: 'badge-docs-department',
             },
             {
               id: 'documents-team',
               icon: this.getSVGIcon('team'),
               label: 'Teamdokumente',
-              url: '/pages/documents-team.html',
+              url: '/documents-team',
               badgeId: 'badge-docs-team',
             },
             {
               id: 'documents-personal',
               icon: this.getSVGIcon('user'),
               label: 'Persönliche Dokumente',
-              url: '/pages/documents-personal.html',
+              url: '/documents-personal',
               badgeId: 'badge-docs-personal',
             },
             {
               id: 'documents-payroll',
               icon: this.getSVGIcon('money'),
               label: 'Gehaltsabrechnungen',
-              url: '/pages/documents-payroll.html',
+              url: '/documents-payroll',
               badgeId: 'badge-docs-payroll',
             },
           ],
@@ -332,7 +611,7 @@ class UnifiedNavigation {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
-          url: '/pages/calendar.html',
+          url: '/calendar',
         },
         {
           id: 'lean-management',
@@ -345,14 +624,14 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp.html',
+              url: '/kvp',
               badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
               icon: this.getSVGIcon('poll'),
               label: 'Umfragen',
-              url: '/pages/survey-admin.html',
+              url: '/survey-admin',
             },
             {
               id: 'tpm',
@@ -381,13 +660,13 @@ class UnifiedNavigation {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
-          url: '/pages/shifts.html',
+          url: '/shifts',
         },
         {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
-          url: '/pages/chat.html',
+          url: '/chat',
           badge: 'unread-messages',
         },
         {
@@ -402,14 +681,14 @@ class UnifiedNavigation {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Feature Management',
-          url: '/pages/feature-management.html',
+          url: '/feature-management',
         },
         */
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/pages/admin-profile.html',
+          url: '/admin-profile',
         },
       ],
 
@@ -419,7 +698,7 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Dashboard',
-          url: '/pages/employee-dashboard.html',
+          url: '/employee-dashboard',
         },
         {
           id: 'documents',
@@ -432,41 +711,41 @@ class UnifiedNavigation {
               id: 'documents-search',
               icon: this.getSVGIcon('search'),
               label: 'Dokumente suchen',
-              url: '/pages/documents-search.html',
+              url: '/documents-search',
             },
             {
               id: 'documents-company',
               icon: this.getSVGIcon('building'),
               label: 'Firmendokumente',
-              url: '/pages/documents-company.html',
+              url: '/documents-company',
               badgeId: 'badge-docs-company',
             },
             {
               id: 'documents-department',
               icon: this.getSVGIcon('sitemap'),
               label: 'Abteilungsdokumente',
-              url: '/pages/documents-department.html',
+              url: '/documents-department',
               badgeId: 'badge-docs-department',
             },
             {
               id: 'documents-team',
               icon: this.getSVGIcon('team'),
               label: 'Teamdokumente',
-              url: '/pages/documents-team.html',
+              url: '/documents-team',
               badgeId: 'badge-docs-team',
             },
             {
               id: 'documents-personal',
               icon: this.getSVGIcon('user'),
               label: 'Persönliche Dokumente',
-              url: '/pages/documents-personal.html',
+              url: '/documents-personal',
               badgeId: 'badge-docs-personal',
             },
             {
               id: 'documents-payroll',
               icon: this.getSVGIcon('money'),
               label: 'Gehaltsabrechnungen',
-              url: '/pages/documents-payroll.html',
+              url: '/documents-payroll',
               badgeId: 'badge-docs-payroll',
             },
           ],
@@ -475,7 +754,7 @@ class UnifiedNavigation {
           id: 'calendar',
           icon: this.getSVGIcon('calendar'),
           label: 'Kalender',
-          url: '/pages/calendar.html',
+          url: '/calendar',
         },
         {
           id: 'lean-management',
@@ -488,14 +767,14 @@ class UnifiedNavigation {
               id: 'kvp',
               icon: this.getSVGIcon('lightbulb'),
               label: 'KVP System',
-              url: '/pages/kvp.html',
+              url: '/kvp',
               badge: 'new-kvp-suggestions',
             },
             {
               id: 'surveys',
               icon: this.getSVGIcon('poll'),
               label: 'Umfragen',
-              url: '/pages/survey-employee.html',
+              url: '/survey-employee',
               badge: 'pending-surveys',
             },
             {
@@ -525,20 +804,20 @@ class UnifiedNavigation {
           id: 'chat',
           icon: this.getSVGIcon('chat'),
           label: 'Chat',
-          url: '/pages/chat.html',
+          url: '/chat',
           badge: 'unread-messages',
         },
         {
           id: 'shifts',
           icon: this.getSVGIcon('clock'),
           label: 'Schichtplanung',
-          url: '/pages/shifts.html',
+          url: '/shifts',
         },
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/pages/profile.html',
+          url: '/profile',
         },
       ],
 
@@ -548,50 +827,63 @@ class UnifiedNavigation {
           id: 'dashboard',
           icon: this.getSVGIcon('home'),
           label: 'Root Dashboard',
-          url: '/pages/root-dashboard.html',
+          url: '/root-dashboard',
+        },
+        {
+          id: 'root-users',
+          icon: this.getSVGIcon('user-shield'),
+          label: 'Root User',
+          url: '/manage-root-users',
         },
         {
           id: 'admins',
           icon: this.getSVGIcon('admin'),
           label: 'Administratoren',
-          url: '/pages/manage-admins.html',
+          url: '/manage-admins',
         },
         {
           id: 'departments',
           icon: this.getSVGIcon('building'),
           label: 'Abteilungen',
-          url: '/pages/departments.html',
+          url: '/departments',
         },
         {
           id: 'department-groups',
           icon: this.getSVGIcon('folder-tree'),
           label: 'Abteilungsgruppen',
-          url: '/pages/manage-department-groups.html',
+          url: '/manage-department-groups',
         },
         {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Features',
-          url: '/pages/root-features.html',
+          url: '/root-features',
         },
         {
           id: 'logs',
           icon: this.getSVGIcon('logs'),
           label: 'System-Logs',
-          url: '/pages/logs.html',
+          url: '/logs',
         },
         {
           id: 'profile',
           icon: this.getSVGIcon('user'),
           label: 'Mein Profil',
-          url: '/pages/root-profile.html',
+          url: '/root-profile',
         },
         {
           id: 'system',
           icon: this.getSVGIcon('settings'),
           label: 'System',
-          url: '#system',
-          section: 'system',
+          hasSubmenu: true,
+          submenu: [
+            {
+              id: 'account-settings',
+              icon: this.getSVGIcon('user-shield'),
+              label: 'Kontoeinstellungen',
+              url: '/account-settings',
+            },
+          ],
         },
       ],
     };
@@ -627,6 +919,8 @@ class UnifiedNavigation {
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
       admin:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
+      'user-shield':
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"/></svg>',
       poll: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
       lean: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
       wrench:
@@ -639,6 +933,8 @@ class UnifiedNavigation {
       sitemap:
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H11C11,19.66 9.66,21 8,21H6C4.34,21 3,19.66 3,18V10H8V12L10,10H13V7H11V3H16C17.66,3 19,4.34 19,6V8C19,9.66 17.66,11 16,11H13V13Z"/></svg>',
       logs: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.5H16V17H8V15.5M8,11.5H16V13H8V11.5Z"/></svg>',
+      'trash-clock':
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15,16H19V18H15V16M15,8H19V10H15V8M15,12H19V14H15V12M5,12V9L9,5L13,9V13A2,2 0 0,1 11,15H7A2,2 0 0,1 5,13M9,3A1,1 0 0,0 8,4A1,1 0 0,0 9,5A1,1 0 0,0 10,4A1,1 0 0,0 9,3M2,17V20H11.67C11.24,19.09 11,18.07 11,17H2M6,8V10H8V8H6M6,11V13H8V11H6M16.5,3C13.46,3 11,5.46 11,8.5V9H13V8.5C13,6.57 14.57,5 16.5,5C18.43,5 20,6.57 20,8.5C20,10.43 18.43,12 16.5,12H16V14H16.5C19.54,14 22,11.54 22,8.5C22,5.46 19.54,3 16.5,3Z"/></svg>',
     };
     return icons[name] || icons.home;
   }
@@ -701,13 +997,38 @@ class UnifiedNavigation {
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =
       storedUserRole === 'root'
-        ? '/pages/root-dashboard.html'
+        ? 'root-dashboard'
         : userRole === 'admin'
-          ? '/pages/admin-dashboard.html?section=dashboard'
-          : '/pages/employee-dashboard.html';
+          ? 'admin-dashboard?section=dashboard'
+          : 'employee-dashboard';
 
     // Determine which logo to use based on sidebar collapsed state
     const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+
+    // Check if user has switched roles and banner hasn't been dismissed
+    const isRoleSwitched = storedUserRole !== activeRole && activeRole !== null;
+    const bannerDismissedKey = `roleSwitchBannerDismissed_${activeRole}`;
+    const isBannerDismissed = localStorage.getItem(bannerDismissedKey) === 'true';
+
+    const warningBanner =
+      isRoleSwitched && !isBannerDismissed
+        ? `
+      <!-- Role Switch Warning Banner -->
+      <div class="role-switch-banner" id="role-switch-warning-banner">
+        <div class="role-switch-banner-content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <span>Sie agieren derzeit als <strong>${activeRole === 'employee' ? 'Mitarbeiter' : activeRole === 'admin' ? 'Admin' : 'Root'}</strong>. Ihre ursprüngliche Rolle ist <strong>${storedUserRole === 'root' ? 'Root' : storedUserRole === 'admin' ? 'Admin' : 'Mitarbeiter'}</strong>.</span>
+          <button class="role-switch-banner-close" onclick="window.dismissRoleSwitchBanner();" title="Banner schließen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `
+        : '';
 
     return `
       <!-- Header -->
@@ -764,6 +1085,8 @@ class UnifiedNavigation {
           </div>
         </div>
       </header>
+
+      ${warningBanner}
 
       <!-- Sidebar -->
       <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
@@ -824,7 +1147,7 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-title blackboard-button" onclick="window.location.href='/pages/blackboard.html'" title="Zum Schwarzen Brett">
+                <button class="sidebar-title blackboard-button" onclick="window.location.href='/blackboard'" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
                         <span class="pin-needle"></span>
@@ -841,6 +1164,7 @@ class UnifiedNavigation {
                         </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.email || 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
+                        <div class="user-employee-number" id="sidebar-employee-number" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                         <span id="role-indicator" class="role-badge ${this.currentRole || ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
@@ -875,19 +1199,21 @@ class UnifiedNavigation {
 
     // If has submenu, create a dropdown
     if (hasSubmenu) {
-      const submenuItems = item
-        .submenu!.map((child) => {
-          // Support both badgeId and badge properties
-          let childBadgeHtml = '';
-          if (child.badgeId) {
-            childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-          } else if (child.badge === 'pending-surveys') {
-            childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
-          } else if (child.badge === 'new-kvp-suggestions') {
-            childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-          }
+      const submenuItems =
+        item.submenu && item.submenu.length > 0
+          ? item.submenu
+              .map((child) => {
+                // Support both badgeId and badge properties
+                let childBadgeHtml = '';
+                if (child.badgeId) {
+                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                } else if (child.badge === 'pending-surveys') {
+                  childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
+                } else if (child.badge === 'new-kvp-suggestions') {
+                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                }
 
-          return `
+                return `
               <li class="submenu-item" style="position: relative;">
                 <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
                   <span class="submenu-label">${child.label}</span>
@@ -895,8 +1221,9 @@ class UnifiedNavigation {
                 </a>
               </li>
             `;
-        })
-        .join('');
+              })
+              .join('')
+          : '';
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
@@ -920,17 +1247,20 @@ class UnifiedNavigation {
 
     // If has children, create a dropdown (old style)
     if (hasChildren) {
-      const submenuItems = item
-        .children!.map(
-          (child) => `
+      const submenuItems =
+        item.children && item.children.length > 0
+          ? item.children
+              .map(
+                (child) => `
         <li class="submenu-item">
           <a href="${child.url}" class="submenu-link" data-nav-id="${child.id}">
             <span class="submenu-label">${child.label}</span>
           </a>
         </li>
       `,
-        )
-        .join('');
+              )
+              .join('')
+          : '';
 
       return `
         <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
@@ -1003,7 +1333,7 @@ class UnifiedNavigation {
         this.handleLogout().catch((error) => {
           console.error('Logout error:', error);
           // Fallback: redirect to login even if logout fails
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
         });
       }
     });
@@ -1096,7 +1426,7 @@ class UnifiedNavigation {
       }
 
       // Force browser to recalculate styles
-      sidebar.offsetWidth;
+      void sidebar.offsetWidth;
 
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
@@ -1256,6 +1586,7 @@ class UnifiedNavigation {
             }
 
             // Call the role switch function
+            console.log('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
             await switchRoleForRoot(selectedRole);
           });
         });
@@ -1466,7 +1797,7 @@ class UnifiedNavigation {
               }
             }
           }
-        } catch (e) {
+        } catch {
           // Skip invalid URLs
           console.warn('Invalid submenu URL:', linkElement.href);
         }
@@ -1526,17 +1857,40 @@ class UnifiedNavigation {
 
   // Public method to refresh navigation
   public refresh(): void {
-    this.loadUserInfo();
-    this.injectNavigationHTML();
-    this.attachEventListeners();
+    console.log('[UnifiedNav] Refreshing navigation');
 
-    // Restore sidebar state after refresh
-    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (isCollapsed) {
-      const sidebar = document.querySelector('.sidebar');
-      const mainContent = document.querySelector('.main-content');
-      sidebar?.classList.add('collapsed');
-      mainContent?.classList.add('sidebar-collapsed');
+    // Reload user info from token
+    this.loadUserInfo();
+
+    // Get the navigation container
+    const navigationContainer = document.getElementById('navigation-container');
+    if (navigationContainer) {
+      // Clear and recreate entire navigation structure
+      const fullNavigation = this.createFullNavigationStructure();
+      navigationContainer.innerHTML = fullNavigation;
+
+      // Re-attach event listeners after DOM update
+      setTimeout(() => {
+        this.attachEventListeners();
+        this.updateActiveNavigation();
+        this.updateUnreadMessages();
+        this.updatePendingSurveys();
+        this.updateUnreadDocuments();
+        this.updateNewKvpSuggestions();
+
+        // Restore sidebar state
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+          const sidebar = navigationContainer.querySelector('.sidebar');
+          const mainContent = document.querySelector('.main-content');
+          sidebar?.classList.add('collapsed');
+          mainContent?.classList.add('sidebar-collapsed');
+        }
+      }, 100);
+    } else {
+      // Fallback for pages without navigation-container
+      this.injectNavigationHTML();
+      this.updateActiveNavigation();
     }
   }
 
@@ -1743,7 +2097,13 @@ class UnifiedNavigation {
           total: 0,
         };
 
-        documents.forEach((doc: any) => {
+        interface DocumentResponse {
+          is_read?: boolean;
+          category?: string;
+          scope?: 'company' | 'department' | 'team' | 'personal';
+        }
+
+        documents.forEach((doc: DocumentResponse) => {
           if (!doc.is_read) {
             unreadCounts.total++;
 
@@ -1871,16 +2231,16 @@ class UnifiedNavigation {
 
     logoContainers.forEach((container) => {
       // Determine the dashboard URL based on role
-      let dashboardUrl = '/pages/employee-dashboard.html'; // default
+      let dashboardUrl = 'employee-dashboard'; // default
       switch (currentRole) {
         case 'employee':
-          dashboardUrl = '/pages/employee-dashboard.html';
+          dashboardUrl = 'employee-dashboard';
           break;
         case 'admin':
-          dashboardUrl = '/pages/admin-dashboard.html?section=dashboard';
+          dashboardUrl = 'admin-dashboard?section=dashboard';
           break;
         case 'root':
-          dashboardUrl = '/pages/root-dashboard.html';
+          dashboardUrl = 'root-dashboard';
           break;
         default:
           console.warn('No user role found for logo navigation, defaulting to employee dashboard');
@@ -1932,7 +2292,7 @@ class UnifiedNavigation {
       document.head.appendChild(styleSheet);
 
       // Force style recalculation
-      document.body.offsetHeight;
+      void document.body.offsetHeight;
     } else {
       console.log('[UnifiedNav] CSS styles already present');
     }
@@ -1957,7 +2317,7 @@ class UnifiedNavigation {
           </div>
           <div class="storage-percentage" id="storage-percentage">0% belegt</div>
         </div>
-        <button class="storage-upgrade-btn" onclick="window.location.href='/pages/storage-upgrade.html'">
+        <button class="storage-upgrade-btn" onclick="window.location.href='/storage-upgrade'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
           </svg>
@@ -2100,6 +2460,62 @@ const unifiedNavigationCSS = `
         font-size: 0.9rem;
     }
 
+    /* Role Switch Warning Banner */
+    .role-switch-banner {
+        position: fixed;
+        top: 60px; /* Unter der Navigation */
+        left: 0;
+        right: 0;
+        background: rgba(255, 193, 7, 0.1);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+        padding: 8px 20px;
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(255, 193, 7, 0.2);
+    }
+
+    .role-switch-banner-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ff9800;
+        font-size: 14px;
+        max-width: 1200px;
+        width: 100%;
+        position: relative;
+    }
+
+    .role-switch-banner-content strong {
+        color: #ffb74d;
+        font-weight: 600;
+    }
+
+    .role-switch-banner-close {
+        position: absolute;
+        right: 0;
+        background: none;
+        border: none;
+        color: #ff9800;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        /* transition: all 0.2s ease; */
+    }
+
+    .role-switch-banner-close:hover {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffb74d;
+    }
+
+    /* Adjust sidebar and main content when banner is visible */
+    .role-switch-banner:not([style*="display: none"]) ~ .sidebar {
+        top: 100px !important; /* 60px header + 40px banner */
+        height: calc(100vh - 100px) !important;
+    }
+
     .sidebar {
         width: 280px !important;
         background: rgba(255, 255, 255, 0);
@@ -2109,9 +2525,9 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        transition: width 0.3s ease !important;
         overflow-y: auto;
         overflow-x: hidden;
+        /* transition: all .3s ease; */
     }
 
     /* Scrollbar Styling */
@@ -2152,7 +2568,7 @@ const unifiedNavigationCSS = `
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
         border: 1.3px solid rgb(255, 203, 0);
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         cursor: pointer;
         width: 98%;
         margin-left: 1%;
@@ -2231,7 +2647,7 @@ const unifiedNavigationCSS = `
             0 3px 6px rgba(0, 0, 0, 0.4),
             inset -2px -2px 3px rgba(0, 0, 0, 0.3),
             inset 2px 2px 3px rgba(255, 255, 255, 0.4);
-        transition: all 0.2s ease;
+        /* transition: all 0.2s ease; */
     }
 
     .pin-head::after {
@@ -2251,7 +2667,7 @@ const unifiedNavigationCSS = `
         left: 50%;
         transform: translateX(-50%);
         opacity: 0;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         z-index: 2;
     }
 
@@ -2298,7 +2714,7 @@ const unifiedNavigationCSS = `
     }
 
     .title-text {
-        transition: opacity 0.3s ease, width 0.3s ease;
+        /* transition: opacity 0.3s ease, width 0.3s ease; */
         white-space: nowrap;
         overflow: hidden;
     }
@@ -2315,7 +2731,7 @@ const unifiedNavigationCSS = `
         border: 1px solid transparent;
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         color: white;
         margin-right: 15px;
         margin-left: -6px;
@@ -2331,7 +2747,7 @@ const unifiedNavigationCSS = `
     }
 
     .toggle-icon {
-        transition: transform 0.3s ease;
+        /* transition: transform 0.3s ease; */
     }
 
     /* Collapsed Sidebar Styles */
@@ -2392,8 +2808,8 @@ const unifiedNavigationCSS = `
         align-items: center;
         min-height: auto;
         margin-top: 28px;
-        margin-bottom: 83px;
-    }
+        margin-bottom: 85px;
+        margin-top: 93px;}
 
     .sidebar.collapsed .user-details {
         display: none;
@@ -2495,7 +2911,7 @@ const unifiedNavigationCSS = `
     .title-text,
     .user-details,
     .storage-widget {
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
     }
 
     /* Icon centering in collapsed state */
@@ -2520,9 +2936,9 @@ const unifiedNavigationCSS = `
     }
 
     .user-info-card {
-        display: flex;
+        /*display: flex;*/
         align-items: center;
-        gap: 30px;
+        /*ap: 15px;*/
         padding: 14px 10px 15px 40px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
@@ -2532,12 +2948,12 @@ const unifiedNavigationCSS = `
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /*transition: all 0.3s ease;*/
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
-        animation: fadeInUp 0.6s ease-out;
+        /*animation: fadeInUp 0.6s ease-out;*/
         margin-top: 39px;
     }
 
@@ -2575,7 +2991,7 @@ const unifiedNavigationCSS = `
 
     .user-info-card:hover {
         background: rgba(255, 255, 255, 0.03);
-        transform: translateY(-5px);
+        /*transform: translateY(-5px);*/
         border-color: rgba(33, 150, 243, 0.3);
         box-shadow: 
             0 12px 40px rgba(0, 0, 0, 0.5),
@@ -2587,14 +3003,14 @@ const unifiedNavigationCSS = `
     #sidebar-user-avatar,
     .sidebar .user-avatar,
     .user-info-card .user-avatar {
-        display: block !important;
+        /*display: block !important;*/
         width: 38px !important;
         height: 38px !important;
         border-radius: 12px !important;
         object-fit: cover !important;
         border: none !important;
         flex-shrink: 0 !important;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         margin-left: 0px;
     }
@@ -2602,6 +3018,13 @@ const unifiedNavigationCSS = `
     /* Avatar padding when sidebar is collapsed */
     .sidebar.collapsed .user-avatar {
         padding: 3px;
+    }
+    
+    /* Avatar margin adjustment when sidebar is collapsed */
+    .sidebar.collapsed #sidebar-user-avatar,
+    .sidebar.collapsed .user-avatar,
+    .sidebar.collapsed .user-info-card .user-avatar {
+        margin-left: -16px !important;
     }
 
     .user-info-card:hover .user-avatar {
@@ -2635,6 +3058,7 @@ const unifiedNavigationCSS = `
         overflow: hidden;
         text-overflow: ellipsis;
         text-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+        white-space: normal;
     }
 
     .company-domain {
@@ -2669,14 +3093,14 @@ const unifiedNavigationCSS = `
         border-radius: 8px;
         font-size: 10px;
         font-weight: 500;
-        transition: all 0.2s ease;
+        /* transition: all 0.2s ease; */
         margin: 6px 0 0 0;
         width: fit-content;
         text-transform: uppercase;
         letter-spacing: 2px;
     }
 
-    /* Role-specific badge colors - Exact match from logs.html */
+    /* Role-specific badge colors - Exact match from logs */
     .role-badge.root {
         background: rgba(156, 39, 176, 0.15);
         color: #9C27B0;
@@ -2743,7 +3167,6 @@ const unifiedNavigationCSS = `
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
-        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
         border: 1px solid transparent;
@@ -2754,7 +3177,6 @@ const unifiedNavigationCSS = `
     .sidebar-link:hover {
         background: rgba(33, 150, 243, 0.1);
         color: var(--primary-color);
-        transform: translateY(-2px);
         /*box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);*/
     }
 
@@ -2768,12 +3190,15 @@ const unifiedNavigationCSS = `
     .sidebar-link .icon {
         min-width: 20px;
         text-align: center;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     .sidebar-link .label {
         font-weight: 500;
         flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .nav-indicator {
@@ -2781,7 +3206,7 @@ const unifiedNavigationCSS = `
         height: 4px;
         border-radius: 50%;
         background: transparent;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     /*.sidebar-item.active .nav-indicator {
@@ -2798,7 +3223,7 @@ const unifiedNavigationCSS = `
         border-radius: 50%;
         background: rgba(33, 150, 243, 0.3);
         transform: translate(-50%, -50%);
-        animation: ripple 0.6s ease-out;
+        /* animation: ripple 0.6s ease-out; */
     }
 
     @keyframes ripple {
@@ -2816,7 +3241,7 @@ const unifiedNavigationCSS = `
 
     .submenu-arrow {
         margin-left: auto;
-        transition: transform 0.3s ease;
+        /* transition: transform 0.3s ease; */
         opacity: 0.6;
     }
 
@@ -2831,7 +3256,7 @@ const unifiedNavigationCSS = `
         list-style: none;
         padding: 0;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     .submenu-item {
@@ -2845,7 +3270,7 @@ const unifiedNavigationCSS = `
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
-        transition: all 0.2s ease;
+        /* transition: all 0.2s ease; */
         transform: translateX(6px);
         position: relative;
     }
@@ -2896,7 +3321,7 @@ const unifiedNavigationCSS = `
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     .storage-widget:hover {
@@ -2948,7 +3373,7 @@ const unifiedNavigationCSS = `
         height: 100%;
         background: var(--success-color);
         border-radius: 4px;
-        transition: width 0.5s ease, background-color 0.3s ease;
+        /* transition: width 0.5s ease, background-color 0.3s ease; */
         position: relative;
         overflow: hidden;
     }
@@ -2971,7 +3396,7 @@ const unifiedNavigationCSS = `
             rgba(255, 255, 255, 0.2)
         );
         background-size: 20px 20px;
-        animation: progress-stripes 1s linear infinite;
+        /* animation: progress-stripes 1s linear infinite; */
     }
 
     @keyframes progress-stripes {
@@ -2999,7 +3424,7 @@ const unifiedNavigationCSS = `
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -3060,7 +3485,11 @@ if (!document.querySelector('#unified-navigation-styles')) {
 // Export to window for backwards compatibility
 
 // Global function for submenu toggle
-(window as any).toggleSubmenu = function (event: Event, itemId: string) {
+interface NavigationWindow extends Window {
+  toggleSubmenu: (event: Event, itemId: string) => void;
+}
+
+(window as unknown as NavigationWindow).toggleSubmenu = function (event: Event, itemId: string) {
   event.preventDefault();
   event.stopPropagation();
 
@@ -3109,27 +3538,65 @@ const setupPeriodicUpdates = () => {
   // Ungelesene Nachrichten beim Start und periodisch aktualisieren
   if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
     window.unifiedNav.updateUnreadMessages();
-    setInterval(() => window.unifiedNav.updateUnreadMessages(), 30000); // Alle 30 Sekunden
+    setInterval(() => window.unifiedNav?.updateUnreadMessages(), 30000); // Alle 30 Sekunden
   }
 
   // Offene Umfragen beim Start und periodisch aktualisieren
-  if (window.unifiedNav && typeof window.unifiedNav.updatePendingSurveys === 'function') {
+  if (
+    window.unifiedNav &&
+    'updatePendingSurveys' in window.unifiedNav &&
+    typeof window.unifiedNav.updatePendingSurveys === 'function'
+  ) {
     window.unifiedNav.updatePendingSurveys();
-    setInterval(() => window.unifiedNav.updatePendingSurveys(), 30000); // Alle 30 Sekunden
+    setInterval(() => window.unifiedNav?.updatePendingSurveys?.(), 30000); // Alle 30 Sekunden
   }
 
   // Storage-Informationen für Root User beim Start und periodisch aktualisieren
-  if (window.unifiedNav && typeof window.unifiedNav.updateStorageInfo === 'function') {
+  if (
+    window.unifiedNav &&
+    'updateStorageInfo' in window.unifiedNav &&
+    typeof window.unifiedNav.updateStorageInfo === 'function'
+  ) {
     window.unifiedNav.updateStorageInfo();
-    setInterval(() => window.unifiedNav.updateStorageInfo(), 60000); // Alle 60 Sekunden
+    setInterval(() => window.unifiedNav?.updateStorageInfo?.(), 60000); // Alle 60 Sekunden
   }
 };
 
 // Call setup after initialization
 setTimeout(setupPeriodicUpdates, 100);
 
+// Extend Window interface for global functions
+declare global {
+  interface Window {
+    UnifiedNavigation: typeof UnifiedNavigation;
+    dismissRoleSwitchBanner: () => void;
+  }
+}
+
 // Export to window for legacy support
 window.UnifiedNavigation = UnifiedNavigation;
+
+// Global function to dismiss role switch banner
+window.dismissRoleSwitchBanner = function () {
+  const banner = document.getElementById('role-switch-warning-banner');
+  if (banner) {
+    banner.style.display = 'none';
+
+    // Save dismissal state
+    const activeRole = localStorage.getItem('activeRole');
+    if (activeRole) {
+      const bannerDismissedKey = `roleSwitchBannerDismissed_${activeRole}`;
+      localStorage.setItem(bannerDismissedKey, 'true');
+    }
+
+    // Reset sidebar position
+    const sidebar = document.querySelector('.sidebar') as HTMLElement;
+    if (sidebar) {
+      sidebar.style.top = '';
+      sidebar.style.height = '';
+    }
+  }
+};
 
 // Export for ES modules
 export default UnifiedNavigation;

@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -295,7 +296,7 @@
         border: 3px solid rgba(255, 255, 255, 0.1);
         border-radius: 50%;
         border-top-color: var(--primary-color);
-        animation: spin 1s ease-in-out infinite;
+        /* animation: spin 1s ease-in-out infinite; */
       }
 
       @keyframes spin {
@@ -322,26 +323,25 @@
     <!-- Navigation Container -->
     <div id="navigation-container"></div>
 
-    <!-- Main Layout -->
-    <div class="layout-container">
-      <!-- Main Content Area -->
-      <main class="main-content">
-        <div class="survey-results-container">
-          <div class="page-header">
-            <h1 class="page-title">
-              <i class="fas fa-chart-bar"></i>
-              Umfrage-Ergebnisse
-            </h1>
-          </div>
+    <!-- Layout Wrapper für Sidebar -->
+    <div class="layout-wrapper">
+      <!-- Main Layout -->
+      <div class="layout-container">
+        <!-- Main Content Area -->
+        <main class="main-content">
+          <div class="survey-results-container">
+            <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
+            <div id="breadcrumb-container"></div>
 
-          <div id="content-area">
-            <div class="loading">
-              <div class="spinner"></div>
-              <p>Lade Umfrage-Ergebnisse...</p>
+            <div id="content-area">
+              <div class="loading">
+                <div class="spinner"></div>
+                <p>Lade Umfrage-Ergebnisse...</p>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
 
     <script>

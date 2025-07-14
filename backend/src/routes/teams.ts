@@ -10,6 +10,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../auth';
 import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
 
 // Import models (now ES modules)
 import Team from '../models/team';
@@ -218,7 +219,7 @@ router.post('/', async (req, res): Promise<void> => {
     if (department_id) {
       const department = await Department.findById(
         department_id,
-        authReq.user.tenant_id
+        req.user.tenant_id
       );
       if (!department) {
         res
@@ -252,11 +253,11 @@ router.post('/', async (req, res): Promise<void> => {
       message: 'Team erfolgreich erstellt',
       teamId,
     });
-  } catch (error: any) {
-    logger.error(`Error creating team: ${error.message}`);
+  } catch (error) {
+    logger.error(`Error creating team: ${getErrorMessage(error)}`);
     res.status(500).json({
       message: 'Fehler beim Erstellen des Teams',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -298,11 +299,11 @@ router.get('/', async (req, res): Promise<void> => {
     const authReq = req as AuthenticatedRequest;
     const teams = await Team.findAll(authReq.user.tenant_id);
     res.json(teams);
-  } catch (error: any) {
-    logger.error(`Error fetching teams: ${error.message}`);
+  } catch (error) {
+    logger.error(`Error fetching teams: ${getErrorMessage(error)}`);
     res.status(500).json({
       message: 'Fehler beim Abrufen der Teams',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -365,11 +366,13 @@ router.get('/:id', async (req, res): Promise<void> => {
     }
 
     res.json(team);
-  } catch (error: any) {
-    logger.error(`Error fetching team ${req.params.id}: ${error.message}`);
+  } catch (error) {
+    logger.error(
+      `Error fetching team ${req.params.id}: ${getErrorMessage(error)}`
+    );
     res.status(500).json({
       message: 'Fehler beim Abrufen des Teams',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -502,7 +505,7 @@ router.put('/:id', async (req, res): Promise<void> => {
     if (department_id) {
       const department = await Department.findById(
         department_id,
-        authReq.user.tenant_id
+        req.user.tenant_id
       );
       if (!department) {
         res
@@ -532,11 +535,13 @@ router.put('/:id', async (req, res): Promise<void> => {
       logger.warn(`Failed to update team ${teamId}`);
       res.status(500).json({ message: 'Fehler beim Aktualisieren des Teams' });
     }
-  } catch (error: any) {
-    logger.error(`Error updating team ${req.params.id}: ${error.message}`);
+  } catch (error) {
+    logger.error(
+      `Error updating team ${req.params.id}: ${getErrorMessage(error)}`
+    );
     res.status(500).json({
       message: 'Fehler beim Aktualisieren des Teams',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -624,11 +629,13 @@ router.delete('/:id', async (req, res): Promise<void> => {
       logger.warn(`Failed to delete team ${teamId}`);
       res.status(500).json({ message: 'Fehler beim Löschen des Teams' });
     }
-  } catch (error: any) {
-    logger.error(`Error deleting team ${req.params.id}: ${error.message}`);
+  } catch (error) {
+    logger.error(
+      `Error deleting team ${req.params.id}: ${getErrorMessage(error)}`
+    );
     res.status(500).json({
       message: 'Fehler beim Löschen des Teams',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -718,13 +725,13 @@ router.get('/:id/members', async (req, res): Promise<void> => {
 
     const members = await Team.getTeamMembers(teamId);
     res.json(members);
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Error fetching members for team ${req.params.id}: ${error.message}`
+      `Error fetching members for team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: 'Fehler beim Abrufen der Teammitglieder',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -853,13 +860,13 @@ router.post('/:id/members', async (req, res): Promise<void> => {
         .status(500)
         .json({ message: 'Fehler beim Hinzufügen des Benutzers zum Team' });
     }
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Error adding user to team ${req.params.id}: ${error.message}`
+      `Error adding user to team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: 'Fehler beim Hinzufügen des Benutzers zum Team',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -966,13 +973,13 @@ router.delete('/:id/members/:userId', async (req, res): Promise<void> => {
         .status(404)
         .json({ message: 'Benutzer ist kein Mitglied dieses Teams' });
     }
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Error removing user from team ${req.params.id}: ${error.message}`
+      `Error removing user from team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: 'Fehler beim Entfernen des Benutzers aus dem Team',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

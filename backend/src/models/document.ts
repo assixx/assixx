@@ -1,18 +1,9 @@
-import pool from '../database';
+import {
+  query as executeQuery,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger';
-import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-
-// Helper function to handle both real pool and mock database
-async function executeQuery<T extends RowDataPacket[] | ResultSetHeader>(
-  sql: string,
-  params?: any[]
-): Promise<[T, any]> {
-  const result = await (pool as any).query(sql, params);
-  if (Array.isArray(result) && result.length === 2) {
-    return result as [T, any];
-  }
-  return [result as T, null];
-}
 
 // Database interfaces
 interface DbDocument extends RowDataPacket {
@@ -57,6 +48,24 @@ interface DocumentUpdateData {
   year?: number;
   month?: string;
   isArchived?: boolean;
+}
+
+interface DocumentFilters {
+  userId?: number;
+  tenant_id?: number;
+  category?: string;
+  year?: number;
+  month?: string;
+  isArchived?: boolean;
+  searchTerm?: string;
+  uploadDateFrom?: Date;
+  uploadDateTo?: Date;
+  recipientType?: string;
+  recipientId?: number;
+  orderBy?: string;
+  orderDirection?: 'ASC' | 'DESC';
+  limit?: number;
+  offset?: number;
 }
 
 interface DocumentCountFilter {
@@ -228,7 +237,7 @@ export class Document {
   ): Promise<boolean> {
     logger.info(`Updating document ${id}`);
     let query = 'UPDATE documents SET ';
-    const params: any[] = [];
+    const params: unknown[] = [];
     const updates: string[] = [];
 
     if (fileName !== undefined) {
@@ -323,7 +332,7 @@ export class Document {
       FROM documents d
       LEFT JOIN users u ON d.user_id = u.id`;
 
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (category) {
       query += ' WHERE d.category = ?';
@@ -374,7 +383,7 @@ export class Document {
   // Search documents with employee access (personal, team, department, company)
   static async searchWithEmployeeAccess(
     userId: number,
-    tenantId: number,
+    tenant_id: number,
     searchTerm: string
   ): Promise<DbDocument[]> {
     logger.info(
@@ -421,14 +430,14 @@ export class Document {
 
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [
-        tenantId,
+        tenant_id,
         `%${searchTerm}%`,
         `%${searchTerm}%`,
         userId,
         userId,
-        tenantId,
+        tenant_id,
         userId,
-        tenantId,
+        tenant_id,
       ]);
       logger.info(
         `Found ${rows.length} accessible documents matching search for employee ${userId}`
@@ -447,7 +456,7 @@ export class Document {
     // If no filters provided, count all documents
     if (!filters || Object.keys(filters).length === 0) {
       try {
-        const [rows] = await executeQuery<any[]>(
+        const [rows] = await executeQuery<RowDataPacket[]>(
           'SELECT COUNT(*) as count FROM documents',
           []
         );
@@ -463,7 +472,7 @@ export class Document {
     // Count with filters
     logger.info('Counting documents with filters');
     let query = 'SELECT COUNT(*) as total FROM documents WHERE 1=1';
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     if (filters.userId) {
       query += ' AND user_id = ?';
@@ -496,10 +505,10 @@ export class Document {
   // Find all documents accessible to an employee (personal, team, department, company)
   static async findByEmployeeWithAccess(
     userId: number,
-    tenantId: number
+    tenant_id: number
   ): Promise<DbDocument[]> {
     logger.info(
-      `Fetching all accessible documents for employee ${userId} in tenant ${tenantId}`
+      `Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`
     );
 
     const query = `
@@ -541,12 +550,12 @@ export class Document {
 
     try {
       const [rows] = await executeQuery<DbDocument[]>(query, [
-        tenantId,
+        tenant_id,
         userId,
         userId,
-        tenantId,
+        tenant_id,
         userId,
-        tenantId,
+        tenant_id,
       ]);
       logger.info(
         `Retrieved ${rows.length} accessible documents for employee ${userId}`
@@ -561,11 +570,11 @@ export class Document {
   }
 
   // Count documents by tenant
-  static async countByTenant(tenantId: number): Promise<number> {
+  static async countByTenant(tenant_id: number): Promise<number> {
     try {
-      const [rows] = await executeQuery<any[]>(
+      const [rows] = await executeQuery<RowDataPacket[]>(
         'SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?',
-        [tenantId]
+        [tenant_id]
       );
       return rows[0]?.count || 0;
     } catch (error) {
@@ -577,26 +586,28 @@ export class Document {
   }
 
   // Get total storage used by tenant (in bytes)
-  static async getTotalStorageUsed(tenantId: number): Promise<number> {
-    logger.info(`Calculating total storage used by tenant ${tenantId}`);
+  static async getTotalStorageUsed(tenant_id: number): Promise<number> {
+    logger.info(`Calculating total storage used by tenant ${tenant_id}`);
     try {
-      const [rows] = await executeQuery<any[]>(
+      const [rows] = await executeQuery<RowDataPacket[]>(
         'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?',
-        [tenantId]
+        [tenant_id]
       );
       const totalSize = rows[0]?.total_size || 0;
-      logger.info(`Tenant ${tenantId} is using ${totalSize} bytes of storage`);
+      logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
       return totalSize;
     } catch (error) {
       logger.error(
-        `Error calculating storage for tenant ${tenantId}: ${(error as Error).message}`
+        `Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`
       );
       return 0;
     }
   }
 
   // Find documents with flexible filters
-  static async findWithFilters(filters: any): Promise<DbDocument[]> {
+  static async findWithFilters(
+    filters: DocumentFilters
+  ): Promise<DbDocument[]> {
     logger.info('Finding documents with filters', filters);
 
     let query = `
@@ -606,7 +617,7 @@ export class Document {
       LEFT JOIN users u ON d.user_id = u.id
       WHERE 1=1`;
 
-    const params: any[] = [];
+    const params: unknown[] = [];
 
     // Add filters
     if (filters.userId) {
@@ -614,9 +625,9 @@ export class Document {
       params.push(filters.userId);
     }
 
-    if (filters.tenantId) {
+    if (filters.tenant_id) {
       query += ' AND d.tenant_id = ?';
-      params.push(filters.tenantId);
+      params.push(filters.tenant_id);
     }
 
     if (filters.category) {
@@ -676,11 +687,11 @@ export class Document {
     // Add pagination
     if (filters.limit) {
       query += ' LIMIT ?';
-      params.push(parseInt(filters.limit));
+      params.push(filters.limit);
 
       if (filters.offset) {
         query += ' OFFSET ?';
-        params.push(parseInt(filters.offset));
+        params.push(filters.offset);
       }
     }
 
@@ -700,21 +711,21 @@ export class Document {
   static async markAsRead(
     documentId: number,
     userId: number,
-    tenantId: number
+    tenant_id: number
   ): Promise<void> {
     const query = `
       INSERT INTO document_read_status (document_id, user_id, tenant_id)
       VALUES (?, ?, ?)
       ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP
     `;
-    await executeQuery(query, [documentId, userId, tenantId]);
+    await executeQuery(query, [documentId, userId, tenant_id]);
   }
 
   // Check if a document has been read by a user
   static async isReadByUser(
     documentId: number,
     userId: number,
-    tenantId: number
+    tenant_id: number
   ): Promise<boolean> {
     const query = `
       SELECT 1 FROM document_read_status
@@ -724,7 +735,7 @@ export class Document {
     const [results] = await executeQuery<RowDataPacket[]>(query, [
       documentId,
       userId,
-      tenantId,
+      tenant_id,
     ]);
     return results.length > 0;
   }
@@ -732,7 +743,7 @@ export class Document {
   // Get unread documents count for a user
   static async getUnreadCountForUser(
     userId: number,
-    tenantId: number
+    tenant_id: number
   ): Promise<number> {
     const query = `
       SELECT COUNT(DISTINCT d.id) as unread_count
@@ -751,12 +762,12 @@ export class Document {
     `;
     const [results] = await executeQuery<RowDataPacket[]>(query, [
       userId,
-      tenantId,
+      tenant_id,
       userId,
-      tenantId,
+      tenant_id,
       userId,
-      tenantId,
-      tenantId,
+      tenant_id,
+      tenant_id,
       userId,
     ]);
     return results[0]?.unread_count || 0;

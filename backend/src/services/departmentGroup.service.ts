@@ -3,7 +3,12 @@
  * Manages hierarchical department groups
  */
 
-import pool from '../config/database.js';
+import {
+  execute,
+  getConnection,
+  RowDataPacket,
+  ResultSetHeader,
+} from '../utils/db';
 import { logger } from '../utils/logger.js';
 
 interface DepartmentGroup {
@@ -45,15 +50,15 @@ class DepartmentGroupService {
         }
       }
 
-      const [result] = await (pool as any).execute(
+      const [result] = await execute<ResultSetHeader>(
         `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by) 
          VALUES (?, ?, ?, ?, ?)`,
         [tenantId, name, description, parentGroupId, createdBy]
       );
 
       return result.insertId;
-    } catch (error: any) {
-      if (error.code === 'ER_DUP_ENTRY') {
+    } catch (error) {
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
         logger.error(
           `Group name '${name}' already exists for tenant ${tenantId}`
         );
@@ -75,7 +80,7 @@ class DepartmentGroupService {
   ): Promise<boolean> {
     if (departmentIds.length === 0) return true;
 
-    const connection = await pool.getConnection();
+    const connection = await getConnection();
 
     try {
       await connection.beginTransaction();
@@ -122,13 +127,13 @@ class DepartmentGroupService {
     try {
       const placeholders = departmentIds.map(() => '?').join(', ');
 
-      const [result] = await (pool as any).execute(
+      const [result] = await execute<ResultSetHeader>(
         `DELETE FROM department_group_members 
          WHERE group_id = ? AND tenant_id = ? AND department_id IN (${placeholders})`,
         [groupId, tenantId, ...departmentIds]
       );
 
-      return result.affectedRows > 0;
+      return (result as ResultSetHeader).affectedRows > 0;
     } catch (error) {
       logger.error('Error removing departments from group:', error);
       return false;
@@ -147,7 +152,7 @@ class DepartmentGroupService {
       const departments = new Map<number, Department>();
 
       // Get direct departments
-      const [directDepts] = await (pool as any).execute(
+      const [directDepts] = await execute<RowDataPacket[]>(
         `SELECT d.id, d.name, d.description
          FROM departments d
          JOIN department_group_members dgm ON d.id = dgm.department_id
@@ -155,7 +160,7 @@ class DepartmentGroupService {
         [groupId, tenantId]
       );
 
-      directDepts.forEach((dept: any) => {
+      directDepts.forEach((dept: RowDataPacket) => {
         departments.set(dept.id, {
           id: dept.id,
           name: dept.name,
@@ -191,7 +196,7 @@ class DepartmentGroupService {
     const departments = new Map<number, Department>();
 
     // Get all subgroups
-    const [subgroups] = await (pool as any).execute(
+    const [subgroups] = await execute<RowDataPacket[]>(
       `SELECT id FROM department_groups 
        WHERE parent_group_id = ? AND tenant_id = ?`,
       [parentGroupId, tenantId]
@@ -219,7 +224,7 @@ class DepartmentGroupService {
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroup[]> {
     try {
       // Get all groups
-      const [groups] = await (pool as any).execute(
+      const [groups] = await execute<RowDataPacket[]>(
         `SELECT id, name, description, parent_group_id 
          FROM department_groups 
          WHERE tenant_id = ? 
@@ -228,7 +233,7 @@ class DepartmentGroupService {
       );
 
       // Get all department assignments
-      const [assignments] = await (pool as any).execute(
+      const [assignments] = await execute<RowDataPacket[]>(
         `SELECT dgm.group_id, d.id as dept_id, d.name as dept_name, d.description as dept_desc
          FROM department_group_members dgm
          JOIN departments d ON dgm.department_id = d.id
@@ -238,11 +243,11 @@ class DepartmentGroupService {
 
       // Build assignment map
       const assignmentMap = new Map<number, Department[]>();
-      assignments.forEach((row: any) => {
+      assignments.forEach((row: RowDataPacket) => {
         if (!assignmentMap.has(row.group_id)) {
           assignmentMap.set(row.group_id, []);
         }
-        assignmentMap.get(row.group_id)!.push({
+        assignmentMap.get(row.group_id)?.push({
           id: row.dept_id,
           name: row.dept_name,
           description: row.dept_desc,
@@ -254,7 +259,7 @@ class DepartmentGroupService {
       const rootGroups: DepartmentGroup[] = [];
 
       // First pass: create all group objects
-      groups.forEach((row: any) => {
+      groups.forEach((row: RowDataPacket) => {
         const group: DepartmentGroup = {
           id: row.id,
           name: row.name,
@@ -267,14 +272,15 @@ class DepartmentGroupService {
       });
 
       // Second pass: build hierarchy
-      groups.forEach((row: any) => {
-        const group = groupMap.get(row.id)!;
+      groups.forEach((row: RowDataPacket) => {
+        const group = groupMap.get(row.id);
+        if (!group) return;
         if (row.parent_group_id === null) {
           rootGroups.push(group);
         } else {
           const parent = groupMap.get(row.parent_group_id);
           if (parent) {
-            parent.subgroups!.push(group);
+            parent.subgroups?.push(group);
           }
         }
       });
@@ -296,16 +302,16 @@ class DepartmentGroupService {
     tenantId: number
   ): Promise<boolean> {
     try {
-      const [result] = await (pool as any).execute(
+      const [result] = await execute<ResultSetHeader>(
         `UPDATE department_groups 
          SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP 
          WHERE id = ? AND tenant_id = ?`,
         [name, description, groupId, tenantId]
       );
 
-      return result.affectedRows > 0;
-    } catch (error: any) {
-      if (error.code === 'ER_DUP_ENTRY') {
+      return (result as ResultSetHeader).affectedRows > 0;
+    } catch (error) {
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
         throw new Error('Group name already exists');
       }
       logger.error('Error updating department group:', error);
@@ -317,7 +323,7 @@ class DepartmentGroupService {
    * Delete a group (only if no admin permissions exist)
    */
   async deleteGroup(groupId: number, tenantId: number): Promise<boolean> {
-    const connection = await pool.getConnection();
+    const connection = await getConnection();
 
     try {
       await connection.beginTransaction();
@@ -329,7 +335,7 @@ class DepartmentGroupService {
         [groupId, tenantId]
       );
 
-      if (permissions[0].count > 0) {
+      if ((permissions as RowDataPacket[])[0].count > 0) {
         throw new Error('Cannot delete group with active admin permissions');
       }
 
@@ -340,7 +346,7 @@ class DepartmentGroupService {
         [groupId, tenantId]
       );
 
-      if (subgroups[0].count > 0) {
+      if ((subgroups as RowDataPacket[])[0].count > 0) {
         throw new Error('Cannot delete group with subgroups');
       }
 
@@ -359,7 +365,7 @@ class DepartmentGroupService {
       );
 
       await connection.commit();
-      return result.affectedRows > 0;
+      return (result as ResultSetHeader).affectedRows > 0;
     } catch (error) {
       await connection.rollback();
       logger.error('Error deleting department group:', error);
@@ -379,7 +385,7 @@ class DepartmentGroupService {
   ): Promise<boolean> {
     if (groupId === targetId) return true;
 
-    const [parents] = await (pool as any).execute(
+    const [parents] = await execute<RowDataPacket[]>(
       `SELECT parent_group_id FROM department_groups 
        WHERE id = ? AND tenant_id = ?`,
       [groupId, tenantId]

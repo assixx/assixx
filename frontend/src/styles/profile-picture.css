@@ -70,7 +70,7 @@
   border-radius: 5px;
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  /* transition: background-color 0.3s; */
   margin-bottom: 10px;
 }
 
@@ -92,7 +92,7 @@
   border-radius: 5px;
   font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  /* transition: background-color 0.3s; */
 }
 
 .remove-btn:hover {
@@ -115,15 +115,15 @@
   border: 3px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
   border-top-color: #1b8e01;
-  animation: spin 1s ease-in-out infinite;
+  /* animation: spin 1s ease-in-out infinite; */
   margin-bottom: 10px;
 }
 
-@keyframes spin {
+/* @keyframes spin {
   to {
     transform: rotate(360deg);
   }
-}
+} */
 
 /* Responsive styles */
 @media (max-width: 768px) {

@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tenant Löschstatus - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
+      @import url('/styles/user-info-update.css');
+
+      /* Glassmorphismus Background */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Container Styles */
+      .container {
+        margin: 0 auto;
+        padding: 24px;
+        margin-top: -34px !important;
+      }
+
+      /* Status Cards */
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+      }
+
+      .status-card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        /* animation: fadeInUp 0.6s ease-out; */
+      }
+
+      .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .tenant-info h3 {
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+      }
+
+      .tenant-info p {
+        color: var(--text-secondary);
+        margin: 4px 0;
+        font-size: 14px;
+      }
+
+      /* Status Badge */
+      .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .status-badge.pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+      }
+
+      .status-badge.approved {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .status-badge.processing {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.3);
+      }
+
+      .status-badge.completed {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .status-badge.failed {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+
+      /* Progress Bar */
+      .progress-section {
+        margin-top: var(--spacing-lg);
+      }
+
+      .progress-bar-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        height: 20px;
+        overflow: hidden;
+        margin: 12px 0;
+      }
+
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+        transition: width 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+      }
+
+      /* Timeline */
+      .timeline {
+        margin-top: var(--spacing-lg);
+      }
+
+      .timeline-item {
+        display: flex;
+        align-items: start;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .timeline-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .timeline-icon.completed {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+
+      .timeline-icon.pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+      }
+
+      .timeline-content {
+        flex: 1;
+      }
+
+      .timeline-content h4 {
+        margin: 0 0 4px 0;
+        color: var(--text-primary);
+        font-size: 16px;
+      }
+
+      .timeline-content p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      /* Action Buttons */
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: var(--spacing-lg);
+      }
+
+      .btn {
+        padding: 10px 24px;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-approve {
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+      }
+
+      .btn-approve:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+      }
+
+      .btn-reject {
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+        color: white;
+      }
+
+      .btn-reject:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+      }
+
+      .btn-emergency {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+      }
+
+      .btn-emergency:hover {
+        background: rgba(255, 152, 0, 0.3);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      /* Cooling Off Warning */
+      .cooling-off-warning {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        margin-top: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .cooling-off-warning i {
+        color: #ff9800;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+        
+        <div class="container">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Tenant Löschstatus</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Löschanfragen und deren Status</p>
+            </div>
+            <div class="card-body">
+              <div id="statusContent" class="status-grid">
+                <!-- Status cards will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module">
+      import { fetchWithAuth, showSuccess, showError } from '/scripts/auth.js';
+
+      let statusData = [];
+
+      async function loadDeletionStatus() {
+        try {
+          const response = await fetchWithAuth('/api/root/deletion-status');
+          if (!response.ok) {
+            throw new Error('Failed to load deletion status');
+          }
+
+          const data = await response.json();
+          statusData = data.data || [];
+          displayStatus();
+        } catch (error) {
+          console.error('Error loading status:', error);
+          showError('Fehler beim Laden des Status');
+        }
+      }
+
+      function displayStatus() {
+        const container = document.getElementById('statusContent');
+
+        if (statusData.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+              </div>
+              <div class="empty-state-text">Keine Löschanfragen vorhanden</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = statusData.map((item) => createStatusCard(item)).join('');
+      }
+
+      function createStatusCard(item) {
+        const progress = item.progress || 0;
+        const createdAt = new Date(item.created_at);
+        const scheduledAt = item.scheduled_deletion_date ? new Date(item.scheduled_deletion_date) : null;
+        const coolingOffRemaining = calculateCoolingOff(item);
+
+        return `
+          <div class="status-card">
+            <div class="status-header">
+              <div class="tenant-info">
+                <h3>${item.company_name}</h3>
+                <p>Tenant ID: ${item.tenant_id}</p>
+                <p>Subdomain: ${item.subdomain}</p>
+                <p>Beantragt von: ${item.requester_name}</p>
+                <p>Beantragt am: ${createdAt.toLocaleString('de-DE')}</p>
+              </div>
+              <span class="status-badge ${item.status}">${getStatusText(item.status)}</span>
+            </div>
+
+            ${
+              item.approval_status === 'pending' && coolingOffRemaining > 0
+                ? `
+              <div class="cooling-off-warning">
+                <i class="fas fa-clock"></i>
+                <div>
+                  <strong>Cooling-off Periode aktiv</strong><br>
+                  Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich
+                </div>
+              </div>
+            `
+                : ''
+            }
+
+            ${
+              item.status === 'processing'
+                ? `
+              <div class="progress-section">
+                <h4>Fortschritt</h4>
+                <div class="progress-bar-container">
+                  <div class="progress-bar" style="width: ${progress}%">
+                    ${progress}%
+                  </div>
+                </div>
+                <p class="text-secondary">${item.current_step || 'Vorbereitung...'}</p>
+              </div>
+            `
+                : ''
+            }
+
+            <div class="timeline">
+              <h4>Status Timeline</h4>
+              ${createTimeline(item)}
+            </div>
+
+            ${
+              item.approval_status === 'pending' && item.created_by !== getCurrentUserId()
+                ? `
+              <div class="action-buttons">
+                ${
+                  coolingOffRemaining === 0
+                    ? `
+                  <button class="btn btn-approve" onclick="approveDeletion(${item.id})">
+                    <i class="fas fa-check"></i> Genehmigen
+                  </button>
+                `
+                    : ''
+                }
+                <button class="btn btn-reject" onclick="rejectDeletion(${item.id})">
+                  <i class="fas fa-times"></i> Ablehnen
+                </button>
+              </div>
+            `
+                : ''
+            }
+
+            ${
+              item.status === 'processing'
+                ? `
+              <div class="action-buttons">
+                <button class="btn btn-emergency" onclick="emergencyStop(${item.id})">
+                  <i class="fas fa-stop-circle"></i> Emergency Stop
+                </button>
+              </div>
+            `
+                : ''
+            }
+          </div>
+        `;
+      }
+
+      function getStatusText(status) {
+        const statusMap = {
+          pending_approval: 'Genehmigung ausstehend',
+          queued: 'In Warteschlange',
+          processing: 'In Bearbeitung',
+          completed: 'Abgeschlossen',
+          failed: 'Fehlgeschlagen',
+          cancelled: 'Abgebrochen',
+        };
+        return statusMap[status] || status;
+      }
+
+      function calculateCoolingOff(item) {
+        if (!item.approval_requested_at) return 0;
+        const requestedAt = new Date(item.approval_requested_at);
+        const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
+        // Use actual cooling_off_hours from DB (can be 0 for development)
+        const coolingOffHours = item.cooling_off_hours !== undefined ? item.cooling_off_hours : 24;
+        return Math.max(0, coolingOffHours - hoursSince);
+      }
+
+      function createTimeline(item) {
+        const timeline = [];
+
+        // Request created
+        timeline.push({
+          icon: 'fa-plus-circle',
+          title: 'Löschung beantragt',
+          date: new Date(item.created_at),
+          completed: true,
+        });
+
+        // Approval
+        if (item.approval_status === 'approved') {
+          timeline.push({
+            icon: 'fa-check-circle',
+            title: 'Genehmigt',
+            date: item.approved_at ? new Date(item.approved_at) : null,
+            completed: true,
+          });
+        }
+
+        // Processing
+        if (item.started_at) {
+          timeline.push({
+            icon: 'fa-cog',
+            title: 'Löschvorgang gestartet',
+            date: new Date(item.started_at),
+            completed: true,
+          });
+        }
+
+        // Completed
+        if (item.completed_at) {
+          timeline.push({
+            icon: 'fa-check-double',
+            title: 'Löschung abgeschlossen',
+            date: new Date(item.completed_at),
+            completed: true,
+          });
+        }
+
+        // Scheduled deletion
+        if (item.scheduled_deletion_date && item.status !== 'completed') {
+          timeline.push({
+            icon: 'fa-calendar-check',
+            title: 'Geplante Löschung',
+            date: new Date(item.scheduled_deletion_date),
+            completed: false,
+          });
+        }
+
+        return timeline
+          .map(
+            (item) => `
+          <div class="timeline-item">
+            <div class="timeline-icon ${item.completed ? 'completed' : 'pending'}">
+              <i class="fas ${item.icon}"></i>
+            </div>
+            <div class="timeline-content">
+              <h4>${item.title}</h4>
+              <p>${item.date ? item.date.toLocaleString('de-DE') : 'Ausstehend'}</p>
+            </div>
+          </div>
+        `,
+          )
+          .join('');
+      }
+
+      function getCurrentUserId() {
+        // Get from JWT token
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return payload.id;
+        } catch {
+          return null;
+        }
+      }
+
+      window.approveDeletion = async function (queueId) {
+        if (!confirm('Möchten Sie diese Löschung wirklich genehmigen?')) return;
+
+        try {
+          const response = await fetchWithAuth(`/api/root/deletion-approvals/${queueId}/approve`, {
+            method: 'POST',
+          });
+
+          if (response.ok) {
+            showSuccess('Löschung genehmigt!');
+            await loadDeletionStatus();
+          } else {
+            const error = await response.json();
+            showError(error.error || 'Fehler bei der Genehmigung');
+          }
+        } catch (error) {
+          console.error('Error approving:', error);
+          showError('Fehler bei der Genehmigung');
+        }
+      };
+
+      window.rejectDeletion = async function (queueId) {
+        const reason = prompt('Grund für die Ablehnung:');
+        if (!reason) return;
+
+        try {
+          const response = await fetchWithAuth(`/api/root/deletion-approvals/${queueId}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+          });
+
+          if (response.ok) {
+            showSuccess('Löschung abgelehnt!');
+            await loadDeletionStatus();
+          } else {
+            const error = await response.json();
+            showError(error.error || 'Fehler beim Ablehnen');
+          }
+        } catch (error) {
+          console.error('Error rejecting:', error);
+          showError('Fehler beim Ablehnen');
+        }
+      };
+
+      window.emergencyStop = async function (queueId) {
+        if (!confirm('WARNUNG: Emergency Stop aktivieren?\n\nDies stoppt die Löschung sofort!')) return;
+
+        try {
+          const response = await fetchWithAuth(`/api/root/deletion-emergency/${queueId}/stop`, {
+            method: 'POST',
+          });
+
+          if (response.ok) {
+            showSuccess('Emergency Stop aktiviert!');
+            await loadDeletionStatus();
+          } else {
+            const error = await response.json();
+            showError(error.error || 'Fehler beim Emergency Stop');
+          }
+        } catch (error) {
+          console.error('Error emergency stop:', error);
+          showError('Fehler beim Emergency Stop');
+        }
+      };
+
+      // Load status on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        loadDeletionStatus();
+
+        // Refresh every 10 seconds
+        setInterval(loadDeletionStatus, 10000);
+      });
+    </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
+  </body>
+</html>

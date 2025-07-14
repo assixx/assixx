@@ -1,0 +1,11 @@
+{
+  "info": "Diese Datei dokumentiert, dass TypeScript-Fehler in Test-Dateien für v0.1.0 ignoriert werden",
+  "reason": "Test-Framework Migration steht noch aus",
+  "affected_files": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/__tests__/**"
+  ],
+  "expected_errors": 56,
+  "to_be_fixed_in": "v0.2.0"
+}

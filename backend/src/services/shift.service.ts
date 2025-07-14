@@ -29,8 +29,16 @@ import { Pool } from 'mysql2/promise';
 interface ShiftEntry {
   id: number;
   tenant_id: number;
-  // Add other shift-specific fields as needed
-  [key: string]: any;
+  shift_plan_id: number;
+  template_id?: number | null;
+  date: Date;
+  start_time: string;
+  end_time: string;
+  position?: string | null;
+  required_employees: number;
+  assigned_employees?: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface ShiftFilters {
@@ -38,19 +46,28 @@ interface ShiftFilters {
   team_id?: number;
   start_date?: string | Date;
   end_date?: string | Date;
-  status?: string;
-  [key: string]: any;
+  status?: 'draft' | 'published' | 'archived';
+  plan_id?: number;
+  template_id?: number;
 }
 
 interface ShiftCreateData {
   tenant_id: number;
-  // Add other required fields for shift entries
-  [key: string]: any;
+  shift_plan_id: number;
+  template_id?: number | null;
+  date: Date | string;
+  start_time: string;
+  end_time: string;
+  position?: string | null;
+  required_employees?: number;
 }
 
 interface ShiftUpdateData {
-  // Add updateable fields for shift entries
-  [key: string]: any;
+  template_id?: number | null;
+  start_time?: string;
+  end_time?: string;
+  position?: string | null;
+  required_employees?: number;
 }
 
 // Additional interfaces for actual Shift functionality
@@ -202,9 +219,31 @@ class ShiftService {
   /**
    * Create a new shift template
    */
-  async createShiftTemplate(templateData: any): Promise<ShiftTemplate> {
+  async createShiftTemplate(templateData: {
+    tenant_id: number;
+    name: string;
+    description?: string | null;
+    start_time: string;
+    end_time: string;
+    break_duration_minutes?: number;
+    color?: string;
+    created_by: number;
+  }): Promise<ShiftTemplate> {
     try {
-      return await createShiftTemplate(templateData);
+      // Calculate duration_hours from start_time and end_time
+      const start = new Date(`2000-01-01 ${templateData.start_time}`);
+      const end = new Date(`2000-01-01 ${templateData.end_time}`);
+      let duration_hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+      // Handle overnight shifts
+      if (duration_hours < 0) {
+        duration_hours += 24;
+      }
+
+      return await createShiftTemplate({
+        ...templateData,
+        duration_hours,
+      });
     } catch (error) {
       console.error('Error in ShiftService.createShiftTemplate:', error);
       throw error;
@@ -217,8 +256,16 @@ class ShiftService {
   async getShiftPlans(
     tenantId: number,
     userId: number,
-    options?: any
-  ): Promise<any> {
+    options?: ShiftFilters
+  ): Promise<{
+    plans: ShiftPlan[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
     try {
       return await getShiftPlans(tenantId, userId, options);
     } catch (error) {
@@ -230,7 +277,16 @@ class ShiftService {
   /**
    * Create a new shift plan
    */
-  async createShiftPlan(planData: any): Promise<ShiftPlan> {
+  async createShiftPlan(planData: {
+    tenant_id: number;
+    name: string;
+    description?: string | null;
+    start_date: Date | string;
+    end_date: Date | string;
+    department_id?: number | null;
+    team_id?: number | null;
+    created_by: number;
+  }): Promise<ShiftPlan> {
     try {
       return await createShiftPlan(planData);
     } catch (error) {
@@ -246,9 +302,24 @@ class ShiftService {
     planId: number,
     tenantId: number,
     userId: number
-  ): Promise<any[]> {
+  ): Promise<ShiftEntry[]> {
     try {
-      return await getShiftsByPlan(planId, tenantId, userId);
+      const shifts = await getShiftsByPlan(planId, tenantId, userId);
+      // Map DbShift to ShiftEntry
+      return shifts.map((shift) => ({
+        id: shift.id,
+        tenant_id: shift.tenant_id,
+        shift_plan_id: shift.plan_id, // Map plan_id to shift_plan_id
+        template_id: shift.template_id,
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        position: null as string | null,
+        required_employees: shift.required_employees,
+        assigned_employees: shift.assigned_employees,
+        created_at: shift.created_at,
+        updated_at: shift.updated_at,
+      }));
     } catch (error) {
       console.error('Error in ShiftService.getShiftsByPlan:', error);
       throw error;
@@ -258,9 +329,37 @@ class ShiftService {
   /**
    * Create a shift
    */
-  async createShift(shiftData: any): Promise<any> {
+  async createShift(
+    shiftData: ShiftCreateData & { created_by: number }
+  ): Promise<ShiftEntry> {
     try {
-      return await createShift(shiftData);
+      // Map ShiftCreateData to ShiftData expected by model
+      const modelData = {
+        tenant_id: shiftData.tenant_id,
+        plan_id: shiftData.shift_plan_id, // Map shift_plan_id to plan_id
+        template_id: shiftData.template_id,
+        date: shiftData.date,
+        start_time: shiftData.start_time,
+        end_time: shiftData.end_time,
+        required_employees: shiftData.required_employees,
+        created_by: shiftData.created_by,
+      };
+      const shift = await createShift(modelData);
+      // Map DbShift back to ShiftEntry
+      return {
+        id: shift.id,
+        tenant_id: shift.tenant_id,
+        shift_plan_id: shift.plan_id, // Map plan_id back to shift_plan_id
+        template_id: shift.template_id,
+        date: shift.date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        position: shiftData.position || null,
+        required_employees: shift.required_employees,
+        assigned_employees: 0,
+        created_at: shift.created_at,
+        updated_at: shift.updated_at,
+      };
     } catch (error) {
       console.error('Error in ShiftService.createShift:', error);
       throw error;
@@ -270,9 +369,33 @@ class ShiftService {
   /**
    * Assign employee to a shift
    */
-  async assignEmployeeToShift(assignmentData: any): Promise<any> {
+  async assignEmployeeToShift(assignmentData: {
+    shift_id: number;
+    employee_id: number;
+    tenant_id: number;
+    assigned_by: number;
+  }): Promise<{
+    id: number;
+    shift_id: number;
+    employee_id: number;
+    assigned_at: Date;
+  }> {
     try {
-      return await assignEmployeeToShift(assignmentData);
+      // Map employee_id to user_id for model
+      const modelData = {
+        shift_id: assignmentData.shift_id,
+        user_id: assignmentData.employee_id, // Map employee_id to user_id
+        tenant_id: assignmentData.tenant_id,
+        assigned_by: assignmentData.assigned_by,
+      };
+      const assignment = await assignEmployeeToShift(modelData);
+      // Map result back with employee_id
+      return {
+        id: assignment.id,
+        shift_id: assignment.shift_id,
+        employee_id: assignment.user_id, // Map user_id back to employee_id
+        assigned_at: assignment.assigned_at,
+      };
     } catch (error) {
       console.error('Error in ShiftService.assignEmployeeToShift:', error);
       throw error;
@@ -287,7 +410,17 @@ class ShiftService {
     userId: number,
     startDate: string | Date,
     endDate: string | Date
-  ): Promise<any[]> {
+  ): Promise<
+    Array<{
+      id: number;
+      date: Date;
+      start_time: string;
+      end_time: string;
+      position?: string | null;
+      template_name?: string | null;
+      plan_name?: string | null;
+    }>
+  > {
     try {
       return await getEmployeeShifts(tenantId, userId, startDate, endDate);
     } catch (error) {

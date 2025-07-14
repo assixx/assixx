@@ -1,7 +1,7 @@
 /**
  * Middleware für die Überprüfung der Dokumentenzugriffsberechtigungen
  */
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import Document from '../models/document.js';
 import User from '../models/user.js';
 import { logger } from '../utils/logger.js';
@@ -20,20 +20,21 @@ export interface DocumentAccessOptions {
  * @param options.allowDepartmentHeads - Ob Abteilungsleiter Zugriff auf Dokumente ihrer Abteilungsmitglieder haben dürfen
  * @param options.requireOwnership - Ob der Benutzer der Besitzer des Dokuments sein muss
  */
-export const checkDocumentAccess =
-  (
-    options: DocumentAccessOptions = {
-      allowAdmin: true,
-      allowDepartmentHeads: false,
-      requireOwnership: true,
-    }
-  ) =>
-  async (req: DocumentRequest, res: Response, next: NextFunction) => {
+export const checkDocumentAccess = (
+  options: DocumentAccessOptions = {
+    allowAdmin: true,
+    allowDepartmentHeads: false,
+    requireOwnership: true,
+  }
+): RequestHandler => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Type assertion - we know auth middleware has run
+    const docReq = req as DocumentRequest;
     try {
-      const userId = req.user?.id;
-      const userRole = req.user?.role;
-      const tenantId = req.user?.tenantId || req.tenantId;
-      const { documentId } = req.params;
+      const userId = docReq.user?.id;
+      const userRole = docReq.user?.role;
+      const tenantId = docReq.user?.tenant_id || docReq.tenantId;
+      const { documentId } = docReq.params;
 
       if (!userId || !userRole) {
         return res.status(401).json({ error: 'Nicht authentifiziert' });
@@ -61,7 +62,10 @@ export const checkDocumentAccess =
         logger.info(
           `Admin access granted for user ${userId} to document ${documentId}`
         );
-        req.document = document;
+        docReq.document = {
+          ...document,
+          filename: document.file_name,
+        };
         return next();
       }
 
@@ -73,7 +77,10 @@ export const checkDocumentAccess =
             logger.info(
               `User access granted for user ${userId} to document ${documentId}`
             );
-            req.document = document;
+            docReq.document = {
+              ...document,
+              filename: document.file_name,
+            };
             return next();
           }
           break;
@@ -98,7 +105,10 @@ export const checkDocumentAccess =
             logger.info(
               `Company-wide access granted for user ${userId} to document ${documentId}`
             );
-            req.document = document;
+            docReq.document = {
+              ...document,
+              filename: document.file_name,
+            };
             return next();
           }
           break;
@@ -122,7 +132,10 @@ export const checkDocumentAccess =
           logger.info(
             `Department head access granted for user ${userId} to document ${documentId}`
           );
-          req.document = document;
+          docReq.document = {
+            ...document,
+            filename: document.file_name,
+          };
           return next();
         }
       }
@@ -132,7 +145,10 @@ export const checkDocumentAccess =
         logger.info(
           `General access granted for user ${userId} to document ${documentId} (ownership not required)`
         );
-        req.document = document;
+        docReq.document = {
+          ...document,
+          filename: document.file_name,
+        };
         return next();
       }
 
@@ -150,12 +166,13 @@ export const checkDocumentAccess =
       });
     }
   };
+};
 
 /**
  * Middleware für öffentliche Dokumente (kein Login erforderlich)
  */
 export const checkPublicDocumentAccess = async (
-  req: Request & { document?: any },
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -176,7 +193,9 @@ export const checkPublicDocumentAccess = async (
       });
     }
 
-    req.document = document;
+    // Store document in request - extend Request if needed
+    const docReq = req as Request & { document: typeof document };
+    docReq.document = document;
     return next();
   } catch (error) {
     logger.error('Error in checkPublicDocumentAccess middleware:', error);

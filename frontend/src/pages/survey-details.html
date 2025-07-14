@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -299,9 +300,8 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="page-header">
-          <h1 class="page-title">Umfrage-Details</h1>
-        </div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
         <div id="content-area">
           <div class="loading">
@@ -563,5 +563,6 @@
 
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

@@ -20,6 +20,7 @@
     </script>
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Fix for sidebar title alignment */
@@ -62,6 +63,17 @@
         background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
         pointer-events: none;
         z-index: -1;
+      }
+
+      /* Align ALL content sections with sidebar user-info-card 
+         Admin-dashboard needs positive margin unlike other pages */
+      body .content-section {
+        margin-top: 25px !important;
+      }
+      
+      /* Override the universal rule from breadcrumb-alignment.css */
+      body #breadcrumb-container + .content-section {
+        margin-top: 25px !important;
       }
 
       /* Glassmorphismus für Stat-Cards */
@@ -357,7 +369,7 @@
       .stat-card,
       .card,
       .compact-card {
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       @keyframes subtle-pulse {
@@ -521,7 +533,7 @@
       .skeleton {
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
         background-size: 200% 100%;
-        animation: skeleton-loading 1.5s infinite;
+        /* animation: skeleton-loading 1.5s infinite; */
         border-radius: 4px;
         margin-bottom: 8px;
       }
@@ -640,10 +652,9 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
         <div id="breadcrumb-container"></div>
-        
+
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section">
-
           <!-- Dashboard Stats Grid -->
           <div class="dashboard-grid">
             <div class="stat-card">
@@ -673,6 +684,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Mitarbeiter</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Mitarbeiter verwalten und hinzufügen</p>
               </div>
               <div class="compact-content">
                 <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
@@ -692,13 +704,14 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Dokumente</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Dokumente hochladen und verwalten</p>
               </div>
               <div class="compact-content">
                 <a href="/document-upload" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
                 <div class="compact-list" id="recent-documents">
                   <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
                 </div>
-                <a href="/pages/documents-search.html" class="view-all-link" id="manage-documents-link">
+                <a href="/documents-search" class="view-all-link" id="manage-documents-link">
                   Verwalten
                   <span class="arrow">→</span>
                 </a>
@@ -709,9 +722,10 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Abteilungen</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Abteilungsstruktur organisieren</p>
               </div>
               <div class="compact-content">
-                <a href="/pages/departments.html" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
+                <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
                 <div class="compact-list" id="department-list">
                   <!-- Wird dynamisch gefüllt -->
                 </div>
@@ -726,6 +740,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Teams</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Teams erstellen und verwalten</p>
               </div>
               <div class="compact-content">
                 <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
@@ -743,6 +758,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Kalender</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Termine und Events verwalten</p>
               </div>
               <div class="compact-content">
                 <a href="/calendar" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
@@ -761,32 +777,13 @@
                 </a>
               </div>
             </div>
-
-            <!-- Blackboard Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Schwarzes Brett</h2>
-              </div>
-              <div class="compact-content">
-                <div class="blackboard-preview" id="blackboard-preview">
-                  <div class="loading-placeholder">
-                    <div class="skeleton skeleton-text"></div>
-                    <div class="skeleton skeleton-text"></div>
-                    <div class="skeleton skeleton-text"></div>
-                  </div>
-                </div>
-                <a href="/pages/blackboard.html" class="view-all-link">
-                  Alle anzeigen
-                  <span class="arrow">→</span>
-                </a>
-              </div>
-            </div>
           </div>
 
           <!-- Recently Added Section -->
           <div class="card mt-4">
             <div class="card-header">
               <h2 class="card-title">Kürzlich hinzugefügt</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Neueste Mitarbeiter und Dokumente</p>
             </div>
             <div class="recent-activity-grid">
               <div class="recent-section">
@@ -815,10 +812,13 @@
 
         <!-- Employees Section -->
         <section id="employees-section" class="content-section" style="display: none">
-          <button class="btn btn-primary mb-3" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Mitarbeiterübersicht</h2>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h2 class="card-title">Mitarbeiterübersicht</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Alle Mitarbeiter verwalten und bearbeiten</p>
+              </div>
+              <button class="btn btn-primary" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
             </div>
             <div class="flex-between mb-3">
               <div class="filter-buttons">
@@ -858,11 +858,11 @@
         <section id="documents-section" class="content-section" style="display: none">
           <div class="flex-between mb-3">
             <div>
-              <button class="btn btn-primary" onclick="window.location.href='/pages/document-upload.html'">
+              <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
                 <i class="fas fa-upload me-2"></i>
                 Dokument hochladen
               </button>
-              <a href="/pages/documents.html" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
+              <a href="/documents" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
             </div>
             <div class="search-container">
               <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
@@ -879,6 +879,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Dokumentenübersicht</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Alle Dokumente verwalten und durchsuchen</p>
             </div>
             <div class="table-responsive">
               <table class="table">
@@ -905,10 +906,13 @@
 
         <!-- Teams Section -->
         <section id="teams-section" class="content-section" style="display: none">
-          <button class="btn btn-primary mb-3" onclick="showTeamModal()">Neues Team</button>
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Teamübersicht</h2>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h2 class="card-title">Teamübersicht</h2>
+                <p class="text-secondary" style="margin: 0; margin-top: 4px">Teams und Mitgliedschaften verwalten</p>
+              </div>
+              <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
             </div>
             <div class="table-responsive">
               <table class="table">
@@ -1166,7 +1170,7 @@
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .modal-header {
@@ -1383,7 +1387,7 @@
     <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script src="/scripts/blackboard-widget.js" type="module"></script>
-    
+
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
@@ -1393,6 +1397,59 @@
 
     <!-- Initialize dashboard on page load -->
     <script type="module">
+      // Check if user should be on admin dashboard by reading from JWT token
+      const token = localStorage.getItem('token');
+      let activeRole = null;
+      let userRole = localStorage.getItem('userRole');
+
+      // Parse the JWT token to get the actual active role
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          activeRole = payload.activeRole || payload.role;
+          userRole = payload.role;
+
+          // Update localStorage to match token
+          localStorage.setItem('activeRole', activeRole);
+          if (userRole) {
+            localStorage.setItem('userRole', userRole);
+          }
+
+          console.log('[Admin Dashboard] Token analysis:', {
+            tokenRole: payload.role,
+            tokenActiveRole: payload.activeRole,
+            finalActiveRole: activeRole,
+          });
+        } catch (e) {
+          console.error('[Admin Dashboard] Error parsing token:', e);
+          activeRole = localStorage.getItem('activeRole') || userRole;
+        }
+      } else {
+        activeRole = localStorage.getItem('activeRole') || userRole;
+      }
+
+      // Admin and root users can access admin dashboard when in admin mode
+      if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
+        // User is correctly on admin dashboard
+        console.log('[Admin Dashboard] User has admin access');
+      } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'employee') {
+        // User has switched to employee role - redirect
+        console.log('[Admin Dashboard] User has switched to employee - redirecting');
+        window.location.replace('/employee-dashboard');
+      } else if (userRole === 'root' && activeRole === 'root') {
+        // Root user is in root mode - redirect to root dashboard
+        console.log('[Admin Dashboard] Root user in root mode - redirecting to root dashboard');
+        window.location.replace('/root-dashboard');
+      } else if (userRole === 'employee') {
+        // Employee trying to access admin dashboard - redirect
+        console.log('[Admin Dashboard] Employee detected - redirecting to employee dashboard');
+        window.location.replace('/employee-dashboard');
+      } else if (!userRole) {
+        // No user role - redirect to login
+        console.log('[Admin Dashboard] No user role - redirecting to login');
+        window.location.replace('/login');
+      }
+
       // Ensure dashboard section is shown on page load
       document.addEventListener('DOMContentLoaded', () => {
         // Small delay to ensure all modules are loaded
@@ -1513,7 +1570,7 @@
 
             if (href === '#departments') {
               e.preventDefault();
-              window.location.href = '/pages/departments.html';
+              window.location.href = '/departments';
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
@@ -2196,10 +2253,13 @@
       // Logo und Übersicht verarbeiten
       document.addEventListener('DOMContentLoaded', () => {
         // Logo-Klick behandeln
-        document.querySelector('.logo-container').addEventListener('click', (e) => {
-          e.preventDefault();
-          window.location.href = '/pages/admin-dashboard.html';
-        });
+        const logoContainer = document.querySelector('.logo-container');
+        if (logoContainer) {
+          logoContainer.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/admin-dashboard';
+          });
+        }
 
         // Übersicht-Link in der Seitennavigation
         const dashboardLink = document.querySelector('.sidebar-link[href="#dashboard"]');
@@ -2453,7 +2513,7 @@
         window.loadDepartmentsTable = function () {
           console.log('loadDepartmentsTable called - redirecting to departments page');
           // Since we're using a separate departments page, just reload if needed
-          if (window.location.pathname.includes('departments.html')) {
+          if (window.location.pathname.includes('departments')) {
             window.location.reload();
           }
         };
@@ -2510,7 +2570,7 @@
       }
 
       function showAllDepartments() {
-        window.location.href = '/pages/departments.html';
+        window.location.href = '/departments';
       }
 
       function showAllTeams() {
@@ -2655,7 +2715,7 @@
         box-shadow:
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .modal-header {

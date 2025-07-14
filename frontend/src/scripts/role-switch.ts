@@ -74,6 +74,11 @@ async function switchRole(): Promise<void> {
     // Update currentView immediately
     currentView = data.user.activeRole;
 
+    // Clear all role switch banner dismissal states when switching roles
+    ['root', 'admin', 'employee'].forEach((role) => {
+      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+    });
+
     // Update UI immediately before redirect
     updateRoleUI();
 
@@ -83,21 +88,17 @@ async function switchRole(): Promise<void> {
     // Create toast notification
     showToast(message, 'success');
 
-    // Redirect to appropriate dashboard after short delay
+    // Always redirect to the appropriate dashboard
     setTimeout(() => {
-      const currentPath = window.location.pathname;
       const newRole = data.user.activeRole;
 
-      // If we're on a dashboard page, redirect to the appropriate dashboard
-      if (currentPath.includes('dashboard')) {
-        if (newRole === 'admin') {
-          window.location.href = '/pages/admin-dashboard.html';
-        } else if (newRole === 'employee') {
-          window.location.href = '/pages/employee-dashboard.html';
-        }
+      // Direct redirect to dashboard based on role
+      if (newRole === 'admin') {
+        window.location.href = '/admin-dashboard';
+      } else if (newRole === 'employee') {
+        window.location.href = '/employee-dashboard';
       } else {
-        // For other pages (like KVP), just reload
-        window.location.reload();
+        window.location.href = '/root-dashboard';
       }
     }, 1000);
   } catch (error) {
@@ -147,9 +148,18 @@ function updateRoleUI(): void {
 // Toast notification helper
 function showToast(message: string, type: 'success' | 'error' = 'success'): void {
   // Try to use existing toast system first
-  if (typeof window !== 'undefined' && (window as any).DashboardUI?.showToast) {
-    (window as any).DashboardUI.showToast(message, type);
-    return;
+  interface ToastWindow {
+    DashboardUI?: {
+      showToast: (message: string, type: 'success' | 'error') => void;
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    const toastWindow = window as unknown as ToastWindow;
+    if (toastWindow.DashboardUI?.showToast) {
+      toastWindow.DashboardUI.showToast(message, type);
+      return;
+    }
   }
 
   // Fallback toast implementation
@@ -166,13 +176,13 @@ function showToast(message: string, type: 'success' | 'error' = 'success'): void
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     z-index: 10000;
-    animation: slideIn 0.3s ease;
+    /* animation: slideIn 0.3s ease; */
   `;
 
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease';
+    // toast.style.animation = 'slideOut 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
@@ -287,26 +297,24 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     // Update currentView immediately
     currentView = data.user.activeRole;
 
+    // Clear all role switch banner dismissal states when switching roles
+    ['root', 'admin', 'employee'].forEach((role) => {
+      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+    });
+
     // Show success message
     const message = `Wechsel zur ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
     showToast(message, 'success');
 
-    // Redirect to appropriate dashboard after short delay
+    // Always redirect to the appropriate dashboard
     setTimeout(() => {
-      const currentPath = window.location.pathname;
-
-      // If we're on a dashboard page, redirect to the appropriate dashboard
-      if (currentPath.includes('dashboard')) {
-        if (targetRole === 'root') {
-          window.location.href = '/pages/root-dashboard.html';
-        } else if (targetRole === 'admin') {
-          window.location.href = '/pages/admin-dashboard.html';
-        } else if (targetRole === 'employee') {
-          window.location.href = '/pages/employee-dashboard.html';
-        }
-      } else {
-        // For other pages (like KVP), just reload
-        window.location.reload();
+      // Direct redirect to dashboard based on target role
+      if (targetRole === 'root') {
+        window.location.href = '/root-dashboard';
+      } else if (targetRole === 'admin') {
+        window.location.href = '/admin-dashboard';
+      } else if (targetRole === 'employee') {
+        window.location.href = '/employee-dashboard';
       }
     }, 1000);
   } catch (error) {

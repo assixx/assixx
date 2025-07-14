@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Abteilungen & Teams</title>
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -23,6 +24,7 @@
         width: 100%;
         max-width: 1000px;
         color: #f7f7f7;
+        margin-top: -34px !important; /* Align first container with sidebar user-info-card */
       }
       h1,
       h2 {
@@ -181,7 +183,7 @@
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
       .modal-header {
         display: flex;
@@ -304,9 +306,10 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
-        <div class="container">
-          <h1>Abteilungen & Teams</h1>
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
 
+        <div class="container">
           <div class="tab-container">
             <button class="tab active" onclick="showTab('departments')">Abteilungen</button>
             <button class="tab" onclick="showTab('teams')">Teams</button>
@@ -1290,5 +1293,7 @@
     </div>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

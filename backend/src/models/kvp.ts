@@ -151,12 +151,12 @@ export class KVPModel {
   }
 
   // Get all categories for a tenant
-  static async getCategories(tenantId: number): Promise<DbCategory[]> {
+  static async getCategories(tenant_id: number): Promise<DbCategory[]> {
     const connection = await this.getConnection();
     try {
       const [rows] = await connection.execute<DbCategory[]>(
         'SELECT * FROM kvp_categories WHERE tenant_id = ? ORDER BY name ASC',
-        [tenantId]
+        [tenant_id]
       );
       return rows;
     } finally {
@@ -198,7 +198,7 @@ export class KVPModel {
 
   // Get suggestions with filters
   static async getSuggestions(
-    tenantId: number,
+    tenant_id: number,
     userId: number,
     userRole: string,
     filters: SuggestionFilters = {}
@@ -225,7 +225,7 @@ export class KVPModel {
         WHERE s.tenant_id = ?
       `;
 
-      const params: any[] = [tenantId];
+      const params: unknown[] = [tenant_id];
 
       // If employee, only show their own suggestions and implemented ones
       if (userRole === 'employee') {
@@ -266,7 +266,7 @@ export class KVPModel {
   // Get single suggestion by ID
   static async getSuggestionById(
     id: number,
-    tenantId: number,
+    tenant_id: number,
     userId: number,
     userRole: string
   ): Promise<DbSuggestion | null> {
@@ -290,7 +290,7 @@ export class KVPModel {
         WHERE s.id = ? AND s.tenant_id = ?
       `;
 
-      const params: any[] = [id, tenantId];
+      const params: unknown[] = [id, tenant_id];
 
       // If employee, only allow access to their own suggestions or implemented ones
       if (userRole === 'employee') {
@@ -308,7 +308,7 @@ export class KVPModel {
   // Update suggestion status (Admin only)
   static async updateSuggestionStatus(
     id: number,
-    tenantId: number,
+    tenant_id: number,
     status: string,
     userId: number,
     changeReason: string | null = null
@@ -320,7 +320,7 @@ export class KVPModel {
       // Get current status for history
       const [currentRows] = await connection.execute<DbSuggestion[]>(
         'SELECT status FROM kvp_suggestions WHERE id = ? AND tenant_id = ?',
-        [id, tenantId]
+        [id, tenant_id]
       );
 
       if (currentRows.length === 0) {
@@ -336,7 +336,7 @@ export class KVPModel {
         SET status = ?, assigned_to = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND tenant_id = ?
       `,
-        [status, userId, id, tenantId]
+        [status, userId, id, tenant_id]
       );
 
       // Add to history
@@ -465,7 +465,7 @@ export class KVPModel {
 
   // Get user points summary
   static async getUserPoints(
-    tenantId: number,
+    tenant_id: number,
     userId: number
   ): Promise<DbPointsSummary> {
     const connection = await this.getConnection();
@@ -479,7 +479,7 @@ export class KVPModel {
         FROM kvp_points 
         WHERE tenant_id = ? AND user_id = ?
       `,
-        [tenantId, userId]
+        [tenant_id, userId]
       );
 
       return (rows[0] || {
@@ -494,7 +494,7 @@ export class KVPModel {
 
   // Award points to user
   static async awardPoints(
-    tenantId: number,
+    tenant_id: number,
     userId: number,
     suggestionId: number,
     points: number,
@@ -509,7 +509,7 @@ export class KVPModel {
         (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
         VALUES (?, ?, ?, ?, ?, ?)
       `,
-        [tenantId, userId, suggestionId, points, reason, awardedBy]
+        [tenant_id, userId, suggestionId, points, reason, awardedBy]
       );
 
       return result.insertId;
@@ -519,7 +519,7 @@ export class KVPModel {
   }
 
   // Get dashboard statistics
-  static async getDashboardStats(tenantId: number): Promise<DbDashboardStats> {
+  static async getDashboardStats(tenant_id: number): Promise<DbDashboardStats> {
     const connection = await this.getConnection();
     try {
       const [stats] = await connection.execute<DbDashboardStats[]>(
@@ -534,7 +534,7 @@ export class KVPModel {
         FROM kvp_suggestions 
         WHERE tenant_id = ?
       `,
-        [tenantId]
+        [tenant_id]
       );
 
       return stats[0];
@@ -546,7 +546,7 @@ export class KVPModel {
   // Delete suggestion and all related data (only by owner)
   static async deleteSuggestion(
     suggestionId: number,
-    tenantId: number,
+    tenant_id: number,
     userId: number
   ): Promise<boolean> {
     const connection = await this.getConnection();
@@ -559,7 +559,7 @@ export class KVPModel {
         SELECT submitted_by FROM kvp_suggestions 
         WHERE id = ? AND tenant_id = ? AND submitted_by = ?
       `,
-        [suggestionId, tenantId, userId]
+        [suggestionId, tenant_id, userId]
       );
 
       if (ownerCheck.length === 0) {
@@ -577,7 +577,7 @@ export class KVPModel {
       // Delete database records (cascading will handle related records)
       await connection.execute(
         'DELETE FROM kvp_suggestions WHERE id = ? AND tenant_id = ?',
-        [suggestionId, tenantId]
+        [suggestionId, tenant_id]
       );
 
       await connection.commit();
@@ -604,7 +604,7 @@ export class KVPModel {
   // Get single attachment with access verification
   static async getAttachment(
     attachmentId: number,
-    tenantId: number,
+    tenant_id: number,
     userId: number,
     userRole: string
   ): Promise<DbAttachment | null> {
@@ -617,7 +617,7 @@ export class KVPModel {
         JOIN kvp_suggestions s ON a.suggestion_id = s.id
         WHERE a.id = ? AND s.tenant_id = ?
       `,
-        [attachmentId, tenantId]
+        [attachmentId, tenant_id]
       );
 
       if (attachments.length === 0) {

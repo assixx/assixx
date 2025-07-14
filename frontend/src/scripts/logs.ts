@@ -5,7 +5,7 @@
   const userRole = localStorage.getItem('userRole');
 
   if (!token || userRole !== 'root') {
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     return;
   }
 
@@ -38,16 +38,33 @@
 
   let currentOffset = 0;
   const limit = 50;
-  let currentFilters: any = {};
+  interface Filters {
+    user?: string;
+    action?: string;
+    entity_type?: string;
+    timerange?: string;
+  }
+
+  let currentFilters: Filters = {};
 
   // Make functions available globally
-  (window as any).applyFilters = applyFilters;
-  (window as any).resetFilters = resetFilters;
-  (window as any).deleteFilteredLogs = deleteFilteredLogs;
-  (window as any).loadPreviousPage = loadPreviousPage;
-  (window as any).loadNextPage = loadNextPage;
-  (window as any).showFullDetails = showFullDetails;
-  (window as any).confirmDeleteLogs = confirmDeleteLogs;
+  interface LogsWindow extends Window {
+    applyFilters: typeof applyFilters;
+    resetFilters: typeof resetFilters;
+    deleteFilteredLogs: typeof deleteFilteredLogs;
+    loadPreviousPage: typeof loadPreviousPage;
+    loadNextPage: typeof loadNextPage;
+    showFullDetails: typeof showFullDetails;
+    confirmDeleteLogs: typeof confirmDeleteLogs;
+  }
+
+  (window as unknown as LogsWindow).applyFilters = applyFilters;
+  (window as unknown as LogsWindow).resetFilters = resetFilters;
+  (window as unknown as LogsWindow).deleteFilteredLogs = deleteFilteredLogs;
+  (window as unknown as LogsWindow).loadPreviousPage = loadPreviousPage;
+  (window as unknown as LogsWindow).loadNextPage = loadNextPage;
+  (window as unknown as LogsWindow).showFullDetails = showFullDetails;
+  (window as unknown as LogsWindow).confirmDeleteLogs = confirmDeleteLogs;
 
   // Load logs on page load
   document.addEventListener('DOMContentLoaded', () => {
@@ -242,7 +259,14 @@
   }
 
   // Update pagination
-  function updatePagination(pagination: any) {
+  interface Pagination {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  }
+
+  function updatePagination(pagination: Pagination) {
     const container = document.getElementById('pagination-container');
     const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement;
     const nextBtn = document.getElementById('next-btn') as HTMLButtonElement;
@@ -307,9 +331,18 @@
     const entityDisplay = document.getElementById('entityDisplay');
     const timerangeDisplay = document.getElementById('timerangeDisplay');
 
-    if (actionDisplay) actionDisplay.querySelector('span')!.textContent = 'Alle Aktionen';
-    if (entityDisplay) entityDisplay.querySelector('span')!.textContent = 'Alle Typen';
-    if (timerangeDisplay) timerangeDisplay.querySelector('span')!.textContent = 'Alle Zeit';
+    if (actionDisplay) {
+      const span = actionDisplay.querySelector('span');
+      if (span) span.textContent = 'Alle Aktionen';
+    }
+    if (entityDisplay) {
+      const span = entityDisplay.querySelector('span');
+      if (span) span.textContent = 'Alle Typen';
+    }
+    if (timerangeDisplay) {
+      const span = timerangeDisplay.querySelector('span');
+      if (span) span.textContent = 'Alle Zeit';
+    }
 
     // Reset dropdown selections
     const dropdowns = document.querySelectorAll('.dropdown-option');

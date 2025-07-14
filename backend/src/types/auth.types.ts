@@ -15,6 +15,7 @@ export interface TokenPayload {
   id: number;
   username: string;
   role: 'admin' | 'employee' | 'root';
+  activeRole?: 'admin' | 'employee' | 'root'; // For role switching
   tenant_id: number | null;
   fingerprint?: string; // Browser fingerprint for session isolation
   sessionId?: string; // Unique session identifier
@@ -36,13 +37,13 @@ export interface UserRegistrationData {
   vorname: string;
   nachname: string;
   role?: 'admin' | 'employee';
-  tenantId?: number;
+  tenant_id?: number;
 }
 
 // Extended User for Auth Context
 export interface AuthenticatedUser extends User {
   userId: number; // Alias for id
-  tenantId: number | null; // Alias for tenant_id
+  tenant_id: number | null;
 }
 
 // JWT Configuration

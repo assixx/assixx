@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -32,7 +33,7 @@
 
       /* Profil Container */
       .profile-container {
-        max-width: 800px;
+        
         margin: 0 auto;
         padding: 24px;
       }
@@ -41,7 +42,7 @@
         color: var(--primary-color);
         margin-bottom: 32px;
         font-size: 2.5rem;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       /* Glassmorphismus Cards */
@@ -55,7 +56,7 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl);
         margin-bottom: var(--spacing-lg);
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       /* Card Title with accent bar */
@@ -232,7 +233,7 @@
         border-radius: var(--radius-sm);
         margin-bottom: var(--spacing-md);
         backdrop-filter: blur(10px);
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .alert-success {
@@ -286,7 +287,7 @@
         align-items: center;
         justify-content: center;
         z-index: 1000;
-        animation: fadeIn 0.3s ease-out;
+        /* animation: fadeIn 0.3s ease-out; */
       }
 
       .modal-overlay.active {
@@ -303,10 +304,11 @@
           0 8px 32px rgba(0, 0, 0, 0.4),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         max-width: 500px;
-        width: 90%;
+        width: 100%;
         max-height: 90vh;
         overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
+        padding: 25px;
       }
 
       @keyframes fadeIn {
@@ -385,7 +387,7 @@
         justify-content: center;
         align-items: center;
         z-index: 2000;
-        animation: fadeIn 0.3s ease-out;
+        /* animation: fadeIn 0.3s ease-out; */
       }
 
       .success-message {
@@ -395,14 +397,14 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
         text-align: center;
-        animation: scaleIn 0.5s ease-out;
+        /* animation: scaleIn 0.5s ease-out; */
       }
 
       .success-icon {
         font-size: 4rem;
         color: #4caf50;
         margin-bottom: var(--spacing-lg);
-        animation: checkmark 0.6s ease-out 0.3s both;
+        /* animation: checkmark 0.6s ease-out 0.3s both; */
       }
 
       .success-text {
@@ -443,6 +445,285 @@
         }
       }
 
+      /* Info boxes in deletion status modal */
+      .approval-required-info,
+      .cooling-off-info,
+      .grace-period-info {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        margin: var(--spacing-sm) 0;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .approval-required-info {
+        border-color: rgba(0, 142, 255, 0.3);
+        background: rgba(0, 142, 255, 0.05);
+      }
+
+      .approval-required-info i {
+        color: var(--primary-color);
+      }
+
+      .cooling-off-info {
+        border-color: rgba(255, 193, 7, 0.3);
+        background: rgba(255, 193, 7, 0.05);
+      }
+
+      .cooling-off-info i {
+        color: #ffc107;
+      }
+
+      .grace-period-info {
+        border-color: rgba(76, 175, 80, 0.3);
+        background: rgba(76, 175, 80, 0.05);
+      }
+
+      .grace-period-info i {
+        color: #4caf50;
+      }
+
+      /* Approval Section */
+      .approval-section {
+        background: rgba(255, 193, 7, 0.05);
+        border: 1px solid rgba(255, 193, 7, 0.2);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .approval-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .approval-header i {
+        font-size: 24px;
+        color: #ffc107;
+      }
+
+      .approval-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+      }
+
+      .approval-item {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-md);
+        transition: all 0.3s ease;
+      }
+
+      .approval-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+      }
+
+      .approval-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .approval-item-info {
+        flex: 1;
+      }
+
+      .approval-item-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+      }
+
+      .approval-status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .approval-status.pending {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+      }
+
+      .cooling-off-warning {
+        background: rgba(255, 152, 0, 0.1);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-size: 13px;
+      }
+
+      .cooling-off-warning i {
+        color: #ff9800;
+      }
+
+      /* Deletion Status Modal Styles - Glassmorphismus Design Standards */
+      .deletion-status-container {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xl);
+        padding: var(--spacing-xl);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .status-icon {
+        flex-shrink: 0;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.1), rgba(0, 142, 255, 0.05));
+        border-radius: 50%;
+        border: 2px solid rgba(0, 142, 255, 0.2);
+        /* animation: pulse 2s ease-in-out infinite; */
+      }
+
+      .status-icon i {
+        color: var(--primary-color);
+        filter: drop-shadow(0 0 10px rgba(0, 142, 255, 0.3));
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.8;
+        }
+      }
+
+      .status-message {
+        flex: 1;
+      }
+
+      .status-message .lead {
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-sm);
+        font-weight: 500;
+      }
+
+      .deletion-date {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-md);
+      }
+
+      .deletion-date strong {
+        color: var(--primary-color);
+        font-weight: 600;
+      }
+
+      .grace-period-info {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.2);
+        border-radius: var(--radius-sm);
+        color: #ffc107;
+      }
+
+      .grace-period-info i {
+        font-size: 1.2rem;
+      }
+
+      .status-actions {
+        display: flex;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-xl);
+        flex-wrap: wrap;
+      }
+
+      .status-actions .btn {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      .export-reminder {
+        padding: var(--spacing-lg);
+        background: rgba(0, 142, 255, 0.05);
+        border: 1px solid rgba(0, 142, 255, 0.1);
+        border-radius: var(--radius-md);
+        text-align: center;
+      }
+
+      .export-reminder h4 {
+        color: var(--primary-color);
+        margin-bottom: var(--spacing-md);
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      .export-reminder p {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .export-reminder .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        border: none;
+        box-shadow: 0 4px 16px rgba(0, 142, 255, 0.3);
+        transition: all var(--transition-fast);
+      }
+
+      .export-reminder .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 142, 255, 0.4);
+      }
+
+      /* Button Variants for Deletion Modal */
+      .btn-warning {
+        background: rgba(255, 193, 7, 0.2);
+        border: 1px solid #ffc107;
+        color: #ffc107;
+        transition: all var(--transition-fast);
+      }
+
+      .btn-warning:hover {
+        background: rgba(255, 193, 7, 0.3);
+        border-color: #ffca28;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(255, 193, 7, 0.3);
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-primary);
+        transition: all var(--transition-fast);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
       /* Responsive */
       @media (max-width: 768px) {
         .profile-picture-section {
@@ -458,6 +739,19 @@
           margin: 20px;
           padding: 0;
         }
+
+        .deletion-status-container {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .status-actions {
+          flex-direction: column;
+        }
+
+        .status-actions .btn {
+          width: 100%;
+        }
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -470,11 +764,26 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="profile-container">
-          <h1>Mein Profil</h1>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
+        <div class="profile-container">
           <!-- Success/Error Messages -->
           <div id="message-container"></div>
+
+          <!-- Pending Approvals Section -->
+          <div id="approvalSection" class="approval-section" style="display: none">
+            <div class="approval-header">
+              <i class="fas fa-hourglass-half"></i>
+              <div>
+                <h3>Ausstehende Löschgenehmigungen</h3>
+                <p>Diese Löschanfragen warten auf Ihre Genehmigung</p>
+              </div>
+            </div>
+            <div id="approvalList" class="approval-list">
+              <!-- Approval items will be inserted here -->
+            </div>
+          </div>
 
           <!-- Profile Picture Card -->
           <div class="profile-card">
@@ -530,7 +839,14 @@
             <form id="password-form" autocomplete="off">
               <div class="form-group">
                 <label class="form-label">Aktuelles Passwort</label>
-                <input type="password" id="current_password" name="current_password" class="form-control" autocomplete="current-password" required />
+                <input
+                  type="password"
+                  id="current_password"
+                  name="current_password"
+                  class="form-control"
+                  autocomplete="current-password"
+                  required
+                />
               </div>
               <div class="form-group">
                 <label class="form-label">Neues Passwort</label>
@@ -538,7 +854,14 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Neues Passwort bestätigen</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" autocomplete="new-password" required />
+                <input
+                  type="password"
+                  id="confirm_password"
+                  name="confirm_password"
+                  class="form-control"
+                  autocomplete="new-password"
+                  required
+                />
               </div>
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-key"></i>
@@ -546,92 +869,8 @@
               </button>
             </form>
           </div>
-
-          <!-- Danger Zone Card -->
-          <div class="profile-card" style="border-color: rgba(244, 67, 54, 0.3)">
-            <h2 class="card-title" style="color: #f44336">Gefahrenzone</h2>
-            <div style="padding: 20px; background: rgba(244, 67, 54, 0.05); border-radius: var(--radius-sm); margin-bottom: 20px">
-              <p style="color: #f44336; margin-bottom: 16px">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Achtung:</strong>
-                Diese Aktion kann nicht rückgängig gemacht werden!
-              </p>
-              <p style="color: var(--text-secondary); margin-bottom: 20px">
-                Durch das Löschen Ihres Tenants werden
-                <strong>ALLE</strong>
-                Daten unwiderruflich gelöscht:
-              </p>
-              <ul style="color: var(--text-secondary); margin-bottom: 20px; padding-left: 20px">
-                <li>Alle Administratoren und Mitarbeiter</li>
-                <li>Alle Dokumente und Dateien</li>
-                <li>Alle Nachrichten und Chats</li>
-                <li>Alle Einstellungen und Konfigurationen</li>
-                <li>Die gesamte Firmenstruktur</li>
-              </ul>
-              <button
-                class="btn btn-danger"
-                onclick="showDeleteModal()"
-                style="background: rgba(244, 67, 54, 0.2); border-color: #f44336; color: #f44336"
-              >
-                <i class="fas fa-trash-alt"></i>
-                Tenant komplett löschen
-              </button>
-            </div>
-          </div>
         </div>
       </main>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <i class="fas fa-exclamation-triangle fa-2x"></i>
-          <h3>Tenant unwiderruflich löschen</h3>
-        </div>
-
-        <div class="modal-body">
-          <div class="warning-box">
-            <p style="color: #f44336; font-weight: bold; margin-bottom: 12px">
-              <i class="fas fa-skull-crossbones"></i>
-              LETZTE WARNUNG!
-            </p>
-            <p style="color: var(--text-primary)">Sie sind dabei, Ihren gesamten Tenant zu löschen. Diese Aktion:</p>
-            <ul style="color: var(--text-primary); margin: 12px 0; padding-left: 20px">
-              <li>Löscht ALLE Benutzer (Admins und Mitarbeiter)</li>
-              <li>Löscht ALLE Daten und Dokumente</li>
-              <li>Löscht ALLE Einstellungen</li>
-              <li>Kann NICHT rückgängig gemacht werden</li>
-            </ul>
-          </div>
-
-          <div class="confirmation-input">
-            <p style="color: var(--text-secondary); margin-bottom: 12px">
-              Geben Sie zur Bestätigung
-              <strong style="color: #f44336">LÖSCHEN</strong>
-              ein:
-            </p>
-            <input
-              type="text"
-              id="deleteConfirmation"
-              class="form-control"
-              placeholder="Geben Sie LÖSCHEN ein"
-              style="border-color: rgba(244, 67, 54, 0.3)"
-            />
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeDeleteModal()">
-            <i class="fas fa-times"></i>
-            Abbrechen
-          </button>
-          <button class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteTenant()" disabled>
-            <i class="fas fa-trash-alt"></i>
-            Endgültig löschen
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Font Awesome für Icons -->
@@ -877,7 +1116,7 @@
         }
       }
 
-      // Show success overlay animation
+      // Show success overlay animation - nach Design-Standards
       function showSuccessOverlay(text = 'Erfolgreich!') {
         const overlay = document.createElement('div');
         overlay.className = 'success-overlay';
@@ -893,7 +1132,7 @@
         `;
         document.body.appendChild(overlay);
 
-        // Remove after animation
+        // Remove after animation - immer 2 Sekunden
         setTimeout(() => {
           overlay.remove();
         }, 2000);
@@ -912,34 +1151,163 @@
         }
       }, 500);
 
-      // Delete Modal Functions
-      function showDeleteModal() {
-        const modal = document.getElementById('deleteModal');
-        const confirmInput = document.getElementById('deleteConfirmation');
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
+      // Approval Functions
+      async function loadPendingApprovals() {
+        try {
+          const response = await fetch('/api/root/deletion-approvals/pending', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-        if (modal && confirmInput && confirmBtn) {
-          modal.classList.add('active');
-          confirmInput.value = '';
-          confirmBtn.disabled = true;
+          if (!response.ok) throw new Error('Failed to load approvals');
+
+          const data = await response.json();
+          console.log('Deletion approvals response:', data);
+          
+          let approvals = [];
+          if (data && data.success && Array.isArray(data.data)) {
+            approvals = data.data;
+          } else if (Array.isArray(data)) {
+            approvals = data;
+          }
+          
+          console.log('Processed approvals:', approvals);
+
+          const approvalSection = document.getElementById('approvalSection');
+          const approvalList = document.getElementById('approvalList');
+
+          if (approvals.length > 0) {
+            approvalSection.style.display = 'block';
+            approvalList.innerHTML = approvals.map((approval) => createApprovalItem(approval)).join('');
+          } else {
+            approvalSection.style.display = 'none';
+            approvalList.innerHTML = ''; // Clear any existing content
+          }
+        } catch (error) {
+          console.error('Error loading approvals:', error);
         }
       }
 
-      function closeDeleteModal() {
-        const modal = document.getElementById('deleteModal');
-        const confirmInput = document.getElementById('deleteConfirmation');
+      function createApprovalItem(approval) {
+        // Validate approval object
+        if (!approval || !approval.queue_id) {
+          console.error('Invalid approval object:', approval);
+          return '';
+        }
+        
+        const requestedAt = new Date(approval.requested_at);
+        const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
+        const coolingOffRemaining = Math.max(0, 24 - hoursSince);
+        const canApprove = coolingOffRemaining === 0;
 
-        if (modal && confirmInput) {
-          modal.classList.remove('active');
-          confirmInput.value = '';
+        return `
+          <div class="approval-item">
+            <div class="approval-item-header">
+              <div class="approval-item-info">
+                <h4>${approval.company_name}</h4>
+                <p>Subdomain: ${approval.subdomain}</p>
+                <p>Beantragt von: ${approval.requester_name}</p>
+                <p>Beantragt am: ${requestedAt.toLocaleString('de-DE')}</p>
+                <span class="approval-status pending">Ausstehend</span>
+              </div>
+              <div class="approval-item-actions">
+                ${
+                  canApprove
+                    ? `
+                  <button class="btn btn-success" onclick="approveDeletion(${approval.queue_id})">
+                    <i class="fas fa-check"></i> Genehmigen
+                  </button>
+                `
+                    : ''
+                }
+                <button class="btn btn-danger" onclick="rejectDeletion(${approval.queue_id})">
+                  <i class="fas fa-times"></i> Ablehnen
+                </button>
+              </div>
+            </div>
+            ${
+              !canApprove
+                ? `
+              <div class="cooling-off-warning">
+                <i class="fas fa-clock"></i>
+                <span>Cooling-off Periode: Noch ${Math.ceil(coolingOffRemaining)} Stunden warten</span>
+              </div>
+            `
+                : ''
+            }
+          </div>
+        `;
+      }
+
+      async function approveDeletion(queueId) {
+        if (
+          !confirm(
+            'Möchten Sie diese Löschung wirklich genehmigen?\n\nDer Tenant wird nach der 30-tägigen Grace Period endgültig gelöscht.',
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/root/deletion-approvals/${queueId}/approve`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            showSuccessOverlay('Löschung genehmigt!');
+            await loadPendingApprovals();
+          } else {
+            const error = await response.json();
+            showMessage(error.message || 'Fehler bei der Genehmigung', 'error');
+          }
+        } catch (error) {
+          console.error('Error approving deletion:', error);
+          showMessage('Fehler bei der Genehmigung', 'error');
         }
       }
+
+      async function rejectDeletion(queueId) {
+        const reason = prompt('Bitte geben Sie einen Grund für die Ablehnung an:');
+        if (!reason) return;
+
+        try {
+          const response = await fetch(`/api/root/deletion-approvals/${queueId}/reject`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason }),
+          });
+
+          if (response.ok) {
+            showSuccessOverlay('Löschung abgelehnt!');
+            await loadPendingApprovals();
+          } else {
+            const error = await response.json();
+            showMessage(error.message || 'Fehler bei der Ablehnung', 'error');
+          }
+        } catch (error) {
+          console.error('Error rejecting deletion:', error);
+          showMessage('Fehler bei der Ablehnung', 'error');
+        }
+      }
+
+      // Make functions globally available
+      window.approveDeletion = approveDeletion;
+      window.rejectDeletion = rejectDeletion;
 
       // Initialize everything when DOM is ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
           initializeEventListeners();
           loadProfile();
+          loadPendingApprovals();
 
           // Enable delete button only when user types "LÖSCHEN"
           const deleteConfirmInput = document.getElementById('deleteConfirmation');
@@ -950,45 +1318,6 @@
                 confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
               }
             });
-          }
-
-          // Delete tenant function
-          async function deleteTenant() {
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
-
-            try {
-              const response = await fetch('/api/root/delete-tenant', {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (response.ok) {
-                showMessage('Tenant wird gelöscht...', 'success');
-
-                // Clear all local storage
-                localStorage.clear();
-
-                // Redirect to login after 2 seconds
-                setTimeout(() => {
-                  window.location.href = '/login';
-                }, 2000);
-              } else {
-                const error = await response.json();
-                showMessage(error.message || 'Fehler beim Löschen des Tenants', 'error');
-                confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
-                confirmBtn.disabled = false;
-              }
-            } catch (error) {
-              console.error('Error deleting tenant:', error);
-              showMessage('Fehler beim Löschen des Tenants', 'error');
-              confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
-              confirmBtn.disabled = false;
-            }
           }
 
           // Close modal on overlay click
@@ -1005,6 +1334,7 @@
         // DOM already loaded
         initializeEventListeners();
         loadProfile();
+        loadPendingApprovals();
 
         // Enable delete button only when user types "LÖSCHEN"
         const deleteConfirmInput = document.getElementById('deleteConfirmation');
@@ -1028,5 +1358,6 @@
         }
       }
     </script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

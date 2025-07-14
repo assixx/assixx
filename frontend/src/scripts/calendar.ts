@@ -246,11 +246,11 @@ function initializeApp() {
       })
       .catch((error) => {
         console.error('Error loading user data:', error);
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
       });
   } catch (error) {
     console.error('Error checking login:', error);
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
   }
 }
 
@@ -609,7 +609,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     // Get token from localStorage
     const token = getAuthToken();
     if (!token) {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       throw new Error('No token found');
     }
 
@@ -633,7 +633,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 
     if (!response.ok) {
       if (response.status === 401) {
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         throw new Error('Unauthorized');
       }
       throw new Error('Failed to load events');
@@ -720,7 +720,7 @@ async function loadUpcomingEvents(): Promise<void> {
     // Get token from localStorage
     const token = getAuthToken();
     if (!token) {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       throw new Error('No token found');
     }
 
@@ -844,7 +844,7 @@ async function viewEvent(eventId: number): Promise<void> {
     // Get token from localStorage
     const token = getAuthToken();
     if (!token) {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       throw new Error('No token found');
     }
 
@@ -857,7 +857,7 @@ async function viewEvent(eventId: number): Promise<void> {
 
     if (!response.ok) {
       if (response.status === 401) {
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         throw new Error('Unauthorized');
       }
       throw new Error('Failed to load event details');
@@ -1685,7 +1685,7 @@ function checkLoggedIn(): void {
   const token = getAuthToken();
   if (!token) {
     console.error('No authentication token found');
-    window.location.href = '/pages/login.html';
+    window.location.href = '/login';
     throw new Error('No authentication token found');
   }
 }

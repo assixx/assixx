@@ -95,7 +95,7 @@ const directAttachHandlers: {
 
 // Modal helper functions to handle different implementations
 function openModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.getElementById(modalId);
   if (!modal) return;
 
   // Check if it's the new modal style (class="modal")
@@ -125,7 +125,7 @@ function openModal(modalId: string): void {
 }
 
 function closeModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.getElementById(modalId);
   if (!modal) return;
 
   // Check if it's the new modal style (class="modal")
@@ -181,7 +181,7 @@ function initializeBlackboard() {
           isAdmin = userData.role === 'admin' || userData.role === 'root';
 
           // Show/hide "New Entry" button based on permissions
-          const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+          const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
           if (newEntryBtn) {
             newEntryBtn.style.display = isAdmin ? 'block' : 'none';
           }
@@ -195,7 +195,7 @@ function initializeBlackboard() {
             .then((userData: UserData) => {
               currentUserId = userData.id;
               isAdmin = userData.role === 'admin' || userData.role === 'root';
-              const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+              const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
               if (newEntryBtn) {
                 newEntryBtn.style.display = isAdmin ? 'block' : 'none';
               }
@@ -212,7 +212,7 @@ function initializeBlackboard() {
           .then((userData: UserData) => {
             currentUserId = userData.id;
             isAdmin = userData.role === 'admin' || userData.role === 'root';
-            const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+            const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
             if (newEntryBtn) {
               newEntryBtn.style.display = isAdmin ? 'block' : 'none';
             }
@@ -246,13 +246,13 @@ function initializeBlackboard() {
       });
 
       // Hide the load entries button since entries are loaded automatically
-      const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement;
+      const loadEntriesBtn = document.getElementById('loadEntriesBtn') as HTMLButtonElement | null;
       if (loadEntriesBtn) {
         loadEntriesBtn.style.display = 'none';
       }
 
       // Retry-Button Ereignisbehandlung
-      const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement;
+      const retryLoadBtn = document.getElementById('retryLoadBtn') as HTMLButtonElement | null;
       if (retryLoadBtn) {
         retryLoadBtn.addEventListener('click', () => {
           entriesLoadingEnabled = true; // Erlaube das Laden nur nach Klick
@@ -265,7 +265,7 @@ function initializeBlackboard() {
     })
     .catch((error) => {
       console.error('Error checking login:', error);
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     });
 }
 
@@ -285,7 +285,7 @@ function setupCloseButtons(): void {
   document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       // Finde das übergeordnete Modal (both modal-overlay and modal classes)
-      const modal = this.closest('.modal-overlay, .modal') as HTMLElement;
+      const modal = this.closest('.modal-overlay, .modal') as HTMLElement | null;
       if (modal) {
         closeModal(modal.id);
       } else {
@@ -328,7 +328,7 @@ function setupEventListeners(): void {
   });
 
   // Sort entries
-  const sortFilter = document.getElementById('sortFilter') as HTMLSelectElement;
+  const sortFilter = document.getElementById('sortFilter') as HTMLSelectElement | null;
   if (sortFilter) {
     sortFilter.addEventListener('change', function (this: HTMLSelectElement) {
       currentSort = this.value;
@@ -343,8 +343,8 @@ function setupEventListeners(): void {
   }
 
   // Search button
-  const searchButton = document.getElementById('searchButton') as HTMLButtonElement;
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const searchButton = document.getElementById('searchButton') as HTMLButtonElement | null;
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
 
   if (searchButton && searchInput) {
     searchButton.addEventListener('click', () => {
@@ -373,7 +373,7 @@ function setupEventListeners(): void {
   }
 
   // New entry button
-  const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement;
+  const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
   if (newEntryBtn) {
     newEntryBtn.addEventListener('click', () => {
       openEntryForm();
@@ -383,7 +383,7 @@ function setupEventListeners(): void {
   }
 
   // Direct attachment button
-  const directAttachBtn = document.getElementById('directAttachBtn') as HTMLButtonElement;
+  const directAttachBtn = document.getElementById('directAttachBtn') as HTMLButtonElement | null;
   if (directAttachBtn) {
     directAttachBtn.addEventListener('click', () => {
       openDirectAttachModal();
@@ -393,7 +393,7 @@ function setupEventListeners(): void {
   }
 
   // Save entry button
-  const saveEntryBtn = document.getElementById('saveEntryBtn') as HTMLButtonElement;
+  const saveEntryBtn = document.getElementById('saveEntryBtn') as HTMLButtonElement | null;
   if (saveEntryBtn) {
     saveEntryBtn.addEventListener('click', () => {
       saveEntry();
@@ -403,7 +403,7 @@ function setupEventListeners(): void {
   }
 
   // Organization level change
-  const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement;
+  const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement | null;
   if (entryOrgLevel) {
     entryOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
       updateOrgIdDropdown(this.value);
@@ -430,8 +430,8 @@ function setupEventListeners(): void {
  * Setup file upload handlers for attachments
  */
 function setupFileUploadHandlers(): void {
-  const dropZone = document.getElementById('attachmentDropZone') as HTMLDivElement;
-  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement;
+  const dropZone = document.getElementById('attachmentDropZone') as HTMLDivElement | null;
+  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement | null;
 
   if (!dropZone || !fileInput) return;
 
@@ -442,8 +442,8 @@ function setupFileUploadHandlers(): void {
 
   // File input change
   fileInput.addEventListener('change', (event) => {
-    const target = event.target as HTMLInputElement;
-    if (target.files) {
+    const target = event.target as HTMLInputElement | null;
+    if (target && target.files) {
       handleFileSelection(Array.from(target.files));
     }
   });
@@ -506,8 +506,8 @@ function handleFileSelection(files: File[]): void {
  * Update attachment preview display
  */
 function updateAttachmentPreview(): void {
-  const preview = document.getElementById('attachmentPreview') as HTMLDivElement;
-  const list = document.getElementById('attachmentList') as HTMLDivElement;
+  const preview = document.getElementById('attachmentPreview') as HTMLDivElement | null;
+  const list = document.getElementById('attachmentList') as HTMLDivElement | null;
 
   if (!preview || !list) return;
 
@@ -551,7 +551,7 @@ function removeAttachment(index: number): void {
   updateAttachmentPreview();
 
   // Reset file input
-  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement;
+  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement | null;
   if (fileInput) {
     fileInput.value = '';
   }
@@ -581,18 +581,18 @@ async function loadEntries(): Promise<void> {
 
   try {
     // Verstecke die Lade-Button-Karte
-    const loadEntriesCard = document.getElementById('loadEntriesCard') as HTMLElement;
+    const loadEntriesCard = document.getElementById('loadEntriesCard');
     if (loadEntriesCard) loadEntriesCard.classList.add('d-none');
 
     // Zeige den Ladeindikator
-    const loadingIndicator = document.getElementById('loadingIndicator') as HTMLElement;
+    const loadingIndicator = document.getElementById('loadingIndicator');
     if (loadingIndicator) loadingIndicator.classList.remove('d-none');
 
     // Verstecke vorherige Ergebnisse oder Fehlermeldungen
-    const blackboardEntries = document.getElementById('blackboardEntries') as HTMLElement;
+    const blackboardEntries = document.getElementById('blackboardEntries');
     if (blackboardEntries) blackboardEntries.classList.add('d-none');
 
-    const noEntriesMessage = document.getElementById('noEntriesMessage') as HTMLElement;
+    const noEntriesMessage = document.getElementById('noEntriesMessage');
     if (noEntriesMessage) noEntriesMessage.classList.add('d-none');
 
     // Parse sort option
@@ -601,7 +601,7 @@ async function loadEntries(): Promise<void> {
     // Get token from localStorage
     const token = getAuthToken();
     if (!token) {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
       throw new Error('No token found');
     }
 
@@ -618,19 +618,22 @@ async function loadEntries(): Promise<void> {
     if (!response.ok) {
       if (response.status === 401) {
         // Redirect to login if unauthorized
-        window.location.href = '/pages/login.html';
+        window.location.href = '/login';
         throw new Error('Unauthorized');
       }
       throw new Error('Failed to load entries');
     }
 
-    const data: BlackboardResponse = await response.json();
+    const responseData = await response.json();
+    const data: BlackboardResponse = responseData.data || responseData;
 
     // Update pagination
-    updatePagination(data.pagination);
+    if (data.pagination) {
+      updatePagination(data.pagination);
+    }
 
     // Display entries
-    displayEntries(data.entries);
+    displayEntries(data.entries || []);
 
     // Erfolgreiche Anfrage - deaktiviere weitere automatische API-Aufrufe
     entriesLoadingEnabled = false;
@@ -639,17 +642,17 @@ async function loadEntries(): Promise<void> {
     showError('Fehler beim Laden der Einträge.');
 
     // Bei einem Fehler, zeige die "Keine Einträge" Nachricht mit Wiederholungs-Button
-    const noEntriesMessage = document.getElementById('noEntriesMessage') as HTMLElement;
+    const noEntriesMessage = document.getElementById('noEntriesMessage');
     if (noEntriesMessage) {
       noEntriesMessage.classList.remove('d-none');
     }
 
     // Zeige die Lade-Button-Karte wieder an
-    const loadEntriesCard = document.getElementById('loadEntriesCard') as HTMLElement;
+    const loadEntriesCard = document.getElementById('loadEntriesCard');
     if (loadEntriesCard) loadEntriesCard.classList.remove('d-none');
   } finally {
     // Verstecke den Ladeindikator
-    const loadingIndicator = document.getElementById('loadingIndicator') as HTMLElement;
+    const loadingIndicator = document.getElementById('loadingIndicator');
     if (loadingIndicator) loadingIndicator.classList.add('d-none');
   }
 }
@@ -737,14 +740,14 @@ async function loadDepartmentsAndTeams(): Promise<void> {
  * Display blackboard entries
  */
 function displayEntries(entries: BlackboardEntry[]): void {
-  const container = document.getElementById('blackboardEntries') as HTMLElement;
+  const container = document.getElementById('blackboardEntries');
   if (!container) return;
 
   container.innerHTML = '';
   container.classList.remove('d-none');
 
   if (entries.length === 0) {
-    const noEntriesMessage = document.getElementById('noEntriesMessage') as HTMLElement;
+    const noEntriesMessage = document.getElementById('noEntriesMessage');
     if (noEntriesMessage) {
       noEntriesMessage.classList.remove('d-none');
     }
@@ -904,7 +907,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       ${
         canEdit
           ? `
-        <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.2s;">
+        <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; /* transition: opacity 0.2s; */">
           <button class="btn btn-sm btn-link p-1" onclick="event.stopPropagation(); editEntry(${entry.id})" title="Bearbeiten">
             <i class="fas fa-edit"></i>
           </button>
@@ -920,15 +923,17 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
 
   // Show actions on hover
   if (canEdit) {
-    const card = container.querySelector(`.${cardClass}`) as HTMLElement;
-    card.addEventListener('mouseenter', () => {
-      const actions = card.querySelector('.entry-actions') as HTMLElement;
-      if (actions) actions.style.opacity = '1';
-    });
-    card.addEventListener('mouseleave', () => {
-      const actions = card.querySelector('.entry-actions') as HTMLElement;
-      if (actions) actions.style.opacity = '0';
-    });
+    const card = container.querySelector(`.${cardClass}`) as HTMLElement | null;
+    if (card) {
+      card.addEventListener('mouseenter', () => {
+        const actions = card.querySelector('.entry-actions') as HTMLElement | null;
+        if (actions) actions.style.opacity = '1';
+      });
+      card.addEventListener('mouseleave', () => {
+        const actions = card.querySelector('.entry-actions') as HTMLElement | null;
+        if (actions) actions.style.opacity = '0';
+      });
+    }
   }
 
   return container;
@@ -951,7 +956,7 @@ function getPriorityIcon(priority: string): string {
  * Update pagination UI
  */
 function updatePagination(pagination: PaginationInfo): void {
-  const paginationContainer = document.getElementById('pagination') as HTMLElement;
+  const paginationContainer = document.getElementById('pagination');
   if (!paginationContainer) return;
 
   paginationContainer.innerHTML = '';
@@ -1006,11 +1011,11 @@ function changePage(page: number): void {
  * Open entry form for creating/editing
  */
 function openEntryForm(entryId?: number): void {
-  const modal = document.getElementById('entryFormModal') as HTMLElement;
+  const modal = document.getElementById('entryFormModal');
   if (!modal) return;
 
   // Reset form
-  const form = document.getElementById('entryForm') as HTMLFormElement;
+  const form = document.getElementById('entryForm') as HTMLFormElement | null;
   if (form) form.reset();
 
   // Reset color selection
@@ -1022,7 +1027,7 @@ function openEntryForm(entryId?: number): void {
   // Reset file selection
   selectedFiles = [];
   updateAttachmentPreview();
-  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement;
+  const fileInput = document.getElementById('attachmentInput') as HTMLInputElement | null;
   if (fileInput) {
     fileInput.value = '';
   }
@@ -1033,7 +1038,7 @@ function openEntryForm(entryId?: number): void {
   } else {
     // New entry - reset org dropdown
     updateOrgIdDropdown('all');
-    const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement;
+    const entryOrgLevel = document.getElementById('entryOrgLevel') as HTMLSelectElement | null;
     if (entryOrgLevel) {
       entryOrgLevel.value = 'company';
       updateOrgIdDropdown('company');
@@ -1048,8 +1053,8 @@ function openEntryForm(entryId?: number): void {
  * Update organization ID dropdown based on level
  */
 function updateOrgIdDropdown(level: string): void {
-  const orgIdContainer = document.getElementById('orgIdContainer') as HTMLElement;
-  const orgIdSelect = document.getElementById('entryOrgId') as HTMLSelectElement;
+  const orgIdContainer = document.getElementById('orgIdContainer');
+  const orgIdSelect = document.getElementById('entryOrgId') as HTMLSelectElement | null;
 
   if (!orgIdContainer || !orgIdSelect) return;
 
@@ -1086,7 +1091,7 @@ function updateOrgIdDropdown(level: string): void {
  * Save entry
  */
 async function saveEntry(): Promise<void> {
-  const form = document.getElementById('entryForm') as HTMLFormElement;
+  const form = document.getElementById('entryForm') as HTMLFormElement | null;
   if (!form) return;
 
   const formData = new FormData(form);
@@ -1094,7 +1099,7 @@ async function saveEntry(): Promise<void> {
   if (!token) return;
 
   // Get selected color
-  const selectedColor = document.querySelector('.color-option.active') as HTMLElement;
+  const selectedColor = document.querySelector('.color-option.active') as HTMLElement | null;
   const color = selectedColor?.dataset.color || '#f8f9fa';
 
   const entryData = {
@@ -1166,7 +1171,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
       const entry: BlackboardEntry = await response.json();
 
       // Fill form with entry data
-      const form = document.getElementById('entryForm') as HTMLFormElement;
+      const form = document.getElementById('entryForm') as HTMLFormElement | null;
       if (!form) return;
 
       (form.elements.namedItem('entry_id') as HTMLInputElement).value = entry.id.toString();
@@ -1185,7 +1190,7 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
       document.querySelectorAll('.color-option').forEach((option) => {
         option.classList.remove('active');
       });
-      const colorOption = document.querySelector(`.color-option[data-color="${entry.color}"]`) as HTMLElement;
+      const colorOption = document.querySelector(`.color-option[data-color="${entry.color}"]`) as HTMLElement | null;
       if (colorOption) {
         colorOption.classList.add('active');
       }
@@ -1338,7 +1343,7 @@ async function viewEntry(entryId: number): Promise<void> {
       console.log(`[Blackboard] Attachments loaded:`, attachments);
 
       // Show entry detail modal
-      const detailContent = document.getElementById('entryDetailContent') as HTMLElement;
+      const detailContent = document.getElementById('entryDetailContent');
       if (detailContent) {
         const priorityIcon = getPriorityIcon(entry.priority_level);
         const canEdit = isAdmin || entry.created_by === currentUserId;
@@ -1400,7 +1405,7 @@ async function viewEntry(entryId: number): Promise<void> {
         `;
 
         // Update footer buttons BEFORE showing modal
-        const footer = document.getElementById('entryDetailFooter') as HTMLElement;
+        const footer = document.getElementById('entryDetailFooter');
         if (footer && canEdit) {
           footer.innerHTML = `
             <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
@@ -1491,7 +1496,7 @@ async function viewEntry(entryId: number): Promise<void> {
 
             // Visual feedback
             htmlItem.style.cursor = 'pointer';
-            htmlItem.style.transition = 'all 0.2s ease';
+            /* htmlItem.style.transition = 'all 0.2s ease'; */
 
             htmlItem.addEventListener('mouseenter', () => {
               htmlItem.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
@@ -1535,7 +1540,7 @@ async function viewEntry(entryId: number): Promise<void> {
           // Check modal content
           const modalContent = document.querySelector('#entryDetailModal .modal-body');
           if (modalContent) {
-            const contentStyle = window.getComputedStyle(modalContent as HTMLElement);
+            const contentStyle = window.getComputedStyle(modalContent);
             console.log('[Blackboard] Modal content styles:', {
               display: contentStyle.display,
               visibility: contentStyle.visibility,
@@ -1551,7 +1556,7 @@ async function viewEntry(entryId: number): Promise<void> {
           console.log('[Blackboard] Testing direct access...');
           const testAttachment = document.querySelector(
             `#attachment-list-${entryId} .entry-attachment-item`,
-          ) as HTMLElement;
+          ) as HTMLElement | null;
           if (testAttachment) {
             console.log('[Blackboard] Test attachment found:', testAttachment);
             console.log('[Blackboard] Can you see and click this element?', {
@@ -1626,7 +1631,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
   if (titleElement) titleElement.textContent = `Vorschau: ${fileName}`;
 
   // Update download link
-  const downloadLink = document.getElementById('downloadLink') as HTMLAnchorElement;
+  const downloadLink = document.getElementById('downloadLink') as HTMLAnchorElement | null;
   if (downloadLink) {
     downloadLink.href = `/api/blackboard/attachments/${attachmentId}?download=true`;
     downloadLink.setAttribute('download', fileName);
@@ -1816,15 +1821,15 @@ if (typeof window !== 'undefined') {
  */
 function openDirectAttachModal(): void {
   console.log('[DirectAttach] Opening modal');
-  const modal = document.getElementById('directAttachModal') as HTMLElement;
+  const modal = document.getElementById('directAttachModal');
   if (!modal) return;
 
   // Reset form
-  const form = document.getElementById('directAttachForm') as HTMLFormElement;
+  const form = document.getElementById('directAttachForm') as HTMLFormElement | null;
   if (form) form.reset();
 
   // Reset file input and global file
-  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
   if (fileInput) {
     console.log('[DirectAttach] Resetting file input');
     fileInput.value = '';
@@ -1859,9 +1864,9 @@ function openDirectAttachModal(): void {
  */
 function setupDirectAttachHandlers(): void {
   console.log('[DirectAttach] Setting up handlers');
-  const dropZone = document.getElementById('directAttachDropZone') as HTMLDivElement;
-  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
-  const saveBtn = document.getElementById('saveDirectAttachBtn') as HTMLButtonElement;
+  const dropZone = document.getElementById('directAttachDropZone') as HTMLDivElement | null;
+  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
+  const saveBtn = document.getElementById('saveDirectAttachBtn') as HTMLButtonElement | null;
 
   if (!dropZone || !fileInput) {
     console.error('[DirectAttach] Missing required elements');
@@ -1892,9 +1897,9 @@ function setupDirectAttachHandlers(): void {
   };
 
   directAttachHandlers.fileInputChange = (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    console.log('[DirectAttach] File input changed:', target.files?.length);
-    if (target.files && target.files[0]) {
+    const target = event.target as HTMLInputElement | null;
+    console.log('[DirectAttach] File input changed:', target?.files?.length);
+    if (target && target.files && target.files[0]) {
       handleDirectAttachFile(target.files[0]);
     }
   };
@@ -1982,7 +1987,7 @@ function handleDirectAttachFile(file: File): void {
   fileSize.textContent = formatFileSize(file.size);
 
   // Set title from filename if empty
-  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement;
+  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
   if (titleInput && !titleInput.value) {
     titleInput.value = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
   }
@@ -2004,7 +2009,7 @@ function handleDirectAttachFile(file: File): void {
  */
 function clearDirectAttachment(): void {
   console.log('[DirectAttach] Clearing attachment');
-  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+  const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
   const preview = document.getElementById('directAttachPreview');
 
   if (fileInput) fileInput.value = '';
@@ -2021,10 +2026,10 @@ async function saveDirectAttachment(): Promise<void> {
   console.log('[DirectAttach] saveDirectAttachment called');
   console.log('[DirectAttach] Global file:', directAttachmentFile?.name || 'none');
 
-  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement;
-  const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement;
-  const prioritySelect = document.getElementById('directAttachPriority') as HTMLSelectElement;
-  const sizeOption = document.querySelector('.size-option.active') as HTMLElement;
+  const titleInput = document.getElementById('directAttachTitle') as HTMLInputElement | null;
+  const orgLevelSelect = document.getElementById('directAttachOrgLevel') as HTMLSelectElement | null;
+  const prioritySelect = document.getElementById('directAttachPriority') as HTMLSelectElement | null;
+  const sizeOption = document.querySelector('.size-option.active') as HTMLElement | null;
 
   console.log('[DirectAttach] Elements found:', {
     globalFile: directAttachmentFile?.name || 'none',
@@ -2082,10 +2087,10 @@ async function saveDirectAttachment(): Promise<void> {
     directAttachmentFile = null;
 
     // Reset the form and file input for next use
-    const form = document.getElementById('directAttachForm') as HTMLFormElement;
+    const form = document.getElementById('directAttachForm') as HTMLFormElement | null;
     if (form) form.reset();
 
-    const fileInput = document.getElementById('directAttachInput') as HTMLInputElement;
+    const fileInput = document.getElementById('directAttachInput') as HTMLInputElement | null;
     if (fileInput) fileInput.value = '';
 
     const preview = document.getElementById('directAttachPreview');

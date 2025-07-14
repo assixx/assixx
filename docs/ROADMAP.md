@@ -29,7 +29,6 @@ Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit m
 #### Deal-Breaker Features
 
 - [ ] **Urlaubsantrag-System** - Kritisch für HR-Prozesse
-
   - [ ] Antragsformular mit Kalender-Integration
   - [ ] Mehrstufiger Genehmigungsworkflow
   - [ ] Resturlaubsberechnung
@@ -37,7 +36,6 @@ Assixx etabliert sich als führende SaaS-Lösung für Industrieunternehmen mit m
   - [ ] Mobile-optimierte Ansicht
 
 - [ ] **Gehaltsabrechnung Upload** - Kritisch für Payroll
-
   - [ ] Sichere PDF-Upload Funktion
   - [ ] Verschlüsselte Speicherung
   - [ ] Mitarbeiter-Portal für Abruf

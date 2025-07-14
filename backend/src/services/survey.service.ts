@@ -137,7 +137,11 @@ interface SurveyStatistics {
     id: number;
     question_text: string;
     question_type: string;
-    responses?: any[];
+    responses?: Array<{
+      answer_text?: string;
+      selected_option_id?: number;
+      rating?: number;
+    }>;
     options?: Array<{
       option_id: number;
       option_text: string;
@@ -147,7 +151,7 @@ interface SurveyStatistics {
       average: number | null;
       min: number | null;
       max: number | null;
-      count: number;
+      total_responses: number;
     };
   }>;
 }

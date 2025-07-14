@@ -19,6 +19,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
 
@@ -42,17 +43,10 @@
         z-index: -1;
       }
 
-      /* Admin Table Container */
-      .admin-table-container {
-        margin: 20px;
+      /* Container Styles */
+      .container {
         padding: 20px;
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        margin-top: -34px !important; /* Align first container with sidebar user-info-card */
       }
 
       /* Table Styles */
@@ -177,7 +171,7 @@
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       @keyframes fadeInUp {
@@ -457,7 +451,7 @@
 
       .department-badge:hover .department-tooltip {
         display: block !important;
-        animation: tooltipFadeIn 0.2s ease-out;
+        /* animation: tooltipFadeIn 0.2s ease-out; */
       }
 
       @keyframes tooltipFadeIn {
@@ -495,13 +489,19 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="admin-table-container">
-          <h1>Admin-Verwaltung</h1>
-          <p class="text-secondary">Verwalten Sie hier alle Administratoren im System</p>
-
-          <!-- Admin Table -->
-          <div id="adminTableContent">
-            <!-- Tabelle wird hier dynamisch eingefügt -->
+        <div id="breadcrumb-container"></div>
+        <div class="container">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Admin-Verwaltung</h2>
+              <p class="text-secondary" style="margin: 0; margin-top: 4px">Verwalten Sie hier alle Administratoren im System</p>
+            </div>
+            <div class="card-body">
+              <!-- Admin Table -->
+              <div id="adminTableContent">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -807,6 +807,13 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-admins.ts"></script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
+    </script>
 
     <!-- Custom Dropdown Functions -->
     <script>

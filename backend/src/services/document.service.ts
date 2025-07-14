@@ -9,8 +9,7 @@ import { fileURLToPath } from 'url';
 import Document from '../models/document';
 import { logger } from '../utils/logger';
 import { formatPaginationResponse } from '../utils/helpers';
-import pool from '../database';
-import { RowDataPacket } from 'mysql2/promise';
+import { query as executeQuery, RowDataPacket } from '../utils/db';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +25,6 @@ import type {
 interface DocumentData extends RowDataPacket {
   id: number;
   tenant_id: number;
-  tenantId: number;
   name: string;
   filename: string;
   file_name: string;
@@ -52,7 +50,7 @@ interface DocumentData extends RowDataPacket {
 }
 
 interface GetDocumentsOptions {
-  tenantId: number;
+  tenant_id: number;
   category?: string;
   userId?: number;
   scope?: 'all' | 'company' | 'department' | 'team' | 'personal';
@@ -73,7 +71,7 @@ interface DocumentsResponse {
 }
 
 interface ServiceDocumentCreateData {
-  tenantId: number;
+  tenant_id: number;
   name: string;
   description?: string | null;
   filename: string;
@@ -116,7 +114,7 @@ class DocumentService {
    */
   async getDocuments(options: GetDocumentsOptions): Promise<DocumentsResponse> {
     try {
-      const { tenantId, userId, scope, departmentId, teamId, limit, offset } =
+      const { tenant_id, userId, scope, departmentId, teamId, limit, offset } =
         options;
 
       // Build SQL query based on scope
@@ -162,7 +160,7 @@ class DocumentService {
           AND d.is_archived = 0
       `;
 
-      const params: any[] = [userId, userId, tenantId];
+      const params: (number | undefined)[] = [userId, userId, tenant_id];
 
       // Add scope-based filters
       if (scope && scope !== 'all') {
@@ -198,22 +196,20 @@ class DocumentService {
       const countQuery =
         query.replace('SELECT', 'SELECT COUNT(*) as total FROM (SELECT') +
         ') as subquery';
-      const countResult = await (pool as any).query(countQuery, params);
-      const countRows =
-        Array.isArray(countResult) && countResult.length === 2
-          ? countResult[0]
-          : countResult;
-      const total = countRows[0]?.total || 0;
+      const [countRows] = await executeQuery<RowDataPacket[]>(
+        countQuery,
+        params
+      );
+      const total =
+        Array.isArray(countRows) && countRows.length > 0
+          ? countRows[0].total
+          : 0;
 
       // Add ordering and pagination
       query += ` ORDER BY d.uploaded_at DESC LIMIT ? OFFSET ?`;
       params.push(limit, offset);
 
-      const queryResult = await (pool as any).query(query, params);
-      const rows =
-        Array.isArray(queryResult) && queryResult.length === 2
-          ? queryResult[0]
-          : queryResult;
+      const [rows] = await executeQuery<DocumentData[]>(query, params);
 
       return {
         data: rows,
@@ -242,7 +238,7 @@ class DocumentService {
 
       return {
         ...doc,
-        tenantId: doc.tenant_id,
+        tenant_id: doc.tenant_id,
         name: doc.file_name,
         filename: doc.file_name,
         file_name: doc.file_name,
@@ -279,10 +275,10 @@ class DocumentService {
           documentData.description !== null
             ? documentData.description
             : undefined,
-        tenant_id: documentData.tenantId,
+        tenant_id: documentData.tenant_id,
       };
       const documentId = await Document.create(modelData);
-      return await this.getDocumentById(documentId, documentData.tenantId);
+      return await this.getDocumentById(documentId, documentData.tenant_id);
     } catch (error) {
       logger.error('Error in document service createDocument:', error);
       throw error;
@@ -295,11 +291,11 @@ class DocumentService {
   async updateDocument(
     documentId: number,
     updateData: ServiceDocumentUpdateData,
-    tenantId: number
+    tenant_id: number
   ): Promise<boolean> {
     try {
       // Check if document exists
-      const document = await this.getDocumentById(documentId, tenantId);
+      const document = await this.getDocumentById(documentId, tenant_id);
       if (!document) {
         return false;
       }
@@ -322,10 +318,13 @@ class DocumentService {
   /**
    * Delete document
    */
-  async deleteDocument(documentId: number, tenantId: number): Promise<boolean> {
+  async deleteDocument(
+    documentId: number,
+    tenant_id: number
+  ): Promise<boolean> {
     try {
       // Get document info before deletion
-      const document = await this.getDocumentById(documentId, tenantId);
+      const document = await this.getDocumentById(documentId, tenant_id);
       if (!document) {
         return false;
       }
@@ -375,7 +374,7 @@ class DocumentService {
         (doc) =>
           ({
             ...doc,
-            tenantId: doc.tenant_id,
+            tenant_id: doc.tenant_id,
             name: doc.file_name,
             filename: doc.file_name,
             file_name: doc.file_name,
@@ -416,8 +415,8 @@ class DocumentService {
         byCategory: stats.byCategory || {},
         totalSize: stats.totalSize || 0,
         averageSize:
-          stats.total && stats.total > 0
-            ? Math.round(stats.totalSize! / stats.total)
+          stats.total && stats.total > 0 && stats.totalSize
+            ? Math.round(stats.totalSize / stats.total)
             : 0,
       };
     } catch (error) {
@@ -432,7 +431,7 @@ class DocumentService {
   async markDocumentAsRead(
     documentId: number,
     userId: number,
-    tenantId: number
+    tenant_id: number
   ): Promise<boolean> {
     try {
       const query = `
@@ -441,7 +440,7 @@ class DocumentService {
         ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP
       `;
 
-      await (pool as any).query(query, [documentId, userId, tenantId]);
+      await executeQuery(query, [documentId, userId, tenant_id]);
       return true;
     } catch (error) {
       logger.error('Error marking document as read:', error);

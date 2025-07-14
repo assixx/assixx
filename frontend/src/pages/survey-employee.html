@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -342,7 +343,7 @@
         justify-content: center;
         align-items: center;
         z-index: 2000;
-        animation: fadeIn 0.3s ease-out;
+        /* animation: fadeIn 0.3s ease-out; */
       }
 
       .success-message {
@@ -352,14 +353,14 @@
         border-radius: var(--radius-lg);
         padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
         text-align: center;
-        animation: scaleIn 0.5s ease-out;
+        /* animation: scaleIn 0.5s ease-out; */
       }
 
       .success-icon {
         font-size: 4rem;
         color: #4caf50;
         margin-bottom: var(--spacing-lg);
-        animation: checkmark 0.6s ease-out 0.3s both;
+        /* animation: checkmark 0.6s ease-out 0.3s both; */
       }
 
       .success-text {
@@ -447,7 +448,7 @@
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
         padding: 30px;
       }
 
@@ -696,10 +697,6 @@
       <main class="main-content">
         <div class="survey-container">
           <div class="survey-header">
-            <h1 class="survey-title">
-              <i class="fas fa-poll"></i>
-              Meine Umfragen
-            </h1>
             <p class="survey-subtitle">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
           </div>
 
@@ -725,6 +722,8 @@
             </div>
           </div>
         </div>
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
       </main>
     </div>
 
@@ -760,6 +759,7 @@
     </div>
 
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
     <script>
       let currentSurvey = null;
       let answers = {};
@@ -780,10 +780,17 @@
           });
 
           if (response.ok) {
-            const surveys = await response.json();
-            // Filter only active and closed surveys (not draft or archived)
-            const relevantSurveys = surveys.filter((s) => s.status === 'active' || s.status === 'closed');
-            displaySurveys(relevantSurveys);
+            const result = await response.json();
+            const surveys = result.data || result.surveys || result;
+            // Ensure surveys is an array
+            if (Array.isArray(surveys)) {
+              // Filter only active and closed surveys (not draft or archived)
+              const relevantSurveys = surveys.filter((s) => s.status === 'active' || s.status === 'closed');
+              displaySurveys(relevantSurveys);
+            } else {
+              console.error('Invalid surveys data format:', surveys);
+              displaySurveys([]);
+            }
           }
         } catch (error) {
           console.error('Error loading surveys:', error);
@@ -911,7 +918,8 @@
           });
 
           if (response.ok) {
-            currentSurvey = await response.json();
+            const result = await response.json();
+            currentSurvey = result.data || result.survey || result;
             answers = {};
             displaySurveyForm();
           }

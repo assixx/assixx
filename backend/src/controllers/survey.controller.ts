@@ -183,14 +183,22 @@ class SurveyController {
       const createdBy = req.user.id;
 
       // Map question types before creating
+      type MappedQuestionType =
+        | 'text'
+        | 'single_choice'
+        | 'multiple_choice'
+        | 'rating'
+        | 'number';
       const surveyData = {
         ...req.body,
-        questions: req.body.questions?.map((q: any) => ({
+        questions: req.body.questions?.map((q) => ({
           ...q,
-          question_type: mapQuestionType(q.question_type),
+          question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),
         // Ensure status is compatible with model
-        status: req.body.status === 'archived' ? 'closed' : req.body.status,
+        status: (req.body.status === 'archived'
+          ? 'closed'
+          : req.body.status) as 'draft' | 'active' | 'closed' | undefined,
       };
 
       // Using direct model import since the original controller does this
@@ -216,22 +224,42 @@ class SurveyController {
       const tenantId = req.user.tenant_id;
 
       // Map question types before updating
-      const updateData: any = {
+      type MappedQuestionType =
+        | 'text'
+        | 'single_choice'
+        | 'multiple_choice'
+        | 'rating'
+        | 'number';
+      const updateData = {
         ...req.body,
-        questions: req.body.questions?.map((q: any) => ({
+        questions: req.body.questions?.map((q) => ({
           ...q,
-          question_type: mapQuestionType(q.question_type),
+          question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),
         // Ensure status is compatible with model
-        status: req.body.status === 'archived' ? 'closed' : req.body.status,
+        status: (req.body.status === 'archived'
+          ? 'closed'
+          : req.body.status) as 'draft' | 'active' | 'closed' | undefined,
       };
 
       // Using direct model import since the original controller does this
+      // Ensure we have a valid title for the update
+      const surveyDataForUpdate = {
+        title: updateData.title || req.body.title || 'Untitled Survey',
+        description: updateData.description,
+        questions: updateData.questions,
+        is_anonymous: updateData.is_anonymous,
+        start_date: updateData.start_date,
+        end_date: updateData.end_date,
+        status: updateData.status as 'draft' | 'active' | 'closed' | undefined,
+      };
+
       const result = await Survey.update(
         parseInt(req.params.id, 10),
-        updateData,
+        surveyDataForUpdate,
         tenantId
       );
+
       res.json({
         success: result,
         message: 'Umfrage erfolgreich aktualisiert',

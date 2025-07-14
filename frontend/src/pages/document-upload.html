@@ -7,6 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <style>
       @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
       /* Glassmorphismus Design-Standards - Wie im Admin Dashboard */
 
       /* Dramatischer Hintergrund-Gradient */
@@ -61,7 +62,7 @@
         overflow: hidden;
         position: relative;
         transition: all 0.3s ease;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
       }
 
       .upload-section::before {
@@ -374,7 +375,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .pdf-preview-container {
@@ -392,7 +393,7 @@
 
       .pdf-preview-container.active {
         display: block;
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
       }
 
       .pdf-preview {
@@ -510,7 +511,7 @@
         align-items: center;
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        animation: fadeInUp 0.3s ease-out;
+        /* animation: fadeInUp 0.3s ease-out; */
         transition: all 0.3s ease;
       }
 
@@ -566,7 +567,7 @@
       }
 
       .loading-spinner svg {
-        animation: spin 1.5s linear infinite;
+        /* animation: spin 1.5s linear infinite; */
       }
 
       /* Recipient Type Selector Styles */
@@ -637,9 +638,8 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="page-header">
-          <h1 class="page-title">Dokument hochladen</h1>
-        </div>
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
 
         <div id="upload-success" class="alert alert-success" style="display: none">
           <span class="icon">
@@ -1478,5 +1478,6 @@
 
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

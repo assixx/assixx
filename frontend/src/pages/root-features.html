@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
 
@@ -43,7 +44,7 @@
       /* Layout Container - Standard Assixx Layout */
       .layout-container {
         display: flex;
-        margin-top: 60px; /* Header height */
+        min-height: 100vh;
       }
 
       /* Main Content Area - innerhalb layout-container */
@@ -63,8 +64,6 @@
 
       /* Plan Selection Header */
       .plan-header {
-        /*background: rgba(255, 255, 255, 0.04);*/
-        backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 32px;
@@ -72,6 +71,9 @@
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         width: 100%;
         box-sizing: border-box;
+        margin-top: -14px !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        background: hsla(0,0%,100%,.02);
       }
 
       .current-plan-info {
@@ -622,12 +624,15 @@
     <!-- Layout Container -->
     <div class="layout-container">
       <!-- Main Content -->
-      <div class="main-content">
+      <main class="main-content">
+        <!-- Breadcrumb Navigation -->
+        <div id="breadcrumb-container"></div>
+
         <!-- Current Plan Header -->
         <div class="plan-header">
           <div class="current-plan-info">
             <div>
-              <h1 class="plan-title">Plan & Feature Management</h1>
+              <p class="plan-title">Plan & Feature Management</p>
               <p style="color: var(--text-secondary); margin-top: 8px">
                 Verwalten Sie Ihren Plan und aktivieren Sie Features für
                 <strong id="tenant-name">Ihre Organisation</strong>
@@ -859,33 +864,33 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Summary Bar -->
-      <div class="summary-bar">
-        <div class="summary-content">
-          <div class="summary-items">
-            <div class="summary-item">
-              <span class="summary-label">Aktueller Plan</span>
-              <span class="summary-value" id="summary-plan">Enterprise</span>
+        <!-- Summary Bar -->
+        <div class="summary-bar">
+          <div class="summary-content">
+            <div class="summary-items">
+              <div class="summary-item">
+                <span class="summary-label">Aktueller Plan</span>
+                <span class="summary-value" id="summary-plan">Enterprise</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Aktive Features</span>
+                <span class="summary-value" id="summary-features">9 / 9</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Monatliche Kosten</span>
+                <span class="summary-value" id="summary-cost">299,00€</span>
+              </div>
             </div>
-            <div class="summary-item">
-              <span class="summary-label">Aktive Features</span>
-              <span class="summary-value" id="summary-features">9 / 9</span>
+            <div class="summary-actions">
+              <button class="btn-save" onclick="saveChanges()">
+                <i class="fas fa-save"></i>
+                Änderungen speichern
+              </button>
             </div>
-            <div class="summary-item">
-              <span class="summary-label">Monatliche Kosten</span>
-              <span class="summary-value" id="summary-cost">299,00€</span>
-            </div>
-          </div>
-          <div class="summary-actions">
-            <button class="btn-save" onclick="saveChanges()">
-              <i class="fas fa-save"></i>
-              Änderungen speichern
-            </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
     <!-- End main-content -->
 
@@ -1025,7 +1030,7 @@
       // Initialize
       document.addEventListener('DOMContentLoaded', async () => {
         if (!token) {
-          window.location.href = '/pages/login.html';
+          window.location.href = '/login';
           return;
         }
 
@@ -1059,8 +1064,11 @@
             throw new Error('Failed to load plans');
           }
 
-          allPlans = await plansResponse.json();
-          console.log('Loaded plans:', allPlans);
+          const plansData = await plansResponse.json();
+          console.log('Loaded plans response:', plansData);
+
+          // Extract the data array from the response
+          allPlans = plansData.data || plansData;
 
           // Check if response is an array
           if (!Array.isArray(allPlans)) {
@@ -1147,7 +1155,11 @@
           const response = await fetch('/api/features/my-features', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          const features = await response.json();
+          const featuresData = await response.json();
+          console.log('Loaded tenant features response:', featuresData);
+          
+          // Extract the data array from the response
+          const features = featuresData.data || featuresData;
 
           // Update feature states in categories
           Object.values(featureCategories).forEach((category) => {
@@ -1474,6 +1486,13 @@
           alert('Fehler beim Speichern der Änderungen');
         }
       }
+    </script>
+
+    <!-- Breadcrumb Component -->
+    <script type="module">
+      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+      // Breadcrumb wird automatisch generiert basierend auf der URL
+      initBreadcrumb();
     </script>
   </body>
 </html>

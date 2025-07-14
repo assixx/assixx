@@ -49,36 +49,47 @@ export function showSection(sectionName: string): void {
     // Load section-specific data (with small delay to ensure functions are loaded)
     setTimeout(() => {
       const sectionBaseName = sectionName.replace('-section', '');
+      interface SectionWindow {
+        loadEmployeesTable?: () => void;
+        loadDocumentsTable?: () => void;
+        loadPayslipsTable?: () => void;
+        loadEmployeesForPayslipSelect?: () => void;
+        loadDepartmentsTable?: () => void;
+        loadTeamsTable?: () => void;
+      }
+
+      const sectionWindow = window as unknown as SectionWindow;
+
       switch (sectionBaseName) {
         case 'employees':
-          if (typeof (window as any).loadEmployeesTable === 'function') {
+          if (typeof sectionWindow.loadEmployeesTable === 'function') {
             console.info('[ShowSection] Calling loadEmployeesTable');
-            (window as any).loadEmployeesTable();
+            sectionWindow.loadEmployeesTable();
           } else {
             console.warn('[ShowSection] loadEmployeesTable function not found');
           }
           break;
         case 'documents':
-          if (typeof (window as any).loadDocumentsTable === 'function') {
-            (window as any).loadDocumentsTable();
+          if (typeof sectionWindow.loadDocumentsTable === 'function') {
+            sectionWindow.loadDocumentsTable();
           }
           break;
         case 'payslips':
-          if (typeof (window as any).loadPayslipsTable === 'function') {
-            (window as any).loadPayslipsTable();
+          if (typeof sectionWindow.loadPayslipsTable === 'function') {
+            sectionWindow.loadPayslipsTable();
           }
-          if (typeof (window as any).loadEmployeesForPayslipSelect === 'function') {
-            (window as any).loadEmployeesForPayslipSelect();
+          if (typeof sectionWindow.loadEmployeesForPayslipSelect === 'function') {
+            sectionWindow.loadEmployeesForPayslipSelect();
           }
           break;
         case 'departments':
-          if (typeof (window as any).loadDepartmentsTable === 'function') {
-            (window as any).loadDepartmentsTable();
+          if (typeof sectionWindow.loadDepartmentsTable === 'function') {
+            sectionWindow.loadDepartmentsTable();
           }
           break;
         case 'teams':
-          if (typeof (window as any).loadTeamsTable === 'function') {
-            (window as any).loadTeamsTable();
+          if (typeof sectionWindow.loadTeamsTable === 'function') {
+            sectionWindow.loadTeamsTable();
           }
           break;
       }

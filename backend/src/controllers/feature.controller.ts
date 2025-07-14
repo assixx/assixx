@@ -10,6 +10,11 @@ import featureService from '../services/feature.service';
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
+  user?: {
+    id: number;
+    tenantId: number;
+    [key: string]: unknown;
+  };
 }
 
 // Interface for create/update request bodies
@@ -22,7 +27,7 @@ interface FeatureCreateRequest extends TenantRequest {
     description?: string;
     category?: string;
     is_enabled?: boolean;
-    config_data?: any;
+    config_data?: Record<string, unknown>;
     created_by?: number;
     price?: number;
     billing_type?: 'free' | 'monthly' | 'yearly' | 'usage';
@@ -38,7 +43,7 @@ interface FeatureUpdateRequest extends TenantRequest {
     description?: string;
     category?: string;
     is_enabled?: boolean;
-    config_data?: any;
+    config_data?: Record<string, unknown>;
     price?: number;
     billing_type?: 'free' | 'monthly' | 'yearly' | 'usage';
     dependencies?: string[];
@@ -147,11 +152,11 @@ class FeatureController {
       }
 
       const featureData = {
-        tenant_id: req.user.tenantId,
+        tenant_id: req.user?.tenantId || 0,
         feature_key: req.body.feature_key || req.body.key || 'new_feature',
         is_enabled:
           req.body.is_enabled !== undefined ? req.body.is_enabled : false,
-        enabled_by: req.body.is_enabled ? req.user.id : null,
+        enabled_by: req.body.is_enabled ? req.user?.id || null : null,
       };
       const result = await featureService.create(req.tenantDb, featureData);
       res.status(201).json(result);

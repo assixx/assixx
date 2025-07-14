@@ -583,14 +583,12 @@ async function bulkAssignDepartments(adminIds, departmentIds) {
 #### Test-Szenarien
 
 1. **Neue Admin-Erstellung**:
-
    - [ ] Default: Keine Abteilungen
    - [ ] Spezifische Auswahl funktioniert
    - [ ] Gruppen-Auswahl funktioniert
    - [ ] Alle Abteilungen funktioniert
 
 2. **Berechtigungen bearbeiten**:
-
    - [ ] Hinzufügen von Abteilungen
    - [ ] Hinzufügen von Gruppen
    - [ ] Entfernen von Abteilungen/Gruppen
@@ -598,14 +596,12 @@ async function bulkAssignDepartments(adminIds, departmentIds) {
    - [ ] Vererbung bei Gruppen funktioniert
 
 3. **Zugriffskontrolle**:
-
    - [ ] Admin ohne Berechtigung kann keine Daten sehen
    - [ ] Admin mit Berechtigung sieht nur seine Abteilungen
    - [ ] Admin mit Gruppen-Berechtigung sieht alle untergeordneten Abteilungen
    - [ ] Root sieht alles
 
 4. **Gruppen-Verwaltung**:
-
    - [ ] Gruppen erstellen/bearbeiten/löschen
    - [ ] Hierarchische Strukturen funktionieren
    - [ ] Abteilungen zu Gruppen hinzufügen/entfernen

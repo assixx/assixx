@@ -191,9 +191,9 @@ export class SessionManager {
 
     // Redirect to login with timeout parameter if applicable
     if (isTimeout) {
-      window.location.href = '/pages/login.html?timeout=true';
+      window.location.href = '/login?timeout=true';
     } else {
-      window.location.href = '/pages/login.html';
+      window.location.href = '/login';
     }
   }
 
@@ -207,7 +207,10 @@ export class SessionManager {
 
 // Initialize session manager when module loads
 if (typeof window !== 'undefined') {
-  (window as any).sessionManager = SessionManager.getInstance();
+  interface SessionWindow extends Window {
+    sessionManager: SessionManager;
+  }
+  (window as unknown as SessionWindow).sessionManager = SessionManager.getInstance();
 }
 
 // Export for use in other modules
