@@ -3,28 +3,28 @@
  * Handles user profile operations and profile picture uploads
  */
 
-import express, { Router } from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs/promises';
-import bcrypt from 'bcryptjs';
-import { security } from '../middleware/security';
-import { createValidation } from '../middleware/validation';
-import { param } from 'express-validator';
-import { logger } from '../utils/logger';
-import { apiLimiter, uploadLimiter } from '../middleware/security-enhanced';
+import express, { Router } from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
+import bcrypt from "bcryptjs";
+import { security } from "../middleware/security";
+import { createValidation } from "../middleware/validation";
+import { param } from "express-validator";
+import { logger } from "../utils/logger";
+import { apiLimiter, uploadLimiter } from "../middleware/security-enhanced";
 
 // Import User model (keeping require pattern for compatibility)
-import User, { DbUser } from '../models/user';
+import User, { DbUser } from "../models/user";
 
 const router: Router = express.Router();
 
 // Import types
-import { AuthenticatedRequest } from '../types/request.types';
-import { successResponse, errorResponse } from '../types/response.types';
-import { getErrorMessage } from '../utils/errorHandler';
-import { validationSchemas } from '../middleware/validation';
-import { typed } from '../utils/routeHandlers';
+import { AuthenticatedRequest } from "../types/request.types";
+import { successResponse, errorResponse } from "../types/response.types";
+import { getErrorMessage } from "../utils/errorHandler";
+import { validationSchemas } from "../middleware/validation";
+import { typed } from "../utils/routeHandlers";
 
 // Extended request for file uploads
 interface FileUploadRequest extends AuthenticatedRequest {
@@ -33,7 +33,7 @@ interface FileUploadRequest extends AuthenticatedRequest {
 
 // Validation schemas
 const userIdValidation = createValidation([
-  param('id').isInt({ min: 1 }).withMessage('Invalid user ID'),
+  param("id").isInt({ min: 1 }).withMessage("Invalid user ID"),
 ]);
 
 // Type definitions for request bodies
@@ -75,7 +75,7 @@ interface AvailabilityUpdateBody {
 
 // Get all users (admin only)
 router.get(
-  '/',
+  "/",
   apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
@@ -86,33 +86,33 @@ router.get(
       let users: DbUser[] = [];
 
       // Different logic based on user role
-      if (req.user.role === 'admin' || req.user.role === 'root') {
+      if (req.user.role === "admin" || req.user.role === "root") {
         // Admins see all users
         users = await User.findAllByTenant(req.user.tenant_id);
-      } else if (req.user.role === 'employee') {
+      } else if (req.user.role === "employee") {
         // Employees only see users from their department
         const currentUser = await User.findById(
           req.user.id,
-          req.user.tenant_id
+          req.user.tenant_id,
         );
         if (currentUser && currentUser.department_id) {
           const allUsers = await User.findAllByTenant(req.user.tenant_id);
           users = allUsers.filter(
-            (u) => u.department_id === currentUser.department_id
+            (u) => u.department_id === currentUser.department_id,
           );
         }
       } else {
-        res.status(403).json({ message: 'Access denied' });
+        res.status(403).json({ message: "Access denied" });
         return;
       }
 
       // Filter by role if specified
-      if (role && typeof role === 'string') {
+      if (role && typeof role === "string") {
         users = users.filter((user) => user.role === role);
       }
 
       // Apply limit if specified
-      if (limit && typeof limit === 'string') {
+      if (limit && typeof limit === "string") {
         const limitNum = parseInt(limit, 10);
         if (!isNaN(limitNum) && limitNum > 0) {
           users = users.slice(0, limitNum);
@@ -142,29 +142,29 @@ router.get(
 
       res.json(sanitizedUsers);
     } catch (error) {
-      logger.error('Error fetching users:', error);
+      logger.error("Error fetching users:", error);
       res.status(500).json({
-        message: 'Error fetching users',
+        message: "Error fetching users",
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Get current user data (alias for /profile) - for frontend compatibility
 // IMPORTANT: This must come BEFORE the /:id route to avoid 'me' being treated as an ID
 router.get(
-  '/me',
+  "/me",
   apiLimiter,
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       // Debug logging
-      logger.info('GET /api/users/me - req.user:', req.user);
+      logger.info("GET /api/users/me - req.user:", req.user);
 
       if (!req.user || !req.user.id) {
-        logger.error('No user object or user.id in request');
-        res.status(401).json({ message: 'User not authenticated' });
+        logger.error("No user object or user.id in request");
+        res.status(401).json({ message: "User not authenticated" });
         return;
       }
 
@@ -175,7 +175,7 @@ router.get(
 
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
@@ -188,18 +188,18 @@ router.get(
       res.json({ user: userProfile });
     } catch (error) {
       logger.error(
-        `Error retrieving profile for user: ${getErrorMessage(error)}`
+        `Error retrieving profile for user: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen des Profils', 500));
+        .json(errorResponse("Fehler beim Abrufen des Profils", 500));
     }
-  })
+  }),
 );
 
 // Get specific user by ID (admin only)
 router.get(
-  '/:id',
+  "/:id",
   apiLimiter,
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
@@ -210,7 +210,7 @@ router.get(
       const user = await User.findById(userId, req.user.tenant_id);
 
       if (!user) {
-        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
@@ -219,19 +219,19 @@ router.get(
       res.json(userProfile);
     } catch (error) {
       logger.error(
-        `Error fetching user ${req.params.id}: ${getErrorMessage(error)}`
+        `Error fetching user ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res.status(500).json({
-        message: 'Fehler beim Abrufen des Benutzers',
+        message: "Fehler beim Abrufen des Benutzers",
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Update user by ID (admin only)
 router.put(
-  '/:id',
+  "/:id",
   apiLimiter,
   ...security.admin(),
   typed.paramsBody<
@@ -265,17 +265,17 @@ router.put(
       // Verify user belongs to tenant before updating
       const existingUser = await User.findById(userId, req.user.tenant_id);
       if (!existingUser) {
-        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
       // Hash password if provided
       const password = updateData.password;
-      if (typeof password === 'string' && password.trim() !== '') {
+      if (typeof password === "string" && password.trim() !== "") {
         const saltRounds = 10;
         updateData.password = await bcrypt.hash(password, saltRounds);
         logger.info(
-          `Password updated for user ${userId} by admin ${req.user.id}`
+          `Password updated for user ${userId} by admin ${req.user.id}`,
         );
       } else {
         // Remove empty password field
@@ -286,26 +286,26 @@ router.put(
       const success = await User.update(userId, updateData, req.user.tenant_id);
 
       if (!success) {
-        res.status(500).json({ message: 'Aktualisierung fehlgeschlagen' });
+        res.status(500).json({ message: "Aktualisierung fehlgeschlagen" });
         return;
       }
 
       logger.info(`User ${userId} updated by ${req.user.id}`);
-      res.json({ message: 'Benutzer erfolgreich aktualisiert' });
+      res.json({ message: "Benutzer erfolgreich aktualisiert" });
     } catch (error) {
       logger.error(
-        `Error updating user ${req.params.id}: ${getErrorMessage(error)}`
+        `Error updating user ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Aktualisieren des Benutzers', 500));
+        .json(errorResponse("Fehler beim Aktualisieren des Benutzers", 500));
     }
-  })
+  }),
 );
 
 // Delete user by ID (admin only)
 router.delete(
-  '/:id',
+  "/:id",
   apiLimiter,
   ...security.admin(userIdValidation),
   typed.params<{ id: string }>(async (req, res) => {
@@ -318,35 +318,35 @@ router.delete(
       if (userId === req.user.id) {
         res
           .status(400)
-          .json(errorResponse('Sie können sich nicht selbst löschen', 400));
+          .json(errorResponse("Sie können sich nicht selbst löschen", 400));
         return;
       }
 
       // Verify user belongs to tenant before deleting
       const existingUser = await User.findById(userId, req.user.tenant_id);
       if (!existingUser) {
-        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
       const success = await User.delete(userId);
 
       if (!success) {
-        res.status(500).json(errorResponse('Löschen fehlgeschlagen', 500));
+        res.status(500).json(errorResponse("Löschen fehlgeschlagen", 500));
         return;
       }
 
       logger.info(`User ${userId} deleted by ${req.user.id}`);
-      res.json(successResponse(null, 'Benutzer erfolgreich gelöscht'));
+      res.json(successResponse(null, "Benutzer erfolgreich gelöscht"));
     } catch (error) {
       logger.error(
-        `Error deleting user ${req.params.id}: ${getErrorMessage(error)}`
+        `Error deleting user ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Löschen des Benutzers', 500));
+        .json(errorResponse("Fehler beim Löschen des Benutzers", 500));
     }
-  })
+  }),
 );
 
 /**
@@ -378,34 +378,34 @@ router.delete(
  */
 // Get logged-in user's profile data
 router.get(
-  '/profile',
+  "/profile",
   apiLimiter,
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       // Debug logging
-      console.log('[DEBUG] /api/users/profile - req.user:', req.user);
-      console.log('[DEBUG] /api/users/profile - req.user.id:', req.user?.id);
+      console.log("[DEBUG] /api/users/profile - req.user:", req.user);
+      console.log("[DEBUG] /api/users/profile - req.user.id:", req.user?.id);
       console.log(
-        '[DEBUG] /api/users/profile - typeof req.user.id:',
-        typeof req.user?.id
+        "[DEBUG] /api/users/profile - typeof req.user.id:",
+        typeof req.user?.id,
       );
 
       // Use the same logic as /me route which works
       if (!req.user || !req.user.id) {
-        logger.error('No user object or user.id in request');
-        res.status(401).json({ message: 'User not authenticated' });
+        logger.error("No user object or user.id in request");
+        res.status(401).json({ message: "User not authenticated" });
         return;
       }
 
       const userId = parseInt(req.user.id.toString(), 10);
       const tenantId = req.user.tenant_id;
 
-      console.log('[DEBUG] Parsed userId:', userId, 'tenantId:', tenantId);
+      console.log("[DEBUG] Parsed userId:", userId, "tenantId:", tenantId);
 
       const user = await User.findById(userId, tenantId);
       if (!user) {
-        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
@@ -416,19 +416,19 @@ router.get(
       res.json(successResponse(userProfile));
     } catch (error) {
       logger.error(
-        `Error retrieving profile for user: ${getErrorMessage(error)}`
+        `Error retrieving profile for user: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen des Profils', 500));
+        .json(errorResponse("Fehler beim Abrufen des Profils", 500));
     }
-  })
+  }),
 );
 
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    cb(null, 'uploads/profile_pictures/');
+    cb(null, "uploads/profile_pictures/");
   },
   filename(_req, file, cb) {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -437,12 +437,12 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+const fileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
   // Accept only images
-  if (file.mimetype.startsWith('image/')) {
+  if (file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
-    cb(new Error('Nur Bildformate sind erlaubt!'));
+    cb(new Error("Nur Bildformate sind erlaubt!"));
   }
 };
 
@@ -454,7 +454,7 @@ const upload = multer({
 
 // Update user profile
 router.put(
-  '/profile',
+  "/profile",
   apiLimiter,
   ...security.user(validationSchemas.profileUpdate),
   typed.body<ProfileUpdateBody>(async (req, res) => {
@@ -473,21 +473,21 @@ router.put(
         // Use a simpler, non-backtracking regex to prevent ReDoS
         // First check length to prevent processing extremely long inputs
         if (updateData.email.length > 254) {
-          res.status(400).json(errorResponse('E-Mail-Adresse zu lang', 400));
+          res.status(400).json(errorResponse("E-Mail-Adresse zu lang", 400));
           return;
         }
 
         // Simple email validation without nested quantifiers
-        const emailParts = updateData.email.split('@');
+        const emailParts = updateData.email.split("@");
         if (
           emailParts.length !== 2 ||
           emailParts[0].length === 0 ||
           emailParts[1].length === 0 ||
-          !emailParts[1].includes('.') ||
-          emailParts[0].includes(' ') ||
-          emailParts[1].includes(' ')
+          !emailParts[1].includes(".") ||
+          emailParts[0].includes(" ") ||
+          emailParts[1].includes(" ")
         ) {
-          res.status(400).json(errorResponse('Ungültige E-Mail-Adresse', 400));
+          res.status(400).json(errorResponse("Ungültige E-Mail-Adresse", 400));
           return;
         }
       }
@@ -496,34 +496,34 @@ router.put(
 
       if (success) {
         logger.info(`User ${userId} updated their profile`);
-        res.json(successResponse(null, 'Profil erfolgreich aktualisiert'));
+        res.json(successResponse(null, "Profil erfolgreich aktualisiert"));
       } else {
         res
           .status(500)
-          .json(errorResponse('Fehler beim Aktualisieren des Profils', 500));
+          .json(errorResponse("Fehler beim Aktualisieren des Profils", 500));
       }
     } catch (error) {
       logger.error(
-        `Error updating profile for user ${req.user.id}: ${getErrorMessage(error)}`
+        `Error updating profile for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Aktualisieren des Profils', 500));
+        .json(errorResponse("Fehler beim Aktualisieren des Profils", 500));
     }
-  })
+  }),
 );
 
 // Upload profile picture
 router.post(
-  '/profile/picture',
+  "/profile/picture",
   uploadLimiter,
   ...security.user(),
-  upload.single('profilePicture'),
+  upload.single("profilePicture"),
   typed.auth(async (req, res) => {
     try {
       const fileReq = req as FileUploadRequest;
       if (!fileReq.file) {
-        res.status(400).json({ message: 'Keine Datei hochgeladen' });
+        res.status(400).json({ message: "Keine Datei hochgeladen" });
         return;
       }
 
@@ -537,13 +537,13 @@ router.post(
         {
           profile_picture: filePath,
         },
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
         logger.info(`User ${userId} uploaded new profile picture: ${fileName}`);
         res.json({
-          message: 'Profilbild erfolgreich hochgeladen',
+          message: "Profilbild erfolgreich hochgeladen",
           profilePictureUrl: filePath,
         });
       } else {
@@ -553,11 +553,11 @@ router.post(
         }
         res
           .status(500)
-          .json({ message: 'Fehler beim Speichern des Profilbildes' });
+          .json({ message: "Fehler beim Speichern des Profilbildes" });
       }
     } catch (error) {
       logger.error(
-        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${getErrorMessage(error)}`
+        `Error uploading profile picture for user ${(req as AuthenticatedRequest).user.id}: ${getErrorMessage(error)}`,
       );
 
       // Clean up uploaded file
@@ -565,34 +565,34 @@ router.post(
         try {
           // Validate and normalize the file path to prevent path traversal
           const normalizedPath = path.resolve(req.file.path);
-          const uploadsDir = path.resolve('uploads/profile_pictures/');
+          const uploadsDir = path.resolve("uploads/profile_pictures/");
 
           // Ensure the file is within the uploads directory
           if (!normalizedPath.startsWith(uploadsDir)) {
             logger.error(
-              `Attempted to delete file outside uploads directory: ${req.file.path}`
+              `Attempted to delete file outside uploads directory: ${req.file.path}`,
             );
           } else {
             await fs.unlink(normalizedPath);
           }
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
           );
         }
       }
 
       res.status(500).json({
-        message: 'Fehler beim Hochladen des Profilbildes',
+        message: "Fehler beim Hochladen des Profilbildes",
         error: getErrorMessage(error),
       });
     }
-  })
+  }),
 );
 
 // Delete profile picture
 router.delete(
-  '/profile/picture',
+  "/profile/picture",
   apiLimiter,
   ...security.user(),
   typed.auth(async (req, res) => {
@@ -602,7 +602,7 @@ router.delete(
       // Get current user to find existing profile picture
       const user = await User.findById(userId, req.user.tenant_id);
       if (!user) {
-        res.status(404).json(errorResponse('Benutzer nicht gefunden', 404));
+        res.status(404).json(errorResponse("Benutzer nicht gefunden", 404));
         return;
       }
 
@@ -610,26 +610,26 @@ router.delete(
       if (user.profile_picture_url) {
         const oldFilePath = path.join(
           __dirname,
-          '..',
-          '..',
-          user.profile_picture_url
+          "..",
+          "..",
+          user.profile_picture_url,
         );
 
         // Validate and normalize the file path to prevent path traversal
         const normalizedOldPath = path.resolve(oldFilePath);
-        const baseDir = path.resolve(__dirname, '..', '..');
+        const baseDir = path.resolve(__dirname, "..", "..");
 
         // Ensure the file is within the base directory
         if (!normalizedOldPath.startsWith(baseDir)) {
           logger.error(
-            `Attempted to delete file outside base directory: ${user.profile_picture_url}`
+            `Attempted to delete file outside base directory: ${user.profile_picture_url}`,
           );
         } else {
           try {
             await fs.unlink(normalizedOldPath);
           } catch (unlinkError) {
             logger.warn(
-              `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`
+              `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`,
             );
           }
         }
@@ -639,31 +639,31 @@ router.delete(
       const success = await User.update(
         userId,
         { profile_picture: undefined },
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (success) {
         logger.info(`User ${userId} deleted their profile picture`);
-        res.json({ message: 'Profilbild erfolgreich gelöscht' });
+        res.json({ message: "Profilbild erfolgreich gelöscht" });
       } else {
         res
           .status(500)
-          .json({ message: 'Fehler beim Löschen des Profilbildes' });
+          .json({ message: "Fehler beim Löschen des Profilbildes" });
       }
     } catch (error) {
       logger.error(
-        `Error deleting profile picture for user ${req.user.id}: ${getErrorMessage(error)}`
+        `Error deleting profile picture for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Löschen des Profilbildes', 500));
+        .json(errorResponse("Fehler beim Löschen des Profilbildes", 500));
     }
-  })
+  }),
 );
 
 // Change password
 router.put(
-  '/profile/password',
+  "/profile/password",
   apiLimiter,
   ...security.user(validationSchemas.passwordChange),
   typed.body<PasswordChangeBody>(async (req, res) => {
@@ -679,7 +679,7 @@ router.put(
         userId,
         req.user.tenant_id,
         currentPassword,
-        newPassword
+        newPassword,
       );
 
       if (result.success) {
@@ -690,18 +690,18 @@ router.put(
       }
     } catch (error) {
       logger.error(
-        `Error changing password for user ${req.user.id}: ${getErrorMessage(error)}`
+        `Error changing password for user ${req.user.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Ändern des Passworts', 500));
+        .json(errorResponse("Fehler beim Ändern des Passworts", 500));
     }
-  })
+  }),
 );
 
 // Update employee availability
 router.put(
-  '/:id/availability',
+  "/:id/availability",
   apiLimiter,
   ...security.admin(validationSchemas.availabilityUpdate),
   typed.paramsBody<{ id: string }, AvailabilityUpdateBody>(async (req, res) => {
@@ -718,7 +718,7 @@ router.put(
       if (!availability_status) {
         res
           .status(400)
-          .json(errorResponse('Availability status is required', 400));
+          .json(errorResponse("Availability status is required", 400));
         return;
       }
 
@@ -731,30 +731,30 @@ router.put(
           availability_start,
           availability_end,
           availability_notes,
-        }
+        },
       );
 
       if (success) {
         logger.info(
-          `Admin ${req.user.id} updated availability for employee ${employeeId}`
+          `Admin ${req.user.id} updated availability for employee ${employeeId}`,
         );
         res.json(
-          successResponse(null, 'Verfügbarkeit erfolgreich aktualisiert')
+          successResponse(null, "Verfügbarkeit erfolgreich aktualisiert"),
         );
       } else {
-        res.status(404).json(errorResponse('Mitarbeiter nicht gefunden', 404));
+        res.status(404).json(errorResponse("Mitarbeiter nicht gefunden", 404));
       }
     } catch (error) {
       logger.error(
-        `Error updating availability for employee ${req.params.id}: ${getErrorMessage(error)}`
+        `Error updating availability for employee ${req.params.id}: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
         .json(
-          errorResponse('Fehler beim Aktualisieren der Verfügbarkeit', 500)
+          errorResponse("Fehler beim Aktualisieren der Verfügbarkeit", 500),
         );
     }
-  })
+  }),
 );
 
 export default router;

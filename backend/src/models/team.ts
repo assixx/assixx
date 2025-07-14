@@ -2,8 +2,8 @@ import {
   query as executeQuery,
   RowDataPacket,
   ResultSetHeader,
-} from '../utils/db';
-import { logger } from '../utils/logger';
+} from "../utils/db";
+import { logger } from "../utils/logger";
 
 // Database interfaces
 interface DbTeam extends RowDataPacket {
@@ -78,20 +78,20 @@ export class Team {
 
   static async findAll(tenant_id: number | null = null): Promise<DbTeam[]> {
     logger.info(
-      `Fetching all teams${tenant_id ? ` for tenant ${tenant_id}` : ''}`
+      `Fetching all teams${tenant_id ? ` for tenant ${tenant_id}` : ""}`,
     );
     const query = `
       SELECT t.*, d.name AS department_name 
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
-      ${tenant_id ? 'WHERE t.tenant_id = ?' : ''}
+      ${tenant_id ? "WHERE t.tenant_id = ?" : ""}
       ORDER BY t.name
     `;
 
     try {
       const [rows] = await executeQuery<DbTeam[]>(
         query,
-        tenant_id ? [tenant_id] : []
+        tenant_id ? [tenant_id] : [],
       );
       logger.info(`Retrieved ${rows.length} teams`);
       return rows;
@@ -156,7 +156,7 @@ export class Team {
 
   static async delete(id: number): Promise<boolean> {
     logger.info(`Deleting team ${id}`);
-    const query = 'DELETE FROM teams WHERE id = ?';
+    const query = "DELETE FROM teams WHERE id = ?";
 
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [id]);
@@ -174,7 +174,7 @@ export class Team {
 
   static async addUserToTeam(userId: number, teamId: number): Promise<boolean> {
     logger.info(`Adding user ${userId} to team ${teamId}`);
-    const query = 'INSERT INTO user_teams (user_id, team_id) VALUES (?, ?)';
+    const query = "INSERT INTO user_teams (user_id, team_id) VALUES (?, ?)";
 
     try {
       await executeQuery(query, [userId, teamId]);
@@ -183,12 +183,12 @@ export class Team {
     } catch (error) {
       const mysqlError = error as MysqlError;
       // Wenn es ein Duplikat ist, ignorieren wir es
-      if (mysqlError.code === 'ER_DUP_ENTRY') {
+      if (mysqlError.code === "ER_DUP_ENTRY") {
         logger.warn(`User ${userId} is already a member of team ${teamId}`);
         return true;
       }
       logger.error(
-        `Error adding user ${userId} to team ${teamId}: ${mysqlError.message}`
+        `Error adding user ${userId} to team ${teamId}: ${mysqlError.message}`,
       );
       throw error;
     }
@@ -196,10 +196,10 @@ export class Team {
 
   static async removeUserFromTeam(
     userId: number,
-    teamId: number
+    teamId: number,
   ): Promise<boolean> {
     logger.info(`Removing user ${userId} from team ${teamId}`);
-    const query = 'DELETE FROM user_teams WHERE user_id = ? AND team_id = ?';
+    const query = "DELETE FROM user_teams WHERE user_id = ? AND team_id = ?";
 
     try {
       const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -214,7 +214,7 @@ export class Team {
       return true;
     } catch (error) {
       logger.error(
-        `Error removing user ${userId} from team ${teamId}: ${(error as Error).message}`
+        `Error removing user ${userId} from team ${teamId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -235,7 +235,7 @@ export class Team {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching members for team ${teamId}: ${(error as Error).message}`
+        `Error fetching members for team ${teamId}: ${(error as Error).message}`,
       );
       throw error;
     }
@@ -257,7 +257,7 @@ export class Team {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching teams for user ${userId}: ${(error as Error).message}`
+        `Error fetching teams for user ${userId}: ${(error as Error).message}`,
       );
       throw error;
     }

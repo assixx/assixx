@@ -1295,17 +1295,7 @@ async function deleteEntry(entryId: number): Promise<void> {
 }
 
 // Utility functions
-
-function escapeHtml(text: string): string {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
-}
+// escapeHtml is imported from common.ts
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -1767,18 +1757,18 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       const unsupportedDiv = document.createElement('div');
       unsupportedDiv.className = 'text-center';
       unsupportedDiv.style.padding = '40px';
-      
+
       const icon = document.createElement('i');
       icon.className = 'fas fa-file fa-5x';
       icon.style.cssText = 'color: var(--text-secondary); margin-bottom: 20px;';
-      
+
       const p1 = document.createElement('p');
       p1.textContent = 'Vorschau für diesen Dateityp nicht verfügbar.';
-      
+
       const p2 = document.createElement('p');
       p2.className = 'text-muted';
       p2.textContent = fileName;
-      
+
       unsupportedDiv.appendChild(icon);
       unsupportedDiv.appendChild(p1);
       unsupportedDiv.appendChild(p2);

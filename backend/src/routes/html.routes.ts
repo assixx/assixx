@@ -3,11 +3,11 @@
  * Serves frontend pages
  */
 
-import express, { Router, Request, Response } from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { authenticateToken, authorizeRole } from '../middleware/auth';
-import { rateLimiter } from '../middleware/rateLimiter';
+import express, { Router, Request, Response } from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { authenticateToken, authorizeRole } from "../middleware/auth";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 const router: Router = express.Router();
 
@@ -24,328 +24,328 @@ const servePage =
     // Always serve from dist directory (built files)
     const distPath = path.join(
       __dirname,
-      '../../../frontend/dist/pages',
-      `${pageName}.html`
+      "../../../frontend/dist/pages",
+      `${pageName}.html`,
     );
     res.sendFile(distPath);
   };
 
 // Public pages
 // Root '/' is handled by redirectToDashboard middleware in app.ts
-router.get('/index', rateLimiter.public, servePage('index'));
-router.get('/pages/index', rateLimiter.public, (_req: Request, res: Response) =>
-  res.redirect('/index')
+router.get("/index", rateLimiter.public, servePage("index"));
+router.get("/pages/index", rateLimiter.public, (_req: Request, res: Response) =>
+  res.redirect("/index"),
 ); // Redirect old URL
-router.get('/login', rateLimiter.auth, servePage('login'));
-router.get('/signup', rateLimiter.auth, servePage('signup'));
+router.get("/login", rateLimiter.auth, servePage("login"));
+router.get("/signup", rateLimiter.auth, servePage("signup"));
 router.get(
-  '/design-standards',
+  "/design-standards",
   rateLimiter.public,
-  servePage('design-standards')
+  servePage("design-standards"),
 );
 
 // Authenticated pages - All users
 router.get(
-  '/dashboard',
+  "/dashboard",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('dashboard')
+  servePage("dashboard"),
 );
 router.get(
-  '/profile',
+  "/profile",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('profile')
+  servePage("profile"),
 );
 router.get(
-  '/profile-picture',
+  "/profile-picture",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('profile-picture')
+  servePage("profile-picture"),
 );
 router.get(
-  '/settings',
+  "/settings",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('settings')
+  servePage("settings"),
 );
 router.get(
-  '/hilfe',
+  "/hilfe",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('hilfe')
+  servePage("hilfe"),
 );
 router.get(
-  '/chat',
+  "/chat",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('chat')
+  servePage("chat"),
 );
 router.get(
-  '/blackboard',
+  "/blackboard",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('blackboard')
+  servePage("blackboard"),
 );
 router.get(
-  '/calendar',
+  "/calendar",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('calendar')
+  servePage("calendar"),
 );
 router.get(
-  '/kvp',
+  "/kvp",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('kvp')
+  servePage("kvp"),
 );
 router.get(
-  '/kvp-detail',
+  "/kvp-detail",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('kvp-detail')
+  servePage("kvp-detail"),
 );
 router.get(
-  '/documents',
+  "/documents",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents')
+  servePage("documents"),
 );
 router.get(
-  '/documents-personal',
+  "/documents-personal",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents-personal')
+  servePage("documents-personal"),
 );
 router.get(
-  '/documents-payroll',
+  "/documents-payroll",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents-payroll')
+  servePage("documents-payroll"),
 );
 router.get(
-  '/documents-company',
+  "/documents-company",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents-company')
+  servePage("documents-company"),
 );
 router.get(
-  '/documents-department',
+  "/documents-department",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents-department')
+  servePage("documents-department"),
 );
 router.get(
-  '/documents-team',
+  "/documents-team",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents-team')
+  servePage("documents-team"),
 );
 router.get(
-  '/documents-search',
+  "/documents-search",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('documents-search')
+  servePage("documents-search"),
 );
 
 // Employee pages
 router.get(
-  '/employee-dashboard',
+  "/employee-dashboard",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('employee-dashboard')
+  servePage("employee-dashboard"),
 );
 router.get(
-  '/employee-profile',
+  "/employee-profile",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('employee-profile')
+  servePage("employee-profile"),
 );
 router.get(
-  '/employee-documents',
+  "/employee-documents",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('employee-documents')
+  servePage("employee-documents"),
 );
 router.get(
-  '/salary-documents',
+  "/salary-documents",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('salary-documents')
+  servePage("salary-documents"),
 );
 router.get(
-  '/survey-employee',
+  "/survey-employee",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('survey-employee')
+  servePage("survey-employee"),
 );
 router.get(
-  '/shifts',
+  "/shifts",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('shifts')
+  servePage("shifts"),
 );
 
 // Admin pages
 router.get(
-  '/admin-dashboard',
+  "/admin-dashboard",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('admin-dashboard')
+  authorizeRole("admin"),
+  servePage("admin-dashboard"),
 );
 router.get(
-  '/admin-config',
+  "/admin-config",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('admin-config')
+  authorizeRole("admin"),
+  servePage("admin-config"),
 );
 router.get(
-  '/org-management',
+  "/org-management",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('org-management')
+  authorizeRole("admin"),
+  servePage("org-management"),
 );
 router.get(
-  '/document-upload',
+  "/document-upload",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('document-upload')
+  authorizeRole("admin"),
+  servePage("document-upload"),
 );
 router.get(
-  '/archived-employees',
+  "/archived-employees",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('archived-employees')
+  authorizeRole("admin"),
+  servePage("archived-employees"),
 );
 router.get(
-  '/departments',
+  "/departments",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('departments')
+  authorizeRole("admin"),
+  servePage("departments"),
 );
 router.get(
-  '/admin-profile',
+  "/admin-profile",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('admin-profile')
+  authorizeRole("admin"),
+  servePage("admin-profile"),
 );
 router.get(
-  '/manage-admins',
+  "/manage-admins",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('manage-admins')
+  authorizeRole("admin"),
+  servePage("manage-admins"),
 );
 router.get(
-  '/manage-department-groups',
+  "/manage-department-groups",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('manage-department-groups')
+  authorizeRole("admin"),
+  servePage("manage-department-groups"),
 );
 router.get(
-  '/storage-upgrade',
+  "/storage-upgrade",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('storage-upgrade')
+  authorizeRole("admin"),
+  servePage("storage-upgrade"),
 );
 router.get(
-  '/feature-management',
+  "/feature-management",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('feature-management')
+  authorizeRole("admin"),
+  servePage("feature-management"),
 );
 router.get(
-  '/survey-admin',
+  "/survey-admin",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('survey-admin')
+  authorizeRole("admin"),
+  servePage("survey-admin"),
 );
 router.get(
-  '/survey-results',
+  "/survey-results",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('admin'),
-  servePage('survey-results')
+  authorizeRole("admin"),
+  servePage("survey-results"),
 );
 router.get(
-  '/survey-details',
+  "/survey-details",
   rateLimiter.authenticated,
   authenticateToken,
-  servePage('survey-details')
+  servePage("survey-details"),
 );
 
 // Root pages
 router.get(
-  '/root-dashboard',
+  "/root-dashboard",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('root-dashboard')
+  authorizeRole("root"),
+  servePage("root-dashboard"),
 );
 router.get(
-  '/root-features',
+  "/root-features",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('root-features')
+  authorizeRole("root"),
+  servePage("root-features"),
 );
 router.get(
-  '/root-profile',
+  "/root-profile",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('root-profile')
+  authorizeRole("root"),
+  servePage("root-profile"),
 );
 router.get(
-  '/manage-root-users',
+  "/manage-root-users",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('manage-root-users')
+  authorizeRole("root"),
+  servePage("manage-root-users"),
 );
 router.get(
-  '/account-settings',
+  "/account-settings",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('account-settings')
+  authorizeRole("root"),
+  servePage("account-settings"),
 );
 router.get(
-  '/tenant-deletion-status',
+  "/tenant-deletion-status",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('tenant-deletion-status')
+  authorizeRole("root"),
+  servePage("tenant-deletion-status"),
 );
 router.get(
-  '/logs',
+  "/logs",
   rateLimiter.admin,
   authenticateToken,
-  authorizeRole('root'),
-  servePage('logs')
+  authorizeRole("root"),
+  servePage("logs"),
 );
 
 // Development only pages
-if (process.env.NODE_ENV !== 'production') {
-  router.get('/api-test', rateLimiter.public, servePage('api-test'));
-  router.get('/test-db', rateLimiter.public, servePage('test-db'));
+if (process.env.NODE_ENV !== "production") {
+  router.get("/api-test", rateLimiter.public, servePage("api-test"));
+  router.get("/test-db", rateLimiter.public, servePage("test-db"));
   router.get(
-    '/debug-dashboard',
+    "/debug-dashboard",
     rateLimiter.public,
-    servePage('debug-dashboard')
+    servePage("debug-dashboard"),
   );
-  router.get('/token-debug', rateLimiter.public, servePage('token-debug'));
+  router.get("/token-debug", rateLimiter.public, servePage("token-debug"));
 }
 
 export default router;

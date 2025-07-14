@@ -9,7 +9,7 @@ import {
   RowDataPacket,
   ResultSetHeader,
   PoolConnection,
-} from '../utils/db';
+} from "../utils/db";
 
 // Database interfaces
 interface DbSurvey extends RowDataPacket {
@@ -18,7 +18,7 @@ interface DbSurvey extends RowDataPacket {
   title: string;
   description?: string | null;
   created_by: number;
-  status: 'draft' | 'active' | 'closed';
+  status: "draft" | "active" | "closed";
   is_anonymous: boolean | number;
   start_date?: Date | null;
   end_date?: Date | null;
@@ -38,11 +38,11 @@ interface DbSurveyQuestion extends RowDataPacket {
   survey_id: number;
   question_text: string;
   question_type:
-    | 'text'
-    | 'single_choice'
-    | 'multiple_choice'
-    | 'rating'
-    | 'number';
+    | "text"
+    | "single_choice"
+    | "multiple_choice"
+    | "rating"
+    | "number";
   is_required: boolean | number;
   order_position: number;
   created_at: Date;
@@ -59,7 +59,7 @@ interface DbSurveyQuestionOption extends RowDataPacket {
 interface DbSurveyAssignment extends RowDataPacket {
   id: number;
   survey_id: number;
-  assignment_type: 'company' | 'department' | 'team' | 'individual';
+  assignment_type: "company" | "department" | "team" | "individual";
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -78,7 +78,7 @@ interface DbSurveyTemplate extends RowDataPacket {
 interface SurveyCreateData {
   title: string;
   description?: string;
-  status?: 'draft' | 'active' | 'closed';
+  status?: "draft" | "active" | "closed";
   is_anonymous?: boolean;
   is_mandatory?: boolean;
   start_date?: Date | string | null;
@@ -86,17 +86,17 @@ interface SurveyCreateData {
   questions?: Array<{
     question_text: string;
     question_type:
-      | 'text'
-      | 'single_choice'
-      | 'multiple_choice'
-      | 'rating'
-      | 'number';
+      | "text"
+      | "single_choice"
+      | "multiple_choice"
+      | "rating"
+      | "number";
     is_required?: boolean;
     order_position?: number;
     options?: string[];
   }>;
   assignments?: Array<{
-    type: 'company' | 'department' | 'team' | 'individual';
+    type: "company" | "department" | "team" | "individual";
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;
@@ -106,7 +106,7 @@ interface SurveyCreateData {
 interface SurveyUpdateData {
   title?: string;
   description?: string;
-  status?: 'draft' | 'active' | 'closed';
+  status?: "draft" | "active" | "closed";
   is_anonymous?: boolean;
   is_mandatory?: boolean;
   start_date?: Date | string | null;
@@ -114,11 +114,11 @@ interface SurveyUpdateData {
   questions?: Array<{
     question_text: string;
     question_type:
-      | 'text'
-      | 'single_choice'
-      | 'multiple_choice'
-      | 'rating'
-      | 'number';
+      | "text"
+      | "single_choice"
+      | "multiple_choice"
+      | "rating"
+      | "number";
     is_required?: boolean;
     order_position?: number;
     options?: string[];
@@ -126,7 +126,7 @@ interface SurveyUpdateData {
 }
 
 interface SurveyFilters {
-  status?: 'draft' | 'active' | 'closed';
+  status?: "draft" | "active" | "closed";
   page?: number;
   limit?: number;
 }
@@ -168,7 +168,7 @@ export class Survey {
   static async create(
     surveyData: SurveyCreateData,
     tenantId: number,
-    createdBy: number
+    createdBy: number,
   ): Promise<number> {
     // Check if we're using mock database
     let connection: PoolConnection;
@@ -194,12 +194,12 @@ export class Survey {
           surveyData.title,
           surveyData.description || null,
           createdBy,
-          surveyData.status || 'draft',
+          surveyData.status || "draft",
           surveyData.is_anonymous || false,
           surveyData.is_mandatory || false,
           surveyData.start_date || null,
           surveyData.end_date || null,
-        ]
+        ],
       );
 
       const surveyId = surveyResult.insertId;
@@ -223,7 +223,7 @@ export class Survey {
               question.options && question.options.length > 0
                 ? JSON.stringify(question.options)
                 : null,
-            ]
+            ],
           );
 
           // No need to insert options separately - they're stored as JSON in the questions table
@@ -246,7 +246,7 @@ export class Survey {
               assignment.department_id || null,
               assignment.team_id || null,
               assignment.user_id || null,
-            ]
+            ],
           );
         }
       }
@@ -266,7 +266,7 @@ export class Survey {
    */
   static async getAllByTenant(
     tenantId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<DbSurvey[]> {
     const { status, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
@@ -287,11 +287,11 @@ export class Survey {
     const params: unknown[] = [tenantId];
 
     if (status) {
-      query += ' AND s.status = ?';
+      query += " AND s.status = ?";
       params.push(status);
     }
 
-    query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+    query += " GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
     params.push(limit, offset);
 
     const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -309,7 +309,7 @@ export class Survey {
   static async getAllByTenantForEmployee(
     tenantId: number,
     employeeUserId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<DbSurvey[]> {
     const { status, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
@@ -317,7 +317,7 @@ export class Survey {
     // First get employee's department info
     const [userInfo] = await typedQuery<RowDataPacket[]>(
       `SELECT department_id FROM users WHERE id = ? AND tenant_id = ?`,
-      [employeeUserId, tenantId]
+      [employeeUserId, tenantId],
     );
 
     if (userInfo.length === 0) {
@@ -362,11 +362,11 @@ export class Survey {
     ];
 
     if (status) {
-      query += ' AND s.status = ?';
+      query += " AND s.status = ?";
       params.push(status);
     }
 
-    query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+    query += " GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
     params.push(limit, offset);
 
     const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -382,7 +382,7 @@ export class Survey {
   static async getAllByTenantForAdmin(
     tenantId: number,
     adminUserId: number,
-    filters: SurveyFilters = {}
+    filters: SurveyFilters = {},
   ): Promise<DbSurvey[]> {
     const { status, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
@@ -415,11 +415,11 @@ export class Survey {
     const params: unknown[] = [adminUserId, tenantId, adminUserId];
 
     if (status) {
-      query += ' AND s.status = ?';
+      query += " AND s.status = ?";
       params.push(status);
     }
 
-    query += ' GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+    query += " GROUP BY s.id ORDER BY s.created_at DESC LIMIT ? OFFSET ?";
     params.push(limit, offset);
 
     const [surveys] = await typedQuery<DbSurvey[]>(query, params);
@@ -431,7 +431,7 @@ export class Survey {
    */
   static async getById(
     surveyId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<DbSurvey | null> {
     const [surveys] = await typedQuery<DbSurvey[]>(
       `
@@ -442,7 +442,7 @@ export class Survey {
       LEFT JOIN users u ON s.created_by = u.id
       WHERE s.id = ? AND s.tenant_id = ?
     `,
-      [surveyId, tenantId]
+      [surveyId, tenantId],
     );
 
     if (!surveys || !Array.isArray(surveys) || surveys.length === 0) {
@@ -463,7 +463,7 @@ export class Survey {
       WHERE survey_id = ?
       ORDER BY order_index
     `,
-      [surveyId]
+      [surveyId],
     );
 
     // Parse options from JSON and convert Buffer to string for each question
@@ -474,17 +474,17 @@ export class Survey {
       }
 
       if (
-        ['multiple_choice', 'single_choice'].includes(question.question_type) &&
+        ["multiple_choice", "single_choice"].includes(question.question_type) &&
         question.options
       ) {
         // Options are stored as JSON in the database
         try {
           question.options =
-            typeof question.options === 'string'
+            typeof question.options === "string"
               ? JSON.parse(question.options)
               : question.options;
         } catch (e) {
-          console.error('Error parsing options for question:', question.id, e);
+          console.error("Error parsing options for question:", question.id, e);
           question.options = [];
         }
       }
@@ -498,7 +498,7 @@ export class Survey {
       SELECT * FROM survey_assignments
       WHERE survey_id = ?
     `,
-      [surveyId]
+      [surveyId],
     );
 
     survey.assignments = assignments as DbSurveyAssignment[];
@@ -512,7 +512,7 @@ export class Survey {
   static async update(
     surveyId: number,
     surveyData: SurveyUpdateData,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     // Check if we're using mock database
     let connection: PoolConnection;
@@ -540,21 +540,21 @@ export class Survey {
         [
           surveyData.title,
           surveyData.description || null,
-          surveyData.status || 'draft',
+          surveyData.status || "draft",
           surveyData.is_anonymous || false,
           surveyData.start_date || null,
           surveyData.end_date || null,
           surveyId,
           tenantId,
-        ]
+        ],
       );
 
       // Update questions if provided
       if (surveyData.questions) {
         // Delete existing questions and options (cascade will handle options)
         await connection.query(
-          'DELETE FROM survey_questions WHERE survey_id = ?',
-          [surveyId]
+          "DELETE FROM survey_questions WHERE survey_id = ?",
+          [surveyId],
         );
 
         // Add new questions
@@ -575,7 +575,7 @@ export class Survey {
               question.options && question.options.length > 0
                 ? JSON.stringify(question.options)
                 : null,
-            ]
+            ],
           );
 
           // No need to insert options separately - they're stored as JSON in the questions table
@@ -597,8 +597,8 @@ export class Survey {
    */
   static async delete(surveyId: number, tenantId: number): Promise<boolean> {
     const [result] = await typedQuery<ResultSetHeader>(
-      'DELETE FROM surveys WHERE id = ? AND tenant_id = ?',
-      [surveyId, tenantId]
+      "DELETE FROM surveys WHERE id = ? AND tenant_id = ?",
+      [surveyId, tenantId],
     );
     return result.affectedRows > 0;
   }
@@ -613,7 +613,7 @@ export class Survey {
       WHERE tenant_id = ? OR is_public = 1
       ORDER BY name
     `,
-      [tenantId]
+      [tenantId],
     );
     return templates;
   }
@@ -624,18 +624,18 @@ export class Survey {
   static async createFromTemplate(
     templateId: number,
     tenantId: number,
-    createdBy: number
+    createdBy: number,
   ): Promise<number> {
     const [templates] = await typedQuery<DbSurveyTemplate[]>(
       `
       SELECT * FROM survey_templates
       WHERE id = ? AND (tenant_id = ? OR is_public = 1)
     `,
-      [templateId, tenantId]
+      [templateId, tenantId],
     );
 
     if (templates.length === 0) {
-      throw new Error('Template not found');
+      throw new Error("Template not found");
     }
 
     const template = templates[0];
@@ -645,7 +645,7 @@ export class Survey {
       title: templateData.title,
       description: templateData.description,
       questions: templateData.questions,
-      status: 'draft',
+      status: "draft",
     };
 
     return this.create(surveyData, tenantId, createdBy);
@@ -656,7 +656,7 @@ export class Survey {
    */
   static async getStatistics(
     surveyId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<SurveyStatistics> {
     try {
       // Get basic statistics
@@ -671,13 +671,13 @@ export class Survey {
         LEFT JOIN survey_responses sr ON s.id = sr.survey_id
         WHERE s.id = ? AND s.tenant_id = ?
       `,
-        [surveyId, tenantId]
+        [surveyId, tenantId],
       );
 
       // Get survey details with questions
       const survey = await this.getById(surveyId, tenantId);
       if (!survey) {
-        throw new Error('Survey not found');
+        throw new Error("Survey not found");
       }
 
       // Get question statistics
@@ -714,12 +714,12 @@ export class Survey {
         };
 
         if (
-          question.question_type === 'single_choice' ||
-          question.question_type === 'multiple_choice'
+          question.question_type === "single_choice" ||
+          question.question_type === "multiple_choice"
         ) {
           // Get option statistics from JSON stored options
           const options = question.options
-            ? typeof question.options === 'string'
+            ? typeof question.options === "string"
               ? JSON.parse(question.options)
               : question.options
             : [];
@@ -732,14 +732,14 @@ export class Survey {
             WHERE sa.question_id = ?
             AND sa.answer_options IS NOT NULL
           `,
-            [question.id]
+            [question.id],
           );
 
           // Count responses per option
           const optionCounts: { [key: number]: number } = {};
           (answers as RowDataPacket[]).forEach((answer) => {
             const selectedOptions =
-              typeof answer.answer_options === 'string'
+              typeof answer.answer_options === "string"
                 ? JSON.parse(answer.answer_options)
                 : answer.answer_options;
 
@@ -757,9 +757,9 @@ export class Survey {
               option_id: index,
               option_text: optionText,
               count: optionCounts[index] || 0,
-            })
+            }),
           );
-        } else if (question.question_type === 'text') {
+        } else if (question.question_type === "text") {
           // Get text responses
           const [textResponses] = await typedQuery<RowDataPacket[]>(
             `
@@ -773,14 +773,14 @@ export class Survey {
             LEFT JOIN users u ON sr.user_id = u.id
             WHERE sa.question_id = ? AND sa.answer_text IS NOT NULL
           `,
-            [question.id]
+            [question.id],
           );
           questionStat.responses = textResponses.map((row) => ({
             answer_text: row.answer_text?.toString(),
           }));
         } else if (
-          question.question_type === 'rating' ||
-          question.question_type === 'number'
+          question.question_type === "rating" ||
+          question.question_type === "number"
         ) {
           // Get numeric statistics
           const [numericStats] = await typedQuery<RowDataPacket[]>(
@@ -793,7 +793,7 @@ export class Survey {
             FROM survey_answers sa
             WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
           `,
-            [question.id]
+            [question.id],
           );
           const stats = numericStats[0];
           questionStat.statistics = {
@@ -815,7 +815,7 @@ export class Survey {
         completion_rate:
           stats[0].total_responses > 0
             ? Math.round(
-                (stats[0].completed_responses / stats[0].total_responses) * 100
+                (stats[0].completed_responses / stats[0].total_responses) * 100,
               )
             : 0,
         first_response: stats[0].first_response,
@@ -823,7 +823,7 @@ export class Survey {
         questions: questionStats,
       };
     } catch (error) {
-      console.error('Error in getStatistics:', error);
+      console.error("Error in getStatistics:", error);
       throw error;
     }
   }

@@ -1628,7 +1628,7 @@ class ChatClient {
       // Create preview elements safely to prevent XSS
       const fileIconDiv = document.createElement('div');
       fileIconDiv.className = 'file-icon';
-      
+
       if (isImage) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
@@ -1639,34 +1639,34 @@ class ChatClient {
         icon.className = 'fas fa-file';
         fileIconDiv.appendChild(icon);
       }
-      
+
       const fileInfoDiv = document.createElement('div');
       fileInfoDiv.className = 'file-info';
-      
+
       const fileName = document.createElement('div');
       fileName.className = 'file-name';
       fileName.textContent = file.name;
-      
+
       const fileSize = document.createElement('div');
       fileSize.className = 'file-size';
       fileSize.textContent = this.formatFileSize(file.size);
-      
+
       fileInfoDiv.appendChild(fileName);
       fileInfoDiv.appendChild(fileSize);
-      
+
       const removeButton = document.createElement('button');
       removeButton.className = 'remove-file';
       removeButton.dataset.index = index.toString();
       const removeIcon = document.createElement('i');
       removeIcon.className = 'fas fa-times';
       removeButton.appendChild(removeIcon);
-      
+
       removeButton.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement | null;
         const fileIndex = parseInt(target?.dataset.index || '0');
         this.removeFile(fileIndex);
       });
-      
+
       preview.appendChild(fileIconDiv);
       preview.appendChild(fileInfoDiv);
       preview.appendChild(removeButton);

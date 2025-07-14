@@ -5,34 +5,34 @@
  * Sie ersetzt sowohl auth.js als auch middleware/auth.js, um Inkonsistenzen zu vermeiden.
  */
 
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import { Request, Response, NextFunction } from 'express';
-import UserModel from './models/user';
-import { DatabaseUser } from './types';
-import { TokenPayload, TokenValidationResult } from './types/auth.types';
-import { AuthUser } from './types/request.types';
-import { query as executeQuery, RowDataPacket } from './utils/db';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { Request, Response, NextFunction } from "express";
+import UserModel from "./models/user";
+import { DatabaseUser } from "./types";
+import { TokenPayload, TokenValidationResult } from "./types/auth.types";
+import { AuthUser } from "./types/request.types";
+import { query as executeQuery, RowDataPacket } from "./utils/db";
 
 // Konstante für das JWT-Secret aus der Umgebungsvariable
-const JWT_SECRET: string = process.env.JWT_SECRET || '';
+const JWT_SECRET: string = process.env.JWT_SECRET || "";
 
 // In Produktion MUSS ein JWT_SECRET gesetzt sein
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     throw new Error(
-      'JWT_SECRET must be set in production and be at least 32 characters long!'
+      "JWT_SECRET must be set in production and be at least 32 characters long!",
     );
   } else {
     console.warn(
-      '⚠️  WARNING: Using insecure default JWT_SECRET for development only!'
+      "⚠️  WARNING: Using insecure default JWT_SECRET for development only!",
     );
   }
 }
 
 // Import DbUser type from user model
-import type { DbUser } from './models/user';
+import type { DbUser } from "./models/user";
 
 // Helper function to convert DbUser to DatabaseUser
 function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
@@ -40,10 +40,10 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
     id: dbUser.id,
     username: dbUser.username,
     email: dbUser.email,
-    password_hash: dbUser.password || '',
+    password_hash: dbUser.password || "",
     first_name: dbUser.first_name,
     last_name: dbUser.last_name,
-    role: dbUser.role as 'admin' | 'employee' | 'root',
+    role: dbUser.role as "admin" | "employee" | "root",
     tenant_id: dbUser.tenant_id ?? null,
     department_id: dbUser.department_id ?? null,
     is_active: dbUser.is_active === true || dbUser.is_active === undefined,
@@ -51,7 +51,7 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
     profile_picture: dbUser.profile_picture ?? null,
     phone_number: dbUser.phone || null,
     landline: dbUser.landline || null,
-    employee_number: dbUser.employee_number || '',
+    employee_number: dbUser.employee_number || "",
     position: dbUser.position ?? null,
     hire_date: dbUser.hire_date ?? null,
     birth_date: dbUser.birthday || null,
@@ -65,54 +65,54 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
  */
 export interface AuthUserResult {
   user: DatabaseUser | null;
-  error?: 'USER_NOT_FOUND' | 'INVALID_PASSWORD' | 'USER_INACTIVE';
+  error?: "USER_NOT_FOUND" | "INVALID_PASSWORD" | "USER_INACTIVE";
 }
 
 export async function authenticateUser(
   usernameOrEmail: string,
-  password: string
+  password: string,
 ): Promise<AuthUserResult> {
-  console.log('[DEBUG] authenticateUser called with:', usernameOrEmail);
+  console.log("[DEBUG] authenticateUser called with:", usernameOrEmail);
   try {
     // Try to find user by username first
-    console.log('[DEBUG] Looking up user by username...');
+    console.log("[DEBUG] Looking up user by username...");
     let user = await UserModel.findByUsername(usernameOrEmail);
 
     // If not found by username, try by email
     if (!user) {
-      console.log('[DEBUG] Not found by username, trying email...');
+      console.log("[DEBUG] Not found by username, trying email...");
       user = await UserModel.findByEmail(usernameOrEmail);
     }
 
     if (!user) {
-      console.log('[DEBUG] User not found');
-      return { user: null, error: 'USER_NOT_FOUND' };
+      console.log("[DEBUG] User not found");
+      return { user: null, error: "USER_NOT_FOUND" };
     }
 
     console.log(
-      '[DEBUG] User found:',
+      "[DEBUG] User found:",
       user.username,
-      'tenant_id:',
+      "tenant_id:",
       user.tenant_id,
-      'is_active:',
-      user.is_active
+      "is_active:",
+      user.is_active,
     );
     const isValid = await bcrypt.compare(password, user.password);
-    console.log('[DEBUG] Password comparison result:', isValid);
+    console.log("[DEBUG] Password comparison result:", isValid);
     if (isValid) {
       // Check if user is active
       if (user.is_active === false) {
-        console.log('[DEBUG] User is inactive, denying access');
-        return { user: null, error: 'USER_INACTIVE' };
+        console.log("[DEBUG] User is inactive, denying access");
+        return { user: null, error: "USER_INACTIVE" };
       }
       return { user: dbUserToDatabaseUser(user) };
     } else {
-      return { user: null, error: 'INVALID_PASSWORD' };
+      return { user: null, error: "INVALID_PASSWORD" };
     }
   } catch (error) {
     console.error(
       `Error during authentication for user ${usernameOrEmail}:`,
-      error
+      error,
     );
     throw error;
   }
@@ -124,23 +124,23 @@ export async function authenticateUser(
 export function generateToken(
   user: DatabaseUser,
   fingerprint?: string,
-  sessionId?: string
+  sessionId?: string,
 ): string {
   try {
     const payload: TokenPayload = {
       id: parseInt(user.id.toString(), 10), // Ensure ID is a number
       username: user.username,
-      role: user.role as TokenPayload['role'],
+      role: user.role as TokenPayload["role"],
       tenant_id: user.tenant_id
         ? parseInt(user.tenant_id.toString(), 10)
         : null,
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
         sessionId ||
-        `sess_${Date.now()}_${crypto.randomBytes(16).toString('hex')}`, // Cryptographically secure session ID
+        `sess_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`, // Cryptographically secure session ID
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' }); // 8 Stunden wie bei den meisten SaaS
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "8h" }); // 8 Stunden wie bei den meisten SaaS
 
     return token;
   } catch (error) {
@@ -155,12 +155,12 @@ export function generateToken(
 export function authenticateToken(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
-  const authHeader = req.headers['authorization'];
+  const authHeader = req.headers["authorization"];
 
   // Try to get token from Authorization header first
-  let token = authHeader && authHeader.split(' ')[1];
+  let token = authHeader && authHeader.split(" ")[1];
 
   // If no token in header, try cookie (for HTML pages)
   if (!token && req.cookies && req.cookies.token) {
@@ -168,20 +168,20 @@ export function authenticateToken(
   }
 
   // Debug logging
-  console.log('Auth check - Path:', req.path);
-  console.log('Auth check - Headers:', req.headers);
-  console.log('Auth check - Cookies:', req.cookies);
-  console.log('Auth check - Token found:', !!token);
+  console.log("Auth check - Path:", req.path);
+  console.log("Auth check - Headers:", req.headers);
+  console.log("Auth check - Cookies:", req.cookies);
+  console.log("Auth check - Token found:", !!token);
 
   if (!token) {
-    res.status(401).json({ error: 'Authentication token required' });
+    res.status(401).json({ error: "Authentication token required" });
     return;
   }
 
   jwt.verify(token, JWT_SECRET, async (err, decoded) => {
-    if (err || !decoded || typeof decoded === 'string') {
+    if (err || !decoded || typeof decoded === "string") {
       res.status(403).json({
-        error: 'Invalid or expired token',
+        error: "Invalid or expired token",
         details: err?.message,
       });
       return;
@@ -197,7 +197,7 @@ export function authenticateToken(
       try {
         // Track wichtige Security-Events, aber blockiere nicht bei normalen Änderungen
         const requestFingerprint = req.headers[
-          'x-browser-fingerprint'
+          "x-browser-fingerprint"
         ] as string;
         // const requestIP = req.ip || req.connection.remoteAddress;
         // const userAgent = req.headers['user-agent'];
@@ -209,7 +209,7 @@ export function authenticateToken(
           requestFingerprint !== user.fingerprint
         ) {
           console.info(
-            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`
+            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
           );
 
           // Nur bei verdächtigen Mustern warnen/blockieren:
@@ -221,21 +221,21 @@ export function authenticateToken(
         }
 
         // Optionally validate session in database
-        if (process.env.VALIDATE_SESSIONS === 'true') {
+        if (process.env.VALIDATE_SESSIONS === "true") {
           const [sessions] = await executeQuery<RowDataPacket[]>(
-            'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
-            [user.id, user.sessionId]
+            "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
+            [user.id, user.sessionId],
           );
 
           if (sessions.length === 0) {
             res.status(403).json({
-              error: 'Session expired or not found',
+              error: "Session expired or not found",
             });
             return;
           }
         }
       } catch (error) {
-        console.error('[AUTH] Session validation error:', error);
+        console.error("[AUTH] Session validation error:", error);
         // Continue anyway in case of database issues
       }
     }
@@ -248,9 +248,9 @@ export function authenticateToken(
       id: parseInt(user.id.toString(), 10),
       userId: parseInt(user.id.toString(), 10),
       username: user.username,
-      email: '', // Will be filled from database if needed
-      first_name: '',
-      last_name: '',
+      email: "", // Will be filled from database if needed
+      first_name: "",
+      last_name: "",
       role: user.role,
       activeRole: user.activeRole || user.role, // Support für Dual-Role
       isRoleSwitched: user.isRoleSwitched || false,
@@ -270,23 +270,23 @@ export function authenticateToken(
 /**
  * Middleware zur Rollenbasierte Autorisierung
  */
-export function authorizeRole(role: 'admin' | 'employee' | 'root') {
+export function authorizeRole(role: "admin" | "employee" | "root") {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: "Authentication required" });
       return;
     }
 
     // Root hat Zugriff auf alles
-    if (req.user.role === 'root') {
+    if (req.user.role === "root") {
       next();
       return;
     }
 
     // Admin hat Zugriff auf Admin- und Employee-Ressourcen
     if (
-      req.user.role === 'admin' &&
-      (role === 'admin' || role === 'employee')
+      req.user.role === "admin" &&
+      (role === "admin" || role === "employee")
     ) {
       next();
       return;
@@ -298,7 +298,7 @@ export function authorizeRole(role: 'admin' | 'employee' | 'root') {
       return;
     }
 
-    res.status(403).send('Unauthorized');
+    res.status(403).send("Unauthorized");
   };
 }
 
@@ -316,7 +316,7 @@ export function validateToken(token: string): TokenValidationResult {
   } catch (error) {
     return {
       valid: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }

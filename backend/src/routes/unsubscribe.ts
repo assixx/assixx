@@ -2,13 +2,14 @@
  * Routen für die Abmeldung von E-Mail-Benachrichtigungen
  */
 
-import express, { Router } from 'express';
-import jwt from 'jsonwebtoken';
-import { logger } from '../utils/logger';
-import { getErrorMessage } from '../utils/errorHandler';
+import express, { Router } from "express";
+import jwt from "jsonwebtoken";
+import { logger } from "../utils/logger";
+import { getErrorMessage } from "../utils/errorHandler";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 // Import models (keeping require pattern for compatibility)
-import User from '../models/user';
+import User from "../models/user";
 
 const router: Router = express.Router();
 
@@ -39,7 +40,7 @@ interface NotificationSettings {
  * GET /unsubscribe
  * Verarbeitet Abmeldungen von E-Mail-Benachrichtigungen
  */
-router.get('/', async (req, res): Promise<void> => {
+router.get("/", rateLimiter.public, async (req, res): Promise<void> => {
   try {
     const token = req.query.token as string;
 
@@ -69,26 +70,26 @@ router.get('/', async (req, res): Promise<void> => {
     // Token verifizieren
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'default-secret'
+      process.env.JWT_SECRET || "default-secret",
     ) as unknown as UnsubscribeToken;
 
     if (
       !decoded.email ||
       !decoded.purpose ||
-      decoded.purpose !== 'unsubscribe'
+      decoded.purpose !== "unsubscribe"
     ) {
-      throw new Error('Ungültiger Token');
+      throw new Error("Ungültiger Token");
     }
 
     // Benutzer finden
     const user = await User.findByEmail(decoded.email);
 
     if (!user) {
-      throw new Error('Benutzer nicht gefunden');
+      throw new Error("Benutzer nicht gefunden");
     }
 
     // Bestimmte oder alle Benachrichtigungen deaktivieren
-    const notificationType = decoded.type || 'all';
+    const notificationType = decoded.type || "all";
 
     // TODO: Implement notification settings when notification_settings column is added to users table
     /*
@@ -116,7 +117,7 @@ router.get('/', async (req, res): Promise<void> => {
     */
 
     logger.info(
-      `Benutzer ${user.email} hat sich von ${notificationType === 'all' ? 'allen Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet`
+      `Benutzer ${user.email} hat sich von ${notificationType === "all" ? "allen Benachrichtigungen" : `${notificationType}-Benachrichtigungen`} abgemeldet`,
     );
 
     // Erfolgsseite anzeigen
@@ -133,7 +134,7 @@ router.get('/', async (req, res): Promise<void> => {
         <body>
           <div class="container">
             <h1 class="success">Erfolgreich abgemeldet</h1>
-            <p>Sie haben sich erfolgreich von ${notificationType === 'all' ? 'allen E-Mail-Benachrichtigungen' : `${notificationType}-Benachrichtigungen`} abgemeldet.</p>
+            <p>Sie haben sich erfolgreich von ${notificationType === "all" ? "allen E-Mail-Benachrichtigungen" : `${notificationType}-Benachrichtigungen`} abgemeldet.</p>
             <p>Sie können Ihre Einstellungen jederzeit in Ihrem Profil ändern.</p>
             <p><a href="/login">Zum Login</a></p>
           </div>
@@ -142,7 +143,7 @@ router.get('/', async (req, res): Promise<void> => {
     `);
   } catch (error) {
     logger.error(
-      `Fehler bei der Abmeldung von Benachrichtigungen: ${getErrorMessage(error)}`
+      `Fehler bei der Abmeldung von Benachrichtigungen: ${getErrorMessage(error)}`,
     );
 
     res.status(400).send(`
