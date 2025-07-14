@@ -18,7 +18,7 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "mysql", "-h", "localhost", "-u", "assixx_user", "-pAssixxP@ss2025!", "-e", "SELECT 1"]
+      test: ["CMD", "mysql", "-h", "localhost", "-u", "root", "-pStrongP@ssw0rd!123", "-e", "SELECT 1"]
       interval: 10s
       timeout: 10s
       retries: 20
