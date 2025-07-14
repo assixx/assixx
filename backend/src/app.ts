@@ -280,14 +280,19 @@ app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
   next();
 });
 
-// Rate limiting with exemptions
+// Apply general rate limiting to all routes (HTML and API)
+// This provides a baseline protection against DoS attacks
+app.use(generalLimiter);
+
+// Additional rate limiting for API routes with exemptions
 app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
-  // Exempt /api/auth/user from general rate limiting
+  // Exempt /api/auth/user from additional API rate limiting
   if (req.path === '/auth/user' || req.path === '/auth/check') {
     next();
     return;
   }
-  generalLimiter(req, res, next);
+  // API routes already have generalLimiter applied above
+  next();
 });
 
 // Auth endpoints have stricter limits, but exempt /api/auth/user
