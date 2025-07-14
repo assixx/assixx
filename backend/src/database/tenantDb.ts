@@ -88,7 +88,12 @@ export async function initializeTenantDatabase(
   });
 
   try {
-    // Datenbank erstellen
+    // Validate tenantId to prevent SQL injection
+    if (!/^[a-zA-Z0-9_]+$/.test(tenantId)) {
+      throw new Error('Invalid tenant ID format');
+    }
+    
+    // Datenbank erstellen - tenantId is now validated
     await connection.query(`CREATE DATABASE IF NOT EXISTS assixx_${tenantId}`);
     await connection.query(`USE assixx_${tenantId}`);
 

@@ -51,8 +51,10 @@ class AuthService {
         };
       }
 
-      // Generate session ID
-      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Generate cryptographically secure session ID
+      const crypto = await import('crypto');
+      const randomBytes = crypto.randomBytes(16).toString('hex');
+      const sessionId = `sess_${Date.now()}_${randomBytes}`;
 
       // Generate JWT token with fingerprint and session ID
       const token = generateToken(result.user, fingerprint, sessionId);

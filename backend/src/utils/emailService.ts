@@ -138,10 +138,24 @@ async function loadTemplate(
     );
     let templateContent = await fs.promises.readFile(templatePath, 'utf8');
 
+    // Helper function to escape HTML
+    const escapeHtml = (str: string): string => {
+      const htmlEscapes: { [key: string]: string } = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return String(str).replace(/[&<>"']/g, (match) => htmlEscapes[match]);
+    };
+    
     // Platzhalter ersetzen (Format: {{variable}})
     Object.keys(replacements).forEach((key: string): void => {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-      templateContent = templateContent.replace(regex, replacements[key]);
+      // Escape replacement values to prevent XSS
+      const safeValue = escapeHtml(String(replacements[key]));
+      templateContent = templateContent.replace(regex, safeValue);
     });
 
     return templateContent;
@@ -150,11 +164,24 @@ async function loadTemplate(
       `Fehler beim Laden des E-Mail-Templates '${templateName}': ${(error as Error).message}`
     );
     // Fallback-Template
+    // Escape HTML to prevent XSS
+    const escapeHtml = (str: string): string => {
+      const htmlEscapes: { [key: string]: string } = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return str.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
+    };
+    
+    const safeMessage = escapeHtml(replacements.message || 'Keine Nachricht verfügbar');
     return `
       <html>
         <body>
           <h1>Assixx Benachrichtigung</h1>
-          <p>${replacements.message || 'Keine Nachricht verfügbar'}</p>
+          <p>${safeMessage}</p>
         </body>
       </html>
     `;

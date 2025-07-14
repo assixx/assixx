@@ -462,8 +462,21 @@ router.put(
 
       // Validate email if provided
       if (updateData.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(updateData.email)) {
+        // Use a simpler, non-backtracking regex to prevent ReDoS
+        // First check length to prevent processing extremely long inputs
+        if (updateData.email.length > 254) {
+          res.status(400).json(errorResponse('E-Mail-Adresse zu lang', 400));
+          return;
+        }
+        
+        // Simple email validation without nested quantifiers
+        const emailParts = updateData.email.split('@');
+        if (emailParts.length !== 2 || 
+            emailParts[0].length === 0 || 
+            emailParts[1].length === 0 ||
+            !emailParts[1].includes('.') ||
+            emailParts[0].includes(' ') ||
+            emailParts[1].includes(' ')) {
           res.status(400).json(errorResponse('Ungültige E-Mail-Adresse', 400));
           return;
         }

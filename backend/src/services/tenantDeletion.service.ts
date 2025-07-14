@@ -2532,7 +2532,13 @@ export class TenantDeletionService {
     ];
 
     for (const table of tables) {
-      const data = await query(`SELECT * FROM ${table} WHERE tenant_id = ?`, [
+      // Validate table name against whitelist to prevent SQL injection
+      if (!tables.includes(table)) {
+        throw new Error(`Invalid table name: ${table}`);
+      }
+      
+      // Use backticks for table name (MySQL identifier quote)
+      const data = await query(`SELECT * FROM \`${table}\` WHERE tenant_id = ?`, [
         tenantId,
       ]);
       if (data.length > 0) {

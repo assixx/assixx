@@ -136,7 +136,7 @@ export function generateToken(
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
         sessionId ||
-        `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique session ID
+        `sess_${Date.now()}_${require('crypto').randomBytes(16).toString('hex')}`, // Cryptographically secure session ID
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' }); // 8 Stunden wie bei den meisten SaaS

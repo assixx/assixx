@@ -158,10 +158,12 @@ app.use('/js', (req: Request, res: Response): void => {
   }
 
   // Fallback - return empty module
+  // Escape filename to prevent XSS
+  const escapedFileName = jsFileName.replace(/['"\\]/g, '\\$&').replace(/[<>]/g, '');
   res
     .type('application/javascript')
     .send(
-      `// Module ${jsFileName} not found\nconsole.warn('Module ${jsFileName} not found');`
+      `// Module ${escapedFileName} not found\nconsole.warn('Module ${escapedFileName} not found');`
     );
 });
 
