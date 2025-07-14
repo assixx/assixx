@@ -118,6 +118,8 @@ body {
   margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
+  backdrop-filter: blur(20px) saturate(180%);
+  background: hsla(0,0%,100%,.02);
 }
 
 .card-header {
@@ -141,7 +143,7 @@ body {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -184,7 +186,7 @@ body {
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 152, 0, 0.3);
   color: #ff9800;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   position: relative;
   overflow: hidden;
 }
@@ -230,7 +232,7 @@ body {
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 14px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .form-control:hover {
@@ -347,7 +349,7 @@ body {
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
 }
 
 .stat-card:hover {
@@ -392,7 +394,7 @@ body {
 }
 
 /* Animations */
-@keyframes fadeIn {
+/* @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -401,10 +403,10 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
+} */
 
 .fade-in {
-  animation: fadeIn 0.3s ease;
+  /* animation: fadeIn 0.3s ease; */
 }
 
 /* Utility Classes */
@@ -492,7 +494,7 @@ body {
   padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
 }
@@ -687,7 +689,7 @@ body {
   padding: var(--spacing-lg);
   /* Use CSS custom properties for dynamic layout */
   margin-left: var(--content-margin, 250px);
-  transition: margin-left 0.3s ease;
+  /* transition: margin-left 0.3s ease; */
 }
 
 /* REDUNDANT - content-section not actively used
@@ -744,7 +746,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   position: relative;
   overflow: hidden;
 }
@@ -758,7 +760,7 @@ body {
 
 .btn-role-switch i {
   font-size: 1rem;
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
 }
 
 .btn-role-switch:hover i {
@@ -790,7 +792,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .role-switch-dropdown .dropdown-display:hover {
@@ -805,7 +807,7 @@ body {
 }
 
 .role-switch-dropdown .dropdown-display svg {
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
   width: 12px;
   height: 8px;
 }
@@ -828,7 +830,7 @@ body {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   z-index: 1001;
   margin-right: -14px;
 }
@@ -845,7 +847,7 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* transition: all 0.2s ease; */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 

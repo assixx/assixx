@@ -150,7 +150,7 @@ export class NotificationService {
       margin-bottom: 12px;
       padding: 16px;
       position: relative;
-      animation: slideInRight 0.3s ease-out;
+      /* animation: slideInRight 0.3s ease-out; */
       border-left: 4px solid ${this.getTypeColor(notification.type)};
     `;
 
@@ -295,7 +295,7 @@ style.textContent = `
   }
   
   .notification-fade-out {
-    animation: fadeOut 0.3s ease-out forwards;
+    /* animation: fadeOut 0.3s ease-out forwards; */
   }
   
   @keyframes fadeOut {

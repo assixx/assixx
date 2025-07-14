@@ -1899,7 +1899,7 @@ const unifiedNavigationCSS = `
         position: fixed;
         left: 0;
         top: 60px;
-        transition: width 0.3s ease !important;
+        /* transition: width 0.3s ease !important; */
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -1942,7 +1942,7 @@ const unifiedNavigationCSS = `
         background:rgba(234, 187, 0, 0);
         border-radius: 5px;
         border: 1.3px solid rgb(255, 203, 0);
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         cursor: pointer;
         width: 98%;
         margin-left: 1%;
@@ -2021,7 +2021,7 @@ const unifiedNavigationCSS = `
             0 3px 6px rgba(0, 0, 0, 0.4),
             inset -2px -2px 3px rgba(0, 0, 0, 0.3),
             inset 2px 2px 3px rgba(255, 255, 255, 0.4);
-        transition: all 0.2s ease;
+        /* transition: all 0.2s ease; */
     }
 
     .pin-head::after {
@@ -2041,7 +2041,7 @@ const unifiedNavigationCSS = `
         left: 50%;
         transform: translateX(-50%);
         opacity: 0;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         z-index: 2;
     }
 
@@ -2088,7 +2088,7 @@ const unifiedNavigationCSS = `
     }
 
     .title-text {
-        transition: opacity 0.3s ease, width 0.3s ease;
+        /* transition: opacity 0.3s ease, width 0.3s ease; */
         white-space: nowrap;
         overflow: hidden;
     }
@@ -2105,7 +2105,7 @@ const unifiedNavigationCSS = `
         border: 1px solid transparent;
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         color: white;
         margin-right: 15px;
         margin-left: -6px;
@@ -2121,7 +2121,7 @@ const unifiedNavigationCSS = `
     }
 
     .toggle-icon {
-        transition: transform 0.3s ease;
+        /* transition: transform 0.3s ease; */
     }
 
     /* Collapsed Sidebar Styles */
@@ -2182,7 +2182,8 @@ const unifiedNavigationCSS = `
         align-items: center;
         min-height: auto;
         margin-top: 28px;
-        margin-bottom: 83px;
+        margin-bottom: 85px;
+        margin-top: 93px;
     }
 
     .sidebar.collapsed .user-details {
@@ -2285,7 +2286,7 @@ const unifiedNavigationCSS = `
     .title-text,
     .user-details,
     .storage-widget {
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     /* Icon centering in collapsed state */
@@ -2320,12 +2321,12 @@ const unifiedNavigationCSS = `
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
-        animation: fadeInUp 0.6s ease-out;
+        /* animation: fadeInUp 0.6s ease-out; */
         margin-top: 39px;
     }
 
@@ -2382,7 +2383,7 @@ const unifiedNavigationCSS = `
         object-fit: cover !important;
         border: none !important;
         flex-shrink: 0 !important;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         margin-left: 0px;
     }
@@ -2458,7 +2459,7 @@ const unifiedNavigationCSS = `
         border-radius: 8px;
         font-size: 10px;
         font-weight: 500;
-        transition: all 0.2s ease;
+        /* transition: all 0.2s ease; */
         margin: 6px 0 0 0;
         width: fit-content;
         text-transform: uppercase;
@@ -2532,7 +2533,7 @@ const unifiedNavigationCSS = `
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         position: relative;
         overflow: hidden;
         border: 1px solid transparent;
@@ -2557,7 +2558,7 @@ const unifiedNavigationCSS = `
     .sidebar-link .icon {
         min-width: 20px;
         text-align: center;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     .sidebar-link .label {
@@ -2570,7 +2571,7 @@ const unifiedNavigationCSS = `
         height: 4px;
         border-radius: 50%;
         background: transparent;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     /*.sidebar-item.active .nav-indicator {
@@ -2587,7 +2588,7 @@ const unifiedNavigationCSS = `
         border-radius: 50%;
         background: rgba(33, 150, 243, 0.3);
         transform: translate(-50%, -50%);
-        animation: ripple 0.6s ease-out;
+        /* animation: ripple 0.6s ease-out; */
     }
 
     @keyframes ripple {
@@ -2605,7 +2606,7 @@ const unifiedNavigationCSS = `
 
     .submenu-arrow {
         margin-left: auto;
-        transition: transform 0.3s ease;
+        /* transition: transform 0.3s ease; */
         opacity: 0.6;
     }
 
@@ -2620,7 +2621,7 @@ const unifiedNavigationCSS = `
         list-style: none;
         padding: 0;
         overflow: hidden;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     .submenu-item {
@@ -2634,7 +2635,7 @@ const unifiedNavigationCSS = `
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
-        transition: all 0.2s ease;
+        /* transition: all 0.2s ease; */
         transform: translateX(6px);
         position: relative;
     }
@@ -2685,7 +2686,7 @@ const unifiedNavigationCSS = `
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
     }
 
     .storage-widget:hover {
@@ -2737,7 +2738,7 @@ const unifiedNavigationCSS = `
         height: 100%;
         background: var(--success-color);
         border-radius: 4px;
-        transition: width 0.5s ease, background-color 0.3s ease;
+        /* transition: width 0.5s ease, background-color 0.3s ease; */
         position: relative;
         overflow: hidden;
     }
@@ -2760,7 +2761,7 @@ const unifiedNavigationCSS = `
             rgba(255, 255, 255, 0.2)
         );
         background-size: 20px 20px;
-        animation: progress-stripes 1s linear infinite;
+        /* animation: progress-stripes 1s linear infinite; */
     }
 
     @keyframes progress-stripes {
@@ -2788,7 +2789,7 @@ const unifiedNavigationCSS = `
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         display: flex;
         align-items: center;
         justify-content: center;

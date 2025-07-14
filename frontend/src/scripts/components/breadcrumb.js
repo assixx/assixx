@@ -168,7 +168,7 @@ function injectStyles() {
       .breadcrumb-link {
         color: var(--text-secondary);
         text-decoration: none;
-        transition: all 0.3s ease;
+        /* transition: all 0.3s ease; */
         padding: 4px 8px;
         border-radius: 6px;
       }

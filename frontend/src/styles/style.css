@@ -89,7 +89,7 @@ header {
   font-size: 1rem;
   line-height: 1.5;
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease-in-out;
+  /* transition: all 0.15s ease-in-out; */
   cursor: pointer;
 }
 
@@ -344,23 +344,23 @@ header {
 
 /* Animation utilities */
 .fade-in {
-  animation: fadeIn 0.3s;
+  /* animation: fadeIn 0.3s; */
 }
 
-@keyframes fadeIn {
+/* @keyframes fadeIn {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
   }
-}
+} */
 
 .slide-in {
-  animation: slideIn 0.3s;
+  /* animation: slideIn 0.3s; */
 }
 
-@keyframes slideIn {
+/* @keyframes slideIn {
   from {
     transform: translateY(20px);
     opacity: 0;
@@ -369,4 +369,4 @@ header {
     transform: translateY(0);
     opacity: 1;
   }
-}
+} */

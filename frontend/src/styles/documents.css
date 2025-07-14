@@ -21,7 +21,7 @@
   font-size: 13px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -53,7 +53,7 @@
   border-radius: 12px;
   padding: 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   overflow: hidden;
 }
 
@@ -81,7 +81,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   z-index: 10;
 }
 
@@ -240,7 +240,7 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .stat-card:hover {
@@ -331,7 +331,7 @@
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 15px;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .search-input:focus {
@@ -404,7 +404,7 @@
   border-radius: 8px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   font-size: 14px;
 }
 
@@ -434,7 +434,7 @@
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   z-index: 1000;
 }
 
@@ -448,7 +448,7 @@
   padding: 10px 15px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* transition: all 0.2s ease; */
   display: flex;
   align-items: center;
   gap: 10px;
@@ -532,7 +532,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .close-button:hover {
@@ -656,7 +656,7 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   display: inline-flex;
   align-items: center;
   gap: 8px;

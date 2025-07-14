@@ -22,7 +22,7 @@
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .tab-btn:hover {
@@ -42,7 +42,7 @@
 
 .tab-pane {
   display: none;
-  animation: fadeIn 0.3s ease;
+  /* animation: fadeIn 0.3s ease; */
 }
 
 .tab-pane.active {
@@ -111,7 +111,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 2rem;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .overview-card:hover {
@@ -140,7 +140,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   cursor: pointer;
 }
 
@@ -208,7 +208,7 @@
   color: var(--primary-color);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .plan-card-actions button:hover {
@@ -229,7 +229,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   position: relative;
 }
 
@@ -283,7 +283,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .shift-item:hover {
@@ -354,7 +354,7 @@
   padding: 1rem;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .availability-day:hover {
@@ -395,7 +395,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .exchange-item:hover {
@@ -445,7 +445,7 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   border: none;
 }
 
@@ -481,7 +481,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 1rem;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .assignment-card:hover {
@@ -523,7 +523,7 @@
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .calendar-day:hover {
@@ -556,7 +556,7 @@
 }
 
 /* Animation */
-@keyframes fadeIn {
+/* @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -565,7 +565,7 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
+} */
 
 /* Form Enhancements for Shift Planning */
 .form-group {
@@ -645,7 +645,7 @@
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  animation: modalSlideIn 0.3s ease;
+  /* animation: modalSlideIn 0.3s ease; */
 }
 
 .modal-header {
@@ -676,7 +676,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .modal-close:hover {
@@ -700,7 +700,7 @@
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
   border: none;
 }
 
@@ -725,7 +725,7 @@
   color: white;
 }
 
-@keyframes modalSlideIn {
+/* @keyframes modalSlideIn {
   from {
     opacity: 0;
     transform: scale(0.9) translateY(-20px);
@@ -734,7 +734,7 @@
     opacity: 1;
     transform: scale(1) translateY(0);
   }
-}
+} */
 
 /* Employee Availability Status Styles */
 .employee-item.unavailable {
@@ -782,7 +782,7 @@
   letter-spacing: 0.5px;
   font-weight: 600;
   width: fit-content;
-  transition: all 0.2s ease;
+  /* transition: all 0.2s ease; */
   margin-top: 2px;
 }
 

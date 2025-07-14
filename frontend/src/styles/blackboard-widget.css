@@ -6,12 +6,12 @@
   border-radius: 15px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  transition: none; /* Prevent animation on initial load */
+  /* transition: none; */ /* Prevent animation on initial load */
 }
 
 /* After content loads, enable transitions */
 .blackboard-widget.loaded {
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .blackboard-widget-header {
@@ -38,7 +38,7 @@
   color: var(--text-muted);
   text-decoration: none;
   font-size: 0.875rem;
-  transition: color 0.3s ease;
+  /* transition: color 0.3s ease; */
 }
 
 .blackboard-widget-link:hover {
@@ -73,9 +73,9 @@
   border-radius: 8px;
   position: relative;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition:
+  /* transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease; */
   cursor: pointer;
 }
 
@@ -218,7 +218,7 @@
 }
 
 .blackboard-widget-loading i {
-  animation: spin 1s linear infinite;
+  /* animation: spin 1s linear infinite; */
 }
 
 /* Responsive */

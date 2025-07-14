@@ -64,8 +64,6 @@
 
       /* Plan Selection Header */
       .plan-header {
-        /*background: rgba(255, 255, 255, 0.04);*/
-        backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 32px;
@@ -74,6 +72,8 @@
         width: 100%;
         box-sizing: border-box;
         margin-top: -14px !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        background: hsla(0,0%,100%,.02);
       }
 
       .current-plan-info {

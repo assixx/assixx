@@ -797,7 +797,7 @@
           .map((dept) => {
             const hasPermission = currentPerms.departments.some((d) => d.id === dept.id);
             return `
-          <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" 
+          <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; /* transition: background 0.2s; */" 
                  onmouseover="this.style.background='rgba(255,255,255,0.02)'" 
                  onmouseout="this.style.background='transparent'">
             <input type="checkbox" name="deptPermission" value="${dept.id}" 

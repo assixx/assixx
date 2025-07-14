@@ -907,7 +907,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       ${
         canEdit
           ? `
-        <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; transition: opacity 0.2s;">
+        <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; /* transition: opacity 0.2s; */">
           <button class="btn btn-sm btn-link p-1" onclick="event.stopPropagation(); editEntry(${entry.id})" title="Bearbeiten">
             <i class="fas fa-edit"></i>
           </button>
@@ -1496,7 +1496,7 @@ async function viewEntry(entryId: number): Promise<void> {
 
             // Visual feedback
             htmlItem.style.cursor = 'pointer';
-            htmlItem.style.transition = 'all 0.2s ease';
+            /* htmlItem.style.transition = 'all 0.2s ease'; */
 
             htmlItem.addEventListener('mouseenter', () => {
               htmlItem.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
