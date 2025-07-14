@@ -11,7 +11,13 @@ WORKDIR /app
 # Package files kopieren
 COPY package.json ./
 COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig.json ./
+
+# Workspace package.json files kopieren (für pnpm workspace)
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+COPY scripts/package.json ./scripts/
 
 # Dependencies installieren
 RUN pnpm install --frozen-lockfile
@@ -19,13 +25,10 @@ RUN pnpm install --frozen-lockfile
 # Backend Source kopieren
 COPY backend/ ./backend/
 
-# Fix-Script kopieren (in scripts Ordner)
-RUN mkdir -p scripts
+# Fix-Script kopieren (scripts/package.json bereits kopiert)
 COPY scripts/fix-esm-imports.js ./scripts/
-COPY scripts/package.json ./scripts/
 
-# Backend Dependencies installieren
-RUN cd backend && pnpm install --frozen-lockfile
+# Backend Dependencies sind bereits durch Workspace installiert
 
 # TypeScript kompilieren
 RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
@@ -46,7 +49,14 @@ WORKDIR /app
 # Alle Dependencies (inkl. tsx für runtime)
 COPY package.json ./
 COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY tsconfig.json ./
+
+# Workspace package.json files kopieren
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+COPY scripts/package.json ./scripts/
+
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm store prune
 
