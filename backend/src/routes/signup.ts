@@ -10,6 +10,7 @@ import { createValidation } from '../middleware/validation';
 import { successResponse, errorResponse } from '../types/response.types';
 import { logger } from '../utils/logger';
 import { typed } from '../utils/routeHandlers';
+import { authLimiter, apiLimiter } from '../middleware/security-enhanced';
 
 // Import models (keeping require pattern for compatibility)
 import Tenant from '../models/tenant';
@@ -91,6 +92,7 @@ const checkSubdomainValidation = createValidation([
 // Öffentliche Signup-Route
 router.post(
   '/signup',
+  authLimiter,
   ...security.auth(signupValidation),
   typed.body<SignupBody>(async (req, res) => {
     console.log('[SIGNUP DEBUG] Request received!');
@@ -179,6 +181,7 @@ router.post(
 // Subdomain-Verfügbarkeit prüfen
 router.get(
   '/check-subdomain/:subdomain',
+  apiLimiter,
   ...security.public(checkSubdomainValidation),
   typed.params<{ subdomain: string }>(async (req, res) => {
     try {

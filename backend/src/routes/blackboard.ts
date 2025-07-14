@@ -18,6 +18,11 @@ import { typed } from '../utils/routeHandlers';
 import { AuthenticatedRequest } from '../types/request.types';
 import { security } from '../middleware/security';
 import { successResponse, errorResponse } from '../types/response.types';
+import {
+  validatePath,
+  sanitizeFilename,
+  getUploadDirectory,
+} from '../utils/pathSecurity';
 import { createValidation } from '../middleware/validation';
 import { param } from 'express-validator';
 
@@ -31,7 +36,8 @@ const storage = multer.diskStorage({
   destination: async (req, _file, cb) => {
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id || 1;
-    const uploadDir = `uploads/blackboard/${tenantId}`;
+    const baseUploadDir = getUploadDirectory('blackboard');
+    const uploadDir = path.join(baseUploadDir, tenantId.toString());
 
     // Ensure directory exists
     try {
@@ -42,8 +48,10 @@ const storage = multer.diskStorage({
     }
   },
   filename: (_req, file, cb) => {
+    const sanitized = sanitizeFilename(file.originalname);
+    const ext = path.extname(sanitized);
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    cb(null, uniqueSuffix + ext);
   },
 });
 
@@ -968,8 +976,16 @@ router.get(
       // Override X-Frame-Options to allow embedding
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
-      // Send file
-      res.sendFile(path.resolve(attachment.file_path));
+      // Validate and send file
+      const baseDir = path.resolve(process.cwd(), 'uploads');
+      const validatedPath = validatePath(attachment.file_path, baseDir);
+
+      if (!validatedPath) {
+        res.status(400).json(errorResponse('Ungültiger Dateipfad', 400));
+        return;
+      }
+
+      res.sendFile(validatedPath);
     } catch (error) {
       console.error('Error in GET /api/blackboard/attachments/:id:', error);
       res
@@ -1028,8 +1044,16 @@ router.get(
       // Override X-Frame-Options to allow embedding
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
-      // Send file
-      res.sendFile(path.resolve(attachment.file_path));
+      // Validate and send file
+      const baseDir = path.resolve(process.cwd(), 'uploads');
+      const validatedPath = validatePath(attachment.file_path, baseDir);
+
+      if (!validatedPath) {
+        res.status(400).json(errorResponse('Ungültiger Dateipfad', 400));
+        return;
+      }
+
+      res.sendFile(validatedPath);
     } catch (error) {
       console.error(
         'Error in GET /api/blackboard/attachments/:id/preview:',

@@ -223,43 +223,68 @@ function injectStyles() {
   document.head.insertAdjacentHTML('beforeend', styles);
 }
 
-// Breadcrumb HTML generieren
-function generateBreadcrumbHTML(items, config) {
-  let html = '<nav class="breadcrumb">';
+// HTML-Entities escapen
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Breadcrumb DOM sicher generieren
+function generateBreadcrumbDOM(items, config) {
+  const nav = document.createElement('nav');
+  nav.className = 'breadcrumb';
 
   items.forEach((item, index) => {
-    html += '<div class="breadcrumb-item">';
+    const breadcrumbItem = document.createElement('div');
+    breadcrumbItem.className = 'breadcrumb-item';
 
     if (item.current) {
       // Aktuelle Seite (nicht klickbar)
-      html += '<span class="breadcrumb-current">';
+      const span = document.createElement('span');
+      span.className = 'breadcrumb-current';
+
       if (config.showIcons && item.icon) {
-        html += `<i class="fas ${item.icon} breadcrumb-icon"></i> `;
+        const icon = document.createElement('i');
+        icon.className = `fas ${escapeHtml(item.icon)} breadcrumb-icon`;
+        span.appendChild(icon);
+        span.appendChild(document.createTextNode(' '));
       }
-      html += item.label;
-      html += '</span>';
+      span.appendChild(document.createTextNode(item.label));
+      breadcrumbItem.appendChild(span);
     } else {
       // Klickbarer Link
-      html += `<a href="${item.href || '#'}" class="breadcrumb-link">`;
+      const link = document.createElement('a');
+      link.href = item.href || '#';
+      link.className = 'breadcrumb-link';
+
       if (config.showIcons && item.icon) {
-        html += `<i class="fas ${item.icon} breadcrumb-icon"></i> `;
+        const icon = document.createElement('i');
+        icon.className = `fas ${escapeHtml(item.icon)} breadcrumb-icon`;
+        link.appendChild(icon);
+        link.appendChild(document.createTextNode(' '));
       }
-      html += item.label;
-      html += '</a>';
+      link.appendChild(document.createTextNode(item.label));
+      breadcrumbItem.appendChild(link);
     }
 
-    html += '</div>';
+    nav.appendChild(breadcrumbItem);
 
     // Separator (nicht nach dem letzten Item)
     if (index < items.length - 1) {
-      html += `<div class="breadcrumb-separator">
-        <i class="fas ${config.separator}"></i>
-      </div>`;
+      const separator = document.createElement('div');
+      separator.className = 'breadcrumb-separator';
+      const sepIcon = document.createElement('i');
+      sepIcon.className = `fas ${escapeHtml(config.separator)}`;
+      separator.appendChild(sepIcon);
+      nav.appendChild(separator);
     }
   });
 
-  html += '</nav>';
-  return html;
+  return nav;
 }
 
 // Breadcrumbs aus URL generieren
@@ -433,9 +458,9 @@ function generateBreadcrumbsFromURL() {
             current: true,
           });
         } else {
-          // Fallback für unbekannte Sections
+          // Fallback für unbekannte Sections - sicher escapen
           items.push({
-            label: section.charAt(0).toUpperCase() + section.slice(1),
+            label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^a-zA-Z0-9-_\s]/g, ''),
             current: true,
           });
         }
@@ -447,8 +472,12 @@ function generateBreadcrumbsFromURL() {
         });
       }
     } else {
-      // Fallback für nicht gemappte Seiten
-      const pageName = currentPage.split('/').pop().replace(/-/g, ' ');
+      // Fallback für nicht gemappte Seiten - sicher escapen
+      const pageName = currentPage
+        .split('/')
+        .pop()
+        .replace(/-/g, ' ')
+        .replace(/[^a-zA-Z0-9\s]/g, '');
       items.push({
         label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
         current: true,
@@ -477,9 +506,10 @@ export function initBreadcrumb(customItems = null, customConfig = {}) {
     return;
   }
 
-  // HTML generieren und einfügen
-  const html = generateBreadcrumbHTML(items, config);
-  container.innerHTML = html;
+  // DOM sicher generieren und einfügen
+  const breadcrumbElement = generateBreadcrumbDOM(items, config);
+  container.innerHTML = '';
+  container.appendChild(breadcrumbElement);
 
   // Event für debugging
   console.log('Breadcrumb initialisiert:', items);

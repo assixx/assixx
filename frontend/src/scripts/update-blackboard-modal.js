@@ -1,5 +1,18 @@
 // Update Script für Blackboard Modal Design Standards
 
+// HTML-Entities escapen
+function escapeHtml(unsafe) {
+  if (unsafe === null || unsafe === undefined) {
+    return '';
+  }
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Konvertiere native selects zu custom dropdowns
 function convertSelectsToDropdowns() {
   // Org Level Dropdown
@@ -148,7 +161,8 @@ async function loadOrgOptions(type) {
 
     dropdownOptions.innerHTML = items
       .map(
-        (item) => `<div class="dropdown-option" onclick="selectOrgId('${item.id}', '${item.name}')">${item.name}</div>`,
+        (item) =>
+          `<div class="dropdown-option" onclick="selectOrgId('${escapeHtml(String(item.id))}', '${escapeHtml(item.name)}')">${escapeHtml(item.name)}</div>`,
       )
       .join('');
   } catch (error) {

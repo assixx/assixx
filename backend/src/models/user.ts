@@ -366,27 +366,63 @@ export class User {
     tenantId: number // SECURITY FIX: Made tenantId mandatory to prevent cross-tenant updates
   ): Promise<boolean> {
     try {
+      // Define allowed fields for update to prevent SQL injection
+      const allowedFields: (keyof UserCreateData)[] = [
+        'username',
+        'email',
+        'password',
+        'role',
+        'company',
+        'notes',
+        'first_name',
+        'last_name',
+        'age',
+        'employee_id',
+        'iban',
+        'department_id',
+        'position',
+        'phone',
+        'landline',
+        'employee_number',
+        'address',
+        'birthday',
+        'hire_date',
+        'emergency_contact',
+        'profile_picture',
+        'status',
+        'is_archived',
+        'is_active',
+      ];
+
       // Dynamisch Query aufbauen basierend auf den zu aktualisierenden Feldern
       const fields: string[] = [];
       const values: unknown[] = [];
 
       // Für jedes übergebene Feld Query vorbereiten
       Object.entries(userData).forEach(([key, value]) => {
-        if (value !== undefined) {
+        // SECURITY FIX: Only allow whitelisted fields to prevent SQL injection
+        if (
+          value !== undefined &&
+          allowedFields.includes(key as keyof UserCreateData)
+        ) {
           // Special handling for boolean fields
-          if (key === 'is_active') {
+          if (key === 'is_active' || key === 'is_archived') {
             logger.info(
-              `Special handling for is_active field - received value: ${value}, type: ${typeof value}`
+              `Special handling for ${key} field - received value: ${value}, type: ${typeof value}`
             );
-            fields.push(`${key} = ?`);
+            // Use backticks to escape column names properly
+            fields.push(`\`${key}\` = ?`);
             // Ensure boolean is converted properly for MySQL
             values.push(value === true ? 1 : 0);
-            logger.info(`is_active will be set to: ${value === true ? 1 : 0}`);
+            logger.info(`${key} will be set to: ${value === true ? 1 : 0}`);
           } else {
-            fields.push(`${key} = ?`);
+            // Use backticks to escape column names properly
+            fields.push(`\`${key}\` = ?`);
             values.push(value);
             logger.info(`Updating field ${key} to value: ${value}`);
           }
+        } else if (value !== undefined) {
+          logger.warn(`Attempted to update non-allowed field: ${key}`);
         }
       });
 
@@ -838,7 +874,8 @@ export class User {
       // SQL-Query dynamisch erstellen
       const fields = Object.keys(updates);
       const values = Object.values(updates);
-      const setClause = fields.map((field) => `${field} = ?`).join(', ');
+      // SECURITY FIX: Escape column names with backticks to prevent SQL injection
+      const setClause = fields.map((field) => `\`${field}\` = ?`).join(', ');
 
       const query = `UPDATE users SET ${setClause} WHERE id = ?`;
       values.push(userId);

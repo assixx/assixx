@@ -12,6 +12,7 @@ import { security } from '../middleware/security';
 import { createValidation } from '../middleware/validation';
 import { param } from 'express-validator';
 import { logger } from '../utils/logger';
+import { apiLimiter, uploadLimiter } from '../middleware/security-enhanced';
 
 // Import User model (keeping require pattern for compatibility)
 import User, { DbUser } from '../models/user';
@@ -75,6 +76,7 @@ interface AvailabilityUpdateBody {
 // Get all users (admin only)
 router.get(
   '/',
+  apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
@@ -153,6 +155,7 @@ router.get(
 // IMPORTANT: This must come BEFORE the /:id route to avoid 'me' being treated as an ID
 router.get(
   '/me',
+  apiLimiter,
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -197,6 +200,7 @@ router.get(
 // Get specific user by ID (admin only)
 router.get(
   '/:id',
+  apiLimiter,
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -228,6 +232,7 @@ router.get(
 // Update user by ID (admin only)
 router.put(
   '/:id',
+  apiLimiter,
   ...security.admin(),
   typed.paramsBody<
     { id: string },
@@ -301,6 +306,7 @@ router.put(
 // Delete user by ID (admin only)
 router.delete(
   '/:id',
+  apiLimiter,
   ...security.admin(userIdValidation),
   typed.params<{ id: string }>(async (req, res) => {
     try {
@@ -373,6 +379,7 @@ router.delete(
 // Get logged-in user's profile data
 router.get(
   '/profile',
+  apiLimiter,
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -448,6 +455,7 @@ const upload = multer({
 // Update user profile
 router.put(
   '/profile',
+  apiLimiter,
   ...security.user(validationSchemas.profileUpdate),
   typed.body<ProfileUpdateBody>(async (req, res) => {
     try {
@@ -468,15 +476,17 @@ router.put(
           res.status(400).json(errorResponse('E-Mail-Adresse zu lang', 400));
           return;
         }
-        
+
         // Simple email validation without nested quantifiers
         const emailParts = updateData.email.split('@');
-        if (emailParts.length !== 2 || 
-            emailParts[0].length === 0 || 
-            emailParts[1].length === 0 ||
-            !emailParts[1].includes('.') ||
-            emailParts[0].includes(' ') ||
-            emailParts[1].includes(' ')) {
+        if (
+          emailParts.length !== 2 ||
+          emailParts[0].length === 0 ||
+          emailParts[1].length === 0 ||
+          !emailParts[1].includes('.') ||
+          emailParts[0].includes(' ') ||
+          emailParts[1].includes(' ')
+        ) {
           res.status(400).json(errorResponse('Ungültige E-Mail-Adresse', 400));
           return;
         }
@@ -506,6 +516,7 @@ router.put(
 // Upload profile picture
 router.post(
   '/profile/picture',
+  uploadLimiter,
   ...security.user(),
   upload.single('profilePicture'),
   typed.auth(async (req, res) => {
@@ -555,10 +566,12 @@ router.post(
           // Validate and normalize the file path to prevent path traversal
           const normalizedPath = path.resolve(req.file.path);
           const uploadsDir = path.resolve('uploads/profile_pictures/');
-          
+
           // Ensure the file is within the uploads directory
           if (!normalizedPath.startsWith(uploadsDir)) {
-            logger.error(`Attempted to delete file outside uploads directory: ${req.file.path}`);
+            logger.error(
+              `Attempted to delete file outside uploads directory: ${req.file.path}`
+            );
           } else {
             await fs.unlink(normalizedPath);
           }
@@ -580,6 +593,7 @@ router.post(
 // Delete profile picture
 router.delete(
   '/profile/picture',
+  apiLimiter,
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -600,14 +614,16 @@ router.delete(
           '..',
           user.profile_picture_url
         );
-        
+
         // Validate and normalize the file path to prevent path traversal
         const normalizedOldPath = path.resolve(oldFilePath);
         const baseDir = path.resolve(__dirname, '..', '..');
-        
+
         // Ensure the file is within the base directory
         if (!normalizedOldPath.startsWith(baseDir)) {
-          logger.error(`Attempted to delete file outside base directory: ${user.profile_picture_url}`);
+          logger.error(
+            `Attempted to delete file outside base directory: ${user.profile_picture_url}`
+          );
         } else {
           try {
             await fs.unlink(normalizedOldPath);
@@ -648,6 +664,7 @@ router.delete(
 // Change password
 router.put(
   '/profile/password',
+  apiLimiter,
   ...security.user(validationSchemas.passwordChange),
   typed.body<PasswordChangeBody>(async (req, res) => {
     try {
@@ -685,6 +702,7 @@ router.put(
 // Update employee availability
 router.put(
   '/:id/availability',
+  apiLimiter,
   ...security.admin(validationSchemas.availabilityUpdate),
   typed.paramsBody<{ id: string }, AvailabilityUpdateBody>(async (req, res) => {
     try {

@@ -92,7 +92,7 @@ export async function initializeTenantDatabase(
     if (!/^[a-zA-Z0-9_]+$/.test(tenantId)) {
       throw new Error('Invalid tenant ID format');
     }
-    
+
     // Datenbank erstellen - tenantId is now validated
     await connection.query(`CREATE DATABASE IF NOT EXISTS assixx_${tenantId}`);
     await connection.query(`USE assixx_${tenantId}`);

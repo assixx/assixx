@@ -201,7 +201,7 @@ class BlackboardWidget {
       if (isImage) {
         contentHtml = `
           <div class="mini-note-attachment">
-            <img data-src="/api/blackboard/attachments/${attachment.id}/preview" 
+            <img data-src="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview" 
                  alt="${this.escapeHtml(attachment.original_name)}" 
                  style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
                  loading="lazy"
@@ -215,7 +215,7 @@ class BlackboardWidget {
       } else if (isPDF) {
         contentHtml = `
           <div class="mini-note-attachment" style="position: relative; height: 120px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
-            <object data="/api/blackboard/attachments/${attachment.id}/preview" 
+            <object data="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview" 
                     type="application/pdf" 
                     style="width: 100%; height: 100%; pointer-events: none;">
               <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
@@ -246,7 +246,7 @@ class BlackboardWidget {
     }
 
     return `
-            <div class="mini-note ${color} ${isDirectAttachment ? 'has-attachment' : ''}" id="mini-note-${entry.id}">
+            <div class="mini-note ${color} ${isDirectAttachment ? 'has-attachment' : ''}" id="mini-note-${this.escapeHtml(String(entry.id))}">
                 <div class="mini-pushpin"></div>
                 <div class="mini-note-title">${this.escapeHtml(entry.title)}</div>
                 ${contentHtml}
@@ -274,7 +274,7 @@ class BlackboardWidget {
 
   openEntry(entryId) {
     // Navigate to blackboard page with entry ID
-    window.location.href = `/blackboard?entry=${entryId}`;
+    window.location.href = `/blackboard?entry=${encodeURIComponent(entryId)}`;
   }
 
   escapeHtml(text) {

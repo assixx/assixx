@@ -3,6 +3,19 @@
  * Displays recent blackboard entries on dashboards
  */
 
+// HTML-Entities escapen
+function escapeHtml(unsafe) {
+  if (unsafe === null || unsafe === undefined) {
+    return '';
+  }
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 class BlackboardWidget {
   constructor(containerId, limit = 3, isDashboard = true) {
     this.container = document.getElementById(containerId);
@@ -140,17 +153,17 @@ class BlackboardWidget {
       html += `
         <div class="blackboard-entry card mb-3 ${priorityClass}">
           <div class="card-body">
-            <h5 class="card-title">${entry.title} ${unreadBadge}</h5>
+            <h5 class="card-title">${escapeHtml(entry.title)} ${unreadBadge}</h5>
             <div class="entry-meta mb-2">
               ${levelBadge}
               <small class="text-muted ms-2">${formattedDate}</small>
             </div>
-            <p class="card-text">${this.truncateText(entry.content, 100)}</p>
+            <p class="card-text">${escapeHtml(this.truncateText(entry.content, 100))}</p>
             <div class="entry-actions">
-              <a href="/blackboard?id=${entry.id}" class="btn btn-sm btn-primary">Details</a>
+              <a href="/blackboard?id=${escapeHtml(String(entry.id))}" class="btn btn-sm btn-primary">Details</a>
               ${
                 entry.requires_confirmation && !entry.is_confirmed
-                  ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${entry.id}">
+                  ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${escapeHtml(String(entry.id))}">
                      Bestätigen
                    </button>`
                   : ''
@@ -199,14 +212,14 @@ class BlackboardWidget {
       html += `
         <li class="list-group-item d-flex justify-content-between align-items-center ${priorityClass} ${unreadIndicator}">
           <div>
-            <a href="/blackboard?id=${entry.id}" class="blackboard-entry-link">
-              ${entry.title}
+            <a href="/blackboard?id=${escapeHtml(String(entry.id))}" class="blackboard-entry-link">
+              ${escapeHtml(entry.title)}
             </a>
             <small class="d-block text-muted">${formattedDate}</small>
           </div>
           ${
             entry.requires_confirmation && !entry.is_confirmed
-              ? `<button class="btn btn-sm btn-outline-success confirm-entry-btn" data-id="${entry.id}">
+              ? `<button class="btn btn-sm btn-outline-success confirm-entry-btn" data-id="${escapeHtml(String(entry.id))}">
                  <i class="fas fa-check"></i>
                </button>`
               : ''

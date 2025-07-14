@@ -38,20 +38,79 @@ router.get('/pages/index', rateLimiter.public, (_req: Request, res: Response) =>
 ); // Redirect old URL
 router.get('/login', rateLimiter.auth, servePage('login'));
 router.get('/signup', rateLimiter.auth, servePage('signup'));
-router.get('/design-standards', rateLimiter.public, servePage('design-standards'));
+router.get(
+  '/design-standards',
+  rateLimiter.public,
+  servePage('design-standards')
+);
 
 // Authenticated pages - All users
-router.get('/dashboard', rateLimiter.authenticated, authenticateToken, servePage('dashboard'));
-router.get('/profile', rateLimiter.authenticated, authenticateToken, servePage('profile'));
-router.get('/profile-picture', rateLimiter.authenticated, authenticateToken, servePage('profile-picture'));
-router.get('/settings', rateLimiter.authenticated, authenticateToken, servePage('settings'));
-router.get('/hilfe', rateLimiter.authenticated, authenticateToken, servePage('hilfe'));
-router.get('/chat', rateLimiter.authenticated, authenticateToken, servePage('chat'));
-router.get('/blackboard', rateLimiter.authenticated, authenticateToken, servePage('blackboard'));
-router.get('/calendar', rateLimiter.authenticated, authenticateToken, servePage('calendar'));
-router.get('/kvp', rateLimiter.authenticated, authenticateToken, servePage('kvp'));
-router.get('/kvp-detail', rateLimiter.authenticated, authenticateToken, servePage('kvp-detail'));
-router.get('/documents', rateLimiter.authenticated, authenticateToken, servePage('documents'));
+router.get(
+  '/dashboard',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('dashboard')
+);
+router.get(
+  '/profile',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('profile')
+);
+router.get(
+  '/profile-picture',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('profile-picture')
+);
+router.get(
+  '/settings',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('settings')
+);
+router.get(
+  '/hilfe',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('hilfe')
+);
+router.get(
+  '/chat',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('chat')
+);
+router.get(
+  '/blackboard',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('blackboard')
+);
+router.get(
+  '/calendar',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('calendar')
+);
+router.get(
+  '/kvp',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('kvp')
+);
+router.get(
+  '/kvp-detail',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('kvp-detail')
+);
+router.get(
+  '/documents',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('documents')
+);
 router.get(
   '/documents-personal',
   rateLimiter.authenticated,
@@ -76,7 +135,12 @@ router.get(
   authenticateToken,
   servePage('documents-department')
 );
-router.get('/documents-team', rateLimiter.authenticated, authenticateToken, servePage('documents-team'));
+router.get(
+  '/documents-team',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('documents-team')
+);
 router.get(
   '/documents-search',
   rateLimiter.authenticated,
@@ -109,8 +173,18 @@ router.get(
   authenticateToken,
   servePage('salary-documents')
 );
-router.get('/survey-employee', rateLimiter.authenticated, authenticateToken, servePage('survey-employee'));
-router.get('/shifts', rateLimiter.authenticated, authenticateToken, servePage('shifts'));
+router.get(
+  '/survey-employee',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('survey-employee')
+);
+router.get(
+  '/shifts',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('shifts')
+);
 
 // Admin pages
 router.get(
@@ -204,7 +278,12 @@ router.get(
   authorizeRole('admin'),
   servePage('survey-results')
 );
-router.get('/survey-details', rateLimiter.authenticated, authenticateToken, servePage('survey-details'));
+router.get(
+  '/survey-details',
+  rateLimiter.authenticated,
+  authenticateToken,
+  servePage('survey-details')
+);
 
 // Root pages
 router.get(
@@ -261,7 +340,11 @@ router.get(
 if (process.env.NODE_ENV !== 'production') {
   router.get('/api-test', rateLimiter.public, servePage('api-test'));
   router.get('/test-db', rateLimiter.public, servePage('test-db'));
-  router.get('/debug-dashboard', rateLimiter.public, servePage('debug-dashboard'));
+  router.get(
+    '/debug-dashboard',
+    rateLimiter.public,
+    servePage('debug-dashboard')
+  );
   router.get('/token-debug', rateLimiter.public, servePage('token-debug'));
 }
 

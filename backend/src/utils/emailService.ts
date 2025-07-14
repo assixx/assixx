@@ -145,11 +145,11 @@ async function loadTemplate(
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#39;'
+        "'": '&#39;',
       };
       return String(str).replace(/[&<>"']/g, (match) => htmlEscapes[match]);
     };
-    
+
     // Platzhalter ersetzen (Format: {{variable}})
     Object.keys(replacements).forEach((key: string): void => {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
@@ -171,12 +171,14 @@ async function loadTemplate(
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#39;'
+        "'": '&#39;',
       };
       return str.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
     };
-    
-    const safeMessage = escapeHtml(replacements.message || 'Keine Nachricht verfügbar');
+
+    const safeMessage = escapeHtml(
+      replacements.message || 'Keine Nachricht verfügbar'
+    );
     return `
       <html>
         <body>

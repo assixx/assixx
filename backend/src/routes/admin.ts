@@ -19,6 +19,8 @@ import {
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/errorHandler';
 import { typed } from '../utils/routeHandlers';
+import { sanitizeFilename, getUploadDirectory } from '../utils/pathSecurity';
+import { apiLimiter } from '../middleware/security-enhanced';
 
 // Import models (now ES modules)
 import User from '../models/user';
@@ -84,11 +86,13 @@ interface DocumentUploadRequest extends AuthenticatedAdminRequest {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    cb(null, 'uploads/documents/');
+    const uploadDir = getUploadDirectory('documents');
+    cb(null, uploadDir);
   },
   filename(_req, file, cb) {
+    const sanitized = sanitizeFilename(file.originalname);
+    const extension = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = path.extname(file.originalname);
     cb(null, `doc-${uniqueSuffix}${extension}`);
   },
 });
@@ -212,6 +216,7 @@ const upload = multer({
 // Create employee
 router.post(
   '/employees',
+  apiLimiter,
   ...security.admin(validateCreateEmployee),
   typed.body<EmployeeCreateRequest['body']>(async (req, res) => {
     const adminId = req.user.id;
@@ -315,6 +320,7 @@ router.post(
 // Get all employees
 router.get(
   '/employees',
+  apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
@@ -394,6 +400,7 @@ router.get(
 // Get single employee
 router.get(
   '/employees/:id',
+  apiLimiter,
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
     const adminId = req.user.id;
@@ -523,6 +530,7 @@ router.get(
 // Update employee
 router.put(
   '/employees/:id',
+  apiLimiter,
   ...security.admin(),
   ...validateUpdateEmployee,
   typed.paramsBody<
@@ -690,6 +698,7 @@ router.put(
 // Upload document for employee
 router.post(
   '/upload-document/:employeeId',
+  apiLimiter,
   ...security.admin(),
   upload.single('document'),
   typed.paramsBody<
@@ -817,6 +826,7 @@ router.post(
 // Get dashboard stats
 router.get(
   '/dashboard-stats',
+  apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
@@ -879,6 +889,7 @@ router.get(
 // Get all documents for admin
 router.get(
   '/documents',
+  apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {

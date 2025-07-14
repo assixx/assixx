@@ -2536,11 +2536,12 @@ export class TenantDeletionService {
       if (!tables.includes(table)) {
         throw new Error(`Invalid table name: ${table}`);
       }
-      
+
       // Use backticks for table name (MySQL identifier quote)
-      const data = await query(`SELECT * FROM \`${table}\` WHERE tenant_id = ?`, [
-        tenantId,
-      ]);
+      const data = await query(
+        `SELECT * FROM \`${table}\` WHERE tenant_id = ?`,
+        [tenantId]
+      );
       if (data.length > 0) {
         await fs.writeFile(
           `${jsonExportDir}/${table}.json`,

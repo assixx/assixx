@@ -18,6 +18,11 @@ import { getErrorMessage } from '../utils/errorHandler';
 import { security } from '../middleware/security';
 import { rateLimiter } from '../middleware/rateLimiter';
 import {
+  validatePath,
+  sanitizeFilename,
+  getUploadDirectory,
+} from '../utils/pathSecurity';
+import {
   validateDocumentUpload,
   validatePaginationQuery,
   validateFileUpload,
@@ -68,10 +73,16 @@ interface DocumentAccessRequest extends AuthenticatedRequest {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    cb(null, 'uploads/documents/');
+    const uploadDir = getUploadDirectory('documents');
+    cb(null, uploadDir);
   },
   filename(_req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // Filename with timestamp
+    // Sanitize the original filename and add timestamp
+    const sanitized = sanitizeFilename(file.originalname);
+    const ext = path.extname(sanitized);
+    const base = path.basename(sanitized, ext);
+    const secureFilename = `${Date.now()}-${base}${ext}`;
+    cb(null, secureFilename);
   },
 });
 
@@ -258,8 +269,15 @@ router.post(
           throw new Error('Ungültiger Empfänger-Typ');
       }
 
-      // Read file content
-      const fileContent = await fs.readFile(filePath);
+      // Validate and read file content
+      const uploadDir = getUploadDirectory('documents');
+      const validatedPath = validatePath(path.basename(filePath), uploadDir);
+      if (!validatedPath) {
+        await fs.unlink(filePath);
+        res.status(400).json(errorResponse('Ungültiger Dateipfad', 400));
+        return;
+      }
+      const fileContent = await fs.readFile(validatedPath);
 
       const documentId = await Document.create({
         fileName: originalname,
@@ -280,7 +298,7 @@ router.post(
       });
 
       // Delete temporary file
-      await fs.unlink(filePath);
+      await fs.unlink(validatedPath);
 
       logger.info(
         `Admin ${adminId} successfully uploaded document ${documentId} for user ${userId}`
@@ -361,7 +379,14 @@ router.post(
       // Clean up file if it was uploaded
       if (uploadReq.file?.path) {
         try {
-          await fs.unlink(uploadReq.file.path);
+          const uploadDir = getUploadDirectory('documents');
+          const validatedPath = validatePath(
+            path.basename(uploadReq.file.path),
+            uploadDir
+          );
+          if (validatedPath) {
+            await fs.unlink(validatedPath);
+          }
         } catch (unlinkError) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`

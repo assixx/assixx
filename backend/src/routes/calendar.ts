@@ -14,6 +14,7 @@ import { createValidation } from '../middleware/validation';
 import { successResponse, errorResponse } from '../types/response.types';
 import { typed } from '../utils/routeHandlers';
 import { AuthenticatedRequest } from '../types/request.types';
+import { apiLimiter } from '../middleware/security-enhanced';
 
 // Import calendar model (keeping require pattern for compatibility)
 import calendarModel from '../models/calendar';
@@ -296,6 +297,7 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
  */
 router.get(
   '/',
+  apiLimiter,
   ...security.user(getEventsValidation),
   typed.auth(async (req, res) => {
     try {
@@ -343,6 +345,7 @@ router.get(
  */
 router.get(
   '/dashboard',
+  apiLimiter,
   ...security.user(
     createValidation([
       query('days').optional().isInt({ min: 1, max: 365 }),
@@ -382,6 +385,7 @@ router.get(
  */
 router.get(
   '/:id',
+  apiLimiter,
   ...security.user(
     createValidation([
       param('id').isInt({ min: 1 }).withMessage('Ungültige Event-ID'),
@@ -418,6 +422,7 @@ router.get(
  */
 router.post(
   '/',
+  apiLimiter,
   ...security.user(createEventValidation),
   typed.body<CalendarEventBody>(async (req, res) => {
     try {
@@ -468,6 +473,7 @@ router.post(
  */
 router.put(
   '/:id',
+  apiLimiter,
   ...security.user(updateEventValidation),
   canManageEvent,
   typed.paramsBody<{ id: string }, CalendarEventBody>(async (req, res) => {
@@ -517,6 +523,7 @@ router.put(
  */
 router.delete(
   '/:id',
+  apiLimiter,
   ...security.user(
     createValidation([
       param('id').isInt({ min: 1 }).withMessage('Ungültige Event-ID'),

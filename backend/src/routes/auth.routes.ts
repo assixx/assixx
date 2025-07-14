@@ -59,6 +59,7 @@ const validateFingerprintValidation = createValidation([
 // Public routes with enhanced rate limiting and validation
 router.post(
   '/login',
+  strictAuthLimiter,
   ...security.auth(loginValidation),
   typed.body<LoginBody>(async (req, res) => {
     console.log('[DEBUG] /api/auth/login endpoint hit');

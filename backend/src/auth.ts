@@ -7,6 +7,7 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import UserModel from './models/user';
 import { DatabaseUser } from './types';
@@ -136,7 +137,7 @@ export function generateToken(
       fingerprint: fingerprint, // Browser fingerprint
       sessionId:
         sessionId ||
-        `sess_${Date.now()}_${require('crypto').randomBytes(16).toString('hex')}`, // Cryptographically secure session ID
+        `sess_${Date.now()}_${crypto.randomBytes(16).toString('hex')}`, // Cryptographically secure session ID
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' }); // 8 Stunden wie bei den meisten SaaS

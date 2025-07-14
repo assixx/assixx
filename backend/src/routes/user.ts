@@ -9,6 +9,11 @@ import { authenticateToken } from '../middleware/auth-refactored';
 import multer from 'multer';
 import { getErrorMessage } from '../utils/errorHandler';
 import { AuthenticatedRequest } from '../types/request.types';
+import {
+  validatePath,
+  sanitizeFilename,
+  getUploadDirectory,
+} from '../utils/pathSecurity';
 
 // Import models and database
 import { User } from '../models/user';
@@ -42,7 +47,7 @@ interface UserUpdateFields {
 // Configure multer for profile picture uploads
 const storage = multer.diskStorage({
   destination: async (_req, _file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'profile-pictures');
+    const uploadDir = getUploadDirectory('profile_pictures');
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -50,8 +55,9 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
+    const sanitized = sanitizeFilename(file.originalname);
+    const extension = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = path.extname(file.originalname);
     cb(null, `profile-${uniqueSuffix}${extension}`);
   },
 });
@@ -237,16 +243,26 @@ router.get(
         return;
       }
 
-      // Send the profile picture file
-      const filePath = path.join(
-        process.cwd(),
-        user.profile_picture.startsWith('/')
-          ? user.profile_picture.substring(1)
-          : user.profile_picture
-      );
+      // Validate and send the profile picture file
+      const baseDir = path.join(process.cwd(), 'uploads');
+      const profilePicPath = user.profile_picture.startsWith('/')
+        ? user.profile_picture.substring(1)
+        : user.profile_picture;
 
-      if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
+      // Remove 'uploads/' prefix if present
+      const relativePath = profilePicPath.startsWith('uploads/')
+        ? profilePicPath.substring(8)
+        : profilePicPath;
+
+      const validatedPath = validatePath(relativePath, baseDir);
+
+      if (!validatedPath) {
+        res.status(400).json({ message: 'Invalid file path' });
+        return;
+      }
+
+      if (fs.existsSync(validatedPath)) {
+        res.sendFile(validatedPath);
       } else {
         res.status(404).json({ message: 'Profile picture file not found' });
       }

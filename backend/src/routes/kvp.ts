@@ -12,17 +12,21 @@ import multer from 'multer';
 import path from 'path';
 import { authenticateToken } from '../auth.js';
 import kvpController from '../controllers/kvp.controller.js';
+import { sanitizeFilename, getUploadDirectory } from '../utils/pathSecurity';
 
 const router: Router = express.Router();
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    cb(null, 'uploads/kvp/');
+    const uploadDir = getUploadDirectory('kvp');
+    cb(null, uploadDir);
   },
   filename(_req, file, cb) {
+    const sanitized = sanitizeFilename(file.originalname);
+    const ext = path.extname(sanitized);
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    cb(null, uniqueSuffix + ext);
   },
 });
 

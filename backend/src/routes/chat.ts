@@ -15,6 +15,7 @@ import { security } from '../middleware/security';
 import { body, param, query } from 'express-validator';
 import { createValidation } from '../middleware/validation';
 import { typed } from '../utils/routeHandlers';
+import { sanitizeFilename, getUploadDirectory } from '../utils/pathSecurity';
 import type {
   ChatUsersRequest,
   GetConversationsRequest,
@@ -69,15 +70,14 @@ const searchUsersValidation = createValidation([
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const uploadPath = path.join(__dirname, '../../uploads/chat');
+    const uploadPath = getUploadDirectory('chat');
     cb(null, uploadPath);
   },
   filename: (_req, file, cb) => {
+    const sanitized = sanitizeFilename(file.originalname);
+    const ext = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(
-      null,
-      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`
-    );
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
   },
 });
 
