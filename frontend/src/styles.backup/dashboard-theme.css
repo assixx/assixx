@@ -689,7 +689,7 @@ body {
   padding: var(--spacing-lg);
   /* Use CSS custom properties for dynamic layout */
   margin-left: var(--content-margin, 250px);
-  transition: margin-left 0.3s ease;
+  /*transition: margin-left 0.3s ease;*/
 }
 
 /* REDUNDANT - content-section not actively used
