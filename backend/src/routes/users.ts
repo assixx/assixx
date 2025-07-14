@@ -539,7 +539,16 @@ router.post(
       // Clean up uploaded file
       if (req.file?.path) {
         try {
-          await fs.unlink(req.file.path);
+          // Validate and normalize the file path to prevent path traversal
+          const normalizedPath = path.resolve(req.file.path);
+          const uploadsDir = path.resolve('uploads/profile_pictures/');
+          
+          // Ensure the file is within the uploads directory
+          if (!normalizedPath.startsWith(uploadsDir)) {
+            logger.error(`Attempted to delete file outside uploads directory: ${req.file.path}`);
+          } else {
+            await fs.unlink(normalizedPath);
+          }
         } catch (unlinkError) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
@@ -578,12 +587,22 @@ router.delete(
           '..',
           user.profile_picture_url
         );
-        try {
-          await fs.unlink(oldFilePath);
-        } catch (unlinkError) {
-          logger.warn(
-            `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`
-          );
+        
+        // Validate and normalize the file path to prevent path traversal
+        const normalizedOldPath = path.resolve(oldFilePath);
+        const baseDir = path.resolve(__dirname, '..', '..');
+        
+        // Ensure the file is within the base directory
+        if (!normalizedOldPath.startsWith(baseDir)) {
+          logger.error(`Attempted to delete file outside base directory: ${user.profile_picture_url}`);
+        } else {
+          try {
+            await fs.unlink(normalizedOldPath);
+          } catch (unlinkError) {
+            logger.warn(
+              `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`
+            );
+          }
         }
       }
 
