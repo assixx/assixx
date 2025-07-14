@@ -21,6 +21,7 @@ import {
   validatePath,
   sanitizeFilename,
   getUploadDirectory,
+  safeDeleteFile,
 } from '../utils/pathSecurity';
 import {
   validateDocumentUpload,
@@ -273,7 +274,8 @@ router.post(
       const uploadDir = getUploadDirectory('documents');
       const validatedPath = validatePath(path.basename(filePath), uploadDir);
       if (!validatedPath) {
-        await fs.unlink(filePath);
+        // Safely delete the uploaded file
+        await safeDeleteFile(filePath);
         res.status(400).json(errorResponse('Ungültiger Dateipfad', 400));
         return;
       }
@@ -379,14 +381,7 @@ router.post(
       // Clean up file if it was uploaded
       if (uploadReq.file?.path) {
         try {
-          const uploadDir = getUploadDirectory('documents');
-          const validatedPath = validatePath(
-            path.basename(uploadReq.file.path),
-            uploadDir
-          );
-          if (validatedPath) {
-            await fs.unlink(validatedPath);
-          }
+          await safeDeleteFile(uploadReq.file.path);
         } catch (unlinkError) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`

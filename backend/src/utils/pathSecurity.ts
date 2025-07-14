@@ -131,3 +131,37 @@ export function getUploadDirectory(type: string): string {
 
   return dir;
 }
+
+/**
+ * Safely deletes a file, ensuring it's within the uploads directory
+ * @param filePath - The file path to delete
+ * @returns True if file was deleted, false otherwise
+ */
+export async function safeDeleteFile(filePath: string): Promise<boolean> {
+  try {
+    // Validate the path is within the uploads directory
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
+    const validatedPath = validatePath(filePath, process.cwd());
+    
+    if (!validatedPath || !validatedPath.startsWith(uploadsDir)) {
+      logger.warn(`Attempted to delete file outside uploads directory: ${filePath}`);
+      return false;
+    }
+
+    // Check if file exists before attempting to delete
+    const fs = await import('fs/promises');
+    try {
+      await fs.access(validatedPath);
+      await fs.unlink(validatedPath);
+      logger.info(`Successfully deleted file: ${validatedPath}`);
+      return true;
+    } catch (error) {
+      // File doesn't exist or can't be accessed
+      logger.warn(`File not found or inaccessible: ${validatedPath}`);
+      return false;
+    }
+  } catch (error) {
+    logger.error(`Error in safeDeleteFile: ${error}`);
+    return false;
+  }
+}
