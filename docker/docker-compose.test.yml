@@ -18,11 +18,11 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "mysql", "-h", "localhost", "-u", "root", "-pStrongP@ssw0rd!123", "-e", "SELECT 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 20
-      start_period: 60s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pStrongP@ssw0rd!123", "--silent"]
+      interval: 5s
+      timeout: 20s
+      retries: 30
+      start_period: 90s
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:
