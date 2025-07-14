@@ -18,9 +18,11 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
-      timeout: 10s
-      retries: 5
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:
@@ -64,10 +66,10 @@ services:
       - assixx-network
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
-      interval: 5s
+      interval: 10s
       timeout: 10s
-      retries: 10
-      start_period: 40s
+      retries: 20
+      start_period: 60s
     # Development command mit nodemon
     command: ['pnpm', 'run', 'dev']
 
