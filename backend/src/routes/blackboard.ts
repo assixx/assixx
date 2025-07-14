@@ -25,6 +25,7 @@ import {
 } from "../utils/pathSecurity";
 import { createValidation } from "../middleware/validation";
 import { param } from "express-validator";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 // Import blackboard model (now ES modules)
 import blackboardModel, { DbBlackboardEntry } from "../models/blackboard";
@@ -940,6 +941,7 @@ router.get(
         .withMessage("Ungültige Attachment-ID"),
     ]),
   ),
+  rateLimiter.download,
   typed.params<{ attachmentId: string }>(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
@@ -1008,6 +1010,7 @@ router.get(
         .withMessage("Ungültige Attachment-ID"),
     ]),
   ),
+  rateLimiter.download,
   typed.params<{ attachmentId: string }>(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);

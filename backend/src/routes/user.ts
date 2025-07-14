@@ -15,6 +15,7 @@ import {
   getUploadDirectory,
   safeDeleteFile,
 } from "../utils/pathSecurity";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 // Import models and database
 import { User } from "../models/user";
@@ -234,6 +235,7 @@ router.put("/profile", authenticateToken, async (req, res): Promise<void> => {
 router.get(
   "/profile-picture",
   authenticateToken,
+  rateLimiter.download,
   async (req, res): Promise<void> => {
     try {
       const authReq = req as AuthenticatedRequest;

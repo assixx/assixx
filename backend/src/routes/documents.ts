@@ -682,6 +682,7 @@ router.get(
 router.get(
   "/download/:documentId",
   ...security.user(),
+  rateLimiter.download,
   checkDocumentAccess({
     allowAdmin: true,
     requireOwnership: false,
@@ -824,6 +825,7 @@ router.get(
 router.get(
   "/:id/download",
   ...security.user(),
+  rateLimiter.download,
   typed.auth(async (req, res) => {
     await documentController.downloadDocument(req, res);
   }),

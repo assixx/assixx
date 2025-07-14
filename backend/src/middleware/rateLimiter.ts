@@ -98,6 +98,21 @@ const rateLimiterConfigs = {
       return req.ip || "unknown";
     },
   },
+
+  // File download endpoints
+  [RateLimiterType.DOWNLOAD]: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 downloads per 15 minutes
+    message: "Download limit exceeded, please try again later.",
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req: Request) => {
+      if (isAuthenticated(req)) {
+        return `download_${req.user.id}`;
+      }
+      return req.ip || "unknown";
+    },
+  },
 };
 
 // Create rate limiter instances
@@ -122,6 +137,7 @@ export const rateLimiter: RateLimiterMiddleware = Object.assign(
     admin: rateLimiters[RateLimiterType.ADMIN],
     api: rateLimiters[RateLimiterType.API],
     upload: rateLimiters[RateLimiterType.UPLOAD],
+    download: rateLimiters[RateLimiterType.DOWNLOAD],
   },
 );
 
@@ -135,6 +151,7 @@ export const securityStacks = {
   adminEndpoint: [rateLimiter.admin],
   apiEndpoint: [rateLimiter.api],
   uploadEndpoint: [rateLimiter.upload],
+  downloadEndpoint: [rateLimiter.download],
 };
 
 export default rateLimiter;

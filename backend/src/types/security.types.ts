@@ -26,6 +26,7 @@ export enum RateLimiterType {
   ADMIN = "admin",
   API = "api",
   UPLOAD = "upload",
+  DOWNLOAD = "download",
 }
 
 // Rate Limiter Options per Type
@@ -36,6 +37,7 @@ export interface RateLimiterOptions {
   [RateLimiterType.ADMIN]: RateLimiterConfig;
   [RateLimiterType.API]: RateLimiterConfig;
   [RateLimiterType.UPLOAD]: RateLimiterConfig;
+  [RateLimiterType.DOWNLOAD]: RateLimiterConfig;
 }
 
 // CSRF Token Types
@@ -195,6 +197,7 @@ export interface RateLimiterMiddleware {
   admin: RateLimitMiddleware;
   api: RateLimitMiddleware;
   upload: RateLimitMiddleware;
+  download: RateLimitMiddleware;
 }
 
 // Type Guards

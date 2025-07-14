@@ -51,11 +51,12 @@ router.post("/:id/comments", kvpController.addComment);
 router.get("/:id/attachments", kvpController.getAttachments);
 router.post(
   "/:id/attachments",
+  rateLimiter.upload,
   kvpController.uploadAttachment as unknown as RequestHandler,
 );
 router.get(
   "/attachments/:attachmentId/download",
-  rateLimiter.upload, // Use upload rate limiter for downloads
+  rateLimiter.download, // Use download rate limiter for downloads
   kvpController.downloadAttachment,
 );
 
