@@ -9,6 +9,7 @@ import * as path from "path";
 import { promises as fs } from "fs";
 import { AuthenticatedRequest } from "../types/request.types";
 import { Pool } from "mysql2/promise";
+import { validatePath } from "../utils/pathSecurity";
 
 // Extended request with tenantDb
 interface TenantAuthenticatedRequest extends AuthenticatedRequest {
@@ -284,17 +285,23 @@ class ChatController {
   async downloadFile(req: Request, res: Response): Promise<void> {
     try {
       const filename = req.params.filename;
-      const filePath = path.join(process.cwd(), "uploads", "chat", filename);
+      const uploadsDir = path.join(process.cwd(), "uploads", "chat");
+      const validatedPath = validatePath(filename, uploadsDir);
+
+      if (!validatedPath) {
+        res.status(400).json({ error: "Invalid file path" });
+        return;
+      }
 
       // Check if file exists
       try {
-        await fs.access(filePath);
+        await fs.access(validatedPath);
       } catch {
         res.status(404).json({ error: "File not found" });
         return;
       }
 
-      res.download(filePath);
+      res.download(validatedPath);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

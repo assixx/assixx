@@ -13,6 +13,7 @@ import {
   validatePath,
   sanitizeFilename,
   getUploadDirectory,
+  safeDeleteFile,
 } from "../utils/pathSecurity";
 
 // Import models and database
@@ -307,9 +308,7 @@ router.post(
             : user.profile_picture_url,
         );
         try {
-          if (fs.existsSync(oldFilePath)) {
-            fs.unlinkSync(oldFilePath);
-          }
+          await safeDeleteFile(oldFilePath);
         } catch (unlinkError) {
           console.warn(
             "Could not delete old profile picture:",
@@ -334,7 +333,7 @@ router.post(
         });
       } else {
         // Clean up uploaded file if database update failed
-        fs.unlinkSync(authReq.file.path);
+        await safeDeleteFile(authReq.file.path);
         res
           .status(500)
           .json({ message: "Fehler beim Speichern des Profilbildes" });
@@ -346,7 +345,7 @@ router.post(
       const authenticatedReq = req as AuthenticatedRequest;
       if (authenticatedReq.file?.path) {
         try {
-          fs.unlinkSync(authenticatedReq.file.path);
+          await safeDeleteFile(authenticatedReq.file.path);
         } catch (unlinkError) {
           console.error(
             "Error deleting temporary file:",
@@ -392,9 +391,7 @@ router.delete(
             : user.profile_picture_url,
         );
         try {
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
+          await safeDeleteFile(filePath);
         } catch (unlinkError) {
           console.warn(
             "Could not delete profile picture file:",

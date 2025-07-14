@@ -19,7 +19,7 @@ import {
 import { logger } from "../utils/logger";
 import { getErrorMessage } from "../utils/errorHandler";
 import { typed } from "../utils/routeHandlers";
-import { sanitizeFilename, getUploadDirectory } from "../utils/pathSecurity";
+import { sanitizeFilename, getUploadDirectory, safeDeleteFile } from "../utils/pathSecurity";
 import { apiLimiter } from "../middleware/security-enhanced";
 
 // Import models (now ES modules)
@@ -720,7 +720,7 @@ router.post(
 
       const employee = await User.findById(employeeId, req.user.tenant_id);
       if (!employee) {
-        await fs.unlink(req.file.path);
+        await safeDeleteFile(req.file.path);
         res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
         return;
       }
@@ -735,7 +735,7 @@ router.post(
         tenant_id: req.user.tenant_id,
       });
 
-      await fs.unlink(filePath);
+      await safeDeleteFile(filePath);
 
       logger.info(
         `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`,
@@ -751,7 +751,7 @@ router.post(
 
       if (req.file?.path) {
         try {
-          await fs.unlink(req.file.path);
+          await safeDeleteFile(req.file.path);
         } catch (unlinkError) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,

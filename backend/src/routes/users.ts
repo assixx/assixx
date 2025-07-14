@@ -6,13 +6,13 @@
 import express, { Router } from "express";
 import multer from "multer";
 import path from "path";
-import fs from "fs/promises";
 import bcrypt from "bcryptjs";
 import { security } from "../middleware/security";
 import { createValidation } from "../middleware/validation";
 import { param } from "express-validator";
 import { logger } from "../utils/logger";
 import { apiLimiter, uploadLimiter } from "../middleware/security-enhanced";
+import { safeDeleteFile } from "../utils/pathSecurity";
 
 // Import User model (keeping require pattern for compatibility)
 import User, { DbUser } from "../models/user";
@@ -549,7 +549,7 @@ router.post(
       } else {
         // Clean up uploaded file if database update failed
         if (req.file) {
-          await fs.unlink(req.file.path);
+          await safeDeleteFile(req.file.path);
         }
         res
           .status(500)
@@ -563,18 +563,7 @@ router.post(
       // Clean up uploaded file
       if (req.file?.path) {
         try {
-          // Validate and normalize the file path to prevent path traversal
-          const normalizedPath = path.resolve(req.file.path);
-          const uploadsDir = path.resolve("uploads/profile_pictures/");
-
-          // Ensure the file is within the uploads directory
-          if (!normalizedPath.startsWith(uploadsDir)) {
-            logger.error(
-              `Attempted to delete file outside uploads directory: ${req.file.path}`,
-            );
-          } else {
-            await fs.unlink(normalizedPath);
-          }
+          await safeDeleteFile(req.file.path);
         } catch (unlinkError) {
           logger.error(
             `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
@@ -615,23 +604,12 @@ router.delete(
           user.profile_picture_url,
         );
 
-        // Validate and normalize the file path to prevent path traversal
-        const normalizedOldPath = path.resolve(oldFilePath);
-        const baseDir = path.resolve(__dirname, "..", "..");
-
-        // Ensure the file is within the base directory
-        if (!normalizedOldPath.startsWith(baseDir)) {
-          logger.error(
-            `Attempted to delete file outside base directory: ${user.profile_picture_url}`,
+        try {
+          await safeDeleteFile(oldFilePath);
+        } catch (unlinkError) {
+          logger.warn(
+            `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`,
           );
-        } else {
-          try {
-            await fs.unlink(normalizedOldPath);
-          } catch (unlinkError) {
-            logger.warn(
-              `Could not delete old profile picture file: ${getErrorMessage(unlinkError)}`,
-            );
-          }
         }
       }
 
