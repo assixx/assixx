@@ -376,23 +376,23 @@
                         <div class="info-grid">
                             <div class="info-item">
                                 <span class="info-label">Titel</span>
-                                <span class="info-value">${surveyData.title}</span>
+                                <span class="info-value">${escapeHtml(surveyData.title)}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Status</span>
                                 <span class="info-value">
-                                    <span class="status-badge status-${surveyData.status}">
-                                        ${getStatusLabel(surveyData.status)}
+                                    <span class="status-badge status-${escapeHtml(surveyData.status)}">
+                                        ${escapeHtml(getStatusLabel(surveyData.status))}
                                     </span>
                                 </span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Erstellt am</span>
-                                <span class="info-value">${formatDate(surveyData.created_at)}</span>
+                                <span class="info-value">${escapeHtml(formatDate(surveyData.created_at))}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Endet am</span>
-                                <span class="info-value">${formatDate(surveyData.end_date)}</span>
+                                <span class="info-value">${escapeHtml(formatDate(surveyData.end_date))}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Anonymität</span>
@@ -410,7 +410,7 @@
                             <div style="margin-top: var(--spacing-lg);">
                                 <span class="info-label">Beschreibung</span>
                                 <p style="color: var(--text-primary); margin-top: var(--spacing-xs);">
-                                    ${surveyData.description}
+                                    ${escapeHtml(surveyData.description)}
                                 </p>
                             </div>
                         `
@@ -461,9 +461,9 @@
                     <div class="question-item">
                         <div class="question-number">${index + 1}</div>
                         <div class="question-content">
-                            <p class="question-text">${question.question_text}</p>
+                            <p class="question-text">${escapeHtml(question.question_text)}</p>
                             <div class="question-meta">
-                                ${getQuestionTypeLabel(question.type)} 
+                                ${escapeHtml(getQuestionTypeLabel(question.type))} 
                                 ${question.is_required ? '• Pflichtfeld' : '• Optional'}
                             </div>
                         </div>
@@ -505,12 +505,26 @@
         });
       }
 
+      // HTML escape function to prevent XSS
+      function escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') {
+          return '';
+        }
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
       function showError(message) {
         const contentArea = document.getElementById('content-area');
+        const safeMessage = escapeHtml(message);
         contentArea.innerHTML = `
                 <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
                     <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">❌</div>
-                    <p>${message}</p>
+                    <p>${safeMessage}</p>
                     <button class="btn btn-secondary" onclick="window.location.href='/survey-admin'">
                         Zurück zur Übersicht
                     </button>

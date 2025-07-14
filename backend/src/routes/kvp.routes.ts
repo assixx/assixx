@@ -12,9 +12,8 @@ import { rateLimiter } from "../middleware/rateLimiter";
 
 const router: ExpressRouter = Router();
 
-// All routes require authentication and rate limiting
+// All routes require authentication
 router.use(authenticateToken);
-router.use(rateLimiter.authenticated);
 
 // Public endpoints (all authenticated users)
 router.get("/", kvpController.getAll);
@@ -54,10 +53,17 @@ router.post(
   rateLimiter.upload,
   kvpController.uploadAttachment as unknown as RequestHandler,
 );
+
+// Download attachment - with explicit rate limiting for file operations
+// This route performs expensive file system operations and requires strict rate limiting
 router.get(
   "/attachments/:attachmentId/download",
-  rateLimiter.download, // Use download rate limiter for downloads
-  kvpController.downloadAttachment,
+  [
+    // Rate limiting middleware to prevent DoS attacks
+    rateLimiter.download,
+    // Controller handler that performs file system access
+    kvpController.downloadAttachment as unknown as RequestHandler,
+  ],
 );
 
 export default router;
