@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mein Profil - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -425,18 +440,19 @@
       <!-- Main Content -->
       <main class="main-content">
         <div id="breadcrumb-container"></div>
-        <div class="profile-container">
+        <div class="container">
+          <div class="profile-container">
           <!-- Profile Header -->
           <div class="profile-header">
             <div class="profile-avatar">
               <div class="avatar-container" id="avatar-container">
                 <div class="avatar-initials" id="avatar-initials">JD</div>
-                <img id="avatar-image" class="avatar-image" style="display: none" />
+                <img id="avatar-image" class="avatar-image" class="u-hidden" />
                 <div class="avatar-upload-overlay" onclick="triggerFileUpload()">
                   <i class="fas fa-camera"></i>
                 </div>
               </div>
-              <input type="file" id="avatar-upload" accept="image/*" style="display: none" />
+              <input type="file" id="avatar-upload" accept="image/*" class="u-hidden" />
             </div>
             <div class="profile-info">
               <div class="profile-name" id="profile-name">John Doe</div>
@@ -570,7 +586,7 @@
                 <div>
                   <strong>E-Mail-Benachrichtigungen</strong>
                   <br />
-                  <small style="color: var(--text-secondary)">Erhalten Sie E-Mails über wichtige Updates</small>
+                  <small class="u-color-text-secondary">Erhalten Sie E-Mails über wichtige Updates</small>
                 </div>
                 <div class="toggle-switch active" onclick="toggleSetting(this)">
                   <div class="toggle-slider"></div>
@@ -581,7 +597,7 @@
                 <div>
                   <strong>Profil für andere sichtbar</strong>
                   <br />
-                  <small style="color: var(--text-secondary)">Andere Benutzer können Ihr Profil sehen</small>
+                  <small class="u-color-text-secondary">Andere Benutzer können Ihr Profil sehen</small>
                 </div>
                 <div class="toggle-switch active" onclick="toggleSetting(this)">
                   <div class="toggle-slider"></div>
@@ -592,7 +608,7 @@
                 <div>
                   <strong>Aktivitätsstatus anzeigen</strong>
                   <br />
-                  <small style="color: var(--text-secondary)">Zeigen Sie anderen an, wann Sie zuletzt aktiv waren</small>
+                  <small class="u-color-text-secondary">Zeigen Sie anderen an, wann Sie zuletzt aktiv waren</small>
                 </div>
                 <div class="toggle-switch" onclick="toggleSetting(this)">
                   <div class="toggle-slider"></div>
@@ -611,12 +627,13 @@
               </div>
             </div>
           </div>
+          </div>
         </div>
       </main>
     </div>
 
     <!-- Hidden File Upload -->
-    <input type="file" id="hidden-file-upload" accept="image/*" style="display: none" />
+    <input type="file" id="hidden-file-upload" accept="image/*" class="u-hidden" />
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>

@@ -278,10 +278,39 @@ export function closeModal(modalId?: string): void {
   }
 }
 
-// Also export for window access
-if (typeof window !== 'undefined') {
-  interface ModalWindow extends Window {
+// Global verfügbar machen gemäß Plan
+declare global {
+  interface Window {
+    showModal: (modalId: string) => void;
+    hideModal: (modalId: string) => void;
     modalManager: ModalManager;
   }
-  (window as unknown as ModalWindow).modalManager = modalManager;
+}
+
+// Also export for window access
+if (typeof window !== 'undefined') {
+  window.modalManager = modalManager;
+  
+  // Globale Funktionen gemäß Plan hinzufügen
+  window.showModal = (modalId: string) => {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('u-hidden');
+      modal.classList.add('u-flex');
+    } else {
+      // Fallback to modalManager if element doesn't exist
+      modalManager.show(modalId);
+    }
+  };
+  
+  window.hideModal = (modalId: string) => {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('u-flex');
+      modal.classList.add('u-hidden');
+    } else {
+      // Fallback to modalManager
+      modalManager.hide(modalId);
+    }
+  };
 }

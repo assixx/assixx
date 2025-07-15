@@ -942,7 +942,7 @@ declare global {
     loadRecentEmployees?: () => Promise<void>;
     loadDashboardStats?: () => Promise<void>;
     loadEmployeesTable?: () => Promise<void>;
-    hideModal?: (modalId: string) => void;
+    // hideModal is declared in modal-manager.ts
   }
 }
 

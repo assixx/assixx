@@ -576,7 +576,7 @@
             container.innerHTML = '';
 
             if (departments.length === 0) {
-              container.innerHTML = '<p style="text-align: center;">Keine Abteilungen gefunden</p>';
+              container.innerHTML = '<p class="u-text-center">Keine Abteilungen gefunden</p>';
               return;
             }
 
@@ -631,7 +631,7 @@
             container.innerHTML = '';
 
             if (teams.length === 0) {
-              container.innerHTML = '<p style="text-align: center;">Keine Teams gefunden</p>';
+              container.innerHTML = '<p class="u-text-center">Keine Teams gefunden</p>';
               return;
             }
 
@@ -683,7 +683,7 @@
             container.innerHTML = '';
 
             if (departments.length === 0) {
-              container.innerHTML = '<p style="text-align: center;">Keine Abteilungen gefunden</p>';
+              container.innerHTML = '<p class="u-text-center">Keine Abteilungen gefunden</p>';
               return;
             }
 
@@ -691,7 +691,7 @@
             const topLevelDepts = departments.filter((d) => !d.parent_id);
 
             if (topLevelDepts.length === 0) {
-              container.innerHTML = '<p style="text-align: center;">Keine Top-Level-Abteilungen gefunden</p>';
+              container.innerHTML = '<p class="u-text-center">Keine Top-Level-Abteilungen gefunden</p>';
               return;
             }
 
@@ -1061,7 +1061,7 @@
             container.innerHTML = '';
 
             if (members.length === 0) {
-              container.innerHTML = '<p style="text-align: center;">Keine Mitglieder in diesem Team</p>';
+              container.innerHTML = '<p class="u-text-center">Keine Mitglieder in diesem Team</p>';
               return;
             }
 

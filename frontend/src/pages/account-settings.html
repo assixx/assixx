@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kontoeinstellungen - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -280,7 +295,8 @@
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
         
-        <div class="settings-container">
+        <div class="container">
+          <div class="settings-container">
           <!-- Danger Zone Card -->
           <div class="settings-card" style="border-color: rgba(244, 67, 54, 0.3)">
             <h2 class="card-title" style="color: #f44336">Gefahrenzone</h2>
@@ -313,6 +329,7 @@
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </main>

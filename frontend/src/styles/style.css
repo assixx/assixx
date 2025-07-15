@@ -45,7 +45,7 @@ body {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: var(--spacing-lg); /* 24px - konsistent mit root-dashboard */
 }
 
 /* Container full width when sidebar is collapsed */
@@ -309,7 +309,7 @@ header {
 /* Responsive utilities */
 @media (max-width: 576px) {
   .container {
-    padding: 0 15px;
+    padding: var(--spacing-md); /* 16px auf Mobile */
   }
 }
 

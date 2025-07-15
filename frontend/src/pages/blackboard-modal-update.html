@@ -1,5 +1,5 @@
 <!-- Entry Form Modal - Design Standards Compliant -->
-<div class="modal" id="entryFormModal" style="display: none">
+<div class="modal" id="entryFormModal" class="u-hidden">
   <div class="modal-content">
     <div class="modal-header">
       <h3 class="modal-title">Neuer Eintrag</h3>
@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <div class="form-group" id="orgIdContainer" style="display: none">
+      <div class="form-group" id="orgIdContainer" class="u-hidden">
         <label class="form-label">Welche Abteilung/Team?</label>
         <div class="custom-dropdown">
           <div class="dropdown-display" id="orgIdDisplay" onclick="toggleDropdown('orgId')">
@@ -156,11 +156,11 @@
           </div>
           <p class="upload-text">Dateien hierher ziehen oder klicken zum Auswählen</p>
           <p class="upload-hint">Max. 5 Dateien, je 10MB (PDF, JPG, PNG, GIF)</p>
-          <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" style="display: none" />
+          <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" class="u-hidden" />
         </div>
 
         <!-- Anhang-Vorschau -->
-        <div id="attachmentPreview" class="attachment-preview" style="display: none">
+        <div id="attachmentPreview" class="attachment-preview" class="u-hidden">
           <h4 class="preview-title">Ausgewählte Dateien:</h4>
           <div id="attachmentList" class="attachment-list"></div>
         </div>

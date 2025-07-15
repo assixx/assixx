@@ -1,5 +1,8 @@
 /* Assixx Dashboard Theme - Konsistentes Design für alle Dashboards */
 
+/* Import Utility Classes */
+@import url('./utilities.css');
+
 :root {
   /* Farben */
   --primary-color: #2196f3;
@@ -45,6 +48,72 @@
   /* Role Colors */
   --admin-color: #ff6b6b;
   --employee-color: #4ecdc4;
+
+  /* === NEUE VARIABLEN - EXAKTE WERTE AUS DEM AKTUELLEN DESIGN === */
+  
+  /* Erweiterte Spacings - NUR wenn diese EXAKTEN Werte verwendet werden */
+  --spacing-2xs: 4px;    /* NUR wenn aktuell genau 4px verwendet wird */
+  --spacing-2xl: 48px;   /* NUR wenn aktuell genau 48px verwendet wird */
+  --spacing-3xl: 64px;   /* NUR wenn aktuell genau 64px verwendet wird */
+  --spacing-xxl: 3rem;   /* aus variables.css übernommen */
+  
+  /* Display States */
+  --display-none: none;
+  --display-block: block;
+  --display-flex: flex;
+  --display-inline-flex: inline-flex;
+  
+  /* Common Widths */
+  --modal-width: 500px;
+  --modal-width-lg: 600px;
+  --container-max-width: 1200px;
+  
+  /* Common Margins (für häufige Patterns) */
+  --margin-text-top: 4px;
+  --margin-icon-right: 8px;
+  
+  /* Glassmorphismus (aus variables.css übernehmen) */
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-bg-hover: rgba(255, 255, 255, 0.03);
+  --glass-bg-active: rgba(255, 255, 255, 0.05);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --glass-shadow: rgba(0, 0, 0, 0.1);
+  
+  /* Blur-Effekte */
+  --blur-sm: blur(10px);
+  --blur-md: blur(15px);
+  --blur-lg: blur(20px);
+  
+  /* Z-Index System (aus variables.css) */
+  --z-dropdown: 100;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1000;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-notification: 2000;
+  
+  /* Erweiterte Farben (aus variables.css) */
+  --danger-color: #e74c3c;
+  --info-color: #3498db;
+  --text-muted: #b0b0b0;
+  --text-dark: #333333;
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-light: #f8f9fa;
+  
+  /* Erweiterte Border Radius */
+  --radius-xl: 1.5rem;
+  --radius-round: 50%;
+  
+  /* Erweiterte Shadows */
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  
+  /* Transitions (aus variables.css) */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
 }
 
 * {
@@ -342,21 +411,23 @@ body {
     grid-template-columns: 1fr;
   }
 }
-/*
+
 .stat-card {
   background-color: var(--background-light);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid hsla(0,0%,100%,.1);
-  transition: transform 0.3s ease;
+  /* transition: transform 0.3s ease; */
+  backdrop-filter: blur(20px) saturate(180%);
+  background: hsla(0,0%,100%,.02);
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
-*/
+
 .stat-value {
   font-size: 32px;
   font-weight: 700;

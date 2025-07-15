@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Konfiguration - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -34,7 +49,7 @@
           <div class="card mb-4">
             <div class="card-header">
               <h2 class="card-title">Passwort zurücksetzen</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Ändern Sie Ihr Admin-Passwort</p>
+              <p class="text-secondary" class="u-mt-text">Ändern Sie Ihr Admin-Passwort</p>
             </div>
             <form id="resetPasswordForm">
               <div class="form-group">
@@ -53,7 +68,7 @@
           <div class="card mb-4">
             <div class="card-header">
               <h2 class="card-title">Admin-Details</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Persönliche Informationen verwalten</p>
+              <p class="text-secondary" class="u-mt-text">Persönliche Informationen verwalten</p>
             </div>
             <form id="updateDetailsForm">
               <div class="form-group">
@@ -80,7 +95,7 @@
           <div class="card mb-4">
             <div class="card-header">
               <h2 class="card-title">Berechtigungen</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Ihre administrativen Zugriffsrechte</p>
+              <p class="text-secondary" class="u-mt-text">Ihre administrativen Zugriffsrechte</p>
             </div>
             <div id="permissions-section">
               <div class="form-check">
@@ -106,7 +121,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Anmelde-Historie</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht Ihrer Login-Aktivitäten</p>
+              <p class="text-secondary" class="u-mt-text">Übersicht Ihrer Login-Aktivitäten</p>
             </div>
 
             <!-- Tab Navigation -->

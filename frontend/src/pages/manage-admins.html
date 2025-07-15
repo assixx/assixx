@@ -490,7 +490,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Admin-Verwaltung</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Verwalten Sie hier alle Administratoren im System</p>
+              <p class="text-secondary" class="u-mt-text">Verwalten Sie hier alle Administratoren im System</p>
             </div>
             <div class="card-body">
               <!-- Admin Table -->
@@ -593,23 +593,23 @@
             </div>
 
             <div class="permission-type-selection">
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
-                <input type="radio" name="permissionType" value="none" checked style="margin-right: 8px" />
+              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
+                <input type="radio" name="permissionType" value="none" checked class="u-mr-8" />
                 <span>Keine Abteilungen (Standard - Sicher)</span>
               </label>
 
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
-                <input type="radio" name="permissionType" value="specific" style="margin-right: 8px" />
+              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
+                <input type="radio" name="permissionType" value="specific" class="u-mr-8" />
                 <span>Spezifische Abteilungen auswählen</span>
               </label>
 
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
-                <input type="radio" name="permissionType" value="groups" style="margin-right: 8px" />
+              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
+                <input type="radio" name="permissionType" value="groups" class="u-mr-8" />
                 <span>Abteilungsgruppen auswählen</span>
               </label>
 
-              <label class="radio-label" style="display: block; margin-bottom: 12px; cursor: pointer">
-                <input type="radio" name="permissionType" value="all" style="margin-right: 8px" />
+              <label class="radio-label" class="u-block u-mb-12 u-cursor-pointer">
+                <input type="radio" name="permissionType" value="all" class="u-mr-8" />
                 <span>Alle Abteilungen (Vollzugriff)</span>
               </label>
             </div>
@@ -650,7 +650,7 @@
             <label class="form-label">Notizen</label>
             <textarea id="adminNotes" class="form-control" rows="3"></textarea>
           </div>
-          <div class="form-group" id="activeStatusGroup" style="display: none">
+          <div class="form-group" id="activeStatusGroup" class="u-hidden">
             <label class="form-label">
               <input type="checkbox" id="adminIsActive" />
               <span style="margin-left: 8px">Aktiv</span>
@@ -680,7 +680,7 @@
             <strong>Admin:</strong>
             <span id="permAdminName"></span>
           </p>
-          <p style="margin: 0">
+          <p class="u-m-0">
             <strong>E-Mail:</strong>
             <span id="permAdminEmail"></span>
           </p>
@@ -688,11 +688,11 @@
 
         <div style="padding: 0 16px">
           <div class="permission-options" style="display: flex; gap: 12px; margin-bottom: 20px">
-            <button onclick="selectAllDepartments()" class="btn btn-secondary" style="flex: 1">
+            <button onclick="selectAllDepartments()" class="btn btn-secondary" class="u-flex-1">
               <i class="fas fa-check-square"></i>
               Alle auswählen
             </button>
-            <button onclick="selectNoDepartments()" class="btn btn-secondary" style="flex: 1">
+            <button onclick="selectNoDepartments()" class="btn btn-secondary" class="u-flex-1">
               <i class="fas fa-square"></i>
               Keine auswählen
             </button>
@@ -752,7 +752,7 @@
               </div>
             </div>
 
-            <div class="tab-content" id="groupsTab" style="display: none">
+            <div class="tab-content" id="groupsTab" class="u-hidden">
               <div
                 class="group-list"
                 id="permissionGroupList"
@@ -776,25 +776,25 @@
           >
             <h4 style="margin: 0 0 12px 0; font-size: 14px">Berechtigungsstufen:</h4>
             <label style="display: flex; align-items: center; margin-bottom: 8px">
-              <input type="checkbox" id="permCanRead" checked disabled style="margin-right: 8px" />
+              <input type="checkbox" id="permCanRead" checked disabled class="u-mr-8" />
               <span>Lesen (Standard)</span>
             </label>
             <label style="display: flex; align-items: center; margin-bottom: 8px">
-              <input type="checkbox" id="permCanWrite" style="margin-right: 8px" />
+              <input type="checkbox" id="permCanWrite" class="u-mr-8" />
               <span>Schreiben</span>
             </label>
             <label style="display: flex; align-items: center">
-              <input type="checkbox" id="permCanDelete" style="margin-right: 8px" />
+              <input type="checkbox" id="permCanDelete" class="u-mr-8" />
               <span>Löschen</span>
             </label>
           </div>
 
           <div class="modal-actions" style="display: flex; gap: 12px; padding: 16px 0">
-            <button onclick="savePermissions()" class="btn btn-primary" style="flex: 1">
+            <button onclick="savePermissions()" class="btn btn-primary" class="u-flex-1">
               <i class="fas fa-save"></i>
               Speichern
             </button>
-            <button onclick="closePermissionsModal()" class="btn btn-secondary" style="flex: 1">Abbrechen</button>
+            <button onclick="closePermissionsModal()" class="btn btn-secondary" class="u-flex-1">Abbrechen</button>
           </div>
         </div>
       </div>

@@ -1,0 +1,74 @@
+/* Container Padding Fix - Konsistentes Padding für alle Container-Typen */
+
+/* Generelle Container-Klassen mit konsistentem Padding */
+.container,
+.profile-container,
+.survey-container,
+.documents-container,
+.chat-container,
+.shift-planning-container,
+.kvp-container,
+.logs-container,
+.feature-container,
+.storage-container,
+.survey-results-container,
+.employee-container,
+.admin-container,
+.root-container,
+.department-container,
+.org-container {
+  padding: var(--spacing-lg) !important; /* 24px - wie bei root-dashboard */
+}
+
+/* Spezifische Container die ihr eigenes Padding behalten sollten */
+.modal-container,
+.dropdown-container,
+.toast-container,
+.navigation-container,
+.breadcrumb-container,
+.content-section {
+  /* Diese behalten ihr spezielles Padding */
+}
+
+/* Layout Container braucht kein Padding (ist nur wrapper) */
+.layout-container {
+  padding: 0 !important;
+}
+
+/* Main Content Area - NUR wenn es ein Container ist */
+.main-content > .container:first-child {
+  /* Nur Container bekommen das Padding */
+  padding: var(--spacing-lg);
+}
+
+/* Ausnahmen für spezielle Seiten */
+.main-content.chat-page > div:first-child,
+.main-content.no-padding > div:first-child {
+  padding: 0;
+}
+
+/* Mobile Anpassung */
+@media (max-width: 768px) {
+  .container,
+  .profile-container,
+  .survey-container,
+  .documents-container,
+  .chat-container,
+  .shift-planning-container,
+  .kvp-container,
+  .logs-container,
+  .feature-container,
+  .storage-container,
+  .survey-results-container,
+  .employee-container,
+  .admin-container,
+  .root-container,
+  .department-container,
+  .org-container {
+    padding: var(--spacing-md) !important; /* 16px auf Mobile */
+  }
+  
+  .main-content > .container:first-child {
+    padding: var(--spacing-md);
+  }
+}

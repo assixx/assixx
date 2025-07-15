@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>System-Logs - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
@@ -497,7 +512,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">System-Logs</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Systemaktivitäten</p>
+              <p class="text-secondary" class="u-mt-text">Übersicht aller Systemaktivitäten</p>
             </div>
 
             <!-- Filters -->
@@ -621,7 +636,7 @@
                   <input type="hidden" id="filter-timerange" value="all" />
                 </div>
               </div>
-              <div style="display: flex; gap: 12px">
+              <div class="u-flex-gap-md">
                 <button class="btn btn-primary" onclick="applyFilters()">
                   <i class="fas fa-filter"></i>
                   Filter anwenden
@@ -638,7 +653,7 @@
             </div>
 
             <!-- Logs Table -->
-            <div class="table-responsive" id="logs-table-container" style="padding: 24px">
+            <div class="table-responsive" id="logs-table-container" class="u-p-container">
               <div class="loading">
                 <div class="loading-spinner"></div>
                 <p>Logs werden geladen...</p>
@@ -666,13 +681,13 @@
 
     <!-- Delete Confirmation Modal -->
     <div id="deleteLogsModal" class="modal-overlay">
-      <div class="modal-content" style="max-width: 500px">
+      <div class="modal-content" class="u-max-w-modal">
         <div class="modal-header" style="text-align: center; padding: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1)">
           <i class="fas fa-exclamation-triangle fa-2x" style="color: #f44336; display: block; margin-bottom: 16px"></i>
           <h3 style="color: var(--primary-color); margin: 0; font-size: 24px">Gefilterte Logs löschen</h3>
         </div>
 
-        <div class="modal-body" style="padding: 24px">
+        <div class="modal-body" class="u-p-container">
           <div
             class="warning-box"
             style="
@@ -719,7 +734,7 @@
               <p style="color: var(--text-secondary); margin-bottom: 12px">
                 Da Sie ALLE Aktionen löschen möchten, geben Sie bitte Ihr Root-Passwort ein:
               </p>
-              <input type="password" id="deleteLogsPassword" class="form-control" placeholder="Root-Passwort" style="width: 100%" />
+              <input type="password" id="deleteLogsPassword" class="form-control" placeholder="Root-Passwort" class="u-w-full" />
             </div>
           </div>
 

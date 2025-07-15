@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mitarbeiter Dokumente - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -470,7 +485,11 @@
     <div class="layout-container">
       <!-- Main Content Area -->
       <main class="main-content">
-        <div class="page-header"></div>
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
+        
+        <div class="container">
+          <div class="page-header"></div>
 
         <!-- Dokumente Suche -->
         <div class="card compact-card mb-3">
@@ -513,14 +532,13 @@
                 </tbody>
               </table>
             </div>
-            <div id="no-documents" class="no-documents-message" style="display: none">
+            <div id="no-documents" class="no-documents-message" class="u-hidden">
               <i class="fas fa-folder-open"></i>
               <p>Keine Dokumente gefunden</p>
             </div>
           </div>
         </div>
-        <!-- Breadcrumb Container -->
-        <div id="breadcrumb-container"></div>
+        </div>
       </main>
     </div>
 

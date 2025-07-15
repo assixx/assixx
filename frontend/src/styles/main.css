@@ -23,3 +23,6 @@
 @import "./profile-picture.css";
 @import "./chat-icons.css";
 @import "./user-info-update.css";
+
+/* Container Padding Fix - WICHTIG: Am Ende laden */
+@import "./container-padding-fix.css";

@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Root Profil - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -760,13 +775,14 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-
-        <div class="profile-container">
+        
+        <div class="container">
+          <div class="profile-container">
           <!-- Success/Error Messages -->
           <div id="message-container"></div>
 
           <!-- Pending Approvals Section -->
-          <div id="approvalSection" class="approval-section" style="display: none">
+          <div id="approvalSection" class="approval-section" class="u-hidden">
             <div class="approval-header">
               <i class="fas fa-hourglass-half"></i>
               <div>
@@ -789,12 +805,12 @@
                 </div>
               </div>
               <div class="profile-picture-actions">
-                <input type="file" id="profile-picture-input" accept="image/*" style="display: none" />
+                <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
                 <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
                   <i class="fas fa-camera"></i>
                   Bild ändern
                 </button>
-                <button class="btn btn-secondary" id="remove-picture-btn" style="display: none">
+                <button class="btn btn-secondary" id="remove-picture-btn" class="u-hidden">
                   <i class="fas fa-trash"></i>
                   Bild entfernen
                 </button>
@@ -862,6 +878,7 @@
                 Passwort ändern
               </button>
             </form>
+          </div>
           </div>
         </div>
       </main>
