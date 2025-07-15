@@ -376,8 +376,12 @@ app.use('/api/upload', uploadLimiter);
 
 // Debug middleware to log all requests
 app.use((req: Request, _res: Response, next: NextFunction): void => {
+  // Use separate arguments to avoid format string issues
   console.log(
-    `[DEBUG] ${req.method} ${req.originalUrl} - Body:`,
+    '[DEBUG]',
+    req.method,
+    req.originalUrl,
+    '- Body:',
     req.body ? Object.keys(req.body) : 'No body'
   );
   next();
