@@ -225,7 +225,7 @@ export function hasPermission(
     userPermissions.includes(requiredPermission) ||
     userPermissions.includes("*") ||
     userPermissions.some((p) => {
-      const regex = new RegExp("^" + p.replace("*", ".*") + "$");
+      const regex = new RegExp("^" + p.replace(/\*/g, ".*") + "$");
       return regex.test(requiredPermission);
     })
   );
