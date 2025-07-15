@@ -47,16 +47,16 @@ function sanitizeHtml(html: string): string {
   // Mehrere Durchgänge um verschachtelte Tags zu erwischen
   for (let i = 0; i < 3; i++) {
     dangerousTags.forEach((tag) => {
-      // Entferne komplette Tags mit Inhalt
-      const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}>`, 'gi');
+      // Entferne komplette Tags mit Inhalt (inkl. malformed end tags)
+      const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(fullTagRegex, '');
 
       // Entferne self-closing und einzelne Tags
       const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(singleTagRegex, '');
 
-      // Entferne closing Tags falls übrig
-      const closeTagRegex = new RegExp(`</${tag}>`, 'gi');
+      // Entferne closing Tags falls übrig (inkl. malformed tags)
+      const closeTagRegex = new RegExp(`</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(closeTagRegex, '');
     });
   }
@@ -349,8 +349,9 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       sanitizedHtml = sanitizeHtml(options.html);
 
       // Zusätzliche Sicherheitsvalidierung als Backup
-      // Einfacheres Pattern ohne katastrophisches Backtracking
-      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
+      // Pattern das auch malformed end tags erkennt (z.B. </script foo="bar">)
+      // codeql[js/bad-tag-filter] - This is a backup check after comprehensive sanitization
+      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi;
       const eventHandlerPattern = /\bon\w+\s*=/gi;
 
       if (
