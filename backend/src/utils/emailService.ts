@@ -20,6 +20,70 @@ import Feature from "../models/feature";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
+ * Entfernt gefährliche Tags und Attribute
+ * @param html - Der zu bereinigende HTML-Inhalt
+ * @returns Bereinigter HTML-Inhalt
+ */
+function sanitizeHtml(html: string): string {
+  // Listen für erlaubte Tags und Attribute sind als Kommentare dokumentiert
+  // Erlaubte Tags: a, b, i, em, strong, p, br, div, span, h1-h6, ul, ol, li, 
+  // table, tr, td, th, tbody, thead, img, blockquote, hr, pre, code
+  // Erlaubte Attribute: href, src, alt, title, width, height, style, class, id, target, rel
+  
+  // Entferne alle script-Tags komplett
+  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  
+  // Entferne alle iframe-Tags
+  sanitized = sanitized.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+  
+  // Entferne alle object/embed-Tags
+  sanitized = sanitized.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+  sanitized = sanitized.replace(/<embed\b[^>]*>/gi, '');
+  
+  // Entferne alle Event-Handler-Attribute (on*)
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
+  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '');
+  
+  // Entferne javascript: URLs
+  sanitized = sanitized.replace(/href\s*=\s*["']?\s*javascript:[^"'>]*/gi, 'href="#"');
+  
+  // Entferne data: URLs außer für Bilder
+  sanitized = sanitized.replace(/(?<!img\s[^>]*)\ssrc\s*=\s*["']?\s*data:[^"'>]*/gi, '');
+  
+  // Entferne vbscript: URLs
+  sanitized = sanitized.replace(/href\s*=\s*["']?\s*vbscript:[^"'>]*/gi, 'href="#"');
+  
+  // Entferne gefährliche CSS-Eigenschaften
+  sanitized = sanitized.replace(/style\s*=\s*["'][^"']*expression\s*\([^"']*\)[^"']*["']/gi, 'style=""');
+  sanitized = sanitized.replace(/style\s*=\s*["'][^"']*javascript:[^"']*["']/gi, 'style=""');
+  
+  // Weitere Bereinigung von style-Attributen
+  sanitized = sanitized.replace(/style\s*=\s*["']([^"']*)["']/gi, (_match, styleContent) => {
+    // Entferne gefährliche CSS-Eigenschaften
+    const cleanedStyle = styleContent
+      .replace(/expression\s*\([^)]*\)/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/behavior\s*:/gi, '')
+      .replace(/-moz-binding\s*:/gi, '')
+      .replace(/import\s*\(/gi, '');
+    
+    return cleanedStyle.trim() ? `style="${cleanedStyle}"` : '';
+  });
+  
+  // Entferne form-Tags
+  sanitized = sanitized.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '');
+  
+  // Entferne meta-Tags
+  sanitized = sanitized.replace(/<meta\b[^>]*>/gi, '');
+  
+  // Entferne link-Tags (außer für CSS, aber das sollte in E-Mails eh nicht verwendet werden)
+  sanitized = sanitized.replace(/<link\b[^>]*>/gi, '');
+  
+  return sanitized;
+}
+
 // Interfaces
 interface EmailConfig {
   host: string;
@@ -209,6 +273,30 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     const from: string =
       options.from || process.env.EMAIL_FROM || "Assixx <noreply@assixx.de>";
 
+    // HTML-Sanitization
+    let sanitizedHtml: string | undefined = options.html;
+    if (options.html) {
+      // HTML mit unserer Sanitization-Funktion bereinigen
+      sanitizedHtml = sanitizeHtml(options.html);
+      
+      // Zusätzliche Sicherheitsvalidierung als Backup
+      const scriptPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+      const eventHandlerPattern = /\bon\w+\s*=/gi;
+      
+      if (sanitizedHtml && (scriptPattern.test(sanitizedHtml) || eventHandlerPattern.test(sanitizedHtml))) {
+        logger.warn("Potenziell gefährlicher HTML-Inhalt nach Sanitization erkannt");
+        return { 
+          success: false, 
+          error: "E-Mail enthält nicht erlaubte HTML-Elemente" 
+        };
+      }
+      
+      // Log wenn Inhalte entfernt wurden
+      if (sanitizedHtml !== options.html) {
+        logger.warn("HTML-Inhalt wurde während der Sanitization modifiziert");
+      }
+    }
+
     // E-Mail senden
     const mailOptions: SendMailOptions = {
       from,
@@ -217,7 +305,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       bcc: options.bcc,
       subject: options.subject,
       text: options.text,
-      html: options.html,
+      html: sanitizedHtml,
       attachments: options.attachments,
     };
 
@@ -452,6 +540,7 @@ async function sendBulkNotification(
         .replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`)
         .replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
 
+      // Wichtig: personalizedHtml wird in sendEmail() sanitized
       addToQueue({
         to: user.email,
         subject: messageOptions.subject,
