@@ -111,6 +111,38 @@ Siehe [FEATURES.md](./docs/FEATURES.md) für Details und Preise.
 
 Siehe [ARCHITECTURE.md](./docs/ARCHITECTURE.md) für technische Details.
 
+## 🔒 Sicherheit
+
+### Authentifizierung & CSRF-Schutz
+
+Assixx verwendet einen **hybriden Authentifizierungsansatz** für maximale Sicherheit und Flexibilität:
+
+1. **JWT Bearer Tokens (Primär)**
+   - API-Aufrufe verwenden `Authorization: Bearer <token>` Header
+   - CSRF-immun, da nicht automatisch vom Browser gesendet
+   - Tokens werden im localStorage gespeichert
+
+2. **HTTP-Only Cookies (Fallback)**
+   - Für direkte HTML-Seitenzugriffe und SSR-Kompatibilität
+   - `SameSite=strict` Configuration für CSRF-Schutz
+   - Verhindert Cross-Site-Request-Forgery effektiv
+   - HTTP-Only verhindert XSS-Zugriff
+
+### Warum kein zusätzlicher CSRF-Token?
+
+- **SameSite=strict** bietet bereits exzellenten CSRF-Schutz ([Browser-Support >95%](https://caniuse.com/same-site-cookie-attribute))
+- Verhindert das Senden von Cookies bei Cross-Site-Requests komplett
+- Zusätzliche CSRF-Tokens wären redundant und würden nur Komplexität hinzufügen
+
+### Weitere Sicherheitsmaßnahmen
+
+- **Rate Limiting** auf allen Endpoints
+- **CORS** mit spezifischen erlaubten Origins
+- **Content Security Policy (CSP)** Headers
+- **XSS-Schutz** durch konsequentes HTML-Escaping
+- **SQL Injection Schutz** durch Prepared Statements
+- **Input Validation** auf allen API-Endpoints
+
 ## 🐳 Docker Quick Start
 
 ```bash

@@ -164,7 +164,13 @@ export function authenticateToken(
   // Try to get token from Authorization header first
   let token = authHeader && authHeader.split(' ')[1];
 
-  // If no token in header, try cookie (for HTML pages)
+  // Cookie-Fallback für HTML-Seiten und Server-Side Rendering
+  // WICHTIG: Cookies verwenden SameSite=strict für CSRF-Schutz
+  // Dies ist sicher, da:
+  // 1. SameSite=strict verhindert Cross-Site-Requests komplett
+  // 2. Cookies sind httpOnly (kein JS-Zugriff möglich)
+  // 3. Primär für direkte Seitenzugriffe gedacht (nicht API-Calls)
+  // Siehe README.md für vollständige Sicherheitsdokumentation
   if (!token && req.cookies && req.cookies.token) {
     token = req.cookies.token;
   }
