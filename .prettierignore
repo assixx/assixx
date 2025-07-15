@@ -38,6 +38,10 @@ uploads/
 # Generated files
 eslint-report.json
 
+# External libraries
+frontend/src/styles/lib/
+frontend/src/scripts/lib/
+
 # Package lock files
 package-lock.json
 yarn.lock

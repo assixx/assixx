@@ -3,24 +3,24 @@
  * Uses controller pattern for cleaner code
  */
 
-import express, { Router } from 'express';
-import authController from '../controllers/auth.controller';
-import { typed } from '../utils/routeHandlers';
-import { security } from '../middleware/security';
-import { body } from 'express-validator';
-import { createValidation } from '../middleware/validation';
-import { successResponse } from '../types/response.types';
+import express, { Router } from "express";
+import authController from "../controllers/auth.controller";
+import { typed } from "../utils/routeHandlers";
+import { security } from "../middleware/security";
+import { body } from "express-validator";
+import { createValidation } from "../middleware/validation";
+import { successResponse } from "../types/response.types";
 import {
   generateCSRFTokenMiddleware,
   attachCSRFToken,
   strictAuthLimiter,
-} from '../middleware/security-enhanced';
-import { validateSignup } from '../middleware/validators';
+} from "../middleware/security-enhanced";
+import { validateSignup } from "../middleware/validators";
 
 const router: Router = express.Router();
 
 // Debug logging
-console.log('[DEBUG] Auth routes loading...');
+console.log("[DEBUG] Auth routes loading...");
 
 // Request body interfaces
 interface LoginBody {
@@ -44,54 +44,54 @@ interface ValidateFingerprintBody {
 
 // Validation schemas
 const loginValidation = createValidation([
-  body('password').notEmpty().withMessage('Passwort ist erforderlich'),
-  body('username').optional().trim(),
-  body('email').optional().isEmail().normalizeEmail(),
+  body("password").notEmpty().withMessage("Passwort ist erforderlich"),
+  body("username").optional().trim(),
+  body("email").optional().isEmail().normalizeEmail(),
 ]);
 
 const validateFingerprintValidation = createValidation([
-  body('fingerprint')
+  body("fingerprint")
     .notEmpty()
     .trim()
-    .withMessage('Fingerprint ist erforderlich'),
+    .withMessage("Fingerprint ist erforderlich"),
 ]);
 
 // Public routes with enhanced rate limiting and validation
 router.post(
-  '/login',
+  "/login",
   strictAuthLimiter,
   ...security.auth(loginValidation),
   typed.body<LoginBody>(async (req, res) => {
-    console.log('[DEBUG] /api/auth/login endpoint hit');
+    console.log("[DEBUG] /api/auth/login endpoint hit");
     await authController.login(req, res);
-  })
+  }),
 );
 router.post(
-  '/register',
+  "/register",
   strictAuthLimiter,
   ...validateSignup,
   typed.body<RegisterBody>(async (req, res) => {
     await authController.register(req, res);
-  })
+  }),
 );
 router.get(
-  '/logout',
+  "/logout",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.logout(req, res);
-  })
+  }),
 );
 router.post(
-  '/logout',
+  "/logout",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.logout(req, res);
-  })
+  }),
 ); // Support both GET and POST
 
 // CSRF Token endpoint
 router.get(
-  '/csrf-token',
+  "/csrf-token",
   generateCSRFTokenMiddleware,
   attachCSRFToken,
   typed.public((_req, res) => {
@@ -100,42 +100,42 @@ router.get(
         {
           csrfToken: res.locals.csrfToken,
         },
-        'CSRF token generated successfully'
-      )
+        "CSRF token generated successfully",
+      ),
     );
-  })
+  }),
 );
 
 // Protected routes
 router.get(
-  '/check',
+  "/check",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.checkAuth(req, res);
-  })
+  }),
 );
 router.get(
-  '/user',
+  "/user",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.getUserProfile(req, res);
-  })
+  }),
 );
 
 // Session validation endpoints
 router.get(
-  '/validate',
+  "/validate",
   ...security.user(),
   typed.auth(async (req, res) => {
     await authController.validateToken(req, res);
-  })
+  }),
 );
 router.post(
-  '/validate-fingerprint',
+  "/validate-fingerprint",
   ...security.user(validateFingerprintValidation),
   typed.body<ValidateFingerprintBody>(async (req, res) => {
     await authController.validateFingerprint(req, res);
-  })
+  }),
 );
 
 export default router;

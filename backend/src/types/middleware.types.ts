@@ -3,16 +3,16 @@
  * Types for Express middleware functions with proper typing
  */
 
-import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { AuthenticatedRequest, AuthUser } from './request.types';
-import { ValidationChain } from 'express-validator';
-import { RateLimiterType, RateLimiterMiddleware } from './security.types';
+import { Request, Response, NextFunction, RequestHandler } from "express";
+import { AuthenticatedRequest, AuthUser } from "./request.types";
+import { ValidationChain } from "express-validator";
+import { RateLimiterType, RateLimiterMiddleware } from "./security.types";
 
 // Generic middleware that adds properties to request
 export type MiddlewareWithRequest<T extends Request = Request> = (
   req: T,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => Promise<void> | void;
 
 // Authentication middleware that ensures user is authenticated
@@ -23,12 +23,12 @@ export type AuthenticationMiddleware = MiddlewareWithRequest<Request> & {
 
 // Role-based authorization middleware
 export type AuthorizationMiddleware = (
-  role: string | string[]
+  role: string | string[],
 ) => MiddlewareWithRequest<AuthenticatedRequest>;
 
 // Permission-based authorization middleware
 export type PermissionMiddleware = (
-  permission: string | string[]
+  permission: string | string[],
 ) => MiddlewareWithRequest<AuthenticatedRequest>;
 
 // Rate limiter middleware factory is imported from security.types
@@ -41,12 +41,12 @@ export type ErrorHandlerMiddleware = (
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => void;
 
 // Async handler wrapper type
 export type AsyncHandler<T extends Request = Request> = (
-  fn: (req: T, res: Response, next: NextFunction) => Promise<void>
+  fn: (req: T, res: Response, next: NextFunction) => Promise<void>,
 ) => RequestHandler;
 
 // Combined security middleware options
@@ -71,7 +71,7 @@ export interface MiddlewareFactories {
 
 // Type guard to check if request is authenticated
 export function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null && typeof req.user === 'object';
+  return "user" in req && req.user != null && typeof req.user === "object";
 }
 
 // Type guard to check if user has specific role
@@ -82,18 +82,18 @@ export function hasRole(user: AuthUser, role: string | string[]): boolean {
 
 // Helper to create typed middleware
 export function createMiddleware<T extends Request = Request>(
-  handler: MiddlewareWithRequest<T>
+  handler: MiddlewareWithRequest<T>,
 ): RequestHandler {
   return handler as RequestHandler;
 }
 
 // Helper to create authenticated middleware
 export function createAuthenticatedMiddleware(
-  handler: MiddlewareWithRequest<AuthenticatedRequest>
+  handler: MiddlewareWithRequest<AuthenticatedRequest>,
 ): RequestHandler {
   return ((req: Request, res: Response, next: NextFunction) => {
     if (!isAuthenticated(req)) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     return handler(req, res, next);
   }) as RequestHandler;
@@ -107,7 +107,7 @@ export const middlewareStacks = {
 
   authenticatedRoute: (
     rateLimiter: RateLimiterMiddleware,
-    authenticate: AuthenticationMiddleware
+    authenticate: AuthenticationMiddleware,
   ): RequestHandler[] => [
     rateLimiter.authenticated as RequestHandler,
     authenticate,
@@ -116,17 +116,17 @@ export const middlewareStacks = {
   adminRoute: (
     rateLimiter: RateLimiterMiddleware,
     authenticate: AuthenticationMiddleware,
-    authorize: AuthorizationMiddleware
+    authorize: AuthorizationMiddleware,
   ): RequestHandler[] => [
     rateLimiter.admin as RequestHandler,
     authenticate,
-    authorize('admin') as RequestHandler,
+    authorize("admin") as RequestHandler,
   ],
 
   apiRoute: (
     rateLimiter: RateLimiterMiddleware,
     authenticate: AuthenticationMiddleware,
-    validate?: ValidationMiddleware
+    validate?: ValidationMiddleware,
   ): RequestHandler[] => {
     const stack: RequestHandler[] = [
       rateLimiter.api as RequestHandler,

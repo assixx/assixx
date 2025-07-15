@@ -1,6 +1,6 @@
 // Authentication-specific Type Definitions
 
-import { User } from './models';
+import { User } from "./models";
 
 // Authentication Results
 export interface AuthResult {
@@ -14,8 +14,8 @@ export interface AuthResult {
 export interface TokenPayload {
   id: number;
   username: string;
-  role: 'admin' | 'employee' | 'root';
-  activeRole?: 'admin' | 'employee' | 'root'; // For role switching
+  role: "admin" | "employee" | "root";
+  activeRole?: "admin" | "employee" | "root"; // For role switching
   tenant_id: number | null;
   fingerprint?: string; // Browser fingerprint for session isolation
   sessionId?: string; // Unique session identifier
@@ -36,7 +36,7 @@ export interface UserRegistrationData {
   email: string;
   vorname: string;
   nachname: string;
-  role?: 'admin' | 'employee';
+  role?: "admin" | "employee";
   tenant_id?: number;
 }
 

@@ -336,6 +336,13 @@ pnpm run format:check
 2. Dann `pnpm run lint:fix` für ESLint-Regeln
 3. Abschließend `pnpm run type-check` für TypeScript-Prüfung
 
+### 🚀 Kombinierter Befehl (EMPFOHLEN):
+
+```bash
+# Alles in einem Befehl - Format, Lint und TypeCheck
+docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check"
+```
+
 ## ⚡ Quick Start (Alle Checks in einem Befehl)
 
 ### 🐳 Docker Quick Start:
@@ -343,8 +350,7 @@ pnpm run format:check
 ```bash
 # Docker Status und alle wichtigen Checks
 docker-compose ps && \
-docker exec assixx-backend pnpm run type-check && \
-docker exec assixx-backend pnpm run lint:ts && \
+docker exec assixx-backend sh -c "pnpm run format && pnpm run lint:fix && pnpm run type-check" && \
 curl -s http://localhost:3000/health | jq '.' && \
 docker logs assixx-backend --tail=10 && \
 git status
