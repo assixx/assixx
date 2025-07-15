@@ -16,38 +16,40 @@ const router: ExpressRouter = Router();
 router.use(authenticateToken);
 
 // Public endpoints (all authenticated users)
-router.get("/", kvpController.getAll);
-router.get("/categories", kvpController.getCategories);
-router.get("/stats", checkRole(["admin", "root"]), kvpController.getStatistics);
-router.get("/:id", kvpController.getById);
+router.get("/", rateLimiter.authenticated, kvpController.getAll);
+router.get("/categories", rateLimiter.authenticated, kvpController.getCategories);
+router.get("/stats", rateLimiter.admin, checkRole(["admin", "root"]), kvpController.getStatistics);
+router.get("/:id", rateLimiter.authenticated, kvpController.getById);
 
 // Creation (employees and admins in employee mode)
-router.post("/", kvpController.create);
+router.post("/", rateLimiter.authenticated, kvpController.create);
 
 // Updates (based on permissions)
-router.put("/:id", kvpController.update);
+router.put("/:id", rateLimiter.authenticated, kvpController.update);
 
 // Archive (soft delete)
-router.delete("/:id", kvpController.delete);
+router.delete("/:id", rateLimiter.authenticated, kvpController.delete);
 
 // Admin-only share/unshare functions
 router.post(
   "/:id/share",
+  rateLimiter.admin,
   checkRole(["admin", "root"]),
   kvpController.shareSuggestion,
 );
 router.post(
   "/:id/unshare",
+  rateLimiter.admin,
   checkRole(["admin", "root"]),
   kvpController.unshareSuggestion,
 );
 
 // Comments
-router.get("/:id/comments", kvpController.getComments);
-router.post("/:id/comments", kvpController.addComment);
+router.get("/:id/comments", rateLimiter.authenticated, kvpController.getComments);
+router.post("/:id/comments", rateLimiter.authenticated, kvpController.addComment);
 
 // Attachments
-router.get("/:id/attachments", kvpController.getAttachments);
+router.get("/:id/attachments", rateLimiter.authenticated, kvpController.getAttachments);
 router.post(
   "/:id/attachments",
   rateLimiter.upload,
