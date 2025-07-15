@@ -72,12 +72,37 @@
   --margin-text-top: 4px;
   --margin-icon-right: 8px;
   
-  /* Glassmorphismus (aus variables.css übernehmen) */
+  /* Glassmorphismus - Zentrale Design-Standards */
   --glass-bg: rgba(255, 255, 255, 0.02);
   --glass-bg-hover: rgba(255, 255, 255, 0.03);
   --glass-bg-active: rgba(255, 255, 255, 0.05);
   --glass-border: 1px solid rgba(255, 255, 255, 0.1);
   --glass-shadow: rgba(0, 0, 0, 0.1);
+  
+  /* Glassmorphismus - Komplette Pattern-Definitionen */
+  --glass-backdrop: blur(20px) saturate(180%);
+  --glass-backdrop-subtle: blur(10px) saturate(150%);
+  --glass-backdrop-strong: blur(30px) saturate(200%);
+  
+  /* Standard Glass Card Pattern (wie stat-card in root-dashboard) */
+  --glass-card-bg: hsla(0, 0%, 100%, 0.02);
+  --glass-card-border: 1px solid hsla(0, 0%, 100%, 0.1);
+  --glass-card-shadow: var(--shadow-sm);
+  --glass-card-padding: var(--spacing-lg);
+  --glass-card-radius: var(--radius-md);
+  
+  /* Glass Card Hover States */
+  --glass-card-bg-hover: hsla(0, 0%, 100%, 0.03);
+  --glass-card-shadow-hover: var(--shadow-md);
+  --glass-card-transform-hover: translateY(-2px);
+  
+  /* Glass Form Elements Pattern */
+  --glass-form-bg: rgba(255, 255, 255, 0.04);
+  --glass-form-bg-hover: rgba(255, 255, 255, 0.06);
+  --glass-form-bg-focus: rgba(255, 255, 255, 0.08);
+  --glass-form-border: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-form-border-focus: 1px solid var(--primary-color);
+  --glass-form-backdrop: blur(5px);
   
   /* Blur-Effekte */
   --blur-sm: blur(10px);
@@ -182,13 +207,14 @@ body {
 
 /* Cards */
 .card {
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  border-radius: var(--glass-card-radius);
+  padding: var(--glass-card-padding);
   margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid hsla(0,0%,100%,.1);
-  backdrop-filter: blur(20px) saturate(180%);
-  background: hsla(0,0%,100%,.02);
+  box-shadow: var(--glass-card-shadow);
+  border: var(--glass-card-border);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  background: var(--glass-card-bg);
 }
 
 .card-header {
@@ -294,10 +320,10 @@ body {
 .form-control {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--glass-form-bg);
+  backdrop-filter: var(--glass-form-backdrop);
+  -webkit-backdrop-filter: var(--glass-form-backdrop);
+  border: var(--glass-form-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 14px;
@@ -305,14 +331,14 @@ body {
 }
 
 .form-control:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-form-bg-hover);
   border-color: rgba(255, 255, 255, 0.15);
 }
 
 .form-control:focus {
   outline: none;
   border-color: var(--primary-color);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--glass-form-bg-focus);
   box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
 }
 
@@ -413,20 +439,18 @@ body {
 }
 
 .stat-card {
-  background-color: var(--background-light);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid hsla(0,0%,100%,.1);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  background: var(--glass-card-bg);
+  border: var(--glass-card-border);
+  border-radius: var(--glass-card-radius);
+  box-shadow: var(--glass-card-shadow);
+  padding: var(--glass-card-padding);
+  text-align: center;
   /* transition: transform 0.3s ease; */
-  backdrop-filter: blur(20px) saturate(180%);
-  background: hsla(0,0%,100%,.02);
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
+
 
 .stat-value {
   font-size: 32px;
@@ -478,6 +502,49 @@ body {
 
 .fade-in {
   /* animation: fadeIn 0.3s ease; */
+}
+
+/* Glassmorphismus Utility Classes */
+.glass-card {
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  background: var(--glass-card-bg);
+  border: var(--glass-card-border);
+  border-radius: var(--glass-card-radius);
+  box-shadow: var(--glass-card-shadow);
+  padding: var(--glass-card-padding);
+  /* transition: all 0.3s ease; */
+}
+
+.glass-card:hover {
+  background: var(--glass-card-bg-hover);
+  box-shadow: var(--glass-card-shadow-hover);
+  transform: var(--glass-card-transform-hover);
+}
+
+/* Zusätzliche Glass Patterns */
+.glass-widget {
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  background: var(--glass-card-bg);
+  border: var(--glass-card-border);
+  border-radius: var(--glass-card-radius);
+  box-shadow: var(--glass-card-shadow);
+  padding: var(--glass-card-padding);
+}
+
+.glass-form {
+  backdrop-filter: var(--glass-form-backdrop);
+  -webkit-backdrop-filter: var(--glass-form-backdrop);
+  background: var(--glass-form-bg);
+  border: var(--glass-form-border);
+}
+
+.glass-subtle {
+  backdrop-filter: var(--glass-backdrop-subtle);
+  -webkit-backdrop-filter: var(--glass-backdrop-subtle);
+  background: var(--glass-bg);
+  border: var(--glass-border);
 }
 
 /* Utility Classes */
