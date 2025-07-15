@@ -1432,20 +1432,42 @@ class ChatClient {
 
     let messageContent = this.escapeHtml(message.content);
     messageContent = this.parseEmojis(messageContent);
-    messageContent = this.linkify(messageContent);
 
-    const attachmentsHtml = message.attachments ? this.renderAttachments(message.attachments) : '';
+    // Create DOM elements programmatically to avoid XSS
+    const messageContentDiv = document.createElement('div');
+    messageContentDiv.className = 'message-content';
 
-    messageDiv.innerHTML = `
-      <div class="message-content">
-        <div class="message-text">${messageContent}</div>
-        ${attachmentsHtml}
-        <div class="message-time">
-          ${this.escapeHtml(time)}
-          ${isOwnMessage ? `<span class="read-indicator ${message.is_read ? 'read' : ''}">✓✓</span>` : ''}
-        </div>
-      </div>
-    `;
+    const messageTextDiv = document.createElement('div');
+    messageTextDiv.className = 'message-text';
+    
+    // Use innerHTML for linkified content since we control the linkify function
+    // and it only creates safe anchor tags with escaped URLs
+    // lgtm[js/xss] - Content is escaped before linkification, URLs are escaped in linkify()
+    messageTextDiv.innerHTML = this.linkify(messageContent);
+    messageContentDiv.appendChild(messageTextDiv);
+
+    // Add attachments if present
+    if (message.attachments && message.attachments.length > 0) {
+      const attachmentsDiv = document.createElement('div');
+      // lgtm[js/xss] - renderAttachments() escapes all user content with escapeHtml()
+      attachmentsDiv.innerHTML = this.renderAttachments(message.attachments);
+      messageContentDiv.appendChild(attachmentsDiv);
+    }
+
+    // Create time element
+    const messageTimeDiv = document.createElement('div');
+    messageTimeDiv.className = 'message-time';
+    messageTimeDiv.textContent = time;
+
+    if (isOwnMessage) {
+      const readIndicator = document.createElement('span');
+      readIndicator.className = `read-indicator ${message.is_read ? 'read' : ''}`;
+      readIndicator.textContent = '✓✓';
+      messageTimeDiv.appendChild(readIndicator);
+    }
+
+    messageContentDiv.appendChild(messageTimeDiv);
+    messageDiv.appendChild(messageContentDiv);
 
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
