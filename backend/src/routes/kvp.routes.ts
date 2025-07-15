@@ -58,12 +58,10 @@ router.post(
 // This route performs expensive file system operations and requires strict rate limiting
 router.get(
   "/attachments/:attachmentId/download",
-  [
-    // Rate limiting middleware to prevent DoS attacks
-    rateLimiter.download,
-    // Controller handler that performs file system access
-    kvpController.downloadAttachment as unknown as RequestHandler,
-  ],
+  // Rate limiting middleware to prevent DoS attacks
+  rateLimiter.download,
+  // Controller handler that performs file system access
+  kvpController.downloadAttachment as unknown as RequestHandler,
 );
 
 export default router;
