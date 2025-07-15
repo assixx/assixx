@@ -111,7 +111,9 @@ export async function authenticateUser(
     }
   } catch (error) {
     console.error(
-      `Error during authentication for user ${usernameOrEmail}:`,
+      'Error during authentication for user',
+      usernameOrEmail,
+      ':',
       error
     );
     throw error;
