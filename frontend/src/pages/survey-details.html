@@ -396,11 +396,11 @@
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Anonymität</span>
-                                <span class="info-value">${surveyData.is_anonymous ? 'Anonym' : 'Nicht anonym'}</span>
+                                <span class="info-value">${escapeHtml(surveyData.is_anonymous ? 'Anonym' : 'Nicht anonym')}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Mehrfachteilnahme</span>
-                                <span class="info-value">${surveyData.allow_multiple_responses ? 'Erlaubt' : 'Nicht erlaubt'}</span>
+                                <span class="info-value">${escapeHtml(surveyData.allow_multiple_responses ? 'Erlaubt' : 'Nicht erlaubt')}</span>
                             </div>
                         </div>
                         
@@ -422,7 +422,7 @@
                 <!-- Fragen -->
                 <div class="details-card">
                     <div class="details-header">
-                        <h2 class="details-title">Fragen (${surveyData.questions ? surveyData.questions.length : 0})</h2>
+                        <h2 class="details-title">Fragen (${escapeHtml(surveyData.questions ? surveyData.questions.length : 0)})</h2>
                     </div>
                     <div class="details-body">
                         <div class="question-list">
@@ -436,7 +436,7 @@
                     <button class="btn btn-primary" onclick="editSurvey()">
                         <i class="fas fa-edit"></i> Bearbeiten
                     </button>
-                    <button class="btn btn-secondary" onclick="viewResults(${surveyId})">
+                    <button class="btn btn-secondary" onclick="viewResults(${escapeHtml(surveyId)})">
                         <i class="fas fa-chart-bar"></i> Ergebnisse anzeigen
                     </button>
                     <button class="btn btn-secondary" onclick="duplicateSurvey()">
@@ -459,12 +459,12 @@
           .map(
             (question, index) => `
                     <div class="question-item">
-                        <div class="question-number">${index + 1}</div>
+                        <div class="question-number">${escapeHtml(index + 1)}</div>
                         <div class="question-content">
                             <p class="question-text">${escapeHtml(question.question_text)}</p>
                             <div class="question-meta">
                                 ${escapeHtml(getQuestionTypeLabel(question.type))} 
-                                ${question.is_required ? '• Pflichtfeld' : '• Optional'}
+                                ${escapeHtml(question.is_required ? '• Pflichtfeld' : '• Optional')}
                             </div>
                         </div>
                     </div>
@@ -538,7 +538,7 @@
       }
 
       function viewResults(id) {
-        window.location.href = `/survey-results?id=${id || surveyId}`;
+        window.location.href = `/survey-results?id=${encodeURIComponent(id || surveyId)}`;
       }
 
       function duplicateSurvey() {
