@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gehaltsabrechnungen - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -16,12 +31,15 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
+        
         <div class="container">
           <!-- Tabs Container -->
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Meine Gehaltsabrechnungen</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Aktuelle und archivierte Lohnabrechnungen einsehen</p>
+              <p class="text-secondary" class="u-mt-text">Aktuelle und archivierte Lohnabrechnungen einsehen</p>
             </div>
 
             <div class="card-content">
@@ -657,8 +675,6 @@
             }
           }
         </script>
-        <!-- Breadcrumb Container -->
-        <div id="breadcrumb-container"></div>
       </main>
     </div>
     <!-- Unified Navigation -->

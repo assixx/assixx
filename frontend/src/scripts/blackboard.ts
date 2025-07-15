@@ -1801,8 +1801,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
 
 declare global {
   interface Window {
-    showModal?: (modalId: string) => void;
-    hideModal?: (modalId: string) => void;
+    // showModal and hideModal are declared in modal-manager.ts
     openEntryForm: typeof openEntryForm;
     viewEntry: typeof viewEntry;
     editEntry: typeof openEntryForm;

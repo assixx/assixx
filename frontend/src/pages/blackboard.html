@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blackboard - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/blackboard.css');
@@ -237,15 +252,16 @@
       <!-- Main Content -->
       <main class="main-content">
         <div id="breadcrumb-container"></div>
-        <!-- Filterleiste -->
+        <div class="container">
+          <!-- Filterleiste -->
         <div class="card mb-4">
-          <div class="card-header" style="cursor: pointer" id="filterToggle">
+          <div class="card-header" class="u-cursor-pointer" id="filterToggle">
             <div style="display: flex; justify-content: space-between; align-items: center">
-              <h3 class="card-title" style="margin: 0">Filter & Suche</h3>
+              <h3 class="card-title" class="u-m-0">Filter & Suche</h3>
               <i class="fas fa-chevron-down" id="filterToggleIcon" style="/* transition: transform 0.3s ease */"></i>
             </div>
           </div>
-          <div class="card-body" id="filterContent" style="display: none">
+          <div class="card-body" id="filterContent" class="u-hidden">
             <!-- Moderne Filter-Kontrollen -->
             <div class="modern-filters">
               <!-- Floating Search Bar -->
@@ -307,11 +323,11 @@
                 <i class="fas fa-minus"></i>
               </button>
             </div>
-            <button id="newEntryBtn" class="btn btn-primary" style="margin: 0">
+            <button id="newEntryBtn" class="btn btn-primary" class="u-m-0">
               <i class="fas fa-plus me-2"></i>
               Neuer Eintrag
             </button>
-            <button id="directAttachBtn" class="btn btn-primary" style="margin: 0">
+            <button id="directAttachBtn" class="btn btn-primary" class="u-m-0">
               <i class="fas fa-paperclip me-2"></i>
               Bild/PDF anheften
             </button>
@@ -364,12 +380,13 @@
             <!-- Wird dynamisch gefüllt -->
           </div>
         </div>
+        </div>
       </main>
     </div>
     <!-- Ende des layout-container -->
 
     <!-- Entry Detail Modal -->
-    <div class="modal-overlay" id="entryDetailModal" style="display: none">
+    <div class="modal-overlay" id="entryDetailModal" class="u-hidden">
       <div class="modal-container">
         <div class="modal-header">
           <h2 id="entryDetailModalLabel">Eintrag Details</h2>
@@ -388,7 +405,7 @@
     </div>
 
     <!-- Entry Form Modal -->
-    <div class="modal" id="entryFormModal" style="display: none">
+    <div class="modal" id="entryFormModal" class="u-hidden">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="entryFormModalLabel">Neuer Eintrag</h3>
@@ -427,7 +444,7 @@
             </select>
           </div>
 
-          <div class="form-group" id="orgIdContainer" style="display: none">
+          <div class="form-group" id="orgIdContainer" class="u-hidden">
             <label for="entryOrgId" class="form-label">Welche Abteilung/Team?</label>
             <select class="form-control" id="entryOrgId" name="org_id">
               <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
@@ -501,11 +518,11 @@
               </div>
               <p class="upload-text">Dateien hierher ziehen oder klicken zum Auswählen</p>
               <p class="upload-hint">Max. 5 Dateien, je 10MB (PDF, JPG, PNG, GIF)</p>
-              <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" style="display: none" />
+              <input type="file" id="attachmentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.gif" class="u-hidden" />
             </div>
 
             <!-- Anhang-Vorschau -->
-            <div id="attachmentPreview" class="attachment-preview" style="display: none">
+            <div id="attachmentPreview" class="attachment-preview" class="u-hidden">
               <h4 class="preview-title">Ausgewählte Dateien:</h4>
               <div id="attachmentList" class="attachment-list"></div>
             </div>
@@ -519,7 +536,7 @@
     </div>
 
     <!-- Direct Attachment Modal -->
-    <div class="modal" id="directAttachModal" style="display: none">
+    <div class="modal" id="directAttachModal" class="u-hidden">
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
           <h3 class="modal-title">Bild/PDF direkt anheften</h3>
@@ -543,7 +560,7 @@
                 <i class="fas fa-cloud-upload-alt" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px"></i>
                 <p class="mb-2">Datei hier ablegen oder klicken zum Auswählen</p>
                 <p class="text-secondary mb-0" style="font-size: 0.85rem">Unterstützt: JPG, PNG, PDF (max. 10 MB)</p>
-                <input type="file" id="directAttachInput" accept="image/jpeg,image/jpg,image/png,application/pdf" style="display: none" />
+                <input type="file" id="directAttachInput" accept="image/jpeg,image/jpg,image/png,application/pdf" class="u-hidden" />
               </div>
             </div>
 
@@ -622,7 +639,7 @@
     </div>
 
     <!-- Confirmation Modal -->
-    <div class="modal-overlay" id="confirmationModal" style="display: none">
+    <div class="modal-overlay" id="confirmationModal" class="u-hidden">
       <div class="modal-container modal-sm">
         <div class="modal-header">
           <h2 id="confirmationModalLabel">Bestätigung</h2>
@@ -639,7 +656,7 @@
     </div>
 
     <!-- Confirmation Status Modal -->
-    <div class="modal-overlay" id="confirmationStatusModal" style="display: none">
+    <div class="modal-overlay" id="confirmationStatusModal" class="u-hidden">
       <div class="modal-container modal-lg">
         <div class="modal-header">
           <h2 id="confirmationStatusModalLabel">Lesebestätigungen</h2>

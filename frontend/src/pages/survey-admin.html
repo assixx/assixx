@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Umfrage-Verwaltung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <!-- Font Awesome CDN als Fallback -->
     <link
@@ -688,8 +703,9 @@
       <main class="main-content">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
-
-        <div class="survey-container">
+        
+        <div class="container">
+          <div class="survey-container">
           <div class="survey-header">
             <div class="survey-title">
               <i class="fas fa-poll"></i>
@@ -721,6 +737,7 @@
             <div id="surveyTemplates" class="template-grid">
               <!-- Templates will be loaded here -->
             </div>
+          </div>
           </div>
         </div>
       </main>
@@ -764,12 +781,12 @@
           <div class="form-group">
             <label class="form-label">Laufzeit</label>
             <div style="display: flex; gap: var(--spacing-md)">
-              <div style="flex: 1">
-                <label class="form-label" style="font-size: 0.9rem">Startdatum</label>
+              <div class="u-flex-1">
+                <label class="form-label" class="u-fs-09rem">Startdatum</label>
                 <input type="datetime-local" id="startDate" class="form-control" />
               </div>
-              <div style="flex: 1">
-                <label class="form-label" style="font-size: 0.9rem">Enddatum</label>
+              <div class="u-flex-1">
+                <label class="form-label" class="u-fs-09rem">Enddatum</label>
                 <input type="datetime-local" id="endDate" class="form-control" />
               </div>
             </div>
@@ -794,7 +811,7 @@
           </div>
 
           <!-- Department Selection (hidden by default) -->
-          <div class="form-group" id="departmentSelection" style="display: none">
+          <div class="form-group" id="departmentSelection" class="u-hidden">
             <label class="form-label">Abteilungen auswählen</label>
             <select
               id="departmentSelect"
@@ -1288,7 +1305,7 @@
                             <input type="hidden" id="${questionId}_typeValue" value="text" />
                         </div>
                     </div>
-                    <div class="options-container" id="${questionId}_options" style="display: none;">
+                    <div class="options-container" id="${questionId}_options" class="u-hidden">
                         <!-- Options will be added here for choice questions -->
                     </div>
                     <div class="checkbox-group">

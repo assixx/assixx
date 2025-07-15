@@ -61,6 +61,21 @@
       }
     </style>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -70,7 +85,11 @@
     <div class="layout-container">
       <!-- Main Content -->
       <main class="main-content">
-        <!-- Page Header -->
+        <!-- Breadcrumb Container -->
+        <div id="breadcrumb-container"></div>
+        
+        <div class="container">
+          <!-- Page Header -->
         <div class="page-header">
           <div class="page-title-section">
             <p id="page-subtitle">Dokumente die für alle Mitarbeiter sichtbar sind</p>
@@ -149,13 +168,12 @@
             <p>Dokumente werden geladen...</p>
           </div>
         </div>
-        <!-- Breadcrumb Container -->
-        <div id="breadcrumb-container"></div>
+        </div>
       </main>
     </div>
 
     <!-- Document Preview Modal -->
-    <div id="documentPreviewModal" class="modal" style="display: none">
+    <div id="documentPreviewModal" class="modal" class="u-hidden">
       <div class="modal-content modal-large">
         <div class="modal-header">
           <h2>
@@ -169,7 +187,7 @@
         <div class="modal-body">
           <div class="document-preview-container">
             <iframe id="documentPreviewFrame" class="document-preview-frame" title="Dokument Vorschau"></iframe>
-            <div id="previewError" class="preview-error" style="display: none">
+            <div id="previewError" class="preview-error" class="u-hidden">
               <i class="fas fa-exclamation-circle"></i>
               <p>Vorschau nicht verfügbar</p>
               <small>Das Dokument kann nicht in der Vorschau angezeigt werden.</small>

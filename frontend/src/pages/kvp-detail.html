@@ -572,7 +572,8 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        <!-- Detail Container -->
+        <div class="container">
+          <!-- Detail Container -->
         <div class="detail-container">
           <!-- Main Content -->
           <div class="detail-main">
@@ -615,7 +616,7 @@
                   <span class="info-label">Status</span>
                   <span class="info-value" id="status"></span>
                   <!-- Status Dropdown for Admins -->
-                  <div class="custom-dropdown admin-only" id="statusDropdownContainer" style="display: none">
+                  <div class="custom-dropdown admin-only" id="statusDropdownContainer" class="u-hidden">
                     <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
                       <span>Neu</span>
                       <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -632,15 +633,15 @@
                     <input type="hidden" name="statusValue" id="statusValue" />
                   </div>
                 </div>
-                <div class="info-item" id="assignedToItem" style="display: none">
+                <div class="info-item" id="assignedToItem" class="u-hidden">
                   <span class="info-label">Zugewiesen an</span>
                   <span class="info-value" id="assignedTo"></span>
                 </div>
-                <div class="info-item" id="implementationItem" style="display: none">
+                <div class="info-item" id="implementationItem" class="u-hidden">
                   <span class="info-label">Umsetzung</span>
                   <span class="info-value" id="implementationDate"></span>
                 </div>
-                <div class="info-item" id="rejectionItem" style="display: none">
+                <div class="info-item" id="rejectionItem" class="u-hidden">
                   <span class="info-label">Ablehnungsgrund</span>
                   <span class="info-value" id="rejectionReason"></span>
                 </div>
@@ -662,7 +663,7 @@
             </div>
 
             <!-- Expected Benefit -->
-            <div class="content-section" id="benefitSection" style="display: none">
+            <div class="content-section" id="benefitSection" class="u-hidden">
               <h3 class="section-title">
                 <i class="fas fa-chart-line"></i>
                 Erwarteter Nutzen
@@ -671,7 +672,7 @@
             </div>
 
             <!-- Photo Gallery -->
-            <div class="content-section" id="photoSection" style="display: none">
+            <div class="content-section" id="photoSection" class="u-hidden">
               <h3 class="section-title">
                 <i class="fas fa-images"></i>
                 Fotos
@@ -682,7 +683,7 @@
             </div>
 
             <!-- Financial Info -->
-            <div class="content-section" id="financialSection" style="display: none">
+            <div class="content-section" id="financialSection" class="u-hidden">
               <h3 class="section-title">
                 <i class="fas fa-euro-sign"></i>
                 Finanzielle Informationen
@@ -710,7 +711,7 @@
               <form class="comment-form" id="commentForm">
                 <textarea class="comment-input" id="commentInput" placeholder="Kommentar hinzufügen..." required></textarea>
                 <div>
-                  <label class="admin-only" style="display: none">
+                  <label class="admin-only" class="u-hidden">
                     <input type="checkbox" id="internalComment" />
                     Interner Kommentar
                   </label>
@@ -731,7 +732,7 @@
           <!-- Sidebar -->
           <div class="detail-sidebar">
             <!-- Attachments -->
-            <div class="sidebar-card" id="attachmentsCard" style="display: none">
+            <div class="sidebar-card" id="attachmentsCard" class="u-hidden">
               <h3 class="section-title">
                 <i class="fas fa-paperclip"></i>
                 Anhänge
@@ -742,7 +743,7 @@
             </div>
 
             <!-- Actions -->
-            <div class="sidebar-card admin-only" id="actionsCard" style="display: none">
+            <div class="sidebar-card admin-only" id="actionsCard" class="u-hidden">
               <h3 class="section-title">
                 <i class="fas fa-cog"></i>
                 Aktionen
@@ -752,11 +753,11 @@
                   <i class="fas fa-edit"></i>
                   Bearbeiten
                 </button>
-                <button class="btn" id="shareBtn" style="display: none">
+                <button class="btn" id="shareBtn" class="u-hidden">
                   <i class="fas fa-share-alt"></i>
                   Teilen
                 </button>
-                <button class="btn" id="unshareBtn" style="display: none">
+                <button class="btn" id="unshareBtn" class="u-hidden">
                   <i class="fas fa-undo"></i>
                   Teilen rückgängig
                 </button>
@@ -767,6 +768,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </main>
     </div>

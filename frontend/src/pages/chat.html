@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -1578,7 +1593,7 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Chat Container -->
-      <main class="main-content" style="padding: 0">
+      <main class="main-content" class="u-p-0">
         <div class="chat-container">
           <!-- Chat Sidebar -->
           <div class="chat-sidebar">
@@ -1599,7 +1614,7 @@
           <!-- Main Chat Area -->
           <div class="chat-main">
             <!-- Chat Header -->
-            <div class="chat-header" id="chat-header" style="display: none">
+            <div class="chat-header" id="chat-header" class="u-hidden">
               <div class="chat-header-info">
                 <div class="chat-header-avatar" id="chat-avatar">JD</div>
                 <div class="chat-header-details">
@@ -1632,7 +1647,7 @@
             </div>
 
             <!-- Message Input -->
-            <div class="message-input-container" id="chatArea" style="display: none">
+            <div class="message-input-container" id="chatArea" class="u-hidden">
               <div class="delivery-options">
                 <div class="custom-delivery-select">
                   <div class="delivery-display" onclick="toggleDeliveryDropdown()">
@@ -1691,7 +1706,7 @@
     </div>
 
     <!-- New Chat Modal -->
-    <div id="newConversationModal" class="modal" style="display: none">
+    <div id="newConversationModal" class="modal" class="u-hidden">
       <div class="modal-content">
         <div class="modal-header">
           <h3>Neue Unterhaltung starten</h3>
@@ -1732,7 +1747,7 @@
             </div>
 
             <!-- Employee Dropdown -->
-            <div class="form-group" id="employeeDropdownGroup" style="display: none">
+            <div class="form-group" id="employeeDropdownGroup" class="u-hidden">
               <label class="form-label">Mitarbeiter auswählen</label>
               <div class="custom-dropdown">
                 <div class="dropdown-display" id="employeeDisplay" onclick="toggleChatDropdown('employee')">
@@ -1750,7 +1765,7 @@
           </div>
 
           <!-- Admin Selection -->
-          <div id="adminSelection" class="recipient-selection" style="display: none">
+          <div id="adminSelection" class="recipient-selection" class="u-hidden">
             <div class="form-group">
               <label class="form-label">Administrator auswählen</label>
               <div class="custom-dropdown">
@@ -1770,7 +1785,7 @@
 
           <!-- Multiple Selection for Groups -->
           <div class="form-group" id="multipleSelectionHint" style="display: none; margin-top: 15px">
-            <p class="text-muted" style="font-size: 0.9rem">
+            <p class="text-muted" class="u-fs-09rem">
               <i class="fas fa-info-circle"></i>
               Für Gruppenchats wählen Sie mehrere Empfänger aus
             </p>
@@ -1801,10 +1816,10 @@
     </div>
 
     <!-- File Upload Input -->
-    <input type="file" id="fileInput" style="display: none" multiple />
+    <input type="file" id="fileInput" class="u-hidden" multiple />
 
     <!-- Emoji Picker Modal -->
-    <div id="emojiPicker" class="emoji-picker" style="display: none">
+    <div id="emojiPicker" class="emoji-picker" class="u-hidden">
       <div class="emoji-picker-header">
         <button class="emoji-category active" data-category="smileys">😊</button>
         <button class="emoji-category" data-category="gestures">👍</button>

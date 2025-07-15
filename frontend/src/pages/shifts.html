@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schichtplanung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -777,8 +792,9 @@
       <main class="main-content">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
-
-        <div class="shift-planning-container">
+        
+        <div class="container">
+          <div class="shift-planning-container">
           <!-- Info Row -->
           <div class="shift-info-row">
             <div class="info-item">
@@ -814,7 +830,7 @@
           </div>
 
           <!-- Week Navigation -->
-          <div class="week-navigation" style="display: none">
+          <div class="week-navigation" class="u-hidden">
             <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
             <div class="week-info">
               <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
@@ -832,7 +848,7 @@
           </div>
 
           <!-- Main Planning Area -->
-          <div class="main-planning-area" id="mainPlanningArea" style="display: none">
+          <div class="main-planning-area" id="mainPlanningArea" class="u-hidden">
             <!-- Week Schedule -->
             <div class="week-schedule">
               <!-- Header -->
@@ -841,32 +857,32 @@
                 <div class="day-header">
                   Montag
                   <br />
-                  <span style="font-size: 12px; font-weight: 400">20.05</span>
+                  <span class="u-fs-12 u-fw-400">20.05</span>
                 </div>
                 <div class="day-header">
                   Dienstag
                   <br />
-                  <span style="font-size: 12px; font-weight: 400">21.05</span>
+                  <span class="u-fs-12 u-fw-400">21.05</span>
                 </div>
                 <div class="day-header">
                   Mittwoch
                   <br />
-                  <span style="font-size: 12px; font-weight: 400">22.05</span>
+                  <span class="u-fs-12 u-fw-400">22.05</span>
                 </div>
                 <div class="day-header">
                   Donnerstag
                   <br />
-                  <span style="font-size: 12px; font-weight: 400">23.05</span>
+                  <span class="u-fs-12 u-fw-400">23.05</span>
                 </div>
                 <div class="day-header">
                   Freitag
                   <br />
-                  <span style="font-size: 12px; font-weight: 400">24.05</span>
+                  <span class="u-fs-12 u-fw-400">24.05</span>
                 </div>
                 <div class="day-header">
                   Samstag
                   <br />
-                  <span style="font-size: 12px; font-weight: 400">25.05</span>
+                  <span class="u-fs-12 u-fw-400">25.05</span>
                 </div>
               </div>
 
@@ -875,7 +891,7 @@
                 <div class="shift-label shift-type-early">
                   Frühschicht
                   <br />
-                  <span style="font-size: 11px">06:00-14:00</span>
+                  <span class="u-fs-11">06:00-14:00</span>
                 </div>
                 <div class="shift-cell" data-day="monday" data-shift="early">
                   <div class="employee-assignment">
@@ -914,7 +930,7 @@
                 <div class="shift-label shift-type-late">
                   Spätschicht
                   <br />
-                  <span style="font-size: 11px">14:00-22:00</span>
+                  <span class="u-fs-11">14:00-22:00</span>
                 </div>
                 <div class="shift-cell" data-day="monday" data-shift="late">
                   <div class="employee-assignment">
@@ -953,7 +969,7 @@
                 <div class="shift-label shift-type-night">
                   Nachtschicht
                   <br />
-                  <span style="font-size: 11px">22:00-06:00</span>
+                  <span class="u-fs-11">22:00-06:00</span>
                 </div>
                 <div class="shift-cell" data-day="monday" data-shift="night">
                   <div class="employee-assignment">
@@ -995,7 +1011,7 @@
                   </svg>
                   Info & Todo
                   <br />
-                  <span style="font-size: 11px">Wochennotizen</span>
+                  <span class="u-fs-11">Wochennotizen</span>
                 </div>
                 <div class="shift-info-area" style="grid-column: span 6">
                   <div class="shift-info-title">
@@ -1023,9 +1039,10 @@
           </div>
 
           <!-- Admin Actions -->
-          <div class="admin-actions" id="adminActions" style="display: none">
+          <div class="admin-actions" id="adminActions" class="u-hidden">
             <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
             <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
+          </div>
           </div>
         </div>
       </main>

@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dokument hochladen - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -636,8 +651,9 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-
-        <div id="upload-success" class="alert alert-success" style="display: none">
+        
+        <div class="container">
+          <div id="upload-success" class="alert alert-success" class="u-hidden">
           <span class="icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path
@@ -651,7 +667,7 @@
           </div>
         </div>
 
-        <div id="upload-error" class="alert alert-danger" style="display: none">
+        <div id="upload-error" class="alert alert-danger" class="u-hidden">
           <span class="icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
@@ -708,7 +724,7 @@
                       <input type="hidden" name="userId" id="userValue" />
                     </div>
 
-                    <div class="custom-dropdown" id="teamDropdownContainer" style="display: none">
+                    <div class="custom-dropdown" id="teamDropdownContainer" class="u-hidden">
                       <div class="dropdown-display placeholder" id="teamDisplay" onclick="toggleDropdown('team')">
                         <span>Bitte Team auswählen</span>
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -721,7 +737,7 @@
                       <input type="hidden" name="teamId" id="teamValue" />
                     </div>
 
-                    <div class="custom-dropdown" id="departmentDropdownContainer" style="display: none">
+                    <div class="custom-dropdown" id="departmentDropdownContainer" class="u-hidden">
                       <div class="dropdown-display placeholder" id="departmentDisplay" onclick="toggleDropdown('department')">
                         <span>Bitte Abteilung auswählen</span>
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -861,6 +877,7 @@
               </div>
             </form>
           </div>
+        </div>
         </div>
       </main>
     </div>

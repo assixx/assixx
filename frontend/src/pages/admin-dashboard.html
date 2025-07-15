@@ -76,22 +76,7 @@
         margin-top: 25px !important;
       }
 
-      /* Glassmorphismus für Stat-Cards */
-      .stat-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-        /*transition: all 0.3s ease;*/
-      }
-
-      .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow:
-          0 12px 40px rgba(0, 0, 0, 0.5),
-          inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.03);
-      }
+      /* Stat-Cards nutzen jetzt die Standard-Styles aus dashboard-theme.css */
 
       /* Glassmorphismus für Cards */
       .card,
@@ -648,8 +633,9 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
         <div id="breadcrumb-container"></div>
-
-        <!-- Dashboard Section -->
+        
+        <div class="container">
+          <!-- Dashboard Section -->
         <section id="dashboard-section" class="content-section">
           <!-- Dashboard Stats Grid -->
           <div class="dashboard-grid">
@@ -680,7 +666,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Mitarbeiter</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Mitarbeiter verwalten und hinzufügen</p>
+                <p class="text-secondary" class="u-mt-text">Mitarbeiter verwalten und hinzufügen</p>
               </div>
               <div class="compact-content">
                 <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
@@ -700,7 +686,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Dokumente</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Dokumente hochladen und verwalten</p>
+                <p class="text-secondary" class="u-mt-text">Dokumente hochladen und verwalten</p>
               </div>
               <div class="compact-content">
                 <a href="/document-upload" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
@@ -718,7 +704,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Abteilungen</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Abteilungsstruktur organisieren</p>
+                <p class="text-secondary" class="u-mt-text">Abteilungsstruktur organisieren</p>
               </div>
               <div class="compact-content">
                 <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
@@ -736,7 +722,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Teams</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Teams erstellen und verwalten</p>
+                <p class="text-secondary" class="u-mt-text">Teams erstellen und verwalten</p>
               </div>
               <div class="compact-content">
                 <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
@@ -754,7 +740,7 @@
             <div class="card compact-card">
               <div class="card-header">
                 <h2 class="card-title">Kalender</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Termine und Events verwalten</p>
+                <p class="text-secondary" class="u-mt-text">Termine und Events verwalten</p>
               </div>
               <div class="compact-content">
                 <a href="/calendar" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
@@ -779,7 +765,7 @@
           <div class="card mt-4">
             <div class="card-header">
               <h2 class="card-title">Kürzlich hinzugefügt</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Neueste Mitarbeiter und Dokumente</p>
+              <p class="text-secondary" class="u-mt-text">Neueste Mitarbeiter und Dokumente</p>
             </div>
             <div class="recent-activity-grid">
               <div class="recent-section">
@@ -807,12 +793,12 @@
         <!-- Payslips Section removed - now using documents-payroll.html -->
 
         <!-- Employees Section -->
-        <section id="employees-section" class="content-section" style="display: none">
+        <section id="employees-section" class="content-section" class="u-hidden">
           <div class="card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <h2 class="card-title">Mitarbeiterübersicht</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Alle Mitarbeiter verwalten und bearbeiten</p>
+                <p class="text-secondary" class="u-mt-text">Alle Mitarbeiter verwalten und bearbeiten</p>
               </div>
               <button class="btn btn-primary" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
             </div>
@@ -851,7 +837,7 @@
         </section>
 
         <!-- Documents Section -->
-        <section id="documents-section" class="content-section" style="display: none">
+        <section id="documents-section" class="content-section" class="u-hidden">
           <div class="flex-between mb-3">
             <div>
               <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
@@ -875,7 +861,7 @@
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">Dokumentenübersicht</h2>
-              <p class="text-secondary" style="margin: 0; margin-top: 4px">Alle Dokumente verwalten und durchsuchen</p>
+              <p class="text-secondary" class="u-mt-text">Alle Dokumente verwalten und durchsuchen</p>
             </div>
             <div class="table-responsive">
               <table class="table">
@@ -901,12 +887,12 @@
         <!-- Departments Section wurde nach departments.html verschoben -->
 
         <!-- Teams Section -->
-        <section id="teams-section" class="content-section" style="display: none">
+        <section id="teams-section" class="content-section" class="u-hidden">
           <div class="card">
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
               <div>
                 <h2 class="card-title">Teamübersicht</h2>
-                <p class="text-secondary" style="margin: 0; margin-top: 4px">Teams und Mitgliedschaften verwalten</p>
+                <p class="text-secondary" class="u-mt-text">Teams und Mitgliedschaften verwalten</p>
               </div>
               <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
             </div>
@@ -930,7 +916,7 @@
         </section>
 
         <!-- Settings Section -->
-        <section id="settings-section" class="content-section" style="display: none">
+        <section id="settings-section" class="content-section" class="u-hidden">
           <div class="card">
             <div class="card-header">
               <h2 class="card-title">System-Einstellungen</h2>
@@ -938,6 +924,7 @@
             <p>Einstellungen werden hier implementiert...</p>
           </div>
         </section>
+        </div>
       </main>
     </div>
 
@@ -945,7 +932,7 @@
     <!-- Department Modal wurde nach departments.html verschoben -->
 
     <!-- Team Modal -->
-    <div id="team-modal" class="modal" style="display: none">
+    <div id="team-modal" class="modal" class="u-hidden">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neues Team</h3>
@@ -973,7 +960,7 @@
     </div>
 
     <!-- Employee Status Modal -->
-    <div id="employee-status-modal" class="modal" style="display: none">
+    <div id="employee-status-modal" class="modal" class="u-hidden">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Mitarbeiter-Status ändern</h3>
@@ -994,7 +981,7 @@
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="dropdown-options" id="employee-status-dropdown" style="display: none">
+              <div class="dropdown-options" id="employee-status-dropdown" class="u-hidden">
                 <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'available', 'Verfügbar')">
                   <span class="badge badge-success">Verfügbar</span>
                 </div>
@@ -1032,7 +1019,7 @@
     </div>
 
     <!-- Employee Modal -->
-    <div id="employee-modal" class="modal" style="display: none" data-debug="employee-modal">
+    <div id="employee-modal" class="modal" class="u-hidden" data-debug="employee-modal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neuer Mitarbeiter</h3>
@@ -1086,7 +1073,7 @@
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
-              <div class="dropdown-options" id="employee-department-dropdown" style="display: none">
+              <div class="dropdown-options" id="employee-department-dropdown" class="u-hidden">
                 <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
                   Keine Abteilung
                 </div>
@@ -1104,7 +1091,7 @@
     </div>
 
     <!-- Document Modal -->
-    <div id="document-modal" class="modal" style="display: none">
+    <div id="document-modal" class="modal" class="u-hidden">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Dokument hochladen</h3>
@@ -1989,7 +1976,7 @@
                                                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                                                     </svg>
                                                 </div>
-                                                <div class="dropdown-options" id="edit-employee-department-dropdown" style="display: none">
+                                                <div class="dropdown-options" id="edit-employee-department-dropdown" class="u-hidden">
                                                     <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
                                                         Keine Abteilung
                                                     </div>
@@ -2015,7 +2002,7 @@
                                                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                                                     </svg>
                                                 </div>
-                                                <div class="dropdown-options" id="edit-employee-status-dropdown" style="display: none">
+                                                <div class="dropdown-options" id="edit-employee-status-dropdown" class="u-hidden">
                                                     <div class="dropdown-option" data-value="1" onclick="selectDropdownOption('edit-employee-status', '1', 'Aktiv')">
                                                         Aktiv
                                                     </div>

@@ -846,9 +846,10 @@
     <div class="layout-container">
       <main class="main-content">
         <div id="breadcrumb-container"></div>
-
-        <!-- Admin Info Box -->
-        <div class="admin-info-box" id="adminInfoBox" style="display: none">
+        
+        <div class="container">
+          <!-- Admin Info Box -->
+        <div class="admin-info-box" id="adminInfoBox" class="u-hidden">
           <i class="fas fa-lightbulb"></i>
           <div>
             <strong>Tipp für Admins:</strong>
@@ -858,7 +859,7 @@
         </div>
 
         <!-- Statistics Overview (Admin only) -->
-        <div class="stats-overview" id="statsOverview" style="display: none">
+        <div class="stats-overview" id="statsOverview" class="u-hidden">
           <div class="stat-card">
             <div class="stat-value" id="totalSuggestions">0</div>
             <div class="stat-label">Gesamt Vorschläge</div>
@@ -899,11 +900,11 @@
             Firmenweit
             <span class="badge" id="badgeCompany">0</span>
           </button>
-          <button class="filter-btn admin-only" data-filter="manage" style="display: none">
+          <button class="filter-btn admin-only" data-filter="manage" class="u-hidden">
             <i class="fas fa-tasks"></i>
             Verwalten
           </button>
-          <button class="filter-btn admin-only" data-filter="archived" style="display: none">
+          <button class="filter-btn admin-only" data-filter="archived" class="u-hidden">
             <i class="fas fa-archive"></i>
             Archiv
             <span class="badge" id="badgeArchived">0</span>
@@ -947,7 +948,7 @@
           </div>
 
           <!-- Department Filter Dropdown -->
-          <div class="custom-dropdown admin-only" style="display: none">
+          <div class="custom-dropdown admin-only" class="u-hidden">
             <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
               <span>Alle Abteilungen</span>
               <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
@@ -970,7 +971,7 @@
         </div>
 
         <!-- Empty State -->
-        <div class="empty-state" id="emptyState" style="display: none">
+        <div class="empty-state" id="emptyState" class="u-hidden">
           <i class="fas fa-inbox"></i>
           <h3>Keine Vorschläge gefunden</h3>
           <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
@@ -980,6 +981,7 @@
         <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">
           <i class="fas fa-plus"></i>
         </button>
+        </div>
       </main>
     </div>
 
@@ -1103,7 +1105,7 @@
                   name="photos"
                   accept="image/jpeg,image/jpg,image/png"
                   multiple
-                  style="display: none"
+                  class="u-hidden"
                   onchange="handlePhotoSelection(this)"
                 />
                 <div class="upload-box" onclick="document.getElementById('kvpPhotos').click()">

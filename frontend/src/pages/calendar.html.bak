@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firmenkalender - Assixx</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
+    <!-- FullCalendar CSS -->
+    <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
+    <!-- Calendar spezifische Styles -->
+    <link rel="stylesheet" href="/styles/calendar.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
+
+      /* Glassmorphismus Design-Standards */
+
+      /* Dramatischer Hintergrund-Gradient */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Glassmorphismus für Cards */
+      .card {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
+        /* animation: fadeInUp 0.6s ease-out; */
+      }
+
+      /* Calendar Container - Glassmorphismus */
+      #calendar {
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+      }
+
+      /* Calendar Events - Glassmorphismus */
+      .fc-event {
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      /* Modal Overlays - Glassmorphismus */
+      /* Removed duplicate - defined in calendar.css */
+
+      .modal-container {
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid hsla(0,0%,100%,.1);
+        box-shadow: var(--shadow-sm);
+        /* animation: fadeInUp 0.3s ease-out; */
+      }
+
+      /* Modal-lg spezielle Anpassungen */
+      .modal-lg {
+        max-height: 85vh !important;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal-lg .modal-body {
+        max-height: calc(85vh - 120px);
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      /* Form in Modal scrollbar */
+      .modal-body::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .modal-body::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .modal-body::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      /* Form Controls mit Glassmorphismus */
+      .form-control,
+      input[type='text'],
+      input[type='date'],
+      input[type='time'],
+      textarea {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid hsla(0,0%,100%,.1);
+        color: #fff;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus,
+      input:focus,
+      textarea:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      /* Select Dropdowns - Glassmorphismus wie in signup? */
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #fff;
+        transition: all 0.3s ease;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 14px;
+        padding-right: 32px;
+        cursor: pointer;
+      }
+
+      select:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+
+      select:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      select option {
+        background: rgba(18, 18, 18, 0.95);
+        color: var(--text-primary);
+        padding: 8px;
+      }
+
+      select:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-image: none;
+      }
+
+      /* Buttons mit Glassmorphismus und Shine-Effekt */
+      .btn {
+        position: relative;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        transform: rotate(45deg) translate(-70%, -70%);
+        transition: transform 0.6s;
+      }
+
+      .btn:hover::after {
+        transform: rotate(45deg) translate(-30%, -30%);
+      }
+
+      /* View Selector Buttons - Glassmorphismus */
+      .view-selector .btn {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid hsla(0,0%,100%,.1);
+        color: var(--text-primary);
+      }
+
+      .view-selector .btn.active {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+      }
+
+      /* Filter Tags - Glassmorphismus */
+      .filter-tag {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid hsla(0,0%,100%,.1);
+        transition: all 0.3s ease;
+      }
+
+      .filter-tag.active {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+      }
+
+      /* Animationen */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Custom Dropdown Styles werden aus calendar.css geladen */
+
+      /* Custom Dropdown Wrapper - Korrigiert */
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      /* Dropdown Styles werden aus calendar.css geladen */
+
+      /* Search Input Styling - Glassmorphismus */
+      .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        min-width: 250px;
+      }
+
+      .search-input-wrapper:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .search-input-wrapper:focus-within {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--primary-color);
+        box-shadow:
+          0 0 0 3px rgba(33, 150, 243, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 10px 15px;
+        color: var(--text-primary);
+        font-size: 14px;
+        outline: none;
+      }
+
+      .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 14px;
+      }
+
+      .search-button {
+        background: transparent;
+        border: none;
+        padding: 10px 15px;
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .search-button:hover {
+        color: var(--primary-color);
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      .search-button:active {
+        background: rgba(33, 150, 243, 0.2);
+      }
+
+      .search-button i {
+        font-size: 16px;
+      }
+
+      /* When search has content, highlight button */
+      .search-input:not(:placeholder-shown) ~ .search-button {
+        color: var(--primary-color);
+      }
+      
+      /* Override breadcrumb alignment for calendar page */
+      #breadcrumb-container + .card {
+        margin-top: -15px !important;
+      }
+    </style>
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+  </head>
+  <body>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout mit Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content -->
+      <main class="container main-content">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
+
+        <!-- Filterleiste -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <div class="flex flex-between align-center">
+              <h3 class="card-title">Filter & Anzeige</h3>
+              <div class="flex gap-2">
+                <div class="btn-group view-selector">
+                  <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
+                  <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
+                  <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
+                  <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
+                </div>
+                <button id="newEventBtn" class="btn btn-primary">
+                  <i class="fas fa-plus"></i>
+                  Neuer Termin
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="flex gap-4 flex-wrap">
+              <div class="form-group">
+                <label for="levelFilter" class="form-label">Ebene</label>
+                <div class="tab-navigation mb-2" id="levelFilter">
+                  <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
+                  <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
+                  <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
+                  <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="searchInput" class="form-label">Suche</label>
+                <div class="search-input-wrapper">
+                  <input type="text" id="searchInput" class="search-input" placeholder="Termine durchsuchen..." />
+                  <button class="search-button" type="button" id="searchButton">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex-grow"></div>
+
+              <div class="form-group">
+                <label class="form-label">Legende</label>
+                <div class="legend-container">
+                  <div class="legend-item">
+                    <span class="legend-color" style="background-color: #3498db"></span>
+                    <span class="legend-label">Firma</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color" style="background-color: #e67e22"></span>
+                    <span class="legend-label">Abteilung</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color" style="background-color: #2ecc71"></span>
+                    <span class="legend-label">Team</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-color" style="background-color: #9b59b6"></span>
+                    <span class="legend-label">Persönlich</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Container -->
+        <div class="card calendar-card mb-4">
+          <div class="card-body p-0">
+            <div id="calendar"></div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">Anstehende Termine</h3>
+          </div>
+          <div class="card-body">
+            <div id="upcomingEvents" class="upcoming-events">
+              <!-- Wird dynamisch befüllt -->
+              <div class="loading-placeholder">
+                <div class="loading-spinner"></div>
+                <p class="text-center mt-3">Termine werden geladen...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <!-- Ende des layout-container -->
+
+    <!-- Alle Modals werden dynamisch erstellt -->
+
+    <!-- Marked.js for Markdown rendering -->
+    <script type="module" src="/scripts/lib/marked.min.js"></script>
+    <!-- FullCalendar -->
+    <!-- FullCalendar libraries (external, not bundled by Vite) -->
+    <script src="/scripts/lib/fullcalendar.min.js" defer></script>
+    <script src="/scripts/lib/fullcalendar-locales.min.js" defer></script>
+    <!-- Standalone scripts for Calendar -->
+    <script>
+      // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
+      window.DashboardUI = {
+        openModal: function (modalId) {
+          console.log('DashboardUI.openModal called for:', modalId);
+          const modal = document.getElementById(modalId);
+          console.log('Modal element found:', !!modal);
+          if (modal) {
+            // Entferne zuerst die inline styles
+            modal.style.display = '';
+            modal.style.opacity = '';
+            modal.style.visibility = '';
+            // Dann füge active Klasse hinzu
+            modal.classList.add('active');
+            console.log('Modal classes after open:', modal.className);
+          }
+        },
+        closeModal: function (modalId) {
+          const modal = document.getElementById(modalId);
+          if (modal) {
+            modal.classList.remove('active');
+            // Entferne inline styles nach Animation
+            setTimeout(() => {
+              modal.style.display = '';
+              modal.style.opacity = '';
+              modal.style.visibility = '';
+            }, 300);
+          }
+        },
+        showToast: function (message, type) {
+          // Einfache Toast-Implementierung
+          const toast = document.createElement('div');
+          toast.className = 'toast-' + (type || 'info');
+          toast.textContent = message;
+
+          // Toast-Container erstellen
+          let container = document.querySelector('.toast-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+          }
+
+          container.appendChild(toast);
+
+          // Nach 3 Sekunden ausblenden
+          setTimeout(function () {
+            toast.remove();
+          }, 3000);
+        },
+        formatDate: function (date) {
+          if (!date) return '-';
+          const d = new Date(date);
+          return d.toLocaleDateString('de-DE');
+        },
+      };
+    </script>
+    <style>
+      /* Toast-Styles direkt im HTML einbinden */
+      .toast-container {
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        z-index: 9999;
+      }
+      .toast-info,
+      .toast-error,
+      .toast-success {
+        background-color: var(--background-light);
+        color: var(--text-primary);
+        border-left: 4px solid var(--primary-color);
+        padding: 12px 16px;
+        margin-top: 8px;
+        border-radius: var(--radius-md);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        font-size: 14px;
+      }
+      .toast-error {
+        border-left-color: var(--error-color);
+      }
+      .toast-success {
+        border-left-color: var(--success-color);
+      }
+      /* Zusätzliche Styles für fehlende Klassen */
+      .d-none {
+        display: none !important;
+      }
+    </style>
+    <!-- Calendar Scripts -->
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+
+    <!-- MutationObserver zum Schutz der Header-Struktur -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        const userInfoDiv = document.getElementById('user-info');
+
+        if (userInfoDiv) {
+          // Speichere Referenzen zu den Original-Elementen
+          const originalAvatar = document.getElementById('user-avatar');
+          const originalUserName = document.getElementById('user-name');
+          const originalRoleIndicator = document.getElementById('role-indicator');
+
+          const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+              if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
+                // Prüfe ob alle 3 Elemente vorhanden sind
+                const currentAvatar = document.getElementById('user-avatar');
+                const currentUserName = document.getElementById('user-name');
+                const currentRoleIndicator = document.getElementById('role-indicator');
+
+                if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
+                  console.log('[Calendar] Restoring user-info elements');
+                  userInfoDiv.innerHTML = '';
+
+                  // Avatar wiederherstellen
+                  const newAvatar = originalAvatar ? originalAvatar.cloneNode(true) : document.createElement('img');
+                  newAvatar.id = 'user-avatar';
+                  newAvatar.src = '/assets/images/default-avatar.svg';
+                  newAvatar.alt = 'Avatar';
+                  userInfoDiv.appendChild(newAvatar);
+
+                  // Username wiederherstellen
+                  const newUserName = originalUserName ? originalUserName.cloneNode(true) : document.createElement('span');
+                  newUserName.id = 'user-name';
+                  newUserName.textContent = newUserName.textContent || 'Lade...';
+                  userInfoDiv.appendChild(newUserName);
+
+                  // Role Badge wiederherstellen
+                  const newRoleIndicator = originalRoleIndicator ? originalRoleIndicator.cloneNode(true) : document.createElement('span');
+                  newRoleIndicator.id = 'role-indicator';
+                  newRoleIndicator.className = 'role-badge admin';
+                  newRoleIndicator.textContent = newRoleIndicator.textContent || 'Admin';
+                  userInfoDiv.appendChild(newRoleIndicator);
+                }
+              }
+            });
+          });
+
+          observer.observe(userInfoDiv, { childList: true, subtree: false });
+        }
+      });
+    </script>
+
+    <!-- Scripts in richtiger Reihenfolge -->
+    <script type="module" src="/scripts/calendar.ts"></script>
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+  </body>
+</html>

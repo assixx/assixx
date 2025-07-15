@@ -66,6 +66,21 @@
       }
     </style>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -76,7 +91,8 @@
       <!-- Main Content -->
       <main class="main-content">
         <div id="breadcrumb-container"></div>
-        <!-- Page Header -->
+        <div class="container">
+          <!-- Page Header -->
         <div class="page-header">
         </div>
 
@@ -143,11 +159,12 @@
             <p>Geben Sie einen Suchbegriff ein, um Dokumente zu finden.</p>
           </div>
         </div>
+        </div>
       </main>
     </div>
 
     <!-- Document Preview Modal -->
-    <div id="documentPreviewModal" class="modal" style="display: none">
+    <div id="documentPreviewModal" class="modal" class="u-hidden">
       <div class="modal-content modal-large">
         <div class="modal-header">
           <h2>
@@ -161,7 +178,7 @@
         <div class="modal-body">
           <div class="document-preview-container">
             <iframe id="documentPreviewFrame" class="document-preview-frame" title="Dokument Vorschau"></iframe>
-            <div id="previewError" class="preview-error" style="display: none">
+            <div id="previewError" class="preview-error" class="u-hidden">
               <i class="fas fa-exclamation-circle"></i>
               <p>Vorschau nicht verfügbar</p>
               <small>Das Dokument kann nicht in der Vorschau angezeigt werden.</small>

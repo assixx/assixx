@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Umfrage-Ergebnisse - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <style>
@@ -323,15 +338,17 @@
       <div class="layout-container">
         <!-- Main Content Area -->
         <main class="main-content">
-          <div class="survey-results-container">
-            <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
-            <div id="breadcrumb-container"></div>
-
-            <div id="content-area">
+          <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
+          <div id="breadcrumb-container"></div>
+          
+          <div class="container">
+            <div class="survey-results-container">
+              <div id="content-area">
               <div class="loading">
                 <div class="spinner"></div>
                 <p>Lade Umfrage-Ergebnisse...</p>
               </div>
+            </div>
             </div>
           </div>
         </main>
@@ -550,7 +567,7 @@
         const count = parseInt(stats.count) || 0;
 
         return `
-                <div style="text-align: center;">
+                <div class="u-text-center">
                     <h4 style="font-size: 3rem; color: var(--primary-color); margin: 0;">
                         ${avgRating.toFixed(1)}
                     </h4>
@@ -616,7 +633,7 @@
         const count = parseInt(stats.count) || 0;
 
         return `
-                <div style="text-align: center;">
+                <div class="u-text-center">
                     <h4 style="font-size: 2rem; color: var(--primary-color); margin: 0;">
                         ${average.toFixed(2)}
                     </h4>
