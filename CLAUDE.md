@@ -23,6 +23,7 @@
 - TUE genau was ich sage und frag immer erst wenn du mehr machen sollst als verlangt.
 - Use sub-agents liberally to parallelize work and save on context — but think carefully about when it’s most effective. Think step-by-step.
 - Always use best-practice methods.
+- Always make todowrite list
 ## START-TRIGGER
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
