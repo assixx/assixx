@@ -8,6 +8,20 @@ import { getAuthToken, showSuccess, showError } from './auth';
 import { closeModal as dashboardCloseModal } from './dashboard-scripts';
 import { escapeHtml } from './common';
 
+/**
+ * Escapes a string for safe use in JavaScript string literals
+ * Handles backslashes, quotes, newlines, etc.
+ */
+function escapeJsString(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/'/g, "\\'")    // Escape single quotes
+    .replace(/"/g, '\\"')    // Escape double quotes
+    .replace(/\n/g, '\\n')   // Escape newlines
+    .replace(/\r/g, '\\r')   // Escape carriage returns
+    .replace(/\t/g, '\\t');  // Escape tabs
+}
+
 interface BlackboardEntry {
   id: number;
   title: string;
@@ -826,7 +840,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           <img src="/api/blackboard/attachments/${attachment.id}/preview" 
                alt="${escapeHtml(attachment.original_name)}" 
                style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${attachment.mime_type}', '${escapeHtml(attachment.original_name)}')">
+               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')">
         </div>
       `;
     } else if (isPDF) {
@@ -849,13 +863,13 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
               <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545; margin-bottom: 10px;"></i>
               <p style="color: #666;">PDF-Vorschau nicht verfügbar</p>
               <button class="btn btn-sm btn-primary" 
-                      onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${attachment.mime_type}', '${escapeHtml(attachment.original_name).replace(/'/g, "\\'")}')">
+                      onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')")
                 PDF öffnen
               </button>
             </div>
           </object>
           <div class="pdf-overlay" 
-               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${attachment.mime_type}', '${escapeHtml(attachment.original_name).replace(/'/g, "\\'")}')"
+               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')"
                title="Klicken für Vollansicht">
             <i class="fas fa-expand"></i>
           </div>
@@ -1380,7 +1394,7 @@ async function viewEntry(entryId: number): Promise<void> {
                          data-filename="${escapeHtml(att.original_name)}"
                          style="cursor: pointer;"
                          title="Vorschau: ${escapeHtml(att.original_name)}"
-                         onclick="console.log('[Blackboard] Inline onclick fired!', ${att.id}); window.previewAttachment && window.previewAttachment(${att.id}, '${att.mime_type}', '${escapeHtml(att.original_name).replace(/'/g, "\\'")}'); return false;">
+                         onclick="console.log('[Blackboard] Inline onclick fired!', ${att.id}); window.previewAttachment && window.previewAttachment(${att.id}, '${escapeJsString(att.mime_type)}', '${escapeJsString(att.original_name)}'); return false;">
                       <i class="fas ${isPDF ? 'fa-file-pdf' : 'fa-file-image'}"></i>
                       <span>${escapeHtml(att.original_name)}</span>
                       <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
