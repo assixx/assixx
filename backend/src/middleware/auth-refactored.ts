@@ -3,31 +3,31 @@
  * This replaces the authenticateToken function with a type-safe implementation
  */
 
-import { Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { executeQuery } from "../config/database";
-import { RowDataPacket } from "mysql2/promise";
+import { Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { executeQuery } from '../config/database';
+import { RowDataPacket } from 'mysql2/promise';
 import {
   AuthenticatedRequest,
   PublicRequest,
   AuthUser,
-} from "../types/request.types";
-import { TokenPayload } from "../types/auth.types";
-import { AuthenticationMiddleware } from "../types/middleware.types";
-import { errorResponse } from "../types/response.types";
+} from '../types/request.types';
+import { TokenPayload } from '../types/auth.types';
+import { AuthenticationMiddleware } from '../types/middleware.types';
+import { errorResponse } from '../types/response.types';
 
 // Get JWT secret with proper fallback
-const JWT_SECRET = process.env.JWT_SECRET || "";
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
-if (!JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET must be set in production!");
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set in production!');
 }
 
 // Helper to extract token from request
 function extractToken(req: PublicRequest): string | null {
   // Check Authorization header
-  const authHeader = req.headers["authorization"];
-  const bearerToken = authHeader?.startsWith("Bearer ")
+  const authHeader = req.headers['authorization'];
+  const bearerToken = authHeader?.startsWith('Bearer ')
     ? authHeader.substring(7)
     : null;
 
@@ -41,7 +41,7 @@ function extractToken(req: PublicRequest): string | null {
 async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (typeof decoded === "string" || !decoded) {
+    if (typeof decoded === 'string' || !decoded) {
       return null;
     }
     return decoded as TokenPayload;
@@ -53,20 +53,20 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
 // Helper to validate session (optional)
 async function validateSession(
   userId: number,
-  sessionId?: string,
+  sessionId?: string
 ): Promise<boolean> {
-  if (!sessionId || process.env.VALIDATE_SESSIONS !== "true") {
+  if (!sessionId || process.env.VALIDATE_SESSIONS !== 'true') {
     return true;
   }
 
   try {
     const [sessions] = await executeQuery<RowDataPacket[]>(
-      "SELECT id FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
-      [userId, sessionId],
+      'SELECT id FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
+      [userId, sessionId]
     );
     return sessions.length > 0;
   } catch (error) {
-    console.error("[AUTH] Session validation error:", error);
+    console.error('[AUTH] Session validation error:', error);
     // Allow access if database is down
     return true;
   }
@@ -74,7 +74,7 @@ async function validateSession(
 
 // Helper to get user details from database
 async function getUserDetails(
-  userId: number,
+  userId: number
 ): Promise<Partial<AuthUser> | null> {
   try {
     const [users] = await executeQuery<RowDataPacket[]>(
@@ -86,7 +86,7 @@ async function getUserDetails(
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
       WHERE u.id = ? AND u.status = 'active'`,
-      [userId],
+      [userId]
     );
 
     if (users.length === 0) {
@@ -108,7 +108,7 @@ async function getUserDetails(
       position: user.position,
     };
   } catch (error) {
-    console.error("[AUTH] User lookup error:", error);
+    console.error('[AUTH] User lookup error:', error);
     return null;
   }
 }
@@ -117,7 +117,7 @@ async function getUserDetails(
 export const authenticateToken: AuthenticationMiddleware = async function (
   req: PublicRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> {
   try {
     // Extract token
@@ -126,7 +126,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     if (!token) {
       res
         .status(401)
-        .json(errorResponse("Authentication token required", 401, "NO_TOKEN"));
+        .json(errorResponse('Authentication token required', 401, 'NO_TOKEN'));
       return;
     }
 
@@ -136,7 +136,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     if (!decoded) {
       res
         .status(403)
-        .json(errorResponse("Invalid or expired token", 403, "INVALID_TOKEN"));
+        .json(errorResponse('Invalid or expired token', 403, 'INVALID_TOKEN'));
       return;
     }
 
@@ -147,7 +147,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       res
         .status(403)
         .json(
-          errorResponse("Session expired or not found", 403, "SESSION_EXPIRED"),
+          errorResponse('Session expired or not found', 403, 'SESSION_EXPIRED')
         );
       return;
     }
@@ -159,7 +159,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       res
         .status(403)
         .json(
-          errorResponse("User not found or inactive", 403, "USER_NOT_FOUND"),
+          errorResponse('User not found or inactive', 403, 'USER_NOT_FOUND')
         );
       return;
     }
@@ -168,9 +168,9 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     const authenticatedUser: AuthUser = {
       id: userDetails.id ?? 0,
       userId: userDetails.id ?? 0,
-      username: userDetails.username ?? "",
-      email: userDetails.email ?? "",
-      role: decoded.activeRole || userDetails.role || "", // Support role switching
+      username: userDetails.username ?? '',
+      email: userDetails.email ?? '',
+      role: decoded.activeRole || userDetails.role || '', // Support role switching
       tenant_id: userDetails.tenant_id ?? 0,
       tenantName: userDetails.tenantName,
       first_name: userDetails.first_name,
@@ -186,10 +186,10 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
     next();
   } catch (error) {
-    console.error("[AUTH] Unexpected error:", error);
+    console.error('[AUTH] Unexpected error:', error);
     res
       .status(500)
-      .json(errorResponse("Authentication error", 500, "AUTH_ERROR"));
+      .json(errorResponse('Authentication error', 500, 'AUTH_ERROR'));
   }
 };
 
@@ -197,7 +197,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 export async function optionalAuth(
   req: PublicRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> {
   const token = extractToken(req);
 
@@ -211,7 +211,7 @@ export async function optionalAuth(
   await authenticateToken(req, res, (err?: unknown) => {
     if (err) {
       // Token is invalid, but continue anyway for optional auth
-      console.warn("[AUTH] Invalid token in optional auth:", err);
+      console.warn('[AUTH] Invalid token in optional auth:', err);
     }
     next();
   });
@@ -224,19 +224,19 @@ export function requireRole(allowedRoles: string | string[]) {
   return (
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction,
+    next: NextFunction
   ): void => {
     if (!req.user) {
       res
         .status(401)
         .json(
-          errorResponse("Authentication required", 401, "NOT_AUTHENTICATED"),
+          errorResponse('Authentication required', 401, 'NOT_AUTHENTICATED')
         );
       return;
     }
 
     // Root has access to everything
-    if (req.user.role === "root") {
+    if (req.user.role === 'root') {
       next();
       return;
     }
@@ -248,14 +248,14 @@ export function requireRole(allowedRoles: string | string[]) {
     }
 
     // Admin can access admin and employee resources
-    if (req.user.role === "admin" && roles.includes("employee")) {
+    if (req.user.role === 'admin' && roles.includes('employee')) {
       next();
       return;
     }
 
     res
       .status(403)
-      .json(errorResponse("Insufficient permissions", 403, "FORBIDDEN"));
+      .json(errorResponse('Insufficient permissions', 403, 'FORBIDDEN'));
   };
 }
 

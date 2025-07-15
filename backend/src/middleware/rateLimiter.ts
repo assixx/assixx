@@ -3,14 +3,14 @@
  * Provides different rate limiting strategies for various endpoint types
  */
 
-import rateLimit from "express-rate-limit";
-import { Request } from "express";
+import rateLimit from 'express-rate-limit';
+import { Request } from 'express';
 import {
   RateLimiterMiddleware,
   RateLimiterType,
   RateLimitMiddleware,
-} from "../types/security.types";
-import { isAuthenticated } from "../types/middleware.types";
+} from '../types/security.types';
+import { isAuthenticated } from '../types/middleware.types';
 
 // Rate limiter configurations
 const rateLimiterConfigs = {
@@ -18,7 +18,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.PUBLIC]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 500, // Increased from 100 to 500 for development
-    message: "Too many requests from this IP, please try again later.",
+    message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
   },
@@ -27,7 +27,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.AUTH]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 50, // Increased from 5 to 50 for development
-    message: "Too many authentication attempts, please try again later.",
+    message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful logins
@@ -37,7 +37,7 @@ const rateLimiterConfigs = {
   [RateLimiterType.AUTHENTICATED]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // 1000 requests per user
-    message: "Rate limit exceeded, please slow down.",
+    message: 'Rate limit exceeded, please slow down.',
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
@@ -45,7 +45,7 @@ const rateLimiterConfigs = {
       if (isAuthenticated(req)) {
         return `user_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip || 'unknown';
     },
   },
 
@@ -53,14 +53,14 @@ const rateLimiterConfigs = {
   [RateLimiterType.ADMIN]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 2000, // Higher limit for admins
-    message: "Admin rate limit exceeded.",
+    message: 'Admin rate limit exceeded.',
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       if (isAuthenticated(req)) {
         return `admin_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip || 'unknown';
     },
   },
 
@@ -68,19 +68,19 @@ const rateLimiterConfigs = {
   [RateLimiterType.API]: {
     windowMs: 60 * 1000, // 1 minute
     max: 60, // 60 requests per minute
-    message: "API rate limit exceeded.",
+    message: 'API rate limit exceeded.',
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       // Use API key if present, otherwise user ID or IP
-      const apiKey = req.headers["x-api-key"];
+      const apiKey = req.headers['x-api-key'];
       if (apiKey) {
         return `api_${apiKey}`;
       }
       if (isAuthenticated(req)) {
         return `user_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip || 'unknown';
     },
   },
 
@@ -88,14 +88,14 @@ const rateLimiterConfigs = {
   [RateLimiterType.UPLOAD]: {
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 20, // 20 uploads per hour
-    message: "Upload limit exceeded, please try again later.",
+    message: 'Upload limit exceeded, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       if (isAuthenticated(req)) {
         return `upload_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip || 'unknown';
     },
   },
 
@@ -103,14 +103,14 @@ const rateLimiterConfigs = {
   [RateLimiterType.DOWNLOAD]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // 100 downloads per 15 minutes
-    message: "Download limit exceeded, please try again later.",
+    message: 'Download limit exceeded, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       if (isAuthenticated(req)) {
         return `download_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip || 'unknown';
     },
   },
 };
@@ -121,7 +121,7 @@ const rateLimiters = Object.entries(rateLimiterConfigs).reduce(
     ...acc,
     [type]: rateLimit(config),
   }),
-  {} as Record<RateLimiterType, RateLimitMiddleware>,
+  {} as Record<RateLimiterType, RateLimitMiddleware>
 );
 
 // TODO: Implement advanced rate limiting with redis store
@@ -138,7 +138,7 @@ export const rateLimiter: RateLimiterMiddleware = Object.assign(
     api: rateLimiters[RateLimiterType.API],
     upload: rateLimiters[RateLimiterType.UPLOAD],
     download: rateLimiters[RateLimiterType.DOWNLOAD],
-  },
+  }
 );
 
 // TODO: Implement brute force protection with redis store

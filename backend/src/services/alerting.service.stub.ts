@@ -3,19 +3,19 @@
  * Temporary implementation without axios dependency
  */
 
-import { logger } from "../utils/logger";
-import { execute } from "../utils/db";
+import { logger } from '../utils/logger';
+import { execute } from '../utils/db';
 
 interface SlackAlert {
   channel: string;
-  severity: "info" | "warning" | "critical";
+  severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
   fields?: Record<string, string | number | boolean>;
 }
 
 interface TeamsAlert {
-  severity: "info" | "warning" | "critical";
+  severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
   facts?: Array<{ name: string; value: string }>;
@@ -28,7 +28,7 @@ interface TeamsAlert {
 
 interface PagerDutyIncident {
   summary: string;
-  severity: "critical" | "error" | "warning" | "info";
+  severity: 'critical' | 'error' | 'warning' | 'info';
   details: Record<string, unknown>;
   component?: string;
   group?: string;
@@ -41,12 +41,12 @@ export class AlertingService {
   async sendSlackAlert(alert: SlackAlert): Promise<void> {
     logger.info(`[STUB] Slack alert: ${alert.title} - ${alert.message}`);
     await this.logAlert(
-      "slack",
+      'slack',
       alert.severity,
       alert.channel,
       alert.title,
       alert.message,
-      200,
+      200
     );
   }
 
@@ -56,12 +56,12 @@ export class AlertingService {
   async sendTeamsAlert(alert: TeamsAlert): Promise<void> {
     logger.info(`[STUB] Teams alert: ${alert.title} - ${alert.message}`);
     await this.logAlert(
-      "teams",
+      'teams',
       alert.severity,
-      "teams",
+      'teams',
       alert.title,
       alert.message,
-      200,
+      200
     );
   }
 
@@ -71,12 +71,12 @@ export class AlertingService {
   async sendPagerDutyAlert(incident: PagerDutyIncident): Promise<void> {
     logger.info(`[STUB] PagerDuty incident: ${incident.summary}`);
     await this.logAlert(
-      "pagerduty",
+      'pagerduty',
       incident.severity,
-      "incident",
+      'incident',
       incident.summary,
       JSON.stringify(incident.details),
-      200,
+      200
     );
   }
 
@@ -86,14 +86,14 @@ export class AlertingService {
   async sendCriticalAlert(
     title: string,
     message: string,
-    details: Record<string, unknown>,
+    details: Record<string, unknown>
   ): Promise<void> {
     logger.error(`[STUB] Critical Alert: ${title} - ${message}`, details);
 
     await Promise.all([
       this.sendSlackAlert({
-        channel: "#alerts-critical",
-        severity: "critical",
+        channel: '#alerts-critical',
+        severity: 'critical',
         title,
         message,
         fields: Object.entries(details).reduce(
@@ -101,11 +101,11 @@ export class AlertingService {
             acc[key] = String(value);
             return acc;
           },
-          {} as Record<string, string>,
+          {} as Record<string, string>
         ),
       }),
       this.sendTeamsAlert({
-        severity: "critical",
+        severity: 'critical',
         title,
         message,
         facts: Object.entries(details).map(([name, value]) => ({
@@ -115,7 +115,7 @@ export class AlertingService {
       }),
       this.sendPagerDutyAlert({
         summary: title,
-        severity: "critical",
+        severity: 'critical',
         details: {
           message,
           ...details,
@@ -134,7 +134,7 @@ export class AlertingService {
     title: string,
     message: string,
     responseCode: number,
-    errorMessage?: string,
+    errorMessage?: string
   ): Promise<void> {
     try {
       await execute(
@@ -150,10 +150,10 @@ export class AlertingService {
           message,
           responseCode,
           errorMessage || null,
-        ],
+        ]
       );
     } catch (error) {
-      logger.error("Failed to log alert to database:", error);
+      logger.error('Failed to log alert to database:', error);
     }
   }
 }

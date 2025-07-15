@@ -8,8 +8,8 @@ import {
   getConnection,
   RowDataPacket,
   ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger.js";
+} from '../utils/db';
+import { logger } from '../utils/logger.js';
 
 interface DepartmentGroup {
   id: number;
@@ -35,7 +35,7 @@ class DepartmentGroupService {
     description: string | null,
     parentGroupId: number | null,
     tenantId: number,
-    createdBy: number,
+    createdBy: number
   ): Promise<number | null> {
     try {
       // Check for circular dependencies if parent group is specified
@@ -43,28 +43,28 @@ class DepartmentGroupService {
         const hasCircular = await this.checkCircularDependency(
           parentGroupId,
           0,
-          tenantId,
+          tenantId
         );
         if (hasCircular) {
-          throw new Error("Circular dependency detected");
+          throw new Error('Circular dependency detected');
         }
       }
 
       const [result] = await execute<ResultSetHeader>(
         `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by) 
          VALUES (?, ?, ?, ?, ?)`,
-        [tenantId, name, description, parentGroupId, createdBy],
+        [tenantId, name, description, parentGroupId, createdBy]
       );
 
       return result.insertId;
     } catch (error) {
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
         logger.error(
-          `Group name '${name}' already exists for tenant ${tenantId}`,
+          `Group name '${name}' already exists for tenant ${tenantId}`
         );
-        throw new Error("Group name already exists");
+        throw new Error('Group name already exists');
       }
-      logger.error("Error creating department group:", error);
+      logger.error('Error creating department group:', error);
       return null;
     }
   }
@@ -76,7 +76,7 @@ class DepartmentGroupService {
     groupId: number,
     departmentIds: number[],
     tenantId: number,
-    addedBy: number,
+    addedBy: number
   ): Promise<boolean> {
     if (departmentIds.length === 0) return true;
 
@@ -93,21 +93,21 @@ class DepartmentGroupService {
         addedBy,
       ]);
 
-      const placeholders = departmentIds.map(() => "(?, ?, ?, ?)").join(", ");
+      const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
       // Insert with ON DUPLICATE KEY UPDATE to handle existing assignments
       await connection.execute(
         `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
          VALUES ${placeholders}
          ON DUPLICATE KEY UPDATE added_by = VALUES(added_by), added_at = CURRENT_TIMESTAMP`,
-        values.flat(),
+        values.flat()
       );
 
       await connection.commit();
       return true;
     } catch (error) {
       await connection.rollback();
-      logger.error("Error adding departments to group:", error);
+      logger.error('Error adding departments to group:', error);
       return false;
     } finally {
       connection.release();
@@ -120,22 +120,22 @@ class DepartmentGroupService {
   async removeDepartmentsFromGroup(
     groupId: number,
     departmentIds: number[],
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     if (departmentIds.length === 0) return true;
 
     try {
-      const placeholders = departmentIds.map(() => "?").join(", ");
+      const placeholders = departmentIds.map(() => '?').join(', ');
 
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM department_group_members 
          WHERE group_id = ? AND tenant_id = ? AND department_id IN (${placeholders})`,
-        [groupId, tenantId, ...departmentIds],
+        [groupId, tenantId, ...departmentIds]
       );
 
       return (result as ResultSetHeader).affectedRows > 0;
     } catch (error) {
-      logger.error("Error removing departments from group:", error);
+      logger.error('Error removing departments from group:', error);
       return false;
     }
   }
@@ -146,7 +146,7 @@ class DepartmentGroupService {
   async getGroupDepartments(
     groupId: number,
     tenantId: number,
-    includeSubgroups: boolean = true,
+    includeSubgroups: boolean = true
   ): Promise<Department[]> {
     try {
       const departments = new Map<number, Department>();
@@ -157,7 +157,7 @@ class DepartmentGroupService {
          FROM departments d
          JOIN department_group_members dgm ON d.id = dgm.department_id
          WHERE dgm.group_id = ? AND dgm.tenant_id = ?`,
-        [groupId, tenantId],
+        [groupId, tenantId]
       );
 
       directDepts.forEach((dept: RowDataPacket) => {
@@ -172,7 +172,7 @@ class DepartmentGroupService {
       if (includeSubgroups) {
         const subgroupDepts = await this.getSubgroupDepartments(
           groupId,
-          tenantId,
+          tenantId
         );
         subgroupDepts.forEach((dept) => {
           departments.set(dept.id, dept);
@@ -181,7 +181,7 @@ class DepartmentGroupService {
 
       return Array.from(departments.values());
     } catch (error) {
-      logger.error("Error getting group departments:", error);
+      logger.error('Error getting group departments:', error);
       return [];
     }
   }
@@ -191,7 +191,7 @@ class DepartmentGroupService {
    */
   private async getSubgroupDepartments(
     parentGroupId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<Department[]> {
     const departments = new Map<number, Department>();
 
@@ -199,7 +199,7 @@ class DepartmentGroupService {
     const [subgroups] = await execute<RowDataPacket[]>(
       `SELECT id FROM department_groups 
        WHERE parent_group_id = ? AND tenant_id = ?`,
-      [parentGroupId, tenantId],
+      [parentGroupId, tenantId]
     );
 
     // For each subgroup, get its departments
@@ -207,7 +207,7 @@ class DepartmentGroupService {
       const subgroupDepts = await this.getGroupDepartments(
         subgroup.id,
         tenantId,
-        true, // Include nested subgroups
+        true // Include nested subgroups
       );
 
       subgroupDepts.forEach((dept) => {
@@ -229,7 +229,7 @@ class DepartmentGroupService {
          FROM department_groups 
          WHERE tenant_id = ? 
          ORDER BY parent_group_id NULLS FIRST, name`,
-        [tenantId],
+        [tenantId]
       );
 
       // Get all department assignments
@@ -238,7 +238,7 @@ class DepartmentGroupService {
          FROM department_group_members dgm
          JOIN departments d ON dgm.department_id = d.id
          WHERE dgm.tenant_id = ?`,
-        [tenantId],
+        [tenantId]
       );
 
       // Build assignment map
@@ -287,7 +287,7 @@ class DepartmentGroupService {
 
       return rootGroups;
     } catch (error) {
-      logger.error("Error getting group hierarchy:", error);
+      logger.error('Error getting group hierarchy:', error);
       return [];
     }
   }
@@ -299,22 +299,22 @@ class DepartmentGroupService {
     groupId: number,
     name: string,
     description: string | null,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       const [result] = await execute<ResultSetHeader>(
         `UPDATE department_groups 
          SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP 
          WHERE id = ? AND tenant_id = ?`,
-        [name, description, groupId, tenantId],
+        [name, description, groupId, tenantId]
       );
 
       return (result as ResultSetHeader).affectedRows > 0;
     } catch (error) {
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
-        throw new Error("Group name already exists");
+      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+        throw new Error('Group name already exists');
       }
-      logger.error("Error updating department group:", error);
+      logger.error('Error updating department group:', error);
       return false;
     }
   }
@@ -332,43 +332,43 @@ class DepartmentGroupService {
       const [permissions] = await connection.execute(
         `SELECT COUNT(*) as count FROM admin_group_permissions 
          WHERE group_id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
+        [groupId, tenantId]
       );
 
       if ((permissions as RowDataPacket[])[0].count > 0) {
-        throw new Error("Cannot delete group with active admin permissions");
+        throw new Error('Cannot delete group with active admin permissions');
       }
 
       // Check if group has subgroups
       const [subgroups] = await connection.execute(
         `SELECT COUNT(*) as count FROM department_groups 
          WHERE parent_group_id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
+        [groupId, tenantId]
       );
 
       if ((subgroups as RowDataPacket[])[0].count > 0) {
-        throw new Error("Cannot delete group with subgroups");
+        throw new Error('Cannot delete group with subgroups');
       }
 
       // Delete department assignments
       await connection.execute(
         `DELETE FROM department_group_members 
          WHERE group_id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
+        [groupId, tenantId]
       );
 
       // Delete the group
       const [result] = await connection.execute(
         `DELETE FROM department_groups 
          WHERE id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
+        [groupId, tenantId]
       );
 
       await connection.commit();
       return (result as ResultSetHeader).affectedRows > 0;
     } catch (error) {
       await connection.rollback();
-      logger.error("Error deleting department group:", error);
+      logger.error('Error deleting department group:', error);
       throw error;
     } finally {
       connection.release();
@@ -381,14 +381,14 @@ class DepartmentGroupService {
   private async checkCircularDependency(
     groupId: number,
     targetId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     if (groupId === targetId) return true;
 
     const [parents] = await execute<RowDataPacket[]>(
       `SELECT parent_group_id FROM department_groups 
        WHERE id = ? AND tenant_id = ?`,
-      [groupId, tenantId],
+      [groupId, tenantId]
     );
 
     if (parents.length === 0 || parents[0].parent_group_id === null) {
@@ -398,7 +398,7 @@ class DepartmentGroupService {
     return this.checkCircularDependency(
       parents[0].parent_group_id,
       targetId,
-      tenantId,
+      tenantId
     );
   }
 }

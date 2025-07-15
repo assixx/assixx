@@ -7,18 +7,18 @@
  *   description: Employee self-service operations
  */
 
-import express, { Router } from "express";
-import { security } from "../middleware/security";
-import { logger } from "../utils/logger";
-import { getErrorMessage } from "../utils/errorHandler";
-import { successResponse, errorResponse } from "../types/response.types";
-import { typed } from "../utils/routeHandlers";
+import express, { Router } from 'express';
+import { security } from '../middleware/security';
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
+import { successResponse, errorResponse } from '../types/response.types';
+import { typed } from '../utils/routeHandlers';
 
 // Import models (now ES modules)
-import User from "../models/user";
-import Document from "../models/document";
-import { executeQuery } from "../config/database.js";
-import { RowDataPacket } from "mysql2/promise";
+import User from '../models/user';
+import Document from '../models/document';
+import { executeQuery } from '../config/database.js';
+import { RowDataPacket } from 'mysql2/promise';
 
 const router: Router = express.Router();
 
@@ -69,7 +69,7 @@ const router: Router = express.Router();
  */
 // Get employee information
 router.get(
-  "/info",
+  '/info',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -78,7 +78,7 @@ router.get(
       const employee = await User.findById(employeeId, req.user.tenant_id);
       if (!employee) {
         logger.warn(`Employee with ID ${employeeId} not found`);
-        res.status(404).json(errorResponse("Mitarbeiter nicht gefunden", 404));
+        res.status(404).json(errorResponse('Mitarbeiter nicht gefunden', 404));
         return;
       }
 
@@ -89,18 +89,15 @@ router.get(
       res.json(successResponse(employeeData));
     } catch (error) {
       logger.error(
-        `Error retrieving information for Employee: ${getErrorMessage(error)}`,
+        `Error retrieving information for Employee: ${getErrorMessage(error)}`
       );
       res
         .status(500)
         .json(
-          errorResponse(
-            "Fehler beim Abrufen der Mitarbeiterinformationen",
-            500,
-          ),
+          errorResponse('Fehler beim Abrufen der Mitarbeiterinformationen', 500)
         );
     }
-  }),
+  })
 );
 
 /**
@@ -142,54 +139,54 @@ router.get(
  */
 // Get employee documents (including team, department, and company documents)
 router.get(
-  "/documents",
+  '/documents',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       const employeeId = req.user.id;
       const tenantId = req.user.tenant_id;
       logger.info(
-        `Employee ${employeeId} requesting their accessible documents`,
+        `Employee ${employeeId} requesting their accessible documents`
       );
 
       // Use the new method that includes team, department, and company documents
       const documents = await Document.findByEmployeeWithAccess(
         employeeId,
-        tenantId,
+        tenantId
       );
 
       logger.info(
-        `Retrieved ${documents.length} accessible documents for Employee ${employeeId}`,
+        `Retrieved ${documents.length} accessible documents for Employee ${employeeId}`
       );
       res.json(successResponse(documents));
     } catch (error) {
-      const employeeId2 = req.user?.id || "unknown";
+      const employeeId2 = req.user?.id || 'unknown';
       logger.error(
-        `Error retrieving documents for Employee ${employeeId2}: ${getErrorMessage(error)}`,
+        `Error retrieving documents for Employee ${employeeId2}: ${getErrorMessage(error)}`
       );
       res
         .status(500)
-        .json(errorResponse("Fehler beim Abrufen der Dokumente", 500));
+        .json(errorResponse('Fehler beim Abrufen der Dokumente', 500));
     }
-  }),
+  })
 );
 
 // Mark all documents as read for employee
 router.post(
-  "/documents/mark-all-read",
+  '/documents/mark-all-read',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       const employeeId = req.user.id;
       const tenantId = req.user.tenant_id;
       logger.info(
-        `Employee ${employeeId} marking all accessible documents as read`,
+        `Employee ${employeeId} marking all accessible documents as read`
       );
 
       // Get all accessible documents
       const documents = await Document.findByEmployeeWithAccess(
         employeeId,
-        tenantId,
+        tenantId
       );
 
       // Mark each document as read
@@ -198,27 +195,27 @@ router.post(
       }
 
       logger.info(
-        `Marked ${documents.length} documents as read for Employee ${employeeId}`,
+        `Marked ${documents.length} documents as read for Employee ${employeeId}`
       );
       res.json(
-        successResponse({ success: true, markedCount: documents.length }),
+        successResponse({ success: true, markedCount: documents.length })
       );
     } catch (error) {
       logger.error(
-        `Error marking documents as read: ${getErrorMessage(error)}`,
+        `Error marking documents as read: ${getErrorMessage(error)}`
       );
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Markieren der Dokumente als gelesen", 500),
+          errorResponse('Fehler beim Markieren der Dokumente als gelesen', 500)
         );
     }
-  }),
+  })
 );
 
 // Get unread documents count for employee
 router.get(
-  "/documents/unread-count",
+  '/documents/unread-count',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -228,22 +225,22 @@ router.get(
       // Get real unread count from database
       const unreadCount = await Document.getUnreadCountForUser(
         employeeId,
-        tenantId,
+        tenantId
       );
 
       res.json(successResponse({ unreadCount }));
     } catch (error) {
       logger.error(
-        `Error getting unread document count: ${getErrorMessage(error)}`,
+        `Error getting unread document count: ${getErrorMessage(error)}`
       );
       res.json(successResponse({ unreadCount: 0 }));
     }
-  }),
+  })
 );
 
 // Search employee documents (including team, department, and company documents)
 router.get(
-  "/search-documents",
+  '/search-documents',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -251,11 +248,11 @@ router.get(
       const tenantId = req.user.tenant_id;
       const { query } = req.query;
       logger.info(
-        `Employee ${employeeId} searching accessible documents with query: ${query}`,
+        `Employee ${employeeId} searching accessible documents with query: ${query}`
       );
       if (!query) {
         logger.warn(`Employee ${employeeId} attempted search without query`);
-        res.status(400).json(errorResponse("Suchbegriff erforderlich", 400));
+        res.status(400).json(errorResponse('Suchbegriff erforderlich', 400));
         return;
       }
 
@@ -263,64 +260,64 @@ router.get(
       const documents = await Document.searchWithEmployeeAccess(
         employeeId,
         tenantId,
-        String(query),
+        String(query)
       );
 
       logger.info(
-        `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${query}`,
+        `Found ${documents.length} accessible documents for Employee ${employeeId} with query: ${query}`
       );
       res.json(successResponse(documents));
     } catch (error) {
-      const employeeId3 = req.user?.id || "unknown";
+      const employeeId3 = req.user?.id || 'unknown';
       logger.error(
-        `Error searching documents for Employee ${employeeId3}: ${getErrorMessage(error)}`,
+        `Error searching documents for Employee ${employeeId3}: ${getErrorMessage(error)}`
       );
       res
         .status(500)
-        .json(errorResponse("Fehler bei der Dokumentensuche", 500));
+        .json(errorResponse('Fehler bei der Dokumentensuche', 500));
     }
-  }),
+  })
 );
 
 // Get employee salary documents
 router.get(
-  "/salary-documents",
+  '/salary-documents',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
       const employeeId = req.user.id;
-      const archived = req.query.archived === "true";
+      const archived = req.query.archived === 'true';
 
       logger.info(
-        `Employee ${employeeId} requesting their salary documents (archived: ${archived})`,
+        `Employee ${employeeId} requesting their salary documents (archived: ${archived})`
       );
 
       const documents = await Document.findByUserIdAndCategory(
         employeeId,
-        "salary",
-        archived,
+        'salary',
+        archived
       );
       logger.info(
-        `Retrieved ${documents.length} salary documents for Employee ${employeeId}`,
+        `Retrieved ${documents.length} salary documents for Employee ${employeeId}`
       );
       res.json(successResponse(documents));
     } catch (error) {
-      const employeeId4 = req.user?.id || "unknown";
+      const employeeId4 = req.user?.id || 'unknown';
       logger.error(
-        `Error retrieving salary documents for Employee ${employeeId4}: ${getErrorMessage(error)}`,
+        `Error retrieving salary documents for Employee ${employeeId4}: ${getErrorMessage(error)}`
       );
       res
         .status(500)
         .json(
-          errorResponse("Fehler beim Abrufen der Gehaltsabrechnungen", 500),
+          errorResponse('Fehler beim Abrufen der Gehaltsabrechnungen', 500)
         );
     }
-  }),
+  })
 );
 
 // Download individual document
 router.get(
-  "/documents/:documentId",
+  '/documents/:documentId',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -329,7 +326,7 @@ router.get(
       const { inline } = req.query; // Option zum Anzeigen im Browser statt herunterzuladen
 
       logger.info(
-        `Employee ${employeeId} attempting to download document ${documentId}`,
+        `Employee ${employeeId} attempting to download document ${documentId}`
       );
 
       // Dokument suchen
@@ -338,7 +335,7 @@ router.get(
       // Prüfen, ob das Dokument existiert
       if (!document) {
         logger.warn(`Document ${documentId} not found`);
-        res.status(404).json(errorResponse("Dokument nicht gefunden", 404));
+        res.status(404).json(errorResponse('Dokument nicht gefunden', 404));
         return;
       }
 
@@ -346,43 +343,43 @@ router.get(
       let hasAccess = false;
       const tenantId = req.user.tenant_id;
 
-      switch (document.recipient_type || "user") {
-        case "user":
+      switch (document.recipient_type || 'user') {
+        case 'user':
           // Persönliche Dokumente
           hasAccess = document.user_id == employeeId;
           break;
 
-        case "team":
+        case 'team':
           // Team-Dokumente - prüfen ob Mitarbeiter im Team ist
           try {
             const [teamMembership] = await executeQuery<RowDataPacket[]>(
-              "SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ? AND tenant_id = ?",
-              [employeeId, document.team_id, tenantId],
+              'SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ? AND tenant_id = ?',
+              [employeeId, document.team_id, tenantId]
             );
             hasAccess = teamMembership.length > 0;
           } catch (err) {
             logger.error(
-              `Error checking team membership: ${(err as Error).message}`,
+              `Error checking team membership: ${(err as Error).message}`
             );
           }
           break;
 
-        case "department":
+        case 'department':
           // Abteilungs-Dokumente - prüfen ob Mitarbeiter in der Abteilung ist
           try {
             const [userDept] = await executeQuery<RowDataPacket[]>(
-              "SELECT department_id FROM users WHERE id = ? AND tenant_id = ?",
-              [employeeId, tenantId],
+              'SELECT department_id FROM users WHERE id = ? AND tenant_id = ?',
+              [employeeId, tenantId]
             );
             hasAccess = userDept[0]?.department_id == document.department_id;
           } catch (err) {
             logger.error(
-              `Error checking department membership: ${(err as Error).message}`,
+              `Error checking department membership: ${(err as Error).message}`
             );
           }
           break;
 
-        case "company":
+        case 'company':
           // Firmen-Dokumente - alle Mitarbeiter des Tenants haben Zugriff
           hasAccess = document.tenant_id == tenantId;
           break;
@@ -390,9 +387,9 @@ router.get(
 
       if (!hasAccess) {
         logger.warn(
-          `Access denied: Employee ${employeeId} attempted to access document ${documentId} (type: ${document.recipient_type})`,
+          `Access denied: Employee ${employeeId} attempted to access document ${documentId} (type: ${document.recipient_type})`
         );
-        res.status(403).json(errorResponse("Zugriff verweigert", 403));
+        res.status(403).json(errorResponse('Zugriff verweigert', 403));
         return;
       }
 
@@ -400,40 +397,40 @@ router.get(
       await Document.incrementDownloadCount(parseInt(documentId, 10));
 
       // Content-Type Header setzen
-      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader('Content-Type', 'application/pdf');
 
       // Content-Disposition Header basierend auf inline-Parameter setzen
-      const disposition = inline === "true" ? "inline" : "attachment";
+      const disposition = inline === 'true' ? 'inline' : 'attachment';
       res.setHeader(
-        "Content-Disposition",
-        `${disposition}; filename=${encodeURIComponent(document.file_name)}`,
+        'Content-Disposition',
+        `${disposition}; filename=${encodeURIComponent(document.file_name)}`
       );
 
       // Optional: Cache-Control Header für häufig abgerufene Dokumente
-      res.setHeader("Cache-Control", "max-age=300"); // 5 Minuten cachen
+      res.setHeader('Cache-Control', 'max-age=300'); // 5 Minuten cachen
 
       // Content-Length setzen, um dem Browser mitzuteilen, wie groß die Datei ist
       if (document.file_content) {
-        res.setHeader("Content-Length", document.file_content.length);
+        res.setHeader('Content-Length', document.file_content.length);
       }
 
       logger.info(
-        `Employee ${employeeId} successfully downloading document ${documentId}`,
+        `Employee ${employeeId} successfully downloading document ${documentId}`
       );
 
       // Für alle Dateien einfach den gesamten Inhalt auf einmal senden
       res.end(document.file_content);
     } catch (error) {
-      const employeeId5 = req.user?.id || "unknown";
-      const documentId2 = req.params?.documentId || "unknown";
+      const employeeId5 = req.user?.id || 'unknown';
+      const documentId2 = req.params?.documentId || 'unknown';
       logger.error(
-        `Error downloading document ${documentId2} for Employee ${employeeId5}: ${getErrorMessage(error)}`,
+        `Error downloading document ${documentId2} for Employee ${employeeId5}: ${getErrorMessage(error)}`
       );
       res
         .status(500)
-        .json(errorResponse("Fehler beim Herunterladen des Dokuments", 500));
+        .json(errorResponse('Fehler beim Herunterladen des Dokuments', 500));
     }
-  }),
+  })
 );
 
 export default router;
