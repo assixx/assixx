@@ -35,9 +35,7 @@
       .header {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
       }
 
       /* Main content area - wie calendar? */
@@ -55,10 +53,8 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border-radius: var(--radius-md);
         /* animation: fadeInUp 0.6s ease-out; */
         overflow: visible;
       }
@@ -78,7 +74,7 @@
         padding: var(--spacing-lg);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-md);
         margin-bottom: var(--spacing-lg);
         box-shadow:
@@ -126,7 +122,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
@@ -160,11 +156,9 @@
         background: rgba(18, 18, 18, 0.98);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.6),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
         opacity: 0;
@@ -248,11 +242,9 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-md);
         overflow: hidden;
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
       }
 
       .schedule-header {
@@ -336,13 +328,11 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-md);
         margin: var(--spacing-xl) auto;
         max-width: 600px;
         /* animation: fadeInUp 0.6s ease-out; */
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
       }
 
       .department-notice .notice-icon {
@@ -526,12 +516,10 @@
       .employee-sidebar {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-lg);
+        border: 1px solid hsla(0,0%,100%,.1);
+        border-radius: var(--radius-md);
         padding: var(--spacing-lg);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
       }
 
       .shift-sidebar-title {

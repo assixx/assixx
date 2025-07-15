@@ -859,7 +859,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0" 
                   type="application/pdf" 
                   style="width: 100%; height: 100%; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="text-align: center; padding: 20px;">
+            <div style="text-align: center; padding: 24px;">
               <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545; margin-bottom: 10px;"></i>
               <p style="color: #666;">PDF-Vorschau nicht verfügbar</p>
               <button class="btn btn-sm btn-primary" 

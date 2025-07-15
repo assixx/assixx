@@ -43,10 +43,8 @@
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-lg, 16px);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
         margin-bottom: 24px;
         overflow: hidden;
       }
@@ -69,7 +67,7 @@
       /* Filters */
       .filters-section {
         background: rgba(255, 255, 255, 0.02);
-        padding: 20px;
+        padding: 24px;
         border-radius: 12px;
         margin-bottom: 24px;
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -314,7 +312,7 @@
       .modal-content {
         /*background: rgba(18, 18, 18, 0.95);*/
         backdrop-filter: blur(20px) saturate(580%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: 16px;
         max-width: 600px;
         width: 90%;
@@ -329,7 +327,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px;
+        padding: 24px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
@@ -362,7 +360,7 @@
       }
 
       .modal-body {
-        padding: 20px;
+        padding: 24px;
       }
 
       /* Custom Dropdown */
@@ -379,7 +377,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
@@ -414,11 +412,9 @@
         background: rgba(18, 18, 18, 0.95);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
         opacity: 0;

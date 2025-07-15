@@ -577,7 +577,7 @@
           <h3 class="modal-title">Log Details</h3>
           <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
         </div>
-        <div class="modal-body" style="padding: 20px;">
+        <div class="modal-body" style="padding: 24px;">
           <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${formatted}</pre>
         </div>
       </div>

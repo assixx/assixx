@@ -47,12 +47,10 @@
         min-height: 100vh;
       }
 
-      /* Main Content Area - innerhalb layout-container */
-      .main-content {
-        flex: 1;
-        padding: 24px 24px 120px 24px; /* bottom für summary bar */
-        min-height: calc(100vh - 64px);
-        background: transparent;
+      /* Container Styles */
+      .container {
+        padding: 24px;
+        margin-top: -34px !important; /* Align first container with sidebar user-info-card */
       }
 
       /* Mobile responsiv */
@@ -68,10 +66,9 @@
         border-radius: 12px;
         padding: 32px;
         margin-bottom: 32px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        box-shadow: var(--shadow-sm);
         width: 100%;
         box-sizing: border-box;
-        margin-top: -14px !important;
         backdrop-filter: blur(20px) saturate(180%);
         background: hsla(0,0%,100%,.02);
       }
@@ -328,7 +325,7 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 20px;
+        padding: 24px;
         position: relative;
         transition: all 0.3s ease;
       }
@@ -472,7 +469,7 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
-        padding: 20px;
+        padding: 24px;
         text-align: center;
       }
 
@@ -548,11 +545,12 @@
         border-top: 1px solid hsla(0, 0%, 100%, 0.1);
         bottom: 0;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-        left: 280px;
+        left: var(--sidebar-width, 250px);
         padding: 12px 24px;
         position: fixed;
         right: 0;
         z-index: 900;
+        transition: left 0.3s ease;
       }
 
       /* Mobile responsiv */
@@ -628,8 +626,9 @@
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
-        <!-- Current Plan Header -->
-        <div class="plan-header">
+        <div class="container">
+          <!-- Current Plan Header -->
+          <div class="plan-header">
           <div class="current-plan-info">
             <div>
               <p class="plan-title">Plan & Feature Management</p>
@@ -864,6 +863,7 @@
             </div>
           </div>
         </div>
+        </div> <!-- End of container -->
 
         <!-- Summary Bar -->
         <div class="summary-bar">

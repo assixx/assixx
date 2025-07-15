@@ -2394,9 +2394,7 @@ const unifiedNavigationCSS = `
         height: 60px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         display: flex;
         align-items: center;
         padding: 0 20px;
@@ -2944,7 +2942,7 @@ const unifiedNavigationCSS = `
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
         /*border: 1px solid rgba(115, 115, 115, 0.36);*/
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-md);
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
@@ -3315,8 +3313,8 @@ const unifiedNavigationCSS = `
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: var(--radius-lg);
+        border: 1px solid hsla(0,0%,100%,.1);
+        border-radius: var(--radius-md);
         padding: var(--spacing-md);
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),

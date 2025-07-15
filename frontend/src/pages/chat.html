@@ -408,7 +408,7 @@
         font-size: 0.85rem;
         color: rgba(255, 255, 255, 0.7);
         font-weight: 500;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
       }
 
       .date-separator::before,
@@ -783,7 +783,7 @@
         margin-bottom: 4px;
         background: rgba(18, 18, 18, 0.95);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: 12px;
         overflow: hidden;
         opacity: 0;
@@ -908,7 +908,7 @@
       /* File Upload Area */
       .file-upload-area {
         border: 2px dashed rgba(33, 150, 243, 0.3);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-md);
         padding: var(--spacing-xl);
         text-align: center;
         background: rgba(33, 150, 243, 0.05);
@@ -991,11 +991,9 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-lg);
+        border: 1px solid hsla(0,0%,100%,.1);
+        box-shadow: var(--shadow-sm);
+        border-radius: var(--radius-md);
         padding: var(--spacing-xl);
         max-width: 500px;
         width: 90%;
@@ -1119,8 +1117,8 @@
         background: rgba(20, 20, 40, 0.95);
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: var(--radius-lg);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
         z-index: 1000;
         display: flex;
         flex-direction: column;
@@ -1441,7 +1439,7 @@
         padding: var(--spacing-sm) var(--spacing-md);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
@@ -1475,11 +1473,9 @@
         background: rgba(18, 18, 18, 0.95);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
         opacity: 0;

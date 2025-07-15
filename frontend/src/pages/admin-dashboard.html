@@ -81,10 +81,8 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+        /*transition: all 0.3s ease;*/
       }
 
       .stat-card:hover {
@@ -101,9 +99,7 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
       }
 
       /* Ansprechendere Compact-Cards */
@@ -246,7 +242,7 @@
       .search-input {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         color: #fff;
         transition: all 0.3s ease;
       }
@@ -291,7 +287,7 @@
 
       .btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        box-shadow: var(--shadow-sm);
       }
 
       .btn::after {
@@ -1163,9 +1159,7 @@
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-md);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         width: 90%;
         max-width: 500px;
         max-height: 90vh;
@@ -1251,7 +1245,7 @@
         padding: 10px 12px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: 8px;
         color: #fff;
         cursor: pointer;
@@ -1279,11 +1273,9 @@
         background: rgba(18, 18, 18, 0.98);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: 8px;
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         max-height: 200px;
         overflow-y: auto;
         z-index: 1001;
@@ -2661,7 +2653,7 @@
       .search-input {
         min-width: 300px;
         padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid var(--border-color);
+        border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
         background-color: var(--background-dark);
         color: var(--text-primary);
@@ -2712,9 +2704,7 @@
         max-width: 500px;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-sm);
         /* animation: fadeInUp 0.3s ease-out; */
       }
 
