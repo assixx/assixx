@@ -725,7 +725,13 @@ router.post(
         return;
       }
 
-      const filePath = req.file.path;
+      const uploadDir = getUploadDirectory(); // Ensure this function returns the safe upload directory
+      const filePath = path.resolve(req.file.path);
+      if (!filePath.startsWith(uploadDir)) {
+        await safeDeleteFile(req.file.path);
+        res.status(400).json({ message: "Ungültiger Dateipfad" });
+        return;
+      }
       const fileContent = await fs.readFile(filePath);
 
       const documentId = await Document.create({
