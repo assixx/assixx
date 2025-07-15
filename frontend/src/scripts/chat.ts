@@ -1441,7 +1441,7 @@ class ChatClient {
         <div class="message-text">${messageContent}</div>
         ${attachmentsHtml}
         <div class="message-time">
-          ${time}
+          ${this.escapeHtml(time)}
           ${isOwnMessage ? `<span class="read-indicator ${message.is_read ? 'read' : ''}">✓✓</span>` : ''}
         </div>
       </div>
@@ -2604,7 +2604,10 @@ class ChatClient {
 
   linkify(text: string): string {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
+    return text.replace(urlRegex, (match) => {
+      const escapedUrl = this.escapeHtml(match);
+      return `<a href="${escapedUrl}" target="_blank">${escapedUrl}</a>`;
+    });
   }
 
   formatTime(dateString: string): string {
