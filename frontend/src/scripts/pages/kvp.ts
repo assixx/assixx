@@ -295,7 +295,7 @@ class KvpPage {
         const visibilityText = suggestion.org_level === 'company' ? 'Firmenweit' : 'Abteilung';
 
         return `
-        <div class="kvp-card" data-id="${suggestion.id}">
+        <div class="glass-card kvp-card" data-id="${suggestion.id}">
           <div class="status-badge ${statusClass}">${this.getStatusText(suggestion.status)}</div>
           
           <div class="suggestion-header">

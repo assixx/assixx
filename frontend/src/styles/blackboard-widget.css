@@ -6,12 +6,11 @@
   border-radius: 15px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  /* transition: none; */ /* Prevent animation on initial load */
+  /* Prevent animation on initial load */
 }
 
-/* After content loads, enable transitions */
+/* After content loads */
 .blackboard-widget.loaded {
-  /* transition: all 0.3s ease; */
 }
 
 .blackboard-widget-header {
@@ -38,7 +37,6 @@
   color: var(--text-muted);
   text-decoration: none;
   font-size: 0.875rem;
-  /* transition: color 0.3s ease; */
 }
 
 .blackboard-widget-link:hover {

@@ -66,7 +66,6 @@
         font-size: 0.9rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.3s ease;
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
@@ -114,7 +113,6 @@
         border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
-        transition: all 0.3s ease;
       }
 
       .secondary-filters select:focus,
@@ -153,13 +151,8 @@
 
       /* KVP Card */
       .kvp-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-lg);
-        transition: all 0.3s ease;
+        /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
+        /* Nutzt die glass-card Basis-Styles */
         position: relative;
         cursor: pointer;
       }
@@ -319,7 +312,6 @@
         color: var(--text-primary);
         font-size: 0.85rem;
         cursor: pointer;
-        transition: all 0.3s ease;
       }
 
       .action-btn:hover {
@@ -350,7 +342,6 @@
         font-size: 1.5rem;
         cursor: pointer;
         box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4);
-        transition: all 0.3s ease;
         z-index: 100;
       }
 
@@ -417,7 +408,6 @@
         border-radius: 16px;
         font-size: 0.85rem;
         font-weight: 500;
-        transition: all 0.3s ease;
       }
 
       .category-tag:hover {
@@ -442,7 +432,6 @@
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
-        transition: all 0.3s ease;
         font-size: 0.9rem;
       }
 
@@ -452,7 +441,6 @@
       }
 
       .dropdown-display svg {
-        transition: transform 0.3s ease;
       }
 
       .dropdown-display.active svg {
@@ -475,7 +463,6 @@
         opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
-        transition: all 0.3s ease;
         z-index: 1001;
       }
 
@@ -489,7 +476,6 @@
         padding: 10px 12px;
         color: var(--text-primary);
         cursor: pointer;
-        transition: all 0.2s ease;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         font-size: 0.9rem;
       }
@@ -538,9 +524,6 @@
         align-items: center;
         opacity: 0;
         visibility: hidden;
-        transition:
-          opacity 0.3s ease,
-          visibility 0.3s ease;
       }
 
       .modal.active {
@@ -591,7 +574,6 @@
         align-items: center;
         justify-content: center;
         border-radius: var(--radius-sm);
-        transition: all 0.3s ease;
       }
 
       .modal-close:hover {
@@ -636,7 +618,6 @@
         border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-sm);
         color: #fff;
-        transition: all 0.3s ease;
         font-size: 0.95rem;
       }
 
@@ -661,7 +642,6 @@
         font-weight: 500;
         font-size: 0.9rem;
         cursor: pointer;
-        transition: all 0.3s ease;
         border: none;
         display: inline-flex;
         align-items: center;
@@ -750,7 +730,6 @@
         padding: var(--spacing-xl);
         text-align: center;
         cursor: pointer;
-        transition: all 0.3s ease;
         background: rgba(255, 255, 255, 0.02);
       }
 
@@ -812,7 +791,6 @@
         align-items: center;
         justify-content: center;
         font-size: 0.9rem;
-        transition: all 0.2s ease;
       }
 
       .photo-preview-item .remove-photo:hover {
@@ -838,7 +816,7 @@
     </style>
   </head>
 
-  <body>
+  <body class="kvp-page">
     <!-- Navigation Container -->
     <div id="navigation-container"></div>
 

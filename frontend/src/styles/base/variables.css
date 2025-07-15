@@ -54,9 +54,6 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
 
   /* Transitions */
-  --transition-fast: 150ms ease-in-out;
-  --transition-base: 300ms ease-in-out;
-  --transition-slow: 500ms ease-in-out;
 
   /* Z-index */
   --z-dropdown: 1000;

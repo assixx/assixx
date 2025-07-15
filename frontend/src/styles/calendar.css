@@ -135,9 +135,6 @@
   cursor: pointer;
   border: none !important;
   box-shadow: var(--shadow-sm);
-  /* transition:
-    transform 0.2s,
-    box-shadow 0.2s; */
 }
 
 .fc-event:hover {
@@ -207,7 +204,6 @@
   display: flex;
   padding: 12px;
   border-bottom: 1px solid var(--border-color);
-  /* transition: background-color 0.2s; */
 }
 
 .event-item:last-child {
@@ -338,9 +334,6 @@
   height: 30px;
   border-radius: 50%;
   cursor: pointer;
-  /* transition:
-    transform 0.2s,
-    box-shadow 0.2s; */
 }
 
 .color-option:hover {
@@ -370,9 +363,6 @@
   z-index: 2000;
   opacity: 0;
   visibility: hidden;
-  /* transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease; */
   padding: 24px;
 }
 
@@ -397,7 +387,6 @@
   flex-direction: column;
   overflow: hidden;
   transform: translateY(20px);
-  /* transition: transform 0.3s ease; */
   /* animation: fadeInUp 0.3s ease-out; */
 }
 
@@ -440,7 +429,6 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  /* transition: all 0.3s ease; */
 }
 
 .modal-close:hover {
@@ -538,7 +526,6 @@
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  /* transition: all 0.2s ease; */
 }
 
 .detail-item:last-child {
@@ -602,7 +589,6 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-sm);
-  /* transition: all 0.2s ease; */
 }
 
 .attendee-item:hover {
@@ -777,7 +763,6 @@
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 14px;
-  /* transition: all 0.3s ease; */
 }
 
 .form-control:focus {
@@ -871,7 +856,6 @@ textarea.form-control {
   border-radius: var(--radius-sm);
   color: #fff;
   cursor: pointer;
-  /* transition: all 0.3s ease; */
 }
 
 .dropdown-display:hover {
@@ -906,7 +890,6 @@ textarea.form-control {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  /* transition: all 0.3s ease; */
   z-index: 10001;
 }
 
@@ -920,7 +903,6 @@ textarea.form-control {
   padding: 10px 12px;
   color: var(--text-primary);
   cursor: pointer;
-  /* transition: all 0.2s ease; */
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -961,7 +943,6 @@ textarea.form-control {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-sm);
   margin-bottom: 5px;
-  /* transition: all 0.2s ease; */
 }
 
 .attendee-item:hover {
@@ -1028,10 +1009,6 @@ textarea.form-control {
   border-radius: var(--radius-md);
   padding: 15px;
   cursor: pointer;
-  /* transition:
-    transform 0.2s,
-    box-shadow 0.2s,
-    border-color 0.2s; */
   width: 100px;
 }
 
@@ -1106,7 +1083,6 @@ textarea.form-control {
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 16px;
-  /* transition: border-color 0.2s; */
 }
 
 .big-input:focus {
@@ -1189,7 +1165,6 @@ select.big-input:disabled {
   border: none;
   cursor: pointer;
   font-weight: 500;
-  /* transition: all 0.2s ease; */
   white-space: nowrap;
 }
 
@@ -1230,7 +1205,6 @@ select.big-input:disabled {
 .fc-event:hover {
   opacity: 0.8 !important;
   transform: scale(1.02) !important;
-  /* transition: all 0.2s ease !important; */
 }
 
 /* Event styling by organization level - fallback colors only */
@@ -1308,7 +1282,6 @@ select.big-input:disabled {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-sm);
-  /* transition: all 0.2s ease; */
 }
 
 .attendee-option:hover {
@@ -1344,7 +1317,6 @@ select.big-input:disabled {
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
-  /* transition: all 0.2s ease; */
   position: relative;
 }
 
