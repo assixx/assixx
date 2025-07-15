@@ -27,61 +27,108 @@ const __dirname = path.dirname(__filename);
  * @returns Bereinigter HTML-Inhalt
  */
 function sanitizeHtml(html: string): string {
-  // Listen für erlaubte Tags und Attribute sind als Kommentare dokumentiert
-  // Erlaubte Tags: a, b, i, em, strong, p, br, div, span, h1-h6, ul, ol, li, 
-  // table, tr, td, th, tbody, thead, img, blockquote, hr, pre, code
-  // Erlaubte Attribute: href, src, alt, title, width, height, style, class, id, target, rel
+  if (!html) return '';
   
-  // Entferne alle script-Tags komplett
-  let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  let sanitized = html;
   
-  // Entferne alle iframe-Tags
-  sanitized = sanitized.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+  // Schritt 1: Entferne gefährliche Tags mit mehreren Durchgängen
+  const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'meta', 'link', 'base', 'applet'];
   
-  // Entferne alle object/embed-Tags
-  sanitized = sanitized.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
-  sanitized = sanitized.replace(/<embed\b[^>]*>/gi, '');
+  // Mehrere Durchgänge um verschachtelte Tags zu erwischen
+  for (let i = 0; i < 3; i++) {
+    dangerousTags.forEach(tag => {
+      // Entferne komplette Tags mit Inhalt
+      const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}>`, 'gi');
+      sanitized = sanitized.replace(fullTagRegex, '');
+      
+      // Entferne self-closing und einzelne Tags
+      const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
+      sanitized = sanitized.replace(singleTagRegex, '');
+      
+      // Entferne closing Tags falls übrig
+      const closeTagRegex = new RegExp(`</${tag}>`, 'gi');
+      sanitized = sanitized.replace(closeTagRegex, '');
+    });
+  }
   
-  // Entferne alle Event-Handler-Attribute (on*)
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
-  sanitized = sanitized.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '');
+  // Schritt 2: Entferne Event-Handler mit mehreren Patterns
+  const eventHandlerPatterns = [
+    /\bon\w+\s*=\s*["'][^"']*["']/gi,
+    /\bon\w+\s*=\s*`[^`]*`/gi,
+    /\bon\w+\s*=\s*[^\s>]+/gi,
+    /\son\w+/gi // Fallback für alleinstehende Handler
+  ];
   
-  // Entferne javascript: URLs
-  sanitized = sanitized.replace(/href\s*=\s*["']?\s*javascript:[^"'>]*/gi, 'href="#"');
+  // Mehrere Durchgänge für vollständige Entfernung
+  for (let i = 0; i < 3; i++) {
+    eventHandlerPatterns.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '');
+    });
+  }
   
-  // Entferne data: URLs außer für Bilder
-  sanitized = sanitized.replace(/(?<!img\s[^>]*)\ssrc\s*=\s*["']?\s*data:[^"'>]*/gi, '');
+  // Schritt 3: URL-Bereinigung mit verbesserter Erkennung
+  const urlPatterns = [
+    // href Attribute
+    /href\s*=\s*["']([^"']*?)["']/gi,
+    /href\s*=\s*([^\s>]+)/gi,
+    // src Attribute
+    /src\s*=\s*["']([^"']*?)["']/gi,
+    /src\s*=\s*([^\s>]+)/gi,
+    // andere URL Attribute
+    /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*?)["']/gi
+  ];
   
-  // Entferne vbscript: URLs
-  sanitized = sanitized.replace(/href\s*=\s*["']?\s*vbscript:[^"'>]*/gi, 'href="#"');
+  urlPatterns.forEach(pattern => {
+    sanitized = sanitized.replace(pattern, (match, url) => {
+      const lowerUrl = url.toLowerCase().trim();
+      
+      // Gefährliche Schemas
+      if (/^(javascript|vbscript|data:text\/html|data:text\/javascript|data:application\/javascript)/i.test(lowerUrl)) {
+        return match.replace(url, '#');
+      }
+      
+      // Für data: URLs - nur Bilder erlauben
+      if (lowerUrl.startsWith('data:')) {
+        if (!/^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml)/i.test(lowerUrl)) {
+          return match.replace(url, '#');
+        }
+      }
+      
+      return match;
+    });
+  });
   
-  // Entferne gefährliche CSS-Eigenschaften
-  sanitized = sanitized.replace(/style\s*=\s*["'][^"']*expression\s*\([^"']*\)[^"']*["']/gi, 'style=""');
-  sanitized = sanitized.replace(/style\s*=\s*["'][^"']*javascript:[^"']*["']/gi, 'style=""');
-  
-  // Weitere Bereinigung von style-Attributen
-  sanitized = sanitized.replace(/style\s*=\s*["']([^"']*)["']/gi, (_match, styleContent) => {
-    // Entferne gefährliche CSS-Eigenschaften
-    const cleanedStyle = styleContent
-      .replace(/expression\s*\([^)]*\)/gi, '')
-      .replace(/javascript:/gi, '')
-      .replace(/behavior\s*:/gi, '')
-      .replace(/-moz-binding\s*:/gi, '')
-      .replace(/import\s*\(/gi, '');
+  // Schritt 4: Style-Bereinigung
+  sanitized = sanitized.replace(/style\s*=\s*["']([^"']*?)["']/gi, (match, styleContent) => {
+    let cleanedStyle = styleContent;
+    
+    // Gefährliche CSS-Eigenschaften mit globaler Ersetzung
+    const dangerousCSS = [
+      /expression\s*\([^)]*\)/gi,
+      /javascript\s*:/gi,
+      /vbscript\s*:/gi,
+      /-moz-binding\s*:/gi,
+      /behavior\s*:/gi,
+      /@import/gi,
+      /import\s*\(/gi
+    ];
+    
+    dangerousCSS.forEach(pattern => {
+      cleanedStyle = cleanedStyle.replace(pattern, '');
+    });
+    
+    // URL-Funktionen bereinigen
+    cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch) => {
+      if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
+        return '';
+      }
+      return urlMatch;
+    });
     
     return cleanedStyle.trim() ? `style="${cleanedStyle}"` : '';
   });
   
-  // Entferne form-Tags
-  sanitized = sanitized.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '');
-  
-  // Entferne meta-Tags
-  sanitized = sanitized.replace(/<meta\b[^>]*>/gi, '');
-  
-  // Entferne link-Tags (außer für CSS, aber das sollte in E-Mails eh nicht verwendet werden)
-  sanitized = sanitized.replace(/<link\b[^>]*>/gi, '');
-  
-  return sanitized;
+  return sanitized.trim();
 }
 
 // Interfaces
