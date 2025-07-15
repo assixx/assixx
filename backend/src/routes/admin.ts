@@ -7,29 +7,29 @@
  *   description: Admin-specific operations and management
  */
 
-import express, { Router, Request } from "express";
-import multer from "multer";
-import path from "path";
-import { promises as fs } from "fs";
-import { security } from "../middleware/security";
+import express, { Router, Request } from 'express';
+import multer from 'multer';
+import path from 'path';
+import { promises as fs } from 'fs';
+import { security } from '../middleware/security';
 import {
   validateCreateEmployee,
   validateUpdateEmployee,
-} from "../middleware/validators";
-import { logger } from "../utils/logger";
-import { getErrorMessage } from "../utils/errorHandler";
-import { typed } from "../utils/routeHandlers";
+} from '../middleware/validators';
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/errorHandler';
+import { typed } from '../utils/routeHandlers';
 import {
   sanitizeFilename,
   getUploadDirectory,
   safeDeleteFile,
-} from "../utils/pathSecurity";
-import { apiLimiter } from "../middleware/security-enhanced";
+} from '../utils/pathSecurity';
+import { apiLimiter } from '../middleware/security-enhanced';
 
 // Import models (now ES modules)
-import User from "../models/user";
-import Document from "../models/document";
-import Department from "../models/department";
+import User from '../models/user';
+import Document from '../models/document';
+import Department from '../models/department';
 
 const router: Router = express.Router();
 
@@ -90,7 +90,7 @@ interface DocumentUploadRequest extends AuthenticatedAdminRequest {
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    const uploadDir = getUploadDirectory("documents");
+    const uploadDir = getUploadDirectory('documents');
     cb(null, uploadDir);
   },
   filename(_req, file, cb) {
@@ -105,10 +105,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === "application/pdf") {
+    if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
-      cb(new Error("Nur PDF-Dateien sind erlaubt!"));
+      cb(new Error('Nur PDF-Dateien sind erlaubt!'));
     }
   },
 });
@@ -219,48 +219,48 @@ const upload = multer({
  */
 // Create employee
 router.post(
-  "/employees",
+  '/employees',
   apiLimiter,
   ...security.admin(validateCreateEmployee),
-  typed.body<EmployeeCreateRequest["body"]>(async (req, res) => {
+  typed.body<EmployeeCreateRequest['body']>(async (req, res) => {
     const adminId = req.user.id;
     logger.info(`Admin ${adminId} attempting to create a new employee`);
 
     try {
       const employeeData = {
         ...req.body,
-        first_name: req.body.first_name || "",
-        last_name: req.body.last_name || "",
-        role: "employee",
+        first_name: req.body.first_name || '',
+        last_name: req.body.last_name || '',
+        role: 'employee',
         tenant_id: req.user.tenant_id,
       };
       const employeeId = await User.create(employeeData);
       logger.info(
-        `Admin ${adminId} created new employee with ID: ${employeeId}`,
+        `Admin ${adminId} created new employee with ID: ${employeeId}`
       );
 
       res.status(201).json({
-        message: "Mitarbeiter erfolgreich erstellt",
+        message: 'Mitarbeiter erfolgreich erstellt',
         employeeId,
       });
     } catch (error) {
       logger.error(
-        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`
       );
       const dbError = error as { code?: string };
-      if (dbError.code === "ER_DUP_ENTRY") {
+      if (dbError.code === 'ER_DUP_ENTRY') {
         res.status(409).json({
           message:
-            "Ein Mitarbeiter mit diesem Benutzernamen oder dieser E-Mail existiert bereits.",
+            'Ein Mitarbeiter mit diesem Benutzernamen oder dieser E-Mail existiert bereits.',
         });
         return;
       }
       res.status(500).json({
-        message: "Fehler beim Erstellen des Mitarbeiters",
+        message: 'Fehler beim Erstellen des Mitarbeiters',
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -323,15 +323,15 @@ router.post(
  */
 // Get all employees
 router.get(
-  "/employees",
+  '/employees',
   apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
       const employees = await User.findByRole(
-        "employee",
+        'employee',
         false,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       console.log(`Retrieved ${employees.length} employees:`, employees);
@@ -342,11 +342,11 @@ router.get(
       console.error(`Error retrieving employees from DB:`, error);
       logger.error(`Error retrieving employees: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Abrufen der Mitarbeiter",
+        message: 'Fehler beim Abrufen der Mitarbeiter',
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -403,7 +403,7 @@ router.get(
  */
 // Get single employee
 router.get(
-  "/employees/:id",
+  '/employees/:id',
   apiLimiter,
   ...security.admin(),
   typed.params<{ id: string }>(async (req, res) => {
@@ -416,21 +416,21 @@ router.get(
       const employee = await User.findById(employeeId, req.user.tenant_id);
 
       if (!employee) {
-        res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+        res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
         return;
       }
 
       res.json(employee);
     } catch (error) {
       logger.error(
-        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`
       );
       res.status(500).json({
-        message: "Fehler beim Abrufen des Mitarbeiters",
+        message: 'Fehler beim Abrufen des Mitarbeiters',
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -533,13 +533,13 @@ router.get(
  */
 // Update employee
 router.put(
-  "/employees/:id",
+  '/employees/:id',
   apiLimiter,
   ...security.admin(),
   ...validateUpdateEmployee,
   typed.paramsBody<
-    EmployeeUpdateRequest["params"],
-    EmployeeUpdateRequest["body"]
+    EmployeeUpdateRequest['params'],
+    EmployeeUpdateRequest['body']
   >(async (req, res) => {
     const adminId = req.user.id;
     const employeeId = parseInt(req.params.id, 10);
@@ -550,13 +550,13 @@ router.put(
       const employee = await User.findById(employeeId, req.user.tenant_id);
 
       if (!employee) {
-        res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+        res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
         return;
       }
 
       if (req.body.role && req.body.role !== employee.role) {
         res.status(403).json({
-          message: "Die Rolle eines Mitarbeiters kann nicht geändert werden",
+          message: 'Die Rolle eines Mitarbeiters kann nicht geändert werden',
         });
         return;
       }
@@ -564,35 +564,35 @@ router.put(
       const success = await User.update(
         employeeId,
         req.body,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (success) {
         logger.info(
-          `Employee ${employeeId} updated successfully by Admin ${adminId}`,
+          `Employee ${employeeId} updated successfully by Admin ${adminId}`
         );
         res.json({
-          message: "Mitarbeiter erfolgreich aktualisiert",
+          message: 'Mitarbeiter erfolgreich aktualisiert',
           success: true,
         });
       } else {
         logger.warn(`Failed to update employee ${employeeId}`);
         res.status(500).json({
-          message: "Fehler beim Aktualisieren des Mitarbeiters",
+          message: 'Fehler beim Aktualisieren des Mitarbeiters',
           success: false,
         });
       }
     } catch (error) {
       logger.error(
-        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
       );
       res.status(500).json({
-        message: "Fehler beim Aktualisieren des Mitarbeiters",
+        message: 'Fehler beim Aktualisieren des Mitarbeiters',
         error: getErrorMessage(error),
         success: false,
       });
     }
-  }),
+  })
 );
 
 /**
@@ -701,39 +701,39 @@ router.put(
  */
 // Upload document for employee
 router.post(
-  "/upload-document/:employeeId",
+  '/upload-document/:employeeId',
   apiLimiter,
   ...security.admin(),
-  upload.single("document"),
+  upload.single('document'),
   typed.paramsBody<
-    DocumentUploadRequest["params"],
-    DocumentUploadRequest["body"]
+    DocumentUploadRequest['params'],
+    DocumentUploadRequest['body']
   >(async (req, res) => {
     const adminId = req.user.id;
     const employeeId = parseInt(req.params.employeeId, 10);
 
     logger.info(
-      `Admin ${adminId} attempting to upload document for Employee ${employeeId}`,
+      `Admin ${adminId} attempting to upload document for Employee ${employeeId}`
     );
 
     try {
       if (!req.file) {
-        res.status(400).json({ message: "Keine Datei hochgeladen" });
+        res.status(400).json({ message: 'Keine Datei hochgeladen' });
         return;
       }
 
       const employee = await User.findById(employeeId, req.user.tenant_id);
       if (!employee) {
         await safeDeleteFile(req.file.path);
-        res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+        res.status(404).json({ message: 'Mitarbeiter nicht gefunden' });
         return;
       }
 
-      const uploadDir = getUploadDirectory("documents"); // Ensure this function returns the safe upload directory
+      const uploadDir = getUploadDirectory('documents'); // Ensure this function returns the safe upload directory
       const filePath = path.resolve(req.file.path);
       if (!filePath.startsWith(uploadDir)) {
         await safeDeleteFile(req.file.path);
-        res.status(400).json({ message: "Ungültiger Dateipfad" });
+        res.status(400).json({ message: 'Ungültiger Dateipfad' });
         return;
       }
       const fileContent = await fs.readFile(filePath);
@@ -748,15 +748,15 @@ router.post(
       await safeDeleteFile(filePath);
 
       logger.info(
-        `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`,
+        `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`
       );
       res.status(201).json({
-        message: "Dokument erfolgreich hochgeladen",
+        message: 'Dokument erfolgreich hochgeladen',
         documentId,
       });
     } catch (error) {
       logger.error(
-        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
       );
 
       if (req.file?.path) {
@@ -764,17 +764,17 @@ router.post(
           await safeDeleteFile(req.file.path);
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
           );
         }
       }
 
       res.status(500).json({
-        message: "Fehler beim Hochladen des Dokuments",
+        message: 'Fehler beim Hochladen des Dokuments',
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -835,13 +835,13 @@ router.post(
  */
 // Get dashboard stats
 router.get(
-  "/dashboard-stats",
+  '/dashboard-stats',
   apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
     try {
       const employeeCount = await User.count({
-        role: "employee",
+        role: 'employee',
         tenant_id: req.user.tenant_id,
       });
       let departmentCount = 0;
@@ -850,7 +850,7 @@ router.get(
 
       // Department count
       try {
-        if (typeof Department.countByTenant === "function") {
+        if (typeof Department.countByTenant === 'function') {
           departmentCount = await Department.countByTenant(req.user.tenant_id);
         }
       } catch (e) {
@@ -859,7 +859,7 @@ router.get(
 
       // Team count (using Department model)
       try {
-        if (typeof Department.countTeamsByTenant === "function") {
+        if (typeof Department.countTeamsByTenant === 'function') {
           teamCount = await Department.countTeamsByTenant(req.user.tenant_id);
         }
       } catch (e) {
@@ -867,7 +867,7 @@ router.get(
       }
 
       try {
-        if (typeof Document.countByTenant === "function") {
+        if (typeof Document.countByTenant === 'function') {
           documentCount = await Document.countByTenant(req.user.tenant_id);
         }
       } catch (e) {
@@ -884,11 +884,11 @@ router.get(
     } catch (error) {
       logger.error(`Error fetching dashboard stats: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Abrufen der Dashboard-Daten",
+        message: 'Fehler beim Abrufen der Dashboard-Daten',
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 // Note: Dashboard statistics endpoint removed - duplicate of above route
@@ -898,7 +898,7 @@ router.get(
 
 // Get all documents for admin
 router.get(
-  "/documents",
+  '/documents',
   apiLimiter,
   ...security.admin(),
   typed.auth(async (req, res) => {
@@ -908,11 +908,11 @@ router.get(
     } catch (error) {
       logger.error(`Error retrieving documents: ${getErrorMessage(error)}`);
       res.status(500).json({
-        message: "Fehler beim Abrufen der Dokumente",
+        message: 'Fehler beim Abrufen der Dokumente',
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 export default router;

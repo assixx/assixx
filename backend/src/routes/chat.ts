@@ -7,22 +7,22 @@
  *   description: Real-time messaging and conversations
  */
 
-import express, { Router } from "express";
-import multer from "multer";
-import path from "path";
-import chatController from "../controllers/chat.controller";
-import { security } from "../middleware/security";
-import { body, param, query } from "express-validator";
-import { createValidation } from "../middleware/validation";
-import { typed } from "../utils/routeHandlers";
-import { sanitizeFilename, getUploadDirectory } from "../utils/pathSecurity";
+import express, { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import chatController from '../controllers/chat.controller';
+import { security } from '../middleware/security';
+import { body, param, query } from 'express-validator';
+import { createValidation } from '../middleware/validation';
+import { typed } from '../utils/routeHandlers';
+import { sanitizeFilename, getUploadDirectory } from '../utils/pathSecurity';
 import type {
   ChatUsersRequest,
   GetConversationsRequest,
   CreateConversationRequest,
   GetMessagesRequest,
   SendMessageRequest,
-} from "../types/request.types";
+} from '../types/request.types';
 
 const router: Router = express.Router();
 
@@ -39,38 +39,38 @@ interface SendMessageBody {
 
 // Validation schemas
 const createConversationValidation = createValidation([
-  body("participant_ids")
+  body('participant_ids')
     .isArray({ min: 1 })
-    .withMessage("Teilnehmer müssen als Array angegeben werden"),
-  body("participant_ids.*")
+    .withMessage('Teilnehmer müssen als Array angegeben werden'),
+  body('participant_ids.*')
     .isInt({ min: 1 })
-    .withMessage("Ungültige Teilnehmer-ID"),
-  body("is_group").optional().isBoolean(),
-  body("name").optional().trim().notEmpty(),
+    .withMessage('Ungültige Teilnehmer-ID'),
+  body('is_group').optional().isBoolean(),
+  body('name').optional().trim().notEmpty(),
 ]);
 
 const sendMessageValidation = createValidation([
-  param("id").isInt({ min: 1 }).withMessage("Ungültige Konversations-ID"),
-  body("message")
+  param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+  body('message')
     .notEmpty()
     .trim()
-    .withMessage("Nachricht darf nicht leer sein"),
+    .withMessage('Nachricht darf nicht leer sein'),
 ]);
 
 const getMessagesValidation = createValidation([
-  param("id").isInt({ min: 1 }).withMessage("Ungültige Konversations-ID"),
-  query("page").optional().isInt({ min: 1 }),
-  query("limit").optional().isInt({ min: 1, max: 100 }),
+  param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
 ]);
 
 const searchUsersValidation = createValidation([
-  query("search").optional().trim(),
+  query('search').optional().trim(),
 ]);
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    const uploadPath = getUploadDirectory("chat");
+    const uploadPath = getUploadDirectory('chat');
     cb(null, uploadPath);
   },
   filename: (_req, file, cb) => {
@@ -88,19 +88,19 @@ const upload = multer({
   },
   fileFilter: (_req, file, cb) => {
     const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-      "text/plain",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Dateityp nicht erlaubt"));
+      cb(new Error('Dateityp nicht erlaubt'));
     }
   },
 });
@@ -157,11 +157,11 @@ const upload = multer({
  */
 // Routes with controller methods
 router.get(
-  "/users",
+  '/users',
   ...security.user(searchUsersValidation),
   typed.auth(async (req, res) => {
     await chatController.getUsers(req as ChatUsersRequest, res);
-  }),
+  })
 );
 
 /**
@@ -193,11 +193,11 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.get(
-  "/conversations",
+  '/conversations',
   ...security.user(),
   typed.auth(async (req, res) => {
     await chatController.getConversations(req as GetConversationsRequest, res);
-  }),
+  })
 );
 
 /**
@@ -255,14 +255,14 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.post(
-  "/conversations",
+  '/conversations',
   ...security.user(createConversationValidation),
   typed.body<CreateConversationBody>(async (req, res) => {
     await chatController.createConversation(
       req as CreateConversationRequest,
-      res,
+      res
     );
-  }),
+  })
 );
 /**
  * @swagger
@@ -337,11 +337,11 @@ router.post(
  *                   example: Konversation nicht gefunden
  */
 router.get(
-  "/conversations/:id/messages",
+  '/conversations/:id/messages',
   ...security.user(getMessagesValidation),
   typed.params<{ id: string }>(async (req, res) => {
     await chatController.getMessages(req as GetMessagesRequest, res);
-  }),
+  })
 );
 /**
  * @swagger
@@ -443,12 +443,12 @@ router.get(
  *                   example: Dateityp nicht erlaubt
  */
 router.post(
-  "/conversations/:id/messages",
+  '/conversations/:id/messages',
   ...security.user(sendMessageValidation),
-  upload.single("attachment"),
+  upload.single('attachment'),
   typed.paramsBody<{ id: string }, SendMessageBody>(async (req, res) => {
     await chatController.sendMessage(req as SendMessageRequest, res);
-  }),
+  })
 );
 /**
  * @swagger
@@ -541,15 +541,15 @@ router.post(
  *                   example: Datei nicht gefunden
  */
 router.get(
-  "/attachments/:filename",
+  '/attachments/:filename',
   ...security.user(
     createValidation([
-      param("filename").notEmpty().withMessage("Dateiname erforderlich"),
-    ]),
+      param('filename').notEmpty().withMessage('Dateiname erforderlich'),
+    ])
   ),
   typed.params<{ filename: string }>(async (req, res) => {
     await chatController.downloadFile(req, res);
-  }),
+  })
 );
 // TODO: Implement these routes when controller methods are ready
 // router.put('/messages/:id/read', ...security.user(), chatController.markAsRead);
@@ -596,11 +596,11 @@ router.get(
  *               $ref: '#/components/schemas/Error'
  */
 router.get(
-  "/unread-count",
+  '/unread-count',
   ...security.user(),
   typed.auth(async (req, res) => {
     await chatController.getUnreadCount(req, res);
-  }),
+  })
 );
 /**
  * @swagger
@@ -660,15 +660,15 @@ router.get(
  *                   example: Konversation nicht gefunden
  */
 router.post(
-  "/conversations/:id/read",
+  '/conversations/:id/read',
   ...security.user(
     createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Konversations-ID"),
-    ]),
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+    ])
   ),
   typed.params<{ id: string }>(async (req, res) => {
     await chatController.markConversationAsRead(req, res);
-  }),
+  })
 );
 // TODO: Implement when controller method is ready
 // router.put('/messages/:id/archive', ...security.user(), chatController.archiveMessage);
@@ -727,15 +727,15 @@ router.post(
  *                   example: Konversation nicht gefunden
  */
 router.delete(
-  "/conversations/:id",
+  '/conversations/:id',
   ...security.user(
     createValidation([
-      param("id").isInt({ min: 1 }).withMessage("Ungültige Konversations-ID"),
-    ]),
+      param('id').isInt({ min: 1 }).withMessage('Ungültige Konversations-ID'),
+    ])
   ),
   typed.params<{ id: string }>(async (req, res) => {
     await chatController.deleteConversation(req, res);
-  }),
+  })
 );
 
 export default router;

@@ -3,11 +3,11 @@
  * Handles KVP (Kontinuierlicher Verbesserungsprozess / Continuous Improvement Process) operations
  */
 
-import { Request, Response } from "express";
-import { Pool } from "mysql2/promise";
-import kvpPermissionService from "../services/kvpPermission.service.js";
-import pool, { executeQuery } from "../config/database.js";
-import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
+import kvpPermissionService from '../services/kvpPermission.service.js';
+import pool, { executeQuery } from '../config/database.js';
+import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 // Extended Request interface with tenant database and user
 interface TenantRequest extends Request {
@@ -15,7 +15,7 @@ interface TenantRequest extends Request {
   user?: {
     id: number;
     tenant_id: number;
-    role: "root" | "admin" | "employee";
+    role: 'root' | 'admin' | 'employee';
   };
 }
 
@@ -25,7 +25,7 @@ interface KvpCreateRequest extends TenantRequest {
     title: string;
     description: string;
     category_id?: number;
-    priority?: "low" | "normal" | "high" | "urgent";
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
     expected_benefit?: string;
     estimated_cost?: number;
     department_id?: number;
@@ -37,14 +37,14 @@ interface KvpUpdateRequest extends TenantRequest {
     title?: string;
     description?: string;
     category_id?: number;
-    priority?: "low" | "normal" | "high" | "urgent";
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
     status?:
-      | "new"
-      | "in_review"
-      | "approved"
-      | "implemented"
-      | "rejected"
-      | "archived";
+      | 'new'
+      | 'in_review'
+      | 'approved'
+      | 'implemented'
+      | 'rejected'
+      | 'archived';
     expected_benefit?: string;
     estimated_cost?: number;
     actual_savings?: number;
@@ -70,12 +70,12 @@ interface KvpQueryRequest extends TenantRequest {
     priority?: string;
     status?: string;
     department_id?: string;
-    filter?: "mine" | "department" | "company" | "manage" | "archived";
+    filter?: 'mine' | 'department' | 'company' | 'manage' | 'archived';
     include_archived?: string;
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
@@ -93,7 +93,7 @@ class KvpController {
   async getAll(req: KvpQueryRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
@@ -102,8 +102,8 @@ class KvpController {
         filter,
         status,
         include_archived,
-        page = "1",
-        limit = "20",
+        page = '1',
+        limit = '20',
       } = req.query;
 
       // Build visibility query
@@ -112,7 +112,7 @@ class KvpController {
           userId,
           role,
           tenantId,
-          includeArchived: include_archived === "true",
+          includeArchived: include_archived === 'true',
           statusFilter: status,
           departmentFilter: req.query.department_id
             ? parseInt(req.query.department_id)
@@ -120,27 +120,27 @@ class KvpController {
         });
 
       // Apply filter logic
-      let additionalWhere = "";
+      let additionalWhere = '';
       const additionalParams: (string | number)[] = [];
 
-      if (filter === "mine") {
-        additionalWhere = " AND s.submitted_by = ?";
+      if (filter === 'mine') {
+        additionalWhere = ' AND s.submitted_by = ?';
         additionalParams.push(userId);
-      } else if (filter === "department" && role !== "root") {
+      } else if (filter === 'department' && role !== 'root') {
         const [userInfo] = await executeQuery<RowDataPacket[]>(
-          "SELECT department_id FROM users WHERE id = ?",
-          [userId],
+          'SELECT department_id FROM users WHERE id = ?',
+          [userId]
         );
         if (userInfo[0]?.department_id) {
-          additionalWhere = " AND s.department_id = ?";
+          additionalWhere = ' AND s.department_id = ?';
           additionalParams.push(userInfo[0].department_id);
         }
-      } else if (filter === "company") {
-        additionalWhere = " AND s.org_level = ?";
-        additionalParams.push("company");
-      } else if (filter === "archived") {
-        additionalWhere = " AND s.status = ?";
-        additionalParams.push("archived");
+      } else if (filter === 'company') {
+        additionalWhere = ' AND s.org_level = ?';
+        additionalParams.push('company');
+      } else if (filter === 'archived') {
+        additionalWhere = ' AND s.status = ?';
+        additionalParams.push('archived');
       }
 
       // Execute query
@@ -174,7 +174,7 @@ class KvpController {
 
       // Use query method with proper encoding
       const connection = await pool.getConnection();
-      await connection.query("SET NAMES utf8mb4");
+      await connection.query('SET NAMES utf8mb4');
       const [suggestions] = (await connection.query(query, allParams)) as [
         RowDataPacket[],
         unknown,
@@ -194,19 +194,19 @@ class KvpController {
         (s) => ({
           ...s,
           description: Buffer.isBuffer(s.description)
-            ? s.description.toString("utf8")
+            ? s.description.toString('utf8')
             : s.description,
           expected_benefit: Buffer.isBuffer(s.expected_benefit)
-            ? s.expected_benefit.toString("utf8")
+            ? s.expected_benefit.toString('utf8')
             : s.expected_benefit,
           rejection_reason: Buffer.isBuffer(s.rejection_reason)
-            ? s.rejection_reason.toString("utf8")
+            ? s.rejection_reason.toString('utf8')
             : s.rejection_reason,
           shared_by_name:
             s.shared_by_firstname && s.shared_by_lastname
               ? `${s.shared_by_firstname} ${s.shared_by_lastname}`
               : null,
-        }),
+        })
       );
 
       // Get total count
@@ -231,10 +231,10 @@ class KvpController {
         },
       });
     } catch (error) {
-      console.error("Error in KvpController.getAll:", error);
+      console.error('Error in KvpController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Vorschläge",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Vorschläge',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -246,13 +246,13 @@ class KvpController {
   async getById(req: KvpGetRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -261,11 +261,11 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canView) {
-        res.status(403).json({ error: "Keine Berechtigung" });
+        res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
 
@@ -288,20 +288,20 @@ class KvpController {
          LEFT JOIN departments d ON s.department_id = d.id
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
-        [id],
+        [id]
       );
 
       if (suggestions.length === 0) {
-        res.status(404).json({ error: "Nicht gefunden" });
+        res.status(404).json({ error: 'Nicht gefunden' });
         return;
       }
 
       res.json(suggestions[0]);
     } catch (error) {
-      console.error("Error in KvpController.getById:", error);
+      console.error('Error in KvpController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen des Vorschlags",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen des Vorschlags',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -313,7 +313,7 @@ class KvpController {
   async create(req: KvpCreateRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
@@ -321,8 +321,8 @@ class KvpController {
 
       // Get user's department
       const [userInfo] = await executeQuery<RowDataPacket[]>(
-        "SELECT department_id FROM users WHERE id = ?",
-        [userId],
+        'SELECT department_id FROM users WHERE id = ?',
+        [userId]
       );
 
       const departmentId = req.body.department_id || userInfo[0]?.department_id;
@@ -340,14 +340,14 @@ class KvpController {
           req.body.description,
           req.body.category_id || null,
           departmentId,
-          "department", // Default to department level
+          'department', // Default to department level
           departmentId, // org_id same as department_id initially
           userId,
-          "new",
-          req.body.priority || "normal",
+          'new',
+          req.body.priority || 'normal',
           req.body.expected_benefit || null,
           req.body.estimated_cost || null,
-        ],
+        ]
       );
 
       // Get created suggestion
@@ -364,7 +364,7 @@ class KvpController {
          LEFT JOIN departments d ON s.department_id = d.id
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
-        [result.insertId],
+        [result.insertId]
       );
 
       // Log the creation
@@ -374,8 +374,8 @@ class KvpController {
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
-          "kvp_created",
-          "kvp_suggestion",
+          'kvp_created',
+          'kvp_suggestion',
           result.insertId,
           JSON.stringify({
             title: req.body.title,
@@ -383,8 +383,8 @@ class KvpController {
             category_id: req.body.category_id || null,
           }),
           req.ip || req.socket.remoteAddress,
-          req.headers["user-agent"] || null,
-        ],
+          req.headers['user-agent'] || null,
+        ]
       );
 
       res.status(201).json({
@@ -392,10 +392,10 @@ class KvpController {
         suggestion: newSuggestion[0],
       });
     } catch (error) {
-      console.error("Error in KvpController.create:", error);
+      console.error('Error in KvpController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen des Vorschlags",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen des Vorschlags',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -407,13 +407,13 @@ class KvpController {
   async update(req: KvpUpdateRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -422,11 +422,11 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canEdit) {
-        res.status(403).json({ error: "Keine Berechtigung zum Bearbeiten" });
+        res.status(403).json({ error: 'Keine Berechtigung zum Bearbeiten' });
         return;
       }
 
@@ -435,71 +435,71 @@ class KvpController {
       const updateValues: (string | number | null | Date)[] = [];
 
       if (req.body.title !== undefined) {
-        updateFields.push("title = ?");
+        updateFields.push('title = ?');
         updateValues.push(req.body.title);
       }
       if (req.body.description !== undefined) {
-        updateFields.push("description = ?");
+        updateFields.push('description = ?');
         updateValues.push(req.body.description);
       }
       if (req.body.category_id !== undefined) {
-        updateFields.push("category_id = ?");
+        updateFields.push('category_id = ?');
         updateValues.push(req.body.category_id);
       }
       if (req.body.priority !== undefined) {
-        updateFields.push("priority = ?");
+        updateFields.push('priority = ?');
         updateValues.push(req.body.priority);
       }
       if (req.body.status !== undefined) {
-        updateFields.push("status = ?");
+        updateFields.push('status = ?');
         updateValues.push(req.body.status);
 
         // Log status change
         await kvpPermissionService.logAdminAction(
           req.user.id,
-          "status_change",
+          'status_change',
           id,
-          "kvp_suggestion",
+          'kvp_suggestion',
           req.user.tenant_id,
           null,
-          { status: req.body.status },
+          { status: req.body.status }
         );
       }
       if (req.body.expected_benefit !== undefined) {
-        updateFields.push("expected_benefit = ?");
+        updateFields.push('expected_benefit = ?');
         updateValues.push(req.body.expected_benefit);
       }
       if (req.body.estimated_cost !== undefined) {
-        updateFields.push("estimated_cost = ?");
+        updateFields.push('estimated_cost = ?');
         updateValues.push(req.body.estimated_cost);
       }
       if (req.body.actual_savings !== undefined) {
-        updateFields.push("actual_savings = ?");
+        updateFields.push('actual_savings = ?');
         updateValues.push(req.body.actual_savings);
       }
       if (req.body.implementation_date !== undefined) {
-        updateFields.push("implementation_date = ?");
+        updateFields.push('implementation_date = ?');
         updateValues.push(req.body.implementation_date);
       }
       if (req.body.assigned_to !== undefined) {
-        updateFields.push("assigned_to = ?");
+        updateFields.push('assigned_to = ?');
         updateValues.push(req.body.assigned_to);
       }
       if (req.body.rejection_reason !== undefined) {
-        updateFields.push("rejection_reason = ?");
+        updateFields.push('rejection_reason = ?');
         updateValues.push(req.body.rejection_reason);
       }
 
       if (updateFields.length === 0) {
-        res.status(400).json({ error: "Keine Felder zum Aktualisieren" });
+        res.status(400).json({ error: 'Keine Felder zum Aktualisieren' });
         return;
       }
 
       updateValues.push(id);
 
       await executeQuery<ResultSetHeader>(
-        `UPDATE kvp_suggestions SET ${updateFields.join(", ")} WHERE id = ?`,
-        updateValues,
+        `UPDATE kvp_suggestions SET ${updateFields.join(', ')} WHERE id = ?`,
+        updateValues
       );
 
       // Get updated suggestion
@@ -516,7 +516,7 @@ class KvpController {
          LEFT JOIN departments d ON s.department_id = d.id
          LEFT JOIN kvp_categories cat ON s.category_id = cat.id
          WHERE s.id = ?`,
-        [id],
+        [id]
       );
 
       res.json({
@@ -524,10 +524,10 @@ class KvpController {
         suggestion: updated[0],
       });
     } catch (error) {
-      console.error("Error in KvpController.update:", error);
+      console.error('Error in KvpController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -539,13 +539,13 @@ class KvpController {
   async delete(req: KvpGetRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -554,35 +554,35 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canEdit) {
-        res.status(403).json({ error: "Keine Berechtigung zum Archivieren" });
+        res.status(403).json({ error: 'Keine Berechtigung zum Archivieren' });
         return;
       }
 
       // Archive instead of delete
       await executeQuery<ResultSetHeader>(
-        "UPDATE kvp_suggestions SET status = ? WHERE id = ?",
-        ["archived", id],
+        'UPDATE kvp_suggestions SET status = ? WHERE id = ?',
+        ['archived', id]
       );
 
       // Log action
       await kvpPermissionService.logAdminAction(
         req.user.id,
-        "archive",
+        'archive',
         id,
-        "kvp_suggestion",
-        req.user.tenant_id,
+        'kvp_suggestion',
+        req.user.tenant_id
       );
 
       res.status(204).send();
     } catch (error) {
-      console.error("Error in KvpController.delete:", error);
+      console.error('Error in KvpController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Archivieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Archivieren',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -593,14 +593,14 @@ class KvpController {
    */
   async shareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || req.user.role === "employee") {
-        res.status(403).json({ error: "Nur Admins können Vorschläge teilen" });
+      if (!req.user || req.user.role === 'employee') {
+        res.status(403).json({ error: 'Nur Admins können Vorschläge teilen' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -608,20 +608,20 @@ class KvpController {
       const canShare = await kvpPermissionService.canShareSuggestion(
         req.user.id,
         id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canShare) {
         res
           .status(403)
-          .json({ error: "Keine Berechtigung zum Teilen dieses Vorschlags" });
+          .json({ error: 'Keine Berechtigung zum Teilen dieses Vorschlags' });
         return;
       }
 
       // Get suggestion details for logging
       const [suggestions] = await executeQuery<RowDataPacket[]>(
-        "SELECT title, department_id FROM kvp_suggestions WHERE id = ?",
-        [id],
+        'SELECT title, department_id FROM kvp_suggestions WHERE id = ?',
+        [id]
       );
 
       // Update to company-wide visibility
@@ -632,16 +632,16 @@ class KvpController {
              shared_by = ?,
              shared_at = NOW()
          WHERE id = ?`,
-        [req.user.tenant_id, req.user.id, id],
+        [req.user.tenant_id, req.user.id, id]
       );
 
       // Log action
       await kvpPermissionService.logAdminAction(
         req.user.id,
-        "share_company_wide",
+        'share_company_wide',
         id,
-        "kvp_suggestion",
-        req.user.tenant_id,
+        'kvp_suggestion',
+        req.user.tenant_id
       );
 
       // Log the sharing action
@@ -651,28 +651,28 @@ class KvpController {
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           req.user.id,
-          "kvp_shared",
-          "kvp_suggestion",
+          'kvp_shared',
+          'kvp_suggestion',
           id,
           JSON.stringify({
             title: suggestions[0].title,
-            shared_to: "company",
+            shared_to: 'company',
             from_department_id: suggestions[0].department_id,
           }),
           req.ip || req.socket.remoteAddress,
-          req.headers["user-agent"] || null,
-        ],
+          req.headers['user-agent'] || null,
+        ]
       );
 
       res.json({
         success: true,
-        message: "Vorschlag wurde firmenweit geteilt",
+        message: 'Vorschlag wurde firmenweit geteilt',
       });
     } catch (error) {
-      console.error("Error in KvpController.shareSuggestion:", error);
+      console.error('Error in KvpController.shareSuggestion:', error);
       res.status(500).json({
-        error: "Fehler beim Teilen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Teilen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -683,44 +683,44 @@ class KvpController {
    */
   async unshareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || req.user.role === "employee") {
+      if (!req.user || req.user.role === 'employee') {
         res
           .status(403)
-          .json({ error: "Nur Admins können Teilen rückgängig machen" });
+          .json({ error: 'Nur Admins können Teilen rückgängig machen' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       // Get suggestion details
       const [suggestions] = await executeQuery<RowDataPacket[]>(
-        "SELECT department_id, shared_by, org_level FROM kvp_suggestions WHERE id = ?",
-        [id],
+        'SELECT department_id, shared_by, org_level FROM kvp_suggestions WHERE id = ?',
+        [id]
       );
 
       if (suggestions.length === 0) {
-        res.status(404).json({ error: "Vorschlag nicht gefunden" });
+        res.status(404).json({ error: 'Vorschlag nicht gefunden' });
         return;
       }
 
       const suggestion = suggestions[0];
 
       // Check if already department level
-      if (suggestion.org_level !== "company") {
+      if (suggestion.org_level !== 'company') {
         res
           .status(400)
-          .json({ error: "Vorschlag ist nicht firmenweit geteilt" });
+          .json({ error: 'Vorschlag ist nicht firmenweit geteilt' });
         return;
       }
 
       // Only the original sharer or root can unshare
-      if (req.user.role !== "root" && suggestion.shared_by !== req.user.id) {
+      if (req.user.role !== 'root' && suggestion.shared_by !== req.user.id) {
         res.status(403).json({
-          error: "Nur der ursprüngliche Teiler kann dies rückgängig machen",
+          error: 'Nur der ursprüngliche Teiler kann dies rückgängig machen',
         });
         return;
       }
@@ -733,27 +733,27 @@ class KvpController {
              shared_by = NULL,
              shared_at = NULL
          WHERE id = ?`,
-        [id],
+        [id]
       );
 
       // Log action
       await kvpPermissionService.logAdminAction(
         req.user.id,
-        "unshare_company_wide",
+        'unshare_company_wide',
         id,
-        "kvp_suggestion",
-        req.user.tenant_id,
+        'kvp_suggestion',
+        req.user.tenant_id
       );
 
       res.json({
         success: true,
-        message: "Teilen wurde rückgängig gemacht",
+        message: 'Teilen wurde rückgängig gemacht',
       });
     } catch (error) {
-      console.error("Error in KvpController.unshareSuggestion:", error);
+      console.error('Error in KvpController.unshareSuggestion:', error);
       res.status(500).json({
-        error: "Fehler beim Rückgängigmachen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Rückgängigmachen',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -765,31 +765,31 @@ class KvpController {
   async getStatistics(req: TenantRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const { role, tenant_id: tenantId, id: userId } = req.user;
 
-      if (role === "employee") {
-        res.status(403).json({ error: "Keine Berechtigung für Statistiken" });
+      if (role === 'employee') {
+        res.status(403).json({ error: 'Keine Berechtigung für Statistiken' });
         return;
       }
 
       // Get admin departments if not root
       let departmentIds: number[] = [];
-      if (role === "admin") {
+      if (role === 'admin') {
         departmentIds = await kvpPermissionService.getAdminDepartments(
           userId,
-          tenantId,
+          tenantId
         );
       }
 
       // Get company-wide stats
       const companyStats = await kvpPermissionService.getSuggestionStats(
-        "company",
+        'company',
         tenantId,
-        tenantId,
+        tenantId
       );
 
       // Get department stats
@@ -799,18 +799,18 @@ class KvpController {
         [key: string]: unknown;
       }
       const departmentStats: DepartmentStat[] = [];
-      if (role === "root") {
+      if (role === 'root') {
         // Get all departments
         const [departments] = await executeQuery<RowDataPacket[]>(
-          "SELECT id, name FROM departments WHERE tenant_id = ?",
-          [tenantId],
+          'SELECT id, name FROM departments WHERE tenant_id = ?',
+          [tenantId]
         );
 
         for (const dept of departments) {
           const stats = await kvpPermissionService.getSuggestionStats(
-            "department",
+            'department',
             dept.id,
-            tenantId,
+            tenantId
           );
           departmentStats.push({
             department_id: dept.id,
@@ -822,15 +822,15 @@ class KvpController {
         // Get only admin's departments
         for (const deptId of departmentIds) {
           const [deptInfo] = await executeQuery<RowDataPacket[]>(
-            "SELECT name FROM departments WHERE id = ?",
-            [deptId],
+            'SELECT name FROM departments WHERE id = ?',
+            [deptId]
           );
 
           if (deptInfo.length > 0) {
             const stats = await kvpPermissionService.getSuggestionStats(
-              "department",
+              'department',
               deptId,
-              tenantId,
+              tenantId
             );
             departmentStats.push({
               department_id: deptId,
@@ -846,10 +846,10 @@ class KvpController {
         departments: departmentStats,
       });
     } catch (error) {
-      console.error("Error in KvpController.getStatistics:", error);
+      console.error('Error in KvpController.getStatistics:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Statistiken",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Statistiken',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -861,12 +861,12 @@ class KvpController {
   async getCategories(req: TenantRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const [categories] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM kvp_categories ORDER BY name",
+        'SELECT * FROM kvp_categories ORDER BY name'
       );
 
       res.json({
@@ -874,10 +874,10 @@ class KvpController {
         categories,
       });
     } catch (error) {
-      console.error("Error in KvpController.getCategories:", error);
+      console.error('Error in KvpController.getCategories:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Kategorien",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Kategorien',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -889,13 +889,13 @@ class KvpController {
   async getComments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -904,11 +904,11 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canView) {
-        res.status(403).json({ error: "Keine Berechtigung" });
+        res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
 
@@ -924,11 +924,11 @@ class KvpController {
       `;
 
       // Non-admins cannot see internal comments
-      if (req.user.role === "employee") {
-        query += " AND c.is_internal = 0";
+      if (req.user.role === 'employee') {
+        query += ' AND c.is_internal = 0';
       }
 
-      query += " ORDER BY c.created_at DESC";
+      query += ' ORDER BY c.created_at DESC';
 
       const [comments] = await executeQuery<RowDataPacket[]>(query, [id]);
 
@@ -937,10 +937,10 @@ class KvpController {
         comments,
       });
     } catch (error) {
-      console.error("Error in KvpController.getComments:", error);
+      console.error('Error in KvpController.getComments:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Kommentare",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Kommentare',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -954,24 +954,24 @@ class KvpController {
       params: { id: string };
       body: { comment: string; is_internal?: boolean };
     },
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const { comment, is_internal } = req.body;
 
-      if (!comment || comment.trim() === "") {
-        res.status(400).json({ error: "Kommentar darf nicht leer sein" });
+      if (!comment || comment.trim() === '') {
+        res.status(400).json({ error: 'Kommentar darf nicht leer sein' });
         return;
       }
 
@@ -980,33 +980,33 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canView) {
-        res.status(403).json({ error: "Keine Berechtigung" });
+        res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
 
       // Only admins can add internal comments
       const isInternal =
-        is_internal && (req.user.role === "admin" || req.user.role === "root");
+        is_internal && (req.user.role === 'admin' || req.user.role === 'root');
 
       const [result] = await executeQuery<ResultSetHeader>(
-        "INSERT INTO kvp_comments (suggestion_id, user_id, comment, is_internal) VALUES (?, ?, ?, ?)",
-        [id, req.user.id, comment.trim(), isInternal ? 1 : 0],
+        'INSERT INTO kvp_comments (suggestion_id, user_id, comment, is_internal) VALUES (?, ?, ?, ?)',
+        [id, req.user.id, comment.trim(), isInternal ? 1 : 0]
       );
 
       res.status(201).json({
         success: true,
         commentId: result.insertId,
-        message: "Kommentar hinzugefügt",
+        message: 'Kommentar hinzugefügt',
       });
     } catch (error) {
-      console.error("Error in KvpController.addComment:", error);
+      console.error('Error in KvpController.addComment:', error);
       res.status(500).json({
-        error: "Fehler beim Hinzufügen des Kommentars",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Hinzufügen des Kommentars',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -1018,13 +1018,13 @@ class KvpController {
   async getAttachments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
@@ -1033,11 +1033,11 @@ class KvpController {
         req.user.id,
         id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!canView) {
-        res.status(403).json({ error: "Keine Berechtigung" });
+        res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
 
@@ -1049,7 +1049,7 @@ class KvpController {
          LEFT JOIN users u ON a.uploaded_by = u.id
          WHERE a.suggestion_id = ?
          ORDER BY a.uploaded_at DESC`,
-        [id],
+        [id]
       );
 
       res.json({
@@ -1057,10 +1057,10 @@ class KvpController {
         attachments,
       });
     } catch (error) {
-      console.error("Error in KvpController.getAttachments:", error);
+      console.error('Error in KvpController.getAttachments:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Anhänge",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Anhänge',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -1074,28 +1074,28 @@ class KvpController {
       params: { id: string };
       files?: Express.Multer.File[];
     },
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
-      console.log("=== KVP Upload Attachment Start ===");
-      console.log("User:", req.user);
-      console.log("Suggestion ID:", req.params.id);
-      console.log("Files received:", req.files?.length || 0);
+      console.log('=== KVP Upload Attachment Start ===');
+      console.log('User:', req.user);
+      console.log('Suggestion ID:', req.params.id);
+      console.log('Files received:', req.files?.length || 0);
 
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
       const suggestionId = parseInt(req.params.id);
       const files = req.files as Express.Multer.File[];
 
-      console.log("Parsed suggestion ID:", suggestionId);
-      console.log("Files array:", files);
+      console.log('Parsed suggestion ID:', suggestionId);
+      console.log('Files array:', files);
 
       if (!files || files.length === 0) {
-        console.log("No files in request");
-        res.status(400).json({ error: "Keine Dateien hochgeladen" });
+        console.log('No files in request');
+        res.status(400).json({ error: 'Keine Dateien hochgeladen' });
         return;
       }
 
@@ -1105,13 +1105,13 @@ class KvpController {
         req.user.id,
         suggestionId,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
-      console.log("Has permission:", hasPermission);
+      console.log('Has permission:', hasPermission);
 
       if (!hasPermission) {
-        res.status(403).json({ error: "Keine Berechtigung" });
+        res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
 
@@ -1119,7 +1119,7 @@ class KvpController {
 
       // Save each file reference in database
       for (const file of files) {
-        console.log("Processing file:", {
+        console.log('Processing file:', {
           filename: file.filename,
           originalname: file.originalname,
           mimetype: file.mimetype,
@@ -1138,7 +1138,7 @@ class KvpController {
             file.mimetype,
             file.size,
             req.user.id,
-          ],
+          ]
         );
 
         attachments.push({
@@ -1156,10 +1156,10 @@ class KvpController {
         attachments,
       });
     } catch (error) {
-      console.error("Error in KvpController.uploadAttachment:", error);
+      console.error('Error in KvpController.uploadAttachment:', error);
       res.status(500).json({
-        error: "Fehler beim Hochladen der Fotos",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Hochladen der Fotos',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -1170,11 +1170,11 @@ class KvpController {
    */
   async downloadAttachment(
     req: TenantRequest & { params: { attachmentId: string } },
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
       if (!req.user) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({ error: 'Unauthorized' });
         return;
       }
 
@@ -1186,11 +1186,11 @@ class KvpController {
          FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
          WHERE ka.id = ?`,
-        [attachmentId],
+        [attachmentId]
       );
 
       if (attachments.length === 0) {
-        res.status(404).json({ error: "Anhang nicht gefunden" });
+        res.status(404).json({ error: 'Anhang nicht gefunden' });
         return;
       }
 
@@ -1202,21 +1202,21 @@ class KvpController {
         req.user.id,
         attachment.suggestion_id,
         req.user.role,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (!hasPermission) {
-        res.status(403).json({ error: "Keine Berechtigung" });
+        res.status(403).json({ error: 'Keine Berechtigung' });
         return;
       }
 
       // Send file
       res.download(attachment.file_path, attachment.file_name);
     } catch (error) {
-      console.error("Error in KvpController.downloadAttachment:", error);
+      console.error('Error in KvpController.downloadAttachment:', error);
       res.status(500).json({
-        error: "Fehler beim Herunterladen der Datei",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Herunterladen der Datei',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
