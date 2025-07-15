@@ -56,14 +56,8 @@
 
       /* Survey Results Specific Styles */
       .results-header {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-lg);
+        /* Nutzt glass-card Klasse aus dashboard-theme.css */
         margin-bottom: var(--spacing-lg);
-        box-shadow: var(--shadow-sm);
       }
 
       .survey-title {
@@ -101,15 +95,7 @@
       }
 
       .stat-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-lg);
-        text-align: center;
-        box-shadow: var(--shadow-sm);
-        /*transition: all 0.3s ease;*/
+        /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
       }
 
       .stat-value {
@@ -126,14 +112,9 @@
       }
 
       .question-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
+        /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
         margin-bottom: var(--spacing-lg);
         overflow: hidden;
-        box-shadow: var(--shadow-sm);
       }
 
       .question-header {
@@ -430,7 +411,7 @@
         }
 
         contentArea.innerHTML = `
-                <div class="results-header">
+                <div class="glass-card results-header">
                     <h2 class="survey-title">${escapeHtml(getTextFromBuffer(surveyData.title))}</h2>
                     <div class="survey-meta">
                         <span><i class="fas fa-calendar"></i> Erstellt: ${formatDate(surveyData.created_at)}</span>

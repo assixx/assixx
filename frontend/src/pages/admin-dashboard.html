@@ -65,16 +65,7 @@
         z-index: -1;
       }
 
-      /* Align ALL content sections with sidebar user-info-card 
-         Admin-dashboard needs positive margin unlike other pages */
-      body .content-section {
-        margin-top: 25px !important;
-      }
-      
-      /* Override the universal rule from breadcrumb-alignment.css */
-      body #breadcrumb-container + .content-section {
-        margin-top: 25px !important;
-      }
+      /* Content sections alignment wird jetzt über breadcrumb-alignment.css gesteuert */
 
       /* Stat-Cards nutzen jetzt die Standard-Styles aus dashboard-theme.css */
 
@@ -86,7 +77,6 @@
       .compact-card {
         position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -101,7 +91,6 @@
         height: 3px;
         background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
         opacity: 0;
-        transition: opacity 0.3s ease;
       }
 
       .compact-card:hover::before {
@@ -160,7 +149,6 @@
         background: var(--glass-bg);
         border-radius: var(--radius-sm);
         border: var(--glass-border);
-        transition: all 0.2s ease;
         font-size: 0.9rem;
         color: var(--text-secondary);
       }
@@ -186,7 +174,6 @@
         text-decoration: none;
         font-weight: 500;
         font-size: 0.85rem;
-        transition: color 0.2s ease;
         padding: 8px 0;
         margin-top: auto;
         border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -200,7 +187,6 @@
 
       .view-all-link .arrow {
         font-size: 0.9rem;
-        transition: transform 0.2s ease;
       }
 
       .view-all-link:hover .arrow {
@@ -224,7 +210,6 @@
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0,0%,100%,.1);
         color: #fff;
-        transition: all 0.3s ease;
       }
 
       .form-control:focus,
@@ -257,7 +242,6 @@
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
       }
 
       .btn-primary {
@@ -279,7 +263,6 @@
         height: 200%;
         background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
         transform: rotate(45deg) translate(-70%, -70%);
-        transition: transform 0.6s;
       }
 
       .btn:hover::after {
@@ -299,7 +282,6 @@
 
       .table tbody tr {
         background: rgba(255, 255, 255, 0.01);
-        transition: all 0.3s ease;
       }
 
       .table tbody tr:hover {
@@ -382,7 +364,6 @@
         padding: 0.375rem 0.75rem;
         border-radius: var(--radius-sm);
         font-weight: 500;
-        transition: all 0.3s ease;
         backdrop-filter: blur(10px);
       }
 
@@ -401,7 +382,6 @@
         padding: 0.375rem 0.75rem;
         border-radius: var(--radius-sm);
         font-weight: 500;
-        transition: all 0.3s ease;
         backdrop-filter: blur(10px);
       }
 
@@ -424,7 +404,6 @@
         background: var(--glass-bg);
         margin-bottom: 8px;
         border: 1px solid rgba(255, 255, 255, 0.05);
-        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
       }
@@ -557,7 +536,6 @@
         background: rgba(23, 162, 184, 0.2);
         border: 1px solid rgba(23, 162, 184, 0.3);
         color: #17a2b8;
-        transition: all 0.3s ease;
       }
 
       .btn-info:hover {
@@ -588,7 +566,6 @@
       /* Apply to all main content */
       .main-content {
         margin-left: var(--content-margin);
-        /*transition: margin-left 0.3s ease;*/
       }
 
       /* Apply to all grids */
@@ -602,13 +579,11 @@
       .widget,
       .stat-card,
       .blackboard-widget {
-        transition: all 0.3s ease;
         max-width: var(--card-max-width);
       }
 
       /* Prevent any layout shift during initial load */
       body:not(.loaded) * {
-        transition: none !important;
       }
 
       /* Breadcrumb Styles sind jetzt in breadcrumb.js enthalten */
@@ -618,7 +593,7 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
   </head>
-  <body>
+  <body class="admin-dashboard">
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
@@ -1228,7 +1203,6 @@
         border-radius: 8px;
         color: #fff;
         cursor: pointer;
-        transition: all 0.3s ease;
       }
 
       .dropdown-display:hover {
@@ -1241,7 +1215,6 @@
       }
 
       .dropdown-display svg {
-        transition: transform 0.3s ease;
       }
 
       .dropdown-options {
@@ -1264,7 +1237,6 @@
         padding: 10px 12px;
         color: rgba(255, 255, 255, 0.8);
         cursor: pointer;
-        transition: all 0.2s ease;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
 
@@ -2711,7 +2683,6 @@
         align-items: center;
         justify-content: center;
         border-radius: var(--radius-sm);
-        transition: all 0.3s ease;
       }
 
       .modal-close:hover {
@@ -2739,7 +2710,6 @@
         white-space: nowrap;
         vertical-align: baseline;
         border-radius: 20px;
-        transition: all 0.2s ease;
       }
 
       .badge-primary {
@@ -2765,7 +2735,6 @@
         font-weight: 700;
         border: 1px solid rgba(76, 175, 80, 0.2);
         width: fit-content;
-        transition: all 0.2s ease;
       }
 
       .badge-danger {
@@ -2781,7 +2750,6 @@
         font-weight: 700;
         border: 1px solid rgba(244, 67, 54, 0.2);
         width: fit-content;
-        transition: all 0.2s ease;
       }
 
       tr:hover .badge-success {
@@ -2807,7 +2775,6 @@
         font-weight: 700;
         border: 1px solid rgba(255, 152, 0, 0.2);
         width: fit-content;
-        transition: all 0.2s ease;
       }
 
       tr:hover .badge-warning {
@@ -2836,7 +2803,7 @@
     <!-- Mark body as loaded after all scripts -->
     <script>
       window.addEventListener('load', function () {
-        // Add 'loaded' class to enable transitions after initial load
+        // Add 'loaded' class after initial load
         setTimeout(() => {
           document.body.classList.add('loaded');
         }, 100);

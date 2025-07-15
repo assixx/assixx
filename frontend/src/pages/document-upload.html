@@ -63,14 +63,10 @@
         border: 1px solid rgba(33, 150, 243, 0.2);
       }
 
-      /* Glassmorphismus Upload Section - wie card im Dashboard */
+      /* Glassmorphismus Upload Section - nutzt card Klasse aus dashboard-theme.css */
       .upload-section {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
+        /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
+        /* Erweitert die .card Klasse */
         margin-bottom: var(--spacing-lg);
         overflow: hidden;
         position: relative;
@@ -679,7 +675,7 @@
           </div>
         </div>
 
-        <div class="upload-section">
+        <div class="card upload-section">
           <div class="card-header">
             <h2 class="upload-title">Dokument-Informationen</h2>
           </div>

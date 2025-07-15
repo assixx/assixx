@@ -57,7 +57,7 @@
         color: white;
         margin-bottom: var(--spacing-xl);
         /* Align with sidebar user-info-card */
-        margin-top: -34px !important;
+        margin-top: -37px !important;
         position: relative;
         overflow: hidden;
         display: flex;

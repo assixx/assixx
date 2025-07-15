@@ -1,50 +1,39 @@
 /**
  * Breadcrumb Alignment Styles
- * Aligns the first element after breadcrumb-container with -21px margin-top
+ * Zentralisierte Verwaltung der Abstände nach breadcrumb-container
  */
 
-/* All pages with .container after breadcrumb (except root-dashboard) */
-#breadcrumb-container + .container {
-  margin-top: -34px !important;
+/* ========================================
+   STANDARD SPACING (-37px)
+   Die meisten Seiten nutzen diesen Wert
+   ======================================== */
+
+/* General fallback - gilt für alle nicht spezifisch definierten Elemente */
+#breadcrumb-container + * {
+  margin-top: -37px !important;
 }
 
+/* Spezifische Selektoren für Klarheit (nutzen auch -37px) */
+#breadcrumb-container + .container,
+#breadcrumb-container + .card,
+#breadcrumb-container + .profile-container,
+#breadcrumb-container + .survey-container,
+#breadcrumb-container + .detail-container,
+#breadcrumb-container + .settings-card,
+#breadcrumb-container + .current-usage,
+#breadcrumb-container + #upload-success,
+#breadcrumb-container + #content-area {
+  margin-top: -37px !important;
+}
 
-/* Blackboard page */
+/* ========================================
+   REDUZIERTES SPACING (-15px)
+   Seiten mit speziellen Layout-Anforderungen
+   ======================================== */
+
+/* Blackboard & Calendar - nutzen .flex Layout */
 #breadcrumb-container + .flex {
   margin-top: -15px !important;
-}
-
-/* Document upload page */
-#breadcrumb-container + #upload-success {
-  margin-top: -34px !important;
-}
-
-/* Document pages (company, department, payroll, personal, team) - no direct next element */
-/* These pages have breadcrumb as last element in main, so no adjustment needed */
-
-/* Document search page */
-#breadcrumb-container + .page-header {
-  margin-top: -34px !important;
-}
-
-/* Survey admin page */
-#breadcrumb-container + .survey-container {
-  margin-top: -34px !important;
-}
-
-/* Survey details page */
-#breadcrumb-container + #content-area {
-  margin-top: -34px !important;
-}
-
-/* KVP page */
-#breadcrumb-container + .page-header {
-  margin-top: -15px !important;
-}
-
-/* KVP detail page */
-#breadcrumb-container + .detail-container {
-  margin-top: -34px !important;
 }
 
 /* Shifts page */
@@ -52,52 +41,26 @@
   margin-top: -15px !important;
 }
 
-/* Calendar page */
-#breadcrumb-container + .flex {
-  margin-top: -15px !important;
+/* KVP page - benötigt großen negativen Abstand */
+.kvp-page #breadcrumb-container + * {
+  margin-top: -61px !important;
 }
 
-/* Profile page */
-#breadcrumb-container + .profile-container {
-  margin-top: -34px !important;
+/* ========================================
+   SPEZIELLE FÄLLE
+   ======================================== */
+
+/* Admin Dashboard - benötigt mehr negativen Abstand */
+.admin-dashboard #breadcrumb-container + * {
+  margin-top: -22px !important;
 }
 
-/* Account settings page */
-#breadcrumb-container + .settings-card {
-  margin-top: -34px !important;
-}
-
-/* Storage upgrade page */
-#breadcrumb-container + .current-usage {
-  margin-top: -34px !important;
-}
-
-/* Tenant deletion status page */
-#breadcrumb-container + .card {
-  margin-top: -34px !important;
-}
-
-/* Root features page - special case needs less margin */
+/* Root features page - minimal spacing */
 #breadcrumb-container + .plan-header {
   margin-top: -14px !important;
 }
 
-/* Root profile and admin profile pages */
-#breadcrumb-container + .profile-container {
-  margin-top: -34px !important;
-}
-
-/* Archived employees page */
-#breadcrumb-container + .card {
-  margin-top: -34px !important;
-}
-
-/* General fallback for any direct sibling after breadcrumb */
-#breadcrumb-container + * {
-  margin-top: -34px !important;
-}
-
-/* Special override for documents-search page - must come after general rule */
+/* Documents search page - special override */
 .documents-section ~ * #breadcrumb-container + .page-header,
 #search-container ~ * #breadcrumb-container + .page-header {
   margin-top: -19px !important;

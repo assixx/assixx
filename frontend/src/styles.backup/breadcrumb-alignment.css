@@ -5,7 +5,7 @@
 
 /* All pages with .container after breadcrumb (except root-dashboard) */
 #breadcrumb-container + .container {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 
@@ -16,7 +16,7 @@
 
 /* Document upload page */
 #breadcrumb-container + #upload-success {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Document pages (company, department, payroll, personal, team) - no direct next element */
@@ -24,17 +24,17 @@
 
 /* Document search page */
 #breadcrumb-container + .page-header {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Survey admin page */
 #breadcrumb-container + .survey-container {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Survey details page */
 #breadcrumb-container + #content-area {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* KVP page */
@@ -44,7 +44,7 @@
 
 /* KVP detail page */
 #breadcrumb-container + .detail-container {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Shifts page */
@@ -59,22 +59,22 @@
 
 /* Profile page */
 #breadcrumb-container + .profile-container {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Account settings page */
 #breadcrumb-container + .settings-card {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Storage upgrade page */
 #breadcrumb-container + .current-usage {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Tenant deletion status page */
 #breadcrumb-container + .card {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Root features page - special case needs less margin */
@@ -84,17 +84,17 @@
 
 /* Root profile and admin profile pages */
 #breadcrumb-container + .profile-container {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Archived employees page */
 #breadcrumb-container + .card {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* General fallback for any direct sibling after breadcrumb */
 #breadcrumb-container + * {
-  margin-top: -34px !important;
+  margin-top: -37px !important;
 }
 
 /* Special override for documents-search page - must come after general rule */
