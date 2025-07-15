@@ -290,7 +290,7 @@ declare global {
 // Also export for window access
 if (typeof window !== 'undefined') {
   window.modalManager = modalManager;
-  
+
   // Globale Funktionen gemäß Plan hinzufügen
   window.showModal = (modalId: string) => {
     const modal = document.getElementById(modalId);
@@ -302,7 +302,7 @@ if (typeof window !== 'undefined') {
       modalManager.show(modalId);
     }
   };
-  
+
   window.hideModal = (modalId: string) => {
     const modal = document.getElementById(modalId);
     if (modal) {
