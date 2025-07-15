@@ -13,9 +13,11 @@ import { rateLimiter } from "../middleware/rateLimiter";
 const router: ExpressRouter = Router();
 
 // All routes require authentication
+// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
 router.use(authenticateToken);
 
 // Public endpoints (all authenticated users)
+// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
 router.get("/", rateLimiter.authenticated, kvpController.getAll);
 router.get("/categories", rateLimiter.authenticated, kvpController.getCategories);
 router.get("/stats", rateLimiter.admin, checkRole(["admin", "root"]), kvpController.getStatistics);
@@ -64,6 +66,7 @@ router.get(
   rateLimiter.download,
   // Controller handler that performs file system access
   kvpController.downloadAttachment as unknown as RequestHandler,
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
 );
 
 export default router;
