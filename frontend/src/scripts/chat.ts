@@ -1448,10 +1448,8 @@ class ChatClient {
 
     // Add attachments if present
     if (message.attachments && message.attachments.length > 0) {
-      const attachmentsDiv = document.createElement('div');
-      // lgtm[js/xss] - renderAttachments() escapes all user content with escapeHtml()
-      attachmentsDiv.innerHTML = this.renderAttachments(message.attachments);
-      messageContentDiv.appendChild(attachmentsDiv);
+      const attachmentFragment = this.renderAttachments(message.attachments);
+      messageContentDiv.appendChild(attachmentFragment);
     }
 
     // Create time element
@@ -1496,34 +1494,59 @@ class ChatClient {
     container.appendChild(separator);
   }
 
-  renderAttachments(attachments: Attachment[]): string {
-    return attachments
-      .map((attachment) => {
-        const isImage = attachment.mime_type.startsWith('image/');
-        const fileSize = this.formatFileSize(attachment.file_size);
-
-        if (isImage) {
-          return `
-            <div class="attachment image-attachment">
-              <img src="/api/chat/attachments/${attachment.id}" alt="${this.escapeHtml(attachment.file_name)}" />
-            </div>
-          `;
-        } else {
-          return `
-            <div class="attachment file-attachment">
-              <i class="fas fa-file"></i>
-              <div class="file-info">
-                <div class="file-name">${this.escapeHtml(attachment.file_name)}</div>
-                <div class="file-size">${fileSize}</div>
-              </div>
-              <a href="/api/chat/attachments/${attachment.id}/download" class="download-btn">
-                <i class="fas fa-download"></i>
-              </a>
-            </div>
-          `;
-        }
-      })
-      .join('');
+  renderAttachments(attachments: Attachment[]): DocumentFragment {
+    const fragment = document.createDocumentFragment();
+    
+    attachments.forEach((attachment) => {
+      const isImage = attachment.mime_type.startsWith('image/');
+      const fileSize = this.formatFileSize(attachment.file_size);
+      
+      const attachmentDiv = document.createElement('div');
+      
+      if (isImage) {
+        attachmentDiv.className = 'attachment image-attachment';
+        
+        const img = document.createElement('img');
+        img.src = `/api/chat/attachments/${attachment.id}`;
+        img.alt = attachment.file_name;
+        attachmentDiv.appendChild(img);
+      } else {
+        attachmentDiv.className = 'attachment file-attachment';
+        
+        const fileIcon = document.createElement('i');
+        fileIcon.className = 'fas fa-file';
+        attachmentDiv.appendChild(fileIcon);
+        
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'file-info';
+        
+        const fileName = document.createElement('div');
+        fileName.className = 'file-name';
+        fileName.textContent = attachment.file_name;
+        fileInfo.appendChild(fileName);
+        
+        const fileSizeDiv = document.createElement('div');
+        fileSizeDiv.className = 'file-size';
+        fileSizeDiv.textContent = fileSize;
+        fileInfo.appendChild(fileSizeDiv);
+        
+        attachmentDiv.appendChild(fileInfo);
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = `/api/chat/attachments/${attachment.id}/download`;
+        downloadLink.className = 'download-btn';
+        
+        const downloadIcon = document.createElement('i');
+        downloadIcon.className = 'fas fa-download';
+        downloadLink.appendChild(downloadIcon);
+        
+        attachmentDiv.appendChild(downloadLink);
+      }
+      
+      fragment.appendChild(attachmentDiv);
+    });
+    
+    return fragment;
   }
 
   async sendMessage(content?: string): Promise<void> {
