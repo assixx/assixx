@@ -17,8 +17,12 @@ const router: ExpressRouter = Router();
 router.use(authenticateToken);
 
 // Public endpoints (all authenticated users)
-// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
-router.get('/', rateLimiter.authenticated, kvpController.getAll);
+router.get(
+  '/',
+  rateLimiter.authenticated,
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
+  kvpController.getAll
+);
 router.get(
   '/categories',
   rateLimiter.authenticated,
@@ -85,9 +89,9 @@ router.get(
   '/attachments/:attachmentId/download',
   // Rate limiting middleware to prevent DoS attacks
   rateLimiter.download,
+  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
   // Controller handler that performs file system access
   kvpController.downloadAttachment as unknown as RequestHandler
-  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.download middleware
 );
 
 export default router;

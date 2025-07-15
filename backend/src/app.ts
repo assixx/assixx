@@ -81,8 +81,7 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 // Protect HTML pages based on user role with rate limiting
 app.use(
   rateLimiter.public,
-  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, res: Response, next: NextFunction) => { // lgtm[js/missing-rate-limiting]
     if (req.path.endsWith('.html')) {
       return protectPage(req, res, next);
     }
@@ -114,8 +113,7 @@ app.use(
 );
 
 // Handle /js/ requests - map to TypeScript files in development
-// codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
+app.use('/js', rateLimiter.public, (req: Request, res: Response): void => { // lgtm[js/missing-rate-limiting]
   // Map JS requests to TypeScript source files
   const jsFileName = path.basename(req.path, '.js');
 
@@ -182,8 +180,7 @@ app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
 app.use(
   '/scripts',
   rateLimiter.public,
-  // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-  (req: Request, res: Response, next: NextFunction): void => {
+  (req: Request, res: Response, next: NextFunction): void => { // lgtm[js/missing-rate-limiting]
     if (!req.path.endsWith('.ts')) {
       return next();
     }

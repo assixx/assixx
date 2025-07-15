@@ -349,8 +349,8 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       sanitizedHtml = sanitizeHtml(options.html);
 
       // Zusätzliche Sicherheitsvalidierung als Backup
-      const scriptPattern =
-        /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+      // Einfacheres Pattern ohne katastrophisches Backtracking
+      const scriptPattern = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
       const eventHandlerPattern = /\bon\w+\s*=/gi;
 
       if (
