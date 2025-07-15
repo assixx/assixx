@@ -51,24 +51,14 @@
 
       /* Glassmorphismus für Stat-Cards */
       .stat-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
+        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+        /* stat-card verwendet die zentralen CSS-Variablen */
         /*transition: all 0.3s ease;*/
         border-radius: var(--radius-md);
         padding: var(--spacing-lg);
         text-align: center;
         position: relative;
         overflow: hidden;
-      }
-
-      .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow:
-          0 12px 40px rgba(0, 0, 0, 0.5),
-          inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.03);
       }
 
       .stat-icon {
@@ -93,10 +83,8 @@
 
       /* Glassmorphismus für Cards */
       .card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
+        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+        /* Verwendet die CSS-Variablen aus dem zentralen Theme */
         border-radius: var(--radius-md);
         margin-bottom: var(--spacing-xl);
         overflow: hidden;
@@ -186,9 +174,9 @@
       .search-box input {
         width: 100%;
         padding: 10px 15px 10px 45px;
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--glass-bg-active);
         backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: var(--glass-border);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         font-size: 14px;
@@ -225,9 +213,9 @@
 
       /* Document Card */
       .document-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-backdrop);
+        border: var(--glass-border);
         border-radius: var(--radius-md);
         padding: var(--spacing-lg);
         transition: all 0.3s ease;
@@ -441,9 +429,9 @@
         left: 0;
         right: 0;
         background: rgba(18, 18, 18, 0.98);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: var(--glass-border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
         max-height: 200px;
@@ -479,7 +467,7 @@
         gap: var(--spacing-xl);
         margin-bottom: var(--spacing-lg);
         padding: var(--spacing-md);
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--glass-bg);
         border-radius: var(--radius-sm);
         border: 1px solid rgba(255, 255, 255, 0.05);
       }
@@ -557,7 +545,7 @@
       .modal-content {
         position: relative;
         background: rgba(18, 18, 18, 0.95);
-        backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: var(--glass-backdrop);
         border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-md);
         box-shadow:
@@ -626,8 +614,8 @@
 
       /* Document Info Grid */
       .document-info {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--glass-bg);
+        border: var(--glass-border);
         border-radius: var(--radius-md);
         padding: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
@@ -751,7 +739,7 @@
           <div class="document-preview-container">
             <iframe
               id="documentPreviewFrame"
-              style="width: 100%; height: 600px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-md)"
+              style="width: 100%; height: 600px; border: var(--glass-border); border-radius: var(--radius-md)"
             ></iframe>
             <div id="previewError" style="display: none; text-align: center; padding: 40px">
               <i class="fas fa-file-pdf" style="font-size: 4rem; color: var(--text-secondary); margin-bottom: 20px"></i>

@@ -79,13 +79,8 @@
       /* Stat-Cards nutzen jetzt die Standard-Styles aus dashboard-theme.css */
 
       /* Glassmorphismus für Cards */
-      .card,
-      .compact-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-      }
+      /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+      /* .card und .compact-card verwenden die zentralen CSS-Variablen */
 
       /* Ansprechendere Compact-Cards */
       .compact-card {
@@ -162,9 +157,9 @@
       .compact-list .list-item {
         padding: var(--spacing-sm) var(--spacing-md);
         margin-bottom: var(--spacing-sm);
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--glass-bg);
         border-radius: var(--radius-sm);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: var(--glass-border);
         transition: all 0.2s ease;
         font-size: 0.9rem;
         color: var(--text-secondary);
@@ -347,11 +342,13 @@
         }
       }
 
+      /* Animation für Cards - bei Bedarf aktivieren
       .stat-card,
       .card,
       .compact-card {
-        /* animation: fadeInUp 0.6s ease-out; */
+        animation: fadeInUp 0.6s ease-out;
       }
+      */
 
       @keyframes subtle-pulse {
         0% {
@@ -370,8 +367,6 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
       }
-
-      /* .stat-card:hover animation entfernt */
 
       /* Action buttons in tables - equal width */
       .table td:last-child .btn {
@@ -426,7 +421,7 @@
       .blackboard-preview .list-item {
         padding: 12px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--glass-bg);
         margin-bottom: 8px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         transition: all 0.3s ease;
@@ -1142,11 +1137,8 @@
       }
 
       .modal-content {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
+        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+        /* Verwendet die CSS-Variablen aus dem zentralen Theme */
         width: 90%;
         max-width: 500px;
         max-height: 90vh;
@@ -1258,9 +1250,9 @@
         left: 0;
         right: 0;
         background: rgba(18, 18, 18, 0.98);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        backdrop-filter: var(--glass-backdrop);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        border: var(--glass-border);
         border-radius: 8px;
         box-shadow: var(--shadow-sm);
         max-height: 200px;
@@ -2682,10 +2674,8 @@
       }
 
       .modal-content {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
+        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+        /* Verwendet die CSS-Variablen aus dem zentralen Theme */
         padding: var(--spacing-lg);
         width: 90%;
         max-width: 500px;

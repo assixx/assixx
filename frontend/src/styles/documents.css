@@ -244,12 +244,6 @@
   /* transition: all 0.3s ease; */
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  background: rgba(255, 255, 255, 0.04);
-}
-
 .stat-icon {
   width: 48px;
   height: 48px;
