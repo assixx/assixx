@@ -1677,6 +1677,7 @@ class ChatClient {
       if (isImage) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
+        // lgtm[js/xss-through-dom] - Alt attribute is never read back as HTML
         img.alt = file.name;
         fileIconDiv.appendChild(img);
       } else {
