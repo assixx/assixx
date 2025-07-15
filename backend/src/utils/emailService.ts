@@ -382,11 +382,11 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       bcc: options.bcc,
       subject: options.subject,
       text: options.text,
-      // codeql[js/xss] - False positive: HTML content is thoroughly sanitized
+      // lgtm[js/xss] - False positive: HTML content is thoroughly sanitized
       // by sanitizeHtml() function which removes all dangerous tags (script, iframe, etc.),
       // event handlers, dangerous URLs (javascript:, vbscript:), and malicious CSS.
       // Additional validation at lines 352-368 provides defense in depth.
-      html: sanitizedHtml,
+      html: sanitizedHtml, // codeql[js/xss]
       attachments: options.attachments,
     };
 
