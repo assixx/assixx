@@ -21,6 +21,8 @@
 - BEHUTSAM vorgehen - lieber zweimal prüfen als einmal bereuen
 - VERMEIDE error  Unexpected any. Specify a different type    @typescript-eslint/no-explicit-any
 - TUE genau was ich sage und frag immer erst wenn du mehr machen sollst als verlangt.
+- Use sub-agents liberally to parallelize work and save on context — but think carefully about when it’s most effective. Think step-by-step.
+- Always use best-practice methods.
 ## START-TRIGGER
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
@@ -231,7 +233,7 @@ NIEMALS:
 
 IMMER:
 - Existierende Dateien nutzen
-- Bei DB-Änderungen DATABASE-SETUP-README.md updaten
+- Bei DB-Änderungen DATABASE-SETUP-README.md und DATASBASE-MIGRATION-GUIDE.md updaten
 - Temporäre Dateien aufräumen
 - TypeScript types verwenden (kein any)
 - Im Zweifel nachfragen

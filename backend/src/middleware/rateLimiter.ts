@@ -17,7 +17,7 @@ const rateLimiterConfigs = {
   // Public endpoints (login, signup, password reset)
   [RateLimiterType.PUBLIC]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Increased from 100 to 500 for development
+    max: 10000, // Increased to 10000 for development testing
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -26,7 +26,7 @@ const rateLimiterConfigs = {
   // Authentication endpoints (login, signup)
   [RateLimiterType.AUTH]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // Increased from 5 to 50 for development
+    max: 500, // Increased to 500 for development testing
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -36,7 +36,7 @@ const rateLimiterConfigs = {
   // Authenticated user endpoints
   [RateLimiterType.AUTHENTICATED]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // 1000 requests per user
+    max: 20000, // 20000 requests per user for development testing
     message: 'Rate limit exceeded, please slow down.',
     standardHeaders: true,
     legacyHeaders: false,
