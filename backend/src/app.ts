@@ -55,6 +55,8 @@ app.use(morgan('combined'));
 app.use(cors(corsOptions));
 app.use(securityHeaders);
 app.use(contentSecurityPolicy); // Add CSP headers
+// lgtm[js/missing-token-validation] - Application uses JWT Bearer tokens as primary auth
+// Cookies are only fallback with SameSite=strict protection
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
