@@ -258,7 +258,7 @@
         padding: var(--spacing-md);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         resize: vertical;
@@ -434,7 +434,7 @@
         padding: 8px 12px;
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         font-size: 0.9rem;
@@ -459,7 +459,7 @@
         left: 0;
         right: 0;
         background: rgba(18, 18, 18, 0.98);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-sm);
         max-height: 200px;
@@ -523,7 +523,7 @@
       .btn {
         padding: var(--spacing-sm);
         background: rgba(255, 255, 255, 0.05);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         font-weight: 500;
@@ -566,201 +566,201 @@
         <div id="breadcrumb-container"></div>
         <div class="container">
           <!-- Detail Container -->
-        <div class="detail-container">
-          <!-- Main Content -->
-          <div class="detail-main">
-            <div class="detail-header">
-              <div>
-                <div class="detail-title" id="suggestionTitle">Lädt...</div>
-                <div class="detail-meta">
-                  <span>
-                    <i class="fas fa-user"></i>
-                    <span id="submittedBy"></span>
-                  </span>
-                  <span>
-                    <i class="fas fa-calendar"></i>
-                    <span id="createdAt"></span>
-                  </span>
-                  <span>
-                    <i class="fas fa-building"></i>
-                    <span id="department"></span>
-                  </span>
-                </div>
-              </div>
-              <div class="status-priority">
-                <span class="priority-badge" id="priorityBadge"></span>
-                <span class="status-badge" id="statusBadge"></span>
-              </div>
-            </div>
-
-            <!-- Category & Status Info -->
-            <div class="content-section">
-              <h3 class="section-title">
-                <i class="fas fa-info-circle"></i>
-                Details
-              </h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">Kategorie</span>
-                  <span class="info-value" id="category"></span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Status</span>
-                  <span class="info-value" id="status"></span>
-                  <!-- Status Dropdown for Admins -->
-                  <div class="custom-dropdown admin-only" id="statusDropdownContainer" class="u-hidden">
-                    <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
-                      <span>Neu</span>
-                      <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div class="dropdown-options" id="statusDropdown">
-                      <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
-                      <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
-                      <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
-                      <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
-                      <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
-                    </div>
-                    <input type="hidden" name="statusValue" id="statusValue" />
+          <div class="detail-container">
+            <!-- Main Content -->
+            <div class="detail-main">
+              <div class="detail-header">
+                <div>
+                  <div class="detail-title" id="suggestionTitle">Lädt...</div>
+                  <div class="detail-meta">
+                    <span>
+                      <i class="fas fa-user"></i>
+                      <span id="submittedBy"></span>
+                    </span>
+                    <span>
+                      <i class="fas fa-calendar"></i>
+                      <span id="createdAt"></span>
+                    </span>
+                    <span>
+                      <i class="fas fa-building"></i>
+                      <span id="department"></span>
+                    </span>
                   </div>
                 </div>
-                <div class="info-item" id="assignedToItem" class="u-hidden">
-                  <span class="info-label">Zugewiesen an</span>
-                  <span class="info-value" id="assignedTo"></span>
-                </div>
-                <div class="info-item" id="implementationItem" class="u-hidden">
-                  <span class="info-label">Umsetzung</span>
-                  <span class="info-value" id="implementationDate"></span>
-                </div>
-                <div class="info-item" id="rejectionItem" class="u-hidden">
-                  <span class="info-label">Ablehnungsgrund</span>
-                  <span class="info-value" id="rejectionReason"></span>
+                <div class="status-priority">
+                  <span class="priority-badge" id="priorityBadge"></span>
+                  <span class="status-badge" id="statusBadge"></span>
                 </div>
               </div>
-            </div>
 
-            <!-- Visibility Info -->
-            <div class="visibility-info" id="visibilityInfo">
-              <!-- Dynamic content -->
-            </div>
+              <!-- Category & Status Info -->
+              <div class="content-section">
+                <h3 class="section-title">
+                  <i class="fas fa-info-circle"></i>
+                  Details
+                </h3>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Kategorie</span>
+                    <span class="info-value" id="category"></span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" id="status"></span>
+                    <!-- Status Dropdown for Admins -->
+                    <div class="custom-dropdown admin-only" id="statusDropdownContainer" class="u-hidden">
+                      <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+                        <span>Neu</span>
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                      </div>
+                      <div class="dropdown-options" id="statusDropdown">
+                        <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
+                        <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
+                        <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
+                        <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
+                        <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+                      </div>
+                      <input type="hidden" name="statusValue" id="statusValue" />
+                    </div>
+                  </div>
+                  <div class="info-item" id="assignedToItem" class="u-hidden">
+                    <span class="info-label">Zugewiesen an</span>
+                    <span class="info-value" id="assignedTo"></span>
+                  </div>
+                  <div class="info-item" id="implementationItem" class="u-hidden">
+                    <span class="info-label">Umsetzung</span>
+                    <span class="info-value" id="implementationDate"></span>
+                  </div>
+                  <div class="info-item" id="rejectionItem" class="u-hidden">
+                    <span class="info-label">Ablehnungsgrund</span>
+                    <span class="info-value" id="rejectionReason"></span>
+                  </div>
+                </div>
+              </div>
 
-            <!-- Description -->
-            <div class="content-section">
-              <h3 class="section-title">
-                <i class="fas fa-align-left"></i>
-                Beschreibung
-              </h3>
-              <div class="section-content" id="description"></div>
-            </div>
-
-            <!-- Expected Benefit -->
-            <div class="content-section" id="benefitSection" class="u-hidden">
-              <h3 class="section-title">
-                <i class="fas fa-chart-line"></i>
-                Erwarteter Nutzen
-              </h3>
-              <div class="section-content" id="expectedBenefit"></div>
-            </div>
-
-            <!-- Photo Gallery -->
-            <div class="content-section" id="photoSection" class="u-hidden">
-              <h3 class="section-title">
-                <i class="fas fa-images"></i>
-                Fotos
-              </h3>
-              <div class="photo-gallery" id="photoGallery">
+              <!-- Visibility Info -->
+              <div class="visibility-info" id="visibilityInfo">
                 <!-- Dynamic content -->
               </div>
-            </div>
 
-            <!-- Financial Info -->
-            <div class="content-section" id="financialSection" class="u-hidden">
-              <h3 class="section-title">
-                <i class="fas fa-euro-sign"></i>
-                Finanzielle Informationen
-              </h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">Geschätzte Kosten</span>
-                  <span class="info-value" id="estimatedCost">-</span>
+              <!-- Description -->
+              <div class="content-section">
+                <h3 class="section-title">
+                  <i class="fas fa-align-left"></i>
+                  Beschreibung
+                </h3>
+                <div class="section-content" id="description"></div>
+              </div>
+
+              <!-- Expected Benefit -->
+              <div class="content-section" id="benefitSection" class="u-hidden">
+                <h3 class="section-title">
+                  <i class="fas fa-chart-line"></i>
+                  Erwarteter Nutzen
+                </h3>
+                <div class="section-content" id="expectedBenefit"></div>
+              </div>
+
+              <!-- Photo Gallery -->
+              <div class="content-section" id="photoSection" class="u-hidden">
+                <h3 class="section-title">
+                  <i class="fas fa-images"></i>
+                  Fotos
+                </h3>
+                <div class="photo-gallery" id="photoGallery">
+                  <!-- Dynamic content -->
                 </div>
-                <div class="info-item">
-                  <span class="info-label">Tatsächliche Einsparungen</span>
-                  <span class="info-value" id="actualSavings">-</span>
+              </div>
+
+              <!-- Financial Info -->
+              <div class="content-section" id="financialSection" class="u-hidden">
+                <h3 class="section-title">
+                  <i class="fas fa-euro-sign"></i>
+                  Finanzielle Informationen
+                </h3>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Geschätzte Kosten</span>
+                    <span class="info-value" id="estimatedCost">-</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Tatsächliche Einsparungen</span>
+                    <span class="info-value" id="actualSavings">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comments Section -->
+              <div class="comments-section">
+                <h3 class="section-title">
+                  <i class="fas fa-comments"></i>
+                  Kommentare
+                </h3>
+
+                <!-- Comment Form -->
+                <form class="comment-form" id="commentForm">
+                  <textarea class="comment-input" id="commentInput" placeholder="Kommentar hinzufügen..." required></textarea>
+                  <div>
+                    <label class="admin-only" class="u-hidden">
+                      <input type="checkbox" id="internalComment" />
+                      Interner Kommentar
+                    </label>
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-paper-plane"></i>
+                      Senden
+                    </button>
+                  </div>
+                </form>
+
+                <!-- Comment List -->
+                <div class="comment-list" id="commentList">
+                  <!-- Dynamic content -->
                 </div>
               </div>
             </div>
 
-            <!-- Comments Section -->
-            <div class="comments-section">
-              <h3 class="section-title">
-                <i class="fas fa-comments"></i>
-                Kommentare
-              </h3>
+            <!-- Sidebar -->
+            <div class="detail-sidebar">
+              <!-- Attachments -->
+              <div class="sidebar-card" id="attachmentsCard" class="u-hidden">
+                <h3 class="section-title">
+                  <i class="fas fa-paperclip"></i>
+                  Anhänge
+                </h3>
+                <div class="attachment-list" id="attachmentList">
+                  <!-- Dynamic content -->
+                </div>
+              </div>
 
-              <!-- Comment Form -->
-              <form class="comment-form" id="commentForm">
-                <textarea class="comment-input" id="commentInput" placeholder="Kommentar hinzufügen..." required></textarea>
-                <div>
-                  <label class="admin-only" class="u-hidden">
-                    <input type="checkbox" id="internalComment" />
-                    Interner Kommentar
-                  </label>
-                  <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i>
-                    Senden
+              <!-- Actions -->
+              <div class="sidebar-card admin-only" id="actionsCard" class="u-hidden">
+                <h3 class="section-title">
+                  <i class="fas fa-cog"></i>
+                  Aktionen
+                </h3>
+                <div class="action-buttons">
+                  <button class="btn" id="editBtn">
+                    <i class="fas fa-edit"></i>
+                    Bearbeiten
+                  </button>
+                  <button class="btn" id="shareBtn" class="u-hidden">
+                    <i class="fas fa-share-alt"></i>
+                    Teilen
+                  </button>
+                  <button class="btn" id="unshareBtn" class="u-hidden">
+                    <i class="fas fa-undo"></i>
+                    Teilen rückgängig
+                  </button>
+                  <button class="btn" id="archiveBtn">
+                    <i class="fas fa-archive"></i>
+                    Archivieren
                   </button>
                 </div>
-              </form>
-
-              <!-- Comment List -->
-              <div class="comment-list" id="commentList">
-                <!-- Dynamic content -->
               </div>
             </div>
           </div>
-
-          <!-- Sidebar -->
-          <div class="detail-sidebar">
-            <!-- Attachments -->
-            <div class="sidebar-card" id="attachmentsCard" class="u-hidden">
-              <h3 class="section-title">
-                <i class="fas fa-paperclip"></i>
-                Anhänge
-              </h3>
-              <div class="attachment-list" id="attachmentList">
-                <!-- Dynamic content -->
-              </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="sidebar-card admin-only" id="actionsCard" class="u-hidden">
-              <h3 class="section-title">
-                <i class="fas fa-cog"></i>
-                Aktionen
-              </h3>
-              <div class="action-buttons">
-                <button class="btn" id="editBtn">
-                  <i class="fas fa-edit"></i>
-                  Bearbeiten
-                </button>
-                <button class="btn" id="shareBtn" class="u-hidden">
-                  <i class="fas fa-share-alt"></i>
-                  Teilen
-                </button>
-                <button class="btn" id="unshareBtn" class="u-hidden">
-                  <i class="fas fa-undo"></i>
-                  Teilen rückgängig
-                </button>
-                <button class="btn" id="archiveBtn">
-                  <i class="fas fa-archive"></i>
-                  Archivieren
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
         </div>
       </main>
     </div>

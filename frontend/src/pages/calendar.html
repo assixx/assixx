@@ -67,7 +67,7 @@
       .modal-container {
         background: rgba(18, 18, 18, 0.95);
         backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         box-shadow: var(--shadow-sm);
         /* animation: fadeInUp 0.3s ease-out; */
       }
@@ -107,7 +107,7 @@
       textarea {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         color: #fff;
         transition: all 0.3s ease;
       }
@@ -207,7 +207,7 @@
       .view-selector .btn {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         color: var(--text-primary);
       }
 
@@ -220,7 +220,7 @@
       .filter-tag {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         transition: all 0.3s ease;
       }
 
@@ -323,7 +323,7 @@
       .search-input:not(:placeholder-shown) ~ .search-button {
         color: var(--primary-color);
       }
-      
+
       /* Override breadcrumb alignment for calendar page */
       #breadcrumb-container + .card {
         margin-top: -15px !important;
@@ -341,98 +341,98 @@
       <main class="container main-content">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <!-- Filterleiste -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <div class="flex flex-between align-center">
-              <h3 class="card-title">Filter & Anzeige</h3>
-              <div class="flex gap-2">
-                <div class="btn-group view-selector">
-                  <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
-                  <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
-                  <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
-                  <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
-                </div>
-                <button id="newEventBtn" class="btn btn-primary">
-                  <i class="fas fa-plus"></i>
-                  Neuer Termin
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="flex gap-4 flex-wrap">
-              <div class="form-group">
-                <label for="levelFilter" class="form-label">Ebene</label>
-                <div class="tab-navigation mb-2" id="levelFilter">
-                  <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
-                  <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
-                  <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
-                  <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="searchInput" class="form-label">Suche</label>
-                <div class="search-input-wrapper">
-                  <input type="text" id="searchInput" class="search-input" placeholder="Termine durchsuchen..." />
-                  <button class="search-button" type="button" id="searchButton">
-                    <i class="fas fa-search"></i>
+          <div class="card mb-4">
+            <div class="card-header">
+              <div class="flex flex-between align-center">
+                <h3 class="card-title">Filter & Anzeige</h3>
+                <div class="flex gap-2">
+                  <div class="btn-group view-selector">
+                    <button id="monthView" class="btn btn-sm btn-primary active">Monat</button>
+                    <button id="weekView" class="btn btn-sm btn-outline-primary">Woche</button>
+                    <button id="dayView" class="btn btn-sm btn-outline-primary">Tag</button>
+                    <button id="listView" class="btn btn-sm btn-outline-primary">Liste</button>
+                  </div>
+                  <button id="newEventBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Neuer Termin
                   </button>
                 </div>
               </div>
+            </div>
+            <div class="card-body">
+              <div class="flex gap-4 flex-wrap">
+                <div class="form-group">
+                  <label for="levelFilter" class="form-label">Ebene</label>
+                  <div class="tab-navigation mb-2" id="levelFilter">
+                    <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
+                    <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
+                    <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
+                    <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
+                  </div>
+                </div>
 
-              <div class="flex-grow"></div>
+                <div class="form-group">
+                  <label for="searchInput" class="form-label">Suche</label>
+                  <div class="search-input-wrapper">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Termine durchsuchen..." />
+                    <button class="search-button" type="button" id="searchButton">
+                      <i class="fas fa-search"></i>
+                    </button>
+                  </div>
+                </div>
 
-              <div class="form-group">
-                <label class="form-label">Legende</label>
-                <div class="legend-container">
-                  <div class="legend-item">
-                    <span class="legend-color" style="background-color: #3498db"></span>
-                    <span class="legend-label">Firma</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background-color: #e67e22"></span>
-                    <span class="legend-label">Abteilung</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background-color: #2ecc71"></span>
-                    <span class="legend-label">Team</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background-color: #9b59b6"></span>
-                    <span class="legend-label">Persönlich</span>
+                <div class="flex-grow"></div>
+
+                <div class="form-group">
+                  <label class="form-label">Legende</label>
+                  <div class="legend-container">
+                    <div class="legend-item">
+                      <span class="legend-color" style="background-color: #3498db"></span>
+                      <span class="legend-label">Firma</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color" style="background-color: #e67e22"></span>
+                      <span class="legend-label">Abteilung</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color" style="background-color: #2ecc71"></span>
+                      <span class="legend-label">Team</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color" style="background-color: #9b59b6"></span>
+                      <span class="legend-label">Persönlich</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Calendar Container -->
-        <div class="card calendar-card mb-4">
-          <div class="card-body p-0">
-            <div id="calendar"></div>
+          <!-- Calendar Container -->
+          <div class="card calendar-card mb-4">
+            <div class="card-body p-0">
+              <div id="calendar"></div>
+            </div>
           </div>
-        </div>
 
-        <!-- Upcoming Events -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h3 class="card-title">Anstehende Termine</h3>
-          </div>
-          <div class="card-body">
-            <div id="upcomingEvents" class="upcoming-events">
-              <!-- Wird dynamisch befüllt -->
-              <div class="loading-placeholder">
-                <div class="loading-spinner"></div>
-                <p class="text-center mt-3">Termine werden geladen...</p>
+          <!-- Upcoming Events -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h3 class="card-title">Anstehende Termine</h3>
+            </div>
+            <div class="card-body">
+              <div id="upcomingEvents" class="upcoming-events">
+                <!-- Wird dynamisch befüllt -->
+                <div class="loading-placeholder">
+                  <div class="loading-spinner"></div>
+                  <p class="text-center mt-3">Termine werden geladen...</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </main>
     </div>

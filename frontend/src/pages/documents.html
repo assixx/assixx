@@ -366,7 +366,7 @@
       .form-control {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         color: var(--text-primary);
         padding: 10px 12px;
@@ -397,7 +397,7 @@
         padding: 10px 12px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         color: var(--text-primary);
         cursor: pointer;
@@ -537,7 +537,7 @@
         position: relative;
         background: rgba(18, 18, 18, 0.95);
         backdrop-filter: var(--glass-backdrop);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         box-shadow:
           0 24px 48px rgba(0, 0, 0, 0.6),
@@ -757,135 +757,135 @@
       <main class="main-content">
         <!-- Breadcrumb Container -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <!-- Page Header -->
-        <div class="page-header"></div>
+          <div class="page-header"></div>
 
-        <!-- Stats Bar -->
-        <div
-          class="stats-bar"
-          style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-xl);
-          "
-        >
-          <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
-            <div class="stat-value" id="totalDocs">0</div>
-            <div class="stat-label">Gesamt</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-eye"></i></div>
-            <div class="stat-value" id="unreadDocs">0</div>
-            <div class="stat-label">Ungelesen</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-clock"></i></div>
-            <div class="stat-value" id="recentDocs">0</div>
-            <div class="stat-label">Diese Woche</div>
-          </div>
-        </div>
-
-        <!-- Documents Container -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">
-              <i class="fas fa-folder-open me-2"></i>
-              Dokumente
-            </h2>
-            <p class="text-secondary" class="u-mt-text">Ihre Dokumente filtern und durchsuchen</p>
-          </div>
-          <div class="card-body">
-            <!-- Filter Section -->
-            <div class="filter-section" style="margin-bottom: var(--spacing-lg)">
-              <h3 style="margin-bottom: var(--spacing-md); color: var(--text-primary); font-size: 16px; font-weight: 500">
-                <i class="fas fa-filter me-2"></i>
-                Kategorien
-              </h3>
-              <div class="filter-pills">
-                <button class="filter-pill active" data-filter="all">
-                  Alle
-                  <span class="count" id="countAll">0</span>
-                </button>
-                <button class="filter-pill" data-filter="company">
-                  <i class="fas fa-building me-1"></i>
-                  Meine Firma
-                  <span class="count" id="countCompany">0</span>
-                </button>
-                <button class="filter-pill" data-filter="department">
-                  <i class="fas fa-sitemap me-1"></i>
-                  Meine Abteilung
-                  <span class="count" id="countDepartment">0</span>
-                </button>
-                <button class="filter-pill" data-filter="team">
-                  <i class="fas fa-users me-1"></i>
-                  Mein Team
-                  <span class="count" id="countTeam">0</span>
-                </button>
-                <button class="filter-pill" data-filter="personal">
-                  <i class="fas fa-user me-1"></i>
-                  Persönlich
-                  <span class="count" id="countPersonal">0</span>
-                </button>
-                <button class="filter-pill" data-filter="payroll">
-                  <i class="fas fa-money-check me-1"></i>
-                  Gehaltsabrechnungen
-                  <span class="count" id="countPayroll">0</span>
-                </button>
-              </div>
+          <!-- Stats Bar -->
+          <div
+            class="stats-bar"
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+              gap: var(--spacing-md);
+              margin-bottom: var(--spacing-xl);
+            "
+          >
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+              <div class="stat-value" id="totalDocs">0</div>
+              <div class="stat-label">Gesamt</div>
             </div>
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-eye"></i></div>
+              <div class="stat-value" id="unreadDocs">0</div>
+              <div class="stat-label">Ungelesen</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-clock"></i></div>
+              <div class="stat-value" id="recentDocs">0</div>
+              <div class="stat-label">Diese Woche</div>
+            </div>
+          </div>
 
-            <!-- Controls Section -->
-            <div
-              class="controls-section"
-              style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); align-items: center"
-            >
-              <div class="search-box" class="u-flex-1">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="searchInput" placeholder="Dokumente suchen..." class="form-control" style="padding-left: 40px" />
-              </div>
-
-              <div class="custom-dropdown sort-dropdown" style="min-width: 200px">
-                <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
-                  <span>Neueste zuerst</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
+          <!-- Documents Container -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <i class="fas fa-folder-open me-2"></i>
+                Dokumente
+              </h2>
+              <p class="text-secondary" class="u-mt-text">Ihre Dokumente filtern und durchsuchen</p>
+            </div>
+            <div class="card-body">
+              <!-- Filter Section -->
+              <div class="filter-section" style="margin-bottom: var(--spacing-lg)">
+                <h3 style="margin-bottom: var(--spacing-md); color: var(--text-primary); font-size: 16px; font-weight: 500">
+                  <i class="fas fa-filter me-2"></i>
+                  Kategorien
+                </h3>
+                <div class="filter-pills">
+                  <button class="filter-pill active" data-filter="all">
+                    Alle
+                    <span class="count" id="countAll">0</span>
+                  </button>
+                  <button class="filter-pill" data-filter="company">
+                    <i class="fas fa-building me-1"></i>
+                    Meine Firma
+                    <span class="count" id="countCompany">0</span>
+                  </button>
+                  <button class="filter-pill" data-filter="department">
+                    <i class="fas fa-sitemap me-1"></i>
+                    Meine Abteilung
+                    <span class="count" id="countDepartment">0</span>
+                  </button>
+                  <button class="filter-pill" data-filter="team">
+                    <i class="fas fa-users me-1"></i>
+                    Mein Team
+                    <span class="count" id="countTeam">0</span>
+                  </button>
+                  <button class="filter-pill" data-filter="personal">
+                    <i class="fas fa-user me-1"></i>
+                    Persönlich
+                    <span class="count" id="countPersonal">0</span>
+                  </button>
+                  <button class="filter-pill" data-filter="payroll">
+                    <i class="fas fa-money-check me-1"></i>
+                    Gehaltsabrechnungen
+                    <span class="count" id="countPayroll">0</span>
+                  </button>
                 </div>
-                <div class="dropdown-options" id="sortDropdown">
-                  <div class="dropdown-option" onclick="selectSort('newest', 'Neueste zuerst')">
-                    <i class="fas fa-sort-amount-down me-2"></i>
-                    Neueste zuerst
-                  </div>
-                  <div class="dropdown-option" onclick="selectSort('oldest', 'Älteste zuerst')">
-                    <i class="fas fa-sort-amount-up me-2"></i>
-                    Älteste zuerst
-                  </div>
-                  <div class="dropdown-option" onclick="selectSort('name', 'Nach Name')">
-                    <i class="fas fa-sort-alpha-down me-2"></i>
-                    Nach Name
-                  </div>
-                  <div class="dropdown-option" onclick="selectSort('size', 'Nach Größe')">
-                    <i class="fas fa-weight me-2"></i>
-                    Nach Größe
-                  </div>
-                </div>
-                <input type="hidden" id="sortValue" value="newest" />
               </div>
-            </div>
 
-            <!-- Documents Grid -->
-            <div id="documentsContainer">
-              <div class="loading-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                Lade Dokumente...
+              <!-- Controls Section -->
+              <div
+                class="controls-section"
+                style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); align-items: center"
+              >
+                <div class="search-box" class="u-flex-1">
+                  <i class="fas fa-search search-icon"></i>
+                  <input type="text" id="searchInput" placeholder="Dokumente suchen..." class="form-control" style="padding-left: 40px" />
+                </div>
+
+                <div class="custom-dropdown sort-dropdown" style="min-width: 200px">
+                  <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
+                    <span>Neueste zuerst</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="sortDropdown">
+                    <div class="dropdown-option" onclick="selectSort('newest', 'Neueste zuerst')">
+                      <i class="fas fa-sort-amount-down me-2"></i>
+                      Neueste zuerst
+                    </div>
+                    <div class="dropdown-option" onclick="selectSort('oldest', 'Älteste zuerst')">
+                      <i class="fas fa-sort-amount-up me-2"></i>
+                      Älteste zuerst
+                    </div>
+                    <div class="dropdown-option" onclick="selectSort('name', 'Nach Name')">
+                      <i class="fas fa-sort-alpha-down me-2"></i>
+                      Nach Name
+                    </div>
+                    <div class="dropdown-option" onclick="selectSort('size', 'Nach Größe')">
+                      <i class="fas fa-weight me-2"></i>
+                      Nach Größe
+                    </div>
+                  </div>
+                  <input type="hidden" id="sortValue" value="newest" />
+                </div>
+              </div>
+
+              <!-- Documents Grid -->
+              <div id="documentsContainer">
+                <div class="loading-state">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  Lade Dokumente...
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </main>
     </div>

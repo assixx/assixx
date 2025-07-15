@@ -26,7 +26,7 @@
       @import url('/styles/breadcrumb-alignment.css');
       /* Profile-spezifische Styles mit Glassmorphismus-Design */
       .profile-container {
-       /* max-width: 1200px;*/
+        /* max-width: 1200px;*/
         margin: 0 auto;
         padding: var(--spacing-xl);
       }
@@ -218,7 +218,7 @@
 
       .profile-section {
         background: var(--background-light);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         padding: var(--spacing-xl);
         margin-bottom: var(--spacing-lg);
@@ -256,7 +256,7 @@
       .form-control {
         width: 100%;
         padding: var(--spacing-md);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         background: rgba(255, 255, 255, 0.05);
         color: var(--text-primary);
@@ -442,191 +442,191 @@
         <div id="breadcrumb-container"></div>
         <div class="container">
           <div class="profile-container">
-          <!-- Profile Header -->
-          <div class="profile-header">
-            <div class="profile-avatar">
-              <div class="avatar-container" id="avatar-container">
-                <div class="avatar-initials" id="avatar-initials">JD</div>
-                <img id="avatar-image" class="avatar-image" class="u-hidden" />
-                <div class="avatar-upload-overlay" onclick="triggerFileUpload()">
-                  <i class="fas fa-camera"></i>
+            <!-- Profile Header -->
+            <div class="profile-header">
+              <div class="profile-avatar">
+                <div class="avatar-container" id="avatar-container">
+                  <div class="avatar-initials" id="avatar-initials">JD</div>
+                  <img id="avatar-image" class="avatar-image" class="u-hidden" />
+                  <div class="avatar-upload-overlay" onclick="triggerFileUpload()">
+                    <i class="fas fa-camera"></i>
+                  </div>
+                </div>
+                <input type="file" id="avatar-upload" accept="image/*" class="u-hidden" />
+              </div>
+              <div class="profile-info">
+                <div class="profile-name" id="profile-name">John Doe</div>
+                <div class="profile-role" id="profile-role">Administrator</div>
+                <div class="profile-stats">
+                  <div class="profile-stat">
+                    <span class="stat-number" id="days-active">0</span>
+                    <span class="stat-label">Tage aktiv</span>
+                  </div>
+                  <div class="profile-stat">
+                    <span class="stat-number" id="last-login">Heute</span>
+                    <span class="stat-label">Letzter Login</span>
+                  </div>
                 </div>
               </div>
-              <input type="file" id="avatar-upload" accept="image/*" class="u-hidden" />
             </div>
-            <div class="profile-info">
-              <div class="profile-name" id="profile-name">John Doe</div>
-              <div class="profile-role" id="profile-role">Administrator</div>
-              <div class="profile-stats">
-                <div class="profile-stat">
-                  <span class="stat-number" id="days-active">0</span>
-                  <span class="stat-label">Tage aktiv</span>
-                </div>
-                <div class="profile-stat">
-                  <span class="stat-number" id="last-login">Heute</span>
-                  <span class="stat-label">Letzter Login</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Profile Tabs -->
-          <div class="profile-tabs">
-            <button class="profile-tab active" onclick="switchTab('general')">
-              <i class="fas fa-user"></i>
-              Allgemeine Daten
-            </button>
-            <button class="profile-tab" onclick="switchTab('security')">
-              <i class="fas fa-lock"></i>
-              Sicherheit
-            </button>
-            <button class="profile-tab" onclick="switchTab('privacy')">
-              <i class="fas fa-shield-alt"></i>
-              Datenschutz
-            </button>
-          </div>
-
-          <!-- General Tab Content -->
-          <div id="general-content" class="profile-content active">
-            <div class="profile-section">
-              <h2 class="section-title">
-                <i class="fas fa-user-edit"></i>
-                Persönliche Informationen
-              </h2>
-              <form id="profile-form">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label class="form-label">Benutzername</label>
-                    <input type="text" id="username" class="form-control" readonly />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">E-Mail</label>
-                    <input type="email" id="email" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Vorname</label>
-                    <input type="text" id="first_name" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Nachname</label>
-                    <input type="text" id="last_name" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Alter</label>
-                    <input type="number" id="age" class="form-control" min="16" max="99" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Mitarbeiter-ID</label>
-                    <input type="text" id="employee_id" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">IBAN</label>
-                    <input type="text" id="iban" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Firma</label>
-                    <input type="text" id="company" class="form-control" />
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Notizen</label>
-                  <textarea id="notes" class="form-control" rows="4"></textarea>
-                </div>
-                <button type="submit" class="btn-primary">
-                  <i class="fas fa-save"></i>
-                  Änderungen speichern
-                </button>
-              </form>
-            </div>
-          </div>
-
-          <!-- Security Tab Content -->
-          <div id="security-content" class="profile-content">
-            <div class="profile-section">
-              <h2 class="section-title">
-                <i class="fas fa-key"></i>
-                Passwort ändern
-              </h2>
-              <form id="password-form">
-                <div class="form-group">
-                  <label class="form-label">Aktuelles Passwort</label>
-                  <input type="password" id="current_password" class="form-control" required />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Neues Passwort</label>
-                  <input type="password" id="new_password" class="form-control" required />
-                  <div class="password-strength">
-                    <div class="password-strength-bar" id="password-strength-bar"></div>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Passwort bestätigen</label>
-                  <input type="password" id="confirm_password" class="form-control" required />
-                </div>
-                <button type="submit" class="btn-primary">
-                  <i class="fas fa-lock"></i>
-                  Passwort ändern
-                </button>
-              </form>
-            </div>
-          </div>
-
-          <!-- Privacy Tab Content -->
-          <div id="privacy-content" class="profile-content">
-            <div class="profile-section">
-              <h2 class="section-title">
+            <!-- Profile Tabs -->
+            <div class="profile-tabs">
+              <button class="profile-tab active" onclick="switchTab('general')">
+                <i class="fas fa-user"></i>
+                Allgemeine Daten
+              </button>
+              <button class="profile-tab" onclick="switchTab('security')">
+                <i class="fas fa-lock"></i>
+                Sicherheit
+              </button>
+              <button class="profile-tab" onclick="switchTab('privacy')">
                 <i class="fas fa-shield-alt"></i>
-                Datenschutzeinstellungen
-              </h2>
-              <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg)">
-                Verwalten Sie Ihre Datenschutz- und Benachrichtigungseinstellungen.
-              </p>
+                Datenschutz
+              </button>
+            </div>
 
-              <div class="privacy-setting">
-                <div>
-                  <strong>E-Mail-Benachrichtigungen</strong>
-                  <br />
-                  <small class="u-color-text-secondary">Erhalten Sie E-Mails über wichtige Updates</small>
-                </div>
-                <div class="toggle-switch active" onclick="toggleSetting(this)">
-                  <div class="toggle-slider"></div>
-                </div>
-              </div>
-
-              <div class="privacy-setting">
-                <div>
-                  <strong>Profil für andere sichtbar</strong>
-                  <br />
-                  <small class="u-color-text-secondary">Andere Benutzer können Ihr Profil sehen</small>
-                </div>
-                <div class="toggle-switch active" onclick="toggleSetting(this)">
-                  <div class="toggle-slider"></div>
-                </div>
-              </div>
-
-              <div class="privacy-setting">
-                <div>
-                  <strong>Aktivitätsstatus anzeigen</strong>
-                  <br />
-                  <small class="u-color-text-secondary">Zeigen Sie anderen an, wann Sie zuletzt aktiv waren</small>
-                </div>
-                <div class="toggle-switch" onclick="toggleSetting(this)">
-                  <div class="toggle-slider"></div>
-                </div>
-              </div>
-
-              <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--border-color)">
-                <button class="btn-secondary">
-                  <i class="fas fa-download"></i>
-                  Meine Daten herunterladen
-                </button>
-                <button class="btn-secondary" style="margin-left: var(--spacing-md)">
-                  <i class="fas fa-trash"></i>
-                  Account löschen
-                </button>
+            <!-- General Tab Content -->
+            <div id="general-content" class="profile-content active">
+              <div class="profile-section">
+                <h2 class="section-title">
+                  <i class="fas fa-user-edit"></i>
+                  Persönliche Informationen
+                </h2>
+                <form id="profile-form">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label class="form-label">Benutzername</label>
+                      <input type="text" id="username" class="form-control" readonly />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">E-Mail</label>
+                      <input type="email" id="email" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Vorname</label>
+                      <input type="text" id="first_name" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Nachname</label>
+                      <input type="text" id="last_name" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Alter</label>
+                      <input type="number" id="age" class="form-control" min="16" max="99" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Mitarbeiter-ID</label>
+                      <input type="text" id="employee_id" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">IBAN</label>
+                      <input type="text" id="iban" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Firma</label>
+                      <input type="text" id="company" class="form-control" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Notizen</label>
+                    <textarea id="notes" class="form-control" rows="4"></textarea>
+                  </div>
+                  <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i>
+                    Änderungen speichern
+                  </button>
+                </form>
               </div>
             </div>
-          </div>
+
+            <!-- Security Tab Content -->
+            <div id="security-content" class="profile-content">
+              <div class="profile-section">
+                <h2 class="section-title">
+                  <i class="fas fa-key"></i>
+                  Passwort ändern
+                </h2>
+                <form id="password-form">
+                  <div class="form-group">
+                    <label class="form-label">Aktuelles Passwort</label>
+                    <input type="password" id="current_password" class="form-control" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Neues Passwort</label>
+                    <input type="password" id="new_password" class="form-control" required />
+                    <div class="password-strength">
+                      <div class="password-strength-bar" id="password-strength-bar"></div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Passwort bestätigen</label>
+                    <input type="password" id="confirm_password" class="form-control" required />
+                  </div>
+                  <button type="submit" class="btn-primary">
+                    <i class="fas fa-lock"></i>
+                    Passwort ändern
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <!-- Privacy Tab Content -->
+            <div id="privacy-content" class="profile-content">
+              <div class="profile-section">
+                <h2 class="section-title">
+                  <i class="fas fa-shield-alt"></i>
+                  Datenschutzeinstellungen
+                </h2>
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg)">
+                  Verwalten Sie Ihre Datenschutz- und Benachrichtigungseinstellungen.
+                </p>
+
+                <div class="privacy-setting">
+                  <div>
+                    <strong>E-Mail-Benachrichtigungen</strong>
+                    <br />
+                    <small class="u-color-text-secondary">Erhalten Sie E-Mails über wichtige Updates</small>
+                  </div>
+                  <div class="toggle-switch active" onclick="toggleSetting(this)">
+                    <div class="toggle-slider"></div>
+                  </div>
+                </div>
+
+                <div class="privacy-setting">
+                  <div>
+                    <strong>Profil für andere sichtbar</strong>
+                    <br />
+                    <small class="u-color-text-secondary">Andere Benutzer können Ihr Profil sehen</small>
+                  </div>
+                  <div class="toggle-switch active" onclick="toggleSetting(this)">
+                    <div class="toggle-slider"></div>
+                  </div>
+                </div>
+
+                <div class="privacy-setting">
+                  <div>
+                    <strong>Aktivitätsstatus anzeigen</strong>
+                    <br />
+                    <small class="u-color-text-secondary">Zeigen Sie anderen an, wann Sie zuletzt aktiv waren</small>
+                  </div>
+                  <div class="toggle-switch" onclick="toggleSetting(this)">
+                    <div class="toggle-slider"></div>
+                  </div>
+                </div>
+
+                <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--border-color)">
+                  <button class="btn-secondary">
+                    <i class="fas fa-download"></i>
+                    Meine Daten herunterladen
+                  </button>
+                  <button class="btn-secondary" style="margin-left: var(--spacing-md)">
+                    <i class="fas fa-trash"></i>
+                    Account löschen
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

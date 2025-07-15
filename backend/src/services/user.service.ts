@@ -3,12 +3,12 @@
  * Handles user-related business logic
  */
 
-import bcrypt from 'bcryptjs';
-import User from '../models/user';
-import { logger } from '../utils/logger';
+import bcrypt from "bcryptjs";
+import User from "../models/user";
+import { logger } from "../utils/logger";
 
 // Import types from User model
-import type { DbUser } from '../models/user';
+import type { DbUser } from "../models/user";
 
 // Interfaces
 interface UserData {
@@ -69,7 +69,7 @@ class UserService {
    */
   async getUserById(
     userId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<UserData | null> {
     try {
       const user = await User.findById(userId, tenantId);
@@ -77,7 +77,7 @@ class UserService {
       if (user) {
         // Remove sensitive data
         const userWithoutPassword =
-          'password' in user
+          "password" in user
             ? (() => {
                 const { password: _password, ...rest } = user;
                 return rest;
@@ -95,7 +95,7 @@ class UserService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting user by ID:', error);
+      logger.error("Error getting user by ID:", error);
       throw error;
     }
   }
@@ -119,7 +119,7 @@ class UserService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting user by username:', error);
+      logger.error("Error getting user by username:", error);
       throw error;
     }
   }
@@ -133,7 +133,7 @@ class UserService {
       // const offset = (page - 1) * limit; // Not used by User.findAll
 
       if (!tenantId) {
-        throw new Error('Tenant ID is required');
+        throw new Error("Tenant ID is required");
       }
 
       const users = (await User.findAll({
@@ -149,7 +149,7 @@ class UserService {
 
       const data = users.map((user: DbUser) => {
         const userData =
-          'password' in user
+          "password" in user
             ? (() => {
                 const { password: _password, ...rest } = user;
                 return rest;
@@ -166,7 +166,7 @@ class UserService {
         totalPages,
       };
     } catch (error) {
-      logger.error('Error getting users:', error);
+      logger.error("Error getting users:", error);
       throw error;
     }
   }
@@ -177,7 +177,7 @@ class UserService {
   async updateUser(
     userId: number,
     tenantId: number,
-    updateData: UpdateUserData
+    updateData: UpdateUserData,
   ): Promise<UserData | null> {
     try {
       // Create a clean update object without forbidden fields
@@ -191,7 +191,7 @@ class UserService {
       await User.update(userId, cleanUpdateData, tenantId);
       return await this.getUserById(userId, tenantId);
     } catch (error) {
-      logger.error('Error updating user:', error);
+      logger.error("Error updating user:", error);
       throw error;
     }
   }
@@ -202,7 +202,7 @@ class UserService {
   async updatePassword(
     userId: number,
     tenantId: number,
-    newPassword: string
+    newPassword: string,
   ): Promise<boolean> {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -210,7 +210,7 @@ class UserService {
       await User.update(userId, { password: hashedPassword }, tenantId);
       return true;
     } catch (error) {
-      logger.error('Error updating password:', error);
+      logger.error("Error updating password:", error);
       throw error;
     }
   }
@@ -223,7 +223,7 @@ class UserService {
       await User.delete(userId);
       return true;
     } catch (error) {
-      logger.error('Error deleting user:', error);
+      logger.error("Error deleting user:", error);
       throw error;
     }
   }
@@ -234,13 +234,13 @@ class UserService {
   async archiveUser(
     userId: number,
     tenantId: number,
-    archived: boolean = true
+    archived: boolean = true,
   ): Promise<boolean> {
     try {
       await User.update(userId, { is_archived: archived }, tenantId);
       return true;
     } catch (error) {
-      logger.error('Error archiving user:', error);
+      logger.error("Error archiving user:", error);
       throw error;
     }
   }

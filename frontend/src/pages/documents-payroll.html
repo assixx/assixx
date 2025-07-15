@@ -64,87 +64,87 @@
       <main class="main-content">
         <!-- Breadcrumb Container -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <!-- Page Header -->
-        <div class="page-header">
-          <div class="page-title-section">
-            <p id="page-subtitle">Ihre persönlichen Gehaltsabrechnungen</p>
+          <div class="page-header">
+            <div class="page-title-section">
+              <p id="page-subtitle">Ihre persönlichen Gehaltsabrechnungen</p>
+            </div>
           </div>
-        </div>
 
-        <!-- Stats Section -->
-        <div class="documents-stats">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-money-check"></i>
-            </div>
-            <div class="stat-content">
-              <h3 id="totalDocs">0</h3>
-              <p>Gesamt</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-bell"></i>
-            </div>
-            <div class="stat-content">
-              <h3 id="unreadDocs">0</h3>
-              <p>Ungelesen</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-calendar"></i>
-            </div>
-            <div class="stat-content">
-              <h3 id="recentDocs">0</h3>
-              <p>Dieses Jahr</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sort Controls -->
-        <div class="documents-controls">
-          <div class="control-left">
-            <h2 class="section-title">Alle Gehaltsabrechnungen</h2>
-          </div>
-          <div class="control-right">
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
-                <i class="fas fa-sort me-2"></i>
-                <span>Neueste zuerst</span>
-                <i class="fas fa-chevron-down ms-auto"></i>
+          <!-- Stats Section -->
+          <div class="documents-stats">
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-money-check"></i>
               </div>
-              <div class="dropdown-options" id="sortDropdown">
-                <div class="dropdown-option" data-sort="newest">
-                  <i class="fas fa-clock"></i>
+              <div class="stat-content">
+                <h3 id="totalDocs">0</h3>
+                <p>Gesamt</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-bell"></i>
+              </div>
+              <div class="stat-content">
+                <h3 id="unreadDocs">0</h3>
+                <p>Ungelesen</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-calendar"></i>
+              </div>
+              <div class="stat-content">
+                <h3 id="recentDocs">0</h3>
+                <p>Dieses Jahr</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sort Controls -->
+          <div class="documents-controls">
+            <div class="control-left">
+              <h2 class="section-title">Alle Gehaltsabrechnungen</h2>
+            </div>
+            <div class="control-right">
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
+                  <i class="fas fa-sort me-2"></i>
                   <span>Neueste zuerst</span>
+                  <i class="fas fa-chevron-down ms-auto"></i>
                 </div>
-                <div class="dropdown-option" data-sort="oldest">
-                  <i class="fas fa-history"></i>
-                  <span>Älteste zuerst</span>
-                </div>
-                <div class="dropdown-option" data-sort="name">
-                  <i class="fas fa-font"></i>
-                  <span>Nach Name</span>
-                </div>
-                <div class="dropdown-option" data-sort="size">
-                  <i class="fas fa-weight"></i>
-                  <span>Nach Größe</span>
+                <div class="dropdown-options" id="sortDropdown">
+                  <div class="dropdown-option" data-sort="newest">
+                    <i class="fas fa-clock"></i>
+                    <span>Neueste zuerst</span>
+                  </div>
+                  <div class="dropdown-option" data-sort="oldest">
+                    <i class="fas fa-history"></i>
+                    <span>Älteste zuerst</span>
+                  </div>
+                  <div class="dropdown-option" data-sort="name">
+                    <i class="fas fa-font"></i>
+                    <span>Nach Name</span>
+                  </div>
+                  <div class="dropdown-option" data-sort="size">
+                    <i class="fas fa-weight"></i>
+                    <span>Nach Größe</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Documents Container -->
-        <div id="documentsContainer" class="documents-container">
-          <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Gehaltsabrechnungen werden geladen...</p>
+          <!-- Documents Container -->
+          <div id="documentsContainer" class="documents-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Gehaltsabrechnungen werden geladen...</p>
+            </div>
           </div>
-        </div>
         </div>
       </main>
     </div>

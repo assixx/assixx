@@ -597,7 +597,6 @@
       .btn:hover::after {
         transform: rotate(45deg) translate(-30%, -30%);
       }
-      
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -616,148 +615,148 @@
         <div class="container">
           <!-- Welcome Hero Section -->
           <div class="welcome-hero">
-          <div class="floating-elements">
-            <div class="floating-dot"></div>
-            <div class="floating-dot"></div>
-            <div class="floating-dot"></div>
-            <div class="floating-dot"></div>
-          </div>
-
-          <div class="welcome-content">
-            <p class="welcome-title">Willkommen zurück!</p>
-            <p class="welcome-subtitle">
-              Schön, dass Sie da sind,
-              <span id="employee-name" class="pulse">Mitarbeiter</span>
-            </p>
-          </div>
-
-          <div class="welcome-stats">
-            <div class="welcome-stat">
-              <span class="welcome-stat-number" id="hero-documents">12</span>
-              <span class="welcome-stat-label">Dokumente</span>
+            <div class="floating-elements">
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
             </div>
-            <div class="welcome-stat">
-              <span class="welcome-stat-number" id="hero-points">125</span>
-              <span class="welcome-stat-label">KVP Punkte</span>
+
+            <div class="welcome-content">
+              <p class="welcome-title">Willkommen zurück!</p>
+              <p class="welcome-subtitle">
+                Schön, dass Sie da sind,
+                <span id="employee-name" class="pulse">Mitarbeiter</span>
+              </p>
             </div>
-            <div class="welcome-stat">
-              <span class="welcome-stat-number" id="hero-alerts">3</span>
-              <span class="welcome-stat-label">Neu</span>
+
+            <div class="welcome-stats">
+              <div class="welcome-stat">
+                <span class="welcome-stat-number" id="hero-documents">12</span>
+                <span class="welcome-stat-label">Dokumente</span>
+              </div>
+              <div class="welcome-stat">
+                <span class="welcome-stat-number" id="hero-points">125</span>
+                <span class="welcome-stat-label">KVP Punkte</span>
+              </div>
+              <div class="welcome-stat">
+                <span class="welcome-stat-number" id="hero-alerts">3</span>
+                <span class="welcome-stat-label">Neu</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Employee Info Grid -->
-        <div class="info-grid">
-          <div class="info-card">
-            <div class="info-label">Mitarbeiter-ID</div>
-            <div class="info-value" id="employee-id">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Abteilung</div>
-            <div class="info-value" id="employee-department">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Position</div>
-            <div class="info-value" id="employee-position">Mitarbeiter</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Dokumente</div>
-            <div class="info-value" id="document-count">-</div>
-          </div>
-        </div>
-
-        <!-- Quick Access Features -->
-        <div class="dashboard-grid">
-          <!-- Documents Card -->
-          <div class="feature-card" onclick="window.location.href='/documents'">
-            <div class="feature-icon">📄</div>
-            <h3 class="feature-title">Meine Dokumente</h3>
-            <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
-            <span class="feature-badge" id="new-documents-badge">Neue verfügbar</span>
-          </div>
-
-          <!-- Calendar Card -->
-          <div class="feature-card" onclick="window.location.href='/calendar'">
-            <div class="feature-icon">📅</div>
-            <h3 class="feature-title">Firmenkalender</h3>
-            <p class="feature-description">Termine, Events und wichtige Firmentermine im Überblick</p>
-            <span class="feature-badge">Immer aktuell</span>
-          </div>
-
-          <!-- Blackboard Card -->
-          <div class="feature-card" onclick="window.location.href='/blackboard'">
-            <div class="feature-icon">📋</div>
-            <h3 class="feature-title">Schwarzes Brett</h3>
-            <p class="feature-description">Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung</p>
-            <span class="feature-badge" id="unread-announcements-badge">Neue Meldungen</span>
-          </div>
-
-          <!-- KVP Card -->
-          <div class="feature-card" onclick="window.location.href='/kvp'">
-            <div class="feature-icon">💡</div>
-            <h3 class="feature-title">Verbesserungsvorschläge</h3>
-            <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
-            <span class="feature-badge">Belohnung möglich</span>
-          </div>
-
-          <!-- Shifts Card -->
-          <div class="feature-card" onclick="window.location.href='/shifts'">
-            <div class="feature-icon">🕒</div>
-            <h3 class="feature-title">Schichtplanung</h3>
-            <p class="feature-description">Ihre Schichtpläne und Arbeitszeiten in der Übersicht</p>
-            <span class="feature-badge">Wöchentlich</span>
-          </div>
-
-          <!-- Profile Card -->
-          <div class="feature-card" onclick="window.location.href='/employee-profile'">
-            <div class="feature-icon">👤</div>
-            <h3 class="feature-title">Mein Profil</h3>
-            <p class="feature-description">Persönliche Daten verwalten und Einstellungen anpassen</p>
-            <span class="feature-badge">Personalisiert</span>
-          </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="quick-stats">
-          <div class="stats-header">
-            <h2 class="stats-title">Auf einen Blick</h2>
-            <button class="stats-refresh" onclick="loadDashboardData()">
-              <i class="fas fa-sync-alt"></i>
-              Aktualisieren
-            </button>
-          </div>
+          <!-- Employee Info Grid -->
           <div class="info-grid">
             <div class="info-card">
-              <div class="info-label">Neue Dokumente</div>
-              <div class="info-value" id="new-documents-count">-</div>
+              <div class="info-label">Mitarbeiter-ID</div>
+              <div class="info-value" id="employee-id">-</div>
             </div>
             <div class="info-card">
-              <div class="info-label">Ungelesene Ankündigungen</div>
-              <div class="info-value" id="unread-announcements-count">-</div>
+              <div class="info-label">Abteilung</div>
+              <div class="info-value" id="employee-department">-</div>
             </div>
             <div class="info-card">
-              <div class="info-label">Nächster Termin</div>
-              <div class="info-value" id="next-appointment">-</div>
+              <div class="info-label">Position</div>
+              <div class="info-value" id="employee-position">Mitarbeiter</div>
             </div>
             <div class="info-card">
-              <div class="info-label">Meine KVP Punkte</div>
-              <div class="info-value" id="kvp-points">-</div>
+              <div class="info-label">Dokumente</div>
+              <div class="info-value" id="document-count">-</div>
             </div>
           </div>
-        </div>
 
-        <!-- Recent Activity -->
-        <div class="activity-feed">
-          <h2 class="stats-title" style="margin-bottom: var(--spacing-lg)">Letzte Aktivitäten</h2>
-          <div id="activity-list">
-            <div class="loading-state">
-              <i class="fas fa-spinner fa-spin"></i>
-              Lade Aktivitäten...
+          <!-- Quick Access Features -->
+          <div class="dashboard-grid">
+            <!-- Documents Card -->
+            <div class="feature-card" onclick="window.location.href='/documents'">
+              <div class="feature-icon">📄</div>
+              <h3 class="feature-title">Meine Dokumente</h3>
+              <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
+              <span class="feature-badge" id="new-documents-badge">Neue verfügbar</span>
+            </div>
+
+            <!-- Calendar Card -->
+            <div class="feature-card" onclick="window.location.href='/calendar'">
+              <div class="feature-icon">📅</div>
+              <h3 class="feature-title">Firmenkalender</h3>
+              <p class="feature-description">Termine, Events und wichtige Firmentermine im Überblick</p>
+              <span class="feature-badge">Immer aktuell</span>
+            </div>
+
+            <!-- Blackboard Card -->
+            <div class="feature-card" onclick="window.location.href='/blackboard'">
+              <div class="feature-icon">📋</div>
+              <h3 class="feature-title">Schwarzes Brett</h3>
+              <p class="feature-description">Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung</p>
+              <span class="feature-badge" id="unread-announcements-badge">Neue Meldungen</span>
+            </div>
+
+            <!-- KVP Card -->
+            <div class="feature-card" onclick="window.location.href='/kvp'">
+              <div class="feature-icon">💡</div>
+              <h3 class="feature-title">Verbesserungsvorschläge</h3>
+              <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
+              <span class="feature-badge">Belohnung möglich</span>
+            </div>
+
+            <!-- Shifts Card -->
+            <div class="feature-card" onclick="window.location.href='/shifts'">
+              <div class="feature-icon">🕒</div>
+              <h3 class="feature-title">Schichtplanung</h3>
+              <p class="feature-description">Ihre Schichtpläne und Arbeitszeiten in der Übersicht</p>
+              <span class="feature-badge">Wöchentlich</span>
+            </div>
+
+            <!-- Profile Card -->
+            <div class="feature-card" onclick="window.location.href='/employee-profile'">
+              <div class="feature-icon">👤</div>
+              <h3 class="feature-title">Mein Profil</h3>
+              <p class="feature-description">Persönliche Daten verwalten und Einstellungen anpassen</p>
+              <span class="feature-badge">Personalisiert</span>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="quick-stats">
+            <div class="stats-header">
+              <h2 class="stats-title">Auf einen Blick</h2>
+              <button class="stats-refresh" onclick="loadDashboardData()">
+                <i class="fas fa-sync-alt"></i>
+                Aktualisieren
+              </button>
+            </div>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="info-label">Neue Dokumente</div>
+                <div class="info-value" id="new-documents-count">-</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">Ungelesene Ankündigungen</div>
+                <div class="info-value" id="unread-announcements-count">-</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">Nächster Termin</div>
+                <div class="info-value" id="next-appointment">-</div>
+              </div>
+              <div class="info-card">
+                <div class="info-label">Meine KVP Punkte</div>
+                <div class="info-value" id="kvp-points">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="activity-feed">
+            <h2 class="stats-title" style="margin-bottom: var(--spacing-lg)">Letzte Aktivitäten</h2>
+            <div id="activity-list">
+              <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                Lade Aktivitäten...
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </main>
     </div>
 

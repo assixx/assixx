@@ -3,11 +3,11 @@
  * Provides easy-to-use security stacks for different endpoint types
  */
 
-import { RequestHandler, Router } from 'express';
-import { authenticateToken, requireRole } from './auth-refactored';
-import { rateLimiter } from './rateLimiter';
-import { ValidationMiddleware } from '../types/middleware.types';
-import { RateLimiterType } from '../types/security.types';
+import { RequestHandler, Router } from "express";
+import { authenticateToken, requireRole } from "./auth-refactored";
+import { rateLimiter } from "./rateLimiter";
+import { ValidationMiddleware } from "../types/middleware.types";
+import { RateLimiterType } from "../types/security.types";
 
 // Security middleware stacks for different endpoint types
 export const security = {
@@ -58,7 +58,7 @@ export const security = {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
       authenticateToken as RequestHandler,
-      requireRole('admin') as RequestHandler,
+      requireRole("admin") as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -74,7 +74,7 @@ export const security = {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
       authenticateToken as RequestHandler,
-      requireRole('root') as RequestHandler,
+      requireRole("root") as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -187,7 +187,7 @@ export const securityStacks: Record<string, RequestHandler[]> = {
 // Helper function to apply security to entire router
 export function applySecurityToRouter(
   router: Router,
-  defaultSecurity: RequestHandler[]
+  defaultSecurity: RequestHandler[],
 ): void {
   // Store original methods
   const originalGet = router.get.bind(router);

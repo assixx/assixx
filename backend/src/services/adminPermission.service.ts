@@ -8,8 +8,8 @@ import {
   getConnection,
   RowDataPacket,
   ResultSetHeader,
-} from '../utils/db';
-import { logger } from '../utils/logger.js';
+} from "../utils/db";
+import { logger } from "../utils/logger.js";
 
 interface Permission {
   can_read: boolean;
@@ -34,7 +34,7 @@ class AdminPermissionService {
     adminId: number,
     departmentId: number,
     tenantId: number,
-    requiredPermission: 'read' | 'write' | 'delete' = 'read'
+    requiredPermission: "read" | "write" | "delete" = "read",
   ): Promise<boolean> {
     try {
       // First check direct department permissions
@@ -42,7 +42,7 @@ class AdminPermissionService {
         `SELECT can_read, can_write, can_delete 
          FROM admin_department_permissions 
          WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
-        [adminId, departmentId, tenantId]
+        [adminId, departmentId, tenantId],
       );
 
       if (directPermissions.length > 0) {
@@ -58,33 +58,33 @@ class AdminPermissionService {
          WHERE agp.admin_user_id = ? 
          AND dgm.department_id = ? 
          AND agp.tenant_id = ?`,
-        [adminId, departmentId, tenantId]
+        [adminId, departmentId, tenantId],
       );
 
       if (groupPermissions.length > 0) {
         // Check if any group grants the required permission
         return groupPermissions.some((perm: RowDataPacket) =>
-          this.checkPermissionLevel(perm, requiredPermission)
+          this.checkPermissionLevel(perm, requiredPermission),
         );
       }
 
       return false;
     } catch (error) {
-      logger.error('Error checking admin access:', error);
+      logger.error("Error checking admin access:", error);
       return false;
     }
   }
 
   private checkPermissionLevel(
     permission: RowDataPacket,
-    requiredLevel: 'read' | 'write' | 'delete'
+    requiredLevel: "read" | "write" | "delete",
   ): boolean {
     switch (requiredLevel) {
-      case 'read':
+      case "read":
         return permission.can_read === 1;
-      case 'write':
+      case "write":
         return permission.can_write === 1;
-      case 'delete':
+      case "delete":
         return permission.can_delete === 1;
       default:
         return false;
@@ -96,7 +96,7 @@ class AdminPermissionService {
    */
   async getAdminDepartments(
     adminId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<{
     departments: DepartmentWithPermission[];
     hasAllAccess: boolean;
@@ -106,12 +106,12 @@ class AdminPermissionService {
       const [adminInfo] = await execute<RowDataPacket[]>(
         `SELECT COUNT(*) as dept_count FROM admin_department_permissions 
          WHERE admin_user_id = ? AND tenant_id = ?`,
-        [adminId, tenantId]
+        [adminId, tenantId],
       );
 
       const [totalDepts] = await execute<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM departments WHERE tenant_id = ?`,
-        [tenantId]
+        [tenantId],
       );
 
       const hasAllAccess =
@@ -125,7 +125,7 @@ class AdminPermissionService {
          FROM departments d
          JOIN admin_department_permissions adp ON d.id = adp.department_id
          WHERE adp.admin_user_id = ? AND adp.tenant_id = ?`,
-        [adminId, tenantId]
+        [adminId, tenantId],
       );
 
       // Get departments via group permissions
@@ -139,7 +139,7 @@ class AdminPermissionService {
          JOIN admin_group_permissions agp ON dgm.group_id = agp.group_id
          WHERE agp.admin_user_id = ? AND agp.tenant_id = ?
          GROUP BY d.id, d.name, d.description`,
-        [adminId, tenantId]
+        [adminId, tenantId],
       );
 
       // Merge results, avoiding duplicates
@@ -182,7 +182,7 @@ class AdminPermissionService {
         hasAllAccess,
       };
     } catch (error) {
-      logger.error('Error getting admin departments:', error);
+      logger.error("Error getting admin departments:", error);
       return { departments: [], hasAllAccess: false };
     }
   }
@@ -199,7 +199,7 @@ class AdminPermissionService {
       can_read: true,
       can_write: false,
       can_delete: false,
-    }
+    },
   ): Promise<boolean> {
     const connection = await getConnection();
 
@@ -219,14 +219,14 @@ class AdminPermissionService {
         `SELECT department_id, can_read, can_write, can_delete 
          FROM admin_department_permissions 
          WHERE admin_user_id = ? AND tenant_id = ?`,
-        [adminId, tenantId]
+        [adminId, tenantId],
       );
 
       // Remove all existing permissions
       await connection.execute(
         `DELETE FROM admin_department_permissions 
          WHERE admin_user_id = ? AND tenant_id = ?`,
-        [adminId, tenantId]
+        [adminId, tenantId],
       );
 
       // Add new permissions
@@ -247,14 +247,14 @@ class AdminPermissionService {
         });
 
         const placeholders = departmentIds
-          .map(() => '(?, ?, ?, ?, ?, ?, ?)')
-          .join(', ');
+          .map(() => "(?, ?, ?, ?, ?, ?, ?)")
+          .join(", ");
 
         await connection.execute(
           `INSERT INTO admin_department_permissions 
            (tenant_id, admin_user_id, department_id, can_read, can_write, can_delete, assigned_by) 
            VALUES ${placeholders}`,
-          values.flat()
+          values.flat(),
         );
       }
 
@@ -265,16 +265,16 @@ class AdminPermissionService {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
-          'modify',
+          "modify",
           adminId,
           0, // No specific target, batch operation
-          'department',
+          "department",
           assignedBy,
           JSON.stringify(oldPerms),
           JSON.stringify(
-            departmentIds.map((id) => ({ department_id: id, ...permissions }))
+            departmentIds.map((id) => ({ department_id: id, ...permissions })),
           ),
-        ]
+        ],
       );
 
       await connection.commit();
@@ -282,8 +282,8 @@ class AdminPermissionService {
       return true;
     } catch (error) {
       await connection.rollback();
-      logger.error('Error setting admin permissions:', error);
-      logger.error('[DEBUG] Error details:', {
+      logger.error("Error setting admin permissions:", error);
+      logger.error("[DEBUG] Error details:", {
         message: (error as Error).message,
         code: (error as { code?: string }).code,
         sqlMessage: (error as { sqlMessage?: string }).sqlMessage,
@@ -306,7 +306,7 @@ class AdminPermissionService {
       can_read: true,
       can_write: false,
       can_delete: false,
-    }
+    },
   ): Promise<boolean> {
     const connection = await getConnection();
 
@@ -317,7 +317,7 @@ class AdminPermissionService {
       await connection.execute(
         `DELETE FROM admin_group_permissions 
          WHERE admin_user_id = ? AND tenant_id = ?`,
-        [adminId, tenantId]
+        [adminId, tenantId],
       );
 
       // Add new permissions
@@ -333,14 +333,14 @@ class AdminPermissionService {
         ]);
 
         const placeholders = groupIds
-          .map(() => '(?, ?, ?, ?, ?, ?, ?)')
-          .join(', ');
+          .map(() => "(?, ?, ?, ?, ?, ?, ?)")
+          .join(", ");
 
         await connection.execute(
           `INSERT INTO admin_group_permissions 
            (tenant_id, admin_user_id, group_id, can_read, can_write, can_delete, assigned_by) 
            VALUES ${placeholders}`,
-          values.flat()
+          values.flat(),
         );
       }
 
@@ -348,7 +348,7 @@ class AdminPermissionService {
       return true;
     } catch (error) {
       await connection.rollback();
-      logger.error('Error setting admin group permissions:', error);
+      logger.error("Error setting admin group permissions:", error);
       return false;
     } finally {
       connection.release();
@@ -361,18 +361,18 @@ class AdminPermissionService {
   async removePermission(
     adminId: number,
     departmentId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     try {
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_department_permissions 
          WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?`,
-        [adminId, departmentId, tenantId]
+        [adminId, departmentId, tenantId],
       );
 
       return result.affectedRows > 0;
     } catch (error) {
-      logger.error('Error removing admin permission:', error);
+      logger.error("Error removing admin permission:", error);
       return false;
     }
   }
@@ -383,18 +383,18 @@ class AdminPermissionService {
   async removeGroupPermission(
     adminId: number,
     groupId: number,
-    tenantId: number
+    tenantId: number,
   ): Promise<boolean> {
     try {
       const [result] = await execute<ResultSetHeader>(
         `DELETE FROM admin_group_permissions 
          WHERE admin_user_id = ? AND group_id = ? AND tenant_id = ?`,
-        [adminId, groupId, tenantId]
+        [adminId, groupId, tenantId],
       );
 
       return result.affectedRows > 0;
     } catch (error) {
-      logger.error('Error removing admin group permission:', error);
+      logger.error("Error removing admin group permission:", error);
       return false;
     }
   }
@@ -403,14 +403,14 @@ class AdminPermissionService {
    * Log permission change for audit trail
    */
   async logPermissionChange(
-    action: 'grant' | 'revoke' | 'modify',
+    action: "grant" | "revoke" | "modify",
     adminId: number,
     targetId: number,
-    targetType: 'department' | 'group',
+    targetType: "department" | "group",
     changedBy: number,
     tenantId: number,
     oldPermissions?: unknown,
-    newPermissions?: unknown
+    newPermissions?: unknown,
   ): Promise<void> {
     try {
       await execute<ResultSetHeader>(
@@ -426,10 +426,10 @@ class AdminPermissionService {
           changedBy,
           oldPermissions ? JSON.stringify(oldPermissions) : null,
           newPermissions ? JSON.stringify(newPermissions) : null,
-        ]
+        ],
       );
     } catch (error) {
-      logger.error('Error logging permission change:', error);
+      logger.error("Error logging permission change:", error);
     }
   }
 }

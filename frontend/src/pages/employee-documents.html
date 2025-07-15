@@ -91,7 +91,7 @@
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         box-shadow: var(--shadow-sm);
         border-radius: var(--radius-md);
         /* animation: fadeInUp 0.6s ease-out; */
@@ -174,7 +174,7 @@
       .search-input {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         color: #fff;
         transition: all 0.3s ease;
       }
@@ -487,57 +487,57 @@
       <main class="main-content">
         <!-- Breadcrumb Container -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div class="page-header"></div>
 
-        <!-- Dokumente Suche -->
-        <div class="card compact-card mb-3">
-          <div class="card-header">
-            <h2 class="card-title">Dokumente suchen</h2>
+          <!-- Dokumente Suche -->
+          <div class="card compact-card mb-3">
+            <div class="card-header">
+              <h2 class="card-title">Dokumente suchen</h2>
+            </div>
+            <div class="compact-content">
+              <form id="search-form" class="search-form">
+                <input type="text" id="search-input" class="form-control search-input" placeholder="Suchbegriff eingeben..." />
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-search"></i>
+                  Suchen
+                </button>
+              </form>
+            </div>
           </div>
-          <div class="compact-content">
-            <form id="search-form" class="search-form">
-              <input type="text" id="search-input" class="form-control search-input" placeholder="Suchbegriff eingeben..." />
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-search"></i>
-                Suchen
-              </button>
-            </form>
-          </div>
-        </div>
 
-        <!-- Dokumente Tabelle -->
-        <div class="card compact-card">
-          <div class="card-header">
-            <h2 class="card-title">Dokumentenliste</h2>
-          </div>
-          <div class="compact-content">
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Dokument</th>
-                    <th>Für</th>
-                    <th>Datum</th>
-                    <th>Kategorie</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="document-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                  <tr>
-                    <td colspan="5" class="text-center">Dokumente werden geladen...</td>
-                  </tr>
-                </tbody>
-              </table>
+          <!-- Dokumente Tabelle -->
+          <div class="card compact-card">
+            <div class="card-header">
+              <h2 class="card-title">Dokumentenliste</h2>
             </div>
-            <div id="no-documents" class="no-documents-message" class="u-hidden">
-              <i class="fas fa-folder-open"></i>
-              <p>Keine Dokumente gefunden</p>
+            <div class="compact-content">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Dokument</th>
+                      <th>Für</th>
+                      <th>Datum</th>
+                      <th>Kategorie</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="document-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                    <tr>
+                      <td colspan="5" class="text-center">Dokumente werden geladen...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="no-documents" class="no-documents-message" class="u-hidden">
+                <i class="fas fa-folder-open"></i>
+                <p>Keine Dokumente gefunden</p>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </main>
     </div>

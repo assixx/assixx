@@ -3,11 +3,11 @@
  * Erstellt und verwaltet separate DB-Verbindungen für jeden Tenant
  */
 
-import * as mysql from 'mysql2/promise';
-import { Pool, PoolOptions, Connection } from 'mysql2/promise';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import * as mysql from "mysql2/promise";
+import { Pool, PoolOptions, Connection } from "mysql2/promise";
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -29,17 +29,17 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     // Tenant-spezifische Datenbank-Konfiguration
     // In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
     const dbConfig: PoolOptions = {
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'lohnabrechnung', // Verwende DB_NAME aus .env statt tenant-spezifischer DB
+      host: process.env.DB_HOST || "localhost",
+      user: process.env.DB_USER || "root",
+      password: process.env.DB_PASSWORD || "",
+      database: process.env.DB_NAME || "lohnabrechnung", // Verwende DB_NAME aus .env statt tenant-spezifischer DB
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
     };
 
     console.log(
-      `Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`
+      `Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`,
     );
 
     // Verbindungspool erstellen
@@ -57,7 +57,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
   } catch (error) {
     console.error(
       `Fehler beim Erstellen der DB-Verbindung für ${tenantId}:`,
-      error
+      error,
     );
     throw error;
   }
@@ -70,27 +70,27 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
  * In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
  */
 export async function initializeTenantDatabase(
-  tenantId: string
+  tenantId: string,
 ): Promise<void> {
   // Im Entwicklungsmodus verwenden wir die Haupt-Datenbank
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.log(
-      `Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`
+      `Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`,
     );
     return;
   }
 
   // Im Produktionsmodus führen wir die ursprüngliche Logik aus
   const connection: Connection = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    host: process.env.DB_HOST || "localhost",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
   });
 
   try {
     // Validate tenantId to prevent SQL injection
     if (!/^[a-zA-Z0-9_]+$/.test(tenantId)) {
-      throw new Error('Invalid tenant ID format');
+      throw new Error("Invalid tenant ID format");
     }
 
     // Datenbank erstellen - tenantId is now validated
@@ -98,9 +98,9 @@ export async function initializeTenantDatabase(
     await connection.query(`USE assixx_${tenantId}`);
 
     // Tabellen erstellen (Schema aus schema.sql verwenden)
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    const statements = schema.split(';').filter((stmt: string) => stmt.trim());
+    const schemaPath = path.join(__dirname, "schema.sql");
+    const schema = fs.readFileSync(schemaPath, "utf8");
+    const statements = schema.split(";").filter((stmt: string) => stmt.trim());
 
     for (const statement of statements) {
       if (statement.trim()) {
@@ -112,7 +112,7 @@ export async function initializeTenantDatabase(
   } catch (error) {
     console.error(
       `Fehler beim Initialisieren der Tenant-DB ${tenantId}:`,
-      error
+      error,
     );
     throw error;
   } finally {
@@ -132,7 +132,7 @@ export async function closeAllConnections(): Promise<void> {
     } catch (error) {
       console.error(
         `Fehler beim Schließen der Verbindung für ${tenantId}:`,
-        error
+        error,
       );
     }
   }

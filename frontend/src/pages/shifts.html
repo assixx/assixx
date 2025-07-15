@@ -87,7 +87,7 @@
         padding: var(--spacing-lg);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         margin-bottom: var(--spacing-lg);
         box-shadow:
@@ -135,7 +135,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
@@ -167,7 +167,7 @@
         background: rgba(18, 18, 18, 0.98);
         backdrop-filter: var(--glass-backdrop);
         -webkit-backdrop-filter: var(--glass-backdrop);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-sm);
         max-height: 200px;
@@ -521,7 +521,7 @@
       .employee-sidebar {
         background: var(--glass-bg);
         backdrop-filter: var(--glass-backdrop);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         padding: var(--spacing-lg);
         box-shadow: var(--shadow-sm);
@@ -760,7 +760,7 @@
           gap: 10px;
         }
       }
-      
+
       /* Override breadcrumb alignment for shifts page */
       body #breadcrumb-container + .shift-planning-container,
       body #breadcrumb-container + * {
@@ -779,257 +779,257 @@
       <main class="main-content">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div class="shift-planning-container">
-          <!-- Info Row -->
-          <div class="shift-info-row">
-            <div class="info-item">
-              <div class="info-label">Abteilung</div>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
-                  <span>Abteilung wählen...</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="departmentDropdown">
-                  <!-- Options will be populated dynamically -->
-                </div>
-              </div>
-              <input type="hidden" id="departmentSelect" />
-            </div>
-            <div class="info-item">
-              <div class="info-label">Maschine</div>
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="machineDisplay" onclick="toggleDropdown('machine')">
-                  <span>Maschine wählen...</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="machineDropdown">
-                  <!-- Options will be populated dynamically -->
-                </div>
-              </div>
-              <input type="hidden" id="machineSelect" />
-            </div>
-          </div>
-
-          <!-- Week Navigation -->
-          <div class="week-navigation" class="u-hidden">
-            <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
-            <div class="week-info">
-              <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
-            </div>
-            <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
-          </div>
-
-          <!-- Department Selection Notice -->
-          <div id="departmentNotice" class="department-notice">
-            <div class="notice-icon">
-              <i class="fas fa-building"></i>
-            </div>
-            <h3>Abteilung auswählen</h3>
-            <p>Bitte wählen Sie zuerst eine Abteilung aus, um den Schichtplan zu sehen und zu bearbeiten.</p>
-          </div>
-
-          <!-- Main Planning Area -->
-          <div class="main-planning-area" id="mainPlanningArea" class="u-hidden">
-            <!-- Week Schedule -->
-            <div class="week-schedule">
-              <!-- Header -->
-              <div class="schedule-header">
-                <div class="day-header">Schicht</div>
-                <div class="day-header">
-                  Montag
-                  <br />
-                  <span class="u-fs-12 u-fw-400">20.05</span>
-                </div>
-                <div class="day-header">
-                  Dienstag
-                  <br />
-                  <span class="u-fs-12 u-fw-400">21.05</span>
-                </div>
-                <div class="day-header">
-                  Mittwoch
-                  <br />
-                  <span class="u-fs-12 u-fw-400">22.05</span>
-                </div>
-                <div class="day-header">
-                  Donnerstag
-                  <br />
-                  <span class="u-fs-12 u-fw-400">23.05</span>
-                </div>
-                <div class="day-header">
-                  Freitag
-                  <br />
-                  <span class="u-fs-12 u-fw-400">24.05</span>
-                </div>
-                <div class="day-header">
-                  Samstag
-                  <br />
-                  <span class="u-fs-12 u-fw-400">25.05</span>
-                </div>
-              </div>
-
-              <!-- Early Shift Row -->
-              <div class="shift-row">
-                <div class="shift-label shift-type-early">
-                  Frühschicht
-                  <br />
-                  <span class="u-fs-11">06:00-14:00</span>
-                </div>
-                <div class="shift-cell" data-day="monday" data-shift="early">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="tuesday" data-shift="early">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="wednesday" data-shift="early">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="thursday" data-shift="early">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="friday" data-shift="early">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="saturday" data-shift="early">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Late Shift Row -->
-              <div class="shift-row">
-                <div class="shift-label shift-type-late">
-                  Spätschicht
-                  <br />
-                  <span class="u-fs-11">14:00-22:00</span>
-                </div>
-                <div class="shift-cell" data-day="monday" data-shift="late">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="tuesday" data-shift="late">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="wednesday" data-shift="late">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="thursday" data-shift="late">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="friday" data-shift="late">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="saturday" data-shift="late">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Night Shift Row -->
-              <div class="shift-row">
-                <div class="shift-label shift-type-night">
-                  Nachtschicht
-                  <br />
-                  <span class="u-fs-11">22:00-06:00</span>
-                </div>
-                <div class="shift-cell" data-day="monday" data-shift="night">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="tuesday" data-shift="night">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="wednesday" data-shift="night">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="thursday" data-shift="night">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="friday" data-shift="night">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-                <div class="shift-cell" data-day="saturday" data-shift="night">
-                  <div class="employee-assignment">
-                    <div class="empty-slot">Mitarbeiter zuweisen</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Info/Todo Area Row -->
-              <div class="shift-row">
-                <div class="shift-label" style="background: #b3b8bc4a; border-left: 4px solid #ffc107">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z" />
-                  </svg>
-                  Info & Todo
-                  <br />
-                  <span class="u-fs-11">Wochennotizen</span>
-                </div>
-                <div class="shift-info-area" style="grid-column: span 6">
-                  <div class="shift-info-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+            <!-- Info Row -->
+            <div class="shift-info-row">
+              <div class="info-item">
+                <div class="info-label">Abteilung</div>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+                    <span>Abteilung wählen...</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
-                    Notizen & Todos für diese Woche
                   </div>
-                  <textarea
-                    class="shift-info-textarea"
-                    id="weeklyNotes"
-                    placeholder="Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...&#10;&#10;Beispiele:&#10;• Wartung Anlage 01 am Mittwoch geplant&#10;• Neue Sicherheitsbestimmungen beachten&#10;• Team-Meeting Freitag 14:00 Uhr&#10;• Überstunden-Genehmigung für Donnerstag"
-                  ></textarea>
+                  <div class="dropdown-options" id="departmentDropdown">
+                    <!-- Options will be populated dynamically -->
+                  </div>
+                </div>
+                <input type="hidden" id="departmentSelect" />
+              </div>
+              <div class="info-item">
+                <div class="info-label">Maschine</div>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="machineDisplay" onclick="toggleDropdown('machine')">
+                    <span>Maschine wählen...</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="machineDropdown">
+                    <!-- Options will be populated dynamically -->
+                  </div>
+                </div>
+                <input type="hidden" id="machineSelect" />
+              </div>
+            </div>
+
+            <!-- Week Navigation -->
+            <div class="week-navigation" class="u-hidden">
+              <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
+              <div class="week-info">
+                <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
+              </div>
+              <button class="week-nav-btn" id="nextWeekBtn">Nächste Woche ›</button>
+            </div>
+
+            <!-- Department Selection Notice -->
+            <div id="departmentNotice" class="department-notice">
+              <div class="notice-icon">
+                <i class="fas fa-building"></i>
+              </div>
+              <h3>Abteilung auswählen</h3>
+              <p>Bitte wählen Sie zuerst eine Abteilung aus, um den Schichtplan zu sehen und zu bearbeiten.</p>
+            </div>
+
+            <!-- Main Planning Area -->
+            <div class="main-planning-area" id="mainPlanningArea" class="u-hidden">
+              <!-- Week Schedule -->
+              <div class="week-schedule">
+                <!-- Header -->
+                <div class="schedule-header">
+                  <div class="day-header">Schicht</div>
+                  <div class="day-header">
+                    Montag
+                    <br />
+                    <span class="u-fs-12 u-fw-400">20.05</span>
+                  </div>
+                  <div class="day-header">
+                    Dienstag
+                    <br />
+                    <span class="u-fs-12 u-fw-400">21.05</span>
+                  </div>
+                  <div class="day-header">
+                    Mittwoch
+                    <br />
+                    <span class="u-fs-12 u-fw-400">22.05</span>
+                  </div>
+                  <div class="day-header">
+                    Donnerstag
+                    <br />
+                    <span class="u-fs-12 u-fw-400">23.05</span>
+                  </div>
+                  <div class="day-header">
+                    Freitag
+                    <br />
+                    <span class="u-fs-12 u-fw-400">24.05</span>
+                  </div>
+                  <div class="day-header">
+                    Samstag
+                    <br />
+                    <span class="u-fs-12 u-fw-400">25.05</span>
+                  </div>
+                </div>
+
+                <!-- Early Shift Row -->
+                <div class="shift-row">
+                  <div class="shift-label shift-type-early">
+                    Frühschicht
+                    <br />
+                    <span class="u-fs-11">06:00-14:00</span>
+                  </div>
+                  <div class="shift-cell" data-day="monday" data-shift="early">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="tuesday" data-shift="early">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="wednesday" data-shift="early">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="thursday" data-shift="early">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="friday" data-shift="early">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="saturday" data-shift="early">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Late Shift Row -->
+                <div class="shift-row">
+                  <div class="shift-label shift-type-late">
+                    Spätschicht
+                    <br />
+                    <span class="u-fs-11">14:00-22:00</span>
+                  </div>
+                  <div class="shift-cell" data-day="monday" data-shift="late">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="tuesday" data-shift="late">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="wednesday" data-shift="late">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="thursday" data-shift="late">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="friday" data-shift="late">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="saturday" data-shift="late">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Night Shift Row -->
+                <div class="shift-row">
+                  <div class="shift-label shift-type-night">
+                    Nachtschicht
+                    <br />
+                    <span class="u-fs-11">22:00-06:00</span>
+                  </div>
+                  <div class="shift-cell" data-day="monday" data-shift="night">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="tuesday" data-shift="night">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="wednesday" data-shift="night">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="thursday" data-shift="night">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="friday" data-shift="night">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                  <div class="shift-cell" data-day="saturday" data-shift="night">
+                    <div class="employee-assignment">
+                      <div class="empty-slot">Mitarbeiter zuweisen</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Info/Todo Area Row -->
+                <div class="shift-row">
+                  <div class="shift-label" style="background: #b3b8bc4a; border-left: 4px solid #ffc107">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2z" />
+                    </svg>
+                    Info & Todo
+                    <br />
+                    <span class="u-fs-11">Wochennotizen</span>
+                  </div>
+                  <div class="shift-info-area" style="grid-column: span 6">
+                    <div class="shift-info-title">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                      </svg>
+                      Notizen & Todos für diese Woche
+                    </div>
+                    <textarea
+                      class="shift-info-textarea"
+                      id="weeklyNotes"
+                      placeholder="Hier können wichtige Informationen, Todos oder Anmerkungen für diese Woche eingetragen werden...&#10;&#10;Beispiele:&#10;• Wartung Anlage 01 am Mittwoch geplant&#10;• Neue Sicherheitsbestimmungen beachten&#10;• Team-Meeting Freitag 14:00 Uhr&#10;• Überstunden-Genehmigung für Donnerstag"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Employee Sidebar -->
+              <div class="employee-sidebar">
+                <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
+                <div class="employee-list" id="employeeList">
+                  <!-- Employee items will be loaded here dynamically -->
                 </div>
               </div>
             </div>
 
-            <!-- Employee Sidebar -->
-            <div class="employee-sidebar">
-              <h3 class="shift-sidebar-title">Verfügbare Mitarbeiter</h3>
-              <div class="employee-list" id="employeeList">
-                <!-- Employee items will be loaded here dynamically -->
-              </div>
+            <!-- Admin Actions -->
+            <div class="admin-actions" id="adminActions" class="u-hidden">
+              <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
+              <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
             </div>
-          </div>
-
-          <!-- Admin Actions -->
-          <div class="admin-actions" id="adminActions" class="u-hidden">
-            <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
-            <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
-          </div>
           </div>
         </div>
       </main>

@@ -3,15 +3,15 @@
  * Implementiert Security-Monitoring ohne User Experience zu beeinträchtigen
  */
 
-import { Request } from 'express';
+import { Request } from "express";
 
 interface SecurityEvent {
   userId: number;
   eventType:
-    | 'login'
-    | 'fingerprint_change'
-    | 'ip_change'
-    | 'suspicious_activity';
+    | "login"
+    | "fingerprint_change"
+    | "ip_change"
+    | "suspicious_activity";
   details: Record<string, unknown>;
   timestamp: Date;
   ip?: string;
@@ -27,7 +27,7 @@ export class SessionSecurity {
    */
   static async checkSession(
     _req: Request,
-    _userId: number
+    _userId: number,
   ): Promise<{
     isValid: boolean;
     shouldWarn: boolean;
@@ -61,10 +61,10 @@ export class SessionSecurity {
     // In Produktion: In Datenbank speichern
     // Für jetzt: Nur console.log
 
-    if (event.eventType === 'suspicious_activity') {
-      console.warn('[SECURITY-ALERT]', event);
+    if (event.eventType === "suspicious_activity") {
+      console.warn("[SECURITY-ALERT]", event);
     } else {
-      console.info('[SECURITY-LOG]', {
+      console.info("[SECURITY-LOG]", {
         userId: event.userId,
         type: event.eventType,
         time: event.timestamp,
@@ -81,21 +81,21 @@ export class SessionSecurity {
     ipChanged: boolean;
     countryChanged: boolean;
     deviceChanged: boolean;
-  }): 'allow' | 'verify' | 'block' {
+  }): "allow" | "verify" | "block" {
     // Normal changes → Allow
     if (changes.fingerprintChanged && !changes.countryChanged) {
-      return 'allow'; // Browser update, neue Extension, etc.
+      return "allow"; // Browser update, neue Extension, etc.
     }
 
     // Suspicious → Verify (z.B. 2FA)
     if (changes.countryChanged && changes.deviceChanged) {
-      return 'verify'; // Reise + neues Gerät
+      return "verify"; // Reise + neues Gerät
     }
 
     // Highly suspicious → Block
     // Nur in extremen Fällen!
 
-    return 'allow';
+    return "allow";
   }
 }
 

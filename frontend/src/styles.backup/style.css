@@ -185,7 +185,7 @@ header {
   word-wrap: break-word;
   background-color: white;
   background-clip: border-box;
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
   margin-bottom: 1rem;
   box-shadow: var(--shadow-sm);

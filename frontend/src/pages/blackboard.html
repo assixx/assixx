@@ -132,7 +132,7 @@
       .filter-pill {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         color: var(--text-secondary);
       }
 
@@ -247,132 +247,132 @@
         <div id="breadcrumb-container"></div>
         <div class="container">
           <!-- Filterleiste -->
-        <div class="card mb-4">
-          <div class="card-header" class="u-cursor-pointer" id="filterToggle">
-            <div style="display: flex; justify-content: space-between; align-items: center">
-              <h3 class="card-title" class="u-m-0">Filter & Suche</h3>
-              <i class="fas fa-chevron-down" id="filterToggleIcon" style="/* transition: transform 0.3s ease */"></i>
-            </div>
-          </div>
-          <div class="card-body" id="filterContent" class="u-hidden">
-            <!-- Moderne Filter-Kontrollen -->
-            <div class="modern-filters">
-              <!-- Floating Search Bar -->
-              <div class="floating-search">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-                  />
-                </svg>
-                <input type="text" id="searchInput" class="search-field" placeholder="Blackboard durchsuchen..." />
-                <button type="button" id="searchButton" class="search-trigger">Suchen</button>
-              </div>
-
-              <!-- Filter Pills -->
-              <div class="filter-pills">
-                <div class="pill-group">
-                  <span class="pill-label">Ebene:</span>
-                  <button class="filter-pill active" data-value="all" id="filterAll">
-                    <span>🌐</span>
-                    Alle
-                  </button>
-                  <button class="filter-pill" data-value="company" id="filterCompany">
-                    <span>🏢</span>
-                    Firma
-                  </button>
-                  <button class="filter-pill" data-value="department" id="filterDepartment">
-                    <span>🏛️</span>
-                    Abteilung
-                  </button>
-                  <button class="filter-pill" data-value="team" id="filterTeam">
-                    <span>👥</span>
-                    Team
-                  </button>
-                </div>
-
-                <div class="pill-group">
-                  <span class="pill-label">Sortieren:</span>
-                  <select id="sortFilter" class="modern-select">
-                    <option value="created_at|DESC">🕒 Neueste</option>
-                    <option value="created_at|ASC">⏰ Älteste</option>
-                    <option value="priority|DESC">⚡ Priorität</option>
-                    <option value="title|ASC">🔤 A-Z</option>
-                  </select>
-                </div>
+          <div class="card mb-4">
+            <div class="card-header" class="u-cursor-pointer" id="filterToggle">
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <h3 class="card-title" class="u-m-0">Filter & Suche</h3>
+                <i class="fas fa-chevron-down" id="filterToggleIcon" style="/* transition: transform 0.3s ease */"></i>
               </div>
             </div>
-          </div>
-        </div>
+            <div class="card-body" id="filterContent" class="u-hidden">
+              <!-- Moderne Filter-Kontrollen -->
+              <div class="modern-filters">
+                <!-- Floating Search Bar -->
+                <div class="floating-search">
+                  <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                  <input type="text" id="searchInput" class="search-field" placeholder="Blackboard durchsuchen..." />
+                  <button type="button" id="searchButton" class="search-trigger">Suchen</button>
+                </div>
 
-        <!-- Controls unter der Filterleiste -->
-        <div class="flex flex-between mb-4">
-          <div style="display: flex !important; gap: 1rem; align-items: center">
-            <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
-              <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
-                <i class="fas fa-plus"></i>
-              </button>
-              <span id="zoomLevel" class="zoom-level">100%</span>
-              <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
-                <i class="fas fa-minus"></i>
-              </button>
+                <!-- Filter Pills -->
+                <div class="filter-pills">
+                  <div class="pill-group">
+                    <span class="pill-label">Ebene:</span>
+                    <button class="filter-pill active" data-value="all" id="filterAll">
+                      <span>🌐</span>
+                      Alle
+                    </button>
+                    <button class="filter-pill" data-value="company" id="filterCompany">
+                      <span>🏢</span>
+                      Firma
+                    </button>
+                    <button class="filter-pill" data-value="department" id="filterDepartment">
+                      <span>🏛️</span>
+                      Abteilung
+                    </button>
+                    <button class="filter-pill" data-value="team" id="filterTeam">
+                      <span>👥</span>
+                      Team
+                    </button>
+                  </div>
+
+                  <div class="pill-group">
+                    <span class="pill-label">Sortieren:</span>
+                    <select id="sortFilter" class="modern-select">
+                      <option value="created_at|DESC">🕒 Neueste</option>
+                      <option value="created_at|ASC">⏰ Älteste</option>
+                      <option value="priority|DESC">⚡ Priorität</option>
+                      <option value="title|ASC">🔤 A-Z</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
-            <button id="newEntryBtn" class="btn btn-primary" class="u-m-0">
-              <i class="fas fa-plus me-2"></i>
-              Neuer Eintrag
-            </button>
-            <button id="directAttachBtn" class="btn btn-primary" class="u-m-0">
-              <i class="fas fa-paperclip me-2"></i>
-              Bild/PDF anheften
-            </button>
-          </div>
-        </div>
-
-        <!-- Pinnwand Container -->
-        <div class="blackboard-container" id="blackboardContainer">
-          <!-- Initial Load Button -->
-          <div class="text-center p-5" id="loadEntriesCard">
-            <h3 class="text-white mb-3">Willkommen am Schwarzen Brett</h3>
-            <p class="text-white opacity-75 mb-4">Klicke auf den Button, um die Einträge zu laden</p>
-            <button id="loadEntriesBtn" class="btn btn-primary btn-lg">
-              <i class="fas fa-thumbtack me-2"></i>
-              Einträge anheften
-            </button>
           </div>
 
-          <!-- Loading Indicator -->
-          <div id="loadingIndicator" class="text-center p-5 d-none">
-            <div class="loading-spinner"></div>
-            <p class="mt-3 text-white">Einträge werden geladen...</p>
-          </div>
-
-          <!-- No Entries Message -->
-          <div id="noEntriesMessage" class="text-center p-5 d-none">
-            <div class="pinboard-item">
-              <div class="pinboard-sticky color-yellow text-center">
-                <div class="pushpin pushpin-red"></div>
-                <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0.5; color: #000"></i>
-                <h4 style="color: #000">Noch keine Einträge</h4>
-                <p style="color: #000">Das Schwarze Brett ist noch leer.</p>
-                <button id="retryLoadBtn" class="btn btn-sm btn-outline-dark mt-3">
-                  <i class="fas fa-redo"></i>
-                  Erneut versuchen
+          <!-- Controls unter der Filterleiste -->
+          <div class="flex flex-between mb-4">
+            <div style="display: flex !important; gap: 1rem; align-items: center">
+              <div class="zoom-controls" style="margin: 0; padding: 0; background: transparent; backdrop-filter: none">
+                <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
+                  <i class="fas fa-plus"></i>
+                </button>
+                <span id="zoomLevel" class="zoom-level">100%</span>
+                <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
+                  <i class="fas fa-minus"></i>
                 </button>
               </div>
+              <button id="newEntryBtn" class="btn btn-primary" class="u-m-0">
+                <i class="fas fa-plus me-2"></i>
+                Neuer Eintrag
+              </button>
+              <button id="directAttachBtn" class="btn btn-primary" class="u-m-0">
+                <i class="fas fa-paperclip me-2"></i>
+                Bild/PDF anheften
+              </button>
             </div>
           </div>
 
-          <!-- Pinboard Grid -->
-          <div id="blackboardEntries" class="pinboard-grid d-none">
-            <!-- Einträge werden dynamisch eingefügt -->
-          </div>
-        </div>
+          <!-- Pinnwand Container -->
+          <div class="blackboard-container" id="blackboardContainer">
+            <!-- Initial Load Button -->
+            <div class="text-center p-5" id="loadEntriesCard">
+              <h3 class="text-white mb-3">Willkommen am Schwarzen Brett</h3>
+              <p class="text-white opacity-75 mb-4">Klicke auf den Button, um die Einträge zu laden</p>
+              <button id="loadEntriesBtn" class="btn btn-primary btn-lg">
+                <i class="fas fa-thumbtack me-2"></i>
+                Einträge anheften
+              </button>
+            </div>
 
-        <!-- Pagination -->
-        <div class="flex flex-center mt-4 gap-2 d-none" id="paginationContainer">
-          <div class="pagination" id="pagination">
-            <!-- Wird dynamisch gefüllt -->
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="text-center p-5 d-none">
+              <div class="loading-spinner"></div>
+              <p class="mt-3 text-white">Einträge werden geladen...</p>
+            </div>
+
+            <!-- No Entries Message -->
+            <div id="noEntriesMessage" class="text-center p-5 d-none">
+              <div class="pinboard-item">
+                <div class="pinboard-sticky color-yellow text-center">
+                  <div class="pushpin pushpin-red"></div>
+                  <i class="fas fa-clipboard mb-3" style="font-size: 48px; opacity: 0.5; color: #000"></i>
+                  <h4 style="color: #000">Noch keine Einträge</h4>
+                  <p style="color: #000">Das Schwarze Brett ist noch leer.</p>
+                  <button id="retryLoadBtn" class="btn btn-sm btn-outline-dark mt-3">
+                    <i class="fas fa-redo"></i>
+                    Erneut versuchen
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pinboard Grid -->
+            <div id="blackboardEntries" class="pinboard-grid d-none">
+              <!-- Einträge werden dynamisch eingefügt -->
+            </div>
           </div>
-        </div>
+
+          <!-- Pagination -->
+          <div class="flex flex-center mt-4 gap-2 d-none" id="paginationContainer">
+            <div class="pagination" id="pagination">
+              <!-- Wird dynamisch gefüllt -->
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -543,11 +543,7 @@
               <div
                 id="directAttachDropZone"
                 class="attachment-dropzone text-center p-4"
-                style="
-                  border: 2px dashed rgba(255, 255, 255, 0.3);
-                  border-radius: var(--radius-md);
-                  cursor: pointer;
-                          "
+                style="border: 2px dashed rgba(255, 255, 255, 0.3); border-radius: var(--radius-md); cursor: pointer"
               >
                 <i class="fas fa-cloud-upload-alt" style="font-size: 48px; opacity: 0.5; margin-bottom: 16px"></i>
                 <p class="mb-2">Datei hier ablegen oder klicken zum Auswählen</p>
@@ -846,13 +842,13 @@
       #filterToggle {
         transition: background 0.3s ease;
       }
-      
+
       /* Override breadcrumb alignment for blackboard page */
       body #breadcrumb-container + .card,
       body #breadcrumb-container + * {
         margin-top: -15px !important;
       }
-      
+
       /* Breadcrumb linksbündig machen für blackboard */
       .breadcrumb {
         padding-left: 0 !important;

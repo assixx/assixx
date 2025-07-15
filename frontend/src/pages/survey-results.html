@@ -313,15 +313,15 @@
         <main class="main-content">
           <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
           <div id="breadcrumb-container"></div>
-          
+
           <div class="container">
             <div class="survey-results-container">
               <div id="content-area">
-              <div class="loading">
-                <div class="spinner"></div>
-                <p>Lade Umfrage-Ergebnisse...</p>
+                <div class="loading">
+                  <div class="spinner"></div>
+                  <p>Lade Umfrage-Ergebnisse...</p>
+                </div>
               </div>
-            </div>
             </div>
           </div>
         </main>
@@ -653,12 +653,7 @@
         if (typeof unsafe !== 'string') {
           return '';
         }
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+        return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
       }
 
       function showError(message) {

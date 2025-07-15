@@ -486,7 +486,7 @@ main.container.main-content.sidebar-collapsed {
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   overflow: hidden;
   transform: translateY(20px);
   transition: transform 0.3s ease;
@@ -589,7 +589,7 @@ main.container.main-content.sidebar-collapsed {
 .entry-card {
   background-color: var(--background-light);
   border-radius: var(--radius-md);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   box-shadow: var(--shadow-sm);
   transition:
     transform 0.3s ease,

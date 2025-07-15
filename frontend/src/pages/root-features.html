@@ -85,7 +85,7 @@
         width: 100%;
         box-sizing: border-box;
         backdrop-filter: blur(20px) saturate(180%);
-        background: hsla(0,0%,100%,.02);
+        background: hsla(0, 0%, 100%, 0.02);
       }
 
       .current-plan-info {
@@ -644,241 +644,242 @@
         <div class="container">
           <!-- Current Plan Header -->
           <div class="plan-header">
-          <div class="current-plan-info">
-            <div>
-              <p class="plan-title">Plan & Feature Management</p>
-              <p style="color: var(--text-secondary); margin-top: 8px">
-                Verwalten Sie Ihren Plan und aktivieren Sie Features für
-                <strong id="tenant-name">Ihre Organisation</strong>
-              </p>
+            <div class="current-plan-info">
+              <div>
+                <p class="plan-title">Plan & Feature Management</p>
+                <p style="color: var(--text-secondary); margin-top: 8px">
+                  Verwalten Sie Ihren Plan und aktivieren Sie Features für
+                  <strong id="tenant-name">Ihre Organisation</strong>
+                </p>
+              </div>
+              <div class="plan-badge enterprise">
+                <i class="fas fa-crown"></i>
+                <span>Enterprise Plan</span>
+              </div>
             </div>
-            <div class="plan-badge enterprise">
-              <i class="fas fa-crown"></i>
-              <span>Enterprise Plan</span>
+
+            <!-- Plan Selection -->
+            <div class="plan-selection">
+              <!-- Basic Plan -->
+              <div class="plan-card" data-plan="basic">
+                <h3 class="plan-name">Basic</h3>
+                <div class="plan-price">
+                  49€
+                  <small>/Monat</small>
+                </div>
+                <p class="plan-description">Perfekt für kleine Teams und Startups</p>
+
+                <div class="plan-limits">
+                  <div class="limit-item">
+                    <span class="limit-value">10</span>
+                    <span class="limit-label">Mitarbeiter</span>
+                  </div>
+                  <div class="limit-item">
+                    <span class="limit-value">1</span>
+                    <span class="limit-label">Admin</span>
+                  </div>
+                </div>
+
+                <div class="plan-features">
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Mitarbeiterverwaltung</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Dokumentenverwaltung</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>E-Mail Benachrichtigungen</span>
+                  </div>
+                  <div class="plan-feature">
+                    <i class="fas fa-times" style="color: var(--text-secondary); opacity: 0.5"></i>
+                    <span style="opacity: 0.5">Erweiterte Features</span>
+                  </div>
+                </div>
+
+                <button class="plan-action">Zu Basic wechseln</button>
+              </div>
+
+              <!-- Professional Plan -->
+              <div class="plan-card recommended" data-plan="professional">
+                <h3 class="plan-name">Professional</h3>
+                <div class="plan-price">
+                  149€
+                  <small>/Monat</small>
+                </div>
+                <p class="plan-description">Für wachsende Unternehmen</p>
+
+                <div class="plan-limits">
+                  <div class="limit-item">
+                    <span class="limit-value">50</span>
+                    <span class="limit-label">Mitarbeiter</span>
+                  </div>
+                  <div class="limit-item">
+                    <span class="limit-value">3</span>
+                    <span class="limit-label">Admins</span>
+                  </div>
+                </div>
+
+                <div class="plan-features">
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Alle Basic Features</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Schwarzes Brett & Chat</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Kalender & Teams</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Erweiterte Berichte</span>
+                  </div>
+                </div>
+
+                <button class="plan-action">Zu Professional wechseln</button>
+              </div>
+
+              <!-- Enterprise Plan -->
+              <div class="plan-card current" data-plan="enterprise">
+                <h3 class="plan-name">Enterprise</h3>
+                <div class="plan-price">
+                  299€
+                  <small>/Monat</small>
+                </div>
+                <p class="plan-description">Für große Organisationen</p>
+
+                <div class="plan-limits">
+                  <div class="limit-item">
+                    <span class="limit-value">∞</span>
+                    <span class="limit-label">Mitarbeiter</span>
+                  </div>
+                  <div class="limit-item">
+                    <span class="limit-value">∞</span>
+                    <span class="limit-label">Admins</span>
+                  </div>
+                </div>
+
+                <div class="plan-features">
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Alle Professional Features</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Schichtplanung & KVP</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>API Zugang & Automation</span>
+                  </div>
+                  <div class="plan-feature included">
+                    <i class="fas fa-check"></i>
+                    <span>Priority Support</span>
+                  </div>
+                </div>
+
+                <button class="plan-action current">Aktueller Plan</button>
+              </div>
             </div>
           </div>
 
-          <!-- Plan Selection -->
-          <div class="plan-selection">
-            <!-- Basic Plan -->
-            <div class="plan-card" data-plan="basic">
-              <h3 class="plan-name">Basic</h3>
-              <div class="plan-price">
-                49€
-                <small>/Monat</small>
+          <!-- Features Section -->
+          <div class="features-section">
+            <div class="section-header">
+              <h2 class="section-title">Verfügbare Features</h2>
+              <div class="feature-filters">
+                <button class="filter-btn active" data-filter="all">Alle</button>
+                <button class="filter-btn" data-filter="active">Aktiv</button>
+                <button class="filter-btn" data-filter="included">Im Plan enthalten</button>
+                <button class="filter-btn" data-filter="addons">Zusätzlich buchbar</button>
               </div>
-              <p class="plan-description">Perfekt für kleine Teams und Startups</p>
-
-              <div class="plan-limits">
-                <div class="limit-item">
-                  <span class="limit-value">10</span>
-                  <span class="limit-label">Mitarbeiter</span>
-                </div>
-                <div class="limit-item">
-                  <span class="limit-value">1</span>
-                  <span class="limit-label">Admin</span>
-                </div>
-              </div>
-
-              <div class="plan-features">
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Mitarbeiterverwaltung</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Dokumentenverwaltung</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>E-Mail Benachrichtigungen</span>
-                </div>
-                <div class="plan-feature">
-                  <i class="fas fa-times" style="color: var(--text-secondary); opacity: 0.5"></i>
-                  <span style="opacity: 0.5">Erweiterte Features</span>
-                </div>
-              </div>
-
-              <button class="plan-action">Zu Basic wechseln</button>
             </div>
 
-            <!-- Professional Plan -->
-            <div class="plan-card recommended" data-plan="professional">
-              <h3 class="plan-name">Professional</h3>
-              <div class="plan-price">
-                149€
-                <small>/Monat</small>
-              </div>
-              <p class="plan-description">Für wachsende Unternehmen</p>
-
-              <div class="plan-limits">
-                <div class="limit-item">
-                  <span class="limit-value">50</span>
-                  <span class="limit-label">Mitarbeiter</span>
-                </div>
-                <div class="limit-item">
-                  <span class="limit-value">3</span>
-                  <span class="limit-label">Admins</span>
-                </div>
-              </div>
-
-              <div class="plan-features">
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Alle Basic Features</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Schwarzes Brett & Chat</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Kalender & Teams</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Erweiterte Berichte</span>
-                </div>
-              </div>
-
-              <button class="plan-action">Zu Professional wechseln</button>
+            <div id="features-container">
+              <!-- Features werden hier dynamisch geladen -->
             </div>
+          </div>
 
-            <!-- Enterprise Plan -->
-            <div class="plan-card current" data-plan="enterprise">
-              <h3 class="plan-name">Enterprise</h3>
-              <div class="plan-price">
-                299€
-                <small>/Monat</small>
-              </div>
-              <p class="plan-description">Für große Organisationen</p>
+          <!-- Add-ons Section -->
+          <div class="addons-section">
+            <h2 class="section-title">Zusätzliche Ressourcen</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px">Erweitern Sie Ihre Kapazitäten nach Bedarf</p>
 
-              <div class="plan-limits">
-                <div class="limit-item">
-                  <span class="limit-value">∞</span>
-                  <span class="limit-label">Mitarbeiter</span>
+            <div class="addons-grid">
+              <!-- Zusätzliche Mitarbeiter -->
+              <div class="addon-card">
+                <div class="addon-icon">👥</div>
+                <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
+                <div class="addon-price">5€</div>
+                <div class="addon-unit">pro Mitarbeiter/Monat</div>
+                <div class="addon-current">
+                  Aktuell:
+                  <strong>0</strong>
+                  zusätzlich
                 </div>
-                <div class="limit-item">
-                  <span class="limit-value">∞</span>
-                  <span class="limit-label">Admins</span>
-                </div>
-              </div>
-
-              <div class="plan-features">
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Alle Professional Features</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Schichtplanung & KVP</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>API Zugang & Automation</span>
-                </div>
-                <div class="plan-feature included">
-                  <i class="fas fa-check"></i>
-                  <span>Priority Support</span>
+                <div class="addon-controls">
+                  <button class="addon-btn" onclick="adjustAddon('employees', -1)">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <span class="addon-value" id="addon-employees">0</span>
+                  <button class="addon-btn" onclick="adjustAddon('employees', 1)">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
               </div>
 
-              <button class="plan-action current">Aktueller Plan</button>
+              <!-- Zusätzliche Admins -->
+              <div class="addon-card">
+                <div class="addon-icon">👔</div>
+                <h3 class="addon-name">Zusätzliche Admins</h3>
+                <div class="addon-price">10€</div>
+                <div class="addon-unit">pro Admin/Monat</div>
+                <div class="addon-current">
+                  Aktuell:
+                  <strong>0</strong>
+                  zusätzlich
+                </div>
+                <div class="addon-controls">
+                  <button class="addon-btn" onclick="adjustAddon('admins', -1)">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <span class="addon-value" id="addon-admins">0</span>
+                  <button class="addon-btn" onclick="adjustAddon('admins', 1)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Zusätzlicher Speicher -->
+              <div class="addon-card">
+                <div class="addon-icon">💾</div>
+                <h3 class="addon-name">Zusätzlicher Speicher</h3>
+                <div class="addon-price">10€</div>
+                <div class="addon-unit">pro 100GB/Monat</div>
+                <div class="addon-current">
+                  Aktuell:
+                  <strong>100GB</strong>
+                  inklusive
+                </div>
+                <div class="addon-controls">
+                  <button class="addon-btn" onclick="adjustAddon('storage', -100)">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <span class="addon-value" id="addon-storage">0</span>
+                  <button class="addon-btn" onclick="adjustAddon('storage', 100)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
-        <!-- Features Section -->
-        <div class="features-section">
-          <div class="section-header">
-            <h2 class="section-title">Verfügbare Features</h2>
-            <div class="feature-filters">
-              <button class="filter-btn active" data-filter="all">Alle</button>
-              <button class="filter-btn" data-filter="active">Aktiv</button>
-              <button class="filter-btn" data-filter="included">Im Plan enthalten</button>
-              <button class="filter-btn" data-filter="addons">Zusätzlich buchbar</button>
-            </div>
-          </div>
-
-          <div id="features-container">
-            <!-- Features werden hier dynamisch geladen -->
-          </div>
-        </div>
-
-        <!-- Add-ons Section -->
-        <div class="addons-section">
-          <h2 class="section-title">Zusätzliche Ressourcen</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 20px">Erweitern Sie Ihre Kapazitäten nach Bedarf</p>
-
-          <div class="addons-grid">
-            <!-- Zusätzliche Mitarbeiter -->
-            <div class="addon-card">
-              <div class="addon-icon">👥</div>
-              <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
-              <div class="addon-price">5€</div>
-              <div class="addon-unit">pro Mitarbeiter/Monat</div>
-              <div class="addon-current">
-                Aktuell:
-                <strong>0</strong>
-                zusätzlich
-              </div>
-              <div class="addon-controls">
-                <button class="addon-btn" onclick="adjustAddon('employees', -1)">
-                  <i class="fas fa-minus"></i>
-                </button>
-                <span class="addon-value" id="addon-employees">0</span>
-                <button class="addon-btn" onclick="adjustAddon('employees', 1)">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Zusätzliche Admins -->
-            <div class="addon-card">
-              <div class="addon-icon">👔</div>
-              <h3 class="addon-name">Zusätzliche Admins</h3>
-              <div class="addon-price">10€</div>
-              <div class="addon-unit">pro Admin/Monat</div>
-              <div class="addon-current">
-                Aktuell:
-                <strong>0</strong>
-                zusätzlich
-              </div>
-              <div class="addon-controls">
-                <button class="addon-btn" onclick="adjustAddon('admins', -1)">
-                  <i class="fas fa-minus"></i>
-                </button>
-                <span class="addon-value" id="addon-admins">0</span>
-                <button class="addon-btn" onclick="adjustAddon('admins', 1)">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Zusätzlicher Speicher -->
-            <div class="addon-card">
-              <div class="addon-icon">💾</div>
-              <h3 class="addon-name">Zusätzlicher Speicher</h3>
-              <div class="addon-price">10€</div>
-              <div class="addon-unit">pro 100GB/Monat</div>
-              <div class="addon-current">
-                Aktuell:
-                <strong>100GB</strong>
-                inklusive
-              </div>
-              <div class="addon-controls">
-                <button class="addon-btn" onclick="adjustAddon('storage', -100)">
-                  <i class="fas fa-minus"></i>
-                </button>
-                <span class="addon-value" id="addon-storage">0</span>
-                <button class="addon-btn" onclick="adjustAddon('storage', 100)">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div> <!-- End of container -->
+        <!-- End of container -->
 
         <!-- Summary Bar -->
         <div class="summary-bar">
@@ -1172,7 +1173,7 @@
           });
           const featuresData = await response.json();
           console.log('Loaded tenant features response:', featuresData);
-          
+
           // Extract the data array from the response
           const features = featuresData.data || featuresData;
 

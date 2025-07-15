@@ -48,7 +48,6 @@
 
       /* Profil Container */
       .profile-container {
-        
         margin: 0 auto;
       }
 
@@ -161,7 +160,7 @@
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: #fff;
         font-size: 15px;
@@ -774,110 +773,110 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div class="profile-container">
-          <!-- Success/Error Messages -->
-          <div id="message-container"></div>
+            <!-- Success/Error Messages -->
+            <div id="message-container"></div>
 
-          <!-- Pending Approvals Section -->
-          <div id="approvalSection" class="approval-section" class="u-hidden">
-            <div class="approval-header">
-              <i class="fas fa-hourglass-half"></i>
-              <div>
-                <h3>Ausstehende Löschgenehmigungen</h3>
-                <p>Diese Löschanfragen warten auf Ihre Genehmigung</p>
-              </div>
-            </div>
-            <div id="approvalList" class="approval-list">
-              <!-- Approval items will be inserted here -->
-            </div>
-          </div>
-
-          <!-- Profile Picture Card -->
-          <div class="profile-card">
-            <h2 class="card-title">Profilbild</h2>
-            <div class="profile-picture-section">
-              <div class="profile-picture-container">
-                <div id="profile-picture-display" class="profile-picture-placeholder">
-                  <i class="fas fa-user"></i>
+            <!-- Pending Approvals Section -->
+            <div id="approvalSection" class="approval-section" class="u-hidden">
+              <div class="approval-header">
+                <i class="fas fa-hourglass-half"></i>
+                <div>
+                  <h3>Ausstehende Löschgenehmigungen</h3>
+                  <p>Diese Löschanfragen warten auf Ihre Genehmigung</p>
                 </div>
               </div>
-              <div class="profile-picture-actions">
-                <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
-                  <i class="fas fa-camera"></i>
-                  Bild ändern
+              <div id="approvalList" class="approval-list">
+                <!-- Approval items will be inserted here -->
+              </div>
+            </div>
+
+            <!-- Profile Picture Card -->
+            <div class="profile-card">
+              <h2 class="card-title">Profilbild</h2>
+              <div class="profile-picture-section">
+                <div class="profile-picture-container">
+                  <div id="profile-picture-display" class="profile-picture-placeholder">
+                    <i class="fas fa-user"></i>
+                  </div>
+                </div>
+                <div class="profile-picture-actions">
+                  <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
+                  <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
+                    <i class="fas fa-camera"></i>
+                    Bild ändern
+                  </button>
+                  <button class="btn btn-secondary" id="remove-picture-btn" class="u-hidden">
+                    <i class="fas fa-trash"></i>
+                    Bild entfernen
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Personal Information Card -->
+            <div class="profile-card">
+              <h2 class="card-title">Persönliche Informationen</h2>
+              <form id="profile-form">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" id="email" name="email" class="form-control" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Vorname</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Nachname</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" />
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save"></i>
+                  Änderungen speichern
                 </button>
-                <button class="btn btn-secondary" id="remove-picture-btn" class="u-hidden">
-                  <i class="fas fa-trash"></i>
-                  Bild entfernen
-                </button>
-              </div>
+              </form>
             </div>
-          </div>
 
-          <!-- Personal Information Card -->
-          <div class="profile-card">
-            <h2 class="card-title">Persönliche Informationen</h2>
-            <form id="profile-form">
-              <div class="form-grid">
+            <!-- Password Change Card -->
+            <div class="profile-card">
+              <h2 class="card-title">Passwort ändern</h2>
+              <form id="password-form" autocomplete="off">
                 <div class="form-group">
-                  <label class="form-label">E-Mail</label>
-                  <input type="email" id="email" name="email" class="form-control" required />
+                  <label class="form-label">Aktuelles Passwort</label>
+                  <input
+                    type="password"
+                    id="current_password"
+                    name="current_password"
+                    class="form-control"
+                    autocomplete="current-password"
+                    required
+                  />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Vorname</label>
-                  <input type="text" id="first_name" name="first_name" class="form-control" />
+                  <label class="form-label">Neues Passwort</label>
+                  <input type="password" id="new_password" name="new_password" class="form-control" autocomplete="new-password" required />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Nachname</label>
-                  <input type="text" id="last_name" name="last_name" class="form-control" />
+                  <label class="form-label">Neues Passwort bestätigen</label>
+                  <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                    class="form-control"
+                    autocomplete="new-password"
+                    required
+                  />
                 </div>
-              </div>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i>
-                Änderungen speichern
-              </button>
-            </form>
-          </div>
-
-          <!-- Password Change Card -->
-          <div class="profile-card">
-            <h2 class="card-title">Passwort ändern</h2>
-            <form id="password-form" autocomplete="off">
-              <div class="form-group">
-                <label class="form-label">Aktuelles Passwort</label>
-                <input
-                  type="password"
-                  id="current_password"
-                  name="current_password"
-                  class="form-control"
-                  autocomplete="current-password"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Neues Passwort</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" autocomplete="new-password" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Neues Passwort bestätigen</label>
-                <input
-                  type="password"
-                  id="confirm_password"
-                  name="confirm_password"
-                  class="form-control"
-                  autocomplete="new-password"
-                  required
-                />
-              </div>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-key"></i>
-                Passwort ändern
-              </button>
-            </form>
-          </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-key"></i>
+                  Passwort ändern
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </main>
@@ -1174,14 +1173,14 @@
 
           const data = await response.json();
           console.log('Deletion approvals response:', data);
-          
+
           let approvals = [];
           if (data && data.success && Array.isArray(data.data)) {
             approvals = data.data;
           } else if (Array.isArray(data)) {
             approvals = data;
           }
-          
+
           console.log('Processed approvals:', approvals);
 
           const approvalSection = document.getElementById('approvalSection');
@@ -1205,7 +1204,7 @@
           console.error('Invalid approval object:', approval);
           return '';
         }
-        
+
         const requestedAt = new Date(approval.requested_at);
         const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
         const coolingOffRemaining = Math.max(0, 24 - hoursSince);

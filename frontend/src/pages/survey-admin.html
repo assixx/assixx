@@ -610,7 +610,7 @@
         padding: var(--spacing-md);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
@@ -638,7 +638,7 @@
         background: rgba(18, 18, 18, 0.95);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-sm);
         max-height: 200px;
@@ -703,41 +703,41 @@
       <main class="main-content">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div class="survey-container">
-          <div class="survey-header">
-            <div class="survey-title">
-              <i class="fas fa-poll"></i>
-              Umfrage-Verwaltung
+            <div class="survey-header">
+              <div class="survey-title">
+                <i class="fas fa-poll"></i>
+                Umfrage-Verwaltung
+              </div>
+              <button class="btn btn-primary" onclick="showCreateModal()">
+                <i class="fas fa-plus"></i>
+                Neue Umfrage
+              </button>
             </div>
-            <button class="btn btn-primary" onclick="showCreateModal()">
-              <i class="fas fa-plus"></i>
-              Neue Umfrage
-            </button>
-          </div>
 
-          <!-- Active Surveys -->
-          <h2>Aktive Umfragen</h2>
-          <div id="activeSurveys" class="surveys-grid">
-            <!-- Surveys will be loaded here -->
-          </div>
-
-          <!-- Draft Surveys -->
-          <h2 style="margin-top: var(--spacing-xl)">Entwürfe</h2>
-          <div id="draftSurveys" class="surveys-grid">
-            <!-- Draft surveys will be loaded here -->
-          </div>
-
-          <!-- Templates Section -->
-          <div class="templates-section">
-            <div class="templates-header">
-              <h2 class="templates-title">Vorlagen</h2>
+            <!-- Active Surveys -->
+            <h2>Aktive Umfragen</h2>
+            <div id="activeSurveys" class="surveys-grid">
+              <!-- Surveys will be loaded here -->
             </div>
-            <div id="surveyTemplates" class="template-grid">
-              <!-- Templates will be loaded here -->
+
+            <!-- Draft Surveys -->
+            <h2 style="margin-top: var(--spacing-xl)">Entwürfe</h2>
+            <div id="draftSurveys" class="surveys-grid">
+              <!-- Draft surveys will be loaded here -->
             </div>
-          </div>
+
+            <!-- Templates Section -->
+            <div class="templates-section">
+              <div class="templates-header">
+                <h2 class="templates-title">Vorlagen</h2>
+              </div>
+              <div id="surveyTemplates" class="template-grid">
+                <!-- Templates will be loaded here -->
+              </div>
+            </div>
           </div>
         </div>
       </main>

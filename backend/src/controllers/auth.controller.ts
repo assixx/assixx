@@ -3,18 +3,18 @@
  * Handles all authentication-related business logic
  */
 
-import { Request, Response } from 'express';
-import authService from '../services/auth.service';
-import userService from '../services/user.service';
-import { logger } from '../utils/logger';
-import { AuthenticatedRequest } from '../types/request.types';
-import { createLog } from '../routes/logs.js';
-import { executeQuery } from '../database';
-import { RowDataPacket } from 'mysql2/promise';
+import { Request, Response } from "express";
+import authService from "../services/auth.service";
+import userService from "../services/user.service";
+import { logger } from "../utils/logger";
+import { AuthenticatedRequest } from "../types/request.types";
+import { createLog } from "../routes/logs.js";
+import { executeQuery } from "../database";
+import { RowDataPacket } from "mysql2/promise";
 
 // Type guard to check if request has authenticated user
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null && 'id' in req.user;
+  return "user" in req && req.user != null && "id" in req.user;
 }
 
 // Interfaces for request bodies
@@ -54,8 +54,8 @@ class AuthController {
         },
       });
     } catch (error) {
-      logger.error('Error in auth check:', error);
-      res.status(500).json({ message: 'Server error' });
+      logger.error("Error in auth check:", error);
+      res.status(500).json({ message: "Server error" });
     }
   }
 
@@ -64,23 +64,23 @@ class AuthController {
    */
   async getUserProfile(
     req: AuthenticatedRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const user = await userService.getUserById(
         req.user.id,
-        req.user.tenant_id
+        req.user.tenant_id,
       );
 
       if (!user) {
-        res.status(404).json({ message: 'User not found' });
+        res.status(404).json({ message: "User not found" });
         return;
       }
 
       res.json(user);
     } catch (error) {
-      logger.error('Error in get user profile:', error);
-      res.status(500).json({ message: 'Server error' });
+      logger.error("Error in get user profile:", error);
+      res.status(500).json({ message: "Server error" });
     }
   }
 
@@ -88,46 +88,46 @@ class AuthController {
    * Login user
    */
   async login(req: LoginRequest, res: Response): Promise<void> {
-    console.log('[DEBUG] AuthController.login called');
+    console.log("[DEBUG] AuthController.login called");
     try {
       const { username, password, fingerprint } = req.body;
-      console.log('[DEBUG] Login attempt for username:', username);
-      console.log('[DEBUG] Browser fingerprint provided:', !!fingerprint);
+      console.log("[DEBUG] Login attempt for username:", username);
+      console.log("[DEBUG] Browser fingerprint provided:", !!fingerprint);
 
       // Validate input
       if (!username || !password) {
-        console.log('[DEBUG] Missing username or password');
+        console.log("[DEBUG] Missing username or password");
         res.status(400).json({
-          message: 'Username and password are required',
+          message: "Username and password are required",
         });
         return;
       }
 
       // Authenticate user with fingerprint
-      console.log('[DEBUG] Calling authService.authenticateUser');
+      console.log("[DEBUG] Calling authService.authenticateUser");
       const result = await authService.authenticateUser(
         username,
         password,
-        fingerprint
+        fingerprint,
       );
-      console.log('[DEBUG] Auth result:', result ? 'Success' : 'Failed');
+      console.log("[DEBUG] Auth result:", result ? "Success" : "Failed");
 
       if (!result.success) {
         res.status(401).json({
-          message: result.message || 'Invalid credentials',
+          message: result.message || "Invalid credentials",
         });
         return;
       }
 
       // Set token as httpOnly cookie for HTML pages
       if (!result.token) {
-        res.status(500).json({ message: 'Token generation failed' });
+        res.status(500).json({ message: "Token generation failed" });
         return;
       }
-      res.cookie('token', result.token, {
+      res.cookie("token", result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
 
@@ -136,32 +136,32 @@ class AuthController {
         await createLog(
           result.user.id,
           result.user.tenant_id,
-          'login',
-          'user',
+          "login",
+          "user",
           result.user.id,
           `Erfolgreich angemeldet`,
-          req.ip || 'unknown',
-          req.headers['user-agent'] || 'unknown'
+          req.ip || "unknown",
+          req.headers["user-agent"] || "unknown",
         );
       }
 
       // Return user data and token (compatible with legacy frontend)
       res.json({
-        message: 'Login erfolgreich',
+        message: "Login erfolgreich",
         token: result.token,
         role: result.user?.role,
         user: result.user,
       });
     } catch (error) {
-      logger.error('Login error:', error);
+      logger.error("Login error:", error);
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof Error ? error.message : "Unknown error";
       const errorStack = error instanceof Error ? error.stack : undefined;
-      console.error('[DEBUG] Login error details:', errorMessage, errorStack);
+      console.error("[DEBUG] Login error details:", errorMessage, errorStack);
       res.status(500).json({
-        message: 'Server error during login',
+        message: "Server error during login",
         error:
-          process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+          process.env.NODE_ENV === "development" ? errorMessage : undefined,
       });
     }
   }
@@ -176,9 +176,9 @@ class AuthController {
         username: req.body.username,
         password: req.body.password,
         email: req.body.email,
-        vorname: req.body.first_name || '',
-        nachname: req.body.last_name || '',
-        role: req.body.role as 'admin' | 'employee' | undefined,
+        vorname: req.body.first_name || "",
+        nachname: req.body.last_name || "",
+        role: req.body.role as "admin" | "employee" | undefined,
         tenant_id: req.body.tenant_id,
       };
 
@@ -187,18 +187,18 @@ class AuthController {
 
       if (!result.success) {
         res.status(400).json({
-          message: result.message || 'Registration failed',
+          message: result.message || "Registration failed",
         });
         return;
       }
 
       res.status(201).json({
-        message: 'Registration successful',
+        message: "Registration successful",
         user: result.user,
       });
     } catch (error) {
-      logger.error('Registration error:', error);
-      res.status(500).json({ message: 'Server error during registration' });
+      logger.error("Registration error:", error);
+      res.status(500).json({ message: "Server error during registration" });
     }
   }
 
@@ -211,23 +211,23 @@ class AuthController {
       await createLog(
         req.user.id,
         req.user.tenant_id,
-        'logout',
-        'user',
+        "logout",
+        "user",
         req.user.id,
-        'Abgemeldet',
-        req.ip || 'unknown',
-        req.headers['user-agent'] || 'unknown'
+        "Abgemeldet",
+        req.ip || "unknown",
+        req.headers["user-agent"] || "unknown",
       );
     }
 
     // Clear the httpOnly cookie
-    res.clearCookie('token', {
+    res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
 
-    res.json({ message: 'Logout successful' });
+    res.json({ message: "Logout successful" });
   }
 
   /**
@@ -242,7 +242,7 @@ class AuthController {
 
       if (!user) {
         res.status(404).json({
-          error: 'User not found',
+          error: "User not found",
           valid: false,
         });
         return;
@@ -251,7 +251,7 @@ class AuthController {
       // Check if user is active
       if (!user.is_active) {
         res.status(403).json({
-          error: 'User account is inactive',
+          error: "User account is inactive",
           valid: false,
         });
         return;
@@ -271,9 +271,9 @@ class AuthController {
         },
       });
     } catch (error) {
-      logger.error('[AUTH] Validation error:', error);
+      logger.error("[AUTH] Validation error:", error);
       res.status(500).json({
-        error: 'Internal server error',
+        error: "Internal server error",
         valid: false,
       });
     }
@@ -284,7 +284,7 @@ class AuthController {
    */
   async validateFingerprint(
     req: AuthenticatedRequest,
-    res: Response
+    res: Response,
   ): Promise<void> {
     try {
       const { fingerprint } = req.body as { fingerprint?: string };
@@ -310,13 +310,13 @@ class AuthController {
 
       // Check session in database
       const [sessions] = await executeQuery<RowDataPacket[]>(
-        'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
-        [user.id, sessionId]
+        "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
+        [user.id, sessionId],
       );
 
       if (sessions.length === 0) {
         res.status(403).json({
-          error: 'Session not found or expired',
+          error: "Session not found or expired",
           valid: false,
         });
         return;
@@ -325,10 +325,10 @@ class AuthController {
       const storedFingerprint = sessions[0].fingerprint;
       if (storedFingerprint && storedFingerprint !== fingerprint) {
         logger.warn(
-          `[SECURITY] Browser fingerprint mismatch for user ${user.id}`
+          `[SECURITY] Browser fingerprint mismatch for user ${user.id}`,
         );
         res.status(403).json({
-          error: 'Browser fingerprint mismatch',
+          error: "Browser fingerprint mismatch",
           valid: false,
         });
         return;
@@ -336,9 +336,9 @@ class AuthController {
 
       res.json({ valid: true });
     } catch (error) {
-      logger.error('[AUTH] Fingerprint validation error:', error);
+      logger.error("[AUTH] Fingerprint validation error:", error);
       res.status(500).json({
-        error: 'Internal server error',
+        error: "Internal server error",
         valid: false,
       });
     }

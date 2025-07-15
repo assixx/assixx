@@ -11,13 +11,13 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
-  if (error && typeof error === 'object' && 'message' in error) {
+  if (error && typeof error === "object" && "message" in error) {
     return String(error.message);
   }
-  return 'An unknown error occurred';
+  return "An unknown error occurred";
 }
 
 /**
@@ -41,8 +41,8 @@ export function getErrorStack(error: unknown): string | undefined {
 export function isErrorWithCode(error: unknown, code: string): boolean {
   return (
     error !== null &&
-    typeof error === 'object' &&
-    'code' in error &&
+    typeof error === "object" &&
+    "code" in error &&
     error.code === code
   );
 }
@@ -51,12 +51,12 @@ export function isErrorWithCode(error: unknown, code: string): boolean {
  * Type guard for database errors
  */
 export function isDatabaseError(
-  error: unknown
+  error: unknown,
 ): error is { code: string; errno?: number; sqlMessage?: string } {
   return (
     error !== null &&
-    typeof error === 'object' &&
-    'code' in error &&
-    typeof (error as Record<string, unknown>).code === 'string'
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as Record<string, unknown>).code === "string"
   );
 }

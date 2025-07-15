@@ -185,7 +185,7 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         color: #fff;
         cursor: pointer;
@@ -226,7 +226,7 @@
         background: rgba(18, 18, 18, 0.8);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-sm);
         max-height: 200px;
@@ -388,7 +388,7 @@
       .pdf-preview-container {
         display: none;
         margin: var(--spacing-md) 0;
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
         overflow: hidden;
         max-height: 400px;
@@ -591,7 +591,7 @@
         padding: 12px 16px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         cursor: pointer;
         transition: all 0.3s ease;
@@ -647,233 +647,233 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div id="upload-success" class="alert alert-success" class="u-hidden">
-          <span class="icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-              />
-            </svg>
-          </span>
-          <div>
-            <strong>Erfolg!</strong>
-            <p>Dokument wurde erfolgreich hochgeladen.</p>
+            <span class="icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                />
+              </svg>
+            </span>
+            <div>
+              <strong>Erfolg!</strong>
+              <p>Dokument wurde erfolgreich hochgeladen.</p>
+            </div>
           </div>
-        </div>
 
-        <div id="upload-error" class="alert alert-danger" class="u-hidden">
-          <span class="icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-            </svg>
-          </span>
-          <div>
-            <strong>Fehler!</strong>
-            <p id="error-message">Beim Hochladen des Dokuments ist ein Fehler aufgetreten.</p>
+          <div id="upload-error" class="alert alert-danger" class="u-hidden">
+            <span class="icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+            </span>
+            <div>
+              <strong>Fehler!</strong>
+              <p id="error-message">Beim Hochladen des Dokuments ist ein Fehler aufgetreten.</p>
+            </div>
           </div>
-        </div>
 
-        <div class="card upload-section">
-          <div class="card-header">
-            <h2 class="upload-title">Dokument-Informationen</h2>
-          </div>
-          <div class="card-body">
-            <form id="upload-form" class="upload-form">
-              <div class="form-row">
-                <div class="form-col">
-                  <div class="form-group">
-                    <label class="form-label">Empfänger-Typ</label>
-                    <div class="recipient-type-selector">
-                      <label class="radio-option">
-                        <input type="radio" name="recipientType" value="user" checked onchange="updateRecipientSelector('user')" />
-                        <span>Einzelner Mitarbeiter</span>
-                      </label>
-                      <label class="radio-option">
-                        <input type="radio" name="recipientType" value="team" onchange="updateRecipientSelector('team')" />
-                        <span>Team</span>
-                      </label>
-                      <label class="radio-option">
-                        <input type="radio" name="recipientType" value="department" onchange="updateRecipientSelector('department')" />
-                        <span>Abteilung</span>
-                      </label>
-                      <label class="radio-option">
-                        <input type="radio" name="recipientType" value="company" onchange="updateRecipientSelector('company')" />
-                        <span>Gesamte Firma</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="form-group" id="recipientSelectorGroup">
-                    <label for="user-select" class="form-label" id="recipientLabel">Mitarbeiter auswählen</label>
-                    <div class="custom-dropdown" id="userDropdownContainer">
-                      <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
-                        <span>Bitte Mitarbeiter auswählen</span>
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
+          <div class="card upload-section">
+            <div class="card-header">
+              <h2 class="upload-title">Dokument-Informationen</h2>
+            </div>
+            <div class="card-body">
+              <form id="upload-form" class="upload-form">
+                <div class="form-row">
+                  <div class="form-col">
+                    <div class="form-group">
+                      <label class="form-label">Empfänger-Typ</label>
+                      <div class="recipient-type-selector">
+                        <label class="radio-option">
+                          <input type="radio" name="recipientType" value="user" checked onchange="updateRecipientSelector('user')" />
+                          <span>Einzelner Mitarbeiter</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="recipientType" value="team" onchange="updateRecipientSelector('team')" />
+                          <span>Team</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="recipientType" value="department" onchange="updateRecipientSelector('department')" />
+                          <span>Abteilung</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="recipientType" value="company" onchange="updateRecipientSelector('company')" />
+                          <span>Gesamte Firma</span>
+                        </label>
                       </div>
-                      <div class="dropdown-options" id="userDropdown">
-                        <!-- Wird dynamisch befüllt -->
-                      </div>
-                      <input type="hidden" name="userId" id="userValue" />
                     </div>
 
-                    <div class="custom-dropdown" id="teamDropdownContainer" class="u-hidden">
-                      <div class="dropdown-display placeholder" id="teamDisplay" onclick="toggleDropdown('team')">
-                        <span>Bitte Team auswählen</span>
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                      </div>
-                      <div class="dropdown-options" id="teamDropdown">
-                        <!-- Wird dynamisch befüllt -->
-                      </div>
-                      <input type="hidden" name="teamId" id="teamValue" />
-                    </div>
-
-                    <div class="custom-dropdown" id="departmentDropdownContainer" class="u-hidden">
-                      <div class="dropdown-display placeholder" id="departmentDisplay" onclick="toggleDropdown('department')">
-                        <span>Bitte Abteilung auswählen</span>
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                      </div>
-                      <div class="dropdown-options" id="departmentDropdown">
-                        <!-- Wird dynamisch befüllt -->
-                      </div>
-                      <input type="hidden" name="departmentId" id="departmentValue" />
-                    </div>
-
-                    <div
-                      id="companyInfo"
-                      style="
-                        display: none;
-                        padding: 12px;
-                        background: rgba(33, 150, 243, 0.1);
-                        border-radius: 8px;
-                        border: 1px solid rgba(33, 150, 243, 0.3);
-                      "
-                    >
-                      <i class="fas fa-info-circle" style="color: #2196f3; margin-right: 8px"></i>
-                      Das Dokument wird für alle Mitarbeiter der Firma sichtbar sein.
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="category-select" class="form-label">Kategorie</label>
-                    <div class="custom-dropdown">
-                      <div class="dropdown-display placeholder" id="categoryDisplay" onclick="toggleDropdown('category')">
-                        <span>Bitte Kategorie auswählen</span>
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                      </div>
-                      <div class="dropdown-options" id="categoryDropdown">
-                        <div class="dropdown-option" onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')">
-                          Gehaltsabrechnung
+                    <div class="form-group" id="recipientSelectorGroup">
+                      <label for="user-select" class="form-label" id="recipientLabel">Mitarbeiter auswählen</label>
+                      <div class="custom-dropdown" id="userDropdownContainer">
+                        <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
+                          <span>Bitte Mitarbeiter auswählen</span>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
                         </div>
-                        <div class="dropdown-option" onclick="selectOption('category', 'contract', 'Vertrag')">Vertrag</div>
-                        <div class="dropdown-option" onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')">
-                          Zertifikat/Zeugnis
+                        <div class="dropdown-options" id="userDropdown">
+                          <!-- Wird dynamisch befüllt -->
                         </div>
-                        <div class="dropdown-option" onclick="selectOption('category', 'other', 'Sonstiges')">Sonstiges</div>
+                        <input type="hidden" name="userId" id="userValue" />
                       </div>
-                      <input type="hidden" name="category" id="categoryValue" required />
+
+                      <div class="custom-dropdown" id="teamDropdownContainer" class="u-hidden">
+                        <div class="dropdown-display placeholder" id="teamDisplay" onclick="toggleDropdown('team')">
+                          <span>Bitte Team auswählen</span>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </div>
+                        <div class="dropdown-options" id="teamDropdown">
+                          <!-- Wird dynamisch befüllt -->
+                        </div>
+                        <input type="hidden" name="teamId" id="teamValue" />
+                      </div>
+
+                      <div class="custom-dropdown" id="departmentDropdownContainer" class="u-hidden">
+                        <div class="dropdown-display placeholder" id="departmentDisplay" onclick="toggleDropdown('department')">
+                          <span>Bitte Abteilung auswählen</span>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </div>
+                        <div class="dropdown-options" id="departmentDropdown">
+                          <!-- Wird dynamisch befüllt -->
+                        </div>
+                        <input type="hidden" name="departmentId" id="departmentValue" />
+                      </div>
+
+                      <div
+                        id="companyInfo"
+                        style="
+                          display: none;
+                          padding: 12px;
+                          background: rgba(33, 150, 243, 0.1);
+                          border-radius: 8px;
+                          border: 1px solid rgba(33, 150, 243, 0.3);
+                        "
+                      >
+                        <i class="fas fa-info-circle" style="color: #2196f3; margin-right: 8px"></i>
+                        Das Dokument wird für alle Mitarbeiter der Firma sichtbar sein.
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="category-select" class="form-label">Kategorie</label>
+                      <div class="custom-dropdown">
+                        <div class="dropdown-display placeholder" id="categoryDisplay" onclick="toggleDropdown('category')">
+                          <span>Bitte Kategorie auswählen</span>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </div>
+                        <div class="dropdown-options" id="categoryDropdown">
+                          <div class="dropdown-option" onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')">
+                            Gehaltsabrechnung
+                          </div>
+                          <div class="dropdown-option" onclick="selectOption('category', 'contract', 'Vertrag')">Vertrag</div>
+                          <div class="dropdown-option" onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')">
+                            Zertifikat/Zeugnis
+                          </div>
+                          <div class="dropdown-option" onclick="selectOption('category', 'other', 'Sonstiges')">Sonstiges</div>
+                        </div>
+                        <input type="hidden" name="category" id="categoryValue" required />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-col">
+                    <div class="form-group">
+                      <label for="year-input" class="form-label">Jahr (optional)</label>
+                      <input type="number" id="year-input" name="year" class="form-control" min="1900" max="2100" placeholder="z.B. 2025" />
+                    </div>
+
+                    <div class="form-group">
+                      <label for="month-select" class="form-label">Monat (optional)</label>
+                      <div class="custom-dropdown">
+                        <div class="dropdown-display placeholder" id="monthDisplay" onclick="toggleDropdown('month')">
+                          <span>Monat auswählen (optional)</span>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </div>
+                        <div class="dropdown-options" id="monthDropdown">
+                          <div class="dropdown-option" onclick="selectOption('month', '', 'Kein Monat')">Kein Monat</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Januar', 'Januar')">Januar</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Februar', 'Februar')">Februar</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'März', 'März')">März</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'April', 'April')">April</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Mai', 'Mai')">Mai</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Juni', 'Juni')">Juni</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Juli', 'Juli')">Juli</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'August', 'August')">August</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'September', 'September')">September</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Oktober', 'Oktober')">Oktober</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'November', 'November')">November</div>
+                          <div class="dropdown-option" onclick="selectOption('month', 'Dezember', 'Dezember')">Dezember</div>
+                        </div>
+                        <input type="hidden" name="month" id="monthValue" />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="form-col">
-                  <div class="form-group">
-                    <label for="year-input" class="form-label">Jahr (optional)</label>
-                    <input type="number" id="year-input" name="year" class="form-control" min="1900" max="2100" placeholder="z.B. 2025" />
+                <div class="form-group">
+                  <label for="description-input" class="form-label">Beschreibung (optional)</label>
+                  <textarea
+                    id="description-input"
+                    name="description"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Zusätzliche Informationen zum Dokument"
+                  ></textarea>
+                </div>
+
+                <div class="file-drop-area" id="drop-area">
+                  <span class="file-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                    </svg>
+                  </span>
+                  <div class="file-message">Datei hierher ziehen oder klicken, um auszuwählen</div>
+                  <p class="text-secondary">(Nur PDF-Dateien erlaubt, max. 5MB)</p>
+                  <div class="file-restrictions">
+                    <small>Erlaubte Dateitypen: PDF (.pdf)</small>
+                    <br />
+                    <small>Maximale Dateigröße: 5 MB</small>
                   </div>
+                  <input type="file" id="file-input" name="document" class="file-input" accept=".pdf" required />
+                </div>
 
-                  <div class="form-group">
-                    <label for="month-select" class="form-label">Monat (optional)</label>
-                    <div class="custom-dropdown">
-                      <div class="dropdown-display placeholder" id="monthDisplay" onclick="toggleDropdown('month')">
-                        <span>Monat auswählen (optional)</span>
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                      </div>
-                      <div class="dropdown-options" id="monthDropdown">
-                        <div class="dropdown-option" onclick="selectOption('month', '', 'Kein Monat')">Kein Monat</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Januar', 'Januar')">Januar</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Februar', 'Februar')">Februar</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'März', 'März')">März</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'April', 'April')">April</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Mai', 'Mai')">Mai</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Juni', 'Juni')">Juni</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Juli', 'Juli')">Juli</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'August', 'August')">August</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'September', 'September')">September</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Oktober', 'Oktober')">Oktober</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'November', 'November')">November</div>
-                        <div class="dropdown-option" onclick="selectOption('month', 'Dezember', 'Dezember')">Dezember</div>
-                      </div>
-                      <input type="hidden" name="month" id="monthValue" />
-                    </div>
+                <div class="file-info" id="file-info">
+                  <div class="file-name" id="file-name">document.pdf</div>
+                  <div class="file-size" id="file-size">0 KB</div>
+                </div>
+
+                <div class="pdf-preview-container" id="pdf-preview-container">
+                  <div class="preview-controls">
+                    <span class="preview-title">Dokument-Vorschau</span>
+                    <button type="button" class="preview-close" id="preview-close">×</button>
                   </div>
+                  <iframe class="pdf-preview" id="pdf-preview"></iframe>
                 </div>
-              </div>
 
-              <div class="form-group">
-                <label for="description-input" class="form-label">Beschreibung (optional)</label>
-                <textarea
-                  id="description-input"
-                  name="description"
-                  class="form-control"
-                  rows="3"
-                  placeholder="Zusätzliche Informationen zum Dokument"
-                ></textarea>
-              </div>
-
-              <div class="file-drop-area" id="drop-area">
-                <span class="file-icon">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                  </svg>
-                </span>
-                <div class="file-message">Datei hierher ziehen oder klicken, um auszuwählen</div>
-                <p class="text-secondary">(Nur PDF-Dateien erlaubt, max. 5MB)</p>
-                <div class="file-restrictions">
-                  <small>Erlaubte Dateitypen: PDF (.pdf)</small>
-                  <br />
-                  <small>Maximale Dateigröße: 5 MB</small>
+                <div class="form-group" style="text-align: center; margin-top: 30px">
+                  <button type="submit" class="btn btn-primary" id="upload-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z"
+                      />
+                    </svg>
+                    Dokument hochladen
+                  </button>
                 </div>
-                <input type="file" id="file-input" name="document" class="file-input" accept=".pdf" required />
-              </div>
-
-              <div class="file-info" id="file-info">
-                <div class="file-name" id="file-name">document.pdf</div>
-                <div class="file-size" id="file-size">0 KB</div>
-              </div>
-
-              <div class="pdf-preview-container" id="pdf-preview-container">
-                <div class="preview-controls">
-                  <span class="preview-title">Dokument-Vorschau</span>
-                  <button type="button" class="preview-close" id="preview-close">×</button>
-                </div>
-                <iframe class="pdf-preview" id="pdf-preview"></iframe>
-              </div>
-
-              <div class="form-group" style="text-align: center; margin-top: 30px">
-                <button type="submit" class="btn btn-primary" id="upload-button">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z"
-                    />
-                  </svg>
-                  Dokument hochladen
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
         </div>
       </main>
     </div>

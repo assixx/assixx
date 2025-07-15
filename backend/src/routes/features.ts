@@ -3,20 +3,20 @@
  * Handles feature management for multi-tenant system
  */
 
-import express, { Router } from 'express';
-import { security } from '../middleware/security';
-import { body, param, query } from 'express-validator';
-import { createValidation } from '../middleware/validation';
-import { successResponse, errorResponse } from '../types/response.types';
-import { checkFeature } from '../middleware/features';
-import { logger } from '../utils/logger';
-import { getErrorMessage } from '../utils/errorHandler';
-import { RowDataPacket } from 'mysql2';
-import { typed } from '../utils/routeHandlers';
+import express, { Router } from "express";
+import { security } from "../middleware/security";
+import { body, param, query } from "express-validator";
+import { createValidation } from "../middleware/validation";
+import { successResponse, errorResponse } from "../types/response.types";
+import { checkFeature } from "../middleware/features";
+import { logger } from "../utils/logger";
+import { getErrorMessage } from "../utils/errorHandler";
+import { RowDataPacket } from "mysql2";
+import { typed } from "../utils/routeHandlers";
 
 // Import Feature model and database (now ES modules)
-import Feature from '../models/feature';
-import { execute } from '../database';
+import Feature from "../models/feature";
+import { execute } from "../database";
 
 const router: Router = express.Router();
 
@@ -39,29 +39,29 @@ interface FeatureDeactivationBody {
 
 // Validation schemas
 const featureActivationValidation = createValidation([
-  body('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID'),
-  body('featureCode')
+  body("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
+  body("featureCode")
     .notEmpty()
     .trim()
-    .withMessage('Feature-Code ist erforderlich'),
-  body('options').optional().isObject(),
+    .withMessage("Feature-Code ist erforderlich"),
+  body("options").optional().isObject(),
 ]);
 
 const featureDeactivationValidation = createValidation([
-  body('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID'),
-  body('featureCode')
+  body("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
+  body("featureCode")
     .notEmpty()
     .trim()
-    .withMessage('Feature-Code ist erforderlich'),
+    .withMessage("Feature-Code ist erforderlich"),
 ]);
 
 const usageStatsValidation = createValidation([
-  param('featureCode')
+  param("featureCode")
     .notEmpty()
     .trim()
-    .withMessage('Feature-Code ist erforderlich'),
-  query('startDate').isISO8601().withMessage('Ungültiges Startdatum'),
-  query('endDate').isISO8601().withMessage('Ungültiges Enddatum'),
+    .withMessage("Feature-Code ist erforderlich"),
+  query("startDate").isISO8601().withMessage("Ungültiges Startdatum"),
+  query("endDate").isISO8601().withMessage("Ungültiges Enddatum"),
 ]);
 
 /* Unused interfaces - kept for future reference
@@ -106,29 +106,29 @@ interface FeatureUsageRequest extends AuthenticatedRequest {
 
 // Get all available features (public)
 router.get(
-  '/available',
+  "/available",
   typed.public(async (_req, res) => {
     try {
       const features = await Feature.findAll();
       res.json(successResponse(features));
     } catch (error) {
       logger.error(
-        `Error fetching available features: ${getErrorMessage(error)}`
+        `Error fetching available features: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen der Features', 500));
+        .json(errorResponse("Fehler beim Abrufen der Features", 500));
     }
-  })
+  }),
 );
 
 // Get features for a specific tenant (authenticated)
 router.get(
-  '/tenant/:tenantId',
+  "/tenant/:tenantId",
   ...security.user(
     createValidation([
-      param('tenantId').isInt({ min: 1 }).withMessage('Ungültige Tenant-ID'),
-    ])
+      param("tenantId").isInt({ min: 1 }).withMessage("Ungültige Tenant-ID"),
+    ]),
   ),
   typed.params<{ tenantId: string }>(async (req, res) => {
     try {
@@ -138,10 +138,10 @@ router.get(
 
       if (
         requestedTenantId !== userTenantId &&
-        req.user.role !== 'root' &&
-        req.user.role !== 'admin'
+        req.user.role !== "root" &&
+        req.user.role !== "admin"
       ) {
-        res.status(403).json(errorResponse('Keine Berechtigung', 403));
+        res.status(403).json(errorResponse("Keine Berechtigung", 403));
         return;
       }
 
@@ -151,14 +151,14 @@ router.get(
       logger.error(`Error fetching tenant features: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen der Tenant-Features', 500));
+        .json(errorResponse("Fehler beim Abrufen der Tenant-Features", 500));
     }
-  })
+  }),
 );
 
 // Get my features
 router.get(
-  '/my-features',
+  "/my-features",
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -169,14 +169,14 @@ router.get(
       logger.error(`Error fetching my features: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen der Features', 500));
+        .json(errorResponse("Fehler beim Abrufen der Features", 500));
     }
-  })
+  }),
 );
 
 // Activate feature (Root and Admin only)
 router.post(
-  '/activate',
+  "/activate",
   ...security.admin(featureActivationValidation),
   typed.body<FeatureActivationBody>(async (req, res) => {
     try {
@@ -188,21 +188,21 @@ router.post(
       await Feature.activateForTenant(tenantId, featureCode, options);
 
       logger.info(
-        `Feature ${featureCode} activated for tenant ${tenantId} by user ${req.user.username}`
+        `Feature ${featureCode} activated for tenant ${tenantId} by user ${req.user.username}`,
       );
-      res.json(successResponse(null, 'Feature erfolgreich aktiviert'));
+      res.json(successResponse(null, "Feature erfolgreich aktiviert"));
     } catch (error) {
       logger.error(`Error activating feature: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse('Fehler beim Aktivieren des Features', 500));
+        .json(errorResponse("Fehler beim Aktivieren des Features", 500));
     }
-  })
+  }),
 );
 
 // Deactivate feature (Root and Admin only)
 router.post(
-  '/deactivate',
+  "/deactivate",
   ...security.admin(featureDeactivationValidation),
   typed.body<FeatureDeactivationBody>(async (req, res) => {
     try {
@@ -211,21 +211,21 @@ router.post(
       await Feature.deactivateForTenant(tenantId, featureCode);
 
       logger.info(
-        `Feature ${featureCode} deactivated for tenant ${tenantId} by user ${req.user.username}`
+        `Feature ${featureCode} deactivated for tenant ${tenantId} by user ${req.user.username}`,
       );
-      res.json(successResponse(null, 'Feature erfolgreich deaktiviert'));
+      res.json(successResponse(null, "Feature erfolgreich deaktiviert"));
     } catch (error) {
       logger.error(`Error deactivating feature: ${getErrorMessage(error)}`);
       res
         .status(500)
-        .json(errorResponse('Fehler beim Deaktivieren des Features', 500));
+        .json(errorResponse("Fehler beim Deaktivieren des Features", 500));
     }
-  })
+  }),
 );
 
 // Get feature usage statistics
 router.get(
-  '/usage/:featureCode',
+  "/usage/:featureCode",
   ...security.user(usageStatsValidation),
   typed.params<{ featureCode: string }>(async (req, res) => {
     try {
@@ -237,7 +237,7 @@ router.get(
         tenantId,
         featureCode,
         startDate as string,
-        endDate as string
+        endDate as string,
       );
       res.json(successResponse(stats));
     } catch (error) {
@@ -245,22 +245,22 @@ router.get(
       res
         .status(500)
         .json(
-          errorResponse('Fehler beim Abrufen der Nutzungsstatistiken', 500)
+          errorResponse("Fehler beim Abrufen der Nutzungsstatistiken", 500),
         );
     }
-  })
+  }),
 );
 
 // Test route to check feature access
 router.get(
-  '/test/:featureCode',
+  "/test/:featureCode",
   ...security.user(
     createValidation([
-      param('featureCode')
+      param("featureCode")
         .notEmpty()
         .trim()
-        .withMessage('Feature-Code ist erforderlich'),
-    ])
+        .withMessage("Feature-Code ist erforderlich"),
+    ]),
   ),
   typed.params<{ featureCode: string }>(async (req, res, next) => {
     await checkFeature(req.params.featureCode)(req, res, next);
@@ -270,20 +270,20 @@ router.get(
       successResponse({
         message: `Zugriff auf Feature ${req.params.featureCode} gewährt`,
         feature: req.params.featureCode,
-      })
+      }),
     );
-  })
+  }),
 );
 
 // Get all tenants with features (Root only)
 router.get(
-  '/all-tenants',
+  "/all-tenants",
   ...security.root(),
   typed.auth(async (_req, res) => {
     try {
       // Get all tenants
       const [tenants] = await execute<RowDataPacket[]>(
-        'SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name'
+        "SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name",
       );
 
       // Get activated features for each tenant
@@ -294,13 +294,13 @@ router.get(
       res.json(successResponse(tenants));
     } catch (error) {
       logger.error(
-        `Error fetching all tenants with features: ${getErrorMessage(error)}`
+        `Error fetching all tenants with features: ${getErrorMessage(error)}`,
       );
       res
         .status(500)
-        .json(errorResponse('Fehler beim Abrufen der Tenant-Features', 500));
+        .json(errorResponse("Fehler beim Abrufen der Tenant-Features", 500));
     }
-  })
+  }),
 );
 
 export default router;

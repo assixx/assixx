@@ -208,7 +208,7 @@
       .search-input {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         color: #fff;
       }
 
@@ -603,297 +603,299 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation (außerhalb der Sections für permanente Sichtbarkeit) -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <!-- Dashboard Section -->
-        <section id="dashboard-section" class="content-section">
-          <!-- Dashboard Stats Grid -->
-          <div class="dashboard-grid">
-            <div class="stat-card">
-              <div class="stat-value" id="employee-count">0</div>
-              <div class="stat-label">Mitarbeiter</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="document-count">0</div>
-              <div class="stat-label">Dokumente</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="department-count">0</div>
-              <div class="stat-label">Abteilungen</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="team-count">0</div>
-              <div class="stat-label">Teams</div>
-            </div>
-          </div>
-
-          <!-- Blackboard Widget -->
-          <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading"></div>
-
-          <!-- Main Grid Container -->
-          <div class="admin-grid">
-            <!-- Employee Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Mitarbeiter</h2>
-                <p class="text-secondary" class="u-mt-text">Mitarbeiter verwalten und hinzufügen</p>
+          <section id="dashboard-section" class="content-section">
+            <!-- Dashboard Stats Grid -->
+            <div class="dashboard-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="employee-count">0</div>
+                <div class="stat-label">Mitarbeiter</div>
               </div>
-              <div class="compact-content">
-                <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
-                  Neuer Mitarbeiter
-                </button>
-                <div class="compact-list" id="recent-employees">
-                  <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
+              <div class="stat-card">
+                <div class="stat-value" id="document-count">0</div>
+                <div class="stat-label">Dokumente</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="department-count">0</div>
+                <div class="stat-label">Abteilungen</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="team-count">0</div>
+                <div class="stat-label">Teams</div>
+              </div>
+            </div>
+
+            <!-- Blackboard Widget -->
+            <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading"></div>
+
+            <!-- Main Grid Container -->
+            <div class="admin-grid">
+              <!-- Employee Card -->
+              <div class="card compact-card">
+                <div class="card-header">
+                  <h2 class="card-title">Mitarbeiter</h2>
+                  <p class="text-secondary" class="u-mt-text">Mitarbeiter verwalten und hinzufügen</p>
                 </div>
-                <a href="#" class="view-all-link" id="manage-employees-link">
-                  Verwalten
-                  <span class="arrow">→</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Document Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Dokumente</h2>
-                <p class="text-secondary" class="u-mt-text">Dokumente hochladen und verwalten</p>
-              </div>
-              <div class="compact-content">
-                <a href="/document-upload" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
-                <div class="compact-list" id="recent-documents">
-                  <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
+                <div class="compact-content">
+                  <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
+                    Neuer Mitarbeiter
+                  </button>
+                  <div class="compact-list" id="recent-employees">
+                    <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
+                  </div>
+                  <a href="#" class="view-all-link" id="manage-employees-link">
+                    Verwalten
+                    <span class="arrow">→</span>
+                  </a>
                 </div>
-                <a href="/documents-search" class="view-all-link" id="manage-documents-link">
-                  Verwalten
-                  <span class="arrow">→</span>
-                </a>
               </div>
-            </div>
 
-            <!-- Department Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Abteilungen</h2>
-                <p class="text-secondary" class="u-mt-text">Abteilungsstruktur organisieren</p>
-              </div>
-              <div class="compact-content">
-                <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
-                <div class="compact-list" id="department-list">
-                  <!-- Wird dynamisch gefüllt -->
+              <!-- Document Card -->
+              <div class="card compact-card">
+                <div class="card-header">
+                  <h2 class="card-title">Dokumente</h2>
+                  <p class="text-secondary" class="u-mt-text">Dokumente hochladen und verwalten</p>
                 </div>
-                <a href="#" class="view-all-link" id="manage-departments-link">
-                  Verwalten
-                  <span class="arrow">→</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Team Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Teams</h2>
-                <p class="text-secondary" class="u-mt-text">Teams erstellen und verwalten</p>
-              </div>
-              <div class="compact-content">
-                <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
-                <div class="compact-list" id="team-list">
-                  <!-- Wird dynamisch gefüllt -->
+                <div class="compact-content">
+                  <a href="/document-upload" class="btn btn-primary btn-block mb-3">Dokument hochladen</a>
+                  <div class="compact-list" id="recent-documents">
+                    <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
+                  </div>
+                  <a href="/documents-search" class="view-all-link" id="manage-documents-link">
+                    Verwalten
+                    <span class="arrow">→</span>
+                  </a>
                 </div>
-                <a href="#" class="view-all-link" onclick="showAllTeams()">
-                  Verwalten
-                  <span class="arrow">→</span>
-                </a>
               </div>
-            </div>
 
-            <!-- Kalender Card -->
-            <div class="card compact-card">
-              <div class="card-header">
-                <h2 class="card-title">Kalender</h2>
-                <p class="text-secondary" class="u-mt-text">Termine und Events verwalten</p>
+              <!-- Department Card -->
+              <div class="card compact-card">
+                <div class="card-header">
+                  <h2 class="card-title">Abteilungen</h2>
+                  <p class="text-secondary" class="u-mt-text">Abteilungsstruktur organisieren</p>
+                </div>
+                <div class="compact-content">
+                  <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
+                  <div class="compact-list" id="department-list">
+                    <!-- Wird dynamisch gefüllt -->
+                  </div>
+                  <a href="#" class="view-all-link" id="manage-departments-link">
+                    Verwalten
+                    <span class="arrow">→</span>
+                  </a>
+                </div>
               </div>
-              <div class="compact-content">
-                <a href="/calendar" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
-                <div class="compact-list" id="calendar-events-list">
-                  <!-- Wird dynamisch gefüllt -->
-                  <div class="list-item">
-                    <div class="list-item-content">
-                      <strong>Nächste Termine</strong>
-                      <p class="text-secondary">Keine anstehenden Termine</p>
+
+              <!-- Team Card -->
+              <div class="card compact-card">
+                <div class="card-header">
+                  <h2 class="card-title">Teams</h2>
+                  <p class="text-secondary" class="u-mt-text">Teams erstellen und verwalten</p>
+                </div>
+                <div class="compact-content">
+                  <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
+                  <div class="compact-list" id="team-list">
+                    <!-- Wird dynamisch gefüllt -->
+                  </div>
+                  <a href="#" class="view-all-link" onclick="showAllTeams()">
+                    Verwalten
+                    <span class="arrow">→</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Kalender Card -->
+              <div class="card compact-card">
+                <div class="card-header">
+                  <h2 class="card-title">Kalender</h2>
+                  <p class="text-secondary" class="u-mt-text">Termine und Events verwalten</p>
+                </div>
+                <div class="compact-content">
+                  <a href="/calendar" class="btn btn-primary btn-block mb-3">Kalender öffnen</a>
+                  <div class="compact-list" id="calendar-events-list">
+                    <!-- Wird dynamisch gefüllt -->
+                    <div class="list-item">
+                      <div class="list-item-content">
+                        <strong>Nächste Termine</strong>
+                        <p class="text-secondary">Keine anstehenden Termine</p>
+                      </div>
                     </div>
                   </div>
+                  <a href="/calendar" class="view-all-link">
+                    Alle anzeigen
+                    <span class="arrow">→</span>
+                  </a>
                 </div>
-                <a href="/calendar" class="view-all-link">
-                  Alle anzeigen
-                  <span class="arrow">→</span>
-                </a>
               </div>
             </div>
-          </div>
 
-          <!-- Recently Added Section -->
-          <div class="card mt-4">
-            <div class="card-header">
-              <h2 class="card-title">Kürzlich hinzugefügt</h2>
-              <p class="text-secondary" class="u-mt-text">Neueste Mitarbeiter und Dokumente</p>
+            <!-- Recently Added Section -->
+            <div class="card mt-4">
+              <div class="card-header">
+                <h2 class="card-title">Kürzlich hinzugefügt</h2>
+                <p class="text-secondary" class="u-mt-text">Neueste Mitarbeiter und Dokumente</p>
+              </div>
+              <div class="recent-activity-grid">
+                <div class="recent-section">
+                  <h3>Neue Mitarbeiter</h3>
+                  <ul id="recent-employees-list" class="recent-list">
+                    <!-- Wird dynamisch gefüllt -->
+                  </ul>
+                </div>
+                <div class="recent-section">
+                  <h3>Neue Dokumente</h3>
+                  <ul id="recent-documents-list" class="recent-list">
+                    <!-- Wird dynamisch gefüllt -->
+                  </ul>
+                </div>
+                <div class="recent-section">
+                  <h3>Aktivitäten</h3>
+                  <ul id="recent-activities-list" class="recent-list">
+                    <!-- Wird dynamisch gefüllt -->
+                  </ul>
+                </div>
+              </div>
             </div>
-            <div class="recent-activity-grid">
-              <div class="recent-section">
-                <h3>Neue Mitarbeiter</h3>
-                <ul id="recent-employees-list" class="recent-list">
-                  <!-- Wird dynamisch gefüllt -->
-                </ul>
-              </div>
-              <div class="recent-section">
-                <h3>Neue Dokumente</h3>
-                <ul id="recent-documents-list" class="recent-list">
-                  <!-- Wird dynamisch gefüllt -->
-                </ul>
-              </div>
-              <div class="recent-section">
-                <h3>Aktivitäten</h3>
-                <ul id="recent-activities-list" class="recent-list">
-                  <!-- Wird dynamisch gefüllt -->
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <!-- Payslips Section removed - now using documents-payroll.html -->
+          <!-- Payslips Section removed - now using documents-payroll.html -->
 
-        <!-- Employees Section -->
-        <section id="employees-section" class="content-section" class="u-hidden">
-          <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <h2 class="card-title">Mitarbeiterübersicht</h2>
-                <p class="text-secondary" class="u-mt-text">Alle Mitarbeiter verwalten und bearbeiten</p>
+          <!-- Employees Section -->
+          <section id="employees-section" class="content-section" class="u-hidden">
+            <div class="card">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+                <div>
+                  <h2 class="card-title">Mitarbeiterübersicht</h2>
+                  <p class="text-secondary" class="u-mt-text">Alle Mitarbeiter verwalten und bearbeiten</p>
+                </div>
+                <button class="btn btn-primary" id="employees-section-new-button" onclick="showNewEmployeeModal()">
+                  Neuer Mitarbeiter
+                </button>
               </div>
-              <button class="btn btn-primary" id="employees-section-new-button" onclick="showNewEmployeeModal()">Neuer Mitarbeiter</button>
+              <div class="flex-between mb-3">
+                <div class="filter-buttons">
+                  <button id="show-all-employees" class="btn btn-sm btn-primary">Alle anzeigen</button>
+                  <button id="filter-employees-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
+                  <button id="filter-employees-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+                </div>
+                <div class="search-container">
+                  <input type="text" id="employee-search" class="search-input" placeholder="Name, E-Mail oder Position..." />
+                  <button id="employee-search-btn" class="btn btn-secondary">Suchen</button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>E-Mail</th>
+                      <th>Mitarbeiter-ID</th>
+                      <th>Position</th>
+                      <th>Abteilung</th>
+                      <th>Status</th>
+                      <th>Verfügbarkeit</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="employees-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                  </tbody>
+                </table>
+              </div>
             </div>
+          </section>
+
+          <!-- Documents Section -->
+          <section id="documents-section" class="content-section" class="u-hidden">
             <div class="flex-between mb-3">
-              <div class="filter-buttons">
-                <button id="show-all-employees" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                <button id="filter-employees-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-                <button id="filter-employees-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
+              <div>
+                <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
+                  <i class="fas fa-upload me-2"></i>
+                  Dokument hochladen
+                </button>
+                <a href="/documents" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
               </div>
               <div class="search-container">
-                <input type="text" id="employee-search" class="search-input" placeholder="Name, E-Mail oder Position..." />
-                <button id="employee-search-btn" class="btn btn-secondary">Suchen</button>
+                <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
+                <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
               </div>
             </div>
 
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>E-Mail</th>
-                    <th>Mitarbeiter-ID</th>
-                    <th>Position</th>
-                    <th>Abteilung</th>
-                    <th>Status</th>
-                    <th>Verfügbarkeit</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="employees-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                </tbody>
-              </table>
+            <div class="mb-3">
+              <button id="show-all-documents" class="btn btn-sm btn-secondary">Alle anzeigen</button>
+              <button id="filter-documents-archived" class="btn btn-sm btn-secondary">Archivierte anzeigen</button>
+              <button id="filter-documents-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
             </div>
-          </div>
-        </section>
 
-        <!-- Documents Section -->
-        <section id="documents-section" class="content-section" class="u-hidden">
-          <div class="flex-between mb-3">
-            <div>
-              <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
-                <i class="fas fa-upload me-2"></i>
-                Dokument hochladen
-              </button>
-              <a href="/documents" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
-            </div>
-            <div class="search-container">
-              <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
-              <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <button id="show-all-documents" class="btn btn-sm btn-secondary">Alle anzeigen</button>
-            <button id="filter-documents-archived" class="btn btn-sm btn-secondary">Archivierte anzeigen</button>
-            <button id="filter-documents-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Dokumentenübersicht</h2>
-              <p class="text-secondary" class="u-mt-text">Alle Dokumente verwalten und durchsuchen</p>
-            </div>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Dateiname</th>
-                    <th>Mitarbeiter</th>
-                    <th>Kategorie</th>
-                    <th>Hochgeladen am</th>
-                    <th>Status</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="documents-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- Departments Section -->
-        <!-- Departments Section wurde nach departments.html verschoben -->
-
-        <!-- Teams Section -->
-        <section id="teams-section" class="content-section" class="u-hidden">
-          <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <h2 class="card-title">Teamübersicht</h2>
-                <p class="text-secondary" class="u-mt-text">Teams und Mitgliedschaften verwalten</p>
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Dokumentenübersicht</h2>
+                <p class="text-secondary" class="u-mt-text">Alle Dokumente verwalten und durchsuchen</p>
               </div>
-              <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Dateiname</th>
+                      <th>Mitarbeiter</th>
+                      <th>Kategorie</th>
+                      <th>Hochgeladen am</th>
+                      <th>Status</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="documents-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Abteilung</th>
-                    <th>Beschreibung</th>
-                    <th>Mitglieder</th>
-                    <th>Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody id="teams-table-body">
-                  <!-- Wird dynamisch gefüllt -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <!-- Settings Section -->
-        <section id="settings-section" class="content-section" class="u-hidden">
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">System-Einstellungen</h2>
+          <!-- Departments Section -->
+          <!-- Departments Section wurde nach departments.html verschoben -->
+
+          <!-- Teams Section -->
+          <section id="teams-section" class="content-section" class="u-hidden">
+            <div class="card">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+                <div>
+                  <h2 class="card-title">Teamübersicht</h2>
+                  <p class="text-secondary" class="u-mt-text">Teams und Mitgliedschaften verwalten</p>
+                </div>
+                <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Abteilung</th>
+                      <th>Beschreibung</th>
+                      <th>Mitglieder</th>
+                      <th>Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teams-table-body">
+                    <!-- Wird dynamisch gefüllt -->
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <p>Einstellungen werden hier implementiert...</p>
-          </div>
-        </section>
+          </section>
+
+          <!-- Settings Section -->
+          <section id="settings-section" class="content-section" class="u-hidden">
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">System-Einstellungen</h2>
+              </div>
+              <p>Einstellungen werden hier implementiert...</p>
+            </div>
+          </section>
         </div>
       </main>
     </div>
@@ -1199,7 +1201,7 @@
         padding: 10px 12px;
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: 8px;
         color: #fff;
         cursor: pointer;
@@ -2604,7 +2606,7 @@
       .search-input {
         min-width: 300px;
         padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid hsla(0,0%,100%,.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         background-color: var(--background-dark);
         color: var(--text-primary);

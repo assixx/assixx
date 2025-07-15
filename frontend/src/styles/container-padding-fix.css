@@ -67,7 +67,7 @@
   .org-container {
     padding: var(--spacing-md) !important; /* 16px auf Mobile */
   }
-  
+
   .main-content > .container:first-child {
     padding: var(--spacing-md);
   }

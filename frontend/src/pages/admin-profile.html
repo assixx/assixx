@@ -388,111 +388,111 @@
       <main class="main-content">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
-        
+
         <div class="container">
           <div class="profile-container">
-          <!-- Success/Error Messages -->
-          <div id="message-container"></div>
+            <!-- Success/Error Messages -->
+            <div id="message-container"></div>
 
-          <!-- Profile Picture Card -->
-          <div class="profile-card">
-            <h2 class="card-title">Profilbild</h2>
-            <div class="profile-picture-section">
-              <div class="profile-picture-container">
-                <div id="profile-picture-display" class="profile-picture-placeholder">
-                  <i class="fas fa-user"></i>
+            <!-- Profile Picture Card -->
+            <div class="profile-card">
+              <h2 class="card-title">Profilbild</h2>
+              <div class="profile-picture-section">
+                <div class="profile-picture-container">
+                  <div id="profile-picture-display" class="profile-picture-placeholder">
+                    <i class="fas fa-user"></i>
+                  </div>
                 </div>
-              </div>
-              <div class="profile-picture-actions">
-                <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
-                  <i class="fas fa-camera"></i>
-                  Bild ändern
-                </button>
-                <button class="btn btn-secondary" id="remove-picture-btn" class="u-hidden">
-                  <i class="fas fa-trash"></i>
-                  Bild entfernen
-                </button>
+                <div class="profile-picture-actions">
+                  <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
+                  <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
+                    <i class="fas fa-camera"></i>
+                    Bild ändern
+                  </button>
+                  <button class="btn btn-secondary" id="remove-picture-btn" class="u-hidden">
+                    <i class="fas fa-trash"></i>
+                    Bild entfernen
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Personal Information Card -->
-          <div class="profile-card">
-            <h2 class="card-title">Persönliche Informationen</h2>
+            <!-- Personal Information Card -->
+            <div class="profile-card">
+              <h2 class="card-title">Persönliche Informationen</h2>
 
-            <div class="info-box">
-              <i class="fas fa-info-circle"></i>
-              Als Administrator können Sie nur Ihren Vor- und Nachnamen bearbeiten. Für Änderungen an E-Mail, Position oder anderen Feldern
-              wenden Sie sich bitte an den Root-Administrator.
+              <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                Als Administrator können Sie nur Ihren Vor- und Nachnamen bearbeiten. Für Änderungen an E-Mail, Position oder anderen
+                Feldern wenden Sie sich bitte an den Root-Administrator.
+              </div>
+
+              <form id="profile-form">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" id="email" name="email" class="form-control non-editable" readonly />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Vorname</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Nachname</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Position</label>
+                    <input type="text" id="position" name="position" class="form-control non-editable" readonly />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Firma</label>
+                    <input type="text" id="company" name="company" class="form-control non-editable" readonly />
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save"></i>
+                  Änderungen speichern
+                </button>
+              </form>
             </div>
 
-            <form id="profile-form">
-              <div class="form-grid">
+            <!-- Password Change Card -->
+            <div class="profile-card">
+              <h2 class="card-title">Passwort ändern</h2>
+              <form id="password-form" autocomplete="off">
                 <div class="form-group">
-                  <label class="form-label">E-Mail</label>
-                  <input type="email" id="email" name="email" class="form-control non-editable" readonly />
+                  <label class="form-label">Aktuelles Passwort</label>
+                  <input
+                    type="password"
+                    id="current_password"
+                    name="current_password"
+                    class="form-control"
+                    autocomplete="current-password"
+                    required
+                  />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Vorname</label>
-                  <input type="text" id="first_name" name="first_name" class="form-control" />
+                  <label class="form-label">Neues Passwort</label>
+                  <input type="password" id="new_password" name="new_password" class="form-control" autocomplete="new-password" required />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Nachname</label>
-                  <input type="text" id="last_name" name="last_name" class="form-control" />
+                  <label class="form-label">Neues Passwort bestätigen</label>
+                  <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                    class="form-control"
+                    autocomplete="new-password"
+                    required
+                  />
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Position</label>
-                  <input type="text" id="position" name="position" class="form-control non-editable" readonly />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Firma</label>
-                  <input type="text" id="company" name="company" class="form-control non-editable" readonly />
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i>
-                Änderungen speichern
-              </button>
-            </form>
-          </div>
-
-          <!-- Password Change Card -->
-          <div class="profile-card">
-            <h2 class="card-title">Passwort ändern</h2>
-            <form id="password-form" autocomplete="off">
-              <div class="form-group">
-                <label class="form-label">Aktuelles Passwort</label>
-                <input
-                  type="password"
-                  id="current_password"
-                  name="current_password"
-                  class="form-control"
-                  autocomplete="current-password"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Neues Passwort</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" autocomplete="new-password" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Neues Passwort bestätigen</label>
-                <input
-                  type="password"
-                  id="confirm_password"
-                  name="confirm_password"
-                  class="form-control"
-                  autocomplete="new-password"
-                  required
-                />
-              </div>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-key"></i>
-                Passwort ändern
-              </button>
-            </form>
-          </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-key"></i>
+                  Passwort ändern
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </main>

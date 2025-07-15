@@ -36,7 +36,7 @@
 
       /* Seiten-spezifische Styles */
       /* Alle Glassmorphismus-Styles werden aus dashboard-theme.css verwendet */
-      
+
       /* Override breadcrumb alignment for this page */
       #breadcrumb-container + .page-header {
         margin-top: -19px !important;
@@ -70,72 +70,71 @@
         <div id="breadcrumb-container"></div>
         <div class="container">
           <!-- Page Header -->
-        <div class="page-header">
-        </div>
+          <div class="page-header"></div>
 
-        <!-- Search Section -->
-        <div class="documents-section" id="search-container">
-          <div class="search-bar-container">
-            <div class="search-input-wrapper">
-              <i class="fas fa-search search-icon"></i>
-              <input
-                type="text"
-                id="searchInput"
-                class="search-input"
-                placeholder="Suchen Sie nach Dokumentname, Beschreibung oder Uploader..."
-                autocomplete="off"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Sort Controls -->
-        <div class="documents-controls">
-          <div class="control-left">
-            <div class="stats-container">
-              <div class="stat-item">
-                <span class="stat-label">Gefundene Dokumente:</span>
-                <span class="stat-value" id="totalDocs">0</span>
+          <!-- Search Section -->
+          <div class="documents-section" id="search-container">
+            <div class="search-bar-container">
+              <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  id="searchInput"
+                  class="search-input"
+                  placeholder="Suchen Sie nach Dokumentname, Beschreibung oder Uploader..."
+                  autocomplete="off"
+                />
               </div>
             </div>
           </div>
-          <div class="control-right">
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
-                <i class="fas fa-sort me-2"></i>
-                <span>Neueste zuerst</span>
-                <i class="fas fa-chevron-down ms-auto"></i>
+
+          <!-- Sort Controls -->
+          <div class="documents-controls">
+            <div class="control-left">
+              <div class="stats-container">
+                <div class="stat-item">
+                  <span class="stat-label">Gefundene Dokumente:</span>
+                  <span class="stat-value" id="totalDocs">0</span>
+                </div>
               </div>
-              <div class="dropdown-options" id="sortDropdown">
-                <div class="dropdown-option" data-sort="newest">
-                  <i class="fas fa-clock"></i>
+            </div>
+            <div class="control-right">
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
+                  <i class="fas fa-sort me-2"></i>
                   <span>Neueste zuerst</span>
+                  <i class="fas fa-chevron-down ms-auto"></i>
                 </div>
-                <div class="dropdown-option" data-sort="oldest">
-                  <i class="fas fa-history"></i>
-                  <span>Älteste zuerst</span>
-                </div>
-                <div class="dropdown-option" data-sort="name">
-                  <i class="fas fa-font"></i>
-                  <span>Nach Name</span>
-                </div>
-                <div class="dropdown-option" data-sort="size">
-                  <i class="fas fa-weight"></i>
-                  <span>Nach Größe</span>
+                <div class="dropdown-options" id="sortDropdown">
+                  <div class="dropdown-option" data-sort="newest">
+                    <i class="fas fa-clock"></i>
+                    <span>Neueste zuerst</span>
+                  </div>
+                  <div class="dropdown-option" data-sort="oldest">
+                    <i class="fas fa-history"></i>
+                    <span>Älteste zuerst</span>
+                  </div>
+                  <div class="dropdown-option" data-sort="name">
+                    <i class="fas fa-font"></i>
+                    <span>Nach Name</span>
+                  </div>
+                  <div class="dropdown-option" data-sort="size">
+                    <i class="fas fa-weight"></i>
+                    <span>Nach Größe</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Documents Container -->
-        <div id="documentsContainer" class="documents-container">
-          <div class="empty-state">
-            <i class="fas fa-search"></i>
-            <h3>Suche starten</h3>
-            <p>Geben Sie einen Suchbegriff ein, um Dokumente zu finden.</p>
+          <!-- Documents Container -->
+          <div id="documentsContainer" class="documents-container">
+            <div class="empty-state">
+              <i class="fas fa-search"></i>
+              <h3>Suche starten</h3>
+              <p>Geben Sie einen Suchbegriff ein, um Dokumente zu finden.</p>
+            </div>
           </div>
-        </div>
         </div>
       </main>
     </div>
