@@ -83,7 +83,8 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 // Protect HTML pages based on user role with rate limiting
 app.use(
   rateLimiter.public,
-  (req: Request, res: Response, next: NextFunction) => { // lgtm[js/missing-rate-limiting]
+  (req: Request, res: Response, next: NextFunction) => {
+    // lgtm[js/missing-rate-limiting]
     if (req.path.endsWith('.html')) {
       return protectPage(req, res, next);
     }
@@ -115,7 +116,8 @@ app.use(
 );
 
 // Handle /js/ requests - map to TypeScript files in development
-app.use('/js', rateLimiter.public, (req: Request, res: Response): void => { // lgtm[js/missing-rate-limiting]
+app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
+  // lgtm[js/missing-rate-limiting]
   // Map JS requests to TypeScript source files
   const jsFileName = path.basename(req.path, '.js');
 
@@ -182,7 +184,8 @@ app.use('/js', rateLimiter.public, (req: Request, res: Response): void => { // l
 app.use(
   '/scripts',
   rateLimiter.public,
-  (req: Request, res: Response, next: NextFunction): void => { // lgtm[js/missing-rate-limiting]
+  (req: Request, res: Response, next: NextFunction): void => {
+    // lgtm[js/missing-rate-limiting]
     if (!req.path.endsWith('.ts')) {
       return next();
     }

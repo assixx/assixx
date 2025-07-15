@@ -14,12 +14,12 @@ import { escapeHtml } from './common';
  */
 function escapeJsString(str: string): string {
   return str
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/'/g, "\\'")    // Escape single quotes
-    .replace(/"/g, '\\"')    // Escape double quotes
-    .replace(/\n/g, '\\n')   // Escape newlines
-    .replace(/\r/g, '\\r')   // Escape carriage returns
-    .replace(/\t/g, '\\t');  // Escape tabs
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/'/g, "\\'") // Escape single quotes
+    .replace(/"/g, '\\"') // Escape double quotes
+    .replace(/\n/g, '\\n') // Escape newlines
+    .replace(/\r/g, '\\r') // Escape carriage returns
+    .replace(/\t/g, '\\t'); // Escape tabs
 }
 
 interface BlackboardEntry {

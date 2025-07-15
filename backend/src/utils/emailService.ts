@@ -48,7 +48,10 @@ function sanitizeHtml(html: string): string {
   for (let i = 0; i < 3; i++) {
     dangerousTags.forEach((tag) => {
       // Entferne komplette Tags mit Inhalt (inkl. malformed end tags)
-      const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
+      const fullTagRegex = new RegExp(
+        `<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`,
+        'gi'
+      );
       sanitized = sanitized.replace(fullTagRegex, '');
 
       // Entferne self-closing und einzelne Tags

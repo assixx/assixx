@@ -1439,7 +1439,7 @@ class ChatClient {
 
     const messageTextDiv = document.createElement('div');
     messageTextDiv.className = 'message-text';
-    
+
     // Use innerHTML for linkified content since we control the linkify function
     // and it only creates safe anchor tags with escaped URLs
     // lgtm[js/xss] - Content is escaped before linkification, URLs are escaped in linkify()
@@ -1496,56 +1496,56 @@ class ChatClient {
 
   renderAttachments(attachments: Attachment[]): DocumentFragment {
     const fragment = document.createDocumentFragment();
-    
+
     attachments.forEach((attachment) => {
       const isImage = attachment.mime_type.startsWith('image/');
       const fileSize = this.formatFileSize(attachment.file_size);
-      
+
       const attachmentDiv = document.createElement('div');
-      
+
       if (isImage) {
         attachmentDiv.className = 'attachment image-attachment';
-        
+
         const img = document.createElement('img');
         img.src = `/api/chat/attachments/${attachment.id}`;
         img.alt = attachment.file_name;
         attachmentDiv.appendChild(img);
       } else {
         attachmentDiv.className = 'attachment file-attachment';
-        
+
         const fileIcon = document.createElement('i');
         fileIcon.className = 'fas fa-file';
         attachmentDiv.appendChild(fileIcon);
-        
+
         const fileInfo = document.createElement('div');
         fileInfo.className = 'file-info';
-        
+
         const fileName = document.createElement('div');
         fileName.className = 'file-name';
         fileName.textContent = attachment.file_name;
         fileInfo.appendChild(fileName);
-        
+
         const fileSizeDiv = document.createElement('div');
         fileSizeDiv.className = 'file-size';
         fileSizeDiv.textContent = fileSize;
         fileInfo.appendChild(fileSizeDiv);
-        
+
         attachmentDiv.appendChild(fileInfo);
-        
+
         const downloadLink = document.createElement('a');
         downloadLink.href = `/api/chat/attachments/${attachment.id}/download`;
         downloadLink.className = 'download-btn';
-        
+
         const downloadIcon = document.createElement('i');
         downloadIcon.className = 'fas fa-download';
         downloadLink.appendChild(downloadIcon);
-        
+
         attachmentDiv.appendChild(downloadLink);
       }
-      
+
       fragment.appendChild(attachmentDiv);
     });
-    
+
     return fragment;
   }
 
