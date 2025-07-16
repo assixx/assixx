@@ -19,7 +19,6 @@ import { AuthenticatedRequest } from "../types/request.types";
 import { security } from "../middleware/security";
 import { successResponse, errorResponse } from "../types/response.types";
 import {
-  validatePath,
   sanitizeFilename,
   getUploadDirectory,
 } from "../utils/pathSecurity";
@@ -979,15 +978,26 @@ router.get(
       res.setHeader("X-Frame-Options", "SAMEORIGIN");
 
       // Validate and send file
-      const baseDir = path.resolve(process.cwd(), "uploads");
-      const validatedPath = validatePath(attachment.file_path, baseDir);
-
-      if (!validatedPath) {
+      // If the file_path is already absolute, use it directly
+      let filePath = attachment.file_path;
+      
+      // If it's a relative path, resolve it relative to uploads directory
+      if (!path.isAbsolute(filePath)) {
+        const baseDir = path.resolve(process.cwd(), "uploads");
+        filePath = path.join(baseDir, filePath);
+      }
+      
+      // Ensure the file is within the uploads directory
+      const uploadsBase = path.resolve(process.cwd(), "uploads");
+      const resolvedPath = path.resolve(filePath);
+      
+      if (!resolvedPath.startsWith(uploadsBase)) {
+        logger.warn(`Path traversal attempt for attachment ${attachmentId}: ${filePath}`);
         res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
         return;
       }
 
-      res.sendFile(validatedPath);
+      res.sendFile(resolvedPath);
     } catch (error) {
       console.error("Error in GET /api/blackboard/attachments/:id:", error);
       res
@@ -1048,15 +1058,26 @@ router.get(
       res.setHeader("X-Frame-Options", "SAMEORIGIN");
 
       // Validate and send file
-      const baseDir = path.resolve(process.cwd(), "uploads");
-      const validatedPath = validatePath(attachment.file_path, baseDir);
-
-      if (!validatedPath) {
+      // If the file_path is already absolute, use it directly
+      let filePath = attachment.file_path;
+      
+      // If it's a relative path, resolve it relative to uploads directory
+      if (!path.isAbsolute(filePath)) {
+        const baseDir = path.resolve(process.cwd(), "uploads");
+        filePath = path.join(baseDir, filePath);
+      }
+      
+      // Ensure the file is within the uploads directory
+      const uploadsBase = path.resolve(process.cwd(), "uploads");
+      const resolvedPath = path.resolve(filePath);
+      
+      if (!resolvedPath.startsWith(uploadsBase)) {
+        logger.warn(`Path traversal attempt for attachment preview ${attachmentId}: ${filePath}`);
         res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
         return;
       }
 
-      res.sendFile(validatedPath);
+      res.sendFile(resolvedPath);
     } catch (error) {
       console.error(
         "Error in GET /api/blackboard/attachments/:id/preview:",
@@ -1068,6 +1089,7 @@ router.get(
     }
   }),
 );
+
 
 /**
  * @route DELETE /api/blackboard/attachments/:attachmentId

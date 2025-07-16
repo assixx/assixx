@@ -31,9 +31,15 @@
    Seiten mit speziellen Layout-Anforderungen
    ======================================== */
 
-/* Blackboard & Calendar - nutzen .flex Layout */
+/* Calendar - nutzt .flex Layout */
 #breadcrumb-container + .flex {
   margin-top: -15px !important;
+}
+
+/* Blackboard - spezifischer Abstand */
+.blackboard-page #breadcrumb-container + *,
+body[data-page="blackboard"] #breadcrumb-container + * {
+  margin-top: -13px !important;
 }
 
 /* Shifts page */

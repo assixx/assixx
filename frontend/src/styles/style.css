@@ -45,7 +45,7 @@ body {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-lg); /* 24px - konsistent mit root-dashboard */
+  /* padding entfernt für volle Breite wie root-dashboard */
 }
 
 /* Container full width when sidebar is collapsed */

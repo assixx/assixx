@@ -250,14 +250,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initial loads - add slight delay to ensure DOM is ready
+  console.log('[Admin Dashboard] Setting up initial loads...');
   setTimeout(() => {
-    loadDashboardStats();
-    loadRecentEmployees();
-    loadRecentDocuments();
-    loadDepartments();
-    loadTeams();
-    loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
-    loadBlackboardPreview(); // Laden der Blackboard-Einträge
+    try {
+      console.log('[Admin Dashboard] Starting initial loads...');
+      loadDashboardStats();
+      loadRecentEmployees();
+      loadRecentDocuments();
+      loadDepartments();
+      loadTeams();
+      loadDepartmentsForEmployeeSelect(); // Laden der Abteilungen für Mitarbeiterformular
+      loadBlackboardPreview(); // Laden der Blackboard-Einträge
+      console.log('[Admin Dashboard] Calling loadBlackboardWidget...');
+      loadBlackboardWidget(); // Laden des Blackboard-Widgets
+    } catch (error) {
+      console.error('[Admin Dashboard] Error in initial loads:', error);
+    }
   }, 100);
 
   // Handle section parameter on page load
@@ -271,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default to dashboard if no section specified
     showSection('dashboard');
   }
+  
 
   // Setup manage links
   const manageEmployeesLink = document.getElementById('manage-employees-link');
@@ -515,6 +524,182 @@ document.addEventListener('DOMContentLoaded', () => {
       low: 'Niedrig',
     };
     return labels[priority] || 'Normal';
+  }
+
+  // Load Blackboard Widget - zeigt die neuesten Einträge mit Anhängen
+  async function loadBlackboardWidget(): Promise<void> {
+    console.log('[BlackboardWidget] Starting to load widget...');
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        console.error('[BlackboardWidget] No auth token found');
+        return;
+      }
+      console.log('[BlackboardWidget] Token found, fetching entries...');
+
+      const response = await fetch('/api/blackboard/dashboard?limit=3', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log('[BlackboardWidget] Response status:', response.status);
+
+      const containerElement = document.getElementById('blackboard-widget-container');
+      if (!containerElement) {
+        console.error('[BlackboardWidget] Container element not found: blackboard-widget-container');
+        return;
+      }
+      console.log('[BlackboardWidget] Container element found:', containerElement);
+
+      // Create the widget structure
+      containerElement.innerHTML = `
+        <div class="blackboard-widget">
+          <div class="blackboard-widget-header">
+            <h3 class="blackboard-widget-title">
+              <i class="fas fa-thumbtack"></i>
+              Schwarzes Brett
+            </h3>
+            <a href="/blackboard" class="blackboard-widget-link">
+              Alle anzeigen <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          <div id="blackboard-widget-content">
+            <div class="blackboard-widget-loading">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Lade Einträge...</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const widgetContent = document.getElementById('blackboard-widget-content');
+      if (!widgetContent) return;
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Unauthorized access to blackboard');
+        }
+        throw new Error('Failed to load blackboard entries');
+      }
+
+      const entries = await response.json();
+      console.log('[BlackboardWidget] API Response - entries array:', entries);
+      console.log('[BlackboardWidget] Number of entries:', entries.length);
+      console.log('[BlackboardWidget] First entry (if any):', entries[0]);
+
+      // Clear loading placeholder
+      widgetContent.innerHTML = '';
+
+      if (entries.length === 0) {
+        console.log('[BlackboardWidget] No entries found, showing empty state');
+        // Empty state
+        widgetContent.innerHTML = `
+          <div class="blackboard-empty-state">
+            <i class="fas fa-clipboard"></i>
+            <p>Keine Einträge vorhanden</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Create mini-notes container
+      const miniNotesContainer = document.createElement('div');
+      miniNotesContainer.className = 'mini-notes-container';
+
+      console.log('[BlackboardWidget] Creating mini-notes for entries...');
+      
+      // Render entries as mini-notes
+      entries.forEach((entry: any, index: number) => {
+        console.log(`[BlackboardWidget] Processing entry ${index + 1}:`, entry);
+        
+        const noteDiv = document.createElement('div');
+        const colorClass = entry.color || 'white';
+        const hasAttachment = entry.attachments && entry.attachments.length > 0;
+        noteDiv.className = `mini-note ${colorClass}${hasAttachment ? ' has-attachment' : ''}`;
+        noteDiv.id = `mini-note-${entry.id}`;
+
+        let attachmentHtml = '';
+        if (hasAttachment && entry.attachments[0]) {
+          const attachment = entry.attachments[0];
+          if (attachment.mime_type === 'application/pdf') {
+            // PDF preview - using new approach with scaling
+            attachmentHtml = `
+              <div class="mini-note-attachment" style="position: relative; height: 220px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
+                <div style="transform: scale(0.15); transform-origin: top left; width: ${100/0.15}%; height: ${100/0.15}%;">
+                  <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0&navpanes=0&scrollbar=0&view=FitH" 
+                          type="application/pdf" 
+                          style="width: 100%; height: 100%; pointer-events: none;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
+                      <i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545; margin-bottom: 5px;"></i>
+                      <div style="font-size: 10px;">PDF-Dokument</div>
+                    </div>
+                  </object>
+                </div>
+              </div>
+            `;
+          } else if (attachment.mime_type.startsWith('image/')) {
+            // Image preview
+            attachmentHtml = `
+              <div class="mini-note-attachment">
+                <img src="/api/blackboard/attachments/${attachment.id}/preview" 
+                     alt="${attachment.original_name}" 
+                     style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
+                     loading="lazy"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 80px; color: #666;">
+                  <i class="fas fa-image" style="font-size: 24px; margin-bottom: 5px;"></i>
+                  <span style="font-size: 10px;">Bild</span>
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        const createdDate = new Date(entry.created_at);
+        const dateStr = createdDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+        noteDiv.innerHTML = `
+          <div class="mini-pushpin"></div>
+          <div class="mini-note-title">${entry.title}</div>
+          ${attachmentHtml}
+          <div class="mini-note-meta">
+            <span class="mini-note-priority">
+              <span class="priority-dot ${entry.priority_level || ''}"></span>
+              ${getPriorityLabel(entry.priority_level || 'normal')}
+            </span>
+            <span>${dateStr}</span>
+          </div>
+        `;
+
+        noteDiv.onclick = () => {
+          window.location.href = '/blackboard';
+        };
+
+        miniNotesContainer.appendChild(noteDiv);
+      });
+
+      widgetContent.appendChild(miniNotesContainer);
+      console.log('[BlackboardWidget] Mini-notes container appended to widget content');
+
+      // Add widget loaded class
+      const widget = containerElement.querySelector('.blackboard-widget');
+      if (widget) {
+        widget.classList.add('loaded');
+        console.log('[BlackboardWidget] Widget marked as loaded');
+      }
+
+    } catch (error) {
+      console.error('[BlackboardWidget] Error loading widget:', error);
+
+      const widgetContent = document.getElementById('blackboard-widget-content');
+      if (widgetContent) {
+        widgetContent.innerHTML = `
+          <div class="blackboard-empty-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Fehler beim Laden</p>
+          </div>
+        `;
+      }
+    }
   }
 
   // Create Employee
@@ -964,4 +1149,11 @@ if (typeof window !== 'undefined') {
       }
     }, 100);
   });
+}
+
+// Export loadBlackboardWidget to window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).debugLoadBlackboardWidget = () => {
+    console.log('[Debug] Manual loadBlackboardWidget call');
+  };
 }

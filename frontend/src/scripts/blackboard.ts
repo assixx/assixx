@@ -194,11 +194,18 @@ function initializeBlackboard() {
           const userData = JSON.parse(storedUser);
           currentUserId = userData.id;
           isAdmin = userData.role === 'admin' || userData.role === 'root';
+          
+          console.log('[Blackboard] User data from localStorage:', userData);
+          console.log('[Blackboard] isAdmin:', isAdmin);
+          console.log('[Blackboard] User role:', userData.role);
 
           // Show/hide "New Entry" button based on permissions
           const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
           if (newEntryBtn) {
-            newEntryBtn.style.display = isAdmin ? 'block' : 'none';
+            console.log('[Blackboard] Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
+            newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+          } else {
+            console.log('[Blackboard] newEntryBtn not found!');
           }
 
           // Load departments and teams for form dropdowns
@@ -210,9 +217,17 @@ function initializeBlackboard() {
             .then((userData: UserData) => {
               currentUserId = userData.id;
               isAdmin = userData.role === 'admin' || userData.role === 'root';
+              
+              console.log('[Blackboard] User data from API:', userData);
+              console.log('[Blackboard] isAdmin after API call:', isAdmin);
+              console.log('[Blackboard] User role from API:', userData.role);
+              
               const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
               if (newEntryBtn) {
-                newEntryBtn.style.display = isAdmin ? 'block' : 'none';
+                console.log('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
+                newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+              } else {
+                console.log('[Blackboard] newEntryBtn not found after API call!');
               }
               loadDepartmentsAndTeams();
             })
@@ -227,9 +242,17 @@ function initializeBlackboard() {
           .then((userData: UserData) => {
             currentUserId = userData.id;
             isAdmin = userData.role === 'admin' || userData.role === 'root';
+            
+            console.log('[Blackboard] No localStorage - User data from API:', userData);
+            console.log('[Blackboard] No localStorage - isAdmin:', isAdmin);
+            console.log('[Blackboard] No localStorage - User role:', userData.role);
+            
             const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
             if (newEntryBtn) {
-              newEntryBtn.style.display = isAdmin ? 'block' : 'none';
+              console.log('[Blackboard] No localStorage - Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
+              newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            } else {
+              console.log('[Blackboard] No localStorage - newEntryBtn not found!');
             }
             loadDepartmentsAndTeams();
           })
@@ -712,7 +735,9 @@ async function fetchUserData(): Promise<UserData> {
     throw new Error('Failed to fetch user data');
   }
 
-  return response.json();
+  const result = await response.json();
+  // API returns { success: true, data: {...} }, we need just the data
+  return result.data || result;
 }
 
 // loadHeaderUserInfo function removed - now handled by unified navigation
@@ -844,34 +869,29 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         </div>
       `;
     } else if (isPDF) {
-      // Adjust PDF height to account for hidden toolbar
-      let pdfHeightStyle = '';
-      if (attachmentSize === 'small') {
-        pdfHeightStyle = 'height: 240px;'; // 200 + 40 for toolbar
-      } else if (attachmentSize === 'medium') {
-        pdfHeightStyle = 'height: 340px;'; // 300 + 40 for toolbar
-      } else if (attachmentSize === 'large') {
-        pdfHeightStyle = 'height: 440px;'; // 400 + 40 for toolbar
-      }
-
+      // SVG-Wrapper für PDF - verhindert Abschneiden
+      const containerHeight = attachmentSize === 'small' ? 350 : attachmentSize === 'medium' ? 500 : 380;
+      const scale = attachmentSize === 'small' ? 0.3 : attachmentSize === 'medium' ? 0.4 : 0.5;
+      
       contentHtml = `
-        <div class="pinboard-pdf-preview" style="${sizeStyle} ${pdfHeightStyle} margin: 0 auto; position: relative;">
-          <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0" 
-                  type="application/pdf" 
-                  style="width: 100%; height: 100%; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="text-align: center; padding: 24px;">
-              <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545; margin-bottom: 10px;"></i>
-              <p style="color: #666;">PDF-Vorschau nicht verfügbar</p>
-              <button class="btn btn-sm btn-primary" 
-                      onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')")
-                PDF öffnen
-              </button>
+        <div class="pinboard-pdf-preview" style="${sizeStyle} height: ${containerHeight}px; position: relative; overflow: hidden; background: white; border-radius: 8px; border: 1px solid #ddd;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;">
+            <div style="transform: scale(${scale}); transform-origin: top left; width: ${100/scale}%; height: ${100/scale}%;">
+              <object 
+                data="/api/blackboard/attachments/${attachment.id}/preview#view=FitH&toolbar=0&navpanes=0&scrollbar=0" 
+                type="application/pdf"
+                style="width: 100%; height: 100%; border: none;">
+                <div style="padding: 20px; text-align: center;">
+                  <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>
+                  <p>PDF-Vorschau</p>
+                </div>
+              </object>
             </div>
-          </object>
+          </div>
           <div class="pdf-overlay" 
+               style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; cursor: pointer; z-index: 10;"
                onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')"
                title="Klicken für Vollansicht">
-            <i class="fas fa-expand"></i>
           </div>
         </div>
       `;
@@ -1606,7 +1626,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
           <h2 id="previewTitle">Vorschau</h2>
           <button type="button" class="modal-close" data-action="close">&times;</button>
         </div>
-        <div class="modal-body" id="previewContent" style="overflow: auto; max-height: calc(90vh - 200px); min-height: 400px;">
+        <div class="modal-body" id="previewContent" style="overflow: auto; max-height: calc(85vh - 150px); min-height: 400px; padding: 0;">
           <div class="text-center">
             <i class="fas fa-spinner fa-spin fa-3x"></i>
             <p>Lade Vorschau...</p>
@@ -1717,22 +1737,13 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
-      // Display PDF using object tag
+      // Display PDF with gray background to hide gaps
       previewContent.innerHTML = `
-        <div style="width: 100%; height: 600px; position: relative;">
-          <object data="${blobUrl}" 
-                  type="application/pdf" 
-                  width="100%" 
-                  height="100%" 
-                  style="border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-            <div style="text-align: center; padding: 40px;">
-              <i class="fas fa-file-pdf fa-5x" style="color: #e74c3c; margin-bottom: 20px;"></i>
-              <p>PDF-Vorschau konnte nicht geladen werden.</p>
-              <button id="openPdfNewTab" class="btn btn-primary" style="margin-top: 20px;">
-                <i class="fas fa-external-link-alt"></i> In neuem Tab öffnen
-              </button>
-            </div>
-          </object>
+        <div style="width: 100%; height: 100%; background: #525659; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+          <iframe src="${blobUrl}#zoom=100" 
+                  style="width: calc(100% + 40px); height: 100%; border: none; display: block; margin-left: -20px;"
+                  allowfullscreen>
+          </iframe>
         </div>
       `;
 
@@ -2131,3 +2142,4 @@ async function saveDirectAttachment(): Promise<void> {
     showError(error instanceof Error ? error.message : 'Fehler beim Speichern');
   }
 }
+
