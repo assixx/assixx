@@ -462,6 +462,12 @@ function setupEventListeners(): void {
 
   // File upload handling
   setupFileUploadHandlers();
+  
+  // Zoom controls
+  setupZoomControls();
+  
+  // Fullscreen functionality
+  setupFullscreenControls();
 }
 
 /**
@@ -2140,6 +2146,183 @@ async function saveDirectAttachment(): Promise<void> {
   } catch (error) {
     console.error('Error saving direct attachment:', error);
     showError(error instanceof Error ? error.message : 'Fehler beim Speichern');
+  }
+}
+
+// Global variables for zoom and fullscreen
+let currentZoom = 100;
+let fullscreenAutoRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Setup zoom controls for the blackboard
+ */
+function setupZoomControls(): void {
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const zoomLevelDisplay = document.getElementById('zoomLevel');
+  const blackboardContainer = document.getElementById('blackboardContainer');
+
+  if (!zoomInBtn || !zoomOutBtn || !zoomLevelDisplay || !blackboardContainer) {
+    console.error('[Zoom] Required elements not found');
+    return;
+  }
+
+  // Zoom in
+  zoomInBtn.addEventListener('click', () => {
+    if (currentZoom < 200) {
+      currentZoom += 10;
+      blackboardContainer.style.zoom = `${currentZoom}%`;
+      zoomLevelDisplay.textContent = `${currentZoom}%`;
+    }
+  });
+
+  // Zoom out
+  zoomOutBtn.addEventListener('click', () => {
+    if (currentZoom > 50) {
+      currentZoom -= 10;
+      blackboardContainer.style.zoom = `${currentZoom}%`;
+      zoomLevelDisplay.textContent = `${currentZoom}%`;
+    }
+  });
+}
+
+/**
+ * Setup fullscreen controls
+ */
+function setupFullscreenControls(): void {
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+  const blackboardContainer = document.getElementById('blackboardContainer');
+
+  if (!fullscreenBtn || !exitFullscreenBtn || !blackboardContainer) {
+    console.error('[Fullscreen] Required elements not found');
+    return;
+  }
+
+  // Enter fullscreen
+  fullscreenBtn.addEventListener('click', async () => {
+    try {
+      // Add fullscreen mode class to body
+      document.body.classList.add('fullscreen-mode');
+      
+      // Request fullscreen
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      } else if ((document.documentElement as any).webkitRequestFullscreen) {
+        await (document.documentElement as any).webkitRequestFullscreen();
+      } else if ((document.documentElement as any).msRequestFullscreen) {
+        await (document.documentElement as any).msRequestFullscreen();
+      }
+      
+      // Start auto-refresh (every 60 minutes)
+      startAutoRefresh();
+      
+      // Update button icon
+      const icon = fullscreenBtn.querySelector('i');
+      if (icon) {
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+      }
+    } catch (error) {
+      console.error('[Fullscreen] Error entering fullscreen:', error);
+      document.body.classList.remove('fullscreen-mode');
+    }
+  });
+
+  // Exit fullscreen
+  exitFullscreenBtn.addEventListener('click', () => {
+    exitFullscreen();
+  });
+
+  // Handle ESC key or browser exit fullscreen
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+  document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+  // ESC key handler
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.body.classList.contains('fullscreen-mode')) {
+      exitFullscreen();
+    }
+  });
+}
+
+/**
+ * Handle fullscreen state changes
+ */
+function handleFullscreenChange(): void {
+  const isFullscreen = !!(document.fullscreenElement || 
+                         (document as any).webkitFullscreenElement || 
+                         (document as any).mozFullScreenElement || 
+                         (document as any).msFullscreenElement);
+  
+  if (!isFullscreen) {
+    // User exited fullscreen
+    document.body.classList.remove('fullscreen-mode');
+    stopAutoRefresh();
+    
+    // Reset button icon
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    if (fullscreenBtn) {
+      const icon = fullscreenBtn.querySelector('i');
+      if (icon) {
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+      }
+    }
+  }
+}
+
+/**
+ * Exit fullscreen mode
+ */
+function exitFullscreen(): void {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if ((document as any).webkitExitFullscreen) {
+    (document as any).webkitExitFullscreen();
+  } else if ((document as any).mozCancelFullScreen) {
+    (document as any).mozCancelFullScreen();
+  } else if ((document as any).msExitFullscreen) {
+    (document as any).msExitFullscreen();
+  }
+  
+  document.body.classList.remove('fullscreen-mode');
+  stopAutoRefresh();
+}
+
+/**
+ * Start auto-refresh in fullscreen mode
+ */
+function startAutoRefresh(): void {
+  // Initial load
+  if (entriesLoadingEnabled) {
+    loadEntries();
+  }
+  
+  // Set up interval for 60 minutes (3600000 ms)
+  fullscreenAutoRefreshInterval = setInterval(() => {
+    console.log('[AutoRefresh] Reloading entries...');
+    if (entriesLoadingEnabled) {
+      loadEntries();
+    }
+  }, 3600000); // 60 minutes
+  
+  // Update indicator text
+  const indicator = document.querySelector('.auto-refresh-indicator');
+  if (indicator) {
+    indicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Auto-Refresh: 60 Min';
+  }
+}
+
+/**
+ * Stop auto-refresh
+ */
+function stopAutoRefresh(): void {
+  if (fullscreenAutoRefreshInterval) {
+    clearInterval(fullscreenAutoRefreshInterval);
+    fullscreenAutoRefreshInterval = null;
   }
 }
 

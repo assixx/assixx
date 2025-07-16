@@ -282,11 +282,125 @@
         border-color: rgba(255, 255, 255, 0.5);
         box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
       }
+      
+      /* Fullscreen Mode Styles */
+      .fullscreen-mode {
+        background: #000;
+        padding: 20px;
+      }
+      
+      .fullscreen-mode .blackboard-container {
+        max-width: 100%;
+        margin: 0 auto;
+        height: 100vh;
+        display: grid;
+        grid-template-columns: auto;
+        gap: 30px;
+        padding: 40px;
+        overflow-y: auto;
+        align-content: start;
+      }
+      
+      .fullscreen-mode .filters-container,
+      .fullscreen-mode .sidebar,
+      .fullscreen-mode .navigation,
+      .fullscreen-mode #navigation-container,
+      .fullscreen-mode #breadcrumb-container,
+      .fullscreen-mode .controls-row,
+      .fullscreen-mode .flex.flex-between.mb-4,
+      .fullscreen-mode .card.mb-4 {
+        display: none !important;
+      }
+      
+      .fullscreen-mode .layout-container {
+        padding-top: 0 !important;
+      }
+      
+      .fullscreen-mode .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      
+      .fullscreen-mode .content-card {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      
+      /* Exit fullscreen button */
+      .fullscreen-exit-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+      
+      .fullscreen-exit-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+      }
+      
+      .fullscreen-mode .fullscreen-exit-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      /* Auto-refresh indicator */
+      .auto-refresh-indicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 255, 0, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 255, 0, 0.3);
+        color: #00ff00;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: none;
+        z-index: 9998;
+      }
+      
+      .fullscreen-mode .auto-refresh-indicator {
+        display: block;
+      }
+      
+      /* Optimize notes for fullscreen */
+      .fullscreen-mode .note {
+        transform: scale(1);
+        margin: 0;
+        height: 100%;
+        min-height: 300px;
+      }
     </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
   </head>
   <body class="blackboard-page" data-page="blackboard">
+    <!-- Fullscreen Controls -->
+    <button class="fullscreen-exit-btn" id="exitFullscreenBtn">
+      <i class="fas fa-compress"></i>
+      <span>Vollbild beenden (ESC)</span>
+    </button>
+    
+    <div class="auto-refresh-indicator">
+      <i class="fas fa-sync-alt fa-spin"></i>
+      Auto-Refresh: 30s
+    </div>
+    
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
@@ -366,6 +480,9 @@
                 <span id="zoomLevel" class="zoom-level">100%</span>
                 <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
                   <i class="fas fa-minus"></i>
+                </button>
+                <button id="fullscreenBtn" class="zoom-btn" title="Vollbild" style="margin-left: 10px;">
+                  <i class="fas fa-expand"></i>
                 </button>
               </div>
               <button id="newEntryBtn" class="btn btn-primary u-m-0">
