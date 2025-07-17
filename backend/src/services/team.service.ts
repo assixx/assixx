@@ -43,7 +43,7 @@ class TeamService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: TeamFilters = {},
+    _filters: TeamFilters = {}
   ): Promise<TeamData[]> {
     try {
       // Get tenant_id from filters or extract from tenantDb
@@ -112,7 +112,7 @@ class TeamService {
   async update(
     tenantDb: Pool,
     id: number,
-    data: TeamUpdateData,
+    data: TeamUpdateData
   ): Promise<TeamData | null> {
     try {
       const modelData: ModelTeamUpdateData = {

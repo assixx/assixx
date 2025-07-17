@@ -157,7 +157,7 @@ class SurveyController {
       // Using direct model import since the original controller does this
       const result = await Survey.getById(
         parseInt(req.params.id, 10),
-        tenantId,
+        tenantId
       );
       if (!result) {
         res.status(404).json({ error: "Nicht gefunden" });
@@ -257,7 +257,7 @@ class SurveyController {
       const result = await Survey.update(
         parseInt(req.params.id, 10),
         surveyDataForUpdate,
-        tenantId,
+        tenantId
       );
 
       res.json({
@@ -320,7 +320,7 @@ class SurveyController {
    */
   async createFromTemplate(
     req: SurveyTemplateRequest,
-    res: Response,
+    res: Response
   ): Promise<void> {
     try {
       const tenantId = req.user.tenant_id;
@@ -328,7 +328,7 @@ class SurveyController {
       const surveyId = await surveyService.createFromTemplate(
         parseInt(req.params.templateId, 10),
         tenantId,
-        createdBy,
+        createdBy
       );
       res
         .status(201)
@@ -351,7 +351,7 @@ class SurveyController {
       const tenantId = req.user.tenant_id;
       const statistics = await surveyService.getStatistics(
         parseInt(req.params.id, 10),
-        tenantId,
+        tenantId
       );
       res.json(statistics);
     } catch (error) {

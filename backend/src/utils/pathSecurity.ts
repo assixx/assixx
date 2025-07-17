@@ -102,7 +102,7 @@ export function createSecurePath(baseDir: string, filename: string): string {
  */
 export function isAllowedExtension(
   filename: string,
-  allowedExtensions: string[],
+  allowedExtensions: string[]
 ): boolean {
   const ext = path.extname(filename).toLowerCase();
   return allowedExtensions.includes(ext);
@@ -145,7 +145,7 @@ export async function safeDeleteFile(filePath: string): Promise<boolean> {
 
     if (!validatedPath?.startsWith(uploadsDir)) {
       logger.warn(
-        `Attempted to delete file outside uploads directory: ${filePath}`,
+        `Attempted to delete file outside uploads directory: ${filePath}`
       );
       return false;
     }

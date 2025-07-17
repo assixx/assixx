@@ -78,7 +78,7 @@ export class Team {
 
   static async findAll(tenant_id: number | null = null): Promise<DbTeam[]> {
     logger.info(
-      `Fetching all teams${tenant_id ? ` for tenant ${tenant_id}` : ""}`,
+      `Fetching all teams${tenant_id ? ` for tenant ${tenant_id}` : ""}`
     );
     const query = `
       SELECT t.*, d.name AS department_name 
@@ -91,7 +91,7 @@ export class Team {
     try {
       const [rows] = await executeQuery<DbTeam[]>(
         query,
-        tenant_id ? [tenant_id] : [],
+        tenant_id ? [tenant_id] : []
       );
       logger.info(`Retrieved ${rows.length} teams`);
       return rows;
@@ -188,7 +188,7 @@ export class Team {
         return true;
       }
       logger.error(
-        `Error adding user ${userId} to team ${teamId}: ${mysqlError.message}`,
+        `Error adding user ${userId} to team ${teamId}: ${mysqlError.message}`
       );
       throw error;
     }
@@ -196,7 +196,7 @@ export class Team {
 
   static async removeUserFromTeam(
     userId: number,
-    teamId: number,
+    teamId: number
   ): Promise<boolean> {
     logger.info(`Removing user ${userId} from team ${teamId}`);
     const query = "DELETE FROM user_teams WHERE user_id = ? AND team_id = ?";
@@ -214,7 +214,7 @@ export class Team {
       return true;
     } catch (error) {
       logger.error(
-        `Error removing user ${userId} from team ${teamId}: ${(error as Error).message}`,
+        `Error removing user ${userId} from team ${teamId}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -235,7 +235,7 @@ export class Team {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching members for team ${teamId}: ${(error as Error).message}`,
+        `Error fetching members for team ${teamId}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -257,7 +257,7 @@ export class Team {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching teams for user ${userId}: ${(error as Error).message}`,
+        `Error fetching teams for user ${userId}: ${(error as Error).message}`
       );
       throw error;
     }

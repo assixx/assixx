@@ -153,7 +153,7 @@ export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
 export function errorResponse(
   error: string,
   statusCode: number = 500,
-  code?: string,
+  code?: string
 ): ErrorResponse {
   return {
     success: false,
@@ -168,7 +168,7 @@ export function paginatedResponse<T>(
   data: T[],
   page: number,
   limit: number,
-  total: number,
+  total: number
 ): PaginatedResponse<T> {
   const totalPages = Math.ceil(total / limit);
 

@@ -22,12 +22,12 @@ class KvpPermissionService {
    */
   async getAdminDepartments(
     adminId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<number[]> {
     try {
       const result = await adminPermissionService.getAdminDepartments(
         adminId,
-        tenantId,
+        tenantId
       );
       return result.departments.map((dept) => dept.id);
     } catch (error) {
@@ -43,7 +43,7 @@ class KvpPermissionService {
     userId: number,
     suggestionId: number,
     role: "root" | "admin" | "employee",
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       // Root can see everything
@@ -54,7 +54,7 @@ class KvpPermissionService {
         `SELECT tenant_id, department_id, org_level, org_id, submitted_by 
          FROM kvp_suggestions 
          WHERE id = ?`,
-        [suggestionId],
+        [suggestionId]
       );
 
       if (suggestions.length === 0) return false;
@@ -74,7 +74,7 @@ class KvpPermissionService {
         // Can see department suggestions if in same department
         const [userInfo] = await executeQuery<RowDataPacket[]>(
           "SELECT department_id FROM users WHERE id = ?",
-          [userId],
+          [userId]
         );
 
         if (userInfo.length > 0 && suggestion.org_level === "department") {
@@ -106,7 +106,7 @@ class KvpPermissionService {
     userId: number,
     suggestionId: number,
     role: "root" | "admin" | "employee",
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       // Get suggestion details
@@ -114,7 +114,7 @@ class KvpPermissionService {
         `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by 
          FROM kvp_suggestions 
          WHERE id = ?`,
-        [suggestionId],
+        [suggestionId]
       );
 
       if (suggestions.length === 0) return false;
@@ -177,7 +177,7 @@ class KvpPermissionService {
       // Get user's department
       const [userInfo] = await executeQuery<RowDataPacket[]>(
         "SELECT department_id FROM users WHERE id = ?",
-        [userId],
+        [userId]
       );
 
       const userDeptId = userInfo[0]?.department_id ?? null;
@@ -194,7 +194,7 @@ class KvpPermissionService {
         userId,
         "department",
         userDeptId || 0, // Use 0 as fallback for NULL department
-        "company",
+        "company"
       );
     } else if (role === "admin") {
       // Get admin's managed departments
@@ -203,7 +203,7 @@ class KvpPermissionService {
       if (adminDepts.length > 0) {
         const deptPlaceholders = adminDepts.map(() => "?").join(",");
         conditions.push(
-          `(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`,
+          `(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`
         );
         queryParams.push(...adminDepts, "company");
       } else {
@@ -247,7 +247,7 @@ class KvpPermissionService {
   async canShareSuggestion(
     adminId: number,
     suggestionId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       // Get suggestion details
@@ -255,7 +255,7 @@ class KvpPermissionService {
         `SELECT tenant_id, department_id, org_level 
          FROM kvp_suggestions 
          WHERE id = ?`,
-        [suggestionId],
+        [suggestionId]
       );
 
       if (suggestions.length === 0) return false;
@@ -286,7 +286,7 @@ class KvpPermissionService {
     entityType: string = "kvp_suggestion",
     tenantId: number,
     oldValue?: unknown,
-    newValue?: unknown,
+    newValue?: unknown
   ): Promise<void> {
     try {
       await executeQuery(
@@ -301,7 +301,7 @@ class KvpPermissionService {
           entityId,
           oldValue ? JSON.stringify(oldValue) : null,
           newValue ? JSON.stringify(newValue) : null,
-        ],
+        ]
       );
     } catch (error) {
       logger.error("Error logging admin action:", error);
@@ -314,7 +314,7 @@ class KvpPermissionService {
   async getSuggestionStats(
     scope: "company" | "department",
     scopeId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<{
     total: number;
     byStatus: Record<string, number>;
@@ -336,7 +336,7 @@ class KvpPermissionService {
          FROM kvp_suggestions s
          WHERE ${whereClause}
          GROUP BY status`,
-        params,
+        params
       );
 
       // Get counts by priority
@@ -345,7 +345,7 @@ class KvpPermissionService {
          FROM kvp_suggestions s
          WHERE ${whereClause}
          GROUP BY priority`,
-        params,
+        params
       );
 
       // Get total savings
@@ -353,7 +353,7 @@ class KvpPermissionService {
         `SELECT COALESCE(SUM(actual_savings), 0) as total_savings 
          FROM kvp_suggestions s
          WHERE ${whereClause} AND status = 'implemented'`,
-        params,
+        params
       );
 
       // Build result
@@ -369,7 +369,7 @@ class KvpPermissionService {
 
       const total = Object.values(byStatus).reduce(
         (sum, count) => sum + count,
-        0,
+        0
       );
 
       return {

@@ -25,7 +25,7 @@ export const checkDocumentAccess = (
     allowAdmin: true,
     allowDepartmentHeads: false,
     requireOwnership: true,
-  },
+  }
 ): RequestHandler => {
   return async (req: Request, res: Response, next: NextFunction) => {
     // Type assertion - we know auth middleware has run
@@ -45,7 +45,7 @@ export const checkDocumentAccess = (
       }
 
       logger.info(
-        `Checking document access for user ${userId} (role: ${userRole}) to document ${documentId}`,
+        `Checking document access for user ${userId} (role: ${userRole}) to document ${documentId}`
       );
 
       // Prüfe, ob das Dokument existiert
@@ -60,7 +60,7 @@ export const checkDocumentAccess = (
       // Admin-Zugriff prüfen
       if (options.allowAdmin && userRole === "admin") {
         logger.info(
-          `Admin access granted for user ${userId} to document ${documentId}`,
+          `Admin access granted for user ${userId} to document ${documentId}`
         );
         docReq.document = {
           ...document,
@@ -75,7 +75,7 @@ export const checkDocumentAccess = (
           // Einzelner Benutzer - nur der Empfänger hat Zugriff
           if (document.user_id === userId) {
             logger.info(
-              `User access granted for user ${userId} to document ${documentId}`,
+              `User access granted for user ${userId} to document ${documentId}`
             );
             docReq.document = {
               ...document,
@@ -88,14 +88,14 @@ export const checkDocumentAccess = (
         case "team":
           // TODO: Prüfen ob Benutzer im Team ist
           logger.info(
-            `Team document access check not yet implemented for document ${documentId}`,
+            `Team document access check not yet implemented for document ${documentId}`
           );
           break;
 
         case "department":
           // TODO: Prüfen ob Benutzer in der Abteilung ist
           logger.info(
-            `Department document access check not yet implemented for document ${documentId}`,
+            `Department document access check not yet implemented for document ${documentId}`
           );
           break;
 
@@ -103,7 +103,7 @@ export const checkDocumentAccess = (
           // Alle Benutzer des Tenants haben Zugriff
           if (document.tenant_id === tenantId) {
             logger.info(
-              `Company-wide access granted for user ${userId} to document ${documentId}`,
+              `Company-wide access granted for user ${userId} to document ${documentId}`
             );
             docReq.document = {
               ...document,
@@ -130,7 +130,7 @@ export const checkDocumentAccess = (
           user.department === documentOwner.department
         ) {
           logger.info(
-            `Department head access granted for user ${userId} to document ${documentId}`,
+            `Department head access granted for user ${userId} to document ${documentId}`
           );
           docReq.document = {
             ...document,
@@ -143,7 +143,7 @@ export const checkDocumentAccess = (
       // Wenn requireOwnership false ist und keine anderen Bedingungen zutreffen
       if (!options.requireOwnership) {
         logger.info(
-          `General access granted for user ${userId} to document ${documentId} (ownership not required)`,
+          `General access granted for user ${userId} to document ${documentId} (ownership not required)`
         );
         docReq.document = {
           ...document,
@@ -154,7 +154,7 @@ export const checkDocumentAccess = (
 
       // Zugriff verweigert
       logger.warn(
-        `Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`,
+        `Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`
       );
       return res.status(403).json({
         error: "Keine Berechtigung für dieses Dokument",
@@ -174,7 +174,7 @@ export const checkDocumentAccess = (
 export const checkPublicDocumentAccess = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   try {
     const { documentId } = req.params;

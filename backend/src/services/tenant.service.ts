@@ -54,7 +54,7 @@ class TenantService {
    */
   async getAll(
     _tenantDb: Pool,
-    _filters: TenantFilters = {},
+    _filters: TenantFilters = {}
   ): Promise<TenantData[]> {
     try {
       // TODO: Tenant.getAll doesn't exist in the model
@@ -85,7 +85,7 @@ class TenantService {
    */
   async create(
     _tenantDb: Pool,
-    data: ModelTenantCreateData,
+    data: ModelTenantCreateData
   ): Promise<TenantCreateResult> {
     try {
       const result = await Tenant.create(data);
@@ -102,7 +102,7 @@ class TenantService {
   async update(
     _tenantDb: Pool,
     _id: number,
-    _data: TenantUpdateData,
+    _data: TenantUpdateData
   ): Promise<TenantData | null> {
     try {
       // TODO: Tenant.update doesn't exist in the model

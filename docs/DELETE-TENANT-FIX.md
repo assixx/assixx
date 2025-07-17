@@ -98,8 +98,8 @@ ALTER TABLE tenants
 
 ```typescript
 // backend/src/services/TenantDeletionService.ts
-import { db } from '../database';
-import { logger } from '../utils/logger';
+import { db } from "../database";
+import { logger } from "../utils/logger";
 
 interface DeletionStep {
   name: string;
@@ -112,24 +112,24 @@ export class TenantDeletionService {
   private steps: DeletionStep[] = [
     // Level 1: Session & Cache Data (Unkritisch)
     {
-      name: 'user_sessions',
-      description: 'Lösche User Sessions',
+      name: "user_sessions",
+      description: "Lösche User Sessions",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'user_chat_status',
-      description: 'Lösche Chat Status',
+      name: "user_chat_status",
+      description: "Lösche Chat Status",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM user_chat_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM user_chat_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
@@ -138,12 +138,12 @@ export class TenantDeletionService {
 
     // Level 2: Notifications & Temp Data
     {
-      name: 'chat_notifications',
-      description: 'Lösche Chat Benachrichtigungen',
+      name: "chat_notifications",
+      description: "Lösche Chat Benachrichtigungen",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM chat_notifications WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM chat_notifications WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
@@ -152,437 +152,437 @@ export class TenantDeletionService {
 
     // Level 3: Activity & Logs (Wichtig für Audit, aber löschbar)
     {
-      name: 'activity_logs',
-      description: 'Lösche Activity Logs',
+      name: "activity_logs",
+      description: "Lösche Activity Logs",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM activity_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM activity_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'api_logs',
-      description: 'Lösche API Logs',
+      name: "api_logs",
+      description: "Lösche API Logs",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM api_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM api_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'security_logs',
-      description: 'Lösche Security Logs',
+      name: "security_logs",
+      description: "Lösche Security Logs",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM security_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM security_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'admin_logs',
-      description: 'Lösche Admin Logs',
+      name: "admin_logs",
+      description: "Lösche Admin Logs",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM admin_logs WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM admin_logs WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 4: Messages & Communication
     {
-      name: 'message_read_receipts',
-      description: 'Lösche Message Read Receipts',
+      name: "message_read_receipts",
+      description: "Lösche Message Read Receipts",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM message_read_receipts WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM message_read_receipts WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'message_status',
-      description: 'Lösche Message Status',
+      name: "message_status",
+      description: "Lösche Message Status",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM message_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM message_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'messages',
-      description: 'Lösche Messages',
+      name: "messages",
+      description: "Lösche Messages",
       critical: true,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM messages WHERE sender_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM messages WHERE sender_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'conversation_participants',
-      description: 'Lösche Conversation Participants',
+      name: "conversation_participants",
+      description: "Lösche Conversation Participants",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM conversation_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM conversation_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'conversations',
-      description: 'Lösche Conversations',
+      name: "conversations",
+      description: "Lösche Conversations",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM conversations WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM conversations WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 5: Documents
     {
-      name: 'document_read_status',
-      description: 'Lösche Document Read Status',
+      name: "document_read_status",
+      description: "Lösche Document Read Status",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM document_read_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM document_read_status WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'documents',
-      description: 'Lösche Documents',
+      name: "documents",
+      description: "Lösche Documents",
       critical: true,
       handler: async (tenantId, conn) => {
         // TODO: Dateien vom Filesystem löschen!
-        const result = await conn.query('DELETE FROM documents WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM documents WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 6: KVP System
     {
-      name: 'kvp_comments',
-      description: 'Lösche KVP Comments',
+      name: "kvp_comments",
+      description: "Lösche KVP Comments",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM kvp_comments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM kvp_comments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'kvp_ratings',
-      description: 'Lösche KVP Ratings',
+      name: "kvp_ratings",
+      description: "Lösche KVP Ratings",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM kvp_ratings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM kvp_ratings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'kvp_points',
-      description: 'Lösche KVP Points',
+      name: "kvp_points",
+      description: "Lösche KVP Points",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM kvp_points WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM kvp_points WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'kvp_status_history',
-      description: 'Lösche KVP Status History',
+      name: "kvp_status_history",
+      description: "Lösche KVP Status History",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM kvp_status_history WHERE changed_by IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM kvp_status_history WHERE changed_by IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'kvp_attachments',
-      description: 'Lösche KVP Attachments',
+      name: "kvp_attachments",
+      description: "Lösche KVP Attachments",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM kvp_attachments WHERE uploaded_by IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM kvp_attachments WHERE uploaded_by IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'kvp_suggestions',
-      description: 'Lösche KVP Suggestions',
+      name: "kvp_suggestions",
+      description: "Lösche KVP Suggestions",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM kvp_suggestions WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM kvp_suggestions WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 7: Calendar
     {
-      name: 'calendar_attendees',
-      description: 'Lösche Calendar Attendees',
+      name: "calendar_attendees",
+      description: "Lösche Calendar Attendees",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM calendar_attendees WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM calendar_attendees WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'calendar_participants',
-      description: 'Lösche Calendar Participants',
+      name: "calendar_participants",
+      description: "Lösche Calendar Participants",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM calendar_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM calendar_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'calendar_reminders',
-      description: 'Lösche Calendar Reminders',
+      name: "calendar_reminders",
+      description: "Lösche Calendar Reminders",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM calendar_reminders WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM calendar_reminders WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'calendar_shares',
-      description: 'Lösche Calendar Shares',
+      name: "calendar_shares",
+      description: "Lösche Calendar Shares",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM calendar_shares WHERE calendar_owner_id IN (SELECT id FROM users WHERE tenant_id = ?) OR shared_with_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM calendar_shares WHERE calendar_owner_id IN (SELECT id FROM users WHERE tenant_id = ?) OR shared_with_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId, tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'calendar_events',
-      description: 'Lösche Calendar Events',
+      name: "calendar_events",
+      description: "Lösche Calendar Events",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM calendar_events WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM calendar_events WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 8: Shifts
     {
-      name: 'shift_assignments',
-      description: 'Lösche Shift Assignments',
+      name: "shift_assignments",
+      description: "Lösche Shift Assignments",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM shift_assignments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM shift_assignments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'shift_notes',
-      description: 'Lösche Shift Notes',
+      name: "shift_notes",
+      description: "Lösche Shift Notes",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM shift_notes WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM shift_notes WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'weekly_shift_notes',
-      description: 'Lösche Weekly Shift Notes',
+      name: "weekly_shift_notes",
+      description: "Lösche Weekly Shift Notes",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM weekly_shift_notes WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)',
+          "DELETE FROM weekly_shift_notes WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'shifts',
-      description: 'Lösche Shifts',
+      name: "shifts",
+      description: "Lösche Shifts",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM shifts WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 9: Blackboard
     {
-      name: 'blackboard_confirmations',
-      description: 'Lösche Blackboard Confirmations',
+      name: "blackboard_confirmations",
+      description: "Lösche Blackboard Confirmations",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM blackboard_confirmations WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM blackboard_confirmations WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'blackboard_attachments',
-      description: 'Lösche Blackboard Attachments',
+      name: "blackboard_attachments",
+      description: "Lösche Blackboard Attachments",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM blackboard_attachments WHERE uploaded_by IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM blackboard_attachments WHERE uploaded_by IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'blackboard_entries',
-      description: 'Lösche Blackboard Entries',
+      name: "blackboard_entries",
+      description: "Lösche Blackboard Entries",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM blackboard_entries WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 10: Surveys
     {
-      name: 'survey_comments',
-      description: 'Lösche Survey Comments',
+      name: "survey_comments",
+      description: "Lösche Survey Comments",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM survey_comments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM survey_comments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'survey_responses',
-      description: 'Lösche Survey Responses',
+      name: "survey_responses",
+      description: "Lösche Survey Responses",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM survey_responses WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM survey_responses WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'survey_participants',
-      description: 'Lösche Survey Participants',
+      name: "survey_participants",
+      description: "Lösche Survey Participants",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM survey_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM survey_participants WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'survey_assignments',
-      description: 'Lösche Survey Assignments',
+      name: "survey_assignments",
+      description: "Lösche Survey Assignments",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM survey_assignments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM survey_assignments WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'survey_questions',
-      description: 'Lösche Survey Questions',
+      name: "survey_questions",
+      description: "Lösche Survey Questions",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
+          "DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'surveys',
-      description: 'Lösche Surveys',
+      name: "surveys",
+      description: "Lösche Surveys",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM surveys WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 11: User Settings & Preferences
     {
-      name: 'user_settings',
-      description: 'Lösche User Settings',
+      name: "user_settings",
+      description: "Lösche User Settings",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM user_settings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM user_settings WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'notification_preferences',
-      description: 'Lösche Notification Preferences',
+      name: "notification_preferences",
+      description: "Lösche Notification Preferences",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM notification_preferences WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM notification_preferences WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
@@ -591,24 +591,24 @@ export class TenantDeletionService {
 
     // Level 12: Employee & Features
     {
-      name: 'employee_availability',
-      description: 'Lösche Employee Availability',
+      name: "employee_availability",
+      description: "Lösche Employee Availability",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM employee_availability WHERE employee_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM employee_availability WHERE employee_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'feature_usage_logs',
-      description: 'Lösche Feature Usage Logs',
+      name: "feature_usage_logs",
+      description: "Lösche Feature Usage Logs",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM feature_usage_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM feature_usage_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
@@ -617,36 +617,36 @@ export class TenantDeletionService {
 
     // Level 13: Admin Permissions (WICHTIG: Vor Users!)
     {
-      name: 'admin_permission_logs',
-      description: 'Lösche Admin Permission Logs',
+      name: "admin_permission_logs",
+      description: "Lösche Admin Permission Logs",
       critical: true,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM admin_permission_logs WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?) OR changed_by IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM admin_permission_logs WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?) OR changed_by IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId, tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'admin_department_permissions',
-      description: 'Lösche Admin Department Permissions',
+      name: "admin_department_permissions",
+      description: "Lösche Admin Department Permissions",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM admin_department_permissions WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM admin_department_permissions WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'admin_group_permissions',
-      description: 'Lösche Admin Group Permissions',
+      name: "admin_group_permissions",
+      description: "Lösche Admin Group Permissions",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM admin_group_permissions WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM admin_group_permissions WHERE admin_user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
@@ -655,64 +655,64 @@ export class TenantDeletionService {
 
     // Level 14: Teams & User Relations
     {
-      name: 'user_teams',
-      description: 'Lösche User Teams',
+      name: "user_teams",
+      description: "Lösche User Teams",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM user_teams WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM user_teams WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'department_group_members',
-      description: 'Lösche Department Group Members',
+      name: "department_group_members",
+      description: "Lösche Department Group Members",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM department_group_members WHERE added_by IN (SELECT id FROM users WHERE tenant_id = ?)',
+          "DELETE FROM department_group_members WHERE added_by IN (SELECT id FROM users WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'tenant_admins',
-      description: 'Lösche Tenant Admins',
+      name: "tenant_admins",
+      description: "Lösche Tenant Admins",
       critical: false,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM tenant_admins WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM tenant_admins WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 15: Nullify Foreign Keys
     {
-      name: 'nullify_foreign_keys',
-      description: 'Setze Foreign Keys auf NULL',
+      name: "nullify_foreign_keys",
+      description: "Setze Foreign Keys auf NULL",
       critical: true,
       handler: async (tenantId, conn) => {
         // Teams
-        await conn.query('UPDATE teams SET team_lead_id = NULL WHERE tenant_id = ?', [tenantId]);
-        await conn.query('UPDATE teams SET created_by = NULL WHERE tenant_id = ?', [tenantId]);
+        await conn.query("UPDATE teams SET team_lead_id = NULL WHERE tenant_id = ?", [tenantId]);
+        await conn.query("UPDATE teams SET created_by = NULL WHERE tenant_id = ?", [tenantId]);
 
         // Departments
-        await conn.query('UPDATE departments SET manager_id = NULL WHERE tenant_id = ?', [tenantId]);
-        await conn.query('UPDATE departments SET created_by = NULL WHERE tenant_id = ?', [tenantId]);
+        await conn.query("UPDATE departments SET manager_id = NULL WHERE tenant_id = ?", [tenantId]);
+        await conn.query("UPDATE departments SET created_by = NULL WHERE tenant_id = ?", [tenantId]);
 
         // Department Groups
         await conn.query(
-          'UPDATE department_groups SET created_by = NULL WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)',
+          "UPDATE department_groups SET created_by = NULL WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)",
           [tenantId]
         );
 
         // Tenant Features
-        await conn.query('UPDATE tenant_features SET activated_by = NULL WHERE tenant_id = ?', [tenantId]);
+        await conn.query("UPDATE tenant_features SET activated_by = NULL WHERE tenant_id = ?", [tenantId]);
 
         // Tenants
-        await conn.query('UPDATE tenants SET created_by = NULL WHERE id = ?', [tenantId]);
+        await conn.query("UPDATE tenants SET created_by = NULL WHERE id = ?", [tenantId]);
 
         return 0; // Kein affected rows count nötig
       },
@@ -720,72 +720,72 @@ export class TenantDeletionService {
 
     // Level 16: Core Entities
     {
-      name: 'department_groups',
-      description: 'Lösche Department Groups',
+      name: "department_groups",
+      description: "Lösche Department Groups",
       critical: false,
       handler: async (tenantId, conn) => {
         const result = await conn.query(
-          'DELETE FROM department_groups WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)',
+          "DELETE FROM department_groups WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)",
           [tenantId]
         );
         return result.affectedRows;
       },
     },
     {
-      name: 'teams',
-      description: 'Lösche Teams',
+      name: "teams",
+      description: "Lösche Teams",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM teams WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
     {
-      name: 'departments',
-      description: 'Lösche Departments',
+      name: "departments",
+      description: "Lösche Departments",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM departments WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM departments WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
     {
-      name: 'users',
-      description: 'Lösche Users',
+      name: "users",
+      description: "Lösche Users",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM users WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM users WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 17: Tenant Features & Plans
     {
-      name: 'tenant_features',
-      description: 'Lösche Tenant Features',
+      name: "tenant_features",
+      description: "Lösche Tenant Features",
       critical: false,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM tenant_features WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM tenant_features WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
     {
-      name: 'tenant_plans',
-      description: 'Lösche Tenant Plans',
+      name: "tenant_plans",
+      description: "Lösche Tenant Plans",
       critical: false,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM tenant_plans WHERE tenant_id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM tenant_plans WHERE tenant_id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
 
     // Level 18: Final - Tenant selbst
     {
-      name: 'tenant',
-      description: 'Lösche Tenant',
+      name: "tenant",
+      description: "Lösche Tenant",
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query('DELETE FROM tenants WHERE id = ?', [tenantId]);
+        const result = await conn.query("DELETE FROM tenants WHERE id = ?", [tenantId]);
         return result.affectedRows;
       },
     },
@@ -801,30 +801,30 @@ export class TenantDeletionService {
       await connection.beginTransaction();
 
       // 1. Check if tenant exists and is active
-      const [tenant] = await connection.query('SELECT id, deletion_status FROM tenants WHERE id = ?', [tenantId]);
+      const [tenant] = await connection.query("SELECT id, deletion_status FROM tenants WHERE id = ?", [tenantId]);
 
       if (!tenant) {
-        throw new Error('Tenant not found');
+        throw new Error("Tenant not found");
       }
 
-      if (tenant.deletion_status !== 'active') {
-        throw new Error('Tenant is already being deleted');
+      if (tenant.deletion_status !== "active") {
+        throw new Error("Tenant is already being deleted");
       }
 
       // 2. Mark tenant as suspended
-      await connection.query('UPDATE tenants SET deletion_status = ?, deletion_requested_at = NOW() WHERE id = ?', [
-        'suspended',
+      await connection.query("UPDATE tenants SET deletion_status = ?, deletion_requested_at = NOW() WHERE id = ?", [
+        "suspended",
         tenantId,
       ]);
 
       // 3. Create queue entry
       const result = await connection.query(
-        'INSERT INTO tenant_deletion_queue (tenant_id, created_by, total_steps) VALUES (?, ?, ?)',
+        "INSERT INTO tenant_deletion_queue (tenant_id, created_by, total_steps) VALUES (?, ?, ?)",
         [tenantId, requestedBy, this.steps.length]
       );
 
       // 4. Log out all users of this tenant
-      await connection.query('DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)', [
+      await connection.query("DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)", [
         tenantId,
       ]);
 
@@ -862,7 +862,7 @@ export class TenantDeletionService {
 
       await this.processTenantDeletion(queueItem.id);
     } catch (error) {
-      logger.error('Error processing deletion queue:', error);
+      logger.error("Error processing deletion queue:", error);
     } finally {
       connection.release();
     }
@@ -876,18 +876,18 @@ export class TenantDeletionService {
 
     try {
       // 1. Mark as processing
-      await connection.query('UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?', [
-        'processing',
+      await connection.query("UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?", [
+        "processing",
         queueId,
       ]);
 
       // 2. Get tenant info
-      const [queueItem] = await connection.query('SELECT * FROM tenant_deletion_queue WHERE id = ?', [queueId]);
+      const [queueItem] = await connection.query("SELECT * FROM tenant_deletion_queue WHERE id = ?", [queueId]);
 
       const tenantId = queueItem.tenant_id;
 
       // 3. Update tenant status
-      await connection.query('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['deleting', tenantId]);
+      await connection.query("UPDATE tenants SET deletion_status = ? WHERE id = ?", ["deleting", tenantId]);
 
       // 4. Process each step
       let completedSteps = 0;
@@ -899,7 +899,7 @@ export class TenantDeletionService {
           logger.info(`Processing deletion step: ${step.name} for tenant ${tenantId}`);
 
           // Update current step
-          await connection.query('UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?', [
+          await connection.query("UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?", [
             step.description,
             Math.round((completedSteps / this.steps.length) * 100),
             queueId,
@@ -913,7 +913,7 @@ export class TenantDeletionService {
             `INSERT INTO tenant_deletion_log 
              (queue_id, step_name, table_name, records_deleted, duration_ms, status) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, 'success']
+            [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, "success"]
           );
 
           completedSteps++;
@@ -925,7 +925,7 @@ export class TenantDeletionService {
             `INSERT INTO tenant_deletion_log 
              (queue_id, step_name, table_name, duration_ms, status, error_message) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [queueId, step.name, step.name, Date.now() - startTime, 'failed', error.message]
+            [queueId, step.name, step.name, Date.now() - startTime, "failed", error.message]
           );
 
           if (step.critical) {
@@ -936,26 +936,26 @@ export class TenantDeletionService {
 
       // 5. Mark as completed
       await connection.query(
-        'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW(), progress = 100 WHERE id = ?',
-        ['completed', queueId]
+        "UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW(), progress = 100 WHERE id = ?",
+        ["completed", queueId]
       );
 
       logger.info(`Tenant ${tenantId} deletion completed successfully`);
     } catch (error: any) {
-      logger.error('Tenant deletion failed:', error);
+      logger.error("Tenant deletion failed:", error);
 
       // Mark as failed
-      await connection.query('UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?', [
-        'failed',
+      await connection.query("UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?", [
+        "failed",
         error.message,
         queueId,
       ]);
 
       // Revert tenant status
-      const [queueItem] = await connection.query('SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?', [queueId]);
+      const [queueItem] = await connection.query("SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?", [queueId]);
 
       if (queueItem) {
-        await connection.query('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['active', queueItem.tenant_id]);
+        await connection.query("UPDATE tenants SET deletion_status = ? WHERE id = ?", ["active", queueItem.tenant_id]);
       }
 
       throw error;
@@ -990,8 +990,8 @@ export class TenantDeletionService {
    */
   async retryDeletion(queueId: number): Promise<void> {
     await db.query(
-      'UPDATE tenant_deletion_queue SET status = ?, retry_count = retry_count + 1 WHERE id = ? AND status = ?',
-      ['queued', queueId, 'failed']
+      "UPDATE tenant_deletion_queue SET status = ?, retry_count = retry_count + 1 WHERE id = ? AND status = ?",
+      ["queued", queueId, "failed"]
     );
   }
 }
@@ -1005,16 +1005,16 @@ export const tenantDeletionService = new TenantDeletionService();
 // backend/src/routes/root.ts
 
 // Request tenant deletion
-router.delete('/tenants/:id', auth, requireRole('root'), async (req, res) => {
+router.delete("/tenants/:id", auth, requireRole("root"), async (req, res) => {
   try {
     const tenantId = parseInt(req.params.id);
     const queueId = await tenantDeletionService.queueTenantDeletion(tenantId, req.user.id);
 
     res.json({
       success: true,
-      message: 'Tenant wurde zur Löschung eingeplant',
+      message: "Tenant wurde zur Löschung eingeplant",
       queueId,
-      estimatedTime: '10-15 Minuten',
+      estimatedTime: "10-15 Minuten",
     });
   } catch (error) {
     res.status(500).json({
@@ -1025,7 +1025,7 @@ router.delete('/tenants/:id', auth, requireRole('root'), async (req, res) => {
 });
 
 // Get deletion status
-router.get('/tenants/:id/deletion-status', auth, requireRole('root'), async (req, res) => {
+router.get("/tenants/:id/deletion-status", auth, requireRole("root"), async (req, res) => {
   try {
     const status = await tenantDeletionService.getDeletionStatus(parseInt(req.params.id));
 
@@ -1042,13 +1042,13 @@ router.get('/tenants/:id/deletion-status', auth, requireRole('root'), async (req
 });
 
 // Retry failed deletion
-router.post('/deletion-queue/:id/retry', auth, requireRole('root'), async (req, res) => {
+router.post("/deletion-queue/:id/retry", auth, requireRole("root"), async (req, res) => {
   try {
     await tenantDeletionService.retryDeletion(parseInt(req.params.id));
 
     res.json({
       success: true,
-      message: 'Löschung wird erneut versucht',
+      message: "Löschung wird erneut versucht",
     });
   } catch (error) {
     res.status(500).json({
@@ -1063,23 +1063,23 @@ router.post('/deletion-queue/:id/retry', auth, requireRole('root'), async (req, 
 
 ```typescript
 // backend/src/jobs/deletionWorker.ts
-import cron from 'node-cron';
-import { tenantDeletionService } from '../services/TenantDeletionService';
-import { logger } from '../utils/logger';
+import cron from "node-cron";
+import { tenantDeletionService } from "../services/TenantDeletionService";
+import { logger } from "../utils/logger";
 
 // Run every 5 minutes
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule("*/5 * * * *", async () => {
   try {
-    logger.info('Running tenant deletion worker...');
+    logger.info("Running tenant deletion worker...");
     await tenantDeletionService.processQueue();
   } catch (error) {
-    logger.error('Deletion worker error:', error);
+    logger.error("Deletion worker error:", error);
   }
 });
 
 // Alternativ: Eigener Worker Process
 // backend/src/workers/deletionWorker.ts
-import { tenantDeletionService } from '../services/TenantDeletionService';
+import { tenantDeletionService } from "../services/TenantDeletionService";
 
 async function run() {
   while (true) {
@@ -1088,7 +1088,7 @@ async function run() {
       // Wait 30 seconds between runs
       await new Promise((resolve) => setTimeout(resolve, 30000));
     } catch (error) {
-      console.error('Worker error:', error);
+      console.error("Worker error:", error);
       // Wait 1 minute on error
       await new Promise((resolve) => setTimeout(resolve, 60000));
     }
@@ -1103,16 +1103,16 @@ run();
 ```typescript
 // frontend/src/pages/root-profile.html - deleteTenant function
 async function deleteTenant() {
-  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const confirmBtn = document.getElementById("confirmDeleteBtn");
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
 
   try {
-    const response = await fetch('/api/root/tenants/' + currentTenantId, {
-      method: 'DELETE',
+    const response = await fetch("/api/root/tenants/" + currentTenantId, {
+      method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -1126,13 +1126,13 @@ async function deleteTenant() {
       closeDeleteModal();
     } else {
       const error = await response.json();
-      showMessage(error.message || 'Fehler beim Löschen des Tenants', 'error');
+      showMessage(error.message || "Fehler beim Löschen des Tenants", "error");
       confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
       confirmBtn.disabled = false;
     }
   } catch (error) {
-    console.error('Error deleting tenant:', error);
-    showMessage('Fehler beim Löschen des Tenants', 'error');
+    console.error("Error deleting tenant:", error);
+    showMessage("Fehler beim Löschen des Tenants", "error");
     confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Endgültig löschen';
     confirmBtn.disabled = false;
   }
@@ -1140,8 +1140,8 @@ async function deleteTenant() {
 
 // New function to show deletion progress
 function showDeletionStatusModal(queueId) {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay active';
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay active";
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
@@ -1170,23 +1170,23 @@ function showDeletionStatusModal(queueId) {
       const status = data.data;
 
       if (status) {
-        document.getElementById('deletion-progress').style.width = status.progress + '%';
-        document.getElementById('deletion-status').textContent = status.current_step || 'Verarbeite...';
+        document.getElementById("deletion-progress").style.width = status.progress + "%";
+        document.getElementById("deletion-status").textContent = status.current_step || "Verarbeite...";
 
-        if (status.status === 'completed') {
+        if (status.status === "completed") {
           clearInterval(statusInterval);
           modal.remove();
-          showSuccessOverlay('Tenant wurde erfolgreich gelöscht!');
+          showSuccessOverlay("Tenant wurde erfolgreich gelöscht!");
           localStorage.clear();
-          setTimeout(() => (window.location.href = '/login'), 2000);
-        } else if (status.status === 'failed') {
+          setTimeout(() => (window.location.href = "/login"), 2000);
+        } else if (status.status === "failed") {
           clearInterval(statusInterval);
           modal.remove();
-          showMessage('Fehler beim Löschen: ' + status.error_message, 'error');
+          showMessage("Fehler beim Löschen: " + status.error_message, "error");
         }
       }
     } catch (error) {
-      console.error('Error checking status:', error);
+      console.error("Error checking status:", error);
     }
   }, 5000);
 }
@@ -1353,11 +1353,11 @@ export async function checkTenantStatus(req, res, next) {
   const tenantId = req.user?.tenant_id;
   if (!tenantId) return next();
 
-  const [tenant] = await db.query('SELECT deletion_status FROM tenants WHERE id = ?', [tenantId]);
+  const [tenant] = await db.query("SELECT deletion_status FROM tenants WHERE id = ?", [tenantId]);
 
-  if (tenant?.deletion_status !== 'active') {
+  if (tenant?.deletion_status !== "active") {
     return res.status(403).json({
-      error: 'Tenant is suspended or being deleted',
+      error: "Tenant is suspended or being deleted",
       status: tenant.deletion_status,
     });
   }
@@ -1431,12 +1431,12 @@ class DeletionWorker {
   private processingInterval = 30000; // 30 Sekunden
 
   async start() {
-    logger.info('Deletion Worker started');
+    logger.info("Deletion Worker started");
 
     // Graceful shutdown
-    process.on('SIGTERM', () => {
+    process.on("SIGTERM", () => {
       this.isRunning = false;
-      logger.info('Deletion Worker shutting down...');
+      logger.info("Deletion Worker shutting down...");
     });
 
     while (this.isRunning) {
@@ -1444,7 +1444,7 @@ class DeletionWorker {
         await this.checkAndProcessQueue();
         await this.sleep(this.processingInterval);
       } catch (error) {
-        logger.error('Worker error:', error);
+        logger.error("Worker error:", error);
         await this.sleep(60000); // 1 Minute bei Fehler
       }
     }
@@ -1558,11 +1558,11 @@ async function sendDeletionWarning(tenantId: number) {
   for (const admin of admins) {
     await emailService.sendEmail({
       to: admin.email,
-      subject: 'Wichtig: Ihr Assixx-Konto wird in 30 Tagen gelöscht',
-      template: 'tenant-deletion-warning',
+      subject: "Wichtig: Ihr Assixx-Konto wird in 30 Tagen gelöscht",
+      template: "tenant-deletion-warning",
       data: {
         companyName: admin.company_name,
-        deletionDate: moment().add(30, 'days').format('DD.MM.YYYY'),
+        deletionDate: moment().add(30, "days").format("DD.MM.YYYY"),
         exportUrl: `${APP_URL}/export-data`,
       },
     });
@@ -1596,10 +1596,10 @@ async function sendDeletionWarning(tenantId: number) {
 ```typescript
 // VOR dem Queuing prüfen
 async function checkLegalHold(tenantId: number): Promise<boolean> {
-  const [legalHold] = await db.query('SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1', [tenantId]);
+  const [legalHold] = await db.query("SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1", [tenantId]);
 
   if (legalHold) {
-    throw new Error('Tenant cannot be deleted due to legal hold');
+    throw new Error("Tenant cannot be deleted due to legal hold");
   }
 
   return true;
@@ -1613,13 +1613,13 @@ async function checkLegalHold(tenantId: number): Promise<boolean> {
 async function checkSharedResources(tenantId: number) {
   // Cross-tenant document shares
   const sharedDocs = await db.query(
-    'SELECT COUNT(*) as count FROM document_shares WHERE owner_tenant_id = ? AND shared_with_tenant_id != ?',
+    "SELECT COUNT(*) as count FROM document_shares WHERE owner_tenant_id = ? AND shared_with_tenant_id != ?",
     [tenantId, tenantId]
   );
 
   if (sharedDocs[0].count > 0) {
     // Benachrichtige andere Tenants oder verhindere Löschung
-    throw new Error('Tenant has shared documents with other tenants');
+    throw new Error("Tenant has shared documents with other tenants");
   }
 }
 ```
@@ -1831,9 +1831,9 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
 ```typescript
 // WICHTIG: Wer hat was wann gelöscht?
 async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
-  const tenantInfo = await db.query('SELECT * FROM tenants WHERE id = ?', [tenantId]);
+  const tenantInfo = await db.query("SELECT * FROM tenants WHERE id = ?", [tenantId]);
 
-  const userInfo = await db.query('SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?', [tenantId]);
+  const userInfo = await db.query("SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?", [tenantId]);
 
   await db.query(
     `INSERT INTO deletion_audit_trail 
@@ -1845,7 +1845,7 @@ async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
       userInfo[0].user_count,
       requestedBy,
       req.ip, // IP-Adresse des Löschenden
-      req.body.reason || 'No reason provided',
+      req.body.reason || "No reason provided",
       JSON.stringify({
         subdomain: tenantInfo[0].subdomain,
         created_at: tenantInfo[0].created_at,
@@ -1866,12 +1866,12 @@ async function notifyRootAdmins(tenantId: number, deletedBy: number) {
   for (const root of rootUsers) {
     await emailService.sendEmail({
       to: root.email,
-      subject: 'Tenant-Löschung eingeleitet',
-      template: 'admin-tenant-deletion-notice',
+      subject: "Tenant-Löschung eingeleitet",
+      template: "admin-tenant-deletion-notice",
       data: {
         tenantName: tenantInfo.company_name,
         deletedBy: deletedByUser.username,
-        scheduledDate: moment().add(30, 'days').format('DD.MM.YYYY'),
+        scheduledDate: moment().add(30, "days").format("DD.MM.YYYY"),
       },
     });
   }
@@ -1945,26 +1945,26 @@ DO
 async function sendDeletionFailureAlert(queueId: number, error: string) {
   // Slack/Teams Notification
   await sendSlackAlert({
-    channel: '#critical-alerts',
+    channel: "#critical-alerts",
     text: `🚨 Tenant Deletion Failed!`,
     attachments: [
       {
-        color: 'danger',
+        color: "danger",
         fields: [
-          { title: 'Queue ID', value: queueId },
-          { title: 'Error', value: error },
-          { title: 'Time', value: new Date().toISOString() },
+          { title: "Queue ID", value: queueId },
+          { title: "Error", value: error },
+          { title: "Time", value: new Date().toISOString() },
         ],
       },
     ],
   });
 
   // PagerDuty für kritische Fehler
-  if (error.includes('critical')) {
+  if (error.includes("critical")) {
     await triggerPagerDuty({
-      severity: 'critical',
+      severity: "critical",
       summary: `Tenant deletion failed: ${error}`,
-      source: 'tenant-deletion-service',
+      source: "tenant-deletion-service",
     });
   }
 }
@@ -2227,7 +2227,7 @@ class DeletionWorker {
   async checkEmergencyStop(): Promise<boolean> {
     if (!this.currentQueueId) return false;
 
-    const [stopRequest] = await query('SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?', [
+    const [stopRequest] = await query("SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?", [
       this.currentQueueId,
     ]);
 
@@ -2273,12 +2273,12 @@ class DeletionWorker {
 
 ```typescript
 // Emergency Stop Endpoint
-router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), async (req, res) => {
+router.post("/deletion-queue/:id/emergency-stop", auth, requireRole("root"), async (req, res) => {
   try {
     const queueId = parseInt(req.params.id);
 
     // Set emergency stop flag
-    await execute('UPDATE tenant_deletion_queue SET emergency_stop = TRUE WHERE id = ?', [queueId]);
+    await execute("UPDATE tenant_deletion_queue SET emergency_stop = TRUE WHERE id = ?", [queueId]);
 
     // Log who triggered emergency stop
     await execute(
@@ -2290,7 +2290,7 @@ router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), asy
 
     res.json({
       success: true,
-      message: 'Emergency stop triggered. Worker will halt at next checkpoint.',
+      message: "Emergency stop triggered. Worker will halt at next checkpoint.",
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

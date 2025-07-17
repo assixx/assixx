@@ -236,7 +236,7 @@ router.post(
       };
       const employeeId = await User.create(employeeData);
       logger.info(
-        `Admin ${adminId} created new employee with ID: ${employeeId}`,
+        `Admin ${adminId} created new employee with ID: ${employeeId}`
       );
 
       res.status(201).json({
@@ -245,7 +245,7 @@ router.post(
       });
     } catch (error) {
       logger.error(
-        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error creating employee by Admin ${adminId}: ${getErrorMessage(error)}`
       );
       const dbError = error as { code?: string };
       if (dbError.code === "ER_DUP_ENTRY") {
@@ -260,7 +260,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -331,7 +331,7 @@ router.get(
       const employees = await User.findByRole(
         "employee",
         false,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       console.log(`Retrieved ${employees.length} employees:`, employees);
@@ -346,7 +346,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -423,14 +423,14 @@ router.get(
       res.json(employee);
     } catch (error) {
       logger.error(
-        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error retrieving employee ${employeeId} for Admin ${adminId}: ${getErrorMessage(error)}`
       );
       res.status(500).json({
         message: "Fehler beim Abrufen des Mitarbeiters",
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -564,12 +564,12 @@ router.put(
       const success = await User.update(
         employeeId,
         req.body,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
 
       if (success) {
         logger.info(
-          `Employee ${employeeId} updated successfully by Admin ${adminId}`,
+          `Employee ${employeeId} updated successfully by Admin ${adminId}`
         );
         res.json({
           message: "Mitarbeiter erfolgreich aktualisiert",
@@ -584,7 +584,7 @@ router.put(
       }
     } catch (error) {
       logger.error(
-        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error updating employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
       );
       res.status(500).json({
         message: "Fehler beim Aktualisieren des Mitarbeiters",
@@ -592,7 +592,7 @@ router.put(
         success: false,
       });
     }
-  }),
+  })
 );
 
 /**
@@ -713,7 +713,7 @@ router.post(
     const employeeId = parseInt(req.params.employeeId, 10);
 
     logger.info(
-      `Admin ${adminId} attempting to upload document for Employee ${employeeId}`,
+      `Admin ${adminId} attempting to upload document for Employee ${employeeId}`
     );
 
     try {
@@ -748,7 +748,7 @@ router.post(
       await safeDeleteFile(filePath);
 
       logger.info(
-        `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`,
+        `Admin ${adminId} successfully uploaded document ${documentId} for Employee ${employeeId}`
       );
       res.status(201).json({
         message: "Dokument erfolgreich hochgeladen",
@@ -756,7 +756,7 @@ router.post(
       });
     } catch (error) {
       logger.error(
-        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`,
+        `Error uploading document for Employee ${employeeId} by Admin ${adminId}: ${getErrorMessage(error)}`
       );
 
       if (req.file?.path) {
@@ -764,7 +764,7 @@ router.post(
           await safeDeleteFile(req.file.path);
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
           );
         }
       }
@@ -774,7 +774,7 @@ router.post(
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 /**
@@ -888,7 +888,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 // Note: Dashboard statistics endpoint removed - duplicate of above route
@@ -912,7 +912,7 @@ router.get(
         error: getErrorMessage(error),
       });
     }
-  }),
+  })
 );
 
 export default router;

@@ -90,7 +90,7 @@ export class AdminLog {
       return rows;
     } catch (error) {
       logger.error(
-        `Error fetching admin logs for user ${userId}: ${(error as Error).message}`,
+        `Error fetching admin logs for user ${userId}: ${(error as Error).message}`
       );
       throw error;
     }
@@ -106,7 +106,7 @@ export class AdminLog {
       return rows.length > 0 ? rows[0] : null;
     } catch (error) {
       logger.error(
-        `Error fetching last login for user ${userId}: ${(error as Error).message}`,
+        `Error fetching last login for user ${userId}: ${(error as Error).message}`
       );
       throw error;
     }

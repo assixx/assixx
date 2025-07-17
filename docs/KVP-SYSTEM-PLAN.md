@@ -309,7 +309,7 @@ export async function canAdminEditKVP(adminId: number, suggestionId: number): Pr
   if (!suggestion) return false;
 
   // Company-wide KVPs können nur vom ursprünglichen Admin bearbeitet werden
-  if (suggestion.visibility_scope === 'company') {
+  if (suggestion.visibility_scope === "company") {
     const isOriginalAdmin = await db.query(
       `
       SELECT 1 FROM kvp_suggestions 
@@ -337,11 +337,11 @@ export async function canAdminEditKVP(adminId: number, suggestionId: number): Pr
 const kvpLayout = {
   // Filter-Bar für alle sichtbar
   filters: {
-    mine: { show: true, label: 'Meine' },
-    department: { show: true, label: 'Abteilung' },
-    company: { show: true, label: 'Firmenweit' },
-    archived: { show: isAdmin, label: 'Archiv' },
-    manage: { show: isAdmin, label: 'Verwalten' },
+    mine: { show: true, label: "Meine" },
+    department: { show: true, label: "Abteilung" },
+    company: { show: true, label: "Firmenweit" },
+    archived: { show: isAdmin, label: "Archiv" },
+    manage: { show: isAdmin, label: "Verwalten" },
   },
 
   // Aktionen basierend auf Rolle
@@ -354,7 +354,7 @@ const kvpLayout = {
 
   // Info-Box für Admins
   infoBox:
-    isAdmin && !hasRoleSwitched ? '💡 Tipp: Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen' : null,
+    isAdmin && !hasRoleSwitched ? "💡 Tipp: Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen" : null,
 };
 ```
 
@@ -364,29 +364,29 @@ const kvpLayout = {
 // Erweiterte Filter für Admins
 const adminFilters = {
   status: [
-    { value: 'active', label: 'Alle aktiven' }, // Alles außer archived
-    { value: 'new', label: 'Neu' },
-    { value: 'in_review', label: 'In Prüfung' },
-    { value: 'approved', label: 'Genehmigt' },
-    { value: 'implemented', label: 'Umgesetzt' },
-    { value: 'rejected', label: 'Abgelehnt' },
-    { value: 'archived', label: 'Archiviert', special: true },
+    { value: "active", label: "Alle aktiven" }, // Alles außer archived
+    { value: "new", label: "Neu" },
+    { value: "in_review", label: "In Prüfung" },
+    { value: "approved", label: "Genehmigt" },
+    { value: "implemented", label: "Umgesetzt" },
+    { value: "rejected", label: "Abgelehnt" },
+    { value: "archived", label: "Archiviert", special: true },
   ],
 
   visibility: [
-    { value: 'all', label: 'Alle' },
-    { value: 'department', label: 'Abteilung' },
-    { value: 'company', label: 'Firmenweit' },
+    { value: "all", label: "Alle" },
+    { value: "department", label: "Abteilung" },
+    { value: "company", label: "Firmenweit" },
   ],
 
   department: [], // Dynamisch laden basierend auf Admin-Rechte
 };
 
 // Archivierte in separater Card anzeigen
-if (statusFilter === 'archived') {
-  showInCard('archivedSuggestionsCard');
+if (statusFilter === "archived") {
+  showInCard("archivedSuggestionsCard");
 } else {
-  showInCard('allSuggestionsCard');
+  showInCard("allSuggestionsCard");
 }
 ```
 
@@ -465,13 +465,13 @@ if (statusFilter === 'archived') {
 
 ```javascript
 // Nach Submit keine Bearbeitung mehr
-if (suggestion.status !== 'draft' && suggestion.submitter_id === currentUser.id) {
+if (suggestion.status !== "draft" && suggestion.submitter_id === currentUser.id) {
   disableAllFormFields();
-  showMessage('Eingereichte Vorschläge können nicht mehr bearbeitet werden');
+  showMessage("Eingereichte Vorschläge können nicht mehr bearbeitet werden");
 }
 
 // Nur eigene Drafts löschen
-if (suggestion.status === 'draft' && suggestion.submitter_id === currentUser.id) {
+if (suggestion.status === "draft" && suggestion.submitter_id === currentUser.id) {
   showDeleteButton();
 }
 ```
@@ -483,9 +483,9 @@ if (suggestion.status === 'draft' && suggestion.submitter_id === currentUser.id)
 const canEdit = await checkAdminDepartmentAccess(adminId, suggestion.department_id);
 
 // Geteilte Vorschläge nur vom ursprünglichen Admin
-if (suggestion.visibility_scope === 'company' && suggestion.shared_by !== adminId) {
+if (suggestion.visibility_scope === "company" && suggestion.shared_by !== adminId) {
   disableStatusChange();
-  showMessage('Nur der teilende Admin kann diesen Vorschlag bearbeiten');
+  showMessage("Nur der teilende Admin kann diesen Vorschlag bearbeiten");
 }
 ```
 
@@ -603,7 +603,7 @@ if (suggestion.visibility_scope === 'company' && suggestion.shared_by !== adminI
 
 ```typescript
 const connection = await pool.getConnection();
-await connection.query('SET NAMES utf8mb4');
+await connection.query("SET NAMES utf8mb4");
 // queries...
 connection.release();
 ```

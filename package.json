@@ -28,7 +28,9 @@
     "type-coverage": "pnpm exec type-coverage",
     "check": "tsc --noEmit",
     "lint:ts": "eslint backend/src/**/*.ts",
-    "test:all": "pnpm run check && pnpm run lint:ts && pnpm run format:check"
+    "test:all": "pnpm run check && pnpm run lint:ts && pnpm run format:check",
+    "fix:all": "pnpm run format && pnpm run lint:fix",
+    "check:all": "pnpm run format && pnpm run lint:fix && pnpm run type-check"
   },
   "keywords": [
     "assixx",

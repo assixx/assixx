@@ -59,13 +59,13 @@ async function loadHeaderUserInfo(): Promise<void> {
           const firstInitial = user.first_name ? user.first_name.charAt(0).toUpperCase() : '';
           const lastInitial = user.last_name ? user.last_name.charAt(0).toUpperCase() : '';
           const initials = `${firstInitial}${lastInitial}` || 'U';
-          
+
           // Convert img to div for initials display
           const initialsDiv = document.createElement('div');
           initialsDiv.id = 'user-avatar';
           initialsDiv.className = 'avatar-initials';
           initialsDiv.textContent = initials;
-          
+
           avatarElement.replaceWith(initialsDiv);
         }
       }

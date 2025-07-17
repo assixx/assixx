@@ -965,7 +965,12 @@ class UnifiedNavigation {
     return `${firstInitial}${lastInitial}` || 'U';
   }
 
-  private updateAvatarElement(element: HTMLElement, profilePicUrl: string | null, firstName?: string, lastName?: string): void {
+  private updateAvatarElement(
+    element: HTMLElement,
+    profilePicUrl: string | null,
+    firstName?: string,
+    lastName?: string,
+  ): void {
     if (!element) return;
 
     // Clear existing content
@@ -1035,10 +1040,7 @@ class UnifiedNavigation {
     const firstName = this.userProfileData?.first_name ?? (this.userProfileData?.firstName || '');
     const lastName = this.userProfileData?.last_name ?? (this.userProfileData?.lastName || '');
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
-    const profilePicture =
-      this.userProfileData?.profile_picture ||
-      this.userProfileData?.profilePicture ||
-      null;
+    const profilePicture = this.userProfileData?.profile_picture || this.userProfileData?.profilePicture || null;
 
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =

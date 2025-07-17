@@ -30,7 +30,7 @@ export const checkFeature =
 
       // Debug logging
       logger.info(
-        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenant_id: req.user.tenant_id } : null)}`,
+        `[Feature Check Debug] Checking feature '${featureCode}' - req.tenantId: ${req.tenantId}, req.user: ${JSON.stringify(req.user ? { id: req.user.id, tenant_id: req.user.tenant_id } : null)}`
       );
 
       if (req.tenantId) {
@@ -42,7 +42,7 @@ export const checkFeature =
           // Use database query
           const [tenantRows] = await query<RowDataPacket[]>(
             "SELECT id FROM tenants WHERE subdomain = ?",
-            [req.tenantId],
+            [req.tenantId]
           );
 
           if (tenantRows.length === 0) {
@@ -64,13 +64,13 @@ export const checkFeature =
       }
 
       logger.info(
-        `Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`,
+        `Checking feature '${featureCode}' for tenant ID: ${numericTenantId}`
       );
 
       // Prüfe ob Feature aktiv ist
       const hasFeature = await Feature.checkTenantAccess(
         numericTenantId,
-        featureCode,
+        featureCode
       );
 
       if (!hasFeature) {
@@ -79,7 +79,7 @@ export const checkFeature =
           `Diese Funktion (${featureCode}) ist für Ihren Tarif nicht verfügbar.`;
 
         logger.warn(
-          `Feature '${featureCode}' not available for tenant ${numericTenantId}`,
+          `Feature '${featureCode}' not available for tenant ${numericTenantId}`
         );
 
         const response: {
@@ -99,7 +99,7 @@ export const checkFeature =
       }
 
       logger.info(
-        `Feature '${featureCode}' is active for tenant ${numericTenantId}`,
+        `Feature '${featureCode}' is active for tenant ${numericTenantId}`
       );
       return next();
     } catch (error) {
@@ -126,7 +126,7 @@ export const checkAnyFeature =
           // Use database query
           const [tenantRows] = await query<RowDataPacket[]>(
             "SELECT id FROM tenants WHERE subdomain = ?",
-            [req.tenantId],
+            [req.tenantId]
           );
 
           if (tenantRows.length === 0) {
@@ -150,11 +150,11 @@ export const checkAnyFeature =
       for (const featureCode of featureCodes) {
         const hasFeature = await Feature.checkTenantAccess(
           numericTenantId,
-          featureCode,
+          featureCode
         );
         if (hasFeature) {
           logger.info(
-            `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`,
+            `At least one feature (${featureCode}) is active for tenant ${numericTenantId}`
           );
           return next();
         }
@@ -164,13 +164,13 @@ export const checkAnyFeature =
       const errorMessage =
         options.customErrorMessage ||
         `Keine der erforderlichen Funktionen (${featureCodes.join(
-          ", ",
+          ", "
         )}) ist für Ihren Tarif verfügbar.`;
 
       logger.warn(
         `None of the features [${featureCodes.join(
-          ", ",
-        )}] are available for tenant ${numericTenantId}`,
+          ", "
+        )}] are available for tenant ${numericTenantId}`
       );
 
       return res.status(403).json({
@@ -202,7 +202,7 @@ export const checkAllFeatures =
           // Use database query
           const [tenantRows] = await query<RowDataPacket[]>(
             "SELECT id FROM tenants WHERE subdomain = ?",
-            [req.tenantId],
+            [req.tenantId]
           );
 
           if (tenantRows.length === 0) {
@@ -227,7 +227,7 @@ export const checkAllFeatures =
       for (const featureCode of featureCodes) {
         const hasFeature = await Feature.checkTenantAccess(
           numericTenantId,
-          featureCode,
+          featureCode
         );
         if (!hasFeature) {
           missingFeatures.push(featureCode);
@@ -238,13 +238,13 @@ export const checkAllFeatures =
         const errorMessage =
           options.customErrorMessage ||
           `Die folgenden Funktionen sind für Ihren Tarif nicht verfügbar: ${missingFeatures.join(
-            ", ",
+            ", "
           )}`;
 
         logger.warn(
           `Features [${missingFeatures.join(
-            ", ",
-          )}] are not available for tenant ${numericTenantId}`,
+            ", "
+          )}] are not available for tenant ${numericTenantId}`
         );
 
         return res.status(403).json({
@@ -257,8 +257,8 @@ export const checkAllFeatures =
 
       logger.info(
         `All features [${featureCodes.join(
-          ", ",
-        )}] are active for tenant ${numericTenantId}`,
+          ", "
+        )}] are active for tenant ${numericTenantId}`
       );
       return next();
     } catch (error) {

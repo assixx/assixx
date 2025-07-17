@@ -311,14 +311,14 @@ DELETE /api/users/:id      # Benutzer löschen
 
 ```javascript
 // Client → Server
-socket.emit('join_conversation', conversationId);
-socket.emit('send_message', messageData);
-socket.emit('typing', { conversationId, isTyping });
+socket.emit("join_conversation", conversationId);
+socket.emit("send_message", messageData);
+socket.emit("typing", { conversationId, isTyping });
 
 // Server → Client
-socket.emit('new_message', messageData);
-socket.emit('user_typing', { userId, userName, isTyping });
-socket.emit('conversation_updated', conversationData);
+socket.emit("new_message", messageData);
+socket.emit("user_typing", { userId, userName, isTyping });
+socket.emit("conversation_updated", conversationData);
 ```
 
 ## 🚦 Deployment-Architektur

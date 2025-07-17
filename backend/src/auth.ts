@@ -22,11 +22,11 @@ const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "JWT_SECRET must be set in production and be at least 32 characters long!",
+      "JWT_SECRET must be set in production and be at least 32 characters long!"
     );
   } else {
     console.warn(
-      "⚠️  WARNING: Using insecure default JWT_SECRET for development only!",
+      "⚠️  WARNING: Using insecure default JWT_SECRET for development only!"
     );
   }
 }
@@ -70,7 +70,7 @@ export interface AuthUserResult {
 
 export async function authenticateUser(
   usernameOrEmail: string,
-  password: string,
+  password: string
 ): Promise<AuthUserResult> {
   console.log("[DEBUG] authenticateUser called with:", usernameOrEmail);
   try {
@@ -95,7 +95,7 @@ export async function authenticateUser(
       "tenant_id:",
       user.tenant_id,
       "is_active:",
-      user.is_active,
+      user.is_active
     );
     const isValid = await bcrypt.compare(password, user.password);
     console.log("[DEBUG] Password comparison result:", isValid);
@@ -114,7 +114,7 @@ export async function authenticateUser(
       "Error during authentication for user",
       usernameOrEmail,
       ":",
-      error,
+      error
     );
     throw error;
   }
@@ -126,7 +126,7 @@ export async function authenticateUser(
 export function generateToken(
   user: DatabaseUser,
   fingerprint?: string,
-  sessionId?: string,
+  sessionId?: string
 ): string {
   try {
     const payload: TokenPayload = {
@@ -157,7 +157,7 @@ export function generateToken(
 export function authenticateToken(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   const authHeader = req.headers["authorization"];
 
@@ -217,7 +217,7 @@ export function authenticateToken(
           requestFingerprint !== user.fingerprint
         ) {
           console.info(
-            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`,
+            `[SECURITY-INFO] Fingerprint change for user ${user.id} - likely browser/system update`
           );
 
           // Nur bei verdächtigen Mustern warnen/blockieren:
@@ -232,7 +232,7 @@ export function authenticateToken(
         if (process.env.VALIDATE_SESSIONS === "true") {
           const [sessions] = await executeQuery<RowDataPacket[]>(
             "SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()",
-            [user.id, user.sessionId],
+            [user.id, user.sessionId]
           );
 
           if (sessions.length === 0) {

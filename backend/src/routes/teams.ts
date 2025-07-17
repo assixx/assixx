@@ -219,7 +219,7 @@ router.post("/", async (req, res): Promise<void> => {
     if (department_id) {
       const department = await Department.findById(
         department_id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
       if (!department) {
         res
@@ -246,7 +246,7 @@ router.post("/", async (req, res): Promise<void> => {
     });
 
     logger.info(
-      `Team created with ID ${teamId} by user ${authReq.user.username}`,
+      `Team created with ID ${teamId} by user ${authReq.user.username}`
     );
 
     res.status(201).json({
@@ -368,7 +368,7 @@ router.get("/:id", async (req, res): Promise<void> => {
     res.json(team);
   } catch (error) {
     logger.error(
-      `Error fetching team ${req.params.id}: ${getErrorMessage(error)}`,
+      `Error fetching team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: "Fehler beim Abrufen des Teams",
@@ -505,7 +505,7 @@ router.put("/:id", async (req, res): Promise<void> => {
     if (department_id) {
       const department = await Department.findById(
         department_id,
-        req.user.tenant_id,
+        req.user.tenant_id
       );
       if (!department) {
         res
@@ -537,7 +537,7 @@ router.put("/:id", async (req, res): Promise<void> => {
     }
   } catch (error) {
     logger.error(
-      `Error updating team ${req.params.id}: ${getErrorMessage(error)}`,
+      `Error updating team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: "Fehler beim Aktualisieren des Teams",
@@ -631,7 +631,7 @@ router.delete("/:id", async (req, res): Promise<void> => {
     }
   } catch (error) {
     logger.error(
-      `Error deleting team ${req.params.id}: ${getErrorMessage(error)}`,
+      `Error deleting team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: "Fehler beim Löschen des Teams",
@@ -727,7 +727,7 @@ router.get("/:id/members", async (req, res): Promise<void> => {
     res.json(members);
   } catch (error) {
     logger.error(
-      `Error fetching members for team ${req.params.id}: ${getErrorMessage(error)}`,
+      `Error fetching members for team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: "Fehler beim Abrufen der Teammitglieder",
@@ -851,7 +851,7 @@ router.post("/:id/members", async (req, res): Promise<void> => {
 
     if (success) {
       logger.info(
-        `User ${userId} added to team ${teamId} by user ${authReq.user.username}`,
+        `User ${userId} added to team ${teamId} by user ${authReq.user.username}`
       );
       res.json({ message: "Benutzer erfolgreich zum Team hinzugefügt" });
     } else {
@@ -862,7 +862,7 @@ router.post("/:id/members", async (req, res): Promise<void> => {
     }
   } catch (error) {
     logger.error(
-      `Error adding user to team ${req.params.id}: ${getErrorMessage(error)}`,
+      `Error adding user to team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: "Fehler beim Hinzufügen des Benutzers zum Team",
@@ -964,7 +964,7 @@ router.delete("/:id/members/:userId", async (req, res): Promise<void> => {
 
     if (success) {
       logger.info(
-        `User ${userId} removed from team ${teamId} by user ${authReq.user.username}`,
+        `User ${userId} removed from team ${teamId} by user ${authReq.user.username}`
       );
       res.json({ message: "Benutzer erfolgreich aus dem Team entfernt" });
     } else {
@@ -975,7 +975,7 @@ router.delete("/:id/members/:userId", async (req, res): Promise<void> => {
     }
   } catch (error) {
     logger.error(
-      `Error removing user from team ${req.params.id}: ${getErrorMessage(error)}`,
+      `Error removing user from team ${req.params.id}: ${getErrorMessage(error)}`
     );
     res.status(500).json({
       message: "Fehler beim Entfernen des Benutzers aus dem Team",

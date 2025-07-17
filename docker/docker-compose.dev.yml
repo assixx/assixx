@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Override für Entwicklung mit Live-Reload
@@ -6,7 +6,7 @@ services:
     build:
       context: ..
       target: builder # Nutze nur Build-Stage
-    command: ['npm', 'run', 'dev']
+    command: ["npm", "run", "dev"]
     volumes:
       - ../backend:/app/backend
       - ../package.json:/app/package.json

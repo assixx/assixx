@@ -75,7 +75,7 @@ export function validatePassword(password: string): ValidationResult {
   }
   if (!/[!@#$%^&*]/.test(password)) {
     errors.push(
-      "Password must contain at least one special character (!@#$%^&*)",
+      "Password must contain at least one special character (!@#$%^&*)"
     );
   }
 
@@ -101,7 +101,7 @@ export function validateUsername(username: string): UsernameValidationResult {
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
     errors.push(
-      "Username can only contain letters, numbers, underscores, and hyphens",
+      "Username can only contain letters, numbers, underscores, and hyphens"
     );
   }
 
@@ -132,7 +132,7 @@ export function isValidDate(date: string): boolean {
  */
 export function isValidFileType(
   filename: string,
-  allowedTypes: string[],
+  allowedTypes: string[]
 ): boolean {
   const ext = filename.split(".").pop()?.toLowerCase();
   return ext ? allowedTypes.includes(ext) : false;
@@ -144,7 +144,7 @@ export function isValidFileType(
  * @returns Validation result
  */
 export function validateSubdomain(
-  subdomain: string,
+  subdomain: string
 ): SubdomainValidationResult {
   const errors: string[] = [];
 
@@ -156,7 +156,7 @@ export function validateSubdomain(
   }
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(subdomain)) {
     errors.push(
-      "Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)",
+      "Subdomain can only contain lowercase letters, numbers, and hyphens (not at start or end)"
     );
   }
 
@@ -174,7 +174,7 @@ export function validateSubdomain(
  */
 export function validateRequiredFields(
   data: DataObject,
-  requiredFields: string[],
+  requiredFields: string[]
 ): RequiredFieldsValidationResult {
   const missingFields: string[] = [];
 

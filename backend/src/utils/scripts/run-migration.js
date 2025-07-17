@@ -20,7 +20,7 @@ async function runMigration() {
   try {
     const migrationPath = path.join(
       __dirname,
-      "../../../../database/migrations/003-add-plans-system.sql",
+      "../../../../database/migrations/003-add-plans-system.sql"
     );
     const migration = fs.readFileSync(migrationPath, "utf8");
 

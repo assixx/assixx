@@ -125,11 +125,11 @@ Jede HTML-Seite kann die Breadcrumb einfach importieren:
 <!-- In jeder HTML-Datei -->
 <div id="breadcrumb-container"></div>
 <script type="module">
-  import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+  import { initBreadcrumb } from "/scripts/components/breadcrumb.js";
 
   initBreadcrumb([
-    { label: 'Home', href: '/', icon: 'fa-home' },
-    { label: 'Admin Dashboard', icon: 'fa-tachometer-alt', current: true },
+    { label: "Home", href: "/", icon: "fa-home" },
+    { label: "Admin Dashboard", icon: "fa-tachometer-alt", current: true },
   ]);
 </script>
 ```
@@ -192,15 +192,15 @@ initBreadcrumb();
 
 // Manuelle Definition
 initBreadcrumb([
-  { label: 'Home', href: '/', icon: 'fa-home' },
-  { label: 'Verwaltung', href: '/admin', icon: 'fa-cog' },
-  { label: 'Benutzer', icon: 'fa-users', current: true },
+  { label: "Home", href: "/", icon: "fa-home" },
+  { label: "Verwaltung", href: "/admin", icon: "fa-cog" },
+  { label: "Benutzer", icon: "fa-users", current: true },
 ]);
 
 // Mit Custom-Optionen
 initBreadcrumb(items, {
-  container: '#my-breadcrumb',
-  separator: '/',
+  container: "#my-breadcrumb",
+  separator: "/",
   showIcons: true,
 });
 ```

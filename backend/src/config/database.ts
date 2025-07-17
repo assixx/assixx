@@ -129,7 +129,7 @@ if (USE_MOCK_DB) {
         return [[[]], []] as unknown as [T, mysql.FieldPacket[]];
       } else if (
         sql.includes(
-          "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?",
+          "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?"
         )
       ) {
         // Mock für findById
@@ -273,7 +273,7 @@ if (USE_MOCK_DB) {
       .catch((err) => {
         console.error(
           "[DEBUG] Database connection test failed:",
-          err instanceof Error ? err.message : "Unknown error",
+          err instanceof Error ? err.message : "Unknown error"
         );
       });
   } catch (error) {
@@ -293,13 +293,13 @@ if (USE_MOCK_DB) {
       async getConnection(): Promise<{
         query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
           sql: string,
-          params?: unknown[],
+          params?: unknown[]
         ): Promise<[T, mysql.FieldPacket[]]>;
         execute<
           T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
         >(
           sql: string,
-          params?: unknown[],
+          params?: unknown[]
         ): Promise<[T, mysql.FieldPacket[]]>;
         beginTransaction(): Promise<void>;
         commit(): Promise<void>;

@@ -11,14 +11,14 @@ services:
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
     ports:
-      - '3307:3306'
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ../database/docker-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - assixx-network
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 10s
       retries: 5
 
@@ -47,7 +47,7 @@ services:
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - ../uploads:/app/uploads
       - ../backend/logs:/app/backend/logs
@@ -72,16 +72,16 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'node',
-          '-e',
+          "CMD",
+          "node",
+          "-e",
           "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
     # Development command mit nodemon
-    command: ['pnpm', 'run', 'dev']
+    command: ["pnpm", "run", "dev"]
 
   # Optional: Redis für Sessions/Cache
   redis:
@@ -94,7 +94,7 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -127,7 +127,7 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
     ports:
-      - '3001:3001' # Health check port
+      - "3001:3001" # Health check port
     volumes:
       - ../backend:/app/backend:delegated
       - ../scripts:/app/scripts:delegated
@@ -151,9 +151,9 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'node',
-          '-e',
+          "CMD",
+          "node",
+          "-e",
           "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })",
         ]
       interval: 30s
@@ -161,7 +161,7 @@ services:
       retries: 3
     # Worker command - use tsx directly
     command:
-      ['pnpm', 'exec', 'tsx', '/app/backend/src/workers/deletionWorker.ts']
+      ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
   # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
   phpmyadmin:
@@ -169,7 +169,7 @@ services:
     container_name: assixx-phpmyadmin
     restart: unless-stopped
     ports:
-      - '8080:80'
+      - "8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306

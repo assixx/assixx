@@ -19,14 +19,14 @@ Füge dieses Script im `<head>` Tag ein - **VOR allen CSS-Dateien**!
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script>
       (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const sidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
         const root = document.documentElement;
-        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        root.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+        root.setAttribute("data-sidebar", sidebarCollapsed ? "collapsed" : "expanded");
+        root.style.setProperty("--sidebar-width", sidebarCollapsed ? "60px" : "250px");
+        root.style.setProperty("--content-margin", sidebarCollapsed ? "60px" : "250px");
+        root.style.setProperty("--grid-columns", sidebarCollapsed ? "4" : "3");
+        root.style.setProperty("--widget-columns", sidebarCollapsed ? "5" : "3");
+        root.style.setProperty("--card-padding", sidebarCollapsed ? "2rem" : "1.5rem");
       })();
     </script>
 

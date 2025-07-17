@@ -35,7 +35,7 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
    - Modals wurden durch Template-Parsing erstellt:
 
    ```typescript
-   const div = document.createElement('div');
+   const div = document.createElement("div");
    div.innerHTML = template;
    return div.firstElementChild as HTMLElement;
    ```
@@ -122,16 +122,16 @@ requestAnimationFrame(() => {
   // If still not visible, force it (also check for empty string)
   if (
     !styles.opacity ||
-    styles.opacity === '0' ||
-    styles.opacity === '' ||
-    styles.visibility === 'hidden' ||
-    styles.visibility === '' ||
-    styles.display === 'none'
+    styles.opacity === "0" ||
+    styles.opacity === "" ||
+    styles.visibility === "hidden" ||
+    styles.visibility === "" ||
+    styles.display === "none"
   ) {
-    console.warn('[ModalManager] Modal not visible, forcing visibility');
-    modal!.style.opacity = '1';
-    modal!.style.visibility = 'visible';
-    modal!.style.display = 'flex';
+    console.warn("[ModalManager] Modal not visible, forcing visibility");
+    modal!.style.opacity = "1";
+    modal!.style.visibility = "visible";
+    modal!.style.display = "flex";
   }
 });
 ```

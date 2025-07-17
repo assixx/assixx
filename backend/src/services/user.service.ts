@@ -69,7 +69,7 @@ class UserService {
    */
   async getUserById(
     userId: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<UserData | null> {
     try {
       const user = await User.findById(userId, tenantId);
@@ -177,7 +177,7 @@ class UserService {
   async updateUser(
     userId: number,
     tenantId: number,
-    updateData: UpdateUserData,
+    updateData: UpdateUserData
   ): Promise<UserData | null> {
     try {
       // Create a clean update object without forbidden fields
@@ -202,7 +202,7 @@ class UserService {
   async updatePassword(
     userId: number,
     tenantId: number,
-    newPassword: string,
+    newPassword: string
   ): Promise<boolean> {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -234,7 +234,7 @@ class UserService {
   async archiveUser(
     userId: number,
     tenantId: number,
-    archived: boolean = true,
+    archived: boolean = true
   ): Promise<boolean> {
     try {
       await User.update(userId, { is_archived: archived }, tenantId);

@@ -128,7 +128,7 @@
 
       /* More specific selector to override global styles */
       #profile-picture-display.profile-picture-placeholder.avatar-initials {
-        background: linear-gradient(135deg, #2196F3, #42a5f5) !important;
+        background: linear-gradient(135deg, #2196f3, #42a5f5) !important;
         color: white !important;
         font-weight: 600 !important;
         font-size: 3rem !important;
@@ -941,7 +941,7 @@
           if (response.ok) {
             const data = await response.json();
             console.log('[Root Profile] API Response:', data);
-            
+
             // Handle different response formats
             const user = data.data || data.user || data;
 
@@ -963,7 +963,7 @@
                 const firstInitial = firstName.charAt(0).toUpperCase() || '';
                 const lastInitial = lastName.charAt(0).toUpperCase() || '';
                 const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
-                
+
                 console.log('[Root Profile] User data:', user);
                 console.log('[Root Profile] Setting initials:', { firstName, lastName, initials });
                 container.classList.add('avatar-initials');
@@ -1118,7 +1118,7 @@
                   const firstInitial = firstName.charAt(0).toUpperCase() || '';
                   const lastInitial = lastName.charAt(0).toUpperCase() || '';
                   const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
-                  
+
                   container.classList.add('avatar-initials');
                   container.innerHTML = initials;
                 }

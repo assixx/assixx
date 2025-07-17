@@ -35,10 +35,10 @@ When an admin uses role switch to view as employee, they could still see admin f
 
 ```typescript
 // Added sessionStorage sync
-if (data.user.activeRole === 'employee' && userRole === 'admin') {
-  sessionStorage.setItem('roleSwitch', 'employee');
+if (data.user.activeRole === "employee" && userRole === "admin") {
+  sessionStorage.setItem("roleSwitch", "employee");
 } else {
-  sessionStorage.removeItem('roleSwitch');
+  sessionStorage.removeItem("roleSwitch");
 }
 
 // Changed redirect to reload
@@ -49,11 +49,11 @@ window.location.reload(); // Instead of redirecting to dashboard
 
 ```typescript
 // Check for role switch in loadUserInfo()
-const activeRole = localStorage.getItem('activeRole');
-if (payload.role === 'admin' && activeRole === 'employee') {
-  this.currentRole = 'employee';
-} else if (activeRole && ['root', 'admin', 'employee'].includes(activeRole)) {
-  this.currentRole = activeRole as 'root' | 'admin' | 'employee';
+const activeRole = localStorage.getItem("activeRole");
+if (payload.role === "admin" && activeRole === "employee") {
+  this.currentRole = "employee";
+} else if (activeRole && ["root", "admin", "employee"].includes(activeRole)) {
+  this.currentRole = activeRole as "root" | "admin" | "employee";
 } else {
   this.currentRole = payload.role;
 }

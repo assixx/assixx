@@ -1411,17 +1411,19 @@ class ChatClient {
     const messageDate = new Date(message.created_at).toLocaleDateString('de-DE');
     const messages = messagesContainer.querySelectorAll('.message');
     const lastMessage = messages[messages.length - 1];
-    
+
     // Check if a date separator for this date already exists
     const existingSeparators = messagesContainer.querySelectorAll('.date-separator');
     let separatorExists = false;
-    
-    existingSeparators.forEach(separator => {
+
+    existingSeparators.forEach((separator) => {
       const separatorText = separator.textContent?.trim();
       // Check if separator matches the date or "Heute" or "Gestern"
-      if (separatorText === messageDate || 
-          (separatorText === 'Heute' && this.isToday(messageDate)) ||
-          (separatorText === 'Gestern' && this.isYesterday(messageDate))) {
+      if (
+        separatorText === messageDate ||
+        (separatorText === 'Heute' && this.isToday(messageDate)) ||
+        (separatorText === 'Gestern' && this.isYesterday(messageDate))
+      ) {
         separatorExists = true;
       }
     });
@@ -1905,7 +1907,7 @@ class ChatClient {
     const chatAvatar = document.getElementById('chat-avatar');
     const chatPartnerName = document.getElementById('chat-partner-name');
     const chatPartnerStatus = document.getElementById('chat-partner-status');
-    
+
     if (!this.currentConversationId) return;
 
     const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
@@ -1939,7 +1941,7 @@ class ChatClient {
             // Hide avatar if no data
             chatAvatar.style.display = 'none';
           }
-          
+
           // Update status
           if (chatPartnerStatus) {
             chatPartnerStatus.textContent = this.getRoleDisplayName(otherParticipant.role || '');
@@ -2088,16 +2090,16 @@ class ChatClient {
       // Remove any existing listeners first
       const newTab = tab.cloneNode(true) as HTMLElement;
       tab.parentNode?.replaceChild(newTab, tab);
-      
+
       // Add click listener
       newTab.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const target = e.currentTarget as HTMLElement | null;
         if (!target) return;
         const type = target.dataset.type;
-        
+
         console.log('Tab clicked:', type);
 
         // Update active tab
@@ -2271,7 +2273,7 @@ class ChatClient {
         participant_ids: [selectedUserId],
         is_group: isGroup,
       };
-      
+
       // Only add name for group chats
       if (isGroup && groupName) {
         requestBody.name = groupName;

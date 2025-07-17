@@ -303,14 +303,14 @@ router.post(
       await fs.unlink(validatedPath);
 
       logger.info(
-        `Admin ${adminId} successfully uploaded document ${documentId} for user ${userId}`,
+        `Admin ${adminId} successfully uploaded document ${documentId} for user ${userId}`
       );
 
       // Send email notification if feature is enabled
       try {
         const isEmailFeatureEnabled = await Feature.isEnabledForTenant(
           "email_notifications",
-          uploadReq.user.tenant_id,
+          uploadReq.user.tenant_id
         );
 
         if (isEmailFeatureEnabled) {
@@ -326,15 +326,15 @@ router.post(
               if (userId) {
                 const user = await User.findById(
                   parseInt(userId, 10),
-                  uploadReq.user.tenant_id,
+                  uploadReq.user.tenant_id
                 );
                 if (user?.email) {
                   await emailService.sendNewDocumentNotification(
                     user,
-                    documentInfo,
+                    documentInfo
                   );
                   logger.info(
-                    `Email notification sent to ${user.email} for document ${documentId}`,
+                    `Email notification sent to ${user.email} for document ${documentId}`
                   );
                 }
               }
@@ -343,28 +343,28 @@ router.post(
             case "team":
               // TODO: Send to all team members
               logger.info(
-                `Team notifications not yet implemented for document ${documentId}`,
+                `Team notifications not yet implemented for document ${documentId}`
               );
               break;
 
             case "department":
               // TODO: Send to all department members
               logger.info(
-                `Department notifications not yet implemented for document ${documentId}`,
+                `Department notifications not yet implemented for document ${documentId}`
               );
               break;
 
             case "company":
               // TODO: Send to all company members
               logger.info(
-                `Company-wide notifications not yet implemented for document ${documentId}`,
+                `Company-wide notifications not yet implemented for document ${documentId}`
               );
               break;
           }
         }
       } catch (emailError) {
         logger.warn(
-          `Could not send email notification: ${getErrorMessage(emailError)}`,
+          `Could not send email notification: ${getErrorMessage(emailError)}`
         );
       }
 
@@ -373,7 +373,7 @@ router.post(
           message: "Dokument erfolgreich hochgeladen",
           documentId,
           fileName: originalname,
-        }),
+        })
       );
     } catch (error) {
       logger.error(`Error uploading document: ${getErrorMessage(error)}`);
@@ -384,7 +384,7 @@ router.post(
           await safeDeleteFile(uploadReq.file.path);
         } catch (unlinkError) {
           logger.error(
-            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`,
+            `Error deleting temporary file: ${getErrorMessage(unlinkError)}`
           );
         }
       }
@@ -393,7 +393,7 @@ router.post(
         .status(500)
         .json(errorResponse("Fehler beim Hochladen des Dokuments", 500));
     }
-  }),
+  })
 );
 
 // Get documents (admin only)
@@ -534,7 +534,7 @@ router.get(
             hasNext: pageNum * limitNum < total,
             hasPrev: pageNum > 1,
           },
-        }),
+        })
       );
     } catch (error) {
       logger.error(`Error retrieving documents: ${getErrorMessage(error)}`);
@@ -542,7 +542,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Abrufen der Dokumente", 500));
     }
-  }),
+  })
 );
 
 /**
@@ -667,7 +667,7 @@ router.get(
       res.send(contentBuffer);
 
       logger.info(
-        `Document ${req.params.documentId} previewed by user ${req.user.id}`,
+        `Document ${req.params.documentId} previewed by user ${req.user.id}`
       );
     } catch (error) {
       logger.error(`Error previewing document: ${getErrorMessage(error)}`);
@@ -675,7 +675,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Anzeigen des Dokuments", 500));
     }
-  }),
+  })
 );
 
 // Download document
@@ -714,7 +714,7 @@ router.get(
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileName}"`,
+        `attachment; filename="${fileName}"`
       );
 
       // Handle different possible buffer/content formats
@@ -734,7 +734,7 @@ router.get(
       res.send(contentBuffer);
 
       logger.info(
-        `Document ${req.params.documentId} downloaded by user ${req.user.id}`,
+        `Document ${req.params.documentId} downloaded by user ${req.user.id}`
       );
     } catch (error) {
       logger.error(`Error downloading document: ${getErrorMessage(error)}`);
@@ -742,7 +742,7 @@ router.get(
         .status(500)
         .json(errorResponse("Fehler beim Herunterladen des Dokuments", 500));
     }
-  }),
+  })
 );
 
 // Archive document
@@ -752,7 +752,7 @@ router.put(
   typed.auth(async (req, res) => {
     try {
       const success = await Document.archiveDocument(
-        parseInt(req.params.documentId, 10),
+        parseInt(req.params.documentId, 10)
       );
 
       if (!success) {
@@ -761,7 +761,7 @@ router.put(
       }
 
       logger.info(
-        `Document ${req.params.documentId} archived by admin ${req.user.id}`,
+        `Document ${req.params.documentId} archived by admin ${req.user.id}`
       );
       res.json(successResponse({ message: "Dokument erfolgreich archiviert" }));
     } catch (error) {
@@ -770,7 +770,7 @@ router.put(
         .status(500)
         .json(errorResponse("Fehler beim Archivieren des Dokuments", 500));
     }
-  }),
+  })
 );
 
 // Delete document
@@ -780,7 +780,7 @@ router.delete(
   typed.auth(async (req, res) => {
     try {
       const success = await Document.delete(
-        parseInt(req.params.documentId, 10),
+        parseInt(req.params.documentId, 10)
       );
 
       if (!success) {
@@ -789,7 +789,7 @@ router.delete(
       }
 
       logger.info(
-        `Document ${req.params.documentId} deleted by admin ${req.user.id}`,
+        `Document ${req.params.documentId} deleted by admin ${req.user.id}`
       );
       res.json(successResponse({ message: "Dokument erfolgreich gelöscht" }));
     } catch (error) {
@@ -798,7 +798,7 @@ router.delete(
         .status(500)
         .json(errorResponse("Fehler beim Löschen des Dokuments", 500));
     }
-  }),
+  })
 );
 
 // NEW ROUTES WITH CONTROLLER
@@ -809,7 +809,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.getDocuments(req, res);
-  }),
+  })
 );
 
 // Get document by ID
@@ -818,7 +818,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.getDocumentById(req, res);
-  }),
+  })
 );
 
 // Download document
@@ -828,7 +828,7 @@ router.get(
   rateLimiter.download,
   typed.auth(async (req, res) => {
     await documentController.downloadDocument(req, res);
-  }),
+  })
 );
 
 // Mark document as read
@@ -837,7 +837,7 @@ router.post(
   ...security.user(),
   typed.auth(async (req, res) => {
     await documentController.markDocumentAsRead(req, res);
-  }),
+  })
 );
 
 export default router;

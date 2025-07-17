@@ -106,7 +106,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
 ```typescript
 // Entfernt: Doppelte attachEventListeners() Aufrufe
 // Hinzugefügt: Inline-Styles als Fallback
-sidebar.style.setProperty('width', '70px', 'important');
+sidebar.style.setProperty("width", "70px", "important");
 ```
 
 ### 2. Default Avatar statt User-Bild
@@ -123,10 +123,10 @@ sidebar.style.setProperty('width', '70px', 'important');
 
 ```typescript
 // 1. Dynamischer Avatar bei der Erstellung
-const profilePicture = this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
+const profilePicture = this.userProfileData?.profile_picture || "/assets/images/default-avatar.svg";
 
 // 2. Update nach Profil-Load
-const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+const headerAvatar = document.getElementById("user-avatar") as HTMLImageElement;
 if (headerAvatar && profilePic) {
   headerAvatar.src = profilePic;
 }

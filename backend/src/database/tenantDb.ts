@@ -39,7 +39,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     };
 
     console.log(
-      `Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`,
+      `Verwende Datenbank ${dbConfig.database} für Tenant ${tenantId} (Entwicklungsmodus)`
     );
 
     // Verbindungspool erstellen
@@ -57,7 +57,7 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
   } catch (error) {
     console.error(
       `Fehler beim Erstellen der DB-Verbindung für ${tenantId}:`,
-      error,
+      error
     );
     throw error;
   }
@@ -70,12 +70,12 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
  * In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
  */
 export async function initializeTenantDatabase(
-  tenantId: string,
+  tenantId: string
 ): Promise<void> {
   // Im Entwicklungsmodus verwenden wir die Haupt-Datenbank
   if (process.env.NODE_ENV === "development") {
     console.log(
-      `Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`,
+      `Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`
     );
     return;
   }
@@ -112,7 +112,7 @@ export async function initializeTenantDatabase(
   } catch (error) {
     console.error(
       `Fehler beim Initialisieren der Tenant-DB ${tenantId}:`,
-      error,
+      error
     );
     throw error;
   } finally {
@@ -132,7 +132,7 @@ export async function closeAllConnections(): Promise<void> {
     } catch (error) {
       console.error(
         `Fehler beim Schließen der Verbindung für ${tenantId}:`,
-        error,
+        error
       );
     }
   }

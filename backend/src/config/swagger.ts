@@ -13,7 +13,7 @@ const __dirname = dirname(__filename);
 
 // Read package.json to get version
 const packageJson = JSON.parse(
-  readFileSync(join(__dirname, "../../../package.json"), "utf-8"),
+  readFileSync(join(__dirname, "../../../package.json"), "utf-8")
 );
 
 const options: swaggerJsdoc.Options = {

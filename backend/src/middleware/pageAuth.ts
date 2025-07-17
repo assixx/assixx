@@ -233,7 +233,7 @@ function getDashboardForRole(role: string): string {
 export function protectPage(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   const pagePath = req.path;
   const pageConfig = pagePermissions[pagePath];
@@ -260,13 +260,13 @@ export function protectPage(
     // Verify token
     const decoded = jwt.verify(
       token,
-      process.env["JWT_SECRET"] || "your-secret-key",
+      process.env["JWT_SECRET"] || "your-secret-key"
     ) as DecodedToken;
 
     // Check if user's role is allowed
     if (!pageConfig.allowedRoles.includes(decoded.role)) {
       logger.warn(
-        `User ${decoded.username} (${decoded.role}) tried to access ${pagePath}`,
+        `User ${decoded.username} (${decoded.role}) tried to access ${pagePath}`
       );
 
       // Redirect to appropriate page based on role
@@ -296,7 +296,7 @@ export function redirectToDashboard(req: Request, res: Response): void {
   try {
     const decoded = jwt.verify(
       token,
-      process.env["JWT_SECRET"] || "your-secret-key",
+      process.env["JWT_SECRET"] || "your-secret-key"
     ) as DecodedToken;
     const dashboardUrl = getDashboardForRole(decoded.role);
     res.redirect(dashboardUrl);
@@ -313,7 +313,7 @@ export function redirectToDashboard(req: Request, res: Response): void {
 export function contentSecurityPolicy(
   _req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   res.setHeader(
     "Content-Security-Policy",
@@ -326,7 +326,7 @@ export function contentSecurityPolicy(
       "frame-src 'self' blob:; " +
       "object-src 'self' blob:; " +
       "base-uri 'self'; " +
-      "form-action 'self';",
+      "form-action 'self';"
   );
 
   // Additional security headers

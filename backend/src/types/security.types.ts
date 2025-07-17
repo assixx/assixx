@@ -210,7 +210,7 @@ export function isSecurityEvent(event: unknown): event is SecurityEvent {
     "timestamp" in event &&
     typeof event.type === "string" &&
     Object.values(SecurityEventType).includes(
-      event.type as SecurityEventType,
+      event.type as SecurityEventType
     ) &&
     typeof event.ipAddress === "string" &&
     event.timestamp instanceof Date
@@ -219,7 +219,7 @@ export function isSecurityEvent(event: unknown): event is SecurityEvent {
 
 export function hasPermission(
   userPermissions: string[],
-  requiredPermission: string,
+  requiredPermission: string
 ): boolean {
   return (
     userPermissions.includes(requiredPermission) ||

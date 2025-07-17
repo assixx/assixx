@@ -166,7 +166,7 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
   const firstInitial = (firstName || '').charAt(0).toUpperCase() || '';
   const lastInitial = (lastName || '').charAt(0).toUpperCase() || '';
   const initials = `${firstInitial}${lastInitial}` || 'U';
-  
+
   display.classList.add('avatar-initials');
   display.innerHTML = initials;
 }

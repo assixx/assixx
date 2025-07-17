@@ -5,9 +5,9 @@ on:
     branches:
       - master
       - develop
-      - 'feature/docker-*'
+      - "feature/docker-*"
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches:
       - master
@@ -127,13 +127,13 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          format: "sarif"
+          output: "trivy-results.sarif"
         continue-on-error: true
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
         if: success() || failure()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
         continue-on-error: true

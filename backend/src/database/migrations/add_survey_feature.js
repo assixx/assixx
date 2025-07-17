@@ -30,7 +30,7 @@ async function runMigration() {
     // Prüfen ob Feature bereits existiert
     const [features] = await connection.query(
       "SELECT id FROM features WHERE code = ?",
-      ["surveys"],
+      ["surveys"]
     );
 
     if (features.length === 0) {
@@ -47,7 +47,7 @@ async function runMigration() {
           "premium",
           29.99,
           1,
-        ],
+        ]
       );
       console.log("✅ Survey feature added to features table");
     } else {
@@ -57,7 +57,7 @@ async function runMigration() {
     // Beispiel-Template erstellen
     const [templates] = await connection.query(
       "SELECT id FROM survey_templates WHERE name = ?",
-      ["Mitarbeiterzufriedenheit"],
+      ["Mitarbeiterzufriedenheit"]
     );
 
     if (templates.length === 0) {
@@ -105,7 +105,7 @@ async function runMigration() {
 
       // Get first admin user for template creation
       const [adminUsers] = await connection.query(
-        'SELECT id FROM users WHERE role IN ("admin", "root") LIMIT 1',
+        'SELECT id FROM users WHERE role IN ("admin", "root") LIMIT 1'
       );
 
       const adminUserId = adminUsers.length > 0 ? adminUsers[0].id : 16; // Fallback to known admin
@@ -120,7 +120,7 @@ async function runMigration() {
           "Vorlage für regelmäßige Mitarbeiterbefragungen",
           JSON.stringify(templateData),
           adminUserId,
-        ],
+        ]
       );
 
       console.log("✅ Sample survey template created");

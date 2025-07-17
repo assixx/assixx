@@ -12,7 +12,7 @@ if (userName) {
 }
 
 // ✅ GUT - Explizit und klar
-if (userName !== undefined && userName !== null && userName !== '') {
+if (userName !== undefined && userName !== null && userName !== "") {
   console.log(userName);
 }
 
@@ -79,28 +79,28 @@ if (user) { // Jetzt macht die Prüfung Sinn
 
 ```javascript
 // ❌ SCHLECHT - Chaotische Imports
-import { useState } from 'react';
-import { User } from '../types';
-import fs from 'fs';
-import './styles.css';
-import { Button } from '@mui/material';
-import { formatDate } from './utils';
+import { useState } from "react";
+import { User } from "../types";
+import fs from "fs";
+import "./styles.css";
+import { Button } from "@mui/material";
+import { formatDate } from "./utils";
 
 // ✅ GUT - Organisierte Imports
 // 1. Node built-ins
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 // 2. External packages
-import { useState } from 'react';
-import { Button } from '@mui/material';
+import { useState } from "react";
+import { Button } from "@mui/material";
 
 // 3. Internal modules
-import { User } from '../types';
-import { formatDate } from './utils';
+import { User } from "../types";
+import { formatDate } from "./utils";
 
 // 4. Side-effect imports
-import './styles.css';
+import "./styles.css";
 ```
 
 **Vorteile:**
@@ -177,7 +177,7 @@ const emailRegex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4}
 // Bei Input wie "aaaa@aaaa@aaaa@..." kann exponentiell lange dauern!
 
 // ✅ SICHER - Einfachere Regex oder Library nutzen
-import validator from 'validator';
+import validator from "validator";
 if (validator.isEmail(email)) {
   // ...
 }
@@ -192,16 +192,16 @@ if (validator.isEmail(email)) {
 ```javascript
 // ❌ Unnötige Quotes
 const obj = {
-  name: 'John',
+  name: "John",
   age: 30,
-  'valid-key': true,
+  "valid-key": true,
 };
 
 // ✅ Nur wo nötig
 const obj = {
-  name: 'John',
+  name: "John",
   age: 30,
-  'valid-key': true, // Nur hier nötig wegen Bindestrich
+  "valid-key": true, // Nur hier nötig wegen Bindestrich
 };
 ```
 

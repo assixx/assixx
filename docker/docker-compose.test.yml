@@ -11,7 +11,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
     ports:
-      - '3307:3306'
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ../database/docker-init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
@@ -20,15 +20,15 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'mysqladmin',
-          'ping',
-          '-h',
-          'localhost',
-          '-u',
-          'root',
-          '-pStrongP@ssw0rd!123',
-          '--silent',
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-pStrongP@ssw0rd!123",
+          "--silent",
         ]
       interval: 5s
       timeout: 20s
@@ -58,7 +58,7 @@ services:
       SMTP_FROM: ${SMTP_FROM}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - ../uploads:/app/uploads
       - ../backend/logs:/app/backend/logs
@@ -76,13 +76,13 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
       timeout: 10s
       retries: 20
       start_period: 60s
     # Development command mit nodemon
-    command: ['pnpm', 'run', 'dev']
+    command: ["pnpm", "run", "dev"]
 
   # Optional: Redis für Sessions/Cache
   redis:
@@ -95,7 +95,7 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -106,7 +106,7 @@ services:
     container_name: assixx-phpmyadmin
     restart: unless-stopped
     ports:
-      - '8080:80'
+      - "8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306

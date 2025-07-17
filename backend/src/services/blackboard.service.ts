@@ -55,7 +55,7 @@ class BlackboardService {
     _tenantDb: Pool,
     filters: BlackboardFilters = {},
     tenantId: number,
-    userId: number,
+    userId: number
   ): Promise<BlackboardEntry[]> {
     try {
       const result = await getAllEntries(tenantId, userId, filters);
@@ -73,7 +73,7 @@ class BlackboardService {
     _tenantDb: Pool,
     id: number,
     tenantId: number,
-    userId: number,
+    userId: number
   ): Promise<BlackboardEntry | null> {
     try {
       const entry = await getEntryById(id, tenantId, userId);
@@ -89,7 +89,7 @@ class BlackboardService {
    */
   async create(
     _tenantDb: Pool,
-    data: BlackboardCreateData,
+    data: BlackboardCreateData
   ): Promise<BlackboardEntry> {
     try {
       // Map service data to model data
@@ -130,7 +130,7 @@ class BlackboardService {
     _tenantDb: Pool,
     id: number,
     data: BlackboardUpdateData,
-    tenantId: number,
+    tenantId: number
   ): Promise<BlackboardEntry | null> {
     try {
       // Remove service-specific fields before passing to model
@@ -160,7 +160,7 @@ class BlackboardService {
   async delete(
     _tenantDb: Pool,
     id: number,
-    tenantId: number,
+    tenantId: number
   ): Promise<boolean> {
     try {
       return await deleteEntry(id, tenantId);

@@ -79,10 +79,10 @@ function processData(data: any) {
 
 ```typescript
 function processData(data: unknown): string {
-  if (typeof data === 'object' && data !== null && 'value' in data) {
+  if (typeof data === "object" && data !== null && "value" in data) {
     return String(data.value);
   }
-  throw new Error('Invalid data format');
+  throw new Error("Invalid data format");
 }
 ```
 
@@ -111,7 +111,7 @@ function calculateTotal(items: Item[]): number {
 ```typescript
 function handleClick(event: MouseEvent, index: number): void {
   // index wird nicht verwendet
-  console.log('Clicked!');
+  console.log("Clicked!");
 }
 ```
 
@@ -120,7 +120,7 @@ function handleClick(event: MouseEvent, index: number): void {
 ```typescript
 function handleClick(event: MouseEvent, _index: number): void {
   // Prefix mit _ für bewusst ungenutzte Parameter
-  console.log('Clicked!');
+  console.log("Clicked!");
 }
 ```
 
@@ -143,7 +143,7 @@ declare global {
     DashboardUI?: {
       openModal: (modalId: string) => void;
       closeModal: (modalId: string) => void;
-      showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+      showToast: (message: string, type?: "success" | "error" | "warning" | "info") => void;
     };
   }
 }
@@ -200,13 +200,13 @@ interface User {
 }
 
 // Type Alias
-type UserRole = 'admin' | 'employee' | 'root';
+type UserRole = "admin" | "employee" | "root";
 
 // Enum
 enum Status {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  PENDING = 'PENDING',
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  PENDING = "PENDING",
 }
 ```
 
@@ -242,7 +242,7 @@ export interface Admin {
 }
 
 // admin.ts & manage-admins.ts
-import { Admin } from '@/types/models.types';
+import { Admin } from "@/types/models.types";
 ```
 
 ## 🔄 5. Async/Promise Konsistenz
@@ -253,7 +253,7 @@ import { Admin } from '@/types/models.types';
 
 ```typescript
 async function loadData() {
-  const data = await fetch('/api/data');
+  const data = await fetch("/api/data");
   return data.json();
 }
 ```
@@ -262,7 +262,7 @@ async function loadData() {
 
 ```typescript
 async function loadData(): Promise<DataType> {
-  const response = await fetch('/api/data');
+  const response = await fetch("/api/data");
   return response.json() as Promise<DataType>;
 }
 ```

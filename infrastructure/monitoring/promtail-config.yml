@@ -33,14 +33,14 @@ scrape_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
-        target_label: 'container'
-      - source_labels: ['__meta_docker_container_log_stream']
-        target_label: 'logstream'
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+      - source_labels: ["__meta_docker_container_log_stream"]
+        target_label: "logstream"
       - source_labels:
-          ['__meta_docker_container_label_com_docker_compose_service']
-        target_label: 'service'
+          ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: "service"
 
   # System Logs (optional)
   - job_name: system
@@ -58,7 +58,7 @@ scrape_configs:
                 expression: '(?P<syslog_message>(?P<time>\\S+\\s+\\S+\\s+\\S+)\\s+(?P<host>\\S+)\\s+(?P<process>\\S+):\\s+(?P<message>.*))'
             - timestamp:
                 source: time
-                format: 'Jan _2 15:04:05'
+                format: "Jan _2 15:04:05"
             - labels:
                 host:
                 process:

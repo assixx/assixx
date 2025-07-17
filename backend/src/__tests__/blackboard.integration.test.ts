@@ -89,7 +89,7 @@ describe("Blackboard Integration Tests", () => {
         expect.objectContaining({
           id: createdEntryId,
           title: "Company-wide Announcement",
-        }),
+        })
       );
     });
 
@@ -206,7 +206,7 @@ describe("Blackboard Integration Tests", () => {
         .expect(403);
 
       expect(response.body.message).toContain(
-        "Only admins can create company-wide entries",
+        "Only admins can create company-wide entries"
       );
     });
 
@@ -336,7 +336,7 @@ describe("Blackboard Integration Tests", () => {
         .expect(500);
 
       expect(response.body.error).toContain(
-        "org_id is required for department or team level entries",
+        "org_id is required for department or team level entries"
       );
     });
 
@@ -406,7 +406,7 @@ async function setupTestDatabase() {
 
   // Insert test data
   await pool.execute(
-    `INSERT INTO tenants (id, name) VALUES (1, 'Test Tenant')`,
+    `INSERT INTO tenants (id, name) VALUES (1, 'Test Tenant')`
   );
   await pool.execute(
     `INSERT INTO users (id, tenant_id, username, email, password, role, department_id, team_id) 
@@ -420,7 +420,7 @@ async function setupTestDatabase() {
       adminUser.role,
       null,
       null,
-    ],
+    ]
   );
   await pool.execute(
     `INSERT INTO users (id, tenant_id, username, email, password, role, department_id, team_id) 
@@ -434,7 +434,7 @@ async function setupTestDatabase() {
       employeeUser.role,
       employeeUser.department_id,
       employeeUser.team_id,
-    ],
+    ]
   );
 }
 

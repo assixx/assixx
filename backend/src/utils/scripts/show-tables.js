@@ -25,7 +25,7 @@ async function showTablesAndColumns() {
     console.log("Field\t\tType\t\tNull\tKey\tDefault\tExtra");
     usersColumns.forEach((col) => {
       console.log(
-        `${col.Field}\t\t${col.Type}\t\t${col.Null}\t${col.Key}\t${col.Default || "NULL"}\t${col.Extra}`,
+        `${col.Field}\t\t${col.Type}\t\t${col.Null}\t${col.Key}\t${col.Default || "NULL"}\t${col.Extra}`
       );
     });
 
@@ -36,7 +36,7 @@ async function showTablesAndColumns() {
       console.log("Field\t\tType\t\tNull\tKey\tDefault\tExtra");
       deptColumns.forEach((col) => {
         console.log(
-          `${col.Field}\t\t${col.Type}\t\t${col.Null}\t${col.Key}\t${col.Default || "NULL"}\t${col.Extra}`,
+          `${col.Field}\t\t${col.Type}\t\t${col.Null}\t${col.Key}\t${col.Default || "NULL"}\t${col.Extra}`
         );
       });
     } catch (e) {
@@ -46,7 +46,7 @@ async function showTablesAndColumns() {
     // Überprüfe, ob Daten in der users-Tabelle existieren
     console.log("\nAnzahl der Benutzer in der Datenbank:");
     const [userCount] = await connection.query(
-      "SELECT role, COUNT(*) as count FROM users GROUP BY role",
+      "SELECT role, COUNT(*) as count FROM users GROUP BY role"
     );
     console.log(userCount);
 

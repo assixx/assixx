@@ -134,7 +134,7 @@ if (USE_MOCK_DB) {
         return [[[]], []] as unknown as [T, FieldPacket[]];
       } else if (
         sql.includes(
-          "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?",
+          "SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?"
         )
       ) {
         // Mock für findById
@@ -295,13 +295,13 @@ if (USE_MOCK_DB) {
       async getConnection(): Promise<{
         query<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(
           sql: string,
-          params?: unknown[],
+          params?: unknown[]
         ): Promise<[T, FieldPacket[]]>;
         execute<
           T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader,
         >(
           sql: string,
-          params?: unknown[],
+          params?: unknown[]
         ): Promise<[T, FieldPacket[]]>;
         beginTransaction(): Promise<void>;
         commit(): Promise<void>;

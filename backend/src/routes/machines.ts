@@ -58,7 +58,7 @@ router.get("/", authenticateToken, async (req, res): Promise<void> => {
 
     if (departmentId) {
       filteredMachines = machines.filter(
-        (machine) => machine.department_id == parseInt(String(departmentId)),
+        (machine) => machine.department_id == parseInt(String(departmentId))
       );
     }
 

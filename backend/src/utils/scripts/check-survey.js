@@ -4,7 +4,7 @@ async function checkSurvey() {
   try {
     // Find survey feature
     const [surveys] = await db.query(
-      "SELECT * FROM features WHERE code LIKE '%survey%' OR name LIKE '%Umfrage%'",
+      "SELECT * FROM features WHERE code LIKE '%survey%' OR name LIKE '%Umfrage%'"
     );
     console.log("Survey features found:", surveys.length);
     surveys.forEach((s) => {
@@ -21,7 +21,7 @@ async function checkSurvey() {
         JOIN features f ON tf.feature_id = f.id
         WHERE f.id = ? AND tf.tenant_id = 3
       `,
-        [surveyId],
+        [surveyId]
       );
 
       console.log("\nTenant 3 survey status:");

@@ -638,10 +638,10 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 
 ```javascript
 // In Routes mit Middleware
-router.use(checkFeature('surveys'));
+router.use(checkFeature("surveys"));
 
 // In Frontend prüfen
-const hasFeature = tenantFeatures.some((f) => f.code === 'surveys' && f.is_available);
+const hasFeature = tenantFeatures.some((f) => f.code === "surveys" && f.is_available);
 ```
 
 ---
@@ -1090,7 +1090,7 @@ if (survey.is_anonymous) {
 }
 
 // ✅ RICHTIG - explizite Prüfung
-if (survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true) {
+if (survey.is_anonymous === "1" || survey.is_anonymous === 1 || survey.is_anonymous === true) {
   // Wird nur bei true ausgeführt
 }
 ```
@@ -1118,14 +1118,14 @@ const userId = req.user.id; // Bereits Number aus Auth
 1. **Immer Datentypen prüfen:**
 
    ```javascript
-   console.log('Type:', typeof value, 'Value:', value);
+   console.log("Type:", typeof value, "Value:", value);
    ```
 
 2. **Explizite Boolean-Checks:**
 
    ```javascript
-   const isTrue = value === '1' || value === 1 || value === true;
-   const isFalse = value === '0' || value === 0 || value === false;
+   const isTrue = value === "1" || value === 1 || value === true;
+   const isFalse = value === "0" || value === 0 || value === false;
    ```
 
 3. **Konsistente ID-Behandlung:**

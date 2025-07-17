@@ -40,7 +40,7 @@ async function setupNewTenant(tenantId, companyName) {
     // Neue Konfiguration einfügen
     const updatedConfig = configContent.replace(
       "module.exports = {",
-      `module.exports = {\n    // ${companyName}\n    ${tenantId}: ${JSON.stringify(newTenantConfig, null, 8)},\n`,
+      `module.exports = {\n    // ${companyName}\n    ${tenantId}: ${JSON.stringify(newTenantConfig, null, 8)},\n`
     );
 
     await fs.writeFile(configPath, updatedConfig);
@@ -120,7 +120,7 @@ const [tenantId, companyName] = args;
 // Validierung
 if (!/^[a-z0-9-]+$/.test(tenantId)) {
   console.error(
-    "Fehler: Tenant-ID darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten.",
+    "Fehler: Tenant-ID darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten."
   );
   process.exit(1);
 }

@@ -14,7 +14,7 @@ import type { ValidationMiddleware } from "../types/middleware.types";
 const handleValidationErrors = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -128,7 +128,7 @@ export const validateLogin: ValidationMiddleware = [
     .escape()
     .isLength({ min: 3, max: 50 })
     .withMessage(
-      "Benutzername ist erforderlich und muss 3-50 Zeichen lang sein",
+      "Benutzername ist erforderlich und muss 3-50 Zeichen lang sein"
     ),
   body("password")
     .notEmpty()
@@ -161,13 +161,13 @@ export const validateSignup: ValidationMiddleware = [
     .escape()
     .matches(/^[a-zA-Z0-9_-]+$/)
     .withMessage(
-      "Benutzername muss 3-30 Zeichen lang sein (nur Buchstaben, Zahlen, _ und -)",
+      "Benutzername muss 3-30 Zeichen lang sein (nur Buchstaben, Zahlen, _ und -)"
     ),
   body("password")
     .isLength({ min: 8, max: 128 })
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/)
     .withMessage(
-      "Passwort muss 8-128 Zeichen lang sein mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen",
+      "Passwort muss 8-128 Zeichen lang sein mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen"
     ),
   body("firstName")
     .notEmpty()
@@ -236,7 +236,7 @@ export const validateCreateSurvey: ValidationMiddleware = [
       "date",
     ])
     .withMessage(
-      "Fragetyp muss text, single_choice, multiple_choice, number, rating oder date sein",
+      "Fragetyp muss text, single_choice, multiple_choice, number, rating oder date sein"
     ),
   body("questions.*.required")
     .optional()
@@ -285,7 +285,7 @@ export const validateSurveyResponse: ValidationMiddleware = [
   body("answers")
     .isArray({ min: 1 })
     .withMessage(
-      "Antworten sind erforderlich und müssen als Array übermittelt werden",
+      "Antworten sind erforderlich und müssen als Array übermittelt werden"
     ),
   body("answers.*.question_id")
     .isInt({ min: 1 })
@@ -335,7 +335,7 @@ export const validateDocumentUpload: ValidationMiddleware = [
     .escape()
     .isIn(["salary", "contract", "certificate", "other"])
     .withMessage(
-      "Kategorie muss salary, contract, certificate oder other sein",
+      "Kategorie muss salary, contract, certificate oder other sein"
     ),
   body("description")
     .optional()
@@ -386,19 +386,19 @@ export const validateCreateShift: ValidationMiddleware = [
     .notEmpty()
     .isInt({ min: 1 })
     .withMessage(
-      "Mitarbeiter-ID ist erforderlich und muss eine positive Zahl sein",
+      "Mitarbeiter-ID ist erforderlich und muss eine positive Zahl sein"
     ),
   body("start_time")
     .notEmpty()
     .isISO8601()
     .withMessage(
-      "Startzeit ist erforderlich und muss ein gültiges Datum/Zeit sein",
+      "Startzeit ist erforderlich und muss ein gültiges Datum/Zeit sein"
     ),
   body("end_time")
     .notEmpty()
     .isISO8601()
     .withMessage(
-      "Endzeit ist erforderlich und muss ein gültiges Datum/Zeit sein",
+      "Endzeit ist erforderlich und muss ein gültiges Datum/Zeit sein"
     ),
   body("shift_type")
     .optional()
@@ -406,7 +406,7 @@ export const validateCreateShift: ValidationMiddleware = [
     .escape()
     .isIn(["morning", "afternoon", "night", "overtime"])
     .withMessage(
-      "Schichttyp muss morning, afternoon, night oder overtime sein",
+      "Schichttyp muss morning, afternoon, night oder overtime sein"
     ),
   body("notes")
     .optional()
@@ -471,7 +471,7 @@ export const validateIdParam: ValidationMiddleware = [
 export const validatePaginationQuery = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   const { page, limit } = req.query;
 

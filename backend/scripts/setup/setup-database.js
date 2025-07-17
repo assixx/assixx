@@ -23,7 +23,7 @@ async function setupDatabase() {
     // Check if database exists
     const [databases] = await connection.query("SHOW DATABASES");
     const databaseExists = databases.some(
-      (db) => db.Database === process.env.DB_NAME,
+      (db) => db.Database === process.env.DB_NAME
     );
 
     if (!databaseExists) {
@@ -129,7 +129,7 @@ async function createTablesIfNotExist(connection) {
   // Check if we need to create a default admin user
   try {
     const [users] = await connection.query(
-      'SELECT * FROM users WHERE role = "root" LIMIT 1',
+      'SELECT * FROM users WHERE role = "root" LIMIT 1'
     );
     if (users.length === 0) {
       console.log("Creating default root admin user...");
@@ -144,11 +144,11 @@ async function createTablesIfNotExist(connection) {
         VALUES 
         ('admin', ?, 'System', 'Administrator', 'admin@example.com', 'root')
       `,
-        [hashedPassword],
+        [hashedPassword]
       );
 
       console.log(
-        "Default admin user created with username: admin and password: admin123",
+        "Default admin user created with username: admin and password: admin123"
       );
     } else {
       console.log("Root admin user already exists.");

@@ -10,12 +10,12 @@ Eliminierung aller Security Warnings durch korrekte TypeScript-Typisierung und e
 
 ```typescript
 // ❌ Triggert Security Warning
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   // Login logic
 });
 
 // ✅ Korrekt mit Rate Limiting
-router.post('/login', ...security.auth(loginValidation), async (req: Request, res: Response): Promise<void> => {
+router.post("/login", ...security.auth(loginValidation), async (req: Request, res: Response): Promise<void> => {
   // Login logic
 });
 ```
@@ -24,12 +24,12 @@ router.post('/login', ...security.auth(loginValidation), async (req: Request, re
 
 ```typescript
 // ❌ Triggert Warning - `as any` versteckt fehlende Auth
-router.delete('/user/:id', authenticateToken as any, async (req: any, res: any) => {
+router.delete("/user/:id", authenticateToken as any, async (req: any, res: any) => {
   // Keine Rollenprüfung!
 });
 
 // ✅ Korrekt mit expliziter Authorisierung
-router.delete('/user/:id', ...security.admin(), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.delete("/user/:id", ...security.admin(), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   // Admin-only operation
 });
 ```
@@ -38,10 +38,10 @@ router.delete('/user/:id', ...security.admin(), async (req: AuthenticatedRequest
 
 ```typescript
 // ❌ Direktes Setzen von Headers
-res.setHeader('Location', req.query.redirect);
+res.setHeader("Location", req.query.redirect);
 
 // ✅ Validierte Redirects
-const allowedDomains = ['localhost:3000'];
+const allowedDomains = ["localhost:3000"];
 if (allowedDomains.includes(new URL(redirect).host)) {
   res.redirect(redirect);
 }
@@ -53,10 +53,10 @@ if (allowedDomains.includes(new URL(redirect).host)) {
 
 ```typescript
 // ✅ RICHTIG - Verwende zentrale Types
-import { AuthenticatedRequest } from '../types/request.types';
-import { Response } from 'express';
+import { AuthenticatedRequest } from "../types/request.types";
+import { Response } from "express";
 
-router.get('/me', authenticateToken, rateLimiter, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get("/me", authenticateToken, rateLimiter, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   // req.user ist jetzt typsicher verfügbar
   const userId = req.user.id;
 });
@@ -64,7 +64,7 @@ router.get('/me', authenticateToken, rateLimiter, async (req: AuthenticatedReque
 
 ```typescript
 // ❌ FALSCH - Vermeide 'as any'
-router.get('/me', authenticateToken as any, async (req: any, res: any) => {
+router.get("/me", authenticateToken as any, async (req: any, res: any) => {
   // TypeScript kann nicht validieren
 });
 ```
@@ -73,22 +73,22 @@ router.get('/me', authenticateToken as any, async (req: any, res: any) => {
 
 ```typescript
 // ✅ RICHTIG - Explizite Security Layer
-import { securityMiddleware } from '../middleware/security';
-import { rateLimiter } from '../middleware/rateLimiter';
-import { authenticateToken } from '../auth';
-import { validateInput } from '../middleware/validation';
+import { securityMiddleware } from "../middleware/security";
+import { rateLimiter } from "../middleware/rateLimiter";
+import { authenticateToken } from "../auth";
+import { validateInput } from "../middleware/validation";
 
 // Definiere Security-Stack für verschiedene Szenarien
 const publicRouteStack = [rateLimiter.public, validateInput];
 
 const authenticatedRouteStack = [rateLimiter.authenticated, authenticateToken, validateInput];
 
-const adminRouteStack = [rateLimiter.admin, authenticateToken, requireRole('admin'), validateInput];
+const adminRouteStack = [rateLimiter.admin, authenticateToken, requireRole("admin"), validateInput];
 
 // Anwendung
-router.get('/public', ...publicRouteStack, handler);
-router.get('/user', ...authenticatedRouteStack, handler);
-router.post('/admin', ...adminRouteStack, handler);
+router.get("/public", ...publicRouteStack, handler);
+router.get("/user", ...authenticatedRouteStack, handler);
+router.post("/admin", ...adminRouteStack, handler);
 ```
 
 ### 3. **Rate Limiting Strategie**
@@ -129,13 +129,13 @@ export const rateLimits = {
 ```typescript
 // Type Guard Functions
 function isAuthenticatedRequest(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null;
+  return "user" in req && req.user != null;
 }
 
 // Verwendung in Routes
-router.get('/profile', authenticateToken, async (req: Request, res: Response) => {
+router.get("/profile", authenticateToken, async (req: Request, res: Response) => {
   if (!isAuthenticatedRequest(req)) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    return res.status(401).json({ error: "Not authenticated" });
   }
 
   // TypeScript weiß jetzt, dass req.user existiert
@@ -155,12 +155,12 @@ export interface ApiError {
 }
 
 export class AuthenticationError extends Error implements ApiError {
-  code = 'AUTHENTICATION_ERROR';
+  code = "AUTHENTICATION_ERROR";
   statusCode = 401;
 }
 
 export class RateLimitError extends Error implements ApiError {
-  code = 'RATE_LIMIT_EXCEEDED';
+  code = "RATE_LIMIT_EXCEEDED";
   statusCode = 429;
 }
 ```
@@ -206,7 +206,7 @@ export class RateLimitError extends Error implements ApiError {
 
 ```typescript
 // ❌ users.ts - Unsicher
-router.get('/profile/:id', authenticateToken as any, rateLimiter as any, async (req: any, res: any) => {
+router.get("/profile/:id", authenticateToken as any, rateLimiter as any, async (req: any, res: any) => {
   const userId = req.user.id; // TypeScript kann nicht validieren
 });
 ```
@@ -215,7 +215,7 @@ router.get('/profile/:id', authenticateToken as any, rateLimiter as any, async (
 
 ```typescript
 // ✅ users.ts - Sicher
-router.get('/profile/:id', ...security.admin(), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+router.get("/profile/:id", ...security.admin(), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const userId = req.user.id; // TypeScript validiert req.user
   // ...
   res.json(successResponse(userProfile));
@@ -258,15 +258,15 @@ Starte mit diesen einfachen Änderungen:
 
 ```typescript
 // templates/route.template.ts
-import { Router } from 'express';
-import { AuthenticatedRequest } from '../types/request.types';
-import { authenticateToken } from '../auth';
-import { rateLimiter } from '../middleware/rateLimiter';
+import { Router } from "express";
+import { AuthenticatedRequest } from "../types/request.types";
+import { authenticateToken } from "../auth";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
 router.get(
-  '/',
+  "/",
   rateLimiter.authenticated,
   authenticateToken,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {

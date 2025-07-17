@@ -72,13 +72,13 @@ export class ChatWebSocketServer {
         host?: string;
         authorization?: string;
       };
-    },
+    }
   ): Promise<void> {
     try {
       // Token aus Query-Parameter oder Header extrahieren
       const url = new URL(
         request.url || "/",
-        `http://${request.headers.host ?? "localhost"}`,
+        `http://${request.headers.host ?? "localhost"}`
       );
       const token =
         url.searchParams.get("token") ||
@@ -137,7 +137,7 @@ export class ChatWebSocketServer {
 
   private async handleMessage(
     ws: ExtendedWebSocket,
-    data: WebSocketData,
+    data: WebSocketData
   ): Promise<void> {
     try {
       const message: WebSocketMessage = JSON.parse(data.toString());
@@ -158,7 +158,7 @@ export class ChatWebSocketServer {
         case "join_conversation":
           await this.handleJoinConversation(
             ws,
-            message.data as JoinConversationData,
+            message.data as JoinConversationData
           );
           break;
         case "ping":
@@ -181,7 +181,7 @@ export class ChatWebSocketServer {
 
   private async handleSendMessage(
     ws: ExtendedWebSocket,
-    data: SendMessageData,
+    data: SendMessageData
   ): Promise<void> {
     const { conversationId, content, attachments = [] } = data;
 
@@ -203,11 +203,11 @@ export class ChatWebSocketServer {
       `;
       const [participants] = await pool.query<RowDataPacket[]>(
         participantQuery,
-        [conversationId, ws.tenantId],
+        [conversationId, ws.tenantId]
       );
 
       const participantIds = participants.map(
-        (p) => (p as { user_id: number }).user_id,
+        (p) => (p as { user_id: number }).user_id
       );
 
       // Convert IDs to strings for comparison since ws.userId might be a string
@@ -295,7 +295,7 @@ export class ChatWebSocketServer {
   private async handleTyping(
     ws: ExtendedWebSocket,
     data: TypingData,
-    isTyping: boolean,
+    isTyping: boolean
   ): Promise<void> {
     const { conversationId } = data;
 
@@ -309,7 +309,7 @@ export class ChatWebSocketServer {
       `;
       const [participants] = await pool.query<RowDataPacket[]>(
         participantQuery,
-        [conversationId, ws.tenantId, ws.userId],
+        [conversationId, ws.tenantId, ws.userId]
       );
 
       // Typing-Event an andere Teilnehmer senden
@@ -333,7 +333,7 @@ export class ChatWebSocketServer {
 
   private async handleMarkRead(
     ws: ExtendedWebSocket,
-    data: MarkReadData,
+    data: MarkReadData
   ): Promise<void> {
     const { messageId } = data;
 
@@ -351,7 +351,7 @@ export class ChatWebSocketServer {
           AND cp.user_id = ?
         )
       `,
-        [messageId, ws.tenantId, ws.userId],
+        [messageId, ws.tenantId, ws.userId]
       );
 
       // Sender über Lesebestätigung informieren
@@ -384,7 +384,7 @@ export class ChatWebSocketServer {
 
   private async handleJoinConversation(
     ws: ExtendedWebSocket,
-    data: JoinConversationData,
+    data: JoinConversationData
   ): Promise<void> {
     const { conversationId } = data;
 
@@ -404,7 +404,7 @@ export class ChatWebSocketServer {
       `;
       const [participants] = await pool.query<RowDataPacket[]>(
         participantQuery,
-        [conversationId, ws.tenantId, ws.userId],
+        [conversationId, ws.tenantId, ws.userId]
       );
 
       for (const participant of participants) {
@@ -443,7 +443,7 @@ export class ChatWebSocketServer {
   private async broadcastUserStatus(
     userId: number,
     tenantId: number,
-    status: string,
+    status: string
   ): Promise<void> {
     try {
       // Alle Unterhaltungen des Benutzers ermitteln
@@ -456,7 +456,7 @@ export class ChatWebSocketServer {
       `;
       const [relatedUsers] = await pool.query<RowDataPacket[]>(
         conversationsQuery,
-        [userId, tenantId, userId],
+        [userId, tenantId, userId]
       );
 
       // Status an alle verbundenen Benutzer senden
@@ -517,7 +517,7 @@ export class ChatWebSocketServer {
         // Nachricht als zugestellt markieren
         await pool.query<ResultSetHeader>(
           'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
-          [message.id],
+          [message.id]
         );
 
         // Nachricht an alle Teilnehmer senden
@@ -527,7 +527,7 @@ export class ChatWebSocketServer {
         `;
         const [participants] = await pool.query<RowDataPacket[]>(
           participantQuery,
-          [message.conversation_id],
+          [message.conversation_id]
         );
 
         // Sender-Informationen abrufen
@@ -618,7 +618,7 @@ export class ChatWebSocketServer {
           // Update status to processing
           await pool.query<ResultSetHeader>(
             'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
-            [message.queue_id],
+            [message.queue_id]
           );
 
           // Nachricht-Objekt erstellen
@@ -656,40 +656,40 @@ export class ChatWebSocketServer {
           // Als zugestellt markieren
           await pool.query<ResultSetHeader>(
             'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
-            [message.queue_id],
+            [message.queue_id]
           );
 
           // Delivery status in messages table aktualisieren
           await pool.query<ResultSetHeader>(
             'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
-            [message.message_id],
+            [message.message_id]
           );
         } catch (error) {
           logger.error(
             `Fehler beim Zustellen der Nachricht ${message.message_id}:`,
-            error,
+            error
           );
 
           // Bei Fehler als failed markieren wenn max attempts erreicht
           const [result] = await pool.query<RowDataPacket[]>(
             "SELECT attempts FROM message_delivery_queue WHERE id = ?",
-            [message.queue_id],
+            [message.queue_id]
           );
 
           if (result[0] && result[0].attempts >= 3) {
             await pool.query<ResultSetHeader>(
               'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
-              [message.queue_id],
+              [message.queue_id]
             );
             await pool.query<ResultSetHeader>(
               'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
-              [message.message_id],
+              [message.message_id]
             );
           } else {
             // Zurück auf pending setzen für erneuten Versuch
             await pool.query<ResultSetHeader>(
               'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
-              [message.queue_id],
+              [message.queue_id]
             );
           }
         }
@@ -697,7 +697,7 @@ export class ChatWebSocketServer {
     } catch (error) {
       logger.error(
         "Fehler beim Verarbeiten der Message Delivery Queue:",
-        error,
+        error
       );
     }
   }

@@ -34,7 +34,7 @@ import { AuthenticatedRequest } from "./request.types";
 export type AuthenticatedHandler = (
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => Promise<void> | void;
 
 // Re-export commonly used types for convenience

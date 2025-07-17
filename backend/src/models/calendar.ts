@@ -125,7 +125,7 @@ export class Calendar {
   static async getAllEvents(
     tenant_id: number,
     userId: number,
-    options: EventQueryOptions = {},
+    options: EventQueryOptions = {}
   ) {
     try {
       const {
@@ -208,7 +208,7 @@ export class Calendar {
       // Execute query
       const [events] = await executeQuery<DbCalendarEvent[]>(
         query,
-        queryParams,
+        queryParams
       );
 
       // Map database fields to API fields
@@ -238,7 +238,7 @@ export class Calendar {
           Array.isArray(event.description.data)
         ) {
           event.description = Buffer.from(event.description.data).toString(
-            "utf8",
+            "utf8"
           );
         }
       });
@@ -292,7 +292,7 @@ export class Calendar {
 
       const [countResult] = await executeQuery<CountResult[]>(
         countQuery,
-        countParams,
+        countParams
       );
       const totalEvents = countResult[0].total;
 
@@ -317,7 +317,7 @@ export class Calendar {
   static async getEventById(
     id: number,
     tenant_id: number,
-    userId: number,
+    userId: number
   ): Promise<DbCalendarEvent | null> {
     try {
       // Determine user's role for access control
@@ -371,7 +371,7 @@ export class Calendar {
         Array.isArray(event.description.data)
       ) {
         event.description = Buffer.from(event.description.data).toString(
-          "utf8",
+          "utf8"
         );
       }
 
@@ -380,7 +380,7 @@ export class Calendar {
         // Check if user is an attendee
         const [attendeeRows] = await executeQuery<RowDataPacket[]>(
           "SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
-          [id, userId],
+          [id, userId]
         );
 
         const isAttendee = attendeeRows.length > 0;
@@ -407,7 +407,7 @@ export class Calendar {
    * Create a new calendar event
    */
   static async createEvent(
-    eventData: EventCreateData,
+    eventData: EventCreateData
   ): Promise<DbCalendarEvent | null> {
     try {
       const {
@@ -474,7 +474,7 @@ export class Calendar {
       const createdEvent = await this.getEventById(
         result.insertId,
         tenant_id,
-        created_by,
+        created_by
       );
 
       // Add the creator as an attendee with 'accepted' status
@@ -500,7 +500,7 @@ export class Calendar {
   static async updateEvent(
     id: number,
     eventData: EventUpdateData,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<DbCalendarEvent | null> {
     try {
       const {
@@ -593,7 +593,7 @@ export class Calendar {
       const updatedEvent = await this.getEventById(
         id,
         tenant_id,
-        eventData.created_by || 0,
+        eventData.created_by || 0
       );
       return updatedEvent;
     } catch (error) {
@@ -632,26 +632,26 @@ export class Calendar {
       | "pending"
       | "accepted"
       | "declined"
-      | "tentative" = "pending",
+      | "tentative" = "pending"
   ): Promise<boolean> {
     try {
       // Check if already an attendee
       const [attendees] = await executeQuery<RowDataPacket[]>(
         "SELECT * FROM calendar_attendees WHERE event_id = ? AND user_id = ?",
-        [eventId, userId],
+        [eventId, userId]
       );
 
       if (attendees.length > 0) {
         // Update existing attendee status
         await executeQuery(
           "UPDATE calendar_attendees SET response_status = ?, responded_at = NOW() WHERE event_id = ? AND user_id = ?",
-          [responseStatus, eventId, userId],
+          [responseStatus, eventId, userId]
         );
       } else {
         // Add new attendee
         await executeQuery(
           "INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at) VALUES (?, ?, ?, NOW())",
-          [eventId, userId, responseStatus],
+          [eventId, userId, responseStatus]
         );
       }
 
@@ -667,7 +667,7 @@ export class Calendar {
    */
   static async removeEventAttendee(
     eventId: number,
-    userId: number,
+    userId: number
   ): Promise<boolean> {
     try {
       // Remove attendee
@@ -691,7 +691,7 @@ export class Calendar {
   static async respondToEvent(
     eventId: number,
     userId: number,
-    response: string,
+    response: string
   ): Promise<boolean> {
     try {
       // Validate response
@@ -704,7 +704,7 @@ export class Calendar {
       return await this.addEventAttendee(
         eventId,
         userId,
-        response as "accepted" | "declined" | "tentative",
+        response as "accepted" | "declined" | "tentative"
       );
     } catch (error) {
       logger.error("Error in respondToEvent:", error);
@@ -717,7 +717,7 @@ export class Calendar {
    */
   static async getEventAttendees(
     eventId: number,
-    tenant_id: number,
+    tenant_id: number
   ): Promise<DbEventAttendee[]> {
     try {
       const query = `
@@ -748,7 +748,7 @@ export class Calendar {
     tenant_id: number,
     userId: number,
     days = 7,
-    limit = 5,
+    limit = 5
   ): Promise<DbCalendarEvent[]> {
     try {
       // Get user info for access control
@@ -796,7 +796,7 @@ export class Calendar {
 
       const [events] = await executeQuery<DbCalendarEvent[]>(
         query,
-        queryParams,
+        queryParams
       );
 
       // Map database fields to API fields
@@ -826,7 +826,7 @@ export class Calendar {
           Array.isArray(event.description.data)
         ) {
           event.description = Buffer.from(event.description.data).toString(
-            "utf8",
+            "utf8"
           );
         }
       });
@@ -844,13 +844,13 @@ export class Calendar {
   static async canManageEvent(
     eventId: number,
     userId: number,
-    userInfo: UserInfo | null = null,
+    userInfo: UserInfo | null = null
   ): Promise<boolean> {
     try {
       // Get event details
       const [events] = await executeQuery<DbCalendarEvent[]>(
         "SELECT * FROM calendar_events WHERE id = ?",
-        [eventId],
+        [eventId]
       );
 
       if (events.length === 0) {
@@ -895,7 +895,7 @@ export class Calendar {
    */
   static async generateRecurringEvents(
     parentEvent: DbCalendarEvent,
-    recurrenceRule: string,
+    recurrenceRule: string
   ): Promise<void> {
     try {
       // Parse recurrence rule
@@ -937,7 +937,7 @@ export class Calendar {
 
       // Generate occurrences
       const startDate = new Date(
-        parentEvent.start_time || parentEvent.start_date,
+        parentEvent.start_time || parentEvent.start_date
       );
       const endDate = new Date(parentEvent.end_time ?? parentEvent.end_date);
       const duration = endDate.getTime() - startDate.getTime();

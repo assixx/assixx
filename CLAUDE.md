@@ -1,5 +1,7 @@
 # Claude Code – Assixx Project Complete Guide
+
 Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf nicht gemischt werden. !!!! Stetige abfrage!!!! Kritisch
+
 ## QUICK REFERENCE
 
 - Projekt: Multi-Tenant SaaS für Industriefirmen
