@@ -20,7 +20,7 @@ async function loadHeaderUserInfo(): Promise<void> {
 
     const userNameElement = document.getElementById('user-name') as HTMLElement;
     if (userNameElement) {
-      userNameElement.textContent = payload.username || 'User';
+      userNameElement.textContent = payload.username ?? 'User';
     }
 
     // Update role badge based on user role
@@ -40,18 +40,34 @@ async function loadHeaderUserInfo(): Promise<void> {
 
     if (response.ok) {
       const userData = await response.json();
-      const user: User = userData.user || userData;
+      const user: User = userData.user ?? userData;
 
       // Update with full name
       if (userNameElement && (user.first_name || user.last_name)) {
-        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-        userNameElement.textContent = fullName || user.username || payload.username;
+        const fullName = `${user.first_name ?? ''} ${user.last_name || ''}`.trim();
+        userNameElement.textContent = fullName ?? (user.username || payload.username);
       }
 
       // Update avatar
       const avatarElement = document.getElementById('user-avatar') as HTMLImageElement;
-      if (avatarElement && user.profile_picture) {
-        avatarElement.src = user.profile_picture;
+      if (avatarElement) {
+        if (user.profile_picture) {
+          avatarElement.src = user.profile_picture;
+          avatarElement.classList.remove('avatar-initials');
+        } else {
+          // Display initials if no profile picture
+          const firstInitial = user.first_name ? user.first_name.charAt(0).toUpperCase() : '';
+          const lastInitial = user.last_name ? user.last_name.charAt(0).toUpperCase() : '';
+          const initials = `${firstInitial}${lastInitial}` || 'U';
+          
+          // Convert img to div for initials display
+          const initialsDiv = document.createElement('div');
+          initialsDiv.id = 'user-avatar';
+          initialsDiv.className = 'avatar-initials';
+          initialsDiv.textContent = initials;
+          
+          avatarElement.replaceWith(initialsDiv);
+        }
       }
 
       // Load department badge for admins

@@ -179,6 +179,12 @@
         font-size: 0.9rem;
         flex-shrink: 0;
         position: relative;
+        overflow: hidden;
+      }
+      
+      /* Remove background when image is present */
+      .conversation-avatar:has(img) {
+        background: none;
       }
 
       .conversation-avatar img {
@@ -268,10 +274,13 @@
         gap: 12px;
       }
 
+      /* Use small avatar utility class for chat */
       .chat-header-avatar {
         width: 32px;
         height: 32px;
         border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
         display: flex;
         align-items: center;
@@ -279,6 +288,17 @@
         color: white;
         font-weight: 600;
         font-size: 0.85rem;
+      }
+      
+      /* Remove background when image is present */
+      .chat-header-avatar:has(img) {
+        background: none;
+      }
+      
+      .chat-header-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
 
       .chat-header-details h3 {
@@ -1578,14 +1598,14 @@
           </div>
 
           <!-- Main Chat Area -->
-          <div class="chat-main">
+          <div class="chat-main u-hidden">
             <!-- Chat Header -->
             <div class="chat-header" id="chat-header" class="u-hidden">
               <div class="chat-header-info">
-                <div class="chat-header-avatar" id="chat-avatar">JD</div>
+                <div class="chat-header-avatar" id="chat-avatar"></div>
                 <div class="chat-header-details">
-                  <h3 id="chat-partner-name">John Doe</h3>
-                  <div class="status" id="chat-partner-status">Administrator</div>
+                  <h3 id="chat-partner-name"></h3>
+                  <div class="status" id="chat-partner-status"></div>
                 </div>
               </div>
               <div class="chat-actions">
@@ -1672,7 +1692,7 @@
     </div>
 
     <!-- New Chat Modal -->
-    <div id="newConversationModal" class="modal" class="u-hidden">
+    <div id="newConversationModal" class="modal u-hidden">
       <div class="modal-content">
         <div class="modal-header">
           <h3>Neue Unterhaltung starten</h3>
@@ -1785,7 +1805,7 @@
     <input type="file" id="fileInput" class="u-hidden" multiple />
 
     <!-- Emoji Picker Modal -->
-    <div id="emojiPicker" class="emoji-picker" class="u-hidden">
+    <div id="emojiPicker" class="emoji-picker u-hidden">
       <div class="emoji-picker-header">
         <button class="emoji-category active" data-category="smileys">😊</button>
         <button class="emoji-category" data-category="gestures">👍</button>

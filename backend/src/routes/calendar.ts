@@ -64,7 +64,7 @@ interface CalendarQueryOptions {
 
 // Helper function to get tenant ID from user object
 function getTenantId(user: AuthenticatedRequest["user"]): number {
-  return user.tenant_id || 1;
+  return user.tenant_id ?? 1;
 }
 
 // Validation schemas
@@ -133,8 +133,8 @@ const canManageEvent = typed.params<{ id: string }>(async (req, res, next) => {
 
     // Get user role, department, and team info for permissions
     const userInfo = {
-      role: req.user.role || null,
-      departmentId: req.user.department_id || null,
+      role: req.user.role ?? null,
+      departmentId: req.user.department_id ?? null,
       teamId: null as number | null,
     };
 
@@ -312,14 +312,14 @@ router.get(
             | "department"
             | "team"
             | "personal") || "all",
-        search: (req.query.search as string) || "",
-        start_date: (req.query.start || req.query.start_date) as
+        search: (req.query.search as string) ?? "",
+        start_date: (req.query.start ?? req.query.start_date) as
           | string
           | undefined,
-        end_date: (req.query.end || req.query.end_date) as string | undefined,
-        page: parseInt((req.query.page as string) || "1", 10),
-        limit: parseInt((req.query.limit as string) || "50", 10),
-        sortBy: (req.query.sortBy as string) || "start_date",
+        end_date: (req.query.end ?? req.query.end_date) as string | undefined,
+        page: parseInt((req.query.page as string) ?? "1", 10),
+        limit: parseInt((req.query.limit as string) ?? "50", 10),
+        sortBy: (req.query.sortBy as string) ?? "start_date",
         sortDir: (req.query.sortDir as "ASC" | "DESC") || "ASC",
       };
 
@@ -356,8 +356,8 @@ router.get(
     try {
       const tenantId = getTenantId(req.user);
 
-      const days = parseInt((req.query.days as string) || "7", 10);
-      const limit = parseInt((req.query.limit as string) || "5", 10);
+      const days = parseInt((req.query.days as string) ?? "7", 10);
+      const limit = parseInt((req.query.limit as string) ?? "5", 10);
 
       const events = await calendarModel.getDashboardEvents(
         tenantId,

@@ -85,7 +85,7 @@ class DeletionWorker {
 
   private startHealthCheck(): void {
     // Simple HTTP server for health checks
-    const healthPort = process.env.DELETION_WORKER_HEALTH_PORT || 3001;
+    const healthPort = process.env.DELETION_WORKER_HEALTH_PORT ?? 3001;
 
     const server = http.createServer(
       (req: IncomingMessage, res: ServerResponse) => {

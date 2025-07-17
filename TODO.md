@@ -26,6 +26,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 ### Testing-Checkliste für jede Seite/Funktion:
 
 #### UI/UX Testing
+
 - [ ] Design konsistent mit Glassmorphismus Standards
 - [ ] Alle Buttons/Links funktionieren
 - [ ] Hover-Effekte vorhanden
@@ -33,12 +34,14 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 - [ ] Ladezeiten akzeptabel
 
 #### Funktionalität
+
 - [ ] Alle Features funktionieren wie erwartet
 - [ ] Fehlerbehandlung vorhanden
 - [ ] Validierungen funktionieren
 - [ ] Daten werden korrekt gespeichert/geladen
 
 #### Benutzerfreundlichkeit
+
 - [ ] Intuitive Navigation
 - [ ] Klare Beschriftungen
 - [ ] Hilfetexte wo nötig
@@ -46,6 +49,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 - [ ] Ladeanimationen vorhanden
 
 #### Sicherheit & Multi-Tenant
+
 - [ ] Nur eigene Daten sichtbar
 - [ ] Berechtigungen korrekt
 - [ ] Session-Management stabil
@@ -53,6 +57,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 ## SICHERHEITS-UPDATES & BUGS
 
 ### ✅ Role-Switch Sicherheitsanalyse - ABGESCHLOSSEN (10.07.2025)
+
 - [x] Visueller Indikator: Bereits vorhanden (Active Role Badge)
 - [x] Multi-Tab Sync: Funktioniert bereits korrekt
 - [x] Daten-Isolation: Als Employee nur eigene Daten (funktioniert)
@@ -62,6 +67,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 - [ ] Optional: Zusätzlicher gelber Warning-Banner
 
 ### ✅ Role-Switch Foreign Key Constraint Bug - BEHOBEN (10.07.2025)
+
 - [x] Problem: role-switch.ts versuchte department_id = 1 zu setzen bei neuen Tenants ohne Departments
 - [x] Symptom: 500 Error beim Wechsel zu Mitarbeiter-Ansicht
 - [x] Error: "Cannot add or update a child row: a foreign key constraint fails"
@@ -70,6 +76,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 - [x] **BEHOBEN:** Role-Switch funktioniert jetzt auch bei Tenants ohne Departments
 
 ### ✅ AdminLog Model admin_id vs user_id Bug - BEHOBEN (10.07.2025)
+
 - [x] Problem: AdminLog Model verwendete `admin_id` aber die Datenbank hat `user_id` Spalte
 - [x] Symptom: 500 Error beim Rollenwechsel (root-to-admin, etc.)
 - [x] Error: "Unknown column 'admin_id' in 'field list'"
@@ -77,6 +84,7 @@ Nächster Schritt: Neuen Tenant erstellen und kompletten Durchlauf starten
 - [x] **BEHOBEN:** Alle SQL Queries im AdminLog Model verwenden jetzt korrekt `user_id`
 
 ### ✅ User.update() Method ohne tenant_id Check - BEHOBEN (10.07.2025)
+
 - [x] Problem: Die User.update() Methode in /backend/src/models/user.ts verwendet nur WHERE id = ? ohne tenant_id Überprüfung
 - [x] Risiko: Theoretisch könnte jemand User aus anderen Tenants updaten
 - [x] Lösung: WHERE-Klausel sollte WHERE id = ? AND tenant_id = ? verwenden
@@ -96,6 +104,7 @@ HINWEIS: Implementierung erst NACH Version 0.1.0 (stabile Basis mit allen funkti
 Start: Voraussichtlich in 2-3 Wochen
 
 ### 1. Urlaubsantrag-System (MVP) - WOCHE 1
+
 - [ ] Backend API (/api/vacation)
 - [ ] Datenbank-Schema (vacation_requests, vacation_balances)
 - [ ] Antragsformular (einfache Version)
@@ -105,6 +114,7 @@ Start: Voraussichtlich in 2-3 Wochen
 - [ ] Resturlaub-Berechnung
 
 ### 2. Gehaltsabrechnung Upload - WOCHE 1-2
+
 - [ ] Backend API für Lohndokumente (/api/payroll)
 - [ ] Sicherer Upload für Lohnabrechnungen
 - [ ] Verschlüsselung für sensible Daten
@@ -113,6 +123,7 @@ Start: Voraussichtlich in 2-3 Wochen
 - [ ] Integration mit DATEV/SAP (Beta-Kunden fragen)
 
 ### 3. TPM-System (Total Productive Maintenance) - WOCHE 2-3
+
 - [ ] Backend API für Wartungsplanung (/api/tpm)
 - [ ] Datenbank-Schema für Maschinen & Wartungen
 - [ ] Wartungsplan-Templates (Industrie-Standards)
@@ -123,6 +134,7 @@ Start: Voraussichtlich in 2-3 Wochen
 - [ ] Offline-Viewing mit PWA
 
 ### 4. Mobile Responsiveness - PARALLEL
+
 - [ ] Alle Hauptseiten auf Tablet/Mobile testen
 - [ ] Navigation für Touch optimieren
 - [ ] Schichtplan Mobile-View
@@ -133,6 +145,7 @@ Start: Voraussichtlich in 2-3 Wochen
 ## PHASE 5: Beta-Test Features
 
 ### Data Privacy & Compliance
+
 - [ ] DSGVO-konforme Datenlöschung
 - [ ] Audit-Log für sensible Operationen
 - [ ] Cookie-Banner implementieren
@@ -141,6 +154,7 @@ Start: Voraussichtlich in 2-3 Wochen
 - [ ] Anonymisierung von Altdaten
 
 ### Beta-Test Specifics
+
 - [ ] Demo-Daten Generator
 - [ ] Beta-Tester Onboarding Videos
 - [ ] Rollback-Strategie bei Probleme
@@ -150,6 +164,7 @@ Start: Voraussichtlich in 2-3 Wochen
 ## AKTUELLE Entwicklungs-Reihenfolge
 
 ### Version 0.1.0 - Stabile Entwicklungsversion
+
 1. [x] Funktionstests aller Features
 2. [x] Docker Setup für einfaches Deployment
 3. [x] Kritischster Bug behoben - Multi-Tenant Isolation
@@ -157,6 +172,7 @@ Start: Voraussichtlich in 2-3 Wochen
 5. [ ] Code-Cleanup & Dokumentation
 
 ### Version 1.0.0 - Beta-Test Version
+
 6. [ ] PHASE 4 - DEAL-BREAKER Features (erst nach 0.1.0)
    - Urlaubsantrag-System (MVP)
    - Gehaltsabrechnung Upload
@@ -167,6 +183,7 @@ Start: Voraussichtlich in 2-3 Wochen
 9. [ ] Beta-Test Start
 
 Neue Timeline:
+
 - Version 0.1.0: 2-3 Wochen (Stabilisierung)
 - Version 1.0.0: 4-5 Wochen (Features + Beta-Vorbereitung)
 - Beta-Start: Nach Version 1.0.0

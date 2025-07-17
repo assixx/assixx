@@ -71,14 +71,14 @@ router.get(
       return;
     }
 
-    const limit = parseInt(req.query.limit as string) || 20;
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
     const userId = req.query.user_id
       ? parseInt(req.query.user_id as string)
       : null;
-    const action = (req.query.action as string) || null;
-    const entityType = (req.query.entity_type as string) || null;
-    const timerange = (req.query.timerange as string) || null;
+    const action = (req.query.action as string) ?? null;
+    const entityType = (req.query.entity_type as string) ?? null;
+    const timerange = (req.query.timerange as string) ?? null;
 
     try {
       // Build WHERE conditions
@@ -178,7 +178,7 @@ router.get(
         params,
       );
 
-      const total = countResult[0]?.total || 0;
+      const total = countResult[0]?.total ?? 0;
 
       // Convert Buffer objects to strings
       const processedLogs = logs.map((log) => ({
@@ -211,6 +211,13 @@ router.get(
       });
     } catch (error) {
       logger.error("Error fetching logs:", error);
+      logger.error("Error details:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        userId: req.user.id,
+        tenantId: req.user.tenant_id,
+        query: req.query
+      });
       res.status(500).json({
         success: false,
         error: "Fehler beim Abrufen der Logs",
@@ -254,9 +261,9 @@ router.delete(
     const userId = req.query.user_id
       ? parseInt(req.query.user_id as string)
       : null;
-    const action = (req.query.action as string) || null;
-    const entityType = (req.query.entity_type as string) || null;
-    const timerange = (req.query.timerange as string) || null;
+    const action = (req.query.action as string) ?? null;
+    const entityType = (req.query.entity_type as string) ?? null;
+    const timerange = (req.query.timerange as string) ?? null;
     const password = req.body.password;
 
     // Check if no specific filters are provided (meaning "all actions" deletion)
@@ -377,7 +384,7 @@ router.delete(
         params,
       );
 
-      const deletedCount = result.affectedRows || 0;
+      const deletedCount = result.affectedRows ?? 0;
 
       // Create a human-readable description of what was deleted
       const filterDescriptions: string[] = [];
@@ -388,7 +395,7 @@ router.delete(
           [userId],
         );
         filterDescriptions.push(
-          `Benutzer: ${userInfo[0]?.name || `ID ${userId}`}`,
+          `Benutzer: ${userInfo[0]?.name ?? `ID ${userId}`}`,
         );
       }
       if (action) {
@@ -404,7 +411,7 @@ router.delete(
           assign: "Zuweisungen",
           unassign: "Entfernungen",
         };
-        filterDescriptions.push(`Aktion: ${actionLabels[action] || action}`);
+        filterDescriptions.push(`Aktion: ${actionLabels[action] ?? action}`);
       }
       if (entityType) {
         filterDescriptions.push(`Typ: ${entityType}`);
@@ -420,7 +427,7 @@ router.delete(
           year: "Letztes Jahr",
         };
         filterDescriptions.push(
-          `Zeitraum: ${timeLabels[timerange] || timerange}`,
+          `Zeitraum: ${timeLabels[timerange] ?? timerange}`,
         );
       }
 

@@ -175,7 +175,7 @@ class KvpPage {
       if (!response.ok) throw new Error('Failed to load categories');
 
       const data = await response.json();
-      this.categories = data.categories || [];
+      this.categories = data.categories ?? [];
 
       // Populate category dropdown
       const categoryDropdown = document.getElementById('categoryDropdown');
@@ -213,7 +213,7 @@ class KvpPage {
       if (!response.ok) throw new Error('Failed to load departments');
 
       const data = await response.json();
-      this.departments = data.departments || [];
+      this.departments = data.departments ?? [];
 
       // Populate department dropdown
       const departmentDropdown = document.getElementById('departmentDropdown');
@@ -264,7 +264,7 @@ class KvpPage {
       if (!response.ok) throw new Error('Failed to load suggestions');
 
       const data = await response.json();
-      this.suggestions = data.suggestions || [];
+      this.suggestions = data.suggestions ?? [];
 
       this.renderSuggestions();
       this.updateBadges();
@@ -320,7 +320,7 @@ class KvpPage {
           </div>
           
           <div class="suggestion-footer">
-            <div class="category-tag" style="background: ${suggestion.category_color ? `${suggestion.category_color}20` : '#66666620'}; color: ${suggestion.category_color || '#666'}; border: 1px solid ${suggestion.category_color || '#666'};">
+            <div class="category-tag" style="background: ${suggestion.category_color ? `${suggestion.category_color}20` : '#66666620'}; color: ${suggestion.category_color ?? '#666'}; border: 1px solid ${suggestion.category_color ?? '#666'};">
               ${suggestion.category_icon || '💡'}
               ${suggestion.category_name || 'Sonstiges'}
             </div>
@@ -477,8 +477,8 @@ class KvpPage {
 
       if (totalEl) totalEl.textContent = data.company.total.toString();
       if (openEl)
-        openEl.textContent = ((data.company.byStatus.new || 0) + (data.company.byStatus.in_review || 0)).toString();
-      if (implementedEl) implementedEl.textContent = (data.company.byStatus.implemented || 0).toString();
+        openEl.textContent = ((data.company.byStatus.new ?? 0) + (data.company.byStatus.in_review || 0)).toString();
+      if (implementedEl) implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
       if (savingsEl)
         savingsEl.textContent = new Intl.NumberFormat('de-DE', {
           style: 'currency',
@@ -519,7 +519,7 @@ class KvpPage {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
-        this.currentFilter = btn.getAttribute('data-filter') || 'all';
+        this.currentFilter = btn.getAttribute('data-filter') ?? 'all';
         this.loadSuggestions();
       });
     });
@@ -567,7 +567,7 @@ class KvpPage {
       rejected: 'Abgelehnt',
       archived: 'Archiviert',
     };
-    return statusMap[status] || status;
+    return statusMap[status] ?? status;
   }
 
   private escapeHtml(text: string): string {
@@ -629,8 +629,8 @@ class KvpPage {
         title: title.trim(),
         description: description.trim(),
         category_id: parseInt(categoryId),
-        priority: formData.get('priority') || 'normal',
-        expected_benefit: formData.get('expected_benefit') || null,
+        priority: formData.get('priority') ?? 'normal',
+        expected_benefit: formData.get('expected_benefit') ?? null,
         estimated_cost: formData.get('estimated_cost') ? parseFloat(formData.get('estimated_cost') as string) : null,
       };
 

@@ -139,8 +139,8 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
       id: Date.now(),
       name,
       department_id,
-      description: description || undefined,
-      location: location || undefined,
+      description: description ?? undefined,
+      location: location ?? undefined,
       status: "active",
       created_at: new Date(),
     };

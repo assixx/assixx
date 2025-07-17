@@ -9,25 +9,28 @@ Es gibt eine Inkonsistenz bei der Gestaltung von Card/Container-Headern im Assix
 ### Richtiges Design-Pattern (Beispiel: System-Logs)
 
 **HTML-Struktur:**
+
 ```html
 <div class="card-header">
-    <h2 class="card-title">System-Logs</h2>
-    <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Systemaktivitäten</p>
+  <h2 class="card-title">System-Logs</h2>
+  <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Systemaktivitäten</p>
 </div>
 ```
 
 **CSS-Eigenschaften:**
+
 ```css
 .card-header {
-    border-bottom: 1px solid var(--border-color);
-    border-radius: 10px;
-    margin-bottom: var(--spacing-md);
-    padding: 24px;
-    padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: var(--spacing-md);
+  padding: 24px;
+  padding-bottom: var(--spacing-md);
 }
 ```
 
 **Visuelle Merkmale:**
+
 - Titel in blauer Farbe (var(--primary-color))
 - Kleinere Schriftgröße (h2)
 - Grauer Untertitel mit text-secondary Klasse
@@ -38,12 +41,14 @@ Es gibt eine Inkonsistenz bei der Gestaltung von Card/Container-Headern im Assix
 ### Falsches Design-Pattern (Beispiel: Root User Verwaltung)
 
 **HTML-Struktur:**
+
 ```html
 <h1>Root User Verwaltung</h1>
 <p class="text-secondary">Übersicht aller Root-Benutzer des Systems</p>
 ```
 
 **Probleme:**
+
 - Verwendet h1 statt h2 (zu große Schriftgröße)
 - Kein umschließendes card-header Element
 - Fehlendes inline-styling beim Untertitel
@@ -55,12 +60,14 @@ Es gibt eine Inkonsistenz bei der Gestaltung von Card/Container-Headern im Assix
 Nach einer Analyse wurden folgende Dateien identifiziert:
 
 ### Dateien mit FALSCHEM Pattern (müssen korrigiert werden):
+
 1. `/frontend/src/pages/manage-root-users.html` - Root User Verwaltung
 2. `/frontend/src/pages/manage-admins.html` - Admin Verwaltung
 3. `/frontend/src/pages/manage-department-groups.html` - Abteilungsgruppen Verwaltung
 4. `/frontend/src/pages/tenant-deletion-status.html` - Tenant Löschstatus
 
 ### Dateien mit RICHTIGEM Pattern (als Referenz):
+
 - `/frontend/src/pages/logs.html` - System-Logs (Referenz-Beispiel)
 - `/frontend/src/pages/blackboard.html`
 - `/frontend/src/pages/admin-dashboard.html`
@@ -75,13 +82,13 @@ Alle Card-Header sollten diesem Template folgen:
 
 ```html
 <div class="card">
-    <div class="card-header">
-        <h2 class="card-title">[Titel der Seite]</h2>
-        <p class="text-secondary" style="margin: 0; margin-top: 4px">[Beschreibung der Seite]</p>
-    </div>
-    <div class="card-body">
-        <!-- Content hier -->
-    </div>
+  <div class="card-header">
+    <h2 class="card-title">[Titel der Seite]</h2>
+    <p class="text-secondary" style="margin: 0; margin-top: 4px">[Beschreibung der Seite]</p>
+  </div>
+  <div class="card-body">
+    <!-- Content hier -->
+  </div>
 </div>
 ```
 
@@ -91,13 +98,13 @@ Wenn zusätzliche Elemente im Header benötigt werden (z.B. Buttons, Badges):
 
 ```html
 <div class="card-header">
-    <div>
-        <h2 class="card-title">[Titel]</h2>
-        <p class="text-secondary" style="margin: 0; margin-top: 4px">[Beschreibung]</p>
-    </div>
-    <div class="header-actions">
-        <!-- Buttons, Badges etc. -->
-    </div>
+  <div>
+    <h2 class="card-title">[Titel]</h2>
+    <p class="text-secondary" style="margin: 0; margin-top: 4px">[Beschreibung]</p>
+  </div>
+  <div class="header-actions">
+    <!-- Buttons, Badges etc. -->
+  </div>
 </div>
 ```
 
@@ -115,6 +122,7 @@ Wenn zusätzliche Elemente im Header benötigt werden (z.B. Buttons, Badges):
 Alle 11 fehlerhaften Dateien wurden erfolgreich korrigiert:
 
 ### Phase 1 - Dateien mit fehlendem text-secondary (7 Dateien):
+
 - [x] admin-config.html
 - [x] admin-dashboard.html
 - [x] archived-employees.html
@@ -124,6 +132,7 @@ Alle 11 fehlerhaften Dateien wurden erfolgreich korrigiert:
 - [x] salary-documents.html
 
 ### Phase 2 - Dateien mit komplett falschem Pattern (4 Dateien):
+
 - [x] manage-root-users.html
 - [x] manage-admins.html
 - [x] manage-department-groups.html
@@ -140,41 +149,43 @@ Alle 11 fehlerhaften Dateien wurden erfolgreich korrigiert:
 ## Beispiel-Migration
 
 **Vorher (aus manage-root-users.html):**
+
 ```html
 <div class="root-table-container">
-    <h1>Root User Verwaltung</h1>
-    <p class="text-secondary">Übersicht aller Root-Benutzer des Systems</p>
-    
-    <!-- Security Warning -->
-    <div class="security-warning">
-        <!-- ... -->
-    </div>
-    
-    <!-- Root User Table -->
-    <div id="rootTableContent">
-        <!-- ... -->
-    </div>
+  <h1>Root User Verwaltung</h1>
+  <p class="text-secondary">Übersicht aller Root-Benutzer des Systems</p>
+
+  <!-- Security Warning -->
+  <div class="security-warning">
+    <!-- ... -->
+  </div>
+
+  <!-- Root User Table -->
+  <div id="rootTableContent">
+    <!-- ... -->
+  </div>
 </div>
 ```
 
 **Nachher:**
+
 ```html
 <div class="card">
-    <div class="card-header">
-        <h2 class="card-title">Root User Verwaltung</h2>
-        <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Root-Benutzer des Systems</p>
+  <div class="card-header">
+    <h2 class="card-title">Root User Verwaltung</h2>
+    <p class="text-secondary" style="margin: 0; margin-top: 4px">Übersicht aller Root-Benutzer des Systems</p>
+  </div>
+  <div class="card-body">
+    <!-- Security Warning -->
+    <div class="security-warning">
+      <!-- ... -->
     </div>
-    <div class="card-body">
-        <!-- Security Warning -->
-        <div class="security-warning">
-            <!-- ... -->
-        </div>
-        
-        <!-- Root User Table -->
-        <div id="rootTableContent">
-            <!-- ... -->
-        </div>
+
+    <!-- Root User Table -->
+    <div id="rootTableContent">
+      <!-- ... -->
     </div>
+  </div>
 </div>
 ```
 

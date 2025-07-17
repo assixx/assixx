@@ -11,6 +11,7 @@
 ### Sicherstellung: Keine visuellen Änderungen
 
 **Bei JEDER Änderung:**
+
 1. Screenshot VOR der Änderung
 2. Code-Änderung durchführen
 3. Screenshot NACH der Änderung
@@ -18,6 +19,7 @@
 5. Bei JEDER Abweichung → Änderung rückgängig machen
 
 **Kritische Prüfpunkte:**
+
 - Exakte Farbwerte müssen erhalten bleiben
 - Abstände müssen pixelgenau gleich sein
 - Schriftgrößen dürfen sich nicht ändern
@@ -27,6 +29,7 @@
 ## ⚠️ KRITISCH: Layout-System beachten!
 
 ### Navigation Container System
+
 - **VERWENDE:** Das bestehende `navigation-container` System (97% der Seiten bereits migriert)
 - **NICHT ERSTELLEN:** Keine parallelen Layout-Systeme oder eigene Container
 - **RESPEKTIERE:** Die etablierte Layout-Hierarchie: `navigation-container` → `layout-container` → Content
@@ -34,21 +37,23 @@
 ### Container-Begriff Vereinheitlichung
 
 **Veraltete Begriffe (NICHT verwenden):**
+
 - `main-content` (altes System)
 - Bootstrap `container` (außer wo unbedingt nötig)
 - Kombinationen wie `container main-content`
 
 **Neue einheitliche Struktur:**
+
 ```html
 <body>
   <!-- Navigation (automatisch generiert) -->
   <div id="navigation-container"></div>
-  
+
   <!-- Hauptlayout -->
   <div class="layout-container">
     <!-- Breadcrumb wenn nötig -->
     <div class="breadcrumb-container">...</div>
-    
+
     <!-- Seiteninhalt -->
     <div class="page-content">
       <!-- Hier kommt der spezifische Inhalt -->
@@ -58,6 +63,7 @@
 ```
 
 ### Wichtige Dokumentationen
+
 - **LESE:** `/docs/NAVIGATION-CONTAINER.md` - Verständnis des Layout-Systems
 - **LESE:** `/docs/BREADCRUMB.md` - Breadcrumb-Integration
 - **LESE:** `/docs/LAYOUT-SHIFT-FIX.md` - Layout-Shift vermeiden
@@ -66,6 +72,7 @@
 ## 📊 Projekt-Analyse Ergebnisse
 
 ### Aktuelle Situation
+
 - **2 konkurrierende CSS-Variablen-Systeme** (base/variables.css vs dashboard-theme.css)
 - **91 Inline-Styles** in 10 HTML-Dateien gefunden
 - **102x `display: none`** verstreut über 28 Dateien
@@ -73,6 +80,7 @@
 - **Vite als Build-Tool** bereits konfiguriert und einsatzbereit
 
 ### Häufigste Inline-Style Patterns
+
 1. `display: none` (102 Vorkommen)
 2. `margin: 0; margin-top: 4px` (Text-Abstände)
 3. `padding: 24px` (Container-Abstände)
@@ -128,6 +136,7 @@
 #### 0.2 Container-Migration Mapping
 
 **⚠️ KRITISCH: Vor jeder Container-Migration:**
+
 1. Vergleiche die CSS-Regeln von `.main-content` und `.layout-container`
 2. Wenn sie NICHT identisch sind → STOPP!
 3. Kopiere ALLE CSS-Regeln von `.main-content` zu `.layout-container`
@@ -159,38 +168,38 @@
 ```css
 :root {
   /* === NEUE VARIABLEN - EXAKTE WERTE AUS DEM AKTUELLEN DESIGN === */
-  
+
   /* Erweiterte Spacings - NUR wenn diese EXAKTEN Werte verwendet werden */
-  --spacing-2xs: 4px;    /* NUR wenn aktuell genau 4px verwendet wird */
-  --spacing-2xl: 48px;   /* NUR wenn aktuell genau 48px verwendet wird */
-  --spacing-3xl: 64px;   /* NUR wenn aktuell genau 64px verwendet wird */
-  
+  --spacing-2xs: 4px; /* NUR wenn aktuell genau 4px verwendet wird */
+  --spacing-2xl: 48px; /* NUR wenn aktuell genau 48px verwendet wird */
+  --spacing-3xl: 64px; /* NUR wenn aktuell genau 64px verwendet wird */
+
   /* Display States */
   --display-none: none;
   --display-block: block;
   --display-flex: flex;
   --display-inline-flex: inline-flex;
-  
+
   /* Common Widths */
   --modal-width: 500px;
   --modal-width-lg: 600px;
   --container-max-width: 1200px;
-  
+
   /* Common Margins (für häufige Patterns) */
   --margin-text-top: 4px;
   --margin-icon-right: 8px;
-  
+
   /* Glassmorphismus (aus variables.css übernehmen) */
   --glass-bg: rgba(255, 255, 255, 0.02);
   --glass-bg-hover: rgba(255, 255, 255, 0.03);
   --glass-bg-active: rgba(255, 255, 255, 0.05);
   --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-  
+
   /* Blur-Effekte */
   --blur-sm: blur(10px);
   --blur-md: blur(15px);
   --blur-lg: blur(20px);
-  
+
   /* Z-Index System */
   --z-dropdown: 100;
   --z-modal: 1000;
@@ -215,29 +224,67 @@
 ```css
 /* === Display Utilities === */
 /* WICHTIG: !important ist NOTWENDIG um inline-styles zu überschreiben */
-.u-hidden { display: none !important; }
-.u-block { display: block !important; }
-.u-flex { display: flex !important; }
-.u-inline-flex { display: inline-flex !important; }
+.u-hidden {
+  display: none !important;
+}
+.u-block {
+  display: block !important;
+}
+.u-flex {
+  display: flex !important;
+}
+.u-inline-flex {
+  display: inline-flex !important;
+}
 
 /* === Spacing Utilities === */
-.u-m-0 { margin: 0 !important; }
-.u-mt-xs { margin-top: var(--spacing-xs) !important; }
-.u-mt-text { margin: 0; margin-top: var(--margin-text-top) !important; }
-.u-mr-icon { margin-right: var(--margin-icon-right) !important; }
+.u-m-0 {
+  margin: 0 !important;
+}
+.u-mt-xs {
+  margin-top: var(--spacing-xs) !important;
+}
+.u-mt-text {
+  margin: 0;
+  margin-top: var(--margin-text-top) !important;
+}
+.u-mr-icon {
+  margin-right: var(--margin-icon-right) !important;
+}
 
-.u-p-0 { padding: 0 !important; }
-.u-p-container { padding: var(--spacing-lg) !important; }
-.u-px-lg { padding-left: var(--spacing-lg) !important; padding-right: var(--spacing-lg) !important; }
+.u-p-0 {
+  padding: 0 !important;
+}
+.u-p-container {
+  padding: var(--spacing-lg) !important;
+}
+.u-px-lg {
+  padding-left: var(--spacing-lg) !important;
+  padding-right: var(--spacing-lg) !important;
+}
 
 /* === Flex Utilities === */
-.u-flex-gap-sm { display: flex; gap: var(--spacing-sm) !important; }
-.u-flex-gap-md { display: flex; gap: var(--spacing-md) !important; }
-.u-flex-center { display: flex; align-items: center; justify-content: center !important; }
+.u-flex-gap-sm {
+  display: flex;
+  gap: var(--spacing-sm) !important;
+}
+.u-flex-gap-md {
+  display: flex;
+  gap: var(--spacing-md) !important;
+}
+.u-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center !important;
+}
 
 /* === Width Utilities === */
-.u-max-w-modal { max-width: var(--modal-width) !important; }
-.u-w-full { width: 100% !important; }
+.u-max-w-modal {
+  max-width: var(--modal-width) !important;
+}
+.u-w-full {
+  width: 100% !important;
+}
 ```
 
 #### 2.2 Import in dashboard-theme.css hinzufügen
@@ -268,7 +315,7 @@
       root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
     })();
   </script>
-  
+
   <!-- CSS kommt NACH dem Script -->
   <link rel="stylesheet" href="/styles/dashboard-theme.css" />
 </head>
@@ -284,14 +331,14 @@
 // Singleton Modal Manager
 class ModalManager {
   private static instance: ModalManager;
-  
+
   static getInstance(): ModalManager {
     if (!ModalManager.instance) {
       ModalManager.instance = new ModalManager();
     }
     return ModalManager.instance;
   }
-  
+
   show(modalId: string): void {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -299,7 +346,7 @@ class ModalManager {
       modal.classList.add('u-flex');
     }
   }
-  
+
   hide(modalId: string): void {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -307,9 +354,9 @@ class ModalManager {
       modal.classList.add('u-hidden');
     }
   }
-  
+
   hideAll(): void {
-    document.querySelectorAll('.modal').forEach(modal => {
+    document.querySelectorAll('.modal').forEach((modal) => {
       modal.classList.remove('u-flex');
       modal.classList.add('u-hidden');
     });
@@ -340,41 +387,41 @@ class DropdownManager {
   constructor() {
     this.initializeEventListeners();
   }
-  
+
   private initializeEventListeners(): void {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      
+
       // Toggle dropdown
       if (target.classList.contains('dropdown-display')) {
         e.stopPropagation();
         this.toggle(target);
       }
-      
+
       // Close on outside click
       if (!target.closest('.custom-dropdown')) {
         this.closeAll();
       }
     });
   }
-  
+
   private toggle(trigger: HTMLElement): void {
     const dropdown = trigger.nextElementSibling;
     const isActive = trigger.classList.contains('active');
-    
+
     this.closeAll();
-    
+
     if (!isActive && dropdown) {
       trigger.classList.add('active');
       dropdown.classList.add('active');
     }
   }
-  
+
   private closeAll(): void {
-    document.querySelectorAll('.dropdown-display.active').forEach(el => {
+    document.querySelectorAll('.dropdown-display.active').forEach((el) => {
       el.classList.remove('active');
     });
-    document.querySelectorAll('.dropdown-options.active').forEach(el => {
+    document.querySelectorAll('.dropdown-options.active').forEach((el) => {
       el.classList.remove('active');
     });
   }
@@ -401,21 +448,23 @@ export { DropdownManager };
 ```html
 <!-- ALT -->
 <div id="myModal" style="display: none;">
+  <!-- NEU - NUR wenn .u-hidden EXAKT display: none !important hat -->
+  <div id="myModal" class="modal u-hidden">
+    <!-- ALT -->
+    <p style="margin: 0; margin-top: 4px;">
+      <!-- NEU - NUR wenn .u-mt-text EXAKT margin: 0; margin-top: 4px !important hat -->
+    </p>
 
-<!-- NEU - NUR wenn .u-hidden EXAKT display: none !important hat -->
-<div id="myModal" class="modal u-hidden">
+    <p class="u-mt-text">
+      <!-- ALT -->
+    </p>
 
-<!-- ALT -->
-<p style="margin: 0; margin-top: 4px;">
-
-<!-- NEU - NUR wenn .u-mt-text EXAKT margin: 0; margin-top: 4px !important hat -->
-<p class="u-mt-text">
-
-<!-- ALT -->
-<div style="display: flex; gap: 12px;">
-
-<!-- NEU - NUR wenn .u-flex-gap-md EXAKT display: flex; gap: 12px !important hat -->
-<div class="u-flex-gap-md">
+    <div style="display: flex; gap: 12px;">
+      <!-- NEU - NUR wenn .u-flex-gap-md EXAKT display: flex; gap: 12px !important hat -->
+      <div class="u-flex-gap-md"></div>
+    </div>
+  </div>
+</div>
 ```
 
 #### 4.2 Script Migration in HTML
@@ -468,13 +517,17 @@ echo "✅ Screenshots saved. Make your changes and run 'npm run screenshot:after
 #### 5.2 CSS Linting
 
 **.stylelintrc.json**
+
 ```json
 {
   "extends": "stylelint-config-standard",
   "rules": {
-    "declaration-no-important": [true, {
-      "severity": "warning"
-    }],
+    "declaration-no-important": [
+      true,
+      {
+        "severity": "warning"
+      }
+    ],
     "max-nesting-depth": 3,
     "selector-class-pattern": "^([a-z][a-z0-9]*)(-[a-z0-9]+)*$|^u-[a-z0-9-]+$",
     "custom-property-pattern": "^([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
@@ -511,13 +564,13 @@ const glob = require('glob');
 const countInlineStyles = () => {
   const files = glob.sync('frontend/src/pages/**/*.html');
   let total = 0;
-  
-  files.forEach(file => {
+
+  files.forEach((file) => {
     const content = fs.readFileSync(file, 'utf8');
     const matches = content.match(/style="/g) || [];
     total += matches.length;
   });
-  
+
   return total;
 };
 
@@ -526,22 +579,22 @@ console.log('🎯 Migration Progress Report');
 console.log('===========================');
 console.log(`Inline Styles remaining: ${countInlineStyles()}`);
 console.log(`Target: 0`);
-console.log(`Progress: ${100 - (countInlineStyles() / 91 * 100)}%`);
+console.log(`Progress: ${100 - (countInlineStyles() / 91) * 100}%`);
 ```
 
 ## 📊 Erfolgsmetriken & Tracking
 
 ### Messbare Ziele
 
-| Metrik | Start | Ziel | Status |
-|--------|-------|------|--------|
-| Inline-Styles | 91 | 0 | ⏳ |
-| display: none | 102 | 0 | ⏳ |
-| Doppelte CSS-Variablen-Sets | 2 | 1 | ⏳ |
-| Legacy JS Functions | ~20 | 0 | ⏳ |
-| Utility-Klassen | 0 | 50+ | ⏳ |
-| Alte Container (.main-content) | Viele | 0 | ⏳ |
-| Navigation-Container Coverage | 97% | 100% | ⏳ |
+| Metrik                         | Start | Ziel | Status |
+| ------------------------------ | ----- | ---- | ------ |
+| Inline-Styles                  | 91    | 0    | ⏳     |
+| display: none                  | 102   | 0    | ⏳     |
+| Doppelte CSS-Variablen-Sets    | 2     | 1    | ⏳     |
+| Legacy JS Functions            | ~20   | 0    | ⏳     |
+| Utility-Klassen                | 0     | 50+  | ⏳     |
+| Alte Container (.main-content) | Viele | 0    | ⏳     |
+| Navigation-Container Coverage  | 97%   | 100% | ⏳     |
 
 ### Priorisierung
 
@@ -591,6 +644,7 @@ npm run screenshot:diff
 ### Manuelles Testing
 
 **Für JEDE geänderte Seite:**
+
 1. Browser DevTools öffnen
 2. Element inspizieren VOR Änderung
 3. Computed Styles notieren (padding, margin, colors, etc.)
@@ -605,10 +659,14 @@ npm run screenshot:diff
 style="display: none"
 
 /* Klasse hat Spezifität: 10 */
-.u-hidden { display: none; } /* FUNKTIONIERT NICHT! */
+.u-hidden {
+  display: none;
+} /* FUNKTIONIERT NICHT! */
 
 /* Klasse mit !important hat Spezifität: 10000 */
-.u-hidden { display: none !important; } /* FUNKTIONIERT! */
+.u-hidden {
+  display: none !important;
+} /* FUNKTIONIERT! */
 ```
 
 ## ⚠️ Wichtige Hinweise
@@ -649,6 +707,7 @@ Diese Dinge dürfen NIEMALS passieren:
 ---
 
 **Dieser Plan wurde 4x durchgegangen und optimiert für:**
+
 - ✅ Realistische Umsetzung basierend auf Projekt-Analyse
 - ✅ Schrittweise Migration ohne Breaking Changes
 - ✅ Messbare Fortschritte

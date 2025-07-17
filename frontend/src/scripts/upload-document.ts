@@ -79,7 +79,7 @@ async function loadEmployees(): Promise<void> {
         employees.forEach((employee: User) => {
           const option = document.createElement('option');
           option.value = employee.id.toString();
-          option.textContent = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+          option.textContent = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
           userSelect.appendChild(option);
         });
 
@@ -135,7 +135,7 @@ async function uploadDocument(e: Event): Promise<void> {
 
   // Show loading state
   const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-  const originalText = submitButton?.textContent || 'Hochladen';
+  const originalText = submitButton?.textContent ?? 'Hochladen';
   if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = 'Wird hochgeladen...';
@@ -158,7 +158,7 @@ async function uploadDocument(e: Event): Promise<void> {
 
       // Show success message
       if (successElem) {
-        successElem.textContent = result.message || 'Dokument erfolgreich hochgeladen!';
+        successElem.textContent = result.message ?? 'Dokument erfolgreich hochgeladen!';
         successElem.style.display = 'block';
       }
 
@@ -182,7 +182,7 @@ async function uploadDocument(e: Event): Promise<void> {
     } else {
       console.error('Upload failed:', result);
       if (errorElem) {
-        errorElem.textContent = result.error || 'Fehler beim Hochladen des Dokuments';
+        errorElem.textContent = result.error ?? 'Fehler beim Hochladen des Dokuments';
         errorElem.style.display = 'block';
       }
     }

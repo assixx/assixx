@@ -29,10 +29,10 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     // Tenant-spezifische Datenbank-Konfiguration
     // In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
     const dbConfig: PoolOptions = {
-      host: process.env.DB_HOST || "localhost",
-      user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      database: process.env.DB_NAME || "lohnabrechnung", // Verwende DB_NAME aus .env statt tenant-spezifischer DB
+      host: process.env.DB_HOST ?? "localhost",
+      user: process.env.DB_USER ?? "root",
+      password: process.env.DB_PASSWORD ?? "",
+      database: process.env.DB_NAME ?? "lohnabrechnung", // Verwende DB_NAME aus .env statt tenant-spezifischer DB
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
@@ -82,9 +82,9 @@ export async function initializeTenantDatabase(
 
   // Im Produktionsmodus führen wir die ursprüngliche Logik aus
   const connection: Connection = await mysql.createConnection({
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
+    host: process.env.DB_HOST ?? "localhost",
+    user: process.env.DB_USER ?? "root",
+    password: process.env.DB_PASSWORD ?? "",
   });
 
   try {

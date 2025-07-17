@@ -230,7 +230,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       // Use default tenant ID 1 for now (can be improved later)
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
       const templates = await Shift.getShiftTemplates(tenantId);
       res.json(successResponse({ templates }));
     } catch (error) {
@@ -273,7 +273,7 @@ router.post(
 
       const templateData = {
         ...req.body,
-        tenant_id: req.user.tenant_id || 1,
+        tenant_id: req.user.tenant_id ?? 1,
         created_by: req.user.id,
         duration_hours:
           duration_hours > 0 ? duration_hours : 24 + duration_hours, // Handle overnight shifts
@@ -414,12 +414,12 @@ router.get(
         status: req.query.status
           ? (String(req.query.status) as "draft" | "published" | "archived")
           : undefined,
-        page: parseInt(String(req.query.page || "1"), 10),
-        limit: parseInt(String(req.query.limit || "20"), 10),
+        page: parseInt(String(req.query.page ?? "1"), 10),
+        limit: parseInt(String(req.query.limit ?? "20"), 10),
       };
 
       // Use the actual model function
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
       const userId = req.user.id;
       const result = await Shift.getShiftPlans(tenantId, userId, options);
       res.json(successResponse(result));
@@ -457,7 +457,7 @@ router.post(
 
       const planData = {
         ...req.body,
-        tenant_id: req.user.tenant_id || 1,
+        tenant_id: req.user.tenant_id ?? 1,
         created_by: req.user.id,
       };
 
@@ -544,7 +544,7 @@ router.get(
       const startStr = startDate.toISOString().split("T")[0];
       const endStr = endDate.toISOString().split("T")[0];
 
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
 
       try {
         // Build query based on user role
@@ -598,7 +598,7 @@ router.get(
 
         res.json(
           successResponse({
-            shifts: rows || [],
+            shifts: rows ?? [],
           }),
         );
       } catch (error) {
@@ -642,7 +642,7 @@ router.get(
       const weekDate = new Date(String(week));
       const weekStart = weekDate.toISOString().split("T")[0];
 
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
 
       try {
         let departmentId: number | null = null;
@@ -724,7 +724,7 @@ router.get(
 
         res.json(
           successResponse({
-            notes: notes || "",
+            notes: notes ?? "",
           }),
         );
       } catch (error) {
@@ -780,7 +780,7 @@ router.post(
         return;
       }
 
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
       const { week_start, week_end, assignments, notes } =
         req.body as WeeklyShiftBody;
 
@@ -883,7 +883,7 @@ router.post(
             assignments[0].department_id
           ) {
             // Ensure notes is a string
-            const notesString = notes || "";
+            const notesString = notes ?? "";
             console.log("[SHIFTS SAVE] Saving weekly notes:", {
               tenantId,
               departmentId: assignments[0].department_id,
@@ -979,7 +979,7 @@ router.post(
         const shiftId = parseInt(req.params.shiftId);
         const assignmentData = {
           ...req.body,
-          tenant_id: req.user.tenant_id || 1,
+          tenant_id: req.user.tenant_id ?? 1,
           shift_id: shiftId,
           assigned_by: req.user.id,
         };
@@ -1074,8 +1074,8 @@ router.post(
   typed.body<AvailabilityBody>(async (req, res) => {
     try {
       const availabilityData = {
-        tenant_id: req.user.tenant_id || 1,
-        user_id: req.body.user_id || req.user.id,
+        tenant_id: req.user.tenant_id ?? 1,
+        user_id: req.body.user_id ?? req.user.id,
         date: req.body.date,
         availability_type: req.body.availability_type as
           | "available"
@@ -1145,7 +1145,7 @@ router.get(
               | "rejected"
               | "cancelled")
           : "pending",
-        limit: parseInt(String(req.query.limit || "50"), 10),
+        limit: parseInt(String(req.query.limit ?? "50"), 10),
       };
 
       const requests = await Shift.getShiftExchangeRequests(
@@ -1174,7 +1174,7 @@ router.post(
   typed.body<ShiftExchangeBody>(async (req, res) => {
     try {
       const requestData = {
-        tenant_id: req.user.tenant_id || 1,
+        tenant_id: req.user.tenant_id ?? 1,
         shift_id: req.body.original_shift_id,
         requester_id: req.user.id,
         target_user_id: null as number | null,
@@ -1249,7 +1249,7 @@ router.get(
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
       const userId = req.user.id;
 
       // Get upcoming shifts for this week
@@ -1326,7 +1326,7 @@ router.get(
     try {
       const { start_date, end_date } = req.query;
 
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
 
       // Get shifts with assignments for the week
       const query = `
@@ -1407,7 +1407,7 @@ router.post(
     try {
       const { week, notes, department_id } = req.body;
 
-      const tenantId = req.user.tenant_id || 1;
+      const tenantId = req.user.tenant_id ?? 1;
       const weekDate = new Date(week).toISOString().split("T")[0];
 
       let departmentId: number | null = null;
@@ -1492,7 +1492,7 @@ router.post(
         weekDate.setDate(weekDate.getDate() + (parseInt(week) - 1) * 7);
         const weekStart = weekDate.toISOString().split("T")[0];
 
-        const tenantId = req.user.tenant_id || 1;
+        const tenantId = req.user.tenant_id ?? 1;
 
         // Insert or update notes
         const query = `

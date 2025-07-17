@@ -59,7 +59,7 @@ export class AlertingService {
             color,
             title: alert.title,
             text: alert.message,
-            fields: Object.entries(alert.fields || {}).map(([k, v]) => ({
+            fields: Object.entries(alert.fields ?? {}).map(([k, v]) => ({
               title: k,
               value: String(v),
               short: true,
@@ -123,11 +123,11 @@ export class AlertingService {
             activitySubtitle: "Assixx Alert System",
             activityImage: "https://assixx.com/logo.png",
             text: alert.message,
-            facts: alert.facts || [],
+            facts: alert.facts ?? [],
             markdown: true,
           },
         ],
-        potentialAction: alert.actions || [],
+        potentialAction: alert.actions ?? [],
       };
 
       const response = await axios.post(process.env.TEAMS_WEBHOOK_URL, card);
@@ -205,7 +205,7 @@ export class AlertingService {
             Authorization: `Token token=${process.env.PAGERDUTY_TOKEN}`,
             Accept: "application/vnd.pagerduty+json;version=2",
             "Content-Type": "application/json",
-            From: process.env.PAGERDUTY_EMAIL || "assixx@example.com",
+            From: process.env.PAGERDUTY_EMAIL ?? "assixx@example.com",
           },
         },
       );
@@ -249,7 +249,7 @@ export class AlertingService {
     // Always send critical alerts to all channels
     promises.push(
       this.sendSlackAlert({
-        channel: process.env.SLACK_CRITICAL_CHANNEL || "#alerts-critical",
+        channel: process.env.SLACK_CRITICAL_CHANNEL ?? "#alerts-critical",
         severity: "critical",
         title,
         message,

@@ -195,7 +195,7 @@ export class Tenant {
     tenantId: number,
     connection: PoolConnection | null = null,
   ): Promise<void> {
-    const conn = connection || (await getConnection());
+    const conn = connection ?? (await getConnection());
 
     // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
     // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
@@ -267,7 +267,7 @@ export class Tenant {
       'SELECT * FROM tenants WHERE subdomain = ? AND status != "cancelled"',
       [subdomain],
     );
-    return tenants[0] || null;
+    return tenants[0] ?? null;
   }
 
   // Finde Tenant by ID
@@ -276,7 +276,7 @@ export class Tenant {
       'SELECT * FROM tenants WHERE id = ? AND status != "cancelled"',
       [tenantId],
     );
-    return tenants[0] || null;
+    return tenants[0] ?? null;
   }
 
   // Alle Tenants abrufen

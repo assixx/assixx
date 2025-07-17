@@ -245,7 +245,7 @@ class SurveyController {
       // Using direct model import since the original controller does this
       // Ensure we have a valid title for the update
       const surveyDataForUpdate = {
-        title: updateData.title || req.body.title || "Untitled Survey",
+        title: updateData.title ?? (req.body.title || "Untitled Survey"),
         description: updateData.description,
         questions: updateData.questions,
         is_anonymous: updateData.is_anonymous,

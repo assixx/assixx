@@ -28,7 +28,7 @@ interface AuditEntry {
 type ExtendedRequest = Request;
 
 // CSRF Protection Configuration - Simplified implementation
-// const csrfSecret = process.env.CSRF_SECRET || 'assixx-csrf-secret-change-in-production';
+// const csrfSecret = process.env.CSRF_SECRET  ?? 'assixx-csrf-secret-change-in-production';
 
 // Simple CSRF token generation
 function generateToken(_req: ExtendedRequest, _res: Response): string {
@@ -71,10 +71,7 @@ export const validateCSRFToken = (
   next: NextFunction,
 ): void => {
   // Skip CSRF validation for API endpoints that use Bearer token authentication
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer ")
-  ) {
+  if (req.headers.authorization?.startsWith("Bearer ")) {
     return next();
   }
 
@@ -291,7 +288,7 @@ const createProgressiveRateLimiter = (
 export const suspiciousActivityLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // 10 requests per hour for suspicious IPs
-  keyGenerator: (req: ExtendedRequest) => req.ip || "unknown",
+  keyGenerator: (req: ExtendedRequest) => req.ip ?? "unknown",
   message: {
     error: "Suspicious activity detected",
     message:
@@ -301,7 +298,7 @@ export const suspiciousActivityLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req: ExtendedRequest) => {
     // Skip for authenticated users with valid sessions
-    return !!(req.headers.authorization || req.user);
+    return !!(req.headers.authorization ?? req.user);
   },
 });
 
@@ -406,7 +403,7 @@ export const auditLogger =
       const duration = Date.now() - startTime;
       const auditEntry: AuditEntry = {
         timestamp: new Date().toISOString(),
-        tenant_id: req.tenant?.id || "public",
+        tenant_id: req.tenant?.id ?? "public",
         userId: req.user?.id ? req.user.id.toString() : "anonymous",
         action,
         resource,
@@ -414,7 +411,7 @@ export const auditLogger =
         path: req.path,
         statusCode: res.statusCode,
         duration,
-        ip: req.ip || "unknown",
+        ip: req.ip ?? "unknown",
         userAgent: req.get("user-agent"),
         success: res.statusCode < 400,
       };

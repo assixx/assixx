@@ -164,7 +164,7 @@ body::after {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -270,7 +270,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```css
 .form-control,
-.form-input 
+.form-input
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(255, 255, 255, 0.03);
@@ -370,7 +370,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: var(--spacing-md);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-sm);
   color: #fff;
   cursor: pointer;
@@ -394,7 +394,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   background: rgba(18, 18, 18, 0.8);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-sm);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -1468,7 +1468,7 @@ document.addEventListener('click', function (e) {
 .chat-container {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
 }
 
 /* Message Bubbles */
@@ -1585,7 +1585,7 @@ document.addEventListener('click', function (e) {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -1651,7 +1651,7 @@ document.addEventListener('click', function (e) {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0,0%,100%,.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
   padding: var(--spacing-xl);
   box-shadow:

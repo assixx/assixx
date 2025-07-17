@@ -88,11 +88,24 @@
 #user-avatar,
 .header .header-actions #user-info #user-avatar {
   display: block !important;
-  width: 24px !important;
-  height: 24px !important;
+  width: 35px !important;
+  height: 35px !important;
   border-radius: 50% !important;
   object-fit: cover !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Initials avatar styling for header */
+#user-avatar.avatar-initials,
+.header .header-actions #user-info #user-avatar.avatar-initials {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #1b8e01 !important;
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
 }
 
 /* Hide ALL images in user-info except the user-avatar */

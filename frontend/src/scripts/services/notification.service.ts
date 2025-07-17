@@ -70,7 +70,7 @@ export class NotificationService {
       type: 'success',
       title,
       message,
-      duration: duration || this.defaultDuration,
+      duration: duration ?? this.defaultDuration,
     });
   }
 
@@ -82,7 +82,7 @@ export class NotificationService {
       type: 'error',
       title,
       message,
-      duration: duration || this.defaultDuration * 2, // Errors stay longer
+      duration: duration ?? this.defaultDuration * 2, // Errors stay longer
     });
   }
 
@@ -94,7 +94,7 @@ export class NotificationService {
       type: 'warning',
       title,
       message,
-      duration: duration || this.defaultDuration,
+      duration: duration ?? this.defaultDuration,
     });
   }
 
@@ -106,7 +106,7 @@ export class NotificationService {
       type: 'info',
       title,
       message,
-      duration: duration || this.defaultDuration,
+      duration: duration ?? this.defaultDuration,
     });
   }
 

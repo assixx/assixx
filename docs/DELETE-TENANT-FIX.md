@@ -5,6 +5,7 @@
 Die beste Lösung für Assixx ist ein **Intelligent Deletion Service** mit Background Processing - ähnlich wie Microsoft/Google es machen, aber angepasst an unsere bestehende Codebasis.
 
 **Warum diese Lösung?**
+
 - ✅ Keine Änderung an 500+ Queries nötig
 - ✅ Professionell wie bei Microsoft/Google
 - ✅ In 1 Woche implementierbar
@@ -13,18 +14,21 @@ Die beste Lösung für Assixx ist ein **Intelligent Deletion Service** mit Backg
 ## 🏢 Wie machen es die Großen?
 
 ### Microsoft Azure/Office 365
+
 - **Two-Phase Delete**: Erst deaktivieren (sofort), dann löschen (Background Job)
 - **Grace Period**: 30 Tage Wiederherstellung möglich
 - **Async Processing**: Deletion Queue mit Retry-Logic
 - **Status Updates**: User sieht Fortschritt
 
 ### Google Workspace
+
 - **Staged Deletion**: ACTIVE → SUSPENDED → DELETING → DELETED
 - **Background Workers**: Löschen läuft asynchron
 - **Data Export**: Automatischer Export vor Löschung
 - **Audit Trail**: Jeder Schritt wird geloggt
 
 ### Was wir davon lernen
+
 1. **NIEMALS** synchron löschen bei komplexen Datenstrukturen
 2. **IMMER** Status-Tracking für User Experience
 3. **IMMER** Background Processing für große Operationen
@@ -84,7 +88,7 @@ CREATE TABLE tenant_deletion_log (
 );
 
 -- Status zu Tenants hinzufügen
-ALTER TABLE tenants 
+ALTER TABLE tenants
   ADD COLUMN deletion_status ENUM('active', 'suspended', 'deleting') DEFAULT 'active',
   ADD COLUMN deletion_requested_at TIMESTAMP NULL,
   ADD INDEX idx_deletion_status (deletion_status);
@@ -117,7 +121,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'user_chat_status',
@@ -129,7 +133,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 2: Notifications & Temp Data
@@ -143,7 +147,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 3: Activity & Logs (Wichtig für Audit, aber löschbar)
@@ -157,7 +161,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'api_logs',
@@ -169,7 +173,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'security_logs',
@@ -181,19 +185,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'admin_logs',
       description: 'Lösche Admin Logs',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM admin_logs WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM admin_logs WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 4: Messages & Communication
@@ -207,7 +208,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'message_status',
@@ -219,7 +220,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'messages',
@@ -231,7 +232,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'conversation_participants',
@@ -243,19 +244,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'conversations',
       description: 'Lösche Conversations',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM conversations WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM conversations WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 5: Documents
@@ -269,7 +267,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'documents',
@@ -277,12 +275,9 @@ export class TenantDeletionService {
       critical: true,
       handler: async (tenantId, conn) => {
         // TODO: Dateien vom Filesystem löschen!
-        const result = await conn.query(
-          'DELETE FROM documents WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM documents WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 6: KVP System
@@ -296,7 +291,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'kvp_ratings',
@@ -308,7 +303,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'kvp_points',
@@ -320,7 +315,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'kvp_status_history',
@@ -332,7 +327,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'kvp_attachments',
@@ -344,19 +339,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'kvp_suggestions',
       description: 'Lösche KVP Suggestions',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM kvp_suggestions WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM kvp_suggestions WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 7: Calendar
@@ -370,7 +362,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'calendar_participants',
@@ -382,7 +374,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'calendar_reminders',
@@ -394,7 +386,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'calendar_shares',
@@ -406,19 +398,16 @@ export class TenantDeletionService {
           [tenantId, tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'calendar_events',
       description: 'Lösche Calendar Events',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM calendar_events WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM calendar_events WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 8: Shifts
@@ -432,7 +421,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'shift_notes',
@@ -444,7 +433,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'weekly_shift_notes',
@@ -456,19 +445,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'shifts',
       description: 'Lösche Shifts',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM shifts WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 9: Blackboard
@@ -482,7 +468,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'blackboard_attachments',
@@ -494,19 +480,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'blackboard_entries',
       description: 'Lösche Blackboard Entries',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM blackboard_entries WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 10: Surveys
@@ -520,7 +503,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'survey_responses',
@@ -532,7 +515,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'survey_participants',
@@ -544,7 +527,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'survey_assignments',
@@ -556,7 +539,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'survey_questions',
@@ -568,19 +551,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'surveys',
       description: 'Lösche Surveys',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM surveys WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 11: User Settings & Preferences
@@ -594,7 +574,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'notification_preferences',
@@ -606,7 +586,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 12: Employee & Features
@@ -620,7 +600,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'feature_usage_logs',
@@ -632,7 +612,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 13: Admin Permissions (WICHTIG: Vor Users!)
@@ -646,7 +626,7 @@ export class TenantDeletionService {
           [tenantId, tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'admin_department_permissions',
@@ -658,7 +638,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'admin_group_permissions',
@@ -670,7 +650,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 14: Teams & User Relations
@@ -684,7 +664,7 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'department_group_members',
@@ -696,19 +676,16 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'tenant_admins',
       description: 'Lösche Tenant Admins',
       critical: false,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM tenant_admins WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM tenant_admins WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 15: Nullify Foreign Keys
@@ -720,22 +697,25 @@ export class TenantDeletionService {
         // Teams
         await conn.query('UPDATE teams SET team_lead_id = NULL WHERE tenant_id = ?', [tenantId]);
         await conn.query('UPDATE teams SET created_by = NULL WHERE tenant_id = ?', [tenantId]);
-        
+
         // Departments
         await conn.query('UPDATE departments SET manager_id = NULL WHERE tenant_id = ?', [tenantId]);
         await conn.query('UPDATE departments SET created_by = NULL WHERE tenant_id = ?', [tenantId]);
-        
+
         // Department Groups
-        await conn.query('UPDATE department_groups SET created_by = NULL WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)', [tenantId]);
-        
+        await conn.query(
+          'UPDATE department_groups SET created_by = NULL WHERE department_id IN (SELECT id FROM departments WHERE tenant_id = ?)',
+          [tenantId]
+        );
+
         // Tenant Features
         await conn.query('UPDATE tenant_features SET activated_by = NULL WHERE tenant_id = ?', [tenantId]);
-        
+
         // Tenants
         await conn.query('UPDATE tenants SET created_by = NULL WHERE id = ?', [tenantId]);
-        
+
         return 0; // Kein affected rows count nötig
-      }
+      },
     },
 
     // Level 16: Core Entities
@@ -749,43 +729,34 @@ export class TenantDeletionService {
           [tenantId]
         );
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'teams',
       description: 'Lösche Teams',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM teams WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'departments',
       description: 'Lösche Departments',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM departments WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM departments WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'users',
       description: 'Lösche Users',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM users WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM users WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 17: Tenant Features & Plans
@@ -794,24 +765,18 @@ export class TenantDeletionService {
       description: 'Lösche Tenant Features',
       critical: false,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM tenant_features WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM tenant_features WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
     {
       name: 'tenant_plans',
       description: 'Lösche Tenant Plans',
       critical: false,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM tenant_plans WHERE tenant_id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM tenant_plans WHERE tenant_id = ?', [tenantId]);
         return result.affectedRows;
-      }
+      },
     },
 
     // Level 18: Final - Tenant selbst
@@ -820,13 +785,10 @@ export class TenantDeletionService {
       description: 'Lösche Tenant',
       critical: true,
       handler: async (tenantId, conn) => {
-        const result = await conn.query(
-          'DELETE FROM tenants WHERE id = ?',
-          [tenantId]
-        );
+        const result = await conn.query('DELETE FROM tenants WHERE id = ?', [tenantId]);
         return result.affectedRows;
-      }
-    }
+      },
+    },
   ];
 
   /**
@@ -834,46 +796,42 @@ export class TenantDeletionService {
    */
   async queueTenantDeletion(tenantId: number, requestedBy: number): Promise<number> {
     const connection = await db.getConnection();
-    
+
     try {
       await connection.beginTransaction();
-      
+
       // 1. Check if tenant exists and is active
-      const [tenant] = await connection.query(
-        'SELECT id, deletion_status FROM tenants WHERE id = ?',
-        [tenantId]
-      );
-      
+      const [tenant] = await connection.query('SELECT id, deletion_status FROM tenants WHERE id = ?', [tenantId]);
+
       if (!tenant) {
         throw new Error('Tenant not found');
       }
-      
+
       if (tenant.deletion_status !== 'active') {
         throw new Error('Tenant is already being deleted');
       }
-      
+
       // 2. Mark tenant as suspended
-      await connection.query(
-        'UPDATE tenants SET deletion_status = ?, deletion_requested_at = NOW() WHERE id = ?',
-        ['suspended', tenantId]
-      );
-      
+      await connection.query('UPDATE tenants SET deletion_status = ?, deletion_requested_at = NOW() WHERE id = ?', [
+        'suspended',
+        tenantId,
+      ]);
+
       // 3. Create queue entry
       const result = await connection.query(
         'INSERT INTO tenant_deletion_queue (tenant_id, created_by, total_steps) VALUES (?, ?, ?)',
         [tenantId, requestedBy, this.steps.length]
       );
-      
+
       // 4. Log out all users of this tenant
-      await connection.query(
-        'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
-        [tenantId]
-      );
-      
+      await connection.query('DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)', [
+        tenantId,
+      ]);
+
       await connection.commit();
-      
+
       logger.warn(`Tenant ${tenantId} queued for deletion by user ${requestedBy}`);
-      
+
       return result.insertId;
     } catch (error) {
       await connection.rollback();
@@ -888,7 +846,7 @@ export class TenantDeletionService {
    */
   async processQueue(): Promise<void> {
     const connection = await db.getConnection();
-    
+
     try {
       // Get next queued item
       const [queueItem] = await connection.query(
@@ -897,11 +855,11 @@ export class TenantDeletionService {
          ORDER BY created_at ASC 
          LIMIT 1`
       );
-      
+
       if (!queueItem) {
         return; // Nothing to process
       }
-      
+
       await this.processTenantDeletion(queueItem.id);
     } catch (error) {
       logger.error('Error processing deletion queue:', error);
@@ -915,46 +873,41 @@ export class TenantDeletionService {
    */
   private async processTenantDeletion(queueId: number): Promise<void> {
     const connection = await db.getConnection();
-    
+
     try {
       // 1. Mark as processing
-      await connection.query(
-        'UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?',
-        ['processing', queueId]
-      );
-      
+      await connection.query('UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?', [
+        'processing',
+        queueId,
+      ]);
+
       // 2. Get tenant info
-      const [queueItem] = await connection.query(
-        'SELECT * FROM tenant_deletion_queue WHERE id = ?',
-        [queueId]
-      );
-      
+      const [queueItem] = await connection.query('SELECT * FROM tenant_deletion_queue WHERE id = ?', [queueId]);
+
       const tenantId = queueItem.tenant_id;
-      
+
       // 3. Update tenant status
-      await connection.query(
-        'UPDATE tenants SET deletion_status = ? WHERE id = ?',
-        ['deleting', tenantId]
-      );
-      
+      await connection.query('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['deleting', tenantId]);
+
       // 4. Process each step
       let completedSteps = 0;
-      
+
       for (const step of this.steps) {
         const startTime = Date.now();
-        
+
         try {
           logger.info(`Processing deletion step: ${step.name} for tenant ${tenantId}`);
-          
+
           // Update current step
-          await connection.query(
-            'UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?',
-            [step.description, Math.round((completedSteps / this.steps.length) * 100), queueId]
-          );
-          
+          await connection.query('UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?', [
+            step.description,
+            Math.round((completedSteps / this.steps.length) * 100),
+            queueId,
+          ]);
+
           // Execute step
           const recordsDeleted = await step.handler(tenantId, connection);
-          
+
           // Log success
           await connection.query(
             `INSERT INTO tenant_deletion_log 
@@ -962,12 +915,11 @@ export class TenantDeletionService {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, 'success']
           );
-          
+
           completedSteps++;
-          
         } catch (error: any) {
           logger.error(`Error in deletion step ${step.name}:`, error);
-          
+
           // Log failure
           await connection.query(
             `INSERT INTO tenant_deletion_log 
@@ -975,43 +927,37 @@ export class TenantDeletionService {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [queueId, step.name, step.name, Date.now() - startTime, 'failed', error.message]
           );
-          
+
           if (step.critical) {
             throw new Error(`Critical step ${step.name} failed: ${error.message}`);
           }
         }
       }
-      
+
       // 5. Mark as completed
       await connection.query(
         'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW(), progress = 100 WHERE id = ?',
         ['completed', queueId]
       );
-      
+
       logger.info(`Tenant ${tenantId} deletion completed successfully`);
-      
     } catch (error: any) {
       logger.error('Tenant deletion failed:', error);
-      
+
       // Mark as failed
-      await connection.query(
-        'UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?',
-        ['failed', error.message, queueId]
-      );
-      
+      await connection.query('UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?', [
+        'failed',
+        error.message,
+        queueId,
+      ]);
+
       // Revert tenant status
-      const [queueItem] = await connection.query(
-        'SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?',
-        [queueId]
-      );
-      
+      const [queueItem] = await connection.query('SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?', [queueId]);
+
       if (queueItem) {
-        await connection.query(
-          'UPDATE tenants SET deletion_status = ? WHERE id = ?',
-          ['active', queueItem.tenant_id]
-        );
+        await connection.query('UPDATE tenants SET deletion_status = ? WHERE id = ?', ['active', queueItem.tenant_id]);
       }
-      
+
       throw error;
     } finally {
       connection.release();
@@ -1035,7 +981,7 @@ export class TenantDeletionService {
        LIMIT 1`,
       [tenantId]
     );
-    
+
     return status;
   }
 
@@ -1062,21 +1008,18 @@ export const tenantDeletionService = new TenantDeletionService();
 router.delete('/tenants/:id', auth, requireRole('root'), async (req, res) => {
   try {
     const tenantId = parseInt(req.params.id);
-    const queueId = await tenantDeletionService.queueTenantDeletion(
-      tenantId,
-      req.user.id
-    );
-    
+    const queueId = await tenantDeletionService.queueTenantDeletion(tenantId, req.user.id);
+
     res.json({
       success: true,
       message: 'Tenant wurde zur Löschung eingeplant',
       queueId,
-      estimatedTime: '10-15 Minuten'
+      estimatedTime: '10-15 Minuten',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1084,18 +1027,16 @@ router.delete('/tenants/:id', auth, requireRole('root'), async (req, res) => {
 // Get deletion status
 router.get('/tenants/:id/deletion-status', auth, requireRole('root'), async (req, res) => {
   try {
-    const status = await tenantDeletionService.getDeletionStatus(
-      parseInt(req.params.id)
-    );
-    
+    const status = await tenantDeletionService.getDeletionStatus(parseInt(req.params.id));
+
     res.json({
       success: true,
-      data: status
+      data: status,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1104,15 +1045,15 @@ router.get('/tenants/:id/deletion-status', auth, requireRole('root'), async (req
 router.post('/deletion-queue/:id/retry', auth, requireRole('root'), async (req, res) => {
   try {
     await tenantDeletionService.retryDeletion(parseInt(req.params.id));
-    
+
     res.json({
       success: true,
-      message: 'Löschung wird erneut versucht'
+      message: 'Löschung wird erneut versucht',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1145,11 +1086,11 @@ async function run() {
     try {
       await tenantDeletionService.processQueue();
       // Wait 30 seconds between runs
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      await new Promise((resolve) => setTimeout(resolve, 30000));
     } catch (error) {
       console.error('Worker error:', error);
       // Wait 1 minute on error
-      await new Promise(resolve => setTimeout(resolve, 60000));
+      await new Promise((resolve) => setTimeout(resolve, 60000));
     }
   }
 }
@@ -1177,13 +1118,12 @@ async function deleteTenant() {
 
     if (response.ok) {
       const data = await response.json();
-      
+
       // Show status modal instead of success overlay
       showDeletionStatusModal(data.queueId);
-      
+
       // Close delete confirmation modal
       closeDeleteModal();
-      
     } else {
       const error = await response.json();
       showMessage(error.message || 'Fehler beim Löschen des Tenants', 'error');
@@ -1218,27 +1158,27 @@ function showDeletionStatusModal(queueId) {
     </div>
   `;
   document.body.appendChild(modal);
-  
+
   // Poll status every 5 seconds
   const statusInterval = setInterval(async () => {
     try {
       const response = await fetch(`/api/root/tenants/${currentTenantId}/deletion-status`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await response.json();
       const status = data.data;
-      
+
       if (status) {
         document.getElementById('deletion-progress').style.width = status.progress + '%';
         document.getElementById('deletion-status').textContent = status.current_step || 'Verarbeite...';
-        
+
         if (status.status === 'completed') {
           clearInterval(statusInterval);
           modal.remove();
           showSuccessOverlay('Tenant wurde erfolgreich gelöscht!');
           localStorage.clear();
-          setTimeout(() => window.location.href = '/login', 2000);
+          setTimeout(() => (window.location.href = '/login'), 2000);
         } else if (status.status === 'failed') {
           clearInterval(statusInterval);
           modal.remove();
@@ -1257,16 +1197,19 @@ function showDeletionStatusModal(queueId) {
 ### Woche 1: Backend-Basis
 
 **Tag 1-2: Database Schema**
+
 - [ ] Migration für neue Tabellen erstellen
 - [ ] Indexes optimieren
 - [ ] Test-Daten erstellen
 
 **Tag 3-4: Deletion Service**
+
 - [ ] TenantDeletionService implementieren
 - [ ] Unit Tests schreiben
 - [ ] Integration Tests
 
 **Tag 5: API & Worker**
+
 - [ ] API Endpoints implementieren
 - [ ] Cron Job / Worker einrichten
 - [ ] Logging & Monitoring
@@ -1274,16 +1217,19 @@ function showDeletionStatusModal(queueId) {
 ### Woche 2: Frontend & Testing
 
 **Tag 1-2: Frontend Updates**
+
 - [ ] Status Modal implementieren
 - [ ] Progress Tracking
 - [ ] Error Handling
 
 **Tag 3-4: End-to-End Testing**
+
 - [ ] Test mit kleinem Tenant
 - [ ] Test mit großem Tenant (viele Daten)
 - [ ] Fehlerszenarien testen
 
 **Tag 5: Deployment**
+
 - [ ] Docker Config für Worker
 - [ ] Monitoring Dashboard
 - [ ] Dokumentation
@@ -1296,9 +1242,9 @@ function showDeletionStatusModal(queueId) {
 # docker-compose.yml
 services:
   # ... existing services ...
-  
+
   deletion-worker:
-    build: 
+    build:
       context: ../
       dockerfile: docker/Dockerfile.worker
     environment:
@@ -1315,7 +1261,7 @@ services:
 
 ```sql
 -- Dashboard Query für Root User
-SELECT 
+SELECT
   q.id,
   t.company_name,
   q.status,
@@ -1358,7 +1304,6 @@ Das ist die BESTE Lösung für ein professionelles Multi-Tenant SaaS System!
 !!!!
 Wichtig!
 
-
 💡 Potenzielle Optimierungen & Diskussionspunkte
 
 Dies sind keine "Fehler" im Plan, sondern Vorschläge, um ihn noch weiter zu verfeinern.
@@ -1366,12 +1311,13 @@ Dies sind keine "Fehler" im Plan, sondern Vorschläge, um ihn noch weiter zu ver
 ## 🔧 WICHTIGE OPTIMIERUNGEN
 
 ### 1. Query-Performance Optimierung
+
 Das Muster `DELETE FROM table WHERE user_id IN (SELECT ...)` ist bei großen Datenmengen suboptimal. Wir verwenden stattdessen DELETE mit JOIN:
 
 ```sql
 -- OPTIMIERT: Alle DELETE Queries mit JOIN statt IN (SELECT)
 -- Beispiel für user_sessions
-DELETE s 
+DELETE s
 FROM user_sessions s
 JOIN users u ON s.user_id = u.id
 WHERE u.tenant_id = ?;
@@ -1380,23 +1326,25 @@ WHERE u.tenant_id = ?;
 Diese Optimierung wird in ALLEN Deletion Steps angewendet.
 
 ### 2. Grace Period (30 Tage Wiederherstellung)
+
 Wie bei Microsoft 365 implementieren wir eine echte Grace Period:
 
 ```sql
 -- Erweiterte tenant_deletion_queue Tabelle
-ALTER TABLE tenant_deletion_queue 
+ALTER TABLE tenant_deletion_queue
   ADD COLUMN grace_period_days INT DEFAULT 30,
   ADD COLUMN scheduled_deletion_date TIMESTAMP NULL,
   ADD INDEX idx_scheduled_deletion (scheduled_deletion_date);
 
 -- Neue Status für tenants
-ALTER TABLE tenants 
+ALTER TABLE tenants
   MODIFY deletion_status ENUM('active', 'marked_for_deletion', 'suspended', 'deleting') DEFAULT 'active';
 ```
 
 Der Worker prüft `scheduled_deletion_date` und beginnt erst nach Ablauf der Grace Period mit der Löschung.
 
 ### 3. Globale Tenant-Status Middleware
+
 Alle API-Requests müssen den Tenant-Status prüfen:
 
 ```typescript
@@ -1404,24 +1352,22 @@ Alle API-Requests müssen den Tenant-Status prüfen:
 export async function checkTenantStatus(req, res, next) {
   const tenantId = req.user?.tenant_id;
   if (!tenantId) return next();
-  
-  const [tenant] = await db.query(
-    'SELECT deletion_status FROM tenants WHERE id = ?',
-    [tenantId]
-  );
-  
+
+  const [tenant] = await db.query('SELECT deletion_status FROM tenants WHERE id = ?', [tenantId]);
+
   if (tenant?.deletion_status !== 'active') {
     return res.status(403).json({
       error: 'Tenant is suspended or being deleted',
-      status: tenant.deletion_status
+      status: tenant.deletion_status,
     });
   }
-  
+
   next();
 }
 ```
 
 ### 4. Robuste Filesystem-Bereinigung
+
 Dateien müssen sicher gelöscht werden mit Fallback-Logging:
 
 ```typescript
@@ -1436,9 +1382,9 @@ Dateien müssen sicher gelöscht werden mit Fallback-Logging:
       'SELECT id, file_path, file_name FROM documents WHERE tenant_id = ?',
       [tenantId]
     );
-    
+
     const failedFiles = [];
-    
+
     // Dateien löschen mit Error Handling
     for (const file of files) {
       try {
@@ -1454,7 +1400,7 @@ Dateien müssen sicher gelöscht werden mit Fallback-Logging:
         });
       }
     }
-    
+
     // Failed files in separate table loggen für manuelle Bereinigung
     if (failedFiles.length > 0) {
       await conn.query(
@@ -1462,19 +1408,20 @@ Dateien müssen sicher gelöscht werden mit Fallback-Logging:
         [queueId, JSON.stringify(failedFiles)]
       );
     }
-    
+
     // Dann DB-Einträge löschen
     const result = await conn.query(
       'DELETE FROM documents WHERE tenant_id = ?',
       [tenantId]
     );
-    
+
     return result.affectedRows;
   }
 }
 ```
 
 ### 5. Dedizierter Worker-Prozess (EMPFOHLEN)
+
 Statt Cron-Job verwenden wir einen dedizierten Worker:
 
 ```typescript
@@ -1482,16 +1429,16 @@ Statt Cron-Job verwenden wir einen dedizierten Worker:
 class DeletionWorker {
   private isRunning = true;
   private processingInterval = 30000; // 30 Sekunden
-  
+
   async start() {
     logger.info('Deletion Worker started');
-    
+
     // Graceful shutdown
     process.on('SIGTERM', () => {
       this.isRunning = false;
       logger.info('Deletion Worker shutting down...');
     });
-    
+
     while (this.isRunning) {
       try {
         await this.checkAndProcessQueue();
@@ -1502,7 +1449,7 @@ class DeletionWorker {
       }
     }
   }
-  
+
   private async checkAndProcessQueue() {
     // Prüfe ob Grace Period abgelaufen
     const [nextItem] = await db.query(
@@ -1512,14 +1459,14 @@ class DeletionWorker {
        ORDER BY created_at ASC 
        LIMIT 1`
     );
-    
+
     if (nextItem) {
       await tenantDeletionService.processTenantDeletion(nextItem.id);
     }
   }
-  
+
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -1530,6 +1477,7 @@ new DeletionWorker().start();
 ## ⚠️ KRITISCHE PUNKTE DIE WIR NICHT VERGESSEN DÜRFEN
 
 ### 1. DSGVO/Datenschutz Compliance
+
 **PFLICHT:** Vor der Löschung muss ein Datenexport möglich sein!
 
 ```typescript
@@ -1541,19 +1489,20 @@ new DeletionWorker().start();
   handler: async (tenantId, conn) => {
     // Erstelle ZIP mit allen Tenant-Daten
     const exportPath = await createTenantDataExport(tenantId);
-    
+
     // Speichere Export-Pfad für 90 Tage
     await conn.query(
       'INSERT INTO tenant_data_exports (tenant_id, file_path, created_at, expires_at) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 90 DAY))',
       [tenantId, exportPath]
     );
-    
+
     return 1;
   }
 }
 ```
 
 ### 2. Billing & Compliance Records
+
 **WICHTIG:** Rechnungen müssen 10 Jahre aufbewahrt werden (Steuerrecht)!
 
 ```sql
@@ -1570,11 +1519,12 @@ CREATE TABLE archived_tenant_invoices (
 
 -- VOR dem Löschen: Rechnungen archivieren
 INSERT INTO archived_tenant_invoices (original_tenant_id, tenant_name, invoice_data)
-SELECT t.id, t.company_name, JSON_OBJECT(...) 
+SELECT t.id, t.company_name, JSON_OBJECT(...)
 FROM tenants t WHERE t.id = ?;
 ```
 
 ### 3. Redis/Cache Cleanup
+
 ```typescript
 {
   name: 'redis_cleanup',
@@ -1582,28 +1532,29 @@ FROM tenants t WHERE t.id = ?;
   critical: false,
   handler: async (tenantId, conn) => {
     const redis = getRedisClient();
-    
+
     // Lösche alle Sessions des Tenants
     const userIds = await conn.query('SELECT id FROM users WHERE tenant_id = ?', [tenantId]);
     for (const user of userIds) {
       await redis.del(`session:${user.id}:*`);
       await redis.del(`user:${user.id}:*`);
     }
-    
+
     // Lösche Tenant-spezifischen Cache
     await redis.del(`tenant:${tenantId}:*`);
-    
+
     return userIds.length;
   }
 }
 ```
 
 ### 4. Email Notifications & Warnings
+
 ```typescript
 // 30 Tage vor Löschung
 async function sendDeletionWarning(tenantId: number) {
   const admins = await getTenantsAdmins(tenantId);
-  
+
   for (const admin of admins) {
     await emailService.sendEmail({
       to: admin.email,
@@ -1612,8 +1563,8 @@ async function sendDeletionWarning(tenantId: number) {
       data: {
         companyName: admin.company_name,
         deletionDate: moment().add(30, 'days').format('DD.MM.YYYY'),
-        exportUrl: `${APP_URL}/export-data`
-      }
+        exportUrl: `${APP_URL}/export-data`,
+      },
     });
   }
 }
@@ -1622,6 +1573,7 @@ async function sendDeletionWarning(tenantId: number) {
 ```
 
 ### 5. Subdomain Freigabe
+
 ```typescript
 {
   name: 'release_subdomain',
@@ -1633,30 +1585,29 @@ async function sendDeletionWarning(tenantId: number) {
       'INSERT INTO released_subdomains (subdomain, released_at) SELECT subdomain, NOW() FROM tenants WHERE id = ?',
       [tenantId]
     );
-    
+
     return 1;
   }
 }
 ```
 
 ### 6. Legal Hold Check
+
 ```typescript
 // VOR dem Queuing prüfen
 async function checkLegalHold(tenantId: number): Promise<boolean> {
-  const [legalHold] = await db.query(
-    'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
-    [tenantId]
-  );
-  
+  const [legalHold] = await db.query('SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1', [tenantId]);
+
   if (legalHold) {
     throw new Error('Tenant cannot be deleted due to legal hold');
   }
-  
+
   return true;
 }
 ```
 
 ### 7. Shared Resources Check
+
 ```typescript
 // Prüfe ob Ressourcen mit anderen Tenants geteilt werden
 async function checkSharedResources(tenantId: number) {
@@ -1665,7 +1616,7 @@ async function checkSharedResources(tenantId: number) {
     'SELECT COUNT(*) as count FROM document_shares WHERE owner_tenant_id = ? AND shared_with_tenant_id != ?',
     [tenantId, tenantId]
   );
-  
+
   if (sharedDocs[0].count > 0) {
     // Benachrichtige andere Tenants oder verhindere Löschung
     throw new Error('Tenant has shared documents with other tenants');
@@ -1674,6 +1625,7 @@ async function checkSharedResources(tenantId: number) {
 ```
 
 ### 8. Backup vor Löschung
+
 ```typescript
 {
   name: 'create_final_backup',
@@ -1681,22 +1633,23 @@ async function checkSharedResources(tenantId: number) {
   critical: true,
   handler: async (tenantId, conn) => {
     const backupFile = `tenant_${tenantId}_final_${Date.now()}.sql`;
-    
+
     // Erstelle tenant-spezifisches Backup
     await exec(`mysqldump --single-transaction --routines --triggers main --where="tenant_id=${tenantId}" > ${backupFile}`);
-    
+
     // Speichere Backup-Info
     await conn.query(
       'INSERT INTO tenant_deletion_backups (tenant_id, backup_file, created_at) VALUES (?, ?, NOW())',
       [tenantId, backupFile]
     );
-    
+
     return 1;
   }
 }
 ```
 
 ### 9. Webhooks & External Services
+
 ```typescript
 {
   name: 'notify_external_services',
@@ -1708,7 +1661,7 @@ async function checkSharedResources(tenantId: number) {
       'SELECT * FROM tenant_webhooks WHERE tenant_id = ? AND active = 1',
       [tenantId]
     );
-    
+
     for (const webhook of webhooks) {
       try {
         await axios.post(webhook.url, {
@@ -1720,13 +1673,14 @@ async function checkSharedResources(tenantId: number) {
         logger.warn(`Webhook notification failed: ${webhook.url}`);
       }
     }
-    
+
     return webhooks.length;
   }
 }
 ```
 
 ### 10. Rollback-Möglichkeit
+
 ```sql
 -- Tabelle für Rollback-Informationen
 CREATE TABLE tenant_deletion_rollback (
@@ -1769,6 +1723,7 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
 ## 🚨 WEITERE KRITISCHE PUNKTE DIE WIR FAST VERGESSEN HÄTTEN
 
 ### 11. Upload-Verzeichnisse bereinigen
+
 ```bash
 # Tenant-spezifische Upload-Ordner
 /uploads/tenant_${tenantId}/
@@ -1778,6 +1733,7 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
 ```
 
 ### 12. Cronjobs & Scheduled Tasks
+
 ```typescript
 {
   name: 'cancel_scheduled_tasks',
@@ -1789,19 +1745,20 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
       'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
       [tenantId]
     );
-    
+
     // Lösche recurring jobs
     await conn.query(
       'DELETE FROM recurring_jobs WHERE tenant_id = ?',
       [tenantId]
     );
-    
+
     return 1;
   }
 }
 ```
 
 ### 13. Email Queue bereinigen
+
 ```typescript
 {
   name: 'clear_email_queue',
@@ -1813,13 +1770,14 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
       'DELETE FROM email_queue WHERE tenant_id = ? AND status = "pending"',
       [tenantId]
     );
-    
+
     return result.affectedRows;
   }
 }
 ```
 
 ### 14. OAuth Tokens & API Keys
+
 ```typescript
 {
   name: 'revoke_oauth_tokens',
@@ -1831,19 +1789,20 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
       'UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE tenant_id = ?',
       [tenantId]
     );
-    
+
     // API Keys
     await conn.query(
       'UPDATE api_keys SET active = 0, deactivated_at = NOW() WHERE tenant_id = ?',
       [tenantId]
     );
-    
+
     return 1;
   }
 }
 ```
 
 ### 15. Zwei-Faktor-Authentifizierung
+
 ```typescript
 {
   name: 'remove_2fa_data',
@@ -1855,32 +1814,27 @@ Die Steps müssen in dieser EXAKTEN Reihenfolge ausgeführt werden:
       'DELETE FROM user_2fa_secrets WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
       [tenantId]
     );
-    
+
     // Backup Codes
     const result2 = await conn.query(
       'DELETE FROM user_2fa_backup_codes WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
       [tenantId]
     );
-    
+
     return result1.affectedRows + result2.affectedRows;
   }
 }
 ```
 
 ### 16. Audit Trail für Löschvorgang
+
 ```typescript
 // WICHTIG: Wer hat was wann gelöscht?
 async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
-  const tenantInfo = await db.query(
-    'SELECT * FROM tenants WHERE id = ?',
-    [tenantId]
-  );
-  
-  const userInfo = await db.query(
-    'SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?',
-    [tenantId]
-  );
-  
+  const tenantInfo = await db.query('SELECT * FROM tenants WHERE id = ?', [tenantId]);
+
+  const userInfo = await db.query('SELECT COUNT(*) as user_count FROM users WHERE tenant_id = ?', [tenantId]);
+
   await db.query(
     `INSERT INTO deletion_audit_trail 
      (tenant_id, tenant_name, user_count, deleted_by, deleted_by_ip, deletion_reason, metadata, created_at) 
@@ -1895,22 +1849,20 @@ async function createDeletionAuditTrail(tenantId: number, requestedBy: number) {
       JSON.stringify({
         subdomain: tenantInfo[0].subdomain,
         created_at: tenantInfo[0].created_at,
-        plan: tenantInfo[0].current_plan_id
-      })
+        plan: tenantInfo[0].current_plan_id,
+      }),
     ]
   );
 }
 ```
 
 ### 17. Notification an andere Admins
+
 ```typescript
 // Root-User müssen über Tenant-Löschungen informiert werden
 async function notifyRootAdmins(tenantId: number, deletedBy: number) {
-  const rootUsers = await db.query(
-    'SELECT * FROM users WHERE role = "root" AND id != ?',
-    [deletedBy]
-  );
-  
+  const rootUsers = await db.query('SELECT * FROM users WHERE role = "root" AND id != ?', [deletedBy]);
+
   for (const root of rootUsers) {
     await emailService.sendEmail({
       to: root.email,
@@ -1919,14 +1871,15 @@ async function notifyRootAdmins(tenantId: number, deletedBy: number) {
       data: {
         tenantName: tenantInfo.company_name,
         deletedBy: deletedByUser.username,
-        scheduledDate: moment().add(30, 'days').format('DD.MM.YYYY')
-      }
+        scheduledDate: moment().add(30, 'days').format('DD.MM.YYYY'),
+      },
     });
   }
 }
 ```
 
 ### 18. Externe Storage Services (S3, CDN)
+
 ```typescript
 {
   name: 'cleanup_external_storage',
@@ -1937,13 +1890,13 @@ async function notifyRootAdmins(tenantId: number, deletedBy: number) {
     if (process.env.USE_S3 === 'true') {
       const s3 = new AWS.S3();
       const prefix = `tenants/${tenantId}/`;
-      
+
       // Liste alle Objekte
       const objects = await s3.listObjectsV2({
         Bucket: process.env.S3_BUCKET,
         Prefix: prefix
       }).promise();
-      
+
       // Lösche alle Objekte
       if (objects.Contents?.length > 0) {
         await s3.deleteObjects({
@@ -1954,18 +1907,19 @@ async function notifyRootAdmins(tenantId: number, deletedBy: number) {
         }).promise();
       }
     }
-    
+
     // CDN Cache invalidieren
     if (process.env.USE_CDN === 'true') {
       await invalidateCDNCache(`/tenant/${tenantId}/*`);
     }
-    
+
     return 1;
   }
 }
 ```
 
 ### 19. Backup Retention Policy
+
 ```sql
 -- Automatisches Löschen alter Backups nach Retention Period
 CREATE TABLE backup_retention_policy (
@@ -1980,11 +1934,12 @@ CREATE TABLE backup_retention_policy (
 CREATE EVENT IF NOT EXISTS cleanup_old_backups
 ON SCHEDULE EVERY 1 DAY
 DO
-  DELETE FROM tenant_deletion_backups 
+  DELETE FROM tenant_deletion_backups
   WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
 ```
 
 ### 20. Monitoring & Alerts
+
 ```typescript
 // Alert wenn Löschung fehlschlägt
 async function sendDeletionFailureAlert(queueId: number, error: string) {
@@ -1992,22 +1947,24 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
   await sendSlackAlert({
     channel: '#critical-alerts',
     text: `🚨 Tenant Deletion Failed!`,
-    attachments: [{
-      color: 'danger',
-      fields: [
-        { title: 'Queue ID', value: queueId },
-        { title: 'Error', value: error },
-        { title: 'Time', value: new Date().toISOString() }
-      ]
-    }]
+    attachments: [
+      {
+        color: 'danger',
+        fields: [
+          { title: 'Queue ID', value: queueId },
+          { title: 'Error', value: error },
+          { title: 'Time', value: new Date().toISOString() },
+        ],
+      },
+    ],
   });
-  
+
   // PagerDuty für kritische Fehler
   if (error.includes('critical')) {
     await triggerPagerDuty({
       severity: 'critical',
       summary: `Tenant deletion failed: ${error}`,
-      source: 'tenant-deletion-service'
+      source: 'tenant-deletion-service',
     });
   }
 }
@@ -2016,6 +1973,7 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 ## 🎯 FINALE CHECKLISTE
 
 ### Vor der Implementierung prüfen:
+
 - [ ] Alle Foreign Key Relationships dokumentiert?
 - [ ] Backup-Strategie definiert?
 - [ ] Rollback-Prozess getestet?
@@ -2028,6 +1986,7 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 - [ ] Disaster Recovery Plan?
 
 ### Technische Voraussetzungen:
+
 - [ ] MySQL Event Scheduler aktiviert?
 - [ ] Genug Speicherplatz für Backups?
 - [ ] S3 Bucket Lifecycle Policies?
@@ -2048,6 +2007,7 @@ async function sendDeletionFailureAlert(queueId: number, error: string) {
 ## 🐳 DOCKER SETUP FÜR DELETION WORKER
 
 ### Worker Service starten:
+
 ```bash
 cd /home/scs/projects/Assixx/docker
 
@@ -2059,6 +2019,7 @@ docker-compose up -d
 ```
 
 ### Worker Status prüfen:
+
 ```bash
 # Container Status anzeigen
 docker-compose ps deletion-worker
@@ -2074,6 +2035,7 @@ docker-compose logs --tail=100 deletion-worker
 ```
 
 ### Worker Debugging:
+
 ```bash
 # In den Container verbinden
 docker-compose exec deletion-worker sh
@@ -2098,6 +2060,7 @@ docker-compose exec deletion-worker node -e "
 ```
 
 ### Worker Management:
+
 ```bash
 # Worker stoppen
 docker-compose stop deletion-worker
@@ -2113,13 +2076,16 @@ docker-compose logs --no-log-prefix deletion-worker > deletion-worker.log
 ```
 
 ### Environment Variables:
+
 Der Worker nutzt folgende Umgebungsvariablen (siehe docker-compose.yml):
+
 - `DELETION_WORKER_HEALTH_PORT`: Health Check Port (default: 3001)
 - `DB_*`: Datenbankverbindung (gleich wie Backend)
 - `REDIS_*`: Redis Verbindung für Session Cleanup
 - `SMTP_*`: Email-Versand für Löschbenachrichtigungen
 
 ### Monitoring:
+
 ```bash
 # Worker Health Status als JSON
 curl -s http://localhost:3001/health | jq '.'
@@ -2135,7 +2101,8 @@ curl -s http://localhost:3001/health | jq '.'
 ```
 
 ### Troubleshooting:
-1. **Worker startet nicht**: 
+
+1. **Worker startet nicht**:
    - Prüfe ob MySQL und Redis laufen: `docker-compose ps`
    - Prüfe Logs: `docker-compose logs deletion-worker`
 
@@ -2152,6 +2119,7 @@ curl -s http://localhost:3001/health | jq '.'
 ### 1. Zwei-Personen-Prinzip (Two-Person Rule)
 
 **Was fehlt:**
+
 - Database Schema für zweite Bestätigung
 - API Endpoints für Approval-Workflow
 - UI für Genehmigungsprozess
@@ -2159,9 +2127,10 @@ curl -s http://localhost:3001/health | jq '.'
 **Implementierung:**
 
 #### Database Migration:
+
 ```sql
 -- Erweitere tenant_deletion_queue Tabelle
-ALTER TABLE tenant_deletion_queue 
+ALTER TABLE tenant_deletion_queue
   ADD COLUMN approval_required BOOLEAN DEFAULT TRUE,
   ADD COLUMN second_approver_id INT NULL,
   ADD COLUMN approval_requested_at TIMESTAMP NULL,
@@ -2183,18 +2152,19 @@ CREATE TABLE tenant_deletion_approvals (
 ```
 
 #### Service Erweiterung:
+
 ```typescript
 // In TenantDeletionService
 async requestDeletionApproval(tenantId: number, requestedBy: number): Promise<number> {
   // Erstelle Queue-Eintrag mit pending approval
   const queueId = await this.createQueueEntry(tenantId, requestedBy, 'pending_approval');
-  
+
   // Benachrichtige alle anderen Root-User
   const otherRoots = await query(
     'SELECT * FROM users WHERE role = "root" AND id != ?',
     [requestedBy]
   );
-  
+
   for (const root of otherRoots) {
     await emailService.sendEmail({
       to: root.email,
@@ -2207,7 +2177,7 @@ async requestDeletionApproval(tenantId: number, requestedBy: number): Promise<nu
       }
     });
   }
-  
+
   return queueId;
 }
 
@@ -2217,20 +2187,20 @@ async approveDeletion(queueId: number, approverId: number): Promise<void> {
     'SELECT * FROM tenant_deletion_queue WHERE id = ?',
     [queueId]
   );
-  
+
   if (queue.created_by === approverId) {
     throw new Error('Cannot approve own deletion request');
   }
-  
+
   // Update Queue Status
   await execute(
-    `UPDATE tenant_deletion_queue 
-     SET second_approver_id = ?, approved_at = NOW(), 
+    `UPDATE tenant_deletion_queue
+     SET second_approver_id = ?, approved_at = NOW(),
          approval_status = 'approved', status = 'queued'
      WHERE id = ?`,
     [approverId, queueId]
   );
-  
+
   // Log approval
   await this.logApprovalAction(queueId, approverId, 'approved');
 }
@@ -2239,6 +2209,7 @@ async approveDeletion(queueId: number, approverId: number): Promise<void> {
 ### 2. Emergency Stop während Verarbeitung
 
 **Was fehlt:**
+
 - Interrupt-Mechanismus im Worker
 - Rollback während laufender Verarbeitung
 - Status-Recovery nach Emergency Stop
@@ -2246,26 +2217,26 @@ async approveDeletion(queueId: number, approverId: number): Promise<void> {
 **Implementierung:**
 
 #### Worker Erweiterung:
+
 ```typescript
 // In DeletionWorker
 class DeletionWorker {
   private emergencyStopRequested = false;
   private currentQueueId: number | null = null;
-  
+
   async checkEmergencyStop(): Promise<boolean> {
     if (!this.currentQueueId) return false;
-    
-    const [stopRequest] = await query(
-      'SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?',
-      [this.currentQueueId]
-    );
-    
+
+    const [stopRequest] = await query('SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?', [
+      this.currentQueueId,
+    ]);
+
     return stopRequest?.emergency_stop === true;
   }
-  
+
   async processWithEmergencyCheck(queueId: number): Promise<void> {
     this.currentQueueId = queueId;
-    
+
     try {
       for (const step of this.steps) {
         // Check emergency stop vor jedem Step
@@ -2273,17 +2244,17 @@ class DeletionWorker {
           await this.handleEmergencyStop(queueId);
           return;
         }
-        
+
         await this.executeStep(step);
       }
     } finally {
       this.currentQueueId = null;
     }
   }
-  
+
   async handleEmergencyStop(queueId: number): Promise<void> {
     logger.warn(`🚨 EMERGENCY STOP requested for queue ${queueId}`);
-    
+
     await execute(
       `UPDATE tenant_deletion_queue 
        SET status = 'emergency_stopped', 
@@ -2291,7 +2262,7 @@ class DeletionWorker {
        WHERE id = ?`,
       [queueId]
     );
-    
+
     // Trigger Rollback
     await this.performEmergencyRollback(queueId);
   }
@@ -2299,18 +2270,16 @@ class DeletionWorker {
 ```
 
 #### API Endpoint:
+
 ```typescript
 // Emergency Stop Endpoint
 router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), async (req, res) => {
   try {
     const queueId = parseInt(req.params.id);
-    
+
     // Set emergency stop flag
-    await execute(
-      'UPDATE tenant_deletion_queue SET emergency_stop = TRUE WHERE id = ?',
-      [queueId]
-    );
-    
+    await execute('UPDATE tenant_deletion_queue SET emergency_stop = TRUE WHERE id = ?', [queueId]);
+
     // Log who triggered emergency stop
     await execute(
       `INSERT INTO tenant_deletion_log 
@@ -2318,10 +2287,10 @@ router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), asy
        VALUES (?, 'EMERGENCY_STOP', 'triggered', ?)`,
       [queueId, `Emergency stop by user ${req.user.id}`]
     );
-    
+
     res.json({
       success: true,
-      message: 'Emergency stop triggered. Worker will halt at next checkpoint.'
+      message: 'Emergency stop triggered. Worker will halt at next checkpoint.',
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -2332,6 +2301,7 @@ router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), asy
 ### 3. Monitoring & Alerting System
 
 **Was fehlt:**
+
 - Slack/Teams Integration
 - PagerDuty für kritische Fehler
 - Echtzeit-Dashboard
@@ -2339,6 +2309,7 @@ router.post('/deletion-queue/:id/emergency-stop', auth, requireRole('root'), asy
 **Implementierung:**
 
 #### Alert Service:
+
 ```typescript
 // backend/src/services/alerting.service.ts
 import axios from 'axios';
@@ -2352,13 +2323,13 @@ export class AlertingService {
     fields?: Record<string, any>;
   }): Promise<void> {
     if (!process.env.SLACK_WEBHOOK_URL) return;
-    
+
     const color = {
       info: '#36a64f',
       warning: '#ff9800',
       critical: '#f44336'
     }[alert.severity];
-    
+
     await axios.post(process.env.SLACK_WEBHOOK_URL, {
       channel: alert.channel,
       attachments: [{
@@ -2375,14 +2346,14 @@ export class AlertingService {
       }]
     });
   }
-  
+
   async sendPagerDutyAlert(incident: {
     summary: string;
     severity: 'critical' | 'error' | 'warning';
     details: any;
   }): Promise<void> {
     if (!process.env.PAGERDUTY_TOKEN) return;
-    
+
     await axios.post('https://api.pagerduty.com/incidents', {
       incident: {
         type: 'incident',
@@ -2416,7 +2387,7 @@ private async alertOnFailure(queueId: number, error: Error): Promise<void> {
       'Environment': process.env.NODE_ENV
     }
   });
-  
+
   // Bei kritischen Fehlern auch PagerDuty
   if (error.message.includes('critical') || error.message.includes('database')) {
     await alertingService.sendPagerDutyAlert({
@@ -2435,6 +2406,7 @@ private async alertOnFailure(queueId: number, error: Error): Promise<void> {
 ### 4. Weitere fehlende Features
 
 #### 4.1 Dry-Run Modus:
+
 ```typescript
 async performDryRun(tenantId: number): Promise<DryRunReport> {
   const report: DryRunReport = {
@@ -2444,19 +2416,20 @@ async performDryRun(tenantId: number): Promise<DryRunReport> {
     warnings: [],
     blockers: []
   };
-  
+
   // Simuliere alle Steps ohne Ausführung
   for (const step of this.steps) {
     const count = await this.estimateStepImpact(tenantId, step);
     report.affectedRecords[step.name] = count;
     report.estimatedDuration += count * 0.001; // 1ms pro Record
   }
-  
+
   return report;
 }
 ```
 
 #### 4.2 Cronjobs Cleanup Step:
+
 ```typescript
 {
   name: 'scheduled_tasks_cleanup',
@@ -2464,27 +2437,28 @@ async performDryRun(tenantId: number): Promise<DryRunReport> {
   critical: false,
   handler: async (tenantId: number, queueId: number, connection: any) => {
     let deleted = 0;
-    
+
     // Scheduled Tasks
     const [tasks] = await connection.execute(
       'DELETE FROM scheduled_tasks WHERE tenant_id = ?',
       [tenantId]
     );
     deleted += tasks.affectedRows || 0;
-    
+
     // Recurring Jobs
     const [jobs] = await connection.execute(
       'DELETE FROM recurring_jobs WHERE tenant_id = ?',
       [tenantId]
     );
     deleted += jobs.affectedRows || 0;
-    
+
     return deleted;
   }
 }
 ```
 
 #### 4.3 MySQL Event für Backup Cleanup:
+
 ```sql
 -- In Migration hinzufügen
 DELIMITER $$
@@ -2495,11 +2469,11 @@ STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
   -- Lösche Backups älter als 90 Tage
-  DELETE FROM tenant_deletion_backups 
+  DELETE FROM tenant_deletion_backups
   WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
-  
+
   -- Lösche Export-Dateien älter als 90 Tage
-  DELETE FROM tenant_data_exports 
+  DELETE FROM tenant_data_exports
   WHERE expires_at < NOW();
 END$$
 
@@ -2512,21 +2486,25 @@ DELIMITER ;
 ## 📋 IMPLEMENTIERUNGS-EMPFEHLUNG
 
 ### Phase 1: Kritische Sicherheits-Features (1-2 Tage)
+
 1. **Zwei-Personen-Prinzip** implementieren
 2. **Emergency Stop** während Verarbeitung
 3. **24h Cooling-Off** enforcement
 
 ### Phase 2: Monitoring & Operations (1 Tag)
+
 1. **Slack/Teams Integration**
 2. **Alert System** bei Fehlern
 3. **Monitoring Dashboard**
 
 ### Phase 3: Nice-to-Have Features (1 Tag)
+
 1. **Dry-Run Modus**
 2. **Partial Deletion**
 3. **MySQL Events** für Cleanup
 
 ### Priorisierung:
+
 - 🔴 **KRITISCH**: Zwei-Personen-Prinzip, Emergency Stop
 - 🟠 **WICHTIG**: Monitoring, 24h Cooling-Off
 - 🟡 **NICE**: Dry-Run, Partial Deletion

@@ -107,7 +107,7 @@ class EmployeeController {
       }
 
       // Parse query parameters to appropriate types
-      const tenantId = req.tenantId || req.user?.tenantId;
+      const tenantId = req.tenantId ?? req.user?.tenantId;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
@@ -159,7 +159,7 @@ class EmployeeController {
       }
 
       // Get tenant ID from request
-      const tenantId = req.tenantId || req.user?.tenantId;
+      const tenantId = req.tenantId ?? req.user?.tenantId;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
@@ -192,7 +192,7 @@ class EmployeeController {
       }
 
       // Get tenant ID from request
-      const tenantId = req.tenantId || req.user?.tenantId;
+      const tenantId = req.tenantId ?? req.user?.tenantId;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
@@ -201,13 +201,13 @@ class EmployeeController {
       const employeeData: UserCreateData = {
         username: req.body.username,
         email: req.body.email,
-        password: req.body.password || req.body.password_hash || "",
-        first_name: req.body.first_name || "",
-        last_name: req.body.last_name || "",
-        role: req.body.role || "user",
+        password: req.body.password ?? (req.body.password_hash || ""),
+        first_name: req.body.first_name ?? "",
+        last_name: req.body.last_name ?? "",
+        role: req.body.role ?? "user",
         tenant_id: tenantId,
-        department_id: req.body.department_id || undefined,
-        profile_picture: req.body.profile_picture || undefined,
+        department_id: req.body.department_id ?? undefined,
+        profile_picture: req.body.profile_picture ?? undefined,
         position: req.body.position,
         phone: req.body.phone,
         employee_id: req.body.employee_id,
@@ -247,7 +247,7 @@ class EmployeeController {
         first_name: req.body.first_name,
         last_name: req.body.last_name,
         role: req.body.role,
-        department_id: req.body.department_id || undefined,
+        department_id: req.body.department_id ?? undefined,
         profile_picture:
           req.body.profile_picture || req.body.avatar_url || undefined,
         position: req.body.position,
@@ -258,7 +258,7 @@ class EmployeeController {
             : req.body.is_active === true
               ? "active"
               : undefined,
-        is_archived: req.body.is_archived || req.body.archived,
+        is_archived: req.body.is_archived ?? req.body.archived,
       };
       // Remove undefined values
       Object.keys(updateData).forEach((key) => {
@@ -268,7 +268,7 @@ class EmployeeController {
       });
 
       // Get tenant ID from request
-      const tenantId = req.tenantId || req.user?.tenantId;
+      const tenantId = req.tenantId ?? req.user?.tenantId;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;

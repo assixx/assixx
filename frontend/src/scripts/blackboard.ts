@@ -194,7 +194,7 @@ function initializeBlackboard() {
           const userData = JSON.parse(storedUser);
           currentUserId = userData.id;
           isAdmin = userData.role === 'admin' || userData.role === 'root';
-          
+
           console.log('[Blackboard] User data from localStorage:', userData);
           console.log('[Blackboard] isAdmin:', isAdmin);
           console.log('[Blackboard] User role:', userData.role);
@@ -217,11 +217,11 @@ function initializeBlackboard() {
             .then((userData: UserData) => {
               currentUserId = userData.id;
               isAdmin = userData.role === 'admin' || userData.role === 'root';
-              
+
               console.log('[Blackboard] User data from API:', userData);
               console.log('[Blackboard] isAdmin after API call:', isAdmin);
               console.log('[Blackboard] User role from API:', userData.role);
-              
+
               const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
               if (newEntryBtn) {
                 console.log('[Blackboard] Setting newEntryBtn display after API:', isAdmin ? 'inline-flex' : 'none');
@@ -242,14 +242,17 @@ function initializeBlackboard() {
           .then((userData: UserData) => {
             currentUserId = userData.id;
             isAdmin = userData.role === 'admin' || userData.role === 'root';
-            
+
             console.log('[Blackboard] No localStorage - User data from API:', userData);
             console.log('[Blackboard] No localStorage - isAdmin:', isAdmin);
             console.log('[Blackboard] No localStorage - User role:', userData.role);
-            
+
             const newEntryBtn = document.getElementById('newEntryBtn') as HTMLButtonElement | null;
             if (newEntryBtn) {
-              console.log('[Blackboard] No localStorage - Setting newEntryBtn display:', isAdmin ? 'inline-flex' : 'none');
+              console.log(
+                '[Blackboard] No localStorage - Setting newEntryBtn display:',
+                isAdmin ? 'inline-flex' : 'none',
+              );
               newEntryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
             } else {
               console.log('[Blackboard] No localStorage - newEntryBtn not found!');
@@ -355,7 +358,7 @@ function setupEventListeners(): void {
       // Add active class to clicked pill
       this.classList.add('active');
 
-      currentFilter = this.dataset.value || 'all';
+      currentFilter = this.dataset.value ?? 'all';
       currentPage = 1;
 
       // Nur laden, wenn es aktiviert wurde
@@ -462,10 +465,10 @@ function setupEventListeners(): void {
 
   // File upload handling
   setupFileUploadHandlers();
-  
+
   // Zoom controls
   setupZoomControls();
-  
+
   // Fullscreen functionality
   setupFullscreenControls();
 }
@@ -669,7 +672,7 @@ async function loadEntries(): Promise<void> {
     }
 
     const responseData = await response.json();
-    const data: BlackboardResponse = responseData.data || responseData;
+    const data: BlackboardResponse = responseData.data ?? responseData;
 
     // Update pagination
     if (data.pagination) {
@@ -743,7 +746,7 @@ async function fetchUserData(): Promise<UserData> {
 
   const result = await response.json();
   // API returns { success: true, data: {...} }, we need just the data
-  return result.data || result;
+  return result.data ?? result;
 }
 
 // loadHeaderUserInfo function removed - now handled by unified navigation
@@ -823,7 +826,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
 
   // Determine card type based on priority or content
   let cardClass = 'pinboard-sticky';
-  let cardColor = entry.color || 'yellow';
+  let cardColor = entry.color ?? 'yellow';
 
   // High priority items get info box style
   if (entry.priority_level === 'high' || entry.priority_level === 'critical') {
@@ -834,7 +837,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     cardClass = 'pinboard-note';
   }
 
-  const canEdit = isAdmin || entry.created_by === currentUserId;
+  const canEdit = isAdmin ?? entry.created_by === currentUserId;
   const priorityIcon = getPriorityIcon(entry.priority_level);
 
   // Check if this is a direct attachment
@@ -878,11 +881,11 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       // SVG-Wrapper für PDF - verhindert Abschneiden
       const containerHeight = attachmentSize === 'small' ? 350 : attachmentSize === 'medium' ? 500 : 380;
       const scale = attachmentSize === 'small' ? 0.3 : attachmentSize === 'medium' ? 0.4 : 0.5;
-      
+
       contentHtml = `
         <div class="pinboard-pdf-preview" style="${sizeStyle} height: ${containerHeight}px; position: relative; overflow: hidden; background: white; border-radius: 8px; border: 1px solid #ddd;">
           <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;">
-            <div style="transform: scale(${scale}); transform-origin: top left; width: ${100/scale}%; height: ${100/scale}%;">
+            <div style="transform: scale(${scale}); transform-origin: top left; width: ${100 / scale}%; height: ${100 / scale}%;">
               <object 
                 data="/api/blackboard/attachments/${attachment.id}/preview#view=FitH&toolbar=0&navpanes=0&scrollbar=0" 
                 type="application/pdf"
@@ -938,7 +941,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       
       <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
         <span>
-          <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.author_full_name || entry.author_name || 'Unknown')}
+          <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown')}
         </span>
         <span>
           ${formatDate(entry.created_at)}
@@ -990,7 +993,7 @@ function getPriorityIcon(priority: string): string {
     high: '<i class="fas fa-exclamation-circle" style="color: #ff9800; font-size: 12px;"></i>',
     critical: '<i class="fas fa-exclamation-triangle" style="color: #f44336; font-size: 12px;"></i>',
   };
-  return icons[priority] || icons.medium;
+  return icons[priority] ?? icons.medium;
 }
 
 /**
@@ -1141,7 +1144,7 @@ async function saveEntry(): Promise<void> {
 
   // Get selected color
   const selectedColor = document.querySelector('.color-option.active') as HTMLElement | null;
-  const color = selectedColor?.dataset.color || '#f8f9fa';
+  const color = selectedColor?.dataset.color ?? '#f8f9fa';
 
   const entryData = {
     title: formData.get('title') as string,
@@ -1377,13 +1380,13 @@ async function viewEntry(entryId: number): Promise<void> {
       const detailContent = document.getElementById('entryDetailContent');
       if (detailContent) {
         const priorityIcon = getPriorityIcon(entry.priority_level);
-        const canEdit = isAdmin || entry.created_by === currentUserId;
+        const canEdit = isAdmin ?? entry.created_by === currentUserId;
 
         detailContent.innerHTML = `
           <div class="entry-detail-header">
             <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
             <div class="entry-detail-meta">
-              <span><i class="fas fa-user"></i> ${escapeHtml(entry.author_full_name || entry.author_name || 'Unknown')}</span>
+              <span><i class="fas fa-user"></i> ${escapeHtml(entry.author_full_name ?? (entry.author_name || 'Unknown'))}</span>
               <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
             </div>
           </div>
@@ -1486,9 +1489,9 @@ async function viewEntry(entryId: number): Promise<void> {
 
           attachmentItems.forEach((item, index) => {
             const htmlItem = item as HTMLElement;
-            const attachmentId = parseInt(htmlItem.getAttribute('data-attachment-id') || '0');
-            const mimeType = htmlItem.getAttribute('data-mime-type') || '';
-            const filename = htmlItem.getAttribute('data-filename') || '';
+            const attachmentId = parseInt(htmlItem.getAttribute('data-attachment-id') ?? '0');
+            const mimeType = htmlItem.getAttribute('data-mime-type') ?? '';
+            const filename = htmlItem.getAttribute('data-filename') ?? '';
 
             console.log(`[Blackboard] Setting up attachment ${index}:`, {
               attachmentId,
@@ -1958,7 +1961,7 @@ function setupDirectAttachHandlers(): void {
     dropZone.style.borderColor = 'rgba(255,255,255,0.3)';
     dropZone.style.background = 'transparent';
 
-    if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
+    if (event.dataTransfer?.files?.[0]) {
       console.log('[DirectAttach] File dropped:', event.dataTransfer.files[0].name);
       handleDirectAttachFile(event.dataTransfer.files[0]);
     }
@@ -2076,11 +2079,11 @@ async function saveDirectAttachment(): Promise<void> {
   const sizeOption = document.querySelector('.size-option.active') as HTMLElement | null;
 
   console.log('[DirectAttach] Elements found:', {
-    globalFile: directAttachmentFile?.name || 'none',
+    globalFile: directAttachmentFile?.name ?? 'none',
     titleInput: !!titleInput,
     orgLevelSelect: !!orgLevelSelect,
     prioritySelect: !!prioritySelect,
-    sizeOption: sizeOption?.getAttribute('data-size') || 'none',
+    sizeOption: sizeOption?.getAttribute('data-size') ?? 'none',
   });
 
   if (!directAttachmentFile) {
@@ -2090,8 +2093,8 @@ async function saveDirectAttachment(): Promise<void> {
   }
 
   const file = directAttachmentFile;
-  const title = titleInput?.value || file.name.replace(/\.[^/.]+$/, '');
-  const size = sizeOption?.getAttribute('data-size') || 'medium';
+  const title = titleInput?.value ?? file.name.replace(/\.[^/.]+$/, '');
+  const size = sizeOption?.getAttribute('data-size') ?? 'medium';
 
   // Create FormData
   const formData = new FormData();
@@ -2204,19 +2207,35 @@ function setupFullscreenControls(): void {
     try {
       // Add fullscreen mode class to body
       document.body.classList.add('fullscreen-mode');
-      
+
       // Request fullscreen
       if (document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
-      } else if ((document.documentElement as any).webkitRequestFullscreen) {
-        await (document.documentElement as any).webkitRequestFullscreen();
-      } else if ((document.documentElement as any).msRequestFullscreen) {
-        await (document.documentElement as any).msRequestFullscreen();
+      } else if (
+        (document.documentElement as Document['documentElement'] & { webkitRequestFullscreen?: () => Promise<void> })
+          .webkitRequestFullscreen
+      ) {
+        const elem = document.documentElement as Document['documentElement'] & {
+          webkitRequestFullscreen?: () => Promise<void>;
+        };
+        if (elem.webkitRequestFullscreen) {
+          await elem.webkitRequestFullscreen();
+        }
+      } else if (
+        (document.documentElement as Document['documentElement'] & { msRequestFullscreen?: () => Promise<void> })
+          .msRequestFullscreen
+      ) {
+        const elem = document.documentElement as Document['documentElement'] & {
+          msRequestFullscreen?: () => Promise<void>;
+        };
+        if (elem.msRequestFullscreen) {
+          await elem.msRequestFullscreen();
+        }
       }
-      
+
       // Start auto-refresh (every 60 minutes)
       startAutoRefresh();
-      
+
       // Update button icon
       const icon = fullscreenBtn.querySelector('i');
       if (icon) {
@@ -2252,16 +2271,18 @@ function setupFullscreenControls(): void {
  * Handle fullscreen state changes
  */
 function handleFullscreenChange(): void {
-  const isFullscreen = !!(document.fullscreenElement || 
-                         (document as any).webkitFullscreenElement || 
-                         (document as any).mozFullScreenElement || 
-                         (document as any).msFullscreenElement);
-  
+  const isFullscreen = !!(
+    document.fullscreenElement ||
+    (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
+    (document as Document & { mozFullScreenElement?: Element }).mozFullScreenElement ||
+    (document as Document & { msFullscreenElement?: Element }).msFullscreenElement
+  );
+
   if (!isFullscreen) {
     // User exited fullscreen
     document.body.classList.remove('fullscreen-mode');
     stopAutoRefresh();
-    
+
     // Reset button icon
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     if (fullscreenBtn) {
@@ -2280,14 +2301,23 @@ function handleFullscreenChange(): void {
 function exitFullscreen(): void {
   if (document.exitFullscreen) {
     document.exitFullscreen();
-  } else if ((document as any).webkitExitFullscreen) {
-    (document as any).webkitExitFullscreen();
-  } else if ((document as any).mozCancelFullScreen) {
-    (document as any).mozCancelFullScreen();
-  } else if ((document as any).msExitFullscreen) {
-    (document as any).msExitFullscreen();
+  } else if ((document as Document & { webkitExitFullscreen?: () => void }).webkitExitFullscreen) {
+    const doc = document as Document & { webkitExitFullscreen?: () => void };
+    if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen();
+    }
+  } else if ((document as Document & { mozCancelFullScreen?: () => void }).mozCancelFullScreen) {
+    const doc = document as Document & { mozCancelFullScreen?: () => void };
+    if (doc.mozCancelFullScreen) {
+      doc.mozCancelFullScreen();
+    }
+  } else if ((document as Document & { msExitFullscreen?: () => void }).msExitFullscreen) {
+    const doc = document as Document & { msExitFullscreen?: () => void };
+    if (doc.msExitFullscreen) {
+      doc.msExitFullscreen();
+    }
   }
-  
+
   document.body.classList.remove('fullscreen-mode');
   stopAutoRefresh();
 }
@@ -2300,7 +2330,7 @@ function startAutoRefresh(): void {
   if (entriesLoadingEnabled) {
     loadEntries();
   }
-  
+
   // Set up interval for 60 minutes (3600000 ms)
   fullscreenAutoRefreshInterval = setInterval(() => {
     console.log('[AutoRefresh] Reloading entries...');
@@ -2308,7 +2338,7 @@ function startAutoRefresh(): void {
       loadEntries();
     }
   }, 3600000); // 60 minutes
-  
+
   // Update indicator text
   const indicator = document.querySelector('.auto-refresh-indicator');
   if (indicator) {
@@ -2325,4 +2355,3 @@ function stopAutoRefresh(): void {
     fullscreenAutoRefreshInterval = null;
   }
 }
-

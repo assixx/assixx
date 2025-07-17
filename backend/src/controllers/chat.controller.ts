@@ -109,8 +109,8 @@ class ChatController {
       }
 
       const conversationId = parseInt(req.params.id);
-      const limit = parseInt(String(req.query.limit || "50"));
-      const offset = parseInt(String(req.query.offset || "0"));
+      const limit = parseInt(String(req.query.limit ?? "50"));
+      const offset = parseInt(String(req.query.offset ?? "0"));
 
       const result = await chatService.getMessages(
         req.user.tenant_id,
@@ -137,7 +137,7 @@ class ChatController {
 
       const conversationId = parseInt(req.params.id);
       const body = req.body as { content?: string };
-      let content = body.content || "";
+      let content = body.content ?? "";
       let attachmentUrl: string | undefined;
 
       // Handle file upload
@@ -163,8 +163,8 @@ class ChatController {
         attachmentUrl
           ? {
               path: attachmentUrl,
-              name: req.file?.originalname || "",
-              type: req.file?.mimetype || "",
+              name: req.file?.originalname ?? "",
+              type: req.file?.mimetype ?? "",
             }
           : null,
       );
@@ -336,7 +336,7 @@ class ChatController {
       }
 
       const conversationId = parseInt(req.params.id);
-      const userId = req.user.userId || req.user.id;
+      const userId = req.user.userId ?? req.user.id;
 
       await chatService.markConversationAsRead(conversationId, userId);
 

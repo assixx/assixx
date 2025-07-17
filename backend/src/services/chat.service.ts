@@ -17,10 +17,10 @@ dotenv.config({ path: path.join(__dirname, "../../../.env") });
 
 // Create database connection pool
 const db = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "main",
+  host: process.env.DB_HOST ?? "localhost",
+  user: process.env.DB_USER ?? "root",
+  password: process.env.DB_PASSWORD ?? "",
+  database: process.env.DB_NAME ?? "main",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -361,11 +361,11 @@ class ChatService {
               name: conv.name,
               is_group: conv.is_group,
               created_at: conv.created_at,
-              updated_at: conv.updated_at || conv.created_at,
+              updated_at: conv.updated_at ?? conv.created_at,
               display_name: conv.display_name,
               last_message: lastMessage,
               unread_count: conv.unread_count,
-              participants: participants || [],
+              participants: participants ?? [],
             },
           );
 

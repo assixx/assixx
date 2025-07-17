@@ -168,14 +168,14 @@ class TenantController {
       const tenantData = {
         subdomain: req.body.subdomain,
         company_name: req.body.company_name,
-        company_email: req.body.company_email || req.body.contact_email || req.body.email || '',
-        company_phone: req.body.company_phone || req.body.contact_phone || null,
-        country: req.body.country || 'DE',
-        status: req.body.status || 'active',
-        trial_ends_at: req.body.trial_ends_at || null,
-        subscription_plan: req.body.subscription_plan || null,
-        subscription_ends_at: req.body.subscription_ends_at || null,
-        max_users: req.body.max_users || 10,
+        company_email: req.body.company_email  ?? req.body.contact_email || req.body.email || '',
+        company_phone: req.body.company_phone  ?? req.body.contact_phone || null,
+        country: req.body.country  ?? 'DE',
+        status: req.body.status  ?? 'active',
+        trial_ends_at: req.body.trial_ends_at  ?? null,
+        subscription_plan: req.body.subscription_plan  ?? null,
+        subscription_ends_at: req.body.subscription_ends_at  ?? null,
+        max_users: req.body.max_users  ?? 10,
       };
       const result = await tenantService.create(req.tenantDb, tenantData);
       res.status(201).json(result);

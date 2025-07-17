@@ -204,7 +204,7 @@ class UnifiedNavigation {
    */
   public enforcePageAccess(): void {
     const currentPath = window.location.pathname;
-    const activeRole = (localStorage.getItem('activeRole') || localStorage.getItem('userRole') || 'employee') as
+    const activeRole = (localStorage.getItem('activeRole') ?? (localStorage.getItem('userRole') || 'employee')) as
       | 'admin'
       | 'employee'
       | 'root';
@@ -404,25 +404,25 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] Using cached loadUserInfo');
       const userData = (await loadUserInfoFromAuth()) as UserProfileResponse & { data?: UserProfileResponse };
       if (userData) {
-        const user = userData.user || userData;
+        const user = userData.user ?? userData;
 
         // Update company info (new)
         const companyElement = document.getElementById('sidebar-company-name');
         if (companyElement) {
-          const companyName = userData.company_name || userData.data?.company_name || 'Firmenname';
+          const companyName = userData.company_name ?? (userData.data?.company_name || 'Firmenname');
           companyElement.textContent = companyName;
         }
 
         const domainElement = document.getElementById('sidebar-domain');
         if (domainElement) {
-          const subdomain = userData.subdomain || userData.data?.subdomain || 'demo';
+          const subdomain = userData.subdomain ?? (userData.data?.subdomain || 'demo');
           domainElement.textContent = `${subdomain}.assixx.de`;
         }
 
         // Update user info card with full details
         const sidebarUserName = document.getElementById('sidebar-user-name');
         if (sidebarUserName) {
-          const email = userData.email || userData.data?.email || user.email || this.currentUser?.email || 'User';
+          const email = userData.email ?? (userData.data?.email || user.email || this.currentUser?.email || 'User');
           sidebarUserName.textContent = email;
         }
 
@@ -473,35 +473,43 @@ class UnifiedNavigation {
             console.log('[UnifiedNav] Set header name to:', fullName);
           } else {
             // Fallback auf Email oder Username wenn keine Namen vorhanden
-            const email = userData.email || userData.data?.email || user.email || this.currentUser?.email;
-            const username = userData.username || user.username || this.currentUser?.username;
-            headerUserName.textContent = email || username || 'User';
+            const email = userData.email ?? (userData.data?.email || user.email || this.currentUser?.email);
+            const username = userData.username ?? (user.username || this.currentUser?.username);
+            headerUserName.textContent = email ?? (username || 'User');
             console.log('[UnifiedNav] Fallback to email/username:', email || username);
           }
         }
 
         // Update avatar if we have profile picture
-        const sidebarAvatar = document.getElementById('sidebar-user-avatar') as HTMLImageElement;
+        const sidebarAvatar = document.getElementById('sidebar-user-avatar');
         if (sidebarAvatar) {
           const profilePic =
             userData.profile_picture ||
             userData.data?.profile_picture ||
             userData.profilePicture ||
             (user as User).profilePicture ||
-            '/assets/images/default-avatar.svg';
-          sidebarAvatar.src = profilePic;
+            null;
+          const firstName =
+            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName =
+            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+          this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
         }
 
         // Also update header avatar
-        const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+        const headerAvatar = document.getElementById('user-avatar');
         if (headerAvatar) {
           const profilePic =
             userData.profile_picture ||
             userData.data?.profile_picture ||
             userData.profilePicture ||
             (user as User).profilePicture ||
-            '/assets/images/default-avatar.svg';
-          headerAvatar.src = profilePic;
+            null;
+          const firstName =
+            userData.first_name || userData.data?.first_name || userData.firstName || (user as User).firstName || '';
+          const lastName =
+            userData.last_name || userData.data?.last_name || userData.lastName || (user as User).lastName || '';
+          this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
         }
 
         // Store profile data
@@ -854,6 +862,13 @@ class UnifiedNavigation {
           url: '/manage-department-groups',
         },
         {
+          id: 'chat',
+          icon: this.getSVGIcon('chat'),
+          label: 'Chat',
+          url: '/chat',
+          badge: 'unread-messages',
+        },
+        {
           id: 'features',
           icon: this.getSVGIcon('feature'),
           label: 'Features',
@@ -936,12 +951,43 @@ class UnifiedNavigation {
       'trash-clock':
         '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15,16H19V18H15V16M15,8H19V10H15V8M15,12H19V14H15V12M5,12V9L9,5L13,9V13A2,2 0 0,1 11,15H7A2,2 0 0,1 5,13M9,3A1,1 0 0,0 8,4A1,1 0 0,0 9,5A1,1 0 0,0 10,4A1,1 0 0,0 9,3M2,17V20H11.67C11.24,19.09 11,18.07 11,17H2M6,8V10H8V8H6M6,11V13H8V11H6M16.5,3C13.46,3 11,5.46 11,8.5V9H13V8.5C13,6.57 14.57,5 16.5,5C18.43,5 20,6.57 20,8.5C20,10.43 18.43,12 16.5,12H16V14H16.5C19.54,14 22,11.54 22,8.5C22,5.46 19.54,3 16.5,3Z"/></svg>',
     };
-    return icons[name] || icons.home;
+    return icons[name] ?? icons.home;
   }
 
   private getNavigationForRole(role: 'admin' | 'employee' | 'root' | null): NavItem[] {
     if (!role) return [];
-    return this.navigationItems[role] || [];
+    return this.navigationItems[role] ?? [];
+  }
+
+  private getInitials(firstName?: string, lastName?: string): string {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return `${firstInitial}${lastInitial}` || 'U';
+  }
+
+  private updateAvatarElement(element: HTMLElement, profilePicUrl: string | null, firstName?: string, lastName?: string): void {
+    if (!element) return;
+
+    // Clear existing content
+    element.innerHTML = '';
+
+    if (profilePicUrl) {
+      // Show profile picture
+      const img = document.createElement('img');
+      img.src = profilePicUrl;
+      img.alt = 'Avatar';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = 'inherit';
+      element.appendChild(img);
+      element.classList.remove('avatar-initials');
+    } else {
+      // Show initials
+      const initials = this.getInitials(firstName, lastName);
+      element.textContent = initials;
+      element.classList.add('avatar-initials');
+    }
   }
 
   private injectNavigationHTML(): void {
@@ -980,19 +1026,19 @@ class UnifiedNavigation {
   private createFullNavigationStructure(): string {
     // Get the actual user role from localStorage
     const storedUserRole = localStorage.getItem('userRole');
-    const activeRole = localStorage.getItem('activeRole') || storedUserRole;
+    const activeRole = localStorage.getItem('activeRole') ?? storedUserRole;
 
     // Use the actual stored role for determining which UI elements to show
-    const userRole = storedUserRole || 'employee';
+    const userRole = storedUserRole ?? 'employee';
 
-    const userName = this.userProfileData?.username || this.currentUser?.username || 'User';
-    const firstName = this.userProfileData?.first_name || this.userProfileData?.firstName || '';
-    const lastName = this.userProfileData?.last_name || this.userProfileData?.lastName || '';
+    const userName = this.userProfileData?.username ?? (this.currentUser?.username || 'User');
+    const firstName = this.userProfileData?.first_name ?? (this.userProfileData?.firstName || '');
+    const lastName = this.userProfileData?.last_name ?? (this.userProfileData?.lastName || '');
     const displayName = firstName && lastName ? `${firstName} ${lastName}` : userName;
     const profilePicture =
       this.userProfileData?.profile_picture ||
       this.userProfileData?.profilePicture ||
-      '/assets/images/default-avatar.svg';
+      null;
 
     // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
     const dashboardUrl =
@@ -1059,7 +1105,7 @@ class UnifiedNavigation {
                   <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
                   <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
                 </div>
-                <input type="hidden" id="role-switch-value" value="${activeRole || 'root'}" />
+                <input type="hidden" id="role-switch-value" value="${activeRole ?? 'root'}" />
               </div>
             `
                 : userRole === 'admin'
@@ -1072,15 +1118,19 @@ class UnifiedNavigation {
             `
                   : ''
             }
-            
+
             <div id="user-info">
-              <img id="user-avatar" src="${profilePicture}" alt="Avatar" />
+              <div id="user-avatar" class="user-avatar ${profilePicture ? '' : 'avatar-initials'}">${
+                profilePicture
+                  ? `<img src="${profilePicture}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
+                  : this.getInitials(firstName, lastName)
+              }</div>
               <span id="user-name">${this.escapeHtml(displayName)}</span>
             </div>
-            
+
             <button id="logout-btn" class="btn-logout btn btn-secondary">
               <i class="fas fa-sign-out-alt"></i>
-              
+
             </button>
           </div>
         </div>
@@ -1157,15 +1207,15 @@ class UnifiedNavigation {
                     </span>
                 </button>
                 <div class="user-info-card" id="sidebar-user-info-card">
-                    <img id="sidebar-user-avatar" class="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar">
+                    <div id="sidebar-user-avatar" class="user-avatar avatar-initials">${this.getInitials('', '')}</div>
                     <div class="user-details">
                         <div class="company-info">
                             <div class="company-name" id="sidebar-company-name">Firmennamen lädt...</div>
                         </div>
-                        <div class="user-name" id="sidebar-user-name">${this.currentUser?.email || 'User'}</div>
+                        <div class="user-name" id="sidebar-user-name">${this.currentUser?.email ?? 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
                         <div class="user-employee-number" id="sidebar-employee-number" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
-                        <span id="role-indicator" class="role-badge ${this.currentRole || ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
+                        <span id="role-indicator" class="role-badge ${this.currentRole ?? ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
                 <ul class="sidebar-menu">
@@ -1572,7 +1622,7 @@ class UnifiedNavigation {
             // Update display text
             const displayText = dropdownDisplay.querySelector('span');
             if (displayText) {
-              displayText.textContent = (e.target as HTMLElement).textContent || '';
+              displayText.textContent = (e.target as HTMLElement).textContent ?? '';
             }
 
             // Close dropdown
@@ -1917,7 +1967,7 @@ class UnifiedNavigation {
         const data: UnreadCountResponse = await response.json();
         const badge = document.getElementById('chat-unread-badge');
         if (badge) {
-          const count = data.unreadCount || 0;
+          const count = data.unreadCount ?? 0;
           if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count.toString();
             badge.style.display = 'inline-block';
@@ -1955,7 +2005,7 @@ class UnifiedNavigation {
         const data = await response.json();
         const badge = document.getElementById('kvp-badge');
         if (badge && data.company) {
-          const currentCount = data.company.byStatus?.new || 0;
+          const currentCount = data.company.byStatus?.new ?? 0;
 
           // Check if user has clicked on KVP before
           const hasClickedKvp = this.lastKvpClickTimestamp !== null;
@@ -2019,7 +2069,7 @@ class UnifiedNavigation {
         console.log('[UnifiedNav] updatePendingSurveys - Badge element found:', !!badge);
         console.log('[UnifiedNav] updatePendingSurveys - Parent badge element found:', !!parentBadge);
 
-        const count = data.pendingCount || 0;
+        const count = data.pendingCount ?? 0;
 
         // Update child badge (in submenu)
         if (badge) {
@@ -2071,7 +2121,7 @@ class UnifiedNavigation {
       if (!token || token === 'test-mode') return;
 
       // Für Employees und Admins
-      const role = localStorage.getItem('userRole') || this.currentRole;
+      const role = localStorage.getItem('userRole') ?? this.currentRole;
       if (role !== 'employee' && role !== 'admin') return;
 
       // Fetch all documents with unread status
@@ -2085,7 +2135,7 @@ class UnifiedNavigation {
       if (response.ok) {
         const result = await response.json();
         // Backend returns {data: Document[], pagination: {...}}
-        const documents = result.data || result.documents || [];
+        const documents = result.data ?? (result.documents || []);
 
         // Count unread documents by category
         const unreadCounts = {
@@ -2206,7 +2256,7 @@ class UnifiedNavigation {
         if (response.ok) {
           const data = await response.json();
           if (data.company) {
-            this.lastKnownKvpCount = data.company.byStatus?.new || 0;
+            this.lastKnownKvpCount = data.company.byStatus?.new ?? 0;
             localStorage.setItem('lastKnownKvpCount', this.lastKnownKvpCount.toString());
             console.log('[UnifiedNav] KVP baseline count saved:', this.lastKnownKvpCount);
           }
@@ -2224,7 +2274,7 @@ class UnifiedNavigation {
     const activeRole = localStorage.getItem('activeRole');
 
     // For root users, ALWAYS use root role regardless of activeRole
-    const currentRole = userRole === 'root' ? 'root' : activeRole || userRole || this.currentRole;
+    const currentRole = userRole === 'root' ? 'root' : (activeRole ?? (userRole || this.currentRole));
 
     // Find all logo containers - expanded selector to catch all cases
     const logoContainers = document.querySelectorAll('.logo-container, a.logo-container, div.logo-container');
@@ -2400,13 +2450,13 @@ const unifiedNavigationCSS = `
         padding: 0 20px;
         z-index: 1000;
     }
-    
+
     .header .header-content {
         flex: 1;
         display: flex;
         justify-content: flex-end;
     }
-    
+
     .header .logo-container {
         display: flex;
         align-items: center;
@@ -2414,7 +2464,7 @@ const unifiedNavigationCSS = `
         margin-right: var(--spacing-lg);
         margin-bottom: -3px;
     }
-    
+
     .header .logo {
         height: 50px;
         width: auto;
@@ -2436,7 +2486,7 @@ const unifiedNavigationCSS = `
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    
+
     .header .header-actions #user-name {
         white-space: nowrap;
         overflow: hidden;
@@ -2606,7 +2656,7 @@ const unifiedNavigationCSS = `
 
     .sidebar-title:hover {
         transform: rotate(-1deg) translateY(-2px);
-        box-shadow: 
+        box-shadow:
             0 5px 10px rgba(0, 0, 0, 0.25),
             0 2px 4px rgba(0, 0, 0, 0.15);
     }
@@ -2641,7 +2691,7 @@ const unifiedNavigationCSS = `
         background: #d32f2f;
         display: block;
         position: relative;
-        box-shadow: 
+        box-shadow:
             0 3px 6px rgba(0, 0, 0, 0.4),
             inset -2px -2px 3px rgba(0, 0, 0, 0.3),
             inset 2px 2px 3px rgba(255, 255, 255, 0.4);
@@ -2680,7 +2730,7 @@ const unifiedNavigationCSS = `
         height: 18px;
         border-radius: 50%;
         background: #d32f2f;
-        box-shadow: 
+        box-shadow:
             0 3px 6px rgba(0, 0, 0, 0.4),
             inset -2px -2px 3px rgba(0, 0, 0, 0.3),
             inset 2px 2px 3px rgba(255, 255, 255, 0.4);
@@ -2695,9 +2745,9 @@ const unifiedNavigationCSS = `
         transform: translateX(-50%);
         width: 2px;
         height: 22px;
-        background: linear-gradient(to bottom, 
-            #aaa 0%, 
-            #888 50%, 
+        background: linear-gradient(to bottom,
+            #aaa 0%,
+            #888 50%,
             #666 100%);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
@@ -2763,7 +2813,7 @@ const unifiedNavigationCSS = `
 
     .sidebar.collapsed .sidebar-title {
         padding: var(--spacing-sm);
-        justify-content: center;  
+        justify-content: center;
         width: calc(100% - 8px);
         font-size: 0;
         transform: rotate(-2deg);
@@ -2801,7 +2851,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .user-info-card {
-        padding: 16px;
+        padding: 17px;
         flex-direction: column;
         align-items: center;
         min-height: auto;
@@ -2838,18 +2888,18 @@ const unifiedNavigationCSS = `
     .main-content.sidebar-collapsed {
         margin-left: 70px;
     }
-    
+
     /* Container full width when sidebar collapsed */
     .main-content.sidebar-collapsed .container {
         max-width: none;
     }
-    
+
     /* Content sections full width when sidebar collapsed */
     .main-content.sidebar-collapsed .content-section {
         max-width: none;
         width: 100%;
     }
-    
+
     /* Cards inside collapsed layout use more space */
     .main-content.sidebar-collapsed .card {
         max-width: none;
@@ -2916,10 +2966,10 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-link .icon {
         margin: 0;
     }
-    
+
     /* Active link styling for collapsed sidebar */
     .sidebar.collapsed .sidebar-item.active .sidebar-link {
-        
+
         width: 36px;
         height: 36px;
         display: flex;
@@ -2928,7 +2978,7 @@ const unifiedNavigationCSS = `
         border-radius: 50%;
         margin-left: 0px;
     }
-    
+
     .sidebar.collapsed .sidebar-item.active .sidebar-link::before {
         display: none;
     }
@@ -2947,7 +2997,7 @@ const unifiedNavigationCSS = `
         position: relative;
         overflow: hidden;
         /*transition: all 0.3s ease;*/
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-height: 100px;
@@ -2977,7 +3027,7 @@ const unifiedNavigationCSS = `
         right: -20%;
         width: 200px;
         height: 200px;
-        
+
         border-radius: 50%;
         z-index: 0;
     }
@@ -2991,7 +3041,7 @@ const unifiedNavigationCSS = `
         background: rgba(255, 255, 255, 0.03);
         /*transform: translateY(-5px);*/
         border-color: rgba(33, 150, 243, 0.3);
-        box-shadow: 
+        box-shadow:
             0 12px 40px rgba(0, 0, 0, 0.5),
             inset 0 1px 0 rgba(255, 255, 255, 0.15),
             0 0 40px rgba(33, 150, 243, 0.1);
@@ -3000,29 +3050,51 @@ const unifiedNavigationCSS = `
     /* Avatar Styles - Ohne Border */
     #sidebar-user-avatar,
     .sidebar .user-avatar,
-    .user-info-card .user-avatar {
+    .user-info-card .user-avatar,
+    #user-avatar {
         /*display: block !important;*/
-        width: 38px !important;
-        height: 38px !important;
-        border-radius: 12px !important;
+        width: 31px !important;
+        height: 31px !important;
+        border-radius: 50% !important;
         object-fit: cover !important;
         border: none !important;
         flex-shrink: 0 !important;
         /* transition: all 0.3s ease; */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         margin-left: 0px;
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 8px;
+    }
+
+    /* Header avatar specific size */
+    #user-avatar {
+        width: 24px !important;
+        height: 24px !important;
+    }
+
+    /* Avatar with initials */
+    .avatar-initials {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: linear-gradient(135deg, #2196F3, #42a5f5) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase !important;
     }
 
     /* Avatar padding when sidebar is collapsed */
     .sidebar.collapsed .user-avatar {
         padding: 3px;
     }
-    
+
     /* Avatar margin adjustment when sidebar is collapsed */
     .sidebar.collapsed #sidebar-user-avatar,
     .sidebar.collapsed .user-avatar,
     .sidebar.collapsed .user-info-card .user-avatar {
-        margin-left: -16px !important;
+        margin-left: -13px !important;
     }
 
     .user-info-card:hover .user-avatar {
@@ -3141,7 +3213,7 @@ const unifiedNavigationCSS = `
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(96, 125, 139, 0.25);
     }
-    
+
     /* Role Switch Dropdown - Using styles from dashboard-theme.css */
     /* Only adding the specific margin that's different */
     .role-switch-dropdown {
@@ -3316,7 +3388,7 @@ const unifiedNavigationCSS = `
         border: 1px solid hsla(0,0%,100%,.1);
         border-radius: var(--radius-md);
         padding: var(--spacing-md);
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
         /* transition: all 0.3s ease; */
@@ -3325,7 +3397,7 @@ const unifiedNavigationCSS = `
     .storage-widget:hover {
         background: rgba(255, 255, 255, 0.05);
         transform: translateY(-2px);
-        box-shadow: 
+        box-shadow:
             0 10px 40px rgba(33, 150, 243, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
@@ -3427,14 +3499,14 @@ const unifiedNavigationCSS = `
         align-items: center;
         justify-content: center;
         gap: var(--spacing-xs);
-        box-shadow: 
+        box-shadow:
             0 2px 8px rgba(33, 150, 243, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
 
     .storage-upgrade-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 
+        box-shadow:
             0 6px 20px rgba(33, 150, 243, 0.4),
             inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }

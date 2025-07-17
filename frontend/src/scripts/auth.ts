@@ -25,7 +25,7 @@ declare global {
 
 // Get authentication token from localStorage (compatible with existing system)
 export function getAuthToken(): string | null {
-  return localStorage.getItem('token') || localStorage.getItem('authToken');
+  return localStorage.getItem('token') ?? localStorage.getItem('authToken');
 }
 
 // Set authentication token
@@ -51,7 +51,7 @@ export function isAuthenticated(): boolean {
 
   // Check if token is expired
   const payload = parseJwt(token);
-  if (!payload || !payload.exp) {
+  if (!payload?.exp) {
     return false;
   }
 
@@ -176,19 +176,19 @@ export async function loadUserInfo(): Promise<User> {
 
       if (response.ok) {
         // The API returns the user object directly, not wrapped in data.user
-        const user: User = data.user || data;
+        const user: User = data.user ?? data;
 
         // Update user display - check both element IDs for compatibility
-        const userName = document.getElementById('userName') || document.getElementById('user-name');
+        const userName = document.getElementById('userName') ?? document.getElementById('user-name');
         if (userName) {
-          const firstName = user.first_name || 'Admin';
-          const lastName = user.last_name || '';
+          const firstName = user.first_name ?? 'Admin';
+          const lastName = user.last_name ?? '';
           userName.textContent = `${firstName} ${lastName}`.trim();
         }
 
         const userRole = document.getElementById('userRole');
         if (userRole) {
-          userRole.textContent = user.role || 'Benutzer';
+          userRole.textContent = user.role ?? 'Benutzer';
         }
 
         // Update cache with fresh data
@@ -218,7 +218,7 @@ export async function loadUserInfo(): Promise<User> {
 
     const userRole = document.getElementById('userRole');
     if (userRole) {
-      userRole.textContent = localStorage.getItem('role') || 'Benutzer';
+      userRole.textContent = localStorage.getItem('role') ?? 'Benutzer';
     }
 
     // Don't throw error to prevent redirect loop
@@ -227,7 +227,7 @@ export async function loadUserInfo(): Promise<User> {
       username: 'Benutzer',
       email: '',
       first_name: 'Benutzer',
-      role: (localStorage.getItem('role') || 'admin') as User['role'],
+      role: (localStorage.getItem('role') ?? 'admin') as User['role'],
       tenant_id: 0,
       is_active: true,
       is_archived: false,

@@ -156,11 +156,11 @@ class BlackboardController {
         tenant_id: req.user.tenant_id,
         created_by: req.user.id,
         author_id: req.user.id,
-        org_level: (req.body.org_level || "company") as
+        org_level: (req.body.org_level ?? "company") as
           | "company"
           | "department"
           | "team",
-        org_id: req.body.org_id || null,
+        org_id: req.body.org_id ?? null,
         expires_at: req.body.expires_at
           ? new Date(req.body.expires_at)
           : undefined,

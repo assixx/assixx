@@ -150,7 +150,7 @@ export class Plan {
         throw new Error(`Plan ${request.newPlanCode} not found`);
       }
 
-      const effectiveDate = request.effectiveDate || new Date();
+      const effectiveDate = request.effectiveDate ?? new Date();
 
       // Cancel current plan
       await executeQuery<ResultSetHeader>(
@@ -290,8 +290,8 @@ export class Plan {
       ]);
       const data = queryResult[0];
 
-      const planCost = data?.plan_cost || 0;
-      const addonCost = data?.addon_cost || 0;
+      const planCost = data?.plan_cost ?? 0;
+      const addonCost = data?.addon_cost ?? 0;
 
       return {
         planCost: parseFloat(planCost),

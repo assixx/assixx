@@ -229,8 +229,8 @@ router.post(
     try {
       const employeeData = {
         ...req.body,
-        first_name: req.body.first_name || "",
-        last_name: req.body.last_name || "",
+        first_name: req.body.first_name ?? "",
+        last_name: req.body.last_name ?? "",
         role: "employee",
         tenant_id: req.user.tenant_id,
       };

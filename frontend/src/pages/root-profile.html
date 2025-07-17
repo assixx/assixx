@@ -126,6 +126,15 @@
         background: rgba(0, 142, 255, 0.1);
       }
 
+      /* More specific selector to override global styles */
+      #profile-picture-display.profile-picture-placeholder.avatar-initials {
+        background: linear-gradient(135deg, #2196F3, #42a5f5) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 3rem !important;
+        text-transform: uppercase !important;
+      }
+
       .profile-picture-actions {
         display: flex;
         flex-direction: column;
@@ -798,8 +807,8 @@
               <h2 class="card-title">Profilbild</h2>
               <div class="profile-picture-section">
                 <div class="profile-picture-container">
-                  <div id="profile-picture-display" class="profile-picture-placeholder">
-                    <i class="fas fa-user"></i>
+                  <div id="profile-picture-display" class="profile-picture-placeholder avatar-initials">
+                    <!-- Initials will be set by JavaScript -->
                   </div>
                 </div>
                 <div class="profile-picture-actions">
@@ -930,7 +939,11 @@
           });
 
           if (response.ok) {
-            const user = await response.json();
+            const data = await response.json();
+            console.log('[Root Profile] API Response:', data);
+            
+            // Handle different response formats
+            const user = data.data || data.user || data;
 
             // Fill form fields
             document.getElementById('email').value = user.email || '';
@@ -941,6 +954,21 @@
             if (user.profile_picture) {
               displayProfilePicture(user.profile_picture);
               // Header wird automatisch durch header-user-info.ts aktualisiert
+            } else {
+              // Show initials if no profile picture
+              const container = document.getElementById('profile-picture-display');
+              if (container) {
+                const firstName = user.first_name || '';
+                const lastName = user.last_name || '';
+                const firstInitial = firstName.charAt(0).toUpperCase() || '';
+                const lastInitial = lastName.charAt(0).toUpperCase() || '';
+                const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
+                
+                console.log('[Root Profile] User data:', user);
+                console.log('[Root Profile] Setting initials:', { firstName, lastName, initials });
+                container.classList.add('avatar-initials');
+                container.innerHTML = initials;
+              }
             }
           } else {
             showMessage('Fehler beim Laden des Profils', 'error');
@@ -1082,7 +1110,18 @@
               });
 
               if (response.ok) {
-                document.getElementById('profile-picture-display').innerHTML = '<i class="fas fa-user"></i>';
+                const container = document.getElementById('profile-picture-display');
+                if (container) {
+                  // Get current user data to restore initials
+                  const firstName = document.getElementById('first_name').value || '';
+                  const lastName = document.getElementById('last_name').value || '';
+                  const firstInitial = firstName.charAt(0).toUpperCase() || '';
+                  const lastInitial = lastName.charAt(0).toUpperCase() || '';
+                  const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
+                  
+                  container.classList.add('avatar-initials');
+                  container.innerHTML = initials;
+                }
                 document.getElementById('remove-picture-btn').style.display = 'none';
                 showMessage('Profilbild erfolgreich entfernt', 'success');
               } else {
@@ -1100,6 +1139,7 @@
       function displayProfilePicture(url) {
         const container = document.getElementById('profile-picture-display');
         if (container) {
+          container.classList.remove('avatar-initials');
           container.innerHTML = `<img src="${url}" alt="Profilbild" class="profile-picture">`;
           const removeBtn = document.getElementById('remove-picture-btn');
           if (removeBtn) {
@@ -1311,9 +1351,39 @@
       window.approveDeletion = approveDeletion;
       window.rejectDeletion = rejectDeletion;
 
+      // Set initial placeholder while loading
+      function setInitialPlaceholder() {
+        const container = document.getElementById('profile-picture-display');
+        if (container && !container.innerHTML.trim()) {
+          // Get user info from token if available
+          const token = localStorage.getItem('token');
+          if (token) {
+            try {
+              const userInfo = parseJwt(token);
+              if (userInfo) {
+                // Try to get initials from token data
+                const firstName = userInfo.first_name || userInfo.firstName || '';
+                const lastName = userInfo.last_name || userInfo.lastName || '';
+                const firstInitial = firstName.charAt(0).toUpperCase() || '';
+                const lastInitial = lastName.charAt(0).toUpperCase() || '';
+                const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : '...';
+                container.innerHTML = initials;
+              } else {
+                container.innerHTML = '...';
+              }
+            } catch (e) {
+              container.innerHTML = '...';
+            }
+          } else {
+            container.innerHTML = '...';
+          }
+        }
+      }
+
       // Initialize everything when DOM is ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+          setInitialPlaceholder();
           initializeEventListeners();
           loadProfile();
           loadPendingApprovals();
@@ -1341,6 +1411,7 @@
         });
       } else {
         // DOM already loaded
+        setInitialPlaceholder();
         initializeEventListeners();
         loadProfile();
         loadPendingApprovals();

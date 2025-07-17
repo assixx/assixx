@@ -33,7 +33,7 @@ export const checkDocumentAccess = (
     try {
       const userId = docReq.user?.id;
       const userRole = docReq.user?.role;
-      const tenantId = docReq.user?.tenant_id || docReq.tenantId;
+      const tenantId = docReq.user?.tenant_id ?? docReq.tenantId;
       const { documentId } = docReq.params;
 
       if (!userId || !userRole) {

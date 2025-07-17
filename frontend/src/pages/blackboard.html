@@ -53,25 +53,25 @@
         height: 100% !important;
         border: none !important;
       }
-      
+
       /* PDF.js spezifische Fixes für Chrome/Firefox */
-      #attachmentPreviewModal object[type="application/pdf"] {
+      #attachmentPreviewModal object[type='application/pdf'] {
         overflow: hidden !important;
       }
-      
+
       /* Versuche PDF.js interne Elemente zu erreichen */
       #attachmentPreviewModal object::shadow #viewer,
       #attachmentPreviewModal object /deep/ #viewer {
         margin: 0 !important;
         padding: 0 !important;
       }
-      
+
       #attachmentPreviewModal object::shadow .pdfViewer,
       #attachmentPreviewModal object /deep/ .pdfViewer {
         margin: 0 !important;
         padding: 0 !important;
       }
-      
+
       #attachmentPreviewModal object::shadow .page,
       #attachmentPreviewModal object /deep/ .page {
         margin: 1px auto !important;
@@ -282,13 +282,13 @@
         border-color: rgba(255, 255, 255, 0.5);
         box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
       }
-      
+
       /* Fullscreen Mode Styles */
       .fullscreen-mode {
         background: #000;
         padding: 20px;
       }
-      
+
       .fullscreen-mode .blackboard-container {
         max-width: 100%;
         margin: 0 auto;
@@ -300,7 +300,7 @@
         overflow-y: auto;
         align-content: start;
       }
-      
+
       .fullscreen-mode .filters-container,
       .fullscreen-mode .sidebar,
       .fullscreen-mode .navigation,
@@ -311,24 +311,24 @@
       .fullscreen-mode .card.mb-4 {
         display: none !important;
       }
-      
+
       .fullscreen-mode .layout-container {
-        padding-top: 0 !important;
+        padding-top: 2px !important;
       }
-      
+
       .fullscreen-mode .main-content {
         margin-left: 0 !important;
         padding: 0 !important;
         max-width: 100% !important;
       }
-      
+
       .fullscreen-mode .content-card {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
       }
-      
+
       /* Exit fullscreen button */
       .fullscreen-exit-btn {
         position: fixed;
@@ -346,18 +346,18 @@
         font-size: 14px;
         transition: all 0.3s ease;
       }
-      
+
       .fullscreen-exit-btn:hover {
         background: rgba(255, 255, 255, 0.2);
         transform: scale(1.05);
       }
-      
+
       .fullscreen-mode .fullscreen-exit-btn {
         display: flex;
         align-items: center;
         gap: 8px;
       }
-      
+
       /* Auto-refresh indicator */
       .auto-refresh-indicator {
         position: fixed;
@@ -373,11 +373,11 @@
         display: none;
         z-index: 9998;
       }
-      
+
       .fullscreen-mode .auto-refresh-indicator {
         display: block;
       }
-      
+
       /* Optimize notes for fullscreen */
       .fullscreen-mode .note {
         transform: scale(1);
@@ -395,12 +395,12 @@
       <i class="fas fa-compress"></i>
       <span>Vollbild beenden (ESC)</span>
     </button>
-    
+
     <div class="auto-refresh-indicator">
       <i class="fas fa-sync-alt fa-spin"></i>
       Auto-Refresh: 30s
     </div>
-    
+
     <!-- Unified Navigation -->
     <div id="navigation-container"></div>
 
@@ -417,10 +417,10 @@
             <div class="card-header" class="u-cursor-pointer" id="filterToggle">
               <div style="display: flex; justify-content: space-between; align-items: center">
                 <h3 class="card-title" class="u-m-0">Filter & Suche</h3>
-                <i class="fas fa-chevron-down" id="filterToggleIcon" style="transform: rotate(0deg); transition: transform 0.3s ease;"></i>
+                <i class="fas fa-chevron-down" id="filterToggleIcon" style="transform: rotate(0deg); transition: transform 0.3s ease"></i>
               </div>
             </div>
-            <div class="card-body" id="filterContent" style="display: none;">
+            <div class="card-body" id="filterContent" style="display: none">
               <!-- Moderne Filter-Kontrollen -->
               <div class="modern-filters">
                 <!-- Floating Search Bar -->
@@ -481,7 +481,7 @@
                 <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
                   <i class="fas fa-minus"></i>
                 </button>
-                <button id="fullscreenBtn" class="zoom-btn" title="Vollbild" style="margin-left: 10px;">
+                <button id="fullscreenBtn" class="zoom-btn" title="Vollbild" style="margin-left: 10px">
                   <i class="fas fa-expand"></i>
                 </button>
               </div>

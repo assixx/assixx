@@ -5,6 +5,7 @@
 Die `users` Tabelle wurde um folgende Spalten erweitert:
 
 ### 1. **landline** (Festnetznummer)
+
 - **Typ**: `VARCHAR(30)`
 - **Nullable**: JA
 - **Unique**: NEIN
@@ -12,6 +13,7 @@ Die `users` Tabelle wurde um folgende Spalten erweitert:
 - **Position**: Nach `phone` Spalte
 
 ### 2. **employee_number** (Personalnummer)
+
 - **Typ**: `VARCHAR(50)`
 - **Nullable**: NEIN
 - **Unique**: JA
@@ -22,11 +24,13 @@ Die `users` Tabelle wurde um folgende Spalten erweitert:
 ## 📝 Wichtige Hinweise
 
 ### Phone-Spalte (Handynummer)
+
 - Bleibt weiterhin `VARCHAR(30)` und UNIQUE
 - Für Admin und Employee Rollen sollte diese Spalte in der Anwendungslogik als PFLICHTFELD behandelt werden
 - Root-User können optional eine Telefonnummer haben
 
 ### Employee Number
+
 - Muss für ALLE User vorhanden sein (NOT NULL)
 - Ist eindeutig über alle Tenants hinweg (UNIQUE)
 - Format kann später angepasst werden (z.B. firmenspezifische Präfixe)
@@ -51,13 +55,16 @@ ALTER TABLE users MODIFY COLUMN employee_number VARCHAR(50) NOT NULL;
 ## 🛠️ Backend Anpassungen
 
 ### TypeScript Types aktualisiert:
+
 - `User` Interface in `models.d.ts`
 - `DatabaseUser` Interface in `models.d.ts`
 - `DbUser` Interface in `user.ts`
 - `UserCreateData` Interface in `user.ts`
 
 ### SELECT Statements erweitert:
+
 Alle SELECT Queries wurden um die neuen Felder erweitert:
+
 - `u.landline`
 - `u.employee_number`
 

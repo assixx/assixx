@@ -45,7 +45,7 @@ const rateLimiterConfigs = {
       if (isAuthenticated(req)) {
         return `user_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip ?? "unknown";
     },
   },
 
@@ -60,7 +60,7 @@ const rateLimiterConfigs = {
       if (isAuthenticated(req)) {
         return `admin_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip ?? "unknown";
     },
   },
 
@@ -80,7 +80,7 @@ const rateLimiterConfigs = {
       if (isAuthenticated(req)) {
         return `user_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip ?? "unknown";
     },
   },
 
@@ -95,7 +95,7 @@ const rateLimiterConfigs = {
       if (isAuthenticated(req)) {
         return `upload_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip ?? "unknown";
     },
   },
 
@@ -110,7 +110,7 @@ const rateLimiterConfigs = {
       if (isAuthenticated(req)) {
         return `download_${req.user.id}`;
       }
-      return req.ip || "unknown";
+      return req.ip ?? "unknown";
     },
   },
 };

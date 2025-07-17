@@ -123,8 +123,8 @@ router.get(
       const documents = await Document.countByTenant(req.user.tenant_id);
 
       const response: CountsResponse = {
-        employees: employees || 0,
-        documents: documents || 0,
+        employees: employees ?? 0,
+        documents: documents ?? 0,
         departments: 0,
         teams: 0,
       };

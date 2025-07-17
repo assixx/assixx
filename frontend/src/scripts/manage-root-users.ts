@@ -31,7 +31,7 @@ async function loadRootUsers() {
 
     const data = await response.json();
     // successResponse wraps data in data property
-    const rootUsers = data.data?.users || data.users || [];
+    const rootUsers = data.data?.users ?? (data.users || []);
 
     displayRootUsers(rootUsers);
   } catch (error) {

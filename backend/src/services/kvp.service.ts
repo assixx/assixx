@@ -285,7 +285,7 @@ class KvpService {
       return {
         totalSuggestions: stats.total_suggestions,
         implementedSuggestions: stats.implemented,
-        totalSavings: stats.avg_savings || 0,
+        totalSavings: stats.avg_savings ?? 0,
         suggestionsByCategory: {}, // TODO: Implement category breakdown
         suggestionsByStatus: {
           new: stats.new_suggestions,

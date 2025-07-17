@@ -78,7 +78,7 @@ class DocumentController {
         tenant_id: req.user.tenant_id,
         category,
         userId: userId ? parseInt(userId, 10) : req.user.id,
-        departmentId: req.user.department_id || undefined,
+        departmentId: req.user.department_id ?? undefined,
         teamId: userTeamId,
         limit,
         offset,

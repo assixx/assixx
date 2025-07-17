@@ -156,9 +156,9 @@ router.post("/", authenticateToken, async (req, res): Promise<void> => {
     const area: Area = {
       id: Date.now(),
       name,
-      description: description || undefined,
-      type: type || "production",
-      capacity: capacity || undefined,
+      description: description ?? undefined,
+      type: type ?? "production",
+      capacity: capacity ?? undefined,
       created_at: new Date(),
     };
 

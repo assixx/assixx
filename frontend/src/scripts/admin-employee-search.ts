@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Profilbild oder Platzhalter
       const profileImage = employee.profile_picture
         ? `<img src="/${employee.profile_picture}" class="profile-thumbnail" alt="${employee.first_name}" width="40" height="40">`
-        : `<div class="profile-placeholder">${(employee.first_name || '').charAt(0)}${(employee.last_name || '').charAt(0)}</div>`;
+        : `<div class="profile-placeholder">${(employee.first_name ?? '').charAt(0)}${(employee.last_name || '').charAt(0)}</div>`;
 
       // Abteilungsinformation
       const departmentInfo = employee.department_name
@@ -175,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="d-flex align-items-center">
             ${profileImage}
             <div class="ml-3">
-              <div class="employee-name">${employee.first_name || ''} ${employee.last_name || ''}</div>
-              <div class="employee-position">${employee.position || ''}</div>
+              <div class="employee-name">${employee.first_name ?? ''} ${employee.last_name || ''}</div>
+              <div class="employee-position">${employee.position ?? ''}</div>
             </div>
           </div>
         </td>
@@ -190,12 +190,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <button onclick="uploadDocumentFor('${employee.id}')" class="btn btn-sm btn-primary">Dokument hochladen</button>
           <button class="delete-btn btn btn-sm btn-danger" 
                   data-id="${employee.id}" 
-                  data-name="${employee.first_name || ''} ${employee.last_name || ''}">
+                  data-name="${employee.first_name ?? ''} ${employee.last_name || ''}">
               Löschen
           </button>
           <button class="edit-btn btn btn-sm btn-secondary" 
                   data-id="${employee.id}" 
-                  data-name="${employee.first_name || ''} ${employee.last_name || ''}">
+                  data-name="${employee.first_name ?? ''} ${employee.last_name || ''}">
               Bearbeiten
           </button>
         </td>

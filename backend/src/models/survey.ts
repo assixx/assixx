@@ -756,7 +756,7 @@ export class Survey {
             (optionText: string, index: number) => ({
               option_id: index,
               option_text: optionText,
-              count: optionCounts[index] || 0,
+              count: optionCounts[index] ?? 0,
             }),
           );
         } else if (question.question_type === "text") {
@@ -797,10 +797,10 @@ export class Survey {
           );
           const stats = numericStats[0];
           questionStat.statistics = {
-            average: stats.average || null,
-            min: stats.min || null,
-            max: stats.max || null,
-            total_responses: stats.total_responses || 0,
+            average: stats.average ?? null,
+            min: stats.min ?? null,
+            max: stats.max ?? null,
+            total_responses: stats.total_responses ?? 0,
           };
         }
 
@@ -809,7 +809,7 @@ export class Survey {
 
       return {
         survey_id: surveyId,
-        total_responses: parseInt(stats[0].total_responses.toString()) || 0,
+        total_responses: parseInt(stats[0].total_responses.toString()) ?? 0,
         completed_responses:
           parseInt(stats[0].completed_responses.toString()) || 0,
         completion_rate:

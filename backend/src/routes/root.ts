@@ -129,8 +129,8 @@ router.post(
     try {
       const adminData = {
         ...req.body,
-        first_name: req.body.first_name || "",
-        last_name: req.body.last_name || "",
+        first_name: req.body.first_name ?? "",
+        last_name: req.body.last_name ?? "",
         role: "admin",
         tenant_id: req.user.tenant_id,
         is_active: true, // Ensure new admins are active by default
@@ -196,8 +196,8 @@ router.post(
     try {
       const adminData = {
         ...req.body,
-        first_name: req.body.first_name || "",
-        last_name: req.body.last_name || "",
+        first_name: req.body.first_name ?? "",
+        last_name: req.body.last_name ?? "",
         role: "admin",
         tenant_id: req.user.tenant_id,
         is_active: true, // Ensure new admins are active by default
@@ -529,7 +529,7 @@ router.get(
   typed.params<{ id: string }>(async (req, res) => {
     const rootUser = req.user.username;
     const adminId = req.params.id;
-    const days = parseInt(req.query.days as string) || 0; // 0 bedeutet alle Logs
+    const days = parseInt(req.query.days as string) ?? 0; // 0 bedeutet alle Logs
 
     logger.info(
       `Root user ${rootUser} requesting logs for admin ${adminId} (days: ${days})`,
@@ -672,7 +672,7 @@ router.get(
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100), // Cap at 100%
-        plan: tenant.current_plan || "basic",
+        plan: tenant.current_plan ?? "basic",
       };
 
       logger.info(
@@ -767,7 +767,7 @@ router.delete(
         "tenant",
         tenantId,
         JSON.stringify({
-          reason: req.body.reason || "Keine Angabe",
+          reason: req.body.reason ?? "Keine Angabe",
           user_agent: req.headers["user-agent"],
           secure_route: true,
         }),
@@ -1480,7 +1480,7 @@ router.post(
         [rootUser.tenant_id],
       );
 
-      const subdomain = tenantData[0]?.subdomain || "DEFAULT";
+      const subdomain = tenantData[0]?.subdomain ?? "DEFAULT";
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);

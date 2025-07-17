@@ -3,14 +3,15 @@
 ## 1️⃣ SOFORT umsetzen - Visueller Indikator
 
 ### Frontend: Role-Switch Banner
+
 ```typescript
 // In unified-navigation.ts ergänzen
 private showRoleSwitchIndicator(): void {
   const token = localStorage.getItem('token');
   if (!token) return;
-  
+
   const payload = JSON.parse(atob(token.split('.')[1]));
-  
+
   if (payload.isRoleSwitched) {
     const banner = document.createElement('div');
     banner.className = 'role-switch-banner';
@@ -29,6 +30,7 @@ private showRoleSwitchIndicator(): void {
 ```
 
 ### CSS für den Banner
+
 ```css
 .role-switch-banner {
   position: fixed;
@@ -41,7 +43,7 @@ private showRoleSwitchIndicator(): void {
   text-align: center;
   z-index: 9999;
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .role-switch-warning {
@@ -69,9 +71,11 @@ private showRoleSwitchIndicator(): void {
 ## 2️⃣ Backend Restrictions für Employee-View
 
 ### In sensitiven Routes ergänzen:
+
 ```typescript
 // z.B. in /backend/src/routes/users.ts
-router.get('/api/users/:id/private-data', 
+router.get(
+  '/api/users/:id/private-data',
   ...security.user(),
   typed.params<{ id: string }>(async (req, res) => {
     // NEU: Check für Role-Switch
@@ -79,11 +83,11 @@ router.get('/api/users/:id/private-data',
       // Nur eigene Daten erlauben
       if (parseInt(req.params.id) !== req.user.id) {
         return res.status(403).json({
-          message: 'Im Employee-Modus können Sie nur Ihre eigenen Daten einsehen'
+          message: 'Im Employee-Modus können Sie nur Ihre eigenen Daten einsehen',
         });
       }
     }
-    
+
     // Normale Logik...
   })
 );
@@ -92,31 +96,36 @@ router.get('/api/users/:id/private-data',
 ## 3️⃣ Auto-Timeout nach Inaktivität
 
 ### Backend Middleware:
+
 ```typescript
 // Neue Datei: /backend/src/middleware/roleSwitchTimeout.ts
 export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.isRoleSwitched) {
     return next();
   }
-  
+
   const TIMEOUT = 30 * 60 * 1000; // 30 Minuten
   const lastActivity = req.session?.lastActivity || Date.now();
-  
+
   if (Date.now() - lastActivity > TIMEOUT) {
     // Force revert to original role
-    const originalToken = jwt.sign({
-      ...req.user,
-      activeRole: req.user.role,
-      isRoleSwitched: false
-    }, process.env.JWT_SECRET!, { expiresIn: '8h' });
-    
+    const originalToken = jwt.sign(
+      {
+        ...req.user,
+        activeRole: req.user.role,
+        isRoleSwitched: false,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '8h' }
+    );
+
     res.cookie('token', originalToken);
     return res.status(401).json({
       message: 'Role-Switch Timeout - Sie wurden zur Original-Rolle zurückgesetzt',
-      newToken: originalToken
+      newToken: originalToken,
     });
   }
-  
+
   // Update last activity
   req.session.lastActivity = Date.now();
   next();
@@ -126,9 +135,10 @@ export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFu
 ## 4️⃣ Erweiterte Audit-Logs
 
 ### SQL Migration:
+
 ```sql
 -- Neue Felder für besseres Tracking
-ALTER TABLE admin_logs 
+ALTER TABLE admin_logs
 ADD COLUMN was_role_switched BOOLEAN DEFAULT FALSE,
 ADD COLUMN switched_from_role VARCHAR(50),
 ADD COLUMN viewed_sensitive_data JSON;
@@ -138,6 +148,7 @@ CREATE INDEX idx_role_switch_logs ON admin_logs(was_role_switched, created_at);
 ```
 
 ### Im Code:
+
 ```typescript
 // Bei jedem sensitiven Zugriff loggen
 if (req.user.isRoleSwitched) {
@@ -151,8 +162,8 @@ if (req.user.isRoleSwitched) {
     switched_from_role: req.user.role,
     viewed_sensitive_data: {
       dataType: 'salary',
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   });
 }
 ```
@@ -160,6 +171,7 @@ if (req.user.isRoleSwitched) {
 ## 5️⃣ Multi-Tab Sync
 
 ### Frontend BroadcastChannel:
+
 ```typescript
 // Role-Switch Event Broadcasting
 const channel = new BroadcastChannel('role_switch_channel');
@@ -169,7 +181,7 @@ function notifyRoleSwitch(newRole: string) {
   channel.postMessage({
     type: 'ROLE_SWITCHED',
     newRole: newRole,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }
 
@@ -185,16 +197,19 @@ channel.onmessage = (event) => {
 ## 🚀 Implementierungs-Prioritäten
 
 ### Phase 1 (Diese Woche):
+
 1. ✅ Visueller Banner für Role-Switch
 2. ✅ Basis-Restrictions für Employee View
 3. ✅ Erweiterte Logs mit was_role_switched Flag
 
 ### Phase 2 (Nächste Woche):
+
 1. Auto-Timeout Middleware
 2. Multi-Tab Synchronisation
 3. Audit-Dashboard (Read-only für Betriebsrat)
 
 ### Phase 3 (Später):
+
 1. Delegation System
 2. Emergency Access
 3. Training Mode

@@ -158,7 +158,7 @@
       'it-leiter': 'IT-Leiter',
       vertriebsleiter: 'Vertriebsleiter',
     };
-    return positionMap[position] || position;
+    return positionMap[position] ?? position;
   }
 
   // Helper function to display departments badge
@@ -228,7 +228,7 @@
       if (!tenant) return;
       const option = document.createElement('option');
       option.value = tenant.id.toString();
-      option.textContent = `${tenant.company_name || tenant.name || 'Unnamed'} (${tenant.subdomain})`;
+      option.textContent = `${tenant.company_name ?? (tenant.name || 'Unnamed')} (${tenant.subdomain})`;
       select.appendChild(option);
     });
   }
@@ -275,7 +275,7 @@
       <tbody>
         ${admins
           .map((admin) => {
-            const fullName = `${admin.first_name || ''} ${admin.last_name || ''}`.trim() || '-';
+            const fullName = `${admin.first_name ?? ''} ${admin.last_name || ''}`.trim() || '-';
             return `
           <tr>
             <td>${admin.id}</td>
@@ -314,7 +314,7 @@
     editButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         console.log('Edit button clicked!');
-        const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') || '0');
+        const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0');
         console.log('Admin ID:', adminId);
         if (adminId) editAdminHandler(adminId);
       });
@@ -325,7 +325,7 @@
     deleteButtons.forEach((btn) => {
       btn.addEventListener('click', (e) => {
         console.log('Delete button clicked!');
-        const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') || '0');
+        const adminId = parseInt((e.target as HTMLElement).getAttribute('data-admin-id') ?? '0');
         console.log('Admin ID:', adminId);
         if (adminId) deleteAdminHandler(adminId);
       });
@@ -338,7 +338,7 @@
         console.log('🔵 Permission button clicked!');
         const target = e.target as HTMLElement;
         const button = target.closest('.action-btn.permissions') as HTMLElement;
-        const adminId = parseInt(button?.getAttribute('data-admin-id') || '0');
+        const adminId = parseInt(button?.getAttribute('data-admin-id') ?? '0');
         console.log('Admin ID from button:', adminId);
         if (adminId) {
           e.preventDefault();
@@ -383,13 +383,13 @@
     if (title) title.textContent = 'Admin bearbeiten';
 
     // Formular mit Admin-Daten füllen
-    (document.getElementById('adminFirstName') as HTMLInputElement).value = admin.first_name || '';
-    (document.getElementById('adminLastName') as HTMLInputElement).value = admin.last_name || '';
-    (document.getElementById('adminEmail') as HTMLInputElement).value = admin.email || '';
-    (document.getElementById('adminEmailConfirm') as HTMLInputElement).value = admin.email || '';
+    (document.getElementById('adminFirstName') as HTMLInputElement).value = admin.first_name ?? '';
+    (document.getElementById('adminLastName') as HTMLInputElement).value = admin.last_name ?? '';
+    (document.getElementById('adminEmail') as HTMLInputElement).value = admin.email ?? '';
+    (document.getElementById('adminEmailConfirm') as HTMLInputElement).value = admin.email ?? '';
 
     // Custom dropdown for position
-    const positionValue = admin.position || '';
+    const positionValue = admin.position ?? '';
     (document.getElementById('positionDropdownValue') as HTMLInputElement).value = positionValue;
     const displayText = positionValue ? getPositionDisplay(positionValue) : 'Position auswählen...';
     const positionDropdown = document.getElementById('positionDropdownDisplay');
@@ -398,7 +398,7 @@
       if (span) span.textContent = displayText;
     }
 
-    (document.getElementById('adminNotes') as HTMLTextAreaElement).value = admin.notes || '';
+    (document.getElementById('adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
 
     // Show active status checkbox when editing
     const activeStatusGroup = document.getElementById('activeStatusGroup');
@@ -618,7 +618,7 @@
 
       if (response.ok) {
         const result = await response.json();
-        return result.data || [];
+        return result.data ?? [];
       }
     } catch (error) {
       console.error('Fehler beim Laden der Abteilungsgruppen:', error);
@@ -739,8 +739,8 @@
     const nameEl = document.getElementById('permAdminName');
     const emailEl = document.getElementById('permAdminEmail');
 
-    if (nameEl) nameEl.textContent = `${admin.first_name || ''} ${admin.last_name || ''} (${admin.username})`.trim();
-    if (emailEl) emailEl.textContent = admin.email || '-';
+    if (nameEl) nameEl.textContent = `${admin.first_name ?? ''} ${admin.last_name || ''} (${admin.username})`.trim();
+    if (emailEl) emailEl.textContent = admin.email ?? '-';
 
     // Load departments and current permissions
     await loadPermissionsModalData(adminId);
@@ -820,8 +820,8 @@
       // Set permission levels
       if (currentPerms.departments.length > 0) {
         const firstDept = currentPerms.departments[0];
-        (document.getElementById('permCanWrite') as HTMLInputElement).checked = firstDept.can_write || false;
-        (document.getElementById('permCanDelete') as HTMLInputElement).checked = firstDept.can_delete || false;
+        (document.getElementById('permCanWrite') as HTMLInputElement).checked = firstDept.can_write ?? false;
+        (document.getElementById('permCanDelete') as HTMLInputElement).checked = firstDept.can_delete ?? false;
       }
     } catch (error) {
       console.error('Error loading permissions modal data:', error);
@@ -1010,7 +1010,7 @@
 
       if (response.ok) {
         const result = await response.json();
-        const adminId = currentAdminId || result.adminId || result.id;
+        const adminId = currentAdminId ?? (result.adminId || result.id);
 
         // Set permissions for both new and existing admins
         const permissionType = (document.querySelector('input[name="permissionType"]:checked') as HTMLInputElement)

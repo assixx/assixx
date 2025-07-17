@@ -99,7 +99,7 @@ class BlackboardService {
         content: data.content,
         org_level: data.org_level,
         org_id: data.org_id,
-        author_id: data.author_id || data.created_by || 0,
+        author_id: data.author_id ?? (data.created_by || 0),
         expires_at:
           data.expires_at instanceof Date
             ? data.expires_at

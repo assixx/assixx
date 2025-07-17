@@ -32,7 +32,7 @@ function generateTestToken(
 ): string {
   return jwt.sign(
     { userId, tenantId, role },
-    process.env.JWT_SECRET || "test-secret",
+    process.env.JWT_SECRET ?? "test-secret",
     { expiresIn: "1h" },
   );
 }

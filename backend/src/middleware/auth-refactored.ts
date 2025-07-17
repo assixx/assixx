@@ -17,7 +17,7 @@ import { AuthenticationMiddleware } from "../types/middleware.types";
 import { errorResponse } from "../types/response.types";
 
 // Get JWT secret with proper fallback
-const JWT_SECRET = process.env.JWT_SECRET || "";
+const JWT_SECRET = process.env.JWT_SECRET ?? "";
 
 if (!JWT_SECRET && process.env.NODE_ENV === "production") {
   throw new Error("JWT_SECRET must be set in production!");
@@ -34,7 +34,7 @@ function extractToken(req: PublicRequest): string | null {
   // Check cookie as fallback
   const cookieToken = req.cookies?.token;
 
-  return bearerToken || cookieToken || null;
+  return bearerToken ?? (cookieToken || null);
 }
 
 // Helper to verify JWT token
@@ -170,7 +170,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
       userId: userDetails.id ?? 0,
       username: userDetails.username ?? "",
       email: userDetails.email ?? "",
-      role: decoded.activeRole || userDetails.role || "", // Support role switching
+      role: decoded.activeRole ?? (userDetails.role || ""), // Support role switching
       tenant_id: userDetails.tenant_id ?? 0,
       tenantName: userDetails.tenantName,
       first_name: userDetails.first_name,

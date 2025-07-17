@@ -95,7 +95,7 @@ router.get(
           req.user.id,
           req.user.tenant_id,
         );
-        if (currentUser && currentUser.department_id) {
+        if (currentUser?.department_id) {
           const allUsers = await User.findAllByTenant(req.user.tenant_id);
           users = allUsers.filter(
             (u) => u.department_id === currentUser.department_id,
@@ -162,7 +162,7 @@ router.get(
       // Debug logging
       logger.info("GET /api/users/me - req.user:", req.user);
 
-      if (!req.user || !req.user.id) {
+      if (!req.user?.id) {
         logger.error("No user object or user.id in request");
         res.status(401).json({ message: "User not authenticated" });
         return;
@@ -392,7 +392,7 @@ router.get(
       );
 
       // Use the same logic as /me route which works
-      if (!req.user || !req.user.id) {
+      if (!req.user?.id) {
         logger.error("No user object or user.id in request");
         res.status(401).json({ message: "User not authenticated" });
         return;

@@ -5,7 +5,7 @@
 
 // Check if user is admin or root
 const userRole = localStorage.getItem('userRole');
-let currentView = localStorage.getItem('activeRole') || userRole;
+let currentView = localStorage.getItem('activeRole') ?? userRole;
 
 // Role switch handler
 async function switchRole(): Promise<void> {
@@ -20,10 +20,10 @@ async function switchRole(): Promise<void> {
 
   try {
     const token = localStorage.getItem('token');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
     // Update currentView from localStorage in case it changed
-    currentView = localStorage.getItem('activeRole') || userRole;
+    currentView = localStorage.getItem('activeRole') ?? userRole;
 
     // Determine the endpoint based on current view and original role
     let endpoint = '';
@@ -120,7 +120,7 @@ function updateRoleUI(): void {
   if (!roleIndicator || !switchBtn) return;
 
   // Update currentView from localStorage
-  currentView = localStorage.getItem('activeRole') || userRole;
+  currentView = localStorage.getItem('activeRole') ?? userRole;
 
   if (currentView === 'employee' && userRole === 'admin') {
     // Admin is viewing as employee
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switchSelect.style.display = 'block';
 
     // Set current value
-    const activeRole = localStorage.getItem('activeRole') || 'root';
+    const activeRole = localStorage.getItem('activeRole') ?? 'root';
     switchSelect.value = activeRole;
 
     // Add change event listener
@@ -252,10 +252,10 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
 
   try {
     const token = localStorage.getItem('token');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
     // Update currentView
-    currentView = localStorage.getItem('activeRole') || userRole;
+    currentView = localStorage.getItem('activeRole') ?? userRole;
 
     // Determine endpoint based on target role
     let endpoint = '';

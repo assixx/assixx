@@ -18,10 +18,10 @@ dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 // Database configuration
 const dbConfig: mysql.ConnectionOptions = {
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "lohnabrechnung",
+  host: process.env.DB_HOST ?? "localhost",
+  user: process.env.DB_USER ?? "root",
+  password: process.env.DB_PASSWORD ?? "",
+  database: process.env.DB_NAME ?? "lohnabrechnung",
   charset: "utf8mb4",
 };
 
@@ -299,7 +299,7 @@ export class KVPModel {
       }
 
       const [rows] = await connection.execute<DbSuggestion[]>(query, params);
-      return rows[0] || null;
+      return rows[0] ?? null;
     } finally {
       await connection.end();
     }
@@ -482,7 +482,7 @@ export class KVPModel {
         [tenant_id, userId],
       );
 
-      return (rows[0] || {
+      return (rows[0] ?? {
         total_points: 0,
         total_awards: 0,
         suggestions_awarded: 0,

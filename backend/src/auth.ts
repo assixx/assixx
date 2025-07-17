@@ -16,7 +16,7 @@ import { AuthUser } from "./types/request.types";
 import { query as executeQuery, RowDataPacket } from "./utils/db";
 
 // Konstante für das JWT-Secret aus der Umgebungsvariable
-const JWT_SECRET: string = process.env.JWT_SECRET || "";
+const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 
 // In Produktion MUSS ein JWT_SECRET gesetzt sein
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
@@ -40,23 +40,23 @@ function dbUserToDatabaseUser(dbUser: DbUser): DatabaseUser {
     id: dbUser.id,
     username: dbUser.username,
     email: dbUser.email,
-    password_hash: dbUser.password || "",
+    password_hash: dbUser.password ?? "",
     first_name: dbUser.first_name,
     last_name: dbUser.last_name,
     role: dbUser.role as "admin" | "employee" | "root",
     tenant_id: dbUser.tenant_id ?? null,
     department_id: dbUser.department_id ?? null,
     is_active: dbUser.is_active === true || dbUser.is_active === undefined,
-    is_archived: dbUser.is_archived || false,
+    is_archived: dbUser.is_archived ?? false,
     profile_picture: dbUser.profile_picture ?? null,
-    phone_number: dbUser.phone || null,
-    landline: dbUser.landline || null,
-    employee_number: dbUser.employee_number || "",
+    phone_number: dbUser.phone ?? null,
+    landline: dbUser.landline ?? null,
+    employee_number: dbUser.employee_number ?? "",
     position: dbUser.position ?? null,
     hire_date: dbUser.hire_date ?? null,
-    birth_date: dbUser.birthday || null,
-    created_at: dbUser.created_at || new Date(),
-    updated_at: dbUser.updated_at || new Date(),
+    birth_date: dbUser.birthday ?? null,
+    created_at: dbUser.created_at ?? new Date(),
+    updated_at: dbUser.updated_at ?? new Date(),
   };
 }
 
@@ -162,7 +162,7 @@ export function authenticateToken(
   const authHeader = req.headers["authorization"];
 
   // Try to get token from Authorization header first
-  let token = authHeader && authHeader.split(" ")[1];
+  let token = authHeader?.split(" ")[1];
 
   // Cookie-Fallback für HTML-Seiten und Server-Side Rendering
   // WICHTIG: Cookies verwenden SameSite=strict für CSRF-Schutz
@@ -171,7 +171,7 @@ export function authenticateToken(
   // 2. Cookies sind httpOnly (kein JS-Zugriff möglich)
   // 3. Primär für direkte Seitenzugriffe gedacht (nicht API-Calls)
   // Siehe README.md für vollständige Sicherheitsdokumentation
-  if (!token && req.cookies && req.cookies.token) {
+  if (!token && req.cookies?.token) {
     token = req.cookies.token;
   }
 
@@ -207,7 +207,7 @@ export function authenticateToken(
         const requestFingerprint = req.headers[
           "x-browser-fingerprint"
         ] as string;
-        // const requestIP = req.ip || req.connection.remoteAddress;
+        // const requestIP = req.ip  ?? req.connection.remoteAddress;
         // const userAgent = req.headers['user-agent'];
 
         // Log Security-relevante Änderungen für Monitoring
@@ -260,8 +260,8 @@ export function authenticateToken(
       first_name: "",
       last_name: "",
       role: user.role,
-      activeRole: user.activeRole || user.role, // Support für Dual-Role
-      isRoleSwitched: user.isRoleSwitched || false,
+      activeRole: user.activeRole ?? user.role, // Support für Dual-Role
+      isRoleSwitched: user.isRoleSwitched ?? false,
       tenant_id: user.tenant_id ? parseInt(user.tenant_id.toString(), 10) : 0,
       department_id: null,
       position: null,

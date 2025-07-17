@@ -55,7 +55,7 @@ class ModalManager {
       // Create modal from template or config
       console.log(`[ModalManager] Creating new modal...`);
       const createdModal = this.createModal(modalId, config);
-      modal = createdModal || undefined;
+      modal = createdModal ?? undefined;
       if (!modal) {
         console.error(`[ModalManager] Failed to create modal!`);
         return null;
@@ -197,7 +197,7 @@ class ModalManager {
 
     const modalHtml = `
       <div class="modal-overlay" id="${modalId}">
-        <div class="modal-container modal-${config.size || 'md'}">
+        <div class="modal-container modal-${config.size ?? 'md'}">
           ${
             config.title
               ? `
@@ -229,7 +229,7 @@ class ModalManager {
       const target = e.target as HTMLElement;
 
       // Close button clicked
-      if (target.matches('[data-action="close"]') || target.closest('[data-action="close"]')) {
+      if (target.matches('[data-action="close"]') ?? target.closest('[data-action="close"]')) {
         const modal = target.closest('.modal-overlay') as HTMLElement;
         if (modal && modal.id) {
           this.hide(modal.id);
@@ -263,7 +263,7 @@ export const modalManager = new ModalManager();
 
 // Export convenience functions
 export function openModal(content: string, config?: Partial<ModalConfig>): void {
-  const modalId = config?.id || `modal-${Date.now()}`;
+  const modalId = config?.id ?? `modal-${Date.now()}`;
   modalManager.show(modalId, {
     ...config,
     content,

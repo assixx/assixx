@@ -3,11 +3,13 @@
 ## Date: 2025-07-14
 
 ### Issue Description
+
 GitHub CodeQL alerts (#1442-#1450) identified multiple Path Injection vulnerabilities in the Assixx codebase where user input was used in file paths without proper validation.
 
 ### Vulnerabilities Fixed
 
 #### 1. Created Path Security Utility Module
+
 - **File**: `/backend/src/utils/pathSecurity.ts`
 - **Purpose**: Centralized security functions for path validation and sanitization
 - **Functions**:
@@ -18,9 +20,11 @@ GitHub CodeQL alerts (#1442-#1450) identified multiple Path Injection vulnerabil
   - `getUploadDirectory()`: Returns secure upload directories by type
 
 #### 2. Fixed Multer Upload Configurations
+
 Updated multer configurations in the following files to use sanitized filenames:
+
 - `/backend/src/routes/documents.ts` - Document uploads
-- `/backend/src/routes/users.ts` - Profile picture uploads  
+- `/backend/src/routes/users.ts` - Profile picture uploads
 - `/backend/src/routes/user.ts` - Profile picture uploads
 - `/backend/src/routes/admin.ts` - Admin document uploads
 - `/backend/src/routes/blackboard.ts` - Blackboard attachments
@@ -28,7 +32,9 @@ Updated multer configurations in the following files to use sanitized filenames:
 - `/backend/src/routes/kvp.ts` - KVP image uploads
 
 #### 3. Fixed File Serving Vulnerabilities
+
 Updated file serving endpoints to validate paths before sending:
+
 - `/backend/src/routes/user.ts` - Profile picture serving endpoint
 - `/backend/src/routes/blackboard.ts` - Attachment download/preview endpoints
 - `/backend/src/routes/documents.ts` - Document file operations
@@ -41,17 +47,20 @@ Updated file serving endpoints to validate paths before sending:
 4. **Centralized Security**: All path operations use the same security utility module
 
 ### Testing Performed
+
 - TypeScript compilation successful (`pnpm run type-check`)
 - Build process completed without errors (`pnpm run build:ts`)
 - All unused imports removed to fix linting issues
 
 ### Recommendations
+
 1. Always use the `pathSecurity` utility functions when handling file paths
 2. Never concatenate user input directly into file paths
 3. Validate all file operations against a whitelist of allowed directories
 4. Regularly audit file handling code for security vulnerabilities
 
 ### Files Modified
+
 1. `/backend/src/utils/pathSecurity.ts` (created)
 2. `/backend/src/routes/documents.ts`
 3. `/backend/src/routes/users.ts`

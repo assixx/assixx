@@ -90,7 +90,7 @@ class DepartmentController {
       }
 
       // Get tenant ID from request
-      const tenantId = req.tenantId || req.user?.tenant_id;
+      const tenantId = req.tenantId ?? req.user?.tenant_id;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
@@ -145,7 +145,7 @@ class DepartmentController {
       }
 
       // Get tenant ID from request
-      const tenantId = req.tenantId || req.user?.tenant_id;
+      const tenantId = req.tenantId ?? req.user?.tenant_id;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;
@@ -184,11 +184,11 @@ class DepartmentController {
       const departmentData: DepartmentCreateData = {
         name: req.body.name,
         description: req.body.description,
-        manager_id: req.body.manager_id || undefined,
-        parent_id: req.body.parent_id || undefined,
-        status: req.body.status || undefined,
-        visibility: req.body.visibility || undefined,
-        tenant_id: req.user?.tenant_id || 0,
+        manager_id: req.body.manager_id ?? undefined,
+        parent_id: req.body.parent_id ?? undefined,
+        status: req.body.status ?? undefined,
+        visibility: req.body.visibility ?? undefined,
+        tenant_id: req.user?.tenant_id ?? 0,
       };
       const result = await departmentService.create(
         req.tenantDb,
@@ -231,7 +231,7 @@ class DepartmentController {
         visibility: req.body.visibility,
       };
       // Get tenant ID from request
-      const tenantId = req.tenantId || req.user?.tenant_id;
+      const tenantId = req.tenantId ?? req.user?.tenant_id;
       if (!tenantId) {
         res.status(400).json({ error: "Tenant ID not found" });
         return;

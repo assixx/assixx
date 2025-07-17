@@ -143,7 +143,7 @@ export async function safeDeleteFile(filePath: string): Promise<boolean> {
     const uploadsDir = path.resolve(process.cwd(), "uploads");
     const validatedPath = validatePath(filePath, process.cwd());
 
-    if (!validatedPath || !validatedPath.startsWith(uploadsDir)) {
+    if (!validatedPath?.startsWith(uploadsDir)) {
       logger.warn(
         `Attempted to delete file outside uploads directory: ${filePath}`,
       );

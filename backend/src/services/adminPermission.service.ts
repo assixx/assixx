@@ -162,9 +162,9 @@ class AdminPermissionService {
         const existing = departmentMap.get(dept.id);
         if (existing) {
           // Take maximum permissions
-          existing.can_read = existing.can_read || dept.can_read === 1;
-          existing.can_write = existing.can_write || dept.can_write === 1;
-          existing.can_delete = existing.can_delete || dept.can_delete === 1;
+          existing.can_read = existing.can_read ?? dept.can_read === 1;
+          existing.can_write = existing.can_write ?? dept.can_write === 1;
+          existing.can_delete = existing.can_delete ?? dept.can_delete === 1;
         } else {
           departmentMap.set(dept.id, {
             id: dept.id,

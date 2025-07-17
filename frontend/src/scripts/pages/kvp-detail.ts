@@ -242,8 +242,8 @@ class KvpDetailPage {
     const categoryEl = document.getElementById('category');
     if (categoryEl) {
       categoryEl.innerHTML = `
-      <span style="color: ${this.suggestion.category_color || '#666'}">
-        <i class="${this.suggestion.category_icon || 'fas fa-tag'}"></i>
+      <span style="color: ${this.suggestion.category_color ?? '#666'}">
+        <i class="${this.suggestion.category_icon ?? 'fas fa-tag'}"></i>
         ${this.suggestion.category_name}
       </span>
     `;
@@ -508,7 +508,7 @@ class KvpDetailPage {
     // Status change listener for custom dropdown
     document.addEventListener('statusChange', async (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail && customEvent.detail.status) {
+      if (customEvent.detail?.status) {
         await this.updateStatus(customEvent.detail.status);
       }
     });
@@ -530,7 +530,7 @@ class KvpDetailPage {
         },
         body: JSON.stringify({
           comment,
-          is_internal: internalCheckbox?.checked || false,
+          is_internal: internalCheckbox?.checked ?? false,
         }),
       });
 
@@ -717,7 +717,7 @@ class KvpDetailPage {
       rejected: 'Abgelehnt',
       archived: 'Archiviert',
     };
-    return statusMap[status] || status;
+    return statusMap[status] ?? status;
   }
 
   private getPriorityText(priority: string): string {
@@ -727,7 +727,7 @@ class KvpDetailPage {
       high: 'Hoch',
       urgent: 'Dringend',
     };
-    return priorityMap[priority] || priority;
+    return priorityMap[priority] ?? priority;
   }
 
   private getFileIcon(mimeType: string): string {

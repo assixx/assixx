@@ -3,6 +3,7 @@ import prettier from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
 import typescript from "@typescript-eslint/parser";
 import typescriptPlugin from "@typescript-eslint/eslint-plugin";
+import importPlugin from "eslint-plugin-import-x";
 
 export default [
   // Base JavaScript configuration
@@ -10,6 +11,19 @@ export default [
 
   // Prettier configuration
   prettierConfig,
+
+  // Global overrides to disable complexity rules
+  {
+    rules: {
+      complexity: "off",
+      "max-depth": "off",
+      "max-lines": "off",
+      "max-lines-per-function": "off",
+      "max-nested-callbacks": "off",
+      "max-params": "off",
+      "max-statements": "off",
+    },
+  },
 
   // TypeScript configuration for backend
   {
@@ -44,6 +58,7 @@ export default [
     plugins: {
       "@typescript-eslint": typescriptPlugin,
       prettier,
+      "import-x": importPlugin,
     },
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
@@ -60,6 +75,38 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
       "no-console": "off",
+      // Additional type safety rules
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/prefer-nullish-coalescing": "error",
+      "@typescript-eslint/prefer-optional-chain": "error",
+      // Import order rules
+      "import-x/order": [
+        "error",
+        {
+          groups: [
+            "builtin",
+            "external",
+            "internal",
+            "parent",
+            "sibling",
+            "index",
+          ],
+          "newlines-between": "always",
+          alphabetize: {
+            order: "asc",
+            caseInsensitive: true,
+          },
+        },
+      ],
+      "import-x/no-duplicates": "error",
+      "import-x/no-cycle": "error",
+      "import-x/no-self-import": "error",
+      // Code quality - deaktiviert
+      // 'max-lines': ['warn', { max: 3000, skipBlankLines: true, skipComments: true }],
+      // complexity: ['warn', { max: 15 }],
+      // 'max-depth': ['warn', { max: 5 }],
     },
   },
 
@@ -111,6 +158,7 @@ export default [
     plugins: {
       "@typescript-eslint": typescriptPlugin,
       prettier,
+      "import-x": importPlugin,
     },
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
@@ -127,6 +175,38 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
       "no-console": "off",
+      // Additional type safety rules
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/prefer-nullish-coalescing": "error",
+      "@typescript-eslint/prefer-optional-chain": "error",
+      // Import order rules
+      "import-x/order": [
+        "error",
+        {
+          groups: [
+            "builtin",
+            "external",
+            "internal",
+            "parent",
+            "sibling",
+            "index",
+          ],
+          "newlines-between": "always",
+          alphabetize: {
+            order: "asc",
+            caseInsensitive: true,
+          },
+        },
+      ],
+      "import-x/no-duplicates": "error",
+      "import-x/no-cycle": "error",
+      "import-x/no-self-import": "error",
+      // Code quality - deaktiviert
+      // 'max-lines': ['warn', { max: 3000, skipBlankLines: true, skipComments: true }],
+      // complexity: ['warn', { max: 15 }],
+      // 'max-depth': ['warn', { max: 5 }],
     },
   },
 
@@ -167,6 +247,7 @@ export default [
     plugins: {
       "@typescript-eslint": typescriptPlugin,
       prettier,
+      "import-x": importPlugin,
     },
     rules: {
       ...typescriptPlugin.configs.recommended.rules,
@@ -225,6 +306,9 @@ export default [
       "object-shorthand": "error",
       "prefer-template": "error",
       "no-return-await": "error",
+      complexity: "off",
+      "max-depth": "off",
+      "max-lines": "off",
       "require-await": "error",
       "no-async-promise-executor": "error",
       "prefer-promise-reject-errors": "error",

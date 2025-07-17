@@ -180,7 +180,7 @@ class KvpPermissionService {
         [userId],
       );
 
-      const userDeptId = userInfo[0]?.department_id || null;
+      const userDeptId = userInfo[0]?.department_id ?? null;
 
       // Employee sees: own + department + company-wide
       const visibilityConditions = [
@@ -376,7 +376,7 @@ class KvpPermissionService {
         total,
         byStatus,
         byPriority,
-        totalSavings: parseFloat(savings[0].total_savings) || 0,
+        totalSavings: parseFloat(savings[0].total_savings) ?? 0,
       };
     } catch (error) {
       logger.error("Error getting suggestion stats:", error);

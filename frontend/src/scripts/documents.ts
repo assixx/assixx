@@ -88,7 +88,7 @@ async function loadDocuments(): Promise<void> {
     }
 
     const data = await response.json();
-    allDocuments = data.documents || [];
+    allDocuments = data.documents ?? [];
 
     // Update document counts
     updateCounts();
@@ -198,8 +198,8 @@ function applyFilters(): void {
     filteredDocuments = filteredDocuments.filter(
       (doc) =>
         doc.file_name.toLowerCase().includes(currentSearch) ||
-        (doc.description && doc.description.toLowerCase().includes(currentSearch)) ||
-        (doc.uploaded_by_name && doc.uploaded_by_name.toLowerCase().includes(currentSearch)),
+        doc.description?.toLowerCase().includes(currentSearch) ||
+        doc.uploaded_by_name?.toLowerCase().includes(currentSearch),
     );
   }
 
@@ -267,7 +267,7 @@ function createDocumentCard(doc: Document): HTMLElement {
   card.className = 'document-card';
   card.onclick = () => viewDocument(doc.id);
 
-  const icon = getFileIcon(doc.mime_type || doc.file_name);
+  const icon = getFileIcon(doc.mime_type ?? doc.file_name);
   const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
 
   card.innerHTML = `
@@ -527,7 +527,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     // Create download link
     const link = document.createElement('a');
     link.href = url;
-    link.download = currentDocument?.file_name || 'document.pdf';
+    link.download = currentDocument?.file_name ?? 'document.pdf';
     link.style.display = 'none';
     document.body.appendChild(link);
 

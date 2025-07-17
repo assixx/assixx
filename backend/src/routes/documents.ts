@@ -238,7 +238,7 @@ router.post(
         team_id: number | null;
         department_id: number | null;
       } = {
-        recipient_type: recipientType || "user",
+        recipient_type: recipientType ?? "user",
         user_id: null,
         team_id: null,
         department_id: null,
@@ -292,10 +292,10 @@ router.post(
           | "team"
           | "department",
         fileContent,
-        category: category || "other",
-        description: description || "",
+        category: category ?? "other",
+        description: description ?? "",
         year: year ? parseInt(year, 10) : undefined,
-        month: month || undefined,
+        month: month ?? undefined,
         tenant_id: uploadReq.user.tenant_id,
       });
 
@@ -316,7 +316,7 @@ router.post(
         if (isEmailFeatureEnabled) {
           const documentInfo = {
             file_name: originalname,
-            category: category || "other",
+            category: category ?? "other",
             upload_date: new Date(),
           };
 
@@ -328,7 +328,7 @@ router.post(
                   parseInt(userId, 10),
                   uploadReq.user.tenant_id,
                 );
-                if (user && user.email) {
+                if (user?.email) {
                   await emailService.sendNewDocumentNotification(
                     user,
                     documentInfo,
@@ -644,7 +644,7 @@ router.get(
       }
 
       const doc = document as DocumentWithContent;
-      const fileName = doc.fileName || doc.file_name || "document.pdf";
+      const fileName = doc.fileName ?? (doc.file_name || "document.pdf");
 
       // Set headers for inline display (not download)
       res.setHeader("Content-Type", "application/pdf");
@@ -708,7 +708,7 @@ router.get(
       }
 
       const doc = document as DocumentWithContent;
-      const fileName = doc.fileName || doc.file_name || "document.pdf";
+      const fileName = doc.fileName ?? (doc.file_name || "document.pdf");
 
       // Set headers for file download
       res.setHeader("Content-Type", "application/pdf");

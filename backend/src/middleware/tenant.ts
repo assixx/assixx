@@ -59,12 +59,12 @@ export async function tenantMiddleware(
     }
 
     // Für Login/Signup: Tenant aus Body
-    if (!tenantSubdomain && req.body && req.body.subdomain) {
+    if (!tenantSubdomain && req.body?.subdomain) {
       tenantSubdomain = req.body.subdomain;
     }
 
     // Fallback: Wenn User eingeloggt ist, verwende tenant_id aus JWT
-    if (!tenantSubdomain && req.user && req.user.tenant_id) {
+    if (!tenantSubdomain && req.user?.tenant_id) {
       const tenant = await TenantModel.findById(req.user.tenant_id);
       if (tenant) {
         tenantSubdomain = tenant.subdomain;
@@ -116,7 +116,7 @@ export async function tenantMiddleware(
       name: tenant.company_name,
       status: tenant.status as "active" | "trial" | "cancelled" | "suspended",
       plan: tenant.current_plan,
-      trialStatus: trialStatus || undefined,
+      trialStatus: trialStatus ?? undefined,
     };
 
     req.tenant = tenantInfo;

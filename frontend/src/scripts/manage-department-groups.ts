@@ -41,7 +41,7 @@
 
       if (response.ok) {
         const result = await response.json();
-        groups = result.data || [];
+        groups = result.data ?? [];
         renderGroupTree();
       } else {
         showError('Fehler beim Laden der Gruppen');
@@ -239,8 +239,8 @@
 
     // Fill form
     (document.getElementById('groupName') as HTMLInputElement).value = group.name;
-    (document.getElementById('groupDescription') as HTMLTextAreaElement).value = group.description || '';
-    (document.getElementById('parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() || '';
+    (document.getElementById('groupDescription') as HTMLTextAreaElement).value = group.description ?? '';
+    (document.getElementById('parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() ?? '';
 
     // Update selects
     updateParentGroupSelect(groupId);
@@ -305,7 +305,7 @@
     const formData = {
       name: (document.getElementById('groupName') as HTMLInputElement).value,
       description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
-      parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value || null,
+      parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value ?? null,
       departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
         parseInt((cb as HTMLInputElement).value),
       ),

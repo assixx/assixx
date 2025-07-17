@@ -28,15 +28,18 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
      visibility: hidden !important;
    }
    ```
+
    - Diese Regeln überschrieben alle anderen CSS-Definitionen
 
 2. **DOM Attachment Problem** (Hauptursache)
    - Modals wurden durch Template-Parsing erstellt:
+
    ```typescript
    const div = document.createElement('div');
    div.innerHTML = template;
    return div.firstElementChild as HTMLElement;
    ```
+
    - Das Modal wurde im temporären `<div>` Container erstellt
    - Der Modal Manager prüfte nur `modal.parentElement`, nicht ob es in `document.body` war
    - Computed Styles gaben leere Strings zurück, da das Element nicht im sichtbaren DOM war
@@ -51,6 +54,7 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
      document.body.appendChild(modal);
    }
    ```
+
    - Diese Prüfung erkannte nicht, dass das Modal in einem temporären Container war
 
 2. **CSS Animation Timing**

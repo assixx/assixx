@@ -392,7 +392,7 @@
           assign: 'Zugewiesen',
           unassign: 'Entfernt',
         };
-        filterHTML += `<li>• <strong>Aktion:</strong> ${actionLabels[currentFilters.action] || currentFilters.action}</li>`;
+        filterHTML += `<li>• <strong>Aktion:</strong> ${actionLabels[currentFilters.action] ?? currentFilters.action}</li>`;
       }
       if (currentFilters.entity_type) {
         const entityLabel = currentFilters.entity_type === 'all' ? 'Alle Typen' : currentFilters.entity_type;
@@ -409,7 +409,7 @@
           '6months': 'Letzte 6 Monate',
           year: 'Letztes Jahr',
         };
-        filterHTML += `<li>• <strong>Zeitraum:</strong> ${timeLabels[currentFilters.timerange] || currentFilters.timerange}</li>`;
+        filterHTML += `<li>• <strong>Zeitraum:</strong> ${timeLabels[currentFilters.timerange] ?? currentFilters.timerange}</li>`;
       }
 
       filterHTML += '</ul>';
@@ -448,7 +448,7 @@
 
     // Check if password is required (when action = 'all')
     if (currentFilters.action === 'all') {
-      if (!passwordInput || !passwordInput.value) {
+      if (!passwordInput?.value) {
         alert('❌ Bitte geben Sie Ihr Root-Passwort ein!');
         return;
       }
@@ -504,7 +504,7 @@
         loadLogs();
       } else {
         const error = await response.json();
-        alert(`❌ Fehler beim Löschen der Logs: ${error.error || 'Unbekannter Fehler'}`);
+        alert(`❌ Fehler beim Löschen der Logs: ${error.error ?? 'Unbekannter Fehler'}`);
       }
     } catch (error) {
       console.error('Error deleting logs:', error);
@@ -548,7 +548,7 @@
       kvp_created: 'KVP Erstellt',
       kvp_shared: 'KVP Geteilt',
     };
-    return actionLabels[action] || action;
+    return actionLabels[action] ?? action;
   }
 
   // Helper function to get readable role labels
@@ -558,7 +558,7 @@
       admin: 'Admin',
       employee: 'Mitarbeiter',
     };
-    return roleLabels[role] || role;
+    return roleLabels[role] ?? role;
   }
 
   // Show full details in a modal or alert

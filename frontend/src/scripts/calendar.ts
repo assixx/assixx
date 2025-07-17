@@ -405,7 +405,7 @@ function setupEventListeners(): void {
       // Add active class to clicked pill
       this.classList.add('active');
 
-      currentFilter = this.dataset.value || 'all';
+      currentFilter = this.dataset.value ?? 'all';
       calendar.refetchEvents();
     });
   });
@@ -580,16 +580,16 @@ function setupEventListeners(): void {
 
       if (dropdown?.id === 'orgLevelDropdown') {
         // Extract value and text from the option
-        const value = option.dataset.value || '';
-        const text = option.textContent?.trim() || '';
+        const value = option.dataset.value ?? '';
+        const text = option.textContent?.trim() ?? '';
         selectOrgLevel(value, text);
       } else if (dropdown?.id === 'reminderDropdown') {
-        const value = option.dataset.value || '';
-        const text = option.textContent?.trim() || '';
+        const value = option.dataset.value ?? '';
+        const text = option.textContent?.trim() ?? '';
         selectReminder(value, text);
       } else if (dropdown?.id === 'recurrenceDropdown') {
-        const value = option.dataset.value || '';
-        const text = option.textContent?.trim() || '';
+        const value = option.dataset.value ?? '';
+        const text = option.textContent?.trim() ?? '';
         selectRecurrence(value, text);
       }
     }
@@ -669,7 +669,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
  */
 function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput {
   // Color based on organization level
-  let color = event.color || '#3788d8'; // Default blue
+  let color = event.color ?? '#3788d8'; // Default blue
 
   if (!event.color) {
     switch (event.org_level) {
@@ -935,7 +935,7 @@ async function viewEvent(eventId: number): Promise<void> {
         </div>
         <div class="detail-item">
           <i class="fas fa-user"></i>
-          <span><strong>Erstellt von:</strong> ${escapeHtml(event.creator_name || 'Unknown')}</span>
+          <span><strong>Erstellt von:</strong> ${escapeHtml(event.creator_name ?? 'Unknown')}</span>
         </div>
       </div>
     `;
@@ -967,7 +967,7 @@ async function viewEvent(eventId: number): Promise<void> {
     // Add user response buttons
     if (event.attendees?.some((a) => a.user_id === currentUserId)) {
       const currentAttendee = event.attendees.find((a) => a.user_id === currentUserId);
-      const currentResponse = currentAttendee?.response || 'pending';
+      const currentResponse = currentAttendee?.response ?? 'pending';
 
       modalContent += `
         <div class="response-buttons">
@@ -1313,7 +1313,7 @@ async function saveEvent(): Promise<void> {
 
   // Get selected color
   const selectedColor = document.querySelector('.color-option.selected') as HTMLElement;
-  const color = selectedColor?.dataset.color || colorInput?.value || '#3498db';
+  const color = selectedColor?.dataset.color ?? (colorInput?.value || '#3498db');
 
   // Parse dates and times
   const startDate = startDateInput.value;
@@ -1372,12 +1372,12 @@ async function saveEvent(): Promise<void> {
     end_time: endDateTime,
     all_day: allDay,
     location: locationInput.value,
-    org_level: orgLevelInput.value || 'personal',
+    org_level: orgLevelInput.value ?? 'personal',
     org_id: orgLevelInput.value === 'personal' || orgLevelInput.value === 'company' ? null : parseInt(orgIdInput.value),
     color,
     reminder_time: reminderTimeInput.value ? parseInt(reminderTimeInput.value) : null,
     attendee_ids: selectedAttendees,
-    recurrence_rule: recurrenceRule || null,
+    recurrence_rule: recurrenceRule ?? null,
   };
 
   console.log('Saving event data:', eventData); // Debug log
@@ -1443,10 +1443,10 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       if (titleInput) titleInput.value = event.title;
 
       const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
-      if (descInput) descInput.value = event.description || '';
+      if (descInput) descInput.value = event.description ?? '';
 
       const locationInput = form.elements.namedItem('location') as HTMLInputElement;
-      if (locationInput) locationInput.value = event.location || '';
+      if (locationInput) locationInput.value = event.location ?? '';
 
       // Set org level using custom dropdown
       const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
@@ -1498,7 +1498,7 @@ async function loadEventForEdit(eventId: number): Promise<void> {
       // Update org dropdown
       updateOrgIdDropdown(event.org_level);
       if (event.org_id) {
-        const orgName = event.department_name || event.team_name || '';
+        const orgName = event.department_name ?? (event.team_name || '');
         selectOrgId(event.org_id, orgName);
       }
 
@@ -1626,9 +1626,9 @@ function searchAttendees(query: string): void {
 
   // Filter employees based on query
   const filteredEmployees = employees.filter((emp) => {
-    const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.toLowerCase();
-    const username = (emp.username || '').toLowerCase();
-    const email = (emp.email || '').toLowerCase();
+    const fullName = `${emp.first_name ?? ''} ${emp.last_name || ''}`.toLowerCase();
+    const username = (emp.username ?? '').toLowerCase();
+    const email = (emp.email ?? '').toLowerCase();
     return (
       fullName.includes(query.toLowerCase()) ||
       username.includes(query.toLowerCase()) ||
@@ -1643,7 +1643,7 @@ function searchAttendees(query: string): void {
 
     const item = document.createElement('div');
     item.className = 'search-result-item';
-    const name = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.username;
+    const name = `${emp.first_name ?? ''} ${emp.last_name || ''}`.trim() || emp.username;
     item.innerHTML = `
       <span>${escapeHtml(name)}</span>
       <button class="btn btn-sm btn-primary" onclick="addAttendee(${emp.id}, '${escapeHtml(name)}')">
@@ -1828,7 +1828,7 @@ function setupModalColorPicker(): void {
       newOption.classList.add('selected');
       // Update hidden input
       if (colorInput) {
-        colorInput.value = newOption.dataset.color || '#3498db';
+        colorInput.value = newOption.dataset.color ?? '#3498db';
       }
     });
   });

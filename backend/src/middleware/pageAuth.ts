@@ -204,7 +204,7 @@ function getTokenFromRequest(req: Request): string | null {
 
   // Try Authorization header
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
+  if (authHeader?.startsWith("Bearer ")) {
     return authHeader.substring(7);
   }
 

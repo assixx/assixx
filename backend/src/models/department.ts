@@ -289,7 +289,7 @@ export class Department {
         "SELECT COUNT(*) as count FROM departments WHERE tenant_id = ?",
         [tenant_id],
       );
-      return rows[0]?.count || 0;
+      return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(
         `Error counting departments by tenant: ${(error as Error).message}`,
@@ -308,7 +308,7 @@ export class Department {
         "SELECT COUNT(*) as count FROM teams WHERE tenant_id = ?",
         [tenant_id],
       );
-      return rows[0]?.count || 0;
+      return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(
         `Error counting teams by tenant: ${(error as Error).message}`,

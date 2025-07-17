@@ -46,6 +46,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // Set initial placeholder
+  const display = document.getElementById('profile-picture-display') as HTMLElement;
+  if (display && !display.innerHTML.trim()) {
+    display.innerHTML = '...';
+  }
+
   // Load user profile
   await loadUserProfile();
 
@@ -68,7 +74,7 @@ async function loadUserProfile(): Promise<void> {
 
     if (response.ok) {
       const data = await response.json();
-      const profile = data.data || data.user || data;
+      const profile = data.data ?? (data.user || data);
 
       populateProfileForm(profile);
 
@@ -80,7 +86,7 @@ async function loadUserProfile(): Promise<void> {
         profile.avatar ||
         profile.picture;
 
-      updateProfilePicture(pictureUrl);
+      updateProfilePicture(pictureUrl, profile.first_name, profile.last_name);
     } else {
       showMessage('Fehler beim Laden des Profils', 'error');
     }
@@ -95,21 +101,21 @@ async function loadUserProfile(): Promise<void> {
  */
 function populateProfileForm(profile: UserProfile): void {
   // Editable fields
-  (document.getElementById('first_name') as HTMLInputElement).value = profile.first_name || '';
-  (document.getElementById('last_name') as HTMLInputElement).value = profile.last_name || '';
+  (document.getElementById('first_name') as HTMLInputElement).value = profile.first_name ?? '';
+  (document.getElementById('last_name') as HTMLInputElement).value = profile.last_name ?? '';
 
   // Read-only fields
-  (document.getElementById('email') as HTMLInputElement).value = profile.email || '';
+  (document.getElementById('email') as HTMLInputElement).value = profile.email ?? '';
   (document.getElementById('position') as HTMLInputElement).value = profile.position
     ? positionMap[profile.position] || profile.position
     : '-';
-  (document.getElementById('company') as HTMLInputElement).value = profile.company_name || '-';
+  (document.getElementById('company') as HTMLInputElement).value = profile.company_name ?? '-';
 }
 
 /**
  * Update profile picture display
  */
-function updateProfilePicture(url?: string): void {
+function updateProfilePicture(url?: string, firstName?: string, lastName?: string): void {
   const display = document.getElementById('profile-picture-display') as HTMLElement;
   const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement;
 
@@ -121,6 +127,7 @@ function updateProfilePicture(url?: string): void {
   if (url) {
     // Clear any existing content
     display.innerHTML = '';
+    display.classList.remove('avatar-initials');
 
     // Create image element
     const img = document.createElement('img');
@@ -134,7 +141,8 @@ function updateProfilePicture(url?: string): void {
     // Handle image load error
     img.onerror = () => {
       console.error('Failed to load profile picture:', url);
-      display.innerHTML = '<i class="fas fa-user"></i>';
+      // Show initials on error
+      showInitials(display, firstName, lastName);
     };
 
     display.appendChild(img);
@@ -143,11 +151,24 @@ function updateProfilePicture(url?: string): void {
       removeBtn.style.display = 'inline-flex';
     }
   } else {
-    display.innerHTML = '<i class="fas fa-user"></i>';
+    // Show initials instead of icon
+    showInitials(display, firstName, lastName);
     if (removeBtn) {
       removeBtn.style.display = 'none';
     }
   }
+}
+
+/**
+ * Show initials in the profile picture display
+ */
+function showInitials(display: HTMLElement, firstName?: string, lastName?: string): void {
+  const firstInitial = (firstName || '').charAt(0).toUpperCase() || '';
+  const lastInitial = (lastName || '').charAt(0).toUpperCase() || '';
+  const initials = `${firstInitial}${lastInitial}` || 'U';
+  
+  display.classList.add('avatar-initials');
+  display.innerHTML = initials;
 }
 
 /**
@@ -323,7 +344,7 @@ async function uploadProfilePicture(file: File): Promise<void> {
       // Check different possible response formats
       const pictureUrl =
         result.profilePictureUrl || result.profile_picture_url || result.url || result.data?.profile_picture_url;
-      updateProfilePicture(pictureUrl);
+      updateProfilePicture(pictureUrl, profile.first_name, profile.last_name);
       showMessage('Profilbild erfolgreich hochgeladen', 'success');
       // Reload profile to ensure we have the latest data
       setTimeout(() => loadUserProfile(), 500);
@@ -351,7 +372,10 @@ async function removeProfilePicture(): Promise<void> {
     });
 
     if (response.ok) {
-      updateProfilePicture();
+      // Get current name values for initials
+      const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
+      const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
+      updateProfilePicture(undefined, firstName, lastName);
       showMessage('Profilbild erfolgreich entfernt', 'success');
     } else {
       const error = await response.json();

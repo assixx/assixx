@@ -17,6 +17,7 @@ Definiert welche Rollen auf welche Seiten zugreifen dürfen:
 ### 2. Role Switch Logik
 
 Beim Rollenwechsel wird nun automatisch geprüft:
+
 1. Kann die neue Rolle auf die aktuelle Seite zugreifen?
 2. **JA**: Die Seite wird neu geladen
 3. **NEIN**: Automatische Weiterleitung zum passenden Dashboard

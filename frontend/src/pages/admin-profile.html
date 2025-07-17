@@ -196,6 +196,14 @@
         overflow: hidden;
       }
 
+      .profile-picture-placeholder.avatar-initials {
+        background: linear-gradient(135deg, #2196F3, #42a5f5);
+        color: white;
+        font-weight: 600;
+        font-size: 2.5rem;
+        text-transform: uppercase;
+      }
+
       .profile-picture-placeholder i {
         font-size: 48px;
         color: var(--text-secondary);
@@ -399,8 +407,8 @@
               <h2 class="card-title">Profilbild</h2>
               <div class="profile-picture-section">
                 <div class="profile-picture-container">
-                  <div id="profile-picture-display" class="profile-picture-placeholder">
-                    <i class="fas fa-user"></i>
+                  <div id="profile-picture-display" class="profile-picture-placeholder avatar-initials">
+                    <!-- Initials will be set by JavaScript -->
                   </div>
                 </div>
                 <div class="profile-picture-actions">

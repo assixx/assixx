@@ -138,7 +138,7 @@ export class User {
     const finalUsername = email;
 
     // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
-    const iban = userData.iban || "";
+    const iban = userData.iban ?? "";
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -153,7 +153,7 @@ export class User {
       );
 
       if (tenantResult.length > 0) {
-        const subdomain = tenantResult[0].subdomain || "DEFAULT";
+        const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
         const { tempId } = generateTempEmployeeId(
           subdomain,
           role || "employee",
@@ -203,14 +203,14 @@ export class User {
       logger.info(`User created successfully with ID: ${result.insertId}`);
 
       // Update employee_id with actual user ID if it was generated
-      if (!employee_id && finalEmployeeId && finalEmployeeId.includes("TEMP")) {
+      if (!employee_id && finalEmployeeId?.includes("TEMP")) {
         const [tenantResult] = await executeQuery<RowDataPacket[]>(
           "SELECT subdomain FROM tenants WHERE id = ?",
           [userData.tenant_id],
         );
 
         if (tenantResult.length > 0) {
-          const subdomain = tenantResult[0].subdomain || "DEFAULT";
+          const subdomain = tenantResult[0].subdomain ?? "DEFAULT";
           const newEmployeeId = generateEmployeeId(
             subdomain,
             role || "employee",
@@ -530,8 +530,8 @@ export class User {
 
       // Pagination hinzufügen
       if (filters.limit) {
-        const limit = parseInt(filters.limit.toString()) || 20;
-        const page = parseInt((filters.page || 1).toString()) || 1;
+        const limit = parseInt(filters.limit.toString()) ?? 20;
+        const page = parseInt((filters.page ?? 1).toString()) || 1;
         const offset = (page - 1) * limit;
 
         query += ` LIMIT ? OFFSET ?`;
@@ -971,7 +971,7 @@ export class User {
         count: number;
       }
       const [rows] = await executeQuery<CountResult[]>(query, params);
-      return rows[0]?.count || 0;
+      return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(`Error counting users: ${(error as Error).message}`);
       return 0;
@@ -988,7 +988,7 @@ export class User {
         "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND is_active = 1",
         [tenantId],
       );
-      return rows[0]?.count || 0;
+      return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(`Error counting active users: ${(error as Error).message}`);
       return 0;

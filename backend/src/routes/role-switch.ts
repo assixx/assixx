@@ -69,7 +69,7 @@ router.post(
           tenant_id: user.tenant_id,
           isRoleSwitched: true,
         },
-        process.env.JWT_SECRET || "your-secret-key",
+        process.env.JWT_SECRET ?? "your-secret-key",
         { expiresIn: "24h" },
       );
 
@@ -146,7 +146,7 @@ router.post(
           tenant_id: user.tenant_id,
           isRoleSwitched: false,
         },
-        process.env.JWT_SECRET || "your-secret-key",
+        process.env.JWT_SECRET ?? "your-secret-key",
         { expiresIn: "24h" },
       );
 
@@ -221,7 +221,7 @@ router.post(
           tenant_id: user.tenant_id,
           isRoleSwitched: false,
         },
-        process.env.JWT_SECRET || "your-secret-key",
+        process.env.JWT_SECRET ?? "your-secret-key",
         { expiresIn: "24h" },
       );
 
@@ -233,7 +233,7 @@ router.post(
         entity_type: "user",
         entity_id: req.user.id,
         new_values: {
-          from_role: req.user.activeRole || req.user.role || "unknown",
+          from_role: req.user.activeRole ?? (req.user.role || "unknown"),
           to_role: "root",
           timestamp: new Date(),
         },
@@ -294,7 +294,7 @@ router.post(
           tenant_id: user.tenant_id,
           isRoleSwitched: true,
         },
-        process.env.JWT_SECRET || "your-secret-key",
+        process.env.JWT_SECRET ?? "your-secret-key",
         { expiresIn: "24h" },
       );
 

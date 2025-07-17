@@ -104,7 +104,7 @@ export class BrowserFingerprint {
   private static getWebGLFingerprint(): string {
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
       if (!gl || !(gl instanceof WebGLRenderingContext)) return 'no-webgl';
 
       interface WebGLDebugRendererInfo {
@@ -133,7 +133,7 @@ export class BrowserFingerprint {
         webkitAudioContext?: typeof AudioContext;
       }
 
-      const audioContext = new (window.AudioContext || (window as AudioWindow).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ?? (window as AudioWindow).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const analyser = audioContext.createAnalyser();
       const gain = audioContext.createGain();

@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const data = await response.json();
-        const user = data.data || data.user;
+        const user = data.data ?? data.user;
 
         // Check if user has temporary employee number
         if (user.employeeNumber === '000001' || user.employee_number === '000001') {
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
           window.location.reload();
         } else {
           const error = await response.json();
-          alert(`Fehler: ${error.message || 'Personalnummer konnte nicht gespeichert werden.'}`);
+          alert(`Fehler: ${error.message ?? 'Personalnummer konnte nicht gespeichert werden.'}`);
         }
       } catch (error) {
         console.error('Error updating employee number:', error);
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
       email: elements.email.value,
       password: elements.password.value,
       position: elements.position.value,
-      notes: elements.notes?.value || '',
+      notes: elements.notes?.value ?? '',
     };
 
     try {
@@ -263,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const adminsData = await adminsResponse.json();
         const usersData = await usersResponse.json();
 
-        const admins: AdminUser[] = adminsData.data || adminsData || [];
-        const users: User[] = usersData.data || usersData || [];
+        const admins: AdminUser[] = adminsData.data ?? (adminsData || []);
+        const users: User[] = usersData.data ?? (usersData || []);
 
         // Update counters
         const adminCount = document.getElementById('admin-count');
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const data = await response.json();
-        const admins: AdminUser[] = data.data || data || [];
+        const admins: AdminUser[] = data.data ?? (data || []);
         console.info('Loaded admins:', admins);
         displayAdmins(admins);
 
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Parse JWT token to get basic user info
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        userNameElement.textContent = payload.username || 'Root';
+        userNameElement.textContent = payload.username ?? 'Root';
       } catch (e) {
         console.error('Error parsing JWT token:', e);
       }
@@ -362,14 +362,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok) {
         const userData = (await response.json()) as { data?: User; user?: User } & User;
-        const user = userData.data || userData.user || userData;
+        const user = userData.data ?? (userData.user || userData);
 
         // Update username with full name if available
         if (user.first_name || user.last_name) {
-          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-          userNameElement.textContent = fullName || user.username || 'Root';
+          const fullName = `${user.first_name ?? ''} ${user.last_name || ''}`.trim();
+          userNameElement.textContent = fullName ?? (user.username || 'Root');
         } else {
-          userNameElement.textContent = user.username || 'Root';
+          userNameElement.textContent = user.username ?? 'Root';
         }
 
         // Update avatar if available
@@ -383,10 +383,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error('Error loading user info:', error);
       // Fallback to local storage
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const user = JSON.parse(localStorage.getItem('user') ?? '{}');
       const userName = document.getElementById('user-name');
       if (userName) {
-        userName.textContent = user.username || 'Root';
+        userName.textContent = user.username ?? 'Root';
       }
     }
   }
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
       assign: 'Zugewiesen',
       unassign: 'Entfernt',
     };
-    return actionLabels[action] || action;
+    return actionLabels[action] ?? action;
   }
 
   // Helper function to get readable role labels
@@ -471,6 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
       admin: 'Admin',
       employee: 'Mitarbeiter',
     };
-    return roleLabels[role] || role;
+    return roleLabels[role] ?? role;
   }
 });

@@ -112,8 +112,8 @@ class CalendarController {
           events: [],
           pagination: {
             total: 0,
-            page: filters.page || 1,
-            limit: filters.limit || 50,
+            page: filters.page ?? 1,
+            limit: filters.limit ?? 50,
             totalPages: 0,
           },
         });

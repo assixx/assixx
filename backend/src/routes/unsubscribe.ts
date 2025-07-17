@@ -79,7 +79,7 @@ router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
     // Token verifizieren
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "default-secret",
+      process.env.JWT_SECRET ?? "default-secret",
     ) as unknown as UnsubscribeToken;
 
     if (
@@ -98,7 +98,7 @@ router.get("/", unsubscribeRateLimiter, async (req, res): Promise<void> => {
     }
 
     // Bestimmte oder alle Benachrichtigungen deaktivieren
-    const notificationType = decoded.type || "all";
+    const notificationType = decoded.type ?? "all";
 
     // TODO: Implement notification settings when notification_settings column is added to users table
     /*

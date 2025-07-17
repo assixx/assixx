@@ -160,7 +160,7 @@ export class DocumentBase {
       const result = await response.json();
 
       // Backend returns {data: Document[], pagination: {...}}
-      this.allDocuments = result.data || result.documents || [];
+      this.allDocuments = result.data ?? (result.documents || []);
 
       // Filter based on scope
       this.filterDocumentsByScope();
@@ -215,8 +215,8 @@ export class DocumentBase {
       this.filteredDocuments = this.allDocuments.filter(
         (doc) =>
           doc.file_name.toLowerCase().includes(this.currentSearch) ||
-          (doc.description && doc.description.toLowerCase().includes(this.currentSearch)) ||
-          (doc.uploaded_by_name && doc.uploaded_by_name.toLowerCase().includes(this.currentSearch)),
+          doc.description?.toLowerCase().includes(this.currentSearch) ||
+          doc.uploaded_by_name?.toLowerCase().includes(this.currentSearch),
       );
 
       // Sort results
@@ -320,7 +320,7 @@ export class DocumentBase {
     card.className = 'document-card';
     card.onclick = () => this.viewDocument(doc.id);
 
-    const icon = this.getFileIcon(doc.mime_type || doc.file_name);
+    const icon = this.getFileIcon(doc.mime_type ?? doc.file_name);
     const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
     const archivedBadge = doc.is_archived ? '<span class="document-badge archived">ARCHIVIERT</span>' : '';
     const scopeInfo =

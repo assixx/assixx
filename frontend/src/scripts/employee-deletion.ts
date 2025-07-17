@@ -38,7 +38,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       return response.json();
     })
     .then((employee: User) => {
-      selectedEmployeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim();
+      selectedEmployeeName = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim();
 
       // Prüfen, ob der Mitarbeiter Dokumente hat
       return fetch(`/api/documents?user_id=${employeeId}`, {
@@ -53,7 +53,7 @@ function showDeleteEmployeeDialog(employeeId: number): void {
       }
       try {
         const data = await response.json();
-        return Array.isArray(data) ? data : data.documents || [];
+        return Array.isArray(data) ? data : (data.documents ?? []);
       } catch {
         // If JSON parsing fails, assume no documents
         return [];
@@ -233,7 +233,7 @@ function processEmployeeDeletion(): void {
             try {
               const error = await response.json();
 
-              alert(`Fehler: ${error.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+              alert(`Fehler: ${error.message ?? 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
             } catch {
               alert('Fehler beim Löschen des Mitarbeiters');
             }
@@ -286,7 +286,7 @@ function processEmployeeDeletion(): void {
             try {
               const error = await response.json();
 
-              alert(`Fehler: ${error.message || 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
+              alert(`Fehler: ${error.message ?? 'Unbekannter Fehler beim Löschen des Mitarbeiters'}`);
             } catch {
               alert('Fehler beim Löschen des Mitarbeiters');
             }

@@ -159,10 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const companyInput = document.getElementById('company') as HTMLInputElement;
     const notesInput = document.getElementById('notes') as HTMLTextAreaElement;
 
-    if (usernameInput) usernameInput.value = admin.username || '';
-    if (emailInput) emailInput.value = admin.email || '';
-    if (companyInput) companyInput.value = admin.company || '';
-    if (notesInput) notesInput.value = admin.notes || '';
+    if (usernameInput) usernameInput.value = admin.username ?? '';
+    if (emailInput) emailInput.value = admin.email ?? '';
+    if (companyInput) companyInput.value = admin.company ?? '';
+    if (notesInput) notesInput.value = admin.notes ?? '';
     // Password is not populated as it's not stored in plain text
   }
 
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Show loading state
     const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-    const originalText = submitButton?.textContent || 'Speichern';
+    const originalText = submitButton?.textContent ?? 'Speichern';
     if (submitButton) {
       submitButton.disabled = true;
       submitButton.textContent = 'Wird gespeichert...';

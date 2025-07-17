@@ -231,16 +231,16 @@ let transporter: Transporter | null = null;
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
   // Default-Konfiguration für Entwicklung
   const defaultConfig: EmailConfig = {
-    host: process.env.EMAIL_HOST || "smtp.example.com",
-    port: parseInt(process.env.EMAIL_PORT || "587", 10),
+    host: process.env.EMAIL_HOST ?? "smtp.example.com",
+    port: parseInt(process.env.EMAIL_PORT ?? "587", 10),
     secure: process.env.EMAIL_SECURE === "true",
     auth: {
-      user: process.env.EMAIL_USER || "user@example.com",
-      pass: process.env.EMAIL_PASSWORD || "password",
+      user: process.env.EMAIL_USER ?? "user@example.com",
+      pass: process.env.EMAIL_PASSWORD ?? "password",
     },
   };
 
-  const transportConfig: EmailConfig = config || defaultConfig;
+  const transportConfig: EmailConfig = config ?? defaultConfig;
 
   transporter = nodemailer.createTransport(transportConfig);
 
@@ -343,7 +343,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
     const from: string =
-      options.from || process.env.EMAIL_FROM || "Assixx <noreply@assixx.de>";
+      (options.from || process.env.EMAIL_FROM) ?? "Assixx <noreply@assixx.de>";
 
     // HTML-Sanitization
     let sanitizedHtml: string | undefined = options.html;
@@ -492,9 +492,9 @@ async function sendNewDocumentNotification(
     const replacements: TemplateReplacements = {
       userName: `${user.first_name} ${user.last_name}`,
       documentName: document.file_name,
-      documentCategory: document.category || "Allgemein",
+      documentCategory: document.category ?? "Allgemein",
       documentDate: new Date(document.upload_date).toLocaleDateString("de-DE"),
-      dashboardUrl: `${process.env.APP_URL || "https://app.assixx.de"}/employee-dashboard`,
+      dashboardUrl: `${process.env.APP_URL ?? "https://app.assixx.de"}/employee-dashboard`,
       unsubscribeUrl,
     };
 
@@ -530,8 +530,8 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
 
     const replacements: TemplateReplacements = {
       userName: `${user.first_name} ${user.last_name}`,
-      companyName: user.company || "Ihr Unternehmen",
-      loginUrl: `${process.env.APP_URL || "https://app.assixx.de"}/login.html`,
+      companyName: user.company ?? "Ihr Unternehmen",
+      loginUrl: `${process.env.APP_URL ?? "https://app.assixx.de"}/login.html`,
     };
 
     const html: string = await loadTemplate("welcome", replacements);
@@ -599,7 +599,7 @@ async function sendBulkNotification(
     }
 
     // HTML aus Template laden, falls nicht direkt angegeben
-    let html: string = messageOptions.html || "";
+    let html: string = messageOptions.html ?? "";
     if (messageOptions.templateName) {
       // const notificationType: string =
       //   messageOptions.notificationType || 'notification'; // Unused
@@ -656,11 +656,11 @@ function generateUnsubscribeLink(email: string, type: string = "all"): string {
   // Token generieren (würde normalerweise mit JWT o.ä. implementiert)
   const token: string = jwt.sign(
     { email, type, purpose: "unsubscribe" },
-    process.env.JWT_SECRET || "default-secret",
+    process.env.JWT_SECRET ?? "default-secret",
     { expiresIn: "30d" },
   );
 
-  return `${process.env.APP_URL || "https://app.assixx.de"}/unsubscribe?token=${token}`;
+  return `${process.env.APP_URL ?? "https://app.assixx.de"}/unsubscribe?token=${token}`;
 }
 
 // ES module exports

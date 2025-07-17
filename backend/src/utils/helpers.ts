@@ -43,7 +43,7 @@ export function generateRandomString(length: number = 32): string {
  * @returns Parsed pagination object
  */
 export function parsePagination(query: QueryParams): PaginationResult {
-  const page = parseInt(String(query.page)) || PAGINATION.DEFAULT_PAGE;
+  const page = parseInt(String(query.page)) ?? PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(
     parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
     PAGINATION.MAX_LIMIT,

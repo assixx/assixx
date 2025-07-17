@@ -78,7 +78,7 @@ export class ChatWebSocketServer {
       // Token aus Query-Parameter oder Header extrahieren
       const url = new URL(
         request.url || "/",
-        `http://${request.headers.host || "localhost"}`,
+        `http://${request.headers.host ?? "localhost"}`,
       );
       const token =
         url.searchParams.get("token") ||
@@ -257,14 +257,14 @@ export class ChatWebSocketServer {
             sender.username ||
             "Unbekannter Benutzer"
           : "Unbekannter Benutzer",
-        first_name: sender?.first_name || "",
-        last_name: sender?.last_name || "",
-        username: sender?.username || "",
-        profile_picture_url: sender?.profile_picture_url || null,
+        first_name: sender?.first_name ?? "",
+        last_name: sender?.last_name ?? "",
+        username: sender?.username ?? "",
+        profile_picture_url: sender?.profile_picture_url ?? null,
         created_at: new Date().toISOString(),
         delivery_status: "sent",
         is_read: false,
-        attachments: attachments || [],
+        attachments: attachments ?? [],
       };
 
       // Nachricht an alle Teilnehmer senden
@@ -550,9 +550,9 @@ export class ChatWebSocketServer {
                 .filter((n: string) => n)
                 .join(" ") || "Unbekannter Benutzer"
             : "Unbekannter Benutzer",
-          first_name: sender?.first_name || "",
-          last_name: sender?.last_name || "",
-          profile_picture_url: sender?.profile_picture_url || null,
+          first_name: sender?.first_name ?? "",
+          last_name: sender?.last_name ?? "",
+          profile_picture_url: sender?.profile_picture_url ?? null,
           created_at: message.created_at,
           delivery_status: "delivered",
           is_read: false,
@@ -630,9 +630,9 @@ export class ChatWebSocketServer {
             sender_name:
               `${message.first_name || ""} ${message.last_name || ""}`.trim() ||
               "Unbekannter Benutzer",
-            first_name: message.first_name || "",
-            last_name: message.last_name || "",
-            profile_picture_url: message.profile_picture_url || null,
+            first_name: message.first_name ?? "",
+            last_name: message.last_name ?? "",
+            profile_picture_url: message.profile_picture_url ?? null,
             created_at: message.created_at,
             delivery_status: "delivered",
             is_read: false,

@@ -127,7 +127,7 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
     ports:
-      - '3001:3001'  # Health check port
+      - '3001:3001' # Health check port
     volumes:
       - ../backend:/app/backend:delegated
       - ../scripts:/app/scripts:delegated
@@ -160,7 +160,8 @@ services:
       timeout: 10s
       retries: 3
     # Worker command - use tsx directly
-    command: ['pnpm', 'exec', 'tsx', '/app/backend/src/workers/deletionWorker.ts']
+    command:
+      ['pnpm', 'exec', 'tsx', '/app/backend/src/workers/deletionWorker.ts']
 
   # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
   phpmyadmin:

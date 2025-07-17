@@ -18,10 +18,7 @@ import { typed } from "../utils/routeHandlers";
 import { AuthenticatedRequest } from "../types/request.types";
 import { security } from "../middleware/security";
 import { successResponse, errorResponse } from "../types/response.types";
-import {
-  sanitizeFilename,
-  getUploadDirectory,
-} from "../utils/pathSecurity";
+import { sanitizeFilename, getUploadDirectory } from "../utils/pathSecurity";
 import { createValidation } from "../middleware/validation";
 import { param } from "express-validator";
 import { rateLimiter } from "../middleware/rateLimiter";
@@ -35,7 +32,7 @@ const router: Router = express.Router();
 const storage = multer.diskStorage({
   destination: async (req, _file, cb) => {
     const authReq = req as AuthenticatedRequest;
-    const tenantId = authReq.user.tenant_id || 1;
+    const tenantId = authReq.user.tenant_id ?? 1;
     const baseUploadDir = getUploadDirectory("blackboard");
     const uploadDir = path.join(baseUploadDir, tenantId.toString());
 
@@ -108,7 +105,7 @@ const updateEntryValidation = createValidation([]);
 
 // Helper function to get tenant ID from user object
 function getTenantId(user: AuthenticatedRequest["user"]): number {
-  return user.tenant_id || 1;
+  return user.tenant_id ?? 1;
 }
 
 // Helper function to check if user can manage the entry
@@ -325,19 +322,19 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const options: EntryQueryOptions = {
-        status: ((req.query.status as string) || "active") as
+        status: ((req.query.status as string) ?? "active") as
           | "active"
           | "archived",
-        filter: ((req.query.filter as string) || "all") as
+        filter: ((req.query.filter as string) ?? "all") as
           | "all"
           | "company"
           | "department"
           | "team",
-        search: (req.query.search as string) || "",
-        page: parseInt((req.query.page as string) || "1", 10),
-        limit: parseInt((req.query.limit as string) || "18", 10),
-        sortBy: (req.query.sortBy as string) || "created_at",
-        sortDir: ((req.query.sortDir as string) || "DESC") as "ASC" | "DESC",
+        search: (req.query.search as string) ?? "",
+        page: parseInt((req.query.page as string) ?? "1", 10),
+        limit: parseInt((req.query.limit as string) ?? "18", 10),
+        sortBy: (req.query.sortBy as string) ?? "created_at",
+        sortDir: ((req.query.sortDir as string) ?? "DESC") as "ASC" | "DESC",
       };
 
       const result = await blackboardModel.getAllEntries(
@@ -368,7 +365,7 @@ router.get(
   typed.auth(async (req, res) => {
     try {
       const tenantId = getTenantId(req.user);
-      const limit = parseInt(String(req.query.limit || "3"), 10);
+      const limit = parseInt(String(req.query.limit ?? "3"), 10);
 
       const entries = await blackboardModel.getDashboardEntries(
         tenantId,
@@ -395,19 +392,19 @@ router.get(
       const tenantId = getTenantId(req.user);
 
       const options: EntryQueryOptions = {
-        status: ((req.query.status as string) || "active") as
+        status: ((req.query.status as string) ?? "active") as
           | "active"
           | "archived",
-        filter: ((req.query.filter as string) || "all") as
+        filter: ((req.query.filter as string) ?? "all") as
           | "all"
           | "company"
           | "department"
           | "team",
-        search: (req.query.search as string) || "",
-        page: parseInt((req.query.page as string) || "1", 10),
-        limit: parseInt((req.query.limit as string) || "18", 10),
-        sortBy: (req.query.sortBy as string) || "created_at",
-        sortDir: (((req.query.sortOrder || req.query.sortDir) as string) ||
+        search: (req.query.search as string) ?? "",
+        page: parseInt((req.query.page as string) ?? "1", 10),
+        limit: parseInt((req.query.limit as string) ?? "18", 10),
+        sortBy: (req.query.sortBy as string) ?? "created_at",
+        sortDir: (((req.query.sortOrder ?? req.query.sortDir) as string) ||
           "DESC") as "ASC" | "DESC",
       };
 
@@ -594,7 +591,8 @@ router.post(
       }
 
       // Handle priority_level vs priority field name
-      const priority = req.body.priority || req.body.priority_level || "normal";
+      const priority =
+        req.body.priority ?? (req.body.priority_level || "normal");
 
       const entryData: EntryCreateData = {
         tenant_id: tenantId,
@@ -605,9 +603,9 @@ router.post(
         author_id: req.user.id,
         expires_at: req.body.expires_at ? new Date(req.body.expires_at) : null,
         priority: priority as "low" | "normal" | "high" | "urgent",
-        color: req.body.color || "blue",
-        tags: req.body.tags || [],
-        requires_confirmation: req.body.requires_confirmation || false,
+        color: req.body.color ?? "blue",
+        tags: req.body.tags ?? [],
+        requires_confirmation: req.body.requires_confirmation ?? false,
       };
 
       // Create the entry
@@ -980,19 +978,21 @@ router.get(
       // Validate and send file
       // If the file_path is already absolute, use it directly
       let filePath = attachment.file_path;
-      
+
       // If it's a relative path, resolve it relative to uploads directory
       if (!path.isAbsolute(filePath)) {
         const baseDir = path.resolve(process.cwd(), "uploads");
         filePath = path.join(baseDir, filePath);
       }
-      
+
       // Ensure the file is within the uploads directory
       const uploadsBase = path.resolve(process.cwd(), "uploads");
       const resolvedPath = path.resolve(filePath);
-      
+
       if (!resolvedPath.startsWith(uploadsBase)) {
-        logger.warn(`Path traversal attempt for attachment ${attachmentId}: ${filePath}`);
+        logger.warn(
+          `Path traversal attempt for attachment ${attachmentId}: ${filePath}`,
+        );
         res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
         return;
       }
@@ -1060,19 +1060,21 @@ router.get(
       // Validate and send file
       // If the file_path is already absolute, use it directly
       let filePath = attachment.file_path;
-      
+
       // If it's a relative path, resolve it relative to uploads directory
       if (!path.isAbsolute(filePath)) {
         const baseDir = path.resolve(process.cwd(), "uploads");
         filePath = path.join(baseDir, filePath);
       }
-      
+
       // Ensure the file is within the uploads directory
       const uploadsBase = path.resolve(process.cwd(), "uploads");
       const resolvedPath = path.resolve(filePath);
-      
+
       if (!resolvedPath.startsWith(uploadsBase)) {
-        logger.warn(`Path traversal attempt for attachment preview ${attachmentId}: ${filePath}`);
+        logger.warn(
+          `Path traversal attempt for attachment preview ${attachmentId}: ${filePath}`,
+        );
         res.status(400).json(errorResponse("Ungültiger Dateipfad", 400));
         return;
       }
@@ -1089,7 +1091,6 @@ router.get(
     }
   }),
 );
-
 
 /**
  * @route DELETE /api/blackboard/attachments/:attachmentId

@@ -25,7 +25,7 @@ interface ConfirmTracking {
 
   // Override confirm function
   window.confirm = function (message?: string): boolean {
-    const confirmMessage = message || '';
+    const confirmMessage = message ?? '';
     console.info(`[Confirm] Confirm dialog requested: ${confirmMessage}`);
 
     const now = Date.now();

@@ -265,7 +265,7 @@ class DepartmentGroupService {
           name: row.name,
           description: row.description,
           parent_group_id: row.parent_group_id,
-          departments: assignmentMap.get(row.id) || [],
+          departments: assignmentMap.get(row.id) ?? [],
           subgroups: [],
         };
         groupMap.set(row.id, group);

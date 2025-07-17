@@ -7,6 +7,42 @@ import type { User, Document } from '../types/api.types';
 import { getAuthToken, showSuccess, showError } from './auth';
 import { showSection } from './show-section';
 
+// Blackboard types (matching blackboard.ts)
+interface BlackboardEntry {
+  id: number;
+  title: string;
+  content: string;
+  priority_level: 'low' | 'medium' | 'high' | 'critical';
+  org_level: 'all' | 'department' | 'team';
+  org_id?: number;
+  department_id?: number;
+  team_id?: number;
+  color: string;
+  created_by: number;
+  created_by_name?: string;
+  author_name?: string;
+  author_first_name?: string;
+  author_last_name?: string;
+  author_full_name?: string;
+  created_at: string;
+  updated_at: string;
+  tags?: string[];
+  attachment_count?: number;
+  attachments?: BlackboardAttachment[];
+}
+
+interface BlackboardAttachment {
+  id: number;
+  entry_id: number;
+  filename: string;
+  original_name: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: number;
+  uploaded_at: string;
+  uploader_name?: string;
+}
+
 interface DashboardStats {
   employeeCount: number;
   documentCount: number;
@@ -80,7 +116,7 @@ let token: string | null = null;
 // Load Departments for Employee Select (defined globally)
 const loadDepartmentsForEmployeeSelect = async function (): Promise<void> {
   try {
-    const authToken = token || getAuthToken();
+    const authToken = token ?? getAuthToken();
     const response = await fetch('/api/departments', {
       headers: {
         Authorization: `Bearer ${authToken}`,
@@ -279,7 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default to dashboard if no section specified
     showSection('dashboard');
   }
-  
 
   // Setup manage links
   const manageEmployeesLink = document.getElementById('manage-employees-link');
@@ -333,10 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const deptCountElement = document.getElementById('department-count');
         const teamCount = document.getElementById('team-count');
 
-        if (employeeCount) employeeCount.textContent = (stats.employeeCount || 0).toString();
-        if (documentCount) documentCount.textContent = (stats.documentCount || 0).toString();
-        if (deptCountElement) deptCountElement.textContent = (stats.departmentCount || 0).toString();
-        if (teamCount) teamCount.textContent = (stats.teamCount || 0).toString();
+        if (employeeCount) employeeCount.textContent = (stats.employeeCount ?? 0).toString();
+        if (documentCount) documentCount.textContent = (stats.documentCount ?? 0).toString();
+        if (deptCountElement) deptCountElement.textContent = (stats.departmentCount ?? 0).toString();
+        if (teamCount) teamCount.textContent = (stats.teamCount ?? 0).toString();
       } else {
         console.error('Failed to load dashboard stats', statsRes.statusText);
 
@@ -458,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      const entries = data.entries || [];
+      const entries = data.entries ?? [];
 
       // Clear loading placeholder
       previewContainer.innerHTML = '';
@@ -477,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render entries
       const entriesHtml = entries
         .map((entry: { id: number; title: string; priority?: string; created_at: string }) => {
-          const priorityClass = `priority-${entry.priority || 'normal'}`;
-          const priorityLabel = getPriorityLabel(entry.priority || 'normal');
+          const priorityClass = `priority-${entry.priority ?? 'normal'}`;
+          const priorityLabel = getPriorityLabel(entry.priority ?? 'normal');
           const createdDate = new Date(entry.created_at).toLocaleDateString('de-DE', {
             day: '2-digit',
             month: '2-digit',
@@ -523,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       normal: 'Normal',
       low: 'Niedrig',
     };
-    return labels[priority] || 'Normal';
+    return labels[priority] ?? 'Normal';
   }
 
   // Load Blackboard Widget - zeigt die neuesten Einträge mit Anhängen
@@ -606,25 +641,25 @@ document.addEventListener('DOMContentLoaded', () => {
       miniNotesContainer.className = 'mini-notes-container';
 
       console.log('[BlackboardWidget] Creating mini-notes for entries...');
-      
+
       // Render entries as mini-notes
-      entries.forEach((entry: any, index: number) => {
+      entries.forEach((entry: BlackboardEntry, index: number) => {
         console.log(`[BlackboardWidget] Processing entry ${index + 1}:`, entry);
-        
+
         const noteDiv = document.createElement('div');
-        const colorClass = entry.color || 'white';
+        const colorClass = entry.color ?? 'white';
         const hasAttachment = entry.attachments && entry.attachments.length > 0;
         noteDiv.className = `mini-note ${colorClass}${hasAttachment ? ' has-attachment' : ''}`;
         noteDiv.id = `mini-note-${entry.id}`;
 
         let attachmentHtml = '';
-        if (hasAttachment && entry.attachments[0]) {
+        if (hasAttachment && entry.attachments?.[0]) {
           const attachment = entry.attachments[0];
           if (attachment.mime_type === 'application/pdf') {
             // PDF preview - using new approach with scaling
             attachmentHtml = `
               <div class="mini-note-attachment" style="position: relative; height: 220px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
-                <div style="transform: scale(0.15); transform-origin: top left; width: ${100/0.15}%; height: ${100/0.15}%;">
+                <div style="transform: scale(0.15); transform-origin: top left; width: ${100 / 0.15}%; height: ${100 / 0.15}%;">
                   <object data="/api/blackboard/attachments/${attachment.id}/preview#toolbar=0&navpanes=0&scrollbar=0&view=FitH" 
                           type="application/pdf" 
                           style="width: 100%; height: 100%; pointer-events: none;">
@@ -663,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${attachmentHtml}
           <div class="mini-note-meta">
             <span class="mini-note-priority">
-              <span class="priority-dot ${entry.priority_level || ''}"></span>
+              <span class="priority-dot ${entry.priority_level ?? ''}"></span>
               ${getPriorityLabel(entry.priority_level || 'normal')}
             </span>
             <span>${dateStr}</span>
@@ -686,7 +721,6 @@ document.addEventListener('DOMContentLoaded', () => {
         widget.classList.add('loaded');
         console.log('[BlackboardWidget] Widget marked as loaded');
       }
-
     } catch (error) {
       console.error('[BlackboardWidget] Error loading widget:', error);
 
@@ -746,16 +780,16 @@ document.addEventListener('DOMContentLoaded', () => {
           first_name: employeeData.first_name,
           last_name: employeeData.last_name,
           employee_id: employeeData.employee_id,
-          position: employeeData.position || '',
+          position: employeeData.position ?? '',
           department_id: employeeData.department_id ? parseInt(employeeData.department_id) : null,
           team_id: employeeData.team_id ? parseInt(employeeData.team_id) : null,
-          phone: employeeData.phone || '',
-          birth_date: employeeData.birth_date || null,
-          start_date: employeeData.start_date || null,
-          street: employeeData.street || '',
-          house_number: employeeData.house_number || '',
-          postal_code: employeeData.postal_code || '',
-          city: employeeData.city || '',
+          phone: employeeData.phone ?? '',
+          birth_date: employeeData.birth_date ?? null,
+          start_date: employeeData.start_date ?? null,
+          street: employeeData.street ?? '',
+          house_number: employeeData.house_number ?? '',
+          postal_code: employeeData.postal_code ?? '',
+          city: employeeData.city ?? '',
         }),
       });
 
@@ -811,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const data = await response.json();
-      const employees = Array.isArray(data) ? data : data.users || data.employees || [];
+      const employees = Array.isArray(data) ? data : (data.users ?? (data.employees || []));
 
       // Fill compact card
       const employeeCard = document.getElementById('recent-employees');
@@ -826,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'compact-item';
             item.innerHTML = `
               <span class="compact-item-name">${emp.first_name} ${emp.last_name}</span>
-              <span class="compact-item-count">${emp.position || 'Mitarbeiter'}</span>
+              <span class="compact-item-count">${emp.position ?? 'Mitarbeiter'}</span>
             `;
             employeeCard.appendChild(item);
           });
@@ -845,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const listItem = document.createElement('li');
             listItem.innerHTML = `
               <strong>${emp.first_name} ${emp.last_name}</strong> - ${emp.position || 'Mitarbeiter'}
-              <span class="text-muted">(${emp.department || 'Keine Abteilung'})</span>
+              <span class="text-muted">(${emp.department ?? 'Keine Abteilung'})</span>
             `;
             employeeDetailList.appendChild(listItem);
           });
@@ -1015,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
         item.className = 'compact-item';
         item.innerHTML = `
           <span class="compact-item-name">${team.name}</span>
-          <span class="compact-item-count">${team.department_name || ''}</span>
+          <span class="compact-item-count">${team.department_name ?? ''}</span>
         `;
         teamList.appendChild(item);
       });
@@ -1035,8 +1069,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
-      status: (formData.get('status') as string) || 'active',
-      visibility: (formData.get('visibility') as string) || 'public',
+      status: (formData.get('status') as string) ?? 'active',
+      visibility: (formData.get('visibility') as string) ?? 'public',
     };
 
     try {
@@ -1153,7 +1187,7 @@ if (typeof window !== 'undefined') {
 
 // Export loadBlackboardWidget to window for debugging
 if (typeof window !== 'undefined') {
-  (window as any).debugLoadBlackboardWidget = () => {
+  (window as Window & { debugLoadBlackboardWidget?: () => void }).debugLoadBlackboardWidget = () => {
     console.log('[Debug] Manual loadBlackboardWidget call');
   };
 }

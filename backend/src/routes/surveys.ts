@@ -44,7 +44,7 @@ router.get(
         [userId, tenantId],
       );
 
-      const userDepartmentId = userInfo[0]?.department_id || null;
+      const userDepartmentId = userInfo[0]?.department_id ?? null;
 
       // Get all active surveys assigned to the employee
       const [surveys] = await execute<RowDataPacket[]>(
@@ -583,12 +583,12 @@ router.post(
             tenant_id: req.user.tenant_id,
             response_id: responseId,
             question_id: answer.question_id,
-            answer_text: answer.answer_text || null,
+            answer_text: answer.answer_text ?? null,
             answer_options: answer.answer_options
               ? JSON.stringify(answer.answer_options)
               : null,
-            answer_number: answer.answer_number || null,
-            answer_date: answer.answer_date || null,
+            answer_number: answer.answer_number ?? null,
+            answer_date: answer.answer_date ?? null,
           });
 
           await connection.execute(
@@ -758,11 +758,11 @@ router.get(
           { property: "Anonym", value: survey.is_anonymous ? "Ja" : "Nein" },
           {
             property: "Anzahl Antworten",
-            value: statistics.total_responses || 0,
+            value: statistics.total_responses ?? 0,
           },
           {
             property: "Abschlussrate",
-            value: `${statistics.completed_responses || 0} von ${statistics.total_responses || 0}`,
+            value: `${statistics.completed_responses ?? 0} von ${statistics.total_responses || 0}`,
           },
         ]);
 
@@ -823,7 +823,7 @@ router.get(
               });
 
               question.options.forEach((option) => {
-                const count = optionCounts[option.id] || 0;
+                const count = optionCounts[option.id] ?? 0;
                 const percentage =
                   responses.length > 0
                     ? Math.round((count / responses.length) * 100)

@@ -106,7 +106,7 @@ router.get("/profile", authenticateToken, async (req, res): Promise<void> => {
     const authReq = req as AuthenticatedRequest;
 
     // Validate user ID exists
-    if (!authReq.user || !authReq.user.id || !authReq.user.tenant_id) {
+    if (!authReq.user?.id || !authReq.user.tenant_id) {
       res.status(401).json({ message: "Nicht autorisiert" });
       return;
     }
@@ -241,7 +241,7 @@ router.get(
       const authReq = req as AuthenticatedRequest;
       const user = await User.findById(authReq.user.id, authReq.user.tenant_id);
 
-      if (!user || !user.profile_picture) {
+      if (!user?.profile_picture) {
         res.status(404).json({ message: "Profile picture not found" });
         return;
       }
@@ -302,7 +302,7 @@ router.post(
       const user = await User.findById(userId, authReq.user.tenant_id);
 
       // Delete old profile picture if it exists
-      if (user && user.profile_picture_url) {
+      if (user?.profile_picture_url) {
         const oldFilePath = path.join(
           process.cwd(),
           user.profile_picture_url.startsWith("/")

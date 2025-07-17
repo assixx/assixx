@@ -879,7 +879,7 @@ export class Blackboard {
          WHERE a.id = ? AND e.tenant_id = ?`,
         [attachmentId, tenant_id],
       );
-      return attachments[0] || null;
+      return attachments[0] ?? null;
     } catch (error) {
       logger.error("Error getting attachment by ID:", error);
       throw error;

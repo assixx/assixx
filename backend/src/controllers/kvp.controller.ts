@@ -325,7 +325,7 @@ class KvpController {
         [userId],
       );
 
-      const departmentId = req.body.department_id || userInfo[0]?.department_id;
+      const departmentId = req.body.department_id ?? userInfo[0]?.department_id;
 
       // Create suggestion
       const [result] = await executeQuery<ResultSetHeader>(
@@ -380,7 +380,7 @@ class KvpController {
           JSON.stringify({
             title: req.body.title,
             department_id: departmentId,
-            category_id: req.body.category_id || null,
+            category_id: req.body.category_id ?? null,
           }),
           req.ip || req.socket.remoteAddress,
           req.headers["user-agent"] || null,

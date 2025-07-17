@@ -167,7 +167,7 @@ class AuthService {
       // Ensure tenant_id is present
       const userWithTenantId = {
         ...userWithoutPassword,
-        tenant_id: userWithoutPassword.tenant_id || userData.tenant_id,
+        tenant_id: userWithoutPassword.tenant_id ?? userData.tenant_id,
       };
 
       return {
@@ -241,8 +241,8 @@ class AuthService {
       is_archived: dbUser.is_archived,
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone_number,
-      landline: dbUser.landline || null,
-      employee_number: dbUser.employee_number || "",
+      landline: dbUser.landline ?? null,
+      employee_number: dbUser.employee_number ?? "",
       position: dbUser.position,
       hire_date: dbUser.hire_date,
       birth_date: dbUser.birth_date,
@@ -293,7 +293,7 @@ class AuthService {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
-      password_hash: dbUser.password || "",
+      password_hash: dbUser.password ?? "",
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
       role: dbUser.role as "admin" | "employee" | "root",
@@ -303,16 +303,16 @@ class AuthService {
         dbUser.is_active === true ||
         dbUser.is_active === 1 ||
         dbUser.is_active === "1",
-      is_archived: dbUser.is_archived || false,
+      is_archived: dbUser.is_archived ?? false,
       profile_picture: dbUser.profile_picture ?? null,
       phone_number: dbUser.phone ?? null,
-      landline: dbUser.landline || null,
-      employee_number: dbUser.employee_number || "",
+      landline: dbUser.landline ?? null,
+      employee_number: dbUser.employee_number ?? "",
       position: dbUser.position ?? null,
       hire_date: dbUser.hire_date ?? null,
       birth_date: dbUser.birthday ?? null,
-      created_at: dbUser.created_at || new Date(),
-      updated_at: dbUser.updated_at || new Date(),
+      created_at: dbUser.created_at ?? new Date(),
+      updated_at: dbUser.updated_at ?? new Date(),
     };
   }
 }

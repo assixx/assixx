@@ -135,7 +135,7 @@ function setupUserAndLogout(): void {
         })
         .then((data: User) => {
           // Anzeigename setzen (Name oder Username)
-          const displayName = data.first_name ? `${data.first_name} ${data.last_name || ''}` : data.username;
+          const displayName = data.first_name ? `${data.first_name} ${data.last_name ?? ''}` : data.username;
           userInfo.textContent = displayName;
         })
         .catch((error) => {

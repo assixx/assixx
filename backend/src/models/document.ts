@@ -460,7 +460,7 @@ export class Document {
           "SELECT COUNT(*) as count FROM documents",
           [],
         );
-        return rows[0]?.count || 0;
+        return rows[0]?.count ?? 0;
       } catch (error) {
         logger.error(
           `Error counting all documents: ${(error as Error).message}`,
@@ -576,7 +576,7 @@ export class Document {
         "SELECT COUNT(*) as count FROM documents WHERE tenant_id = ?",
         [tenant_id],
       );
-      return rows[0]?.count || 0;
+      return rows[0]?.count ?? 0;
     } catch (error) {
       logger.error(
         `Error counting documents by tenant: ${(error as Error).message}`,
@@ -593,7 +593,7 @@ export class Document {
         "SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?",
         [tenant_id],
       );
-      const totalSize = rows[0]?.total_size || 0;
+      const totalSize = rows[0]?.total_size ?? 0;
       logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
       return totalSize;
     } catch (error) {
@@ -770,7 +770,7 @@ export class Document {
       tenant_id,
       userId,
     ]);
-    return results[0]?.unread_count || 0;
+    return results[0]?.unread_count ?? 0;
   }
 }
 

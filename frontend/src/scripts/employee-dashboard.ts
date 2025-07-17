@@ -178,21 +178,21 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update username in header
       const employeeName = document.getElementById('employee-name');
       if (employeeName) {
-        const fullName = `${info.first_name || ''} ${info.last_name || ''}`.trim();
-        employeeName.textContent = fullName || info.username;
+        const fullName = `${info.first_name ?? ''} ${info.last_name || ''}`.trim();
+        employeeName.textContent = fullName ?? info.username;
       }
 
       // Update username in welcome message
       const userName = document.getElementById('user-name');
       if (userName) {
-        userName.textContent = info.first_name || info.username;
+        userName.textContent = info.first_name ?? info.username;
       }
 
       // Update employee details if container exists
       const employeeDetails = document.getElementById('employee-details');
       if (employeeDetails) {
         employeeDetails.innerHTML = `
-          <p><strong>Name:</strong> ${escapeHtml(info.first_name || '')} ${escapeHtml(info.last_name || '')}</p>
+          <p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name || '')}</p>
           <p><strong>E-Mail:</strong> ${escapeHtml(info.email)}</p>
           ${info.department ? `<p><strong>Abteilung:</strong> ${escapeHtml(info.department)}</p>` : ''}
           ${info.team ? `<p><strong>Team:</strong> ${escapeHtml(info.team)}</p>` : ''}

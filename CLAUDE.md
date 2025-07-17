@@ -1,9 +1,10 @@
 # Claude Code – Assixx Project Complete Guide
-
+Multi-Tenant-Isolation--> tenant_id = Eine Firma-> vergesse das nicht ! Es darf nicht gemischt werden. !!!! Stetige abfrage!!!! Kritisch
 ## QUICK REFERENCE
+
 - Projekt: Multi-Tenant SaaS für Industriefirmen
 - GitHub: https://github.com/SCS-Technik/Assixx
-- Aktueller Branch: debugging/v0.1.0--R2Stable  
+- Aktueller Branch: debugging/v0.1.0--R2Stable
 - Tech Stack: TypeScript, Express, MySQL, Docker, Redis, Vite
 - Dev URL: http://localhost:3000
 - Docker Dir: /home/scs/projects/Assixx/docker
@@ -12,6 +13,7 @@
 - Projektstruktur: docs/PROJEKTSTRUKTUR.md
 
 ## KRITISCHE REGELN
+
 - **NIEMALS committen oder pushen ohne Erlaubnis vom User**
 - **NIEMALS Fast-Forward merge durchführen**
 - **IMMER existierende Dateien bearbeiten statt neue erstellen**
@@ -26,10 +28,11 @@
 - **Always make todowrite list**
 
 ## **Use MCP Tools Before Everything:**
-– Before modifying files (understand history)  
-– When tests fail (check recent changes)  
-– Finding related code (git grep)  
-– Understanding features (follow evolution)  
+
+– Before modifying files (understand history)
+– When tests fail (check recent changes)
+– Finding related code (git grep)
+– Understanding features (follow evolution)
 – Checking workflows (CI/CD issues)
 
 ## The Twelve Universal Commandments
@@ -50,11 +53,13 @@
 ## START-TRIGGER
 
 ### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
+
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen
 - **Prozess:** Alle Starttasks, TodoWrite mit 10 Punkten, komplette Checks
 - **Ziel:** Sicherstellen, dass alles korrekt läuft
 
 ### Trigger 2: "weitermachen mit Assixx und skip" (Quick-Start-Modus)
+
 - **Aktion:** Minimale Vorbereitung für sofortige Arbeit
 - **Prozess:**
   1. TODO.md lesen (nur TL;DR Section)
@@ -82,21 +87,25 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 ## HÄUFIGE TASKS
 
 ### Frontend-Änderung
+
 1. docker exec assixx-backend pnpm run build:ts
 2. Browser Cache leeren (Ctrl+Shift+R)
 3. Testen auf http://localhost:3000
 
-### Backend API-Änderung  
+### Backend API-Änderung
+
 1. docker exec assixx-backend pnpm run type-check
 2. docker-compose restart backend
 3. Logs prüfen: docker logs -f assixx-backend
 
 ### Datenbank-Migration
+
 1. Backup: bash scripts/quick-backup.sh "before_migration"
 2. Migration kopieren: docker cp migration.sql assixx-mysql:/tmp/
 3. Ausführen: docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main < /tmp/migration.sql
 
 ### TypeScript Fehler beheben
+
 1. docker exec assixx-backend pnpm run lint:fix
 2. docker exec assixx-backend pnpm run format
 3. docker exec assixx-backend pnpm run type-check
@@ -104,33 +113,41 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 ## WENN-DANN ANWEISUNGEN
 
 **WENN User fragt nach Feature-Status**
+
 - TODO.md prüfen, dann FEATURES.md
 
 **WENN TypeScript Error bei Route Handler**
+
 - typed.auth oder typed.body wrapper verwenden
 - Siehe backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md
 
 **WENN User will committen/pushen**
+
 - IMMER nachfragen: "Soll ich die Änderungen committen?"
 - NIE automatisch committen
 
 **WENN Neue Datei erstellen**
+
 - STOPP! Erst prüfen ob existierende Datei bearbeitet werden kann
 
 **WENN Database Error**
+
 - Foreign Key Constraints prüfen
 - Siehe DATABASE-MIGRATION-GUIDE.md
 
 **WENN Docker Container nicht startet**
+
 - docker-compose down && docker-compose up -d
 - Logs prüfen: docker-compose logs
 
 ## BEKANNTE ISSUES
+
 - TypeScript Test-Fehler (56 errors) - ignorieren, betrifft nur Tests
 - SMTP Warnings beim Start - optional, ignorieren
 - Port 3000 belegt - lsof -i :3000 && kill -9 PID
 
 ## PFLICHT-CHECKLISTE (TodoWrite mit 10 Punkten)
+
 1. Docker-Check
 2. TODO.md (AKTUELLE PHASE)
 3. CLAUDE.md
@@ -145,23 +162,27 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 ## ZENTRALE DOKUMENTATION
 
 **KERN-DOKUMENTE (Täglich relevant):**
+
 - docs/PROJEKTSTRUKTUR.md - Vollständige Verzeichnisstruktur
 - backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md - TypeScript Patterns (PFLICHT bei Backend)
 - docs/DATABASE-MIGRATION-GUIDE.md - DB Änderungen (PFLICHT bei Migrationen)
 - docs/DESIGN-STANDARDS.md - Glassmorphismus UI/UX
 
 **ARBEITS-DOKUMENTE:**
+
 - TODO.md - Aktuelle Aufgaben und Status
 - docs/BEFORE-STARTING-DEV.md - Tägliche Dev Checks
 - docs/FEATURES.md - Feature-Liste mit Preisen
 - docs/DATABASE-SETUP-README.md - DB Schema Referenz
 
 **REFERENZ (Bei Bedarf):**
+
 - docs/ARCHITECTURE.md - System-Übersicht
 - docs/ROADMAP.md - Zukünftige Features
 - CLAUDE.local.md - Lokale Notizen
 
 ## CODE-STANDARDS
+
 - Kommentiere WARUM, nicht WAS
 - Jede Funktion braucht JSDoc
 - Komplexe Logik erklären
@@ -171,13 +192,15 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 ## WORKFLOW
 
 ### Bei "weitermachen mit Assixx"
+
 1. TodoWrite mit 10 Punkten erstellen (siehe PFLICHT-CHECKLISTE)
 2. Alle Checks durchführen
 3. Zusammenfassung erstellen
 
 ### Dokumentation aktualisieren bei
+
 - DB-Änderungen: DATABASE-SETUP-README.md
-- Neue Features: FEATURES.md  
+- Neue Features: FEATURES.md
 - UI-Änderungen: DESIGN-STANDARDS.md
 - Struktur-Änderungen: PROJEKTSTRUKTUR.md
 
@@ -188,11 +211,13 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 Wenn ein Branch in master gemerged werden soll:
 
 1. **IMMER mit --no-ff mergen:**
+
    ```bash
    git merge --no-ff <branch-name>
    ```
 
 2. **VOR dem Merge alle Änderungen prüfen:**
+
    ```bash
    # Alle geänderten Dateien anzeigen
    git diff master..<branch-name> --name-status
@@ -208,6 +233,7 @@ Wenn ein Branch in master gemerged werden soll:
    - "Hast du die Änderungen in [Dateiname] gesehen?"
 
 **Warum kein Fast-Forward:**
+
 - Merge-Historie bleibt sichtbar
 - Einfacheres Rollback bei Problemen
 - Verhindert versehentliche Änderungen
@@ -215,6 +241,7 @@ Wenn ein Branch in master gemerged werden soll:
 ## QUICK COMMANDS
 
 ### Docker
+
 ```bash
 cd /home/scs/projects/Assixx/docker
 docker-compose ps
@@ -225,6 +252,7 @@ docker logs -f assixx-backend
 ```
 
 ### TypeScript
+
 ```bash
 docker exec assixx-backend pnpm run type-check
 docker exec assixx-backend pnpm run lint:fix
@@ -233,6 +261,7 @@ docker exec assixx-backend pnpm run build:ts
 ```
 
 ### Git
+
 ```bash
 git status
 git log --oneline -5
@@ -242,13 +271,14 @@ git merge --no-ff branch-name
 
 ## GOLDENE REGELN
 
-**DO WHAT'S ASKED** - Nicht mehr, nicht weniger  
-**EDIT > CREATE** - Vorhandene Dateien bearbeiten statt neue erstellen  
-**ASK BEFORE COMMIT** - Niemals automatisch committen/pushen  
-**THINK LONG-TERM** - Keine Hacks die später Probleme machen  
-**BE CAREFUL** - Behutsam vorgehen, besonders bei kritischen Änderungen  
+**DO WHAT'S ASKED** - Nicht mehr, nicht weniger
+**EDIT > CREATE** - Vorhandene Dateien bearbeiten statt neue erstellen
+**ASK BEFORE COMMIT** - Niemals automatisch committen/pushen
+**THINK LONG-TERM** - Keine Hacks die später Probleme machen
+**BE CAREFUL** - Behutsam vorgehen, besonders bei kritischen Änderungen
 
 **NIEMALS:**
+
 - Unnötige Dateien erstellen
 - Proaktiv Dokumentation schreiben
 - Mehr tun als angefragt
@@ -257,6 +287,7 @@ git merge --no-ff branch-name
 - Redundanten Code/Dateien erstellen
 
 **IMMER:**
+
 - Existierende Dateien nutzen
 - Bei DB-Änderungen DATABASE-SETUP-README.md und DATABASE-MIGRATION-GUIDE.md updaten
 - Temporäre Dateien aufräumen
@@ -265,17 +296,19 @@ git merge --no-ff branch-name
 - Langfristige Wartbarkeit bedenken
 
 ## Truth Hierarchy
+
 1. **Codebase** (ultimate source of truth)
 2. **Documentation** (current state)
 3. **Training data** (historical reference)
 
 ## Core Philosophy
+
 **Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear.**
 
 **Remember:** Future you, debugging at 3 AM, will thank present you for that extra comment explaining the non-obvious business logic.
 
-
 weitere Notes:
+
 ## 🎯 START-TRIGGER QUICK REFERENCE (13.06.2025)
 
 - **"weitermachen mit Assixx"** → Normal-Modus mit allen Checks

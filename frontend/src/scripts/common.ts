@@ -50,7 +50,7 @@ async function loadNavigation(): Promise<void> {
 
       if (userResponse.ok) {
         userData = await userResponse.json();
-        userRole = userData?.role || 'employee';
+        userRole = userData?.role ?? 'employee';
       } else {
         navPlaceholder.innerHTML = createGuestNavigation();
         return;
@@ -133,7 +133,7 @@ function createAdminNavigation(user: User): string {
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-user-circle me-1"></i> ${user.first_name || user.username}
+                <i class="fas fa-user-circle me-1"></i> ${user.first_name ?? user.username}
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                 <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i> Profil</a></li>
@@ -190,7 +190,7 @@ function createEmployeeNavigation(user: User): string {
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-user-circle me-1"></i> ${user.first_name || user.username}
+                <i class="fas fa-user-circle me-1"></i> ${user.first_name ?? user.username}
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                 <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i> Profil</a></li>
@@ -249,7 +249,7 @@ async function checkUnreadNotifications(): Promise<void> {
 
     if (response.ok) {
       const data = await response.json();
-      const count = data.count || 0;
+      const count = data.count ?? 0;
       updateNotificationBadge(count);
     }
   } catch (error) {
@@ -372,7 +372,7 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
             <small class="text-muted">${formatDate(entry.created_at)}</small>
           </div>
           <p class="mb-1 text-truncate">${escapeHtml(entry.content)}</p>
-          <small class="text-muted">von ${entry.created_by_name || 'Unbekannt'}</small>
+          <small class="text-muted">von ${entry.created_by_name ?? 'Unbekannt'}</small>
         </a>
       `,
     )

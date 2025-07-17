@@ -61,7 +61,7 @@ function getDashboardForRole(role: string): string {
 export function checkPageAccess(): void {
   // Get current page name from URL
   const path = window.location.pathname;
-  const pageName = path.split('/').pop()?.replace('.html', '') || '';
+  const pageName = path.split('/').pop()?.replace('.html', '') ?? '';
 
   // Skip check for public pages
   const publicPages = ['login', 'signup', 'index', ''];
@@ -80,7 +80,7 @@ export function checkPageAccess(): void {
 
   // Parse token to get user role
   const tokenData = parseJwt(token);
-  if (!tokenData || !tokenData.role) {
+  if (!tokenData?.role) {
     console.error('Invalid token data, redirecting to login');
     window.location.href = '/login';
     return;

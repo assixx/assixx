@@ -182,13 +182,13 @@ class ShiftPlanningSystem {
       const user = await this.getStoredUserData();
       if (user) {
         // Use activeRole if available (for role switching), otherwise use API role or stored role
-        this.userRole = activeRole || user.role || storedRole || 'employee';
+        this.userRole = activeRole ?? (user.role || storedRole || 'employee');
         this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
         this.currentUserId = user.id;
 
         const userNameElement = document.getElementById('userName');
         if (userNameElement) {
-          userNameElement.textContent = user.username || 'User';
+          userNameElement.textContent = user.username ?? 'User';
         }
 
         // For employees, set their department as selected
@@ -205,7 +205,7 @@ class ShiftPlanningSystem {
 
         const currentTeamLeaderElement = document.getElementById('currentTeamLeader');
         if (currentTeamLeaderElement && user.position) {
-          currentTeamLeaderElement.textContent = user.username || '';
+          currentTeamLeaderElement.textContent = user.username ?? '';
         }
       }
     } catch (error) {
@@ -472,7 +472,7 @@ class ShiftPlanningSystem {
 
       if (response.ok) {
         const data = await response.json();
-        this.machines = data.machines || [];
+        this.machines = data.machines ?? [];
       } else {
         throw new Error('Failed to load machines');
       }
@@ -555,7 +555,7 @@ class ShiftPlanningSystem {
     this.teamLeaders.forEach((leader) => {
       const option = document.createElement('div');
       option.className = 'dropdown-option';
-      option.textContent = leader.name || leader.username;
+      option.textContent = leader.name ?? leader.username;
       option.onclick = () => {
         (window as unknown as ShiftsWindow).selectOption(
           'teamLeader',
@@ -643,7 +643,7 @@ class ShiftPlanningSystem {
 
       if (response.ok) {
         const data = await response.json();
-        const users = Array.isArray(data) ? data : data.users || [];
+        const users = Array.isArray(data) ? data : (data.users ?? []);
         this.employees = users.filter((user: User) => user.role === 'employee');
 
         console.log('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
@@ -676,7 +676,7 @@ class ShiftPlanningSystem {
 
       if (response.ok) {
         const data = await response.json();
-        const availabilityData = data.employees || [];
+        const availabilityData = data.employees ?? [];
 
         // Update employees with availability status
         this.employees = this.employees.map((emp) => {
@@ -684,7 +684,7 @@ class ShiftPlanningSystem {
             (a: { employeeId: number; availabilityStatus?: string }) => a.employeeId === emp.id,
           );
           if (availability) {
-            emp.availability_status = availability.availabilityStatus || 'available';
+            emp.availability_status = availability.availabilityStatus ?? 'available';
           }
           return emp;
         });
@@ -737,7 +737,7 @@ class ShiftPlanningSystem {
         item.classList.add('unavailable', `status-${employee.availability_status}`);
       }
 
-      const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+      const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
       const statusIcon = this.getAvailabilityIcon(employee.availability_status);
       const statusBadge = this.getAvailabilityBadge(employee.availability_status);
 
@@ -826,7 +826,7 @@ class ShiftPlanningSystem {
     // Add selection to clicked item
     employeeItem.classList.add('selected');
 
-    const employeeId = parseInt(employeeItem.dataset.employeeId || '0');
+    const employeeId = parseInt(employeeItem.dataset.employeeId ?? '0');
     this.selectedEmployee = this.employees.find((e) => e.id === employeeId) || null;
   }
 
@@ -882,15 +882,15 @@ class ShiftPlanningSystem {
           unavailable: 'Beurlaubt',
         }[employee.availability_status] || employee.availability_status;
 
-      const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+      const employeeName = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
 
       showError(`Mitarbeiter kann nicht zugewiesen werden: ${employeeName} ist ${statusText}`);
       return;
     }
 
     // Check if employee already has a shift on this day
-    const shiftsOnThisDay = this.weeklyShifts[date] || {};
-    const employeeName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+    const shiftsOnThisDay = this.weeklyShifts[date] ?? {};
+    const employeeName = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
 
     // Check all shifts on this day
     for (const [shiftType, employeeIds] of Object.entries(shiftsOnThisDay)) {
@@ -944,7 +944,7 @@ class ShiftPlanningSystem {
     // Clear existing content
     assignmentDiv.innerHTML = '';
 
-    const employeeIds = this.weeklyShifts[date]?.[shift] || [];
+    const employeeIds = this.weeklyShifts[date]?.[shift] ?? [];
 
     if (employeeIds.length === 0) {
       // Show empty slot
@@ -1166,7 +1166,7 @@ class ShiftPlanningSystem {
           assignmentDiv.innerHTML = '';
 
           // Get assignments for this shift
-          const assignments = this.weeklyShifts[dateKey]?.[shiftType] || [];
+          const assignments = this.weeklyShifts[dateKey]?.[shiftType] ?? [];
 
           console.log('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
 
@@ -1237,11 +1237,11 @@ class ShiftPlanningSystem {
     card.className = 'employee-card';
     card.dataset.employeeId = employee.id.toString();
 
-    const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+    const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
 
     card.innerHTML = `
       <div class="employee-name">${this.escapeHtml(name)}</div>
-      <div class="employee-position">${employee.position || 'Mitarbeiter'}</div>
+      <div class="employee-position">${employee.position ?? 'Mitarbeiter'}</div>
     `;
 
     // Add remove button for admins
@@ -1288,7 +1288,7 @@ class ShiftPlanningSystem {
 
       // Get notes from textarea
       const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
-      const notes = notesTextarea?.value || '';
+      const notes = notesTextarea?.value ?? '';
 
       // Prepare shift assignments
       const assignments: Array<{
@@ -1311,8 +1311,8 @@ class ShiftPlanningSystem {
               shift_type: shiftType,
               week_start: weekStart,
               week_end: weekEnd,
-              department_id: this.selectedContext.departmentId || undefined,
-              machine_id: this.selectedContext.machineId || undefined,
+              department_id: this.selectedContext.departmentId ?? undefined,
+              machine_id: this.selectedContext.machineId ?? undefined,
             });
           });
         });
@@ -1391,7 +1391,7 @@ class ShiftPlanningSystem {
           console.error('[SHIFTS ERROR] Notes is an object, not a string:', data.notes);
           this.weeklyNotes = '';
         } else {
-          this.weeklyNotes = data.notes || '';
+          this.weeklyNotes = data.notes ?? '';
         }
 
         const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
@@ -1427,7 +1427,7 @@ class ShiftPlanningSystem {
       const notesTextarea = document.getElementById('weeklyNotes') as HTMLTextAreaElement;
       if (!notesTextarea) return;
 
-      const newNotes = notesTextarea.value || '';
+      const newNotes = notesTextarea.value ?? '';
 
       // Only save if notes have actually changed
       if (newNotes === this.weeklyNotes) {
@@ -1572,12 +1572,12 @@ class ShiftPlanningSystem {
     };
 
     // Get assigned employees for this shift
-    const employeeIds = this.weeklyShifts[date]?.[shift] || [];
+    const employeeIds = this.weeklyShifts[date]?.[shift] ?? [];
     const assignedEmployees = employeeIds
       .map((id) => {
         const employee = this.employees.find((e) => e.id === id);
         if (employee) {
-          const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.username;
+          const name = `${employee.first_name ?? ''} ${employee.last_name || ''}`.trim() || employee.username;
           return this.escapeHtml(name);
         }
         return '';
@@ -1599,14 +1599,14 @@ class ShiftPlanningSystem {
           </div>
           <div class="detail-row">
             <span class="detail-label">Zugewiesene Mitarbeiter:</span>
-            <span class="detail-value">${assignedEmployees || 'Keine Mitarbeiter zugewiesen'}</span>
+            <span class="detail-value">${assignedEmployees ?? 'Keine Mitarbeiter zugewiesen'}</span>
           </div>
           ${
             this.selectedContext.departmentId
               ? `
           <div class="detail-row">
             <span class="detail-label">Abteilung:</span>
-            <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name || '-'}</span>
+            <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name ?? '-'}</span>
           </div>`
               : ''
           }
@@ -1615,7 +1615,7 @@ class ShiftPlanningSystem {
               ? `
           <div class="detail-row">
             <span class="detail-label">Maschine:</span>
-            <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name || '-'}</span>
+            <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name ?? '-'}</span>
           </div>`
               : ''
           }

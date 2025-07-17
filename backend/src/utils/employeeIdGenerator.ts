@@ -13,7 +13,7 @@ function getRoleAbbreviation(role: string): string {
     admin: "AD",
     employee: "EMP",
   };
-  return roleMap[role.toLowerCase()] || "EMP";
+  return roleMap[role.toLowerCase()] ?? "EMP";
 }
 
 /**

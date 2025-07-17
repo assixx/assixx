@@ -53,7 +53,7 @@ class UserService {
   ): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id, tenantId);
-      return user || null;
+      return user ?? null;
     } catch (error) {
       console.error("Error in UserService.getById:", error);
       throw error;
@@ -96,7 +96,7 @@ class UserService {
       const success = await User.update(id, data, tenantId);
       if (success) {
         const updated = await User.findById(id, tenantId);
-        return updated || null;
+        return updated ?? null;
       }
       return null;
     } catch (error) {

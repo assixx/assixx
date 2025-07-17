@@ -114,7 +114,7 @@ class AuthController {
 
       if (!result.success) {
         res.status(401).json({
-          message: result.message || "Invalid credentials",
+          message: result.message ?? "Invalid credentials",
         });
         return;
       }
@@ -176,8 +176,8 @@ class AuthController {
         username: req.body.username,
         password: req.body.password,
         email: req.body.email,
-        vorname: req.body.first_name || "",
-        nachname: req.body.last_name || "",
+        vorname: req.body.first_name ?? "",
+        nachname: req.body.last_name ?? "",
         role: req.body.role as "admin" | "employee" | undefined,
         tenant_id: req.body.tenant_id,
       };
@@ -187,7 +187,7 @@ class AuthController {
 
       if (!result.success) {
         res.status(400).json({
-          message: result.message || "Registration failed",
+          message: result.message ?? "Registration failed",
         });
         return;
       }

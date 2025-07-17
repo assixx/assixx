@@ -159,7 +159,7 @@ class ShiftController {
         return;
       }
 
-      const shift_plan_id = req.body.shift_plan_id || req.body.plan_id;
+      const shift_plan_id = req.body.shift_plan_id ?? req.body.plan_id;
 
       if (!shift_plan_id) {
         res.status(400).json({ error: "Shift plan ID is required" });
@@ -170,7 +170,7 @@ class ShiftController {
         ...req.body,
         tenant_id: req.user.tenant_id,
         shift_plan_id,
-        date: req.body.date || req.body.shift_date,
+        date: req.body.date ?? req.body.shift_date,
       };
       const result = await shiftService.create(req.tenantDb, createData);
       res.status(201).json(result);

@@ -354,7 +354,7 @@ class ShiftService {
         date: shift.date,
         start_time: shift.start_time,
         end_time: shift.end_time,
-        position: shiftData.position || null,
+        position: shiftData.position ?? null,
         required_employees: shift.required_employees,
         assigned_employees: 0,
         created_at: shift.created_at,

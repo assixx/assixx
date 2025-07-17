@@ -939,7 +939,7 @@ export class Calendar {
       const startDate = new Date(
         parentEvent.start_time || parentEvent.start_date,
       );
-      const endDate = new Date(parentEvent.end_time || parentEvent.end_date);
+      const endDate = new Date(parentEvent.end_time ?? parentEvent.end_date);
       const duration = endDate.getTime() - startDate.getTime();
 
       let currentDate = new Date(startDate);
@@ -970,9 +970,9 @@ export class Calendar {
             start_time: newStartDate.toISOString(),
             end_time: newEndDate.toISOString(),
             all_day: Boolean(parentEvent.all_day),
-            org_level: parentEvent.org_level || "personal",
-            org_id: parentEvent.org_id || 0,
-            created_by: parentEvent.created_by || parentEvent.user_id,
+            org_level: parentEvent.org_level ?? "personal",
+            org_id: parentEvent.org_id ?? 0,
+            created_by: parentEvent.created_by ?? parentEvent.user_id,
             reminder_time: parentEvent.reminder_time,
             color: parentEvent.color,
             parent_event_id: parentEvent.id,

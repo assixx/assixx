@@ -53,7 +53,7 @@ export const checkDepartmentAccess = async (
       department_id = parseInt(String(authReq.body.department_id));
     }
     // Check query parameters
-    else if (req.query && req.query.department_id) {
+    else if (req.query?.department_id) {
       department_id = parseInt(req.query.department_id as string);
     }
     // Check route parameters
@@ -61,9 +61,9 @@ export const checkDepartmentAccess = async (
       department_id = parseInt(req.params.department_id);
     }
     // Check for departmentId variant
-    else if (req.body && req.body.departmentId) {
+    else if (req.body?.departmentId) {
       department_id = parseInt(req.body.departmentId);
-    } else if (req.query && req.query.departmentId) {
+    } else if (req.query?.departmentId) {
       department_id = parseInt(req.query.departmentId as string);
     } else if (req.params && req.params.departmentId) {
       department_id = parseInt(req.params.departmentId);

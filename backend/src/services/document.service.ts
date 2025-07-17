@@ -247,12 +247,12 @@ class DocumentService {
         size: 0, // Would need to be calculated
         file_size: 0,
         uploaded_by: doc.user_id,
-        category: doc.category || "other",
+        category: doc.category ?? "other",
         recipient_type: "user", // Default
         scope: "personal", // Default
-        created_at: doc.upload_date?.toISOString() || new Date().toISOString(),
-        updated_at: doc.upload_date?.toISOString() || new Date().toISOString(),
-        is_deleted: doc.is_archived || false,
+        created_at: doc.upload_date?.toISOString() ?? new Date().toISOString(),
+        updated_at: doc.upload_date?.toISOString() ?? new Date().toISOString(),
+        is_deleted: doc.is_archived ?? false,
       } as DocumentData;
     } catch (error) {
       logger.error("Error in document service getDocumentById:", error);
@@ -383,13 +383,13 @@ class DocumentService {
             size: 0, // Would need to be calculated
             file_size: 0,
             uploaded_by: doc.user_id,
-            description: doc.description || "",
-            category: doc.category || "other",
+            description: doc.description ?? "",
+            category: doc.category ?? "other",
             recipient_type: "user", // Default
             scope: "personal", // Default
             created_at: doc.upload_date.toISOString(),
             updated_at: doc.upload_date.toISOString(),
-            is_deleted: doc.is_archived || false,
+            is_deleted: doc.is_archived ?? false,
           }) as DocumentData,
       );
     } catch (error) {
@@ -411,9 +411,9 @@ class DocumentService {
         byCategory: {},
       };
       return {
-        totalDocuments: stats.total || 0,
-        byCategory: stats.byCategory || {},
-        totalSize: stats.totalSize || 0,
+        totalDocuments: stats.total ?? 0,
+        byCategory: stats.byCategory ?? {},
+        totalSize: stats.totalSize ?? 0,
         averageSize:
           stats.total && stats.total > 0 && stats.totalSize
             ? Math.round(stats.totalSize / stats.total)
