@@ -4,6 +4,12 @@
  */
 
 import mysql from "mysql2/promise";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function setupTestDatabase() {
   console.log("Setting up test database...");
@@ -18,8 +24,6 @@ async function setupTestDatabase() {
   });
 
   try {
-    const fs = require("fs");
-    const path = require("path");
 
     // First, try to use the current schema export
     const databaseDir = path.join(__dirname, "../../../../database");
@@ -69,11 +73,6 @@ async function setupTestDatabase() {
 }
 
 // Run if called directly
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   setupTestDatabase();
