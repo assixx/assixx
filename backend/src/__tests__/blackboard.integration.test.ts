@@ -19,8 +19,8 @@ let adminToken: string;
 let employeeToken: string;
 let testDb: Pool;
 let tenantId: number;
-let adminUserId: number;
-let employeeUserId: number;
+let _adminUserId: number;
+let _employeeUserId: number;
 
 describe("Blackboard Integration Tests", () => {
   beforeAll(async () => {
@@ -44,7 +44,7 @@ describe("Blackboard Integration Tests", () => {
       first_name: "Admin",
       last_name: "User",
     });
-    adminUserId = adminResult.id;
+    _adminUserId = adminResult.id;
 
     const employeeResult = await createTestUser(testDb, {
       username: "employee",
@@ -57,7 +57,7 @@ describe("Blackboard Integration Tests", () => {
       first_name: "Employee",
       last_name: "User",
     });
-    employeeUserId = employeeResult.id;
+    _employeeUserId = employeeResult.id;
 
     // Get auth tokens
     adminToken = await getAuthToken(app, adminResult.username, "TestPass123!");
