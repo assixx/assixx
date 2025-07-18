@@ -3,7 +3,7 @@
  * This script creates the necessary tables for running tests
  */
 
-const mysql = require("mysql2/promise");
+import mysql from "mysql2/promise";
 
 async function setupTestDatabase() {
   console.log("Setting up test database...");
