@@ -130,6 +130,14 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 5. Docker Build Tests
 6. Code Quality Checks
 
+**WICHTIG - Test-Datenbank Schema:**
+- Tests nutzen ECHTE MySQL-Datenbank (keine Mocks)
+- Schema aus `database/current-schema-*.sql` (neueste Datei)
+- Bei DB-Änderungen: `./scripts/export-current-schema.sh` ausführen
+- Schema-Vergleich: `./scripts/compare-db-schema.sh`
+- Migrations in `/database/migrations/` können VERALTET sein!
+- Test-DB hat immer das aktuelle Produktions-Schema
+
 ## WENN-DANN ANWEISUNGEN
 
 **WENN User fragt nach Feature-Status**
