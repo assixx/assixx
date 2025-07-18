@@ -5,7 +5,8 @@
 
 import request from "supertest";
 import app from "../app";
-import { pool } from "../database";
+import { execute } from "../utils/db";
+import type { ResultSetHeader } from "../utils/db";
 // Jest is available globally
 
 // Test data
@@ -45,7 +46,7 @@ describe("Blackboard Integration Tests", () => {
   afterAll(async () => {
     // Cleanup
     await cleanupTestDatabase();
-    await pool.end();
+    // Note: pool.end() is handled by the test environment
   });
 
   describe("Complete Blackboard Entry Lifecycle", () => {
@@ -352,14 +353,14 @@ describe("Blackboard Integration Tests", () => {
 // Helper functions
 async function setupTestDatabase() {
   // Create test tables
-  await pool.execute(`
+  await execute<ResultSetHeader>(`
     CREATE TABLE IF NOT EXISTS tenants (
       id INT PRIMARY KEY AUTO_INCREMENT,
       name VARCHAR(255) NOT NULL
     )
   `);
 
-  await pool.execute(`
+  await execute<ResultSetHeader>(`
     CREATE TABLE IF NOT EXISTS users (
       id INT PRIMARY KEY AUTO_INCREMENT,
       tenant_id INT,
@@ -372,7 +373,7 @@ async function setupTestDatabase() {
     )
   `);
 
-  await pool.execute(`
+  await execute<ResultSetHeader>(`
     CREATE TABLE IF NOT EXISTS blackboard_entries (
       id INT PRIMARY KEY AUTO_INCREMENT,
       tenant_id INT NOT NULL,
@@ -394,7 +395,7 @@ async function setupTestDatabase() {
     )
   `);
 
-  await pool.execute(`
+  await execute<ResultSetHeader>(`
     CREATE TABLE IF NOT EXISTS blackboard_confirmations (
       id INT PRIMARY KEY AUTO_INCREMENT,
       entry_id INT NOT NULL,
@@ -405,10 +406,10 @@ async function setupTestDatabase() {
   `);
 
   // Insert test data
-  await pool.execute(
+  await execute<ResultSetHeader>(
     `INSERT INTO tenants (id, name) VALUES (1, 'Test Tenant')`,
   );
-  await pool.execute(
+  await execute<ResultSetHeader>(
     `INSERT INTO users (id, tenant_id, username, email, password, role, department_id, team_id) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -422,7 +423,7 @@ async function setupTestDatabase() {
       null,
     ],
   );
-  await pool.execute(
+  await execute<ResultSetHeader>(
     `INSERT INTO users (id, tenant_id, username, email, password, role, department_id, team_id) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -439,10 +440,12 @@ async function setupTestDatabase() {
 }
 
 async function cleanupTestDatabase() {
-  await pool.execute("DROP TABLE IF EXISTS blackboard_confirmations");
-  await pool.execute("DROP TABLE IF EXISTS blackboard_entries");
-  await pool.execute("DROP TABLE IF EXISTS users");
-  await pool.execute("DROP TABLE IF EXISTS tenants");
+  await execute<ResultSetHeader>(
+    "DROP TABLE IF EXISTS blackboard_confirmations",
+  );
+  await execute<ResultSetHeader>("DROP TABLE IF EXISTS blackboard_entries");
+  await execute<ResultSetHeader>("DROP TABLE IF EXISTS users");
+  await execute<ResultSetHeader>("DROP TABLE IF EXISTS tenants");
 }
 
 async function getAuthToken(user: any): Promise<string> {

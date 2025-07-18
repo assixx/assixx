@@ -2,6 +2,7 @@
 
 [![Version](https://img.shields.io/badge/Version-2025.1-blue.svg)](https://github.com/SCS-Technik/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development%20v0.0.2-yellow.svg)](https://github.com/SCS-Technik/Assixx)
+[![Tests](https://github.com/SCS-Technik/Assixx/actions/workflows/test.yml/badge.svg)](https://github.com/SCS-Technik/Assixx/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./docs/LICENSE)
 
 > **Digitalisierung von Papier zu Cloud - Speziell für produzierende Unternehmen**

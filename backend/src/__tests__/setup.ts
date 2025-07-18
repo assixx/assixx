@@ -27,7 +27,7 @@ global.console = {
 jest.setTimeout(30000);
 
 // Mock modules that might not be available in test environment
-jest.mock("../../utils/logger", () => ({
+jest.mock("../utils/logger", () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),

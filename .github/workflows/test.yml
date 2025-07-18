@@ -1,0 +1,159 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master, 'unit-tests--Github-Actions' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: StrongP@ssw0rd!123
+          MYSQL_DATABASE: main_test
+          MYSQL_USER: assixx_user
+          MYSQL_PASSWORD: AssixxP@ss2025!
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+          
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        
+    - name: Setup pnpm cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+          
+    - name: Install dependencies
+      run: |
+        cd backend
+        pnpm install --frozen-lockfile
+        
+    - name: Run TypeScript check
+      run: |
+        cd backend
+        pnpm run typecheck
+        
+    - name: Run ESLint
+      run: |
+        cd backend
+        pnpm run lint
+        
+    - name: Run tests with coverage
+      env:
+        NODE_ENV: test
+        JWT_SECRET: test-secret-key-for-github-actions
+        DB_HOST: localhost
+        DB_USER: assixx_user
+        DB_PASSWORD: AssixxP@ss2025!
+        DB_NAME: main_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+      run: |
+        cd backend
+        pnpm test:coverage
+        
+    - name: Upload coverage reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: backend/coverage/
+        
+    - name: Upload coverage to Codecov
+      if: always()
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage/lcov.info
+        flags: backend
+        name: backend-coverage
+        
+  # Docker build test
+  docker-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Backend Docker Image
+      run: |
+        cd docker
+        docker build -f Dockerfile.backend -t assixx-backend-test:latest ..
+        
+    - name: Build Frontend Docker Image
+      run: |
+        cd docker
+        docker build -f Dockerfile.frontend -t assixx-frontend-test:latest ..
+        
+    - name: Test Docker Compose
+      run: |
+        cd docker
+        docker-compose config
+        
+  # Separate job for checking code quality
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Install dependencies
+      run: |
+        cd backend
+        pnpm install --frozen-lockfile
+        
+    - name: Check formatting
+      run: |
+        cd backend
+        pnpm run prettier

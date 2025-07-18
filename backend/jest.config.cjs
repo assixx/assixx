@@ -15,6 +15,7 @@ module.exports = {
           resolveJsonModule: true,
           strict: false,
         },
+        isolatedModules: true,
       },
     ],
   },
@@ -26,4 +27,26 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
   maxWorkers: 1,
   testTimeout: 30000,
+  collectCoverage: false, // Enable with --coverage flag
+  collectCoverageFrom: [
+    "src/**/*.{js,ts}",
+    "!src/**/*.d.ts",
+    "!src/**/*.test.{js,ts}",
+    "!src/**/__tests__/**",
+    "!src/__tests__/**",
+    "!src/types/**",
+    "!src/server.ts",
+    "!src/config/**",
+    "!src/routes/mocks/**",
+  ],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov", "html", "json"],
+  coverageThreshold: {
+    global: {
+      branches: 0, // Start with 0 and increase gradually
+      functions: 0,
+      lines: 0,
+      statements: 0,
+    },
+  },
 };

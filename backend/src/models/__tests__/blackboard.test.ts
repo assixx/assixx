@@ -5,12 +5,23 @@
 
 import { jest } from "@jest/globals";
 import { Blackboard } from "../blackboard";
-import pool, { executeQuery } from "../../database";
 import User from "../user";
 import { logger } from "../../utils/logger";
 
+// Mock the centralized db utilities before importing
+jest.mock("../../utils/db", () => ({
+  query: jest.fn(),
+  execute: jest.fn(),
+  getConnection: jest.fn(),
+  transaction: jest.fn(),
+}));
+
+import { query } from "../../utils/db";
+
+// Cast query to jest.Mock for easier use
+const mockQuery = query as jest.Mock;
+
 // Mock dependencies
-jest.mock("../../database");
 jest.mock("../user");
 jest.mock("../../utils/logger", () => ({
   logger: {
@@ -41,9 +52,9 @@ describe("Blackboard Model", () => {
       };
 
       // Mock database responses
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([{ insertId: 123 }]) // INSERT query
-        .mockResolvedValueOnce([]) // Tags query
+      mockQuery
+        .mockResolvedValueOnce([[{ insertId: 123 }], []]) // INSERT query
+        .mockResolvedValueOnce([[], []]) // Tags query
         .mockResolvedValueOnce([
           [
             {
@@ -53,6 +64,7 @@ describe("Blackboard Model", () => {
               updated_at: new Date(),
             },
           ],
+          [],
         ]); // SELECT query
 
       const result = await Blackboard.createEntry(entryData);
@@ -65,7 +77,7 @@ describe("Blackboard Model", () => {
       });
 
       // Verify INSERT query was called correctly
-      expect(executeQuery).toHaveBeenCalledWith(
+      expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO blackboard_entries"),
         [
           1,
@@ -94,9 +106,9 @@ describe("Blackboard Model", () => {
         color: "blue",
       };
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([{ insertId: 124 }])
-        .mockResolvedValueOnce([[{ id: 124, ...entryData }]]);
+      mockQuery
+        .mockResolvedValueOnce([[{ insertId: 124 }], []])
+        .mockResolvedValueOnce([[{ id: 124, ...entryData }], []]);
 
       const result = await Blackboard.createEntry(entryData);
 
@@ -118,13 +130,13 @@ describe("Blackboard Model", () => {
         priority: "low" as const,
       };
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([{ insertId: 125 }])
-        .mockResolvedValueOnce([[{ id: 125 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[{ insertId: 125 }], []])
+        .mockResolvedValueOnce([[{ id: 125 }], []]);
 
       await Blackboard.createEntry(entryData);
 
-      expect(executeQuery).toHaveBeenCalledWith(
+      expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
         expect.arrayContaining([1, "Team Meeting", "Weekly sync", "team", 10]),
       );
@@ -168,10 +180,10 @@ describe("Blackboard Model", () => {
         tags: ["tag1", "tag2", "tag3"],
       };
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([{ insertId: 126 }])
-        .mockResolvedValueOnce([]) // addTagsToEntry
-        .mockResolvedValueOnce([[{ id: 126 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[{ insertId: 126 }], []])
+        .mockResolvedValueOnce([[], []]) // addTagsToEntry
+        .mockResolvedValueOnce([[{ id: 126 }], []]);
 
       await Blackboard.createEntry(entryData);
 
@@ -193,14 +205,14 @@ describe("Blackboard Model", () => {
         author_id: 1,
       };
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([{ insertId: 127 }])
-        .mockResolvedValueOnce([[{ id: 127 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[{ insertId: 127 }], []])
+        .mockResolvedValueOnce([[{ id: 127 }], []]);
 
       await Blackboard.createEntry(minimalEntry);
 
       // Check defaults were applied
-      expect(executeQuery).toHaveBeenCalledWith(
+      expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
         expect.arrayContaining([
           1,
@@ -231,7 +243,7 @@ describe("Blackboard Model", () => {
       });
 
       // Mock database results
-      (executeQuery as jest.Mock)
+      mockQuery
         .mockResolvedValueOnce([
           [
             {
@@ -252,8 +264,9 @@ describe("Blackboard Model", () => {
               priority: "normal",
             },
           ],
+          [],
         ])
-        .mockResolvedValueOnce([[{ total: 2 }]]);
+        .mockResolvedValueOnce([[{ total: 2 }], []]);
 
       const result = await Blackboard.getAllEntries(mockTenantId, mockUserId);
 
@@ -274,14 +287,14 @@ describe("Blackboard Model", () => {
         teamId: 10,
       });
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([[]])
-        .mockResolvedValueOnce([[{ total: 0 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[], []])
+        .mockResolvedValueOnce([[{ total: 0 }], []]);
 
       await Blackboard.getAllEntries(mockTenantId, mockUserId);
 
       // Verify access control was applied in query
-      const query = (executeQuery as jest.Mock).mock.calls[0][0];
+      const query = mockQuery.mock.calls[0][0];
       expect(query).toContain("e.org_level = 'company'");
       expect(query).toContain("e.org_level = 'department' AND e.org_id = ?");
       expect(query).toContain("e.org_level = 'team' AND e.org_id = ?");
@@ -294,9 +307,9 @@ describe("Blackboard Model", () => {
         teamId: null,
       });
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([[]])
-        .mockResolvedValueOnce([[{ total: 100 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[], []])
+        .mockResolvedValueOnce([[{ total: 100 }], []]);
 
       const result = await Blackboard.getAllEntries(1, 1, {
         page: 3,
@@ -304,7 +317,7 @@ describe("Blackboard Model", () => {
       });
 
       // Check LIMIT and OFFSET in query
-      const queryCall = (executeQuery as jest.Mock).mock.calls[0];
+      const queryCall = mockQuery.mock.calls[0];
       expect(queryCall[1]).toContain(20); // LIMIT
       expect(queryCall[1]).toContain(40); // OFFSET (page 3, limit 20)
 
@@ -323,18 +336,18 @@ describe("Blackboard Model", () => {
         teamId: null,
       });
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([[]])
-        .mockResolvedValueOnce([[{ total: 0 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[], []])
+        .mockResolvedValueOnce([[{ total: 0 }], []]);
 
       await Blackboard.getAllEntries(1, 1, {
         search: "important meeting",
       });
 
-      const query = (executeQuery as jest.Mock).mock.calls[0][0];
+      const query = mockQuery.mock.calls[0][0];
       expect(query).toContain("e.title LIKE ? OR e.content LIKE ?");
 
-      const params = (executeQuery as jest.Mock).mock.calls[0][1];
+      const params = mockQuery.mock.calls[0][1];
       expect(params).toContain("%important meeting%");
     });
 
@@ -345,18 +358,18 @@ describe("Blackboard Model", () => {
         teamId: null,
       });
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([[]])
-        .mockResolvedValueOnce([[{ total: 0 }]]);
+      mockQuery
+        .mockResolvedValueOnce([[], []])
+        .mockResolvedValueOnce([[{ total: 0 }], []]);
 
       await Blackboard.getAllEntries(1, 1, {
         filter: "department",
       });
 
-      const query = (executeQuery as jest.Mock).mock.calls[0][0];
+      const query = mockQuery.mock.calls[0][0];
       expect(query).toContain("AND e.org_level = ?");
 
-      const params = (executeQuery as jest.Mock).mock.calls[0][1];
+      const params = mockQuery.mock.calls[0][1];
       expect(params).toContain("department");
     });
   });
@@ -375,18 +388,18 @@ describe("Blackboard Model", () => {
         tags: ["updated", "new"],
       };
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([]) // UPDATE query
-        .mockResolvedValueOnce([]) // DELETE tags
-        .mockResolvedValueOnce([]) // INSERT tags
-        .mockResolvedValueOnce([[{ id: 1, ...updateData }]]);
+      mockQuery
+        .mockResolvedValueOnce([[], []]) // UPDATE query
+        .mockResolvedValueOnce([[], []]) // DELETE tags
+        .mockResolvedValueOnce([[], []]) // INSERT tags
+        .mockResolvedValueOnce([[{ id: 1, ...updateData }], []]);
 
       const result = await Blackboard.updateEntry(1, updateData, 1);
 
       expect(result).toMatchObject(updateData);
 
       // Verify UPDATE query
-      const updateQuery = (executeQuery as jest.Mock).mock.calls[0];
+      const updateQuery = mockQuery.mock.calls[0];
       expect(updateQuery[0]).toContain("UPDATE blackboard_entries SET");
       expect(updateQuery[1]).toContain("Updated Title");
       expect(updateQuery[1]).toContain("Updated Content");
@@ -398,13 +411,13 @@ describe("Blackboard Model", () => {
         title: "Only Title Updated",
       };
 
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([[{ id: 1, title: "Only Title Updated" }]]);
+      mockQuery
+        .mockResolvedValueOnce([[], []])
+        .mockResolvedValueOnce([[{ id: 1, title: "Only Title Updated" }], []]);
 
       await Blackboard.updateEntry(1, partialUpdate, 1);
 
-      const updateQuery = (executeQuery as jest.Mock).mock.calls[0];
+      const updateQuery = mockQuery.mock.calls[0];
       expect(updateQuery[0]).toContain("title = ?");
       expect(updateQuery[0]).not.toContain("content = ?");
       expect(updateQuery[0]).not.toContain("priority = ?");
@@ -413,19 +426,19 @@ describe("Blackboard Model", () => {
 
   describe("deleteEntry", () => {
     it("should delete entry successfully", async () => {
-      (executeQuery as jest.Mock).mockResolvedValueOnce([{ affectedRows: 1 }]);
+      mockQuery.mockResolvedValueOnce([[{ affectedRows: 1 }], []]);
 
       const result = await Blackboard.deleteEntry(1, 1);
 
       expect(result).toBe(true);
-      expect(executeQuery).toHaveBeenCalledWith(
+      expect(mockQuery).toHaveBeenCalledWith(
         "DELETE FROM blackboard_entries WHERE id = ? AND tenant_id = ?",
         [1, 1],
       );
     });
 
     it("should return false if entry not found", async () => {
-      (executeQuery as jest.Mock).mockResolvedValueOnce([{ affectedRows: 0 }]);
+      mockQuery.mockResolvedValueOnce([[{ affectedRows: 0 }], []]);
 
       const result = await Blackboard.deleteEntry(999, 1);
 
@@ -436,23 +449,21 @@ describe("Blackboard Model", () => {
   describe("confirmEntry", () => {
     it("should confirm entry successfully", async () => {
       // Mock checking if entry requires confirmation
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([[{ requires_confirmation: 1 }]]) // SELECT query
-        .mockResolvedValueOnce([{ insertId: 1 }]); // INSERT confirmation
+      mockQuery
+        .mockResolvedValueOnce([[{ requires_confirmation: 1 }], []]) // SELECT query
+        .mockResolvedValueOnce([[{ insertId: 1 }], []]); // INSERT confirmation
 
       const result = await Blackboard.confirmEntry(1, 1);
 
       expect(result).toBe(true);
-      expect(executeQuery).toHaveBeenCalledWith(
+      expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining("INSERT INTO blackboard_confirmations"),
         [1, 1],
       );
     });
 
     it("should return false if entry does not require confirmation", async () => {
-      (executeQuery as jest.Mock).mockResolvedValueOnce([
-        [{ requires_confirmation: 0 }],
-      ]);
+      mockQuery.mockResolvedValueOnce([[{ requires_confirmation: 0 }], []]);
 
       const result = await Blackboard.confirmEntry(1, 1);
 
@@ -460,8 +471,8 @@ describe("Blackboard Model", () => {
     });
 
     it("should handle duplicate confirmation gracefully", async () => {
-      (executeQuery as jest.Mock)
-        .mockResolvedValueOnce([[{ requires_confirmation: 1 }]])
+      mockQuery
+        .mockResolvedValueOnce([[{ requires_confirmation: 1 }], []])
         .mockRejectedValueOnce({ code: "ER_DUP_ENTRY" });
 
       const result = await Blackboard.confirmEntry(1, 1);
@@ -473,7 +484,7 @@ describe("Blackboard Model", () => {
   describe("Error Handling", () => {
     it("should log errors and rethrow", async () => {
       const dbError = new Error("Database connection lost");
-      (executeQuery as jest.Mock).mockRejectedValue(dbError);
+      mockQuery.mockRejectedValue(dbError);
 
       await expect(Blackboard.getAllEntries(1, 1)).rejects.toThrow(
         "Database connection lost",
