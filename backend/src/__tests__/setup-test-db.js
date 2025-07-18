@@ -6,10 +6,9 @@
 import mysql from "mysql2/promise";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Handle both ESM and CommonJS environments
+const __dirname = process.cwd();
 
 async function setupTestDatabase() {
   console.log("Setting up test database...");
@@ -26,7 +25,7 @@ async function setupTestDatabase() {
   try {
 
     // First, try to use the current schema export
-    const databaseDir = path.join(__dirname, "../../../database");
+    const databaseDir = path.join(__dirname, "database");
     const schemaFiles = fs
       .readdirSync(databaseDir)
       .filter(
@@ -121,8 +120,7 @@ async function setupTestDatabase() {
 }
 
 // Run if called directly
-
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && process.argv[1].endsWith('setup-test-db.js')) {
   setupTestDatabase();
 }
 

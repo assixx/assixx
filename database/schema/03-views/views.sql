@@ -98,22 +98,22 @@ SELECT
     k.id,
     k.tenant_id,
     k.title,
-    k.category,
+    kc.name AS category,
     k.status,
     k.priority,
-    k.estimated_savings,
+    k.estimated_cost AS estimated_savings,
     k.created_at,
     u.first_name AS submitter_first_name,
     u.last_name AS submitter_last_name,
     d.name AS department_name,
-    COUNT(DISTINCT kc.id) AS comment_count,
-    AVG(kr.rating) AS avg_rating
+    COUNT(DISTINCT kcom.id) AS comment_count,
+    0 AS avg_rating
 FROM kvp_suggestions k
-JOIN users u ON k.submitter_id = u.id
+JOIN users u ON k.submitted_by = u.id
 LEFT JOIN departments d ON k.department_id = d.id
-LEFT JOIN kvp_comments kc ON k.id = kc.suggestion_id
-LEFT JOIN kvp_ratings kr ON k.id = kr.suggestion_id
-WHERE k.status IN ('submitted', 'review', 'approved')
+LEFT JOIN kvp_categories kc ON k.category_id = kc.id
+LEFT JOIN kvp_comments kcom ON k.id = kcom.suggestion_id
+WHERE k.status IN ('new', 'in_review', 'approved')
 GROUP BY k.id;
 
 -- Aktuelle Umfragen
