@@ -42,15 +42,9 @@ import roleSwitchRoutes from "./routes/role-switch";
  * Separated from server.js for better testing
  */
 
-// ES modules equivalent of __dirname - only define if not already defined
-const __filename =
-  typeof global.__filename !== "undefined"
-    ? global.__filename
-    : fileURLToPath(import.meta.url);
-const __dirname =
-  typeof global.__dirname !== "undefined"
-    ? global.__dirname
-    : path.dirname(__filename);
+// ES modules equivalent of __dirname - use different variable names to avoid conflicts
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDirPath = path.dirname(currentFilePath);
 // Security middleware
 // Page protection middleware
 // Routes
@@ -103,8 +97,8 @@ app.use(
 );
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
-const distPath = path.join(__dirname, "../../frontend/dist");
-const srcPath = path.join(__dirname, "../../frontend/src");
+const distPath = path.join(currentDirPath, "../../frontend/dist");
+const srcPath = path.join(currentDirPath, "../../frontend/src");
 
 // Serve built files first (HTML, JS, CSS)
 app.use(
@@ -319,7 +313,7 @@ app.use(
 );
 
 // Uploads directory (always served)
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
+app.use("/uploads", express.static(path.join(currentDirPath, "../../uploads")));
 
 // API security headers and additional validation
 app.use("/api", apiSecurityHeaders);
@@ -444,7 +438,7 @@ app.post("/api/test", (req: Request, res: Response): void => {
 // Legacy login endpoints (for backward compatibility) - MUST BE BEFORE OTHER ROUTES
 app.get("/login", (_req: Request, res: Response): void => {
   console.log("[DEBUG] GET /login - serving login page");
-  res.sendFile(path.join(__dirname, "../../frontend/src/pages", "login.html"));
+  res.sendFile(path.join(currentDirPath, "../../frontend/src/pages", "login.html"));
 });
 
 app.post(
