@@ -148,6 +148,7 @@ jobs:
   coverage:
     needs: test
     runs-on: ubuntu-latest
+    # Only run if at least one test job completed
     if: always()
     
     steps:
@@ -158,18 +159,35 @@ jobs:
       with:
         pattern: coverage-*
         path: coverage-reports
+      continue-on-error: true
+        
+    - name: Check for coverage reports
+      id: check-coverage
+      run: |
+        if [ -d "coverage-reports" ] && [ "$(ls -A coverage-reports 2>/dev/null)" ]; then
+          echo "has_coverage=true" >> $GITHUB_OUTPUT
+          echo "Coverage reports found:"
+          ls -la coverage-reports/ || true
+        else
+          echo "has_coverage=false" >> $GITHUB_OUTPUT
+          echo "No coverage reports found - tests may have failed"
+        fi
         
     - name: Merge coverage reports
+      if: steps.check-coverage.outputs.has_coverage == 'true'
       run: |
-        echo "Coverage reports collected from individual test runs"
-        ls -la coverage-reports/
+        echo "Merging coverage reports from individual test runs"
+        # List all coverage directories
+        find coverage-reports -name "lcov.info" -type f || true
         
     - name: Upload to Codecov
+      if: steps.check-coverage.outputs.has_coverage == 'true'
       uses: codecov/codecov-action@v4
       with:
-        directory: coverage-reports
+        directory: ./coverage-reports
         flags: backend
         name: backend-coverage
+        fail_ci_if_error: false
 
   # Static code analysis (TypeScript, ESLint)
   code-analysis:
